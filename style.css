@@ -90,3 +90,41 @@ body, html {
         text-shadow: -0.025em 0 0 rgba(255,0,0,0.75), -0.025em -0.025em 0 rgba(0,255,0,0.75), -0.025em -0.05em 0 rgba(0,0,255,0.75);
     }
 }
+
+/* Responsividad para móviles y tablets */
+@media (max-width: 768px) {
+    .container {
+        padding: 2rem 1.5rem;
+        width: 90%;
+        max-width: 400px;
+    }
+    
+    .glitch {
+        font-size: 3.5rem;
+    }
+    
+    .message {
+        font-size: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .loader {
+        width: 40px;
+        height: 40px;
+        margin: 2rem auto 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 1.5rem 1rem;
+    }
+
+    .glitch {
+        font-size: 2.5rem;
+    }
+    
+    .message {
+        font-size: 0.9rem;
+    }
+}
