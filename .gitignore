@@ -1,0 +1,16 @@
+# Dependencias
+node_modules/
+dist/
+
+# Archivos de entorno (NUNCA subir al repositorio)
+.env
+.env.local
+.env.production
+.env.development
+
+# Logs
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
