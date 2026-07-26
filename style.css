@@ -128,3 +128,41 @@ body, html {
         font-size: 0.9rem;
     }
 }
+
+/* Login Button */
+.login-btn {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    z-index: 20;
+}
+
+.login-btn:hover {
+    background: rgba(255, 0, 127, 0.2);
+    border-color: #ff007f;
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 480px) {
+    .login-btn {
+        top: 1rem;
+        right: 1rem;
+        padding: 0.5rem 1rem;
+    }
+    .login-btn span {
+        display: none;
+    }
+}
