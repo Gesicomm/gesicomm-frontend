@@ -7,7 +7,9 @@
  *   Solo se expone un mensaje genérico.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://api.gesicomm.com';
+// ⚠️ NUNCA hacer fallback a la URL de producción.
+// Si no existe la variable, usamos la ruta relativa (útil si hay un proxy local) o localhost para desarrollo.
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 async function peticion(ruta, opciones = {}) {
   try {

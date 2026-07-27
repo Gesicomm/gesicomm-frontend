@@ -21,7 +21,7 @@
  */
 export async function verificarSesion() {
   try {
-    const API_URL = import.meta.env.VITE_API_URL || 'https://api.gesicomm.com';
+    const API_URL = import.meta.env.VITE_API_URL || '';
     const res = await fetch(`${API_URL}/api/auth/me`, {
       method: 'GET',
       credentials: 'include', // Envía cookies HttpOnly automáticamente
@@ -40,7 +40,7 @@ export async function verificarSesion() {
  * El backend invalida la cookie HttpOnly.
  */
 export async function cerrarSesion() {
-  const API_URL = import.meta.env.VITE_API_URL || 'https://api.gesicomm.com';
+  const API_URL = import.meta.env.VITE_API_URL || '';
   await fetch(`${API_URL}/api/auth/logout`, {
     method: 'POST',
     credentials: 'include',
