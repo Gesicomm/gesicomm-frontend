@@ -1,25 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
+import DashboardLayout from './components/DashboardLayout';
 
-/**
- * Rutas de la aplicación:
- *
- * PÚBLICAS:
- *   /       → Home (Landing page)
- *   /login  → Autenticación (login, registro, recuperar contraseña)
- *
- * PROTEGIDAS (requieren sesión activa verificada en backend):
- *   /dashboard  → Panel principal
- *   /products   → Gestión de productos
- *   /orders     → Gestión de pedidos
- *   /customers  → Gestión de clientes
- *   /settings   → Configuración
- *
- * ⚠️ Las rutas protegidas tienen protección visual con <ProtectedRoute>.
- *    La seguridad real está en el backend (validación del JWT en cada request).
- */
 function App() {
   return (
     <Router>
@@ -28,12 +13,17 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
 
-        {/* Rutas protegidas — se añadirán los componentes reales a futuro */}
+        {/* Rutas protegidas */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <div style={{ color: '#fff', padding: '2rem' }}>Dashboard (en construcción)</div>
+              <DashboardLayout>
+                <div>
+                  <h1>Dashboard</h1>
+                  <p>Bienvenido a Gesicomm.</p>
+                </div>
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -41,7 +31,9 @@ function App() {
           path="/products"
           element={
             <ProtectedRoute>
-              <div style={{ color: '#fff', padding: '2rem' }}>Productos (en construcción)</div>
+              <DashboardLayout>
+                <div><h1>Productos</h1><p>En construcción</p></div>
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -49,7 +41,9 @@ function App() {
           path="/orders"
           element={
             <ProtectedRoute>
-              <div style={{ color: '#fff', padding: '2rem' }}>Pedidos (en construcción)</div>
+              <DashboardLayout>
+                <div><h1>Pedidos</h1><p>En construcción</p></div>
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -57,7 +51,9 @@ function App() {
           path="/customers"
           element={
             <ProtectedRoute>
-              <div style={{ color: '#fff', padding: '2rem' }}>Clientes (en construcción)</div>
+              <DashboardLayout>
+                <div><h1>Clientes</h1><p>En construcción</p></div>
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
@@ -65,7 +61,9 @@ function App() {
           path="/settings"
           element={
             <ProtectedRoute>
-              <div style={{ color: '#fff', padding: '2rem' }}>Configuración (en construcción)</div>
+              <DashboardLayout>
+                <Settings />
+              </DashboardLayout>
             </ProtectedRoute>
           }
         />
