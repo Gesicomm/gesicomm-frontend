@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-// Suponemos que utils/api no existe o no tiene exportaciones, así que usamos fetch nativo
-// para garantizar que todo funcione.
+import { api } from '../utils/api';
 
 const Settings = () => {
     const [metaStatus, setMetaStatus] = useState('loading');
@@ -11,12 +10,6 @@ const Settings = () => {
     
     // Leer query params (viene del redirect de facebook auth)
     const [searchParams, setSearchParams] = useSearchParams();
-
-    const fetchWithAuth = async (url, options = {}) => {
-        options.credentials = 'include';
-        const baseUrl = 'http://localhost:3000'; // backend
-        return fetch(`${baseUrl}${url}`, options);
-    };
 
     useEffect(() => {
         // Manejar los query params resultantes de la redirección de Meta
@@ -37,15 +30,10 @@ const Settings = () => {
 
     const checkMetaStatus = async () => {
         try {
-            const res = await fetchWithAuth('/api/meta/status');
-            if (res.ok) {
-                const data = await res.json();
-                setMetaStatus(data.status);
-                if (data.status === 'conectado') {
-                    fetchMetaData();
-                }
-            } else {
-                setMetaStatus('desconectado');
+            const data = await api.get('/api/meta/status');
+            setMetaStatus(data.status);
+            if (data.status === 'conectado') {
+                fetchMetaData();
             }
         } catch (err) {
             console.error(err);
@@ -56,11 +44,8 @@ const Settings = () => {
 
     const fetchMetaData = async () => {
         try {
-            const res = await fetchWithAuth('/api/meta/data');
-            if (res.ok) {
-                const data = await res.json();
-                setMetaData(data);
-            }
+            const data = await api.get('/api/meta/data');
+            setMetaData(data);
         } catch (err) {
             console.error(err);
             setError('Error al obtener datos de Meta.');
@@ -69,8 +54,8 @@ const Settings = () => {
 
     const handleConnectMeta = () => {
         // En lugar de popup SDK o POST simulado, hacemos redirect completo (OAuth flow real)
-        // Redirige al backend, que establecerá el state en la cookie y redirigirá a Facebook
-        window.location.href = 'http://localhost:3000/api/meta/connect';
+        const baseUrl = import.meta.env.VITE_API_URL || '';
+        window.location.href = `${baseUrl}/api/meta/connect`;
     };
 
     return (
