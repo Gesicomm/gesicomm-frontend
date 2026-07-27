@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Settings from './pages/Settings';
+import Ads from './pages/Ads';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -53,6 +54,16 @@ function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <div><h1>Clientes</h1><p>En construcción</p></div>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ads"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Ads />
               </DashboardLayout>
             </ProtectedRoute>
           }
