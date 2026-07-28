@@ -3,6 +3,10 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Settings from './pages/Settings';
 import Ads from './pages/Ads';
+import ProductList from './pages/productos/ProductList';
+import ProductForm from './pages/productos/ProductForm';
+import CategoriaList from './pages/categorias/CategoriaList';
+import MarcaList from './pages/marcas/MarcaList';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -15,69 +19,42 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Rutas protegidas */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <div>
-                  <h1>Dashboard</h1>
-                  <p>Bienvenido a Gesicomm.</p>
-                </div>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/products"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <div><h1>Productos</h1><p>En construcción</p></div>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <div><h1>Pedidos</h1><p>En construcción</p></div>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/customers"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <div><h1>Clientes</h1><p>En construcción</p></div>
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/ads"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Ads />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <Settings />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/dashboard" element={
+          <ProtectedRoute><DashboardLayout><div><h1>Dashboard</h1><p>Bienvenido a Gesicomm.</p></div></DashboardLayout></ProtectedRoute>
+        } />
+
+        {/* Productos */}
+        <Route path="/products" element={
+          <ProtectedRoute><DashboardLayout><ProductList /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/products/nuevo" element={
+          <ProtectedRoute><DashboardLayout><ProductForm /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/products/:id/editar" element={
+          <ProtectedRoute><DashboardLayout><ProductForm /></DashboardLayout></ProtectedRoute>
+        } />
+
+        {/* Catálogo */}
+        <Route path="/categorias" element={
+          <ProtectedRoute><DashboardLayout><CategoriaList /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/marcas" element={
+          <ProtectedRoute><DashboardLayout><MarcaList /></DashboardLayout></ProtectedRoute>
+        } />
+
+        {/* Otras secciones */}
+        <Route path="/orders" element={
+          <ProtectedRoute><DashboardLayout><div><h1>Pedidos</h1><p>En construcción</p></div></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/customers" element={
+          <ProtectedRoute><DashboardLayout><div><h1>Clientes</h1><p>En construcción</p></div></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/ads" element={
+          <ProtectedRoute><DashboardLayout><Ads /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );
