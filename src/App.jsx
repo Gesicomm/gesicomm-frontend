@@ -6,7 +6,6 @@ import Ads from './pages/Ads';
 import ProductList from './pages/productos/ProductList';
 import ProductForm from './pages/productos/ProductForm';
 import CategoriaList from './pages/categorias/CategoriaList';
-import MarcaList from './pages/marcas/MarcaList';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -37,9 +36,6 @@ function App() {
         {/* Catálogo */}
         <Route path="/categorias" element={
           <ProtectedRoute><DashboardLayout><CategoriaList /></DashboardLayout></ProtectedRoute>
-        } />
-        <Route path="/marcas" element={
-          <ProtectedRoute><DashboardLayout><MarcaList /></DashboardLayout></ProtectedRoute>
         } />
 
         {/* Otras secciones */}

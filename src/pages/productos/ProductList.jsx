@@ -213,11 +213,11 @@ export default function ProductList() {
                 <thead>
                   <tr>
                     <th>Producto</th>
-                    <th>SKU</th>
+                    <th>Estado de venta</th>
                     <th>Categoría</th>
                     <th>Precio</th>
                     <th>Stock</th>
-                    <th>Estado</th>
+                    <th>Activo</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
@@ -246,7 +246,13 @@ export default function ProductList() {
                             </div>
                           </div>
                         </td>
-                        <td><span className="sku-tag">{p.sku || '—'}</span></td>
+                        <td>
+                          <span className={`estado-venta-badge estado-${p.estado_venta || 'en_venta'}`}>
+                            {p.estado_venta === 'en_venta' ? '🟢 En venta'
+                              : p.estado_venta === 'fuera_de_stock' ? '🟡 Fuera de stock'
+                              : '🔴 No disponible'}
+                          </span>
+                        </td>
                         <td>{p.Categoria?.nombre || '—'}</td>
                         <td><span className="price-tag">{precioDisplay(p)}</span></td>
                         <td>

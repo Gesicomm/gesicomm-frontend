@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
-  Settings, LogOut, Tag, Briefcase, ChevronDown, ChevronRight
+  Settings, LogOut, Tag, ChevronDown, ChevronRight
 } from 'lucide-react';
 import './dashboard.css';
 
@@ -10,8 +10,7 @@ const Sidebar = () => {
   const location = useLocation();
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') ||
-    location.pathname.startsWith('/categorias') ||
-    location.pathname.startsWith('/marcas')
+    location.pathname.startsWith('/categorias')
   );
 
   const isActive = (path) => location.pathname === path;
@@ -48,8 +47,9 @@ const Sidebar = () => {
             {/* Productos con sub-menú colapsable */}
             <li className="sidebar-item">
               <button
-                className={`sidebar-link sidebar-collapsible ${isActivePrefix('/products') || isActivePrefix('/categorias') || isActivePrefix('/marcas') ? 'active' : ''}`}
-                onClick={() => setProductosOpen(o => !o)}
+                className={`sidebar-link sidebar-collapsible ${
+                isActivePrefix('/products') || isActivePrefix('/categorias') ? 'active' : ''
+              }`}  onClick={() => setProductosOpen(o => !o)}
                 aria-expanded={productosOpen}
               >
                 <span className="sidebar-icon"><Package /></span>
@@ -74,14 +74,6 @@ const Sidebar = () => {
                       className={`sidebar-sublink ${isActive('/categorias') ? 'active' : ''}`}
                     >
                       <Tag size={13} /> Categorías
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/marcas"
-                      className={`sidebar-sublink ${isActive('/marcas') ? 'active' : ''}`}
-                    >
-                      <Briefcase size={13} /> Marcas
                     </Link>
                   </li>
                 </ul>

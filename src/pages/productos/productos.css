@@ -232,6 +232,22 @@
   color: #10b981;
 }
 
+/* Estado de venta */
+.estado-venta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.estado-en_venta       { background: rgba(16,185,129,0.12); color: #34d399; }
+.estado-fuera_de_stock { background: rgba(245,158,11,0.12); color: #fbbf24; }
+.estado-no_disponible  { background: rgba(239,68,68,0.12);  color: #f87171; }
+
+
 .stock-badge {
   display: inline-flex; align-items: center; gap: 0.3rem;
   font-weight: 600;
@@ -473,7 +489,7 @@
 /* ─── Variantes ───────────────────────────────────── */
 .variantes-header {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1fr 1.2fr 40px;
+  grid-template-columns: 2fr 1fr 1.2fr 40px;
   gap: 0.5rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -494,6 +510,23 @@
   margin-bottom: 0.4rem;
   border: 1px solid rgba(255,255,255,0.06);
 }
+/* Variante simplificada: 3 columnas */
+.variante-row-3 {
+  grid-template-columns: 2fr 1fr 1.4fr 40px;
+}
+.variantes-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem;
+  color: #475569;
+  border: 1px dashed rgba(255,255,255,0.08);
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+.variantes-empty p { font-size: 0.875rem; color: #64748b; margin: 0; text-align: center; }
+
 
 /* ─── Imágenes ────────────────────────────────────── */
 .imagenes-grid {
