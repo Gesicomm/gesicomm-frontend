@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+let apiURL = import.meta.env.VITE_API_URL;
+if (!apiURL) {
+  throw new Error("🚨 ERROR CRÍTICO: La variable VITE_API_URL no está definida en el entorno. Revisa tu archivo .env o la configuración de tu servidor.");
+}
+if (!apiURL.endsWith('/api')) {
+  apiURL = apiURL.replace(/\/$/, '') + '/api';
+}
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  baseURL: apiURL,
   withCredentials: true,
 });
 

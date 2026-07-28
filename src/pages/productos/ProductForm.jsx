@@ -32,7 +32,11 @@ export default function ProductForm() {
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);
   const [categorias, setCategorias] = useState([]);
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
+  const [nuevaCategoria, setNuevaCategoria] = useState('');
+  const [guardandoCategoria, setGuardandoCategoria] = useState(false);
   const [imagenes, setImagenes] = useState([]);
+  const [imagenesNuevas, setImagenesNuevas] = useState([]); // Para imágenes en cola (nuevo prod)
   const [subiendoImg, setSubiendoImg] = useState(false);
   const [tieneVariantes, setTieneVariantes] = useState(false);
 
@@ -148,11 +152,27 @@ export default function ProductForm() {
 
       if (esEdicion) {
         await productService.actualizar(id, payload);
+        // Si subieron imágenes nuevas estando en edición (raro pero posible si no se subió automático)
+        for (const file of imagenesNuevas.map(i => i.file)) {
+          const fd = new FormData();
+          fd.append('imagen', file);
+          await productService.subirImagen(id, fd);
+        }
         navigate('/products');
       } else {
         const nuevo = await productService.crear(payload);
-        // Navegar a edición para poder subir imágenes
-        navigate(`/products/${nuevo.id}/editar`);
+        
+        // Subir las imágenes en cola
+        for (const imgObj of imagenesNuevas) {
+          try {
+            const fd = new FormData();
+            fd.append('imagen', imgObj.file);
+            await productService.subirImagen(nuevo.id, fd);
+          } catch (e) {
+            console.error('Error subiendo imagen', e);
+          }
+        }
+        navigate('/products');
       }
     } catch (err) {
       const errores = err.response?.data?.errores;
@@ -169,10 +189,15 @@ export default function ProductForm() {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     if (!esEdicion) {
-      setError('Guardá el producto primero para poder subir imágenes.');
+      // Poner en cola para subir después
+      const preview = URL.createObjectURL(file);
+      setImagenesNuevas(imgs => [...imgs, { id: Date.now(), file, url: preview, es_principal: imgs.length === 0 }]);
+      e.target.value = '';
       return;
     }
+
     setSubiendoImg(true);
     setError(null);
     try {
@@ -184,12 +209,15 @@ export default function ProductForm() {
       setError(err.response?.data?.message || 'Error al subir imagen. Máx. 1MB.');
     } finally {
       setSubiendoImg(false);
-      // Reset el input para poder subir la misma imagen nuevamente si hace falta
       e.target.value = '';
     }
   };
 
-  const eliminarImagen = async (imgId) => {
+  const eliminarImagen = async (imgId, esNueva = false) => {
+    if (esNueva) {
+      setImagenesNuevas(imgs => imgs.filter(i => i.id !== imgId));
+      return;
+    }
     try {
       await productService.eliminarImagen(id, imgId);
       setImagenes(imgs => imgs.filter(i => i.id !== imgId));
@@ -201,6 +229,22 @@ export default function ProductForm() {
       await productService.actualizarImagen(id, imgId, { es_principal: true });
       setImagenes(imgs => imgs.map(i => ({ ...i, es_principal: i.id === imgId })));
     } catch { setError('Error al actualizar imagen.'); }
+  };
+
+  const handleCrearCategoria = async () => {
+    if (!nuevaCategoria.trim()) return;
+    setGuardandoCategoria(true);
+    try {
+      const res = await categoriaService.crear({ nombre: nuevaCategoria.trim(), activo: true });
+      setCategorias(prev => [...prev, res]);
+      setValue('categoria_id', res.id);
+      setCreandoCategoria(false);
+      setNuevaCategoria('');
+    } catch (err) {
+      setError('Error al crear categoría: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setGuardandoCategoria(false);
+    }
   };
 
   if (cargando) return (
@@ -282,10 +326,40 @@ export default function ProductForm() {
             {/* Categoría */}
             <div className="form-group">
               <label htmlFor="prod-categoria">Categoría</label>
-              <select id="prod-categoria" {...register('categoria_id')}>
-                <option value="">Sin categoría</option>
-                {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
+              {creandoCategoria ? (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Nueva categoría..."
+                    value={nuevaCategoria}
+                    onChange={(e) => setNuevaCategoria(e.target.value)}
+                    disabled={guardandoCategoria}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCrearCategoria();
+                      }
+                    }}
+                  />
+                  <button type="button" className="btn-primary" onClick={handleCrearCategoria} disabled={guardandoCategoria} style={{ padding: '0 10px' }}>
+                    {guardandoCategoria ? '...' : <Save size={15}/>}
+                  </button>
+                  <button type="button" className="btn-icon danger" onClick={() => { setCreandoCategoria(false); setNuevaCategoria(''); }} disabled={guardandoCategoria}>
+                    <X size={15}/>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select id="prod-categoria" {...register('categoria_id')} style={{ flex: 1 }}>
+                    <option value="">Sin categoría</option>
+                    {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                  <button type="button" className="btn-icon" onClick={() => setCreandoCategoria(true)} title="Crear nueva categoría">
+                    <Plus size={16}/>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Estado de venta */}
@@ -315,10 +389,6 @@ export default function ProductForm() {
 
             {/* Flags */}
             <div className="form-group full" style={{ flexDirection: 'row', gap: '2rem', alignItems: 'center' }}>
-              <label className="check-label">
-                <input type="checkbox" {...register('activo')} />
-                Producto activo
-              </label>
               <label className="check-label">
                 <input type="checkbox" {...register('destacado')} />
                 <Star size={13} /> Destacado
@@ -357,14 +427,8 @@ export default function ProductForm() {
             <ImageIcon size={14} /> Imágenes del producto
           </div>
 
-          {!esEdicion && (
-            <div className="info-banner">
-              <Info size={14} />
-              Guardá el producto primero para poder subir imágenes.
-            </div>
-          )}
-
           <div className="imagenes-grid">
+            {/* Imágenes ya guardadas */}
             {[...imagenes].sort((a, b) => a.orden - b.orden).map(img => (
               <div
                 key={img.id}
@@ -384,7 +448,7 @@ export default function ProductForm() {
                     type="button"
                     className="btn-icon danger"
                     title="Eliminar imagen"
-                    onClick={() => eliminarImagen(img.id)}
+                    onClick={() => eliminarImagen(img.id, false)}
                   >
                     <X size={13} />
                   </button>
@@ -393,21 +457,40 @@ export default function ProductForm() {
               </div>
             ))}
 
-            {esEdicion && (
-              <label className="imagen-upload-btn">
-                {subiendoImg
-                  ? <div className="spinner-sm" />
-                  : <><Upload size={20} /><span>Subir foto</span></>
-                }
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleImageUpload}
-                  hidden
-                  disabled={subiendoImg}
-                />
-              </label>
-            )}
+            {/* Imágenes en cola (Nuevas) */}
+            {imagenesNuevas.map(img => (
+              <div
+                key={img.id}
+                className={`imagen-card nueva-img ${img.es_principal ? 'principal' : ''}`}
+              >
+                <img src={img.url} alt="Nueva" />
+                <div className="imagen-actions">
+                  <button
+                    type="button"
+                    className="btn-icon danger"
+                    title="Eliminar"
+                    onClick={() => eliminarImagen(img.id, true)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                <span className="img-principal-badge" style={{background: 'rgba(255,255,255,0.2)'}}>Pendiente</span>
+              </div>
+            ))}
+
+            <label className="imagen-upload-btn">
+              {subiendoImg
+                ? <div className="spinner-sm" />
+                : <><Upload size={20} /><span>Subir foto</span></>
+              }
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageUpload}
+                hidden
+                disabled={subiendoImg}
+              />
+            </label>
           </div>
           <p className="field-hint">
             Formatos admitidos: JPG, PNG, WEBP. Máx. 1&nbsp;MB.

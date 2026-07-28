@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productService } from '../../services/productService';
-import { categoriaService, marcaService } from '../../services/catalogoService';
+import { categoriaService } from '../../services/catalogoService';
 import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
@@ -22,12 +22,10 @@ export default function ProductList() {
   const [pagina, setPagina] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [categorias, setCategorias] = useState([]);
-  const [marcas, setMarcas] = useState([]);
 
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
-  const [marcaId, setMarcaId] = useState('');
   const [soloActivos, setSoloActivos] = useState('true');
   const [stockBajo, setStockBajo] = useState(false);
 
@@ -38,10 +36,8 @@ export default function ProductList() {
   useEffect(() => {
     Promise.all([
       categoriaService.buscar({ solo_activas: true, limit: 1000 }),
-      marcaService.buscar({ solo_activas: true, limit: 1000 }),
-    ]).then(([catData, mrcData]) => {
+    ]).then(([catData]) => {
       setCategorias(catData.categorias || catData);
-      setMarcas(mrcData.marcas || mrcData);
     });
   }, []);
 
@@ -55,7 +51,6 @@ export default function ProductList() {
         // Filtros dinámicos — solo incluir si tienen valor
         ...(textoBuscado.trim()  && { texto: textoBuscado.trim() }),
         ...(categoriaId          && { categoria_id: parseInt(categoriaId) }),
-        ...(marcaId              && { marca_id: parseInt(marcaId) }),
         ...(soloActivos !== ''   && { activo: soloActivos === 'true' }),
         ...(stockBajo            && { stock_bajo: true }),
       };
@@ -69,13 +64,13 @@ export default function ProductList() {
     } finally {
       setCargando(false);
     }
-  }, [textoBuscado, categoriaId, marcaId, soloActivos, stockBajo]);
+  }, [textoBuscado, categoriaId, soloActivos, stockBajo]);
 
   // Cada vez que cambian los filtros → volver a página 1 y buscar
   useEffect(() => {
     setPagina(1);
     buscar(1);
-  }, [textoBuscado, categoriaId, marcaId, soloActivos, stockBajo]);
+  }, [textoBuscado, categoriaId, soloActivos, stockBajo]);
 
   // Cambio de página → buscar la página nueva
   useEffect(() => {
@@ -154,17 +149,6 @@ export default function ProductList() {
         >
           <option value="">Todas las categorías</option>
           {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-        </select>
-
-        {/* Marca */}
-        <select
-          id="filtro-marca"
-          className="filter-select"
-          value={marcaId}
-          onChange={e => setMarcaId(e.target.value)}
-        >
-          <option value="">Todas las marcas</option>
-          {marcas.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
         </select>
 
         {/* Estado */}
