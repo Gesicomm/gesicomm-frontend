@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
+import { comboAdminService } from '../../services/comboAdminService';
+import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/comboPricingLocal';
+import CurrencyInput from '../../components/CurrencyInput';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
-  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag
+  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity
 } from 'lucide-react';
 import './productos.css';
+import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
+
+function fmt(n, decimals = 0) {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('es-PY', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '—'; }
 
 // 3 tabs simplificadas: sin Logística, sin SKU, sin Marcas
 const TABS = [
@@ -39,6 +49,7 @@ export default function ProductForm() {
   const [imagenesNuevas, setImagenesNuevas] = useState([]); // Para imágenes en cola (nuevo prod)
   const [subiendoImg, setSubiendoImg] = useState(false);
   const [tieneVariantes, setTieneVariantes] = useState(false);
+  const [config, setConfig] = useState(null);
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm({
     defaultValues: {
@@ -61,22 +72,23 @@ export default function ProductForm() {
       estado_venta: 'en_venta',
       destacado: false,
       variantes: [],
-      precios_mayoristas: [],
     },
   });
 
   const { fields: variantesFields, append: appendVariante, remove: removeVariante } =
     useFieldArray({ control, name: 'variantes' });
-  const { fields: mayoristasFields, append: appendMayorista, remove: removeMayorista } =
-    useFieldArray({ control, name: 'precios_mayoristas' });
 
   const nombre = watch('nombre');
 
   // ── Cargar datos ──────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
-      const catData = await categoriaService.buscar({ solo_activas: true, limit: 1000 });
+      const [catData, conf] = await Promise.all([
+        categoriaService.buscar({ solo_activas: true, limit: 1000 }),
+        comboAdminService.obtenerConfiguracion().catch(() => null)
+      ]);
       setCategorias(catData.categorias || catData);
+      if (conf) setConfig(conf);
 
       if (esEdicion) {
         try {
@@ -100,11 +112,10 @@ export default function ProductForm() {
             activo: p.activo,
             estado_venta: p.estado_venta || 'en_venta',
             destacado: p.destacado,
-            variantes: p.variantes || [],
-            precios_mayoristas: p.precios_mayoristas || [],
+            variantes: p.variantes?.length ? p.variantes : [],
           });
+          if (p.variantes?.length > 0) setTieneVariantes(true);
           setImagenes(p.imagenes || []);
-          setTieneVariantes((p.variantes || []).length > 0);
         } catch {
           setError('No se pudo cargar el producto.');
         } finally {
@@ -114,6 +125,31 @@ export default function ProductForm() {
     };
     init();
   }, [id]);
+
+  // ── Rentabilidad Reactiva ─────────────────────────────────
+  const precioBaseVal = parseFloat(watch('precio_base')) || 0;
+  const precioCostoVal = parseFloat(watch('precio_costo')) || 0;
+  const descuentoPctVal = parseFloat(watch('descuento_porcentaje')) || 0;
+
+  const rentabilidad = React.useMemo(() => {
+    if (!config) return null;
+    
+    // Si hay descuento, el precio de venta real sobre el cual se calcula rentabilidad baja
+    const finalPrice = precioBaseVal * (1 - (descuentoPctVal / 100));
+
+    const result = calcularPrincipal({ salePrice: finalPrice, cost: precioCostoVal }, {
+      cpaPercentage: Number(config.porcentaje_cpa) || 0,
+      shipping: Number(config.costo_envio) || 0,
+      confirmation: Number(config.costo_confirmacion) || 0,
+      packaging: Number(config.costo_empaque) || 0
+    });
+    
+    // Simulamos sobre el precio base completo (sin el descuento actual aplicado),
+    // para mostrar la tabla general de 0%, 10%, 20%...
+    const simulador = simularDescuentosPrincipal(precioBaseVal, result.totalCosts, [0, 10, 20, 30, 40]);
+    
+    return { ...result, finalPrice, simulador };
+  }, [precioBaseVal, precioCostoVal, descuentoPctVal, config]);
 
   // ── Submit ────────────────────────────────────────────────
   const onSubmit = async (data) => {
@@ -144,15 +180,10 @@ export default function ProductForm() {
           stock: parseInt(v.stock) || 0,
           precio_diferencial: v.precio_diferencial ? parseFloat(v.precio_diferencial) : 0,
         })),
-        precios_mayoristas: data.precios_mayoristas.map(pm => ({
-          cantidad_minima: parseInt(pm.cantidad_minima),
-          precio_unitario: parseFloat(pm.precio_unitario),
-        })),
       };
 
       if (esEdicion) {
         await productService.actualizar(id, payload);
-        // Si subieron imágenes nuevas estando en edición (raro pero posible si no se subió automático)
         for (const file of imagenesNuevas.map(i => i.file)) {
           const fd = new FormData();
           fd.append('imagen', file);
@@ -161,8 +192,6 @@ export default function ProductForm() {
         navigate('/products');
       } else {
         const nuevo = await productService.crear(payload);
-        
-        // Subir las imágenes en cola
         for (const imgObj of imagenesNuevas) {
           try {
             const fd = new FormData();
@@ -191,7 +220,6 @@ export default function ProductForm() {
     if (!file) return;
 
     if (!esEdicion) {
-      // Poner en cola para subir después
       const preview = URL.createObjectURL(file);
       setImagenesNuevas(imgs => [...imgs, { id: Date.now(), file, url: preview, es_principal: imgs.length === 0 }]);
       e.target.value = '';
@@ -254,7 +282,6 @@ export default function ProductForm() {
   return (
     <div className="prod-page">
 
-      {/* ── Header ──────────────────────────────────────────── */}
       <div className="prod-header">
         <div className="prod-header-left">
           <button className="btn-back" onClick={() => navigate('/products')}
@@ -277,7 +304,6 @@ export default function ProductForm() {
         </button>
       </div>
 
-      {/* ── Error banner ────────────────────────────────────── */}
       {error && (
         <div className="form-error-banner" role="alert">
           <Info size={15} />
@@ -288,7 +314,6 @@ export default function ProductForm() {
         </div>
       )}
 
-      {/* ── Tabs ────────────────────────────────────────────── */}
       <div className="prod-tabs" role="tablist">
         {TABS.map(tab => (
           <button
@@ -306,13 +331,8 @@ export default function ProductForm() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="prod-form" noValidate>
 
-        {/* ══════════════════════════════════════════════════════
-            TAB 1: DATOS BÁSICOS (incluye imágenes)
-        ══════════════════════════════════════════════════════ */}
         <div className={`tab-content ${tabActiva === 'basicos' ? 'active' : ''}`}>
           <div className="form-grid-2">
-
-            {/* Nombre */}
             <div className="form-group full">
               <label htmlFor="prod-nombre">Nombre <span className="req">*</span></label>
               <input
@@ -323,7 +343,6 @@ export default function ProductForm() {
               {errors.nombre && <span className="field-error">{errors.nombre.message}</span>}
             </div>
 
-            {/* Categoría */}
             <div className="form-group">
               <label htmlFor="prod-categoria">Categoría</label>
               {creandoCategoria ? (
@@ -362,7 +381,6 @@ export default function ProductForm() {
               )}
             </div>
 
-            {/* Estado de venta */}
             <div className="form-group">
               <label htmlFor="prod-estado-venta">Estado de venta</label>
               <select id="prod-estado-venta" {...register('estado_venta')}>
@@ -375,7 +393,6 @@ export default function ProductForm() {
               </p>
             </div>
 
-            {/* Tags */}
             <div className="form-group">
               <label htmlFor="prod-tags">
                 Tags <span className="hint">(separados por coma)</span>
@@ -387,7 +404,6 @@ export default function ProductForm() {
               />
             </div>
 
-            {/* Flags */}
             <div className="form-group full" style={{ flexDirection: 'row', gap: '2rem', alignItems: 'center' }}>
               <label className="check-label">
                 <input type="checkbox" {...register('destacado')} />
@@ -395,7 +411,6 @@ export default function ProductForm() {
               </label>
             </div>
 
-            {/* Descripción corta */}
             <div className="form-group full">
               <label htmlFor="prod-desc-corta">
                 Descripción corta <span className="hint">(para listados)</span>
@@ -408,7 +423,6 @@ export default function ProductForm() {
               />
             </div>
 
-            {/* Descripción larga */}
             <div className="form-group full">
               <label htmlFor="prod-desc-larga">
                 Descripción <span className="hint">(detalle completo)</span>
@@ -422,13 +436,11 @@ export default function ProductForm() {
             </div>
           </div>
 
-          {/* ── Imágenes (en el mismo tab) ─────────────────── */}
           <div className="form-section-title">
             <ImageIcon size={14} /> Imágenes del producto
           </div>
 
           <div className="imagenes-grid">
-            {/* Imágenes ya guardadas */}
             {[...imagenes].sort((a, b) => a.orden - b.orden).map(img => (
               <div
                 key={img.id}
@@ -457,7 +469,6 @@ export default function ProductForm() {
               </div>
             ))}
 
-            {/* Imágenes en cola (Nuevas) */}
             {imagenesNuevas.map(img => (
               <div
                 key={img.id}
@@ -498,27 +509,27 @@ export default function ProductForm() {
           </p>
         </div>
 
-        {/* ══════════════════════════════════════════════════════
-            TAB 2: PRECIOS
-        ══════════════════════════════════════════════════════ */}
         <div className={`tab-content ${tabActiva === 'precios' ? 'active' : ''}`}>
           <div className="form-grid-3">
             <div className="form-group">
               <label htmlFor="prod-precio-base">
                 Precio base <span className="req">*</span>
               </label>
-              <div className="input-prefix">
-                <span>$</span>
-                <input
-                  id="prod-precio-base"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  {...register('precio_base', {
-                    required: 'El precio base es requerido.',
-                    min: { value: 0, message: 'El precio no puede ser negativo.' },
-                  })}
+              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                <Controller
+                  name="precio_base"
+                  control={control}
+                  rules={{ required: 'El precio base es requerido.', min: { value: 0, message: 'El precio no puede ser negativo.' } }}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="prod-precio-base"
+                      className="w-full"
+                      style={{ padding: '0.6rem' }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               </div>
               {errors.precio_base && <span className="field-error">{errors.precio_base.message}</span>}
@@ -528,17 +539,41 @@ export default function ProductForm() {
               <label htmlFor="prod-precio-costo">
                 Precio de costo <span className="hint">(solo admins)</span>
               </label>
-              <div className="input-prefix">
-                <span>$</span>
-                <input id="prod-precio-costo" type="number" step="0.01" min="0" placeholder="0.00" {...register('precio_costo')} />
+              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                <Controller
+                  name="precio_costo"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="prod-precio-costo"
+                      className="w-full"
+                      style={{ padding: '0.6rem' }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
               </div>
             </div>
 
             <div className="form-group">
               <label htmlFor="prod-precio-minimo">Precio mínimo</label>
-              <div className="input-prefix">
-                <span>$</span>
-                <input id="prod-precio-minimo" type="number" step="0.01" min="0" placeholder="0.00" {...register('precio_minimo')} />
+              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                <Controller
+                  name="precio_minimo"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="prod-precio-minimo"
+                      className="w-full"
+                      style={{ padding: '0.6rem' }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
               </div>
               <p className="field-hint">El precio con descuento no puede caer por debajo de este valor.</p>
             </div>
@@ -573,48 +608,81 @@ export default function ProductForm() {
             </div>
           </div>
 
-          <div className="form-section-title"><DollarSign size={14} /> Precios por volumen (mayorista)</div>
-          {mayoristasFields.map((field, i) => (
-            <div key={field.id} className="variante-row">
-              <div className="form-group">
-                <label>Cantidad mínima</label>
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="10"
-                  {...register(`precios_mayoristas.${i}.cantidad_minima`)}
-                />
-              </div>
-              <div className="form-group">
-                <label>Precio unitario</label>
-                <div className="input-prefix">
-                  <span>$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    {...register(`precios_mayoristas.${i}.precio_unitario`)}
-                  />
+          {config && rentabilidad && (
+            <div className="combo-section" style={{ marginTop: '2rem', background: 'transparent', padding: 0, border: 'none' }}>
+              <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad Individual Estimada</h2>
+              <p className="combo-section-desc">Cálculo basado en la configuración económica global de combos y el descuento actual aplicado.</p>
+              
+              <div className="combo-metrics-grid">
+                <div className="combo-metric-card">
+                  <span className="combo-metric-label">Venta (con desc)</span>
+                  <span className="combo-metric-value">{fmtGs(rentabilidad.finalPrice)}</span>
+                </div>
+                <div className="combo-metric-card">
+                  <span className="combo-metric-label">Costo Prod.</span>
+                  <span className="combo-metric-value">{fmtGs(precioCostoVal)}</span>
+                </div>
+                <div className="combo-metric-card">
+                  <span className="combo-metric-label">CPA ({config.porcentaje_cpa}%)</span>
+                  <span className="combo-metric-value">{fmtGs(rentabilidad.cpaMax)}</span>
+                </div>
+                <div className="combo-metric-card">
+                  <span className="combo-metric-label">Operativos</span>
+                  <span className="combo-metric-value">
+                    {fmtGs((Number(config.costo_envio)||0) + (Number(config.costo_confirmacion)||0) + (Number(config.costo_empaque)||0))}
+                  </span>
+                </div>
+                <div className="combo-metric-card" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <span className="combo-metric-label">Costo Total Estimado</span>
+                  <span className="combo-metric-value">
+                    {fmtGs(rentabilidad.totalCosts)}
+                  </span>
+                </div>
+                <div className={`combo-metric-card ${rentabilidad.profit > 0 ? 'profit-positive' : 'profit-negative'}`}>
+                  <span className="combo-metric-label">Utilidad</span>
+                  <span className="combo-metric-value">
+                    {fmtGs(rentabilidad.profit)}
+                  </span>
+                </div>
+                <div className={`combo-metric-card ${rentabilidad.margin >= 0.15 ? 'profit-positive' : (rentabilidad.margin > 0 ? 'profit-warning' : 'profit-negative')}`}>
+                  <span className="combo-metric-label">Margen</span>
+                  <span className="combo-metric-value">
+                    {(rentabilidad.margin * 100).toFixed(1)}%
+                  </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn-icon danger"
-                onClick={() => removeMayorista(i)}
-                aria-label="Quitar precio mayorista"
-              >
-                <Trash2 size={14} />
-              </button>
+
+              <div className="combo-table-container" style={{ marginTop: '1.5rem' }}>
+                <table className="combo-table">
+                  <thead>
+                    <tr>
+                      <th>Escenario Descuento</th>
+                      <th className="text-right">Precio Final</th>
+                      <th className="text-right">Utilidad Unitaria</th>
+                      <th className="text-right">Margen</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rentabilidad.simulador.map(sim => (
+                      <tr key={sim.discountPercentage}>
+                        <td>
+                          {sim.discountPercentage}% 
+                          {sim.discountPercentage === descuentoPctVal ? <span className="badge-primary" style={{marginLeft: '8px', fontSize: '10px'}}>ACTUAL</span> : null}
+                        </td>
+                        <td className="text-right">{fmtGs(sim.finalPrice)}</td>
+                        <td className={`text-right ${sim.profit > 0 ? 'text-success' : 'text-danger'}`}>
+                          {fmtGs(sim.profit)}
+                        </td>
+                        <td className={`text-right ${sim.margin >= 0.15 ? 'text-success' : (sim.margin > 0 ? 'text-warning' : 'text-danger')}`}>
+                          {(sim.margin * 100).toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          ))}
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={() => appendMayorista({ cantidad_minima: 10, precio_unitario: '' })}
-          >
-            <Plus size={14} /> Agregar precio mayorista
-          </button>
+          )}
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -683,13 +751,19 @@ export default function ProductForm() {
                     placeholder="0"
                     {...register(`variantes.${i}.stock`)}
                   />
-                  <div className="input-prefix">
-                    <span>$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...register(`variantes.${i}.precio_diferencial`)}
+                  <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                    <Controller
+                      name={`variantes.${i}.precio_diferencial`}
+                      control={control}
+                      render={({ field }) => (
+                        <CurrencyInput
+                          className="w-full"
+                          style={{ padding: '0.6rem' }}
+                          value={field.value}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      )}
                     />
                   </div>
                   <button

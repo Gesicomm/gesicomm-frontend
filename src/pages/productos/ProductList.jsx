@@ -6,8 +6,9 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader
+  ToggleLeft, ToggleRight, Loader, Tag
 } from 'lucide-react';
+import ProductCombosDrawer from './ProductCombosDrawer';
 import './productos.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -22,6 +23,7 @@ export default function ProductList() {
   const [pagina, setPagina] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [categorias, setCategorias] = useState([]);
+  const [comboProductoSeleccionado, setComboProductoSeleccionado] = useState(null);
 
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
@@ -100,7 +102,7 @@ export default function ProductList() {
   };
 
   const precioDisplay = (p) =>
-    `$${parseFloat(p.precio_base).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    `${parseFloat(p.precio_base).toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
 
   // ── Render ────────────────────────────────────────────────
   return (
@@ -237,7 +239,7 @@ export default function ProductList() {
                               : '🔴 No disponible'}
                           </span>
                         </td>
-                        <td>{p.Categoria?.nombre || '—'}</td>
+                        <td>{p.categoria?.nombre || '—'}</td>
                         <td><span className="price-tag">{precioDisplay(p)}</span></td>
                         <td>
                           <span className={`stock-badge ${stockBajoItem ? 'stock-low' : 'stock-ok'}`}>
@@ -262,6 +264,13 @@ export default function ProductList() {
                               title="Editar"
                             >
                               <Edit2 size={15} />
+                            </button>
+                            <button
+                              className="btn-icon"
+                              onClick={() => setComboProductoSeleccionado(p)}
+                              title="Gestionar Combos"
+                            >
+                              <Tag size={15} />
                             </button>
                             <button
                               className="btn-icon danger"
@@ -334,6 +343,13 @@ export default function ProductList() {
           </>
         )}
       </div>
+
+      {comboProductoSeleccionado && (
+        <ProductCombosDrawer 
+          producto={comboProductoSeleccionado} 
+          onClose={() => setComboProductoSeleccionado(null)} 
+        />
+      )}
     </div>
   );
 }

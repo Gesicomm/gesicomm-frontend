@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
-  Settings, LogOut, Tag, ChevronDown, ChevronRight
+  Settings, LogOut, Tag, ChevronDown, ChevronRight, Layers
 } from 'lucide-react';
 import './dashboard.css';
 
@@ -11,6 +11,9 @@ const Sidebar = () => {
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') ||
     location.pathname.startsWith('/categorias')
+  );
+  const [combosOpen, setCombosOpen] = useState(
+    location.pathname.startsWith('/combos')
   );
 
   const isActive = (path) => location.pathname === path;
@@ -82,6 +85,41 @@ const Sidebar = () => {
 
             {renderLink({ path: '/orders', label: 'Pedidos', icon: <ShoppingCart /> })}
             {renderLink({ path: '/customers', label: 'Clientes', icon: <Users /> })}
+
+            {/* Combos con sub-menú */}
+            <li className="sidebar-item">
+              <button
+                className={`sidebar-link sidebar-collapsible ${isActivePrefix('/combos') ? 'active' : ''}`}
+                onClick={() => setCombosOpen(o => !o)}
+                aria-expanded={combosOpen}
+              >
+                <span className="sidebar-icon"><Layers /></span>
+                Combos
+                <span className="sidebar-chevron">
+                  {combosOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                </span>
+              </button>
+              {combosOpen && (
+                <ul className="sidebar-submenu">
+                  <li>
+                    <Link
+                      to="/combos"
+                      className={`sidebar-sublink ${isActive('/combos') ? 'active' : ''}`}
+                    >
+                      <Layers size={13} /> Listado
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/combos/nuevo"
+                      className={`sidebar-sublink ${isActive('/combos/nuevo') ? 'active' : ''}`}
+                    >
+                      <Layers size={13} /> Nuevo combo
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
           </ul>
         </div>
 
