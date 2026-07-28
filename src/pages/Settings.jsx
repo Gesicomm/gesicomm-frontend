@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../utils/api';
+import { Plus, Trash2, Store, CheckCircle, XCircle, Loader } from 'lucide-react';
 
 const Settings = () => {
-    const [metaStatus, setMetaStatus] = useState('loading');
-    const [metaBusinessName, setMetaBusinessName] = useState(null);
+    const [tiendas, setTiendas] = useState([]);
+    const [loadingTiendas, setLoadingTiendas] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-    const [disconnecting, setDisconnecting] = useState(false);
+    const [deletingId, setDeletingId] = useState(null);
 
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -20,43 +21,46 @@ const Settings = () => {
             setSearchParams({});
         }
         if (metaSuccess) {
-            setSuccess('Meta Business conectado exitosamente.');
+            setSuccess('Tienda conectada exitosamente.');
             setSearchParams({});
         }
 
-        checkMetaStatus();
+        loadTiendas();
     }, []);
 
-    const checkMetaStatus = async () => {
+    const loadTiendas = async () => {
+        setLoadingTiendas(true);
         try {
-            const data = await api.get('/api/meta/status');
-            setMetaStatus(data.status);
-            if (data.business_name) setMetaBusinessName(data.business_name);
+            const data = await api.get('/api/meta/stores');
+            setTiendas(data.tiendas || []);
         } catch (err) {
-            setMetaStatus('desconectado');
+            setError('No se pudieron cargar las tiendas.');
+        } finally {
+            setLoadingTiendas(false);
         }
     };
 
-    const handleConnectMeta = () => {
+    const handleConnectMeta = (mode = 'connect') => {
         const baseUrl = import.meta.env.VITE_API_URL || '';
-        window.location.href = `${baseUrl}/api/meta/connect`;
+        window.location.href = `${baseUrl}/api/meta/connect?mode=${mode}`;
     };
 
-    const handleDisconnectMeta = async () => {
-        if (!window.confirm('¿Estás seguro de que querés desconectar Meta Business? Se eliminarán los tokens guardados.')) return;
-        setDisconnecting(true);
+    const handleDeleteTienda = async (id, nombre) => {
+        if (!window.confirm(`¿Desconectar la tienda "${nombre}"? Se eliminarán sus tokens guardados.`)) return;
+        setDeletingId(id);
         setError(null);
         try {
-            await api.post('/api/meta/disconnect', {});
-            setMetaStatus('desconectado');
-            setMetaBusinessName(null);
-            setSuccess('Meta Business desconectado correctamente.');
+            await api.delete(`/api/meta/stores/${id}`);
+            setSuccess(`Tienda "${nombre}" desconectada correctamente.`);
+            setTiendas(prev => prev.filter(t => t.id !== id));
         } catch (err) {
             setError(err.message);
         } finally {
-            setDisconnecting(false);
+            setDeletingId(null);
         }
     };
+
+    const hayTiendas = tiendas.length > 0;
 
     return (
         <div className="settings-container">
@@ -77,41 +81,106 @@ const Settings = () => {
             )}
 
             <div className="card">
-                <h3>Integración con Meta Business</h3>
+                {/* Cabecera de la sección */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ 
+                            width: '36px', height: '36px', borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #1877F2, #00b2ff)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                            <Store size={18} color="#fff" />
+                        </div>
+                        <div>
+                            <h3 style={{ margin: 0, fontSize: '1rem' }}>Tiendas Conectadas (Meta Business)</h3>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>
+                                {hayTiendas ? `${tiendas.length} tienda${tiendas.length > 1 ? 's' : ''} activa${tiendas.length > 1 ? 's' : ''}` : 'Ninguna tienda conectada'}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        className="meta-connect-btn"
+                        onClick={() => handleConnectMeta(hayTiendas ? 'add_store' : 'connect')}
+                        style={{ fontSize: '0.85rem', padding: '0.5rem 1.1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                        <Plus size={15} />
+                        {hayTiendas ? 'Agregar tienda' : 'Conectar tienda'}
+                    </button>
+                </div>
 
-                {metaStatus === 'loading' ? (
-                    <p style={{ color: '#aaa' }}>Verificando estado...</p>
-                ) : metaStatus === 'desconectado' ? (
-                    <div>
-                        <p style={{ marginBottom: '1.5rem', color: '#aaa' }}>
-                            Conecta tu cuenta de Meta Business para visualizar métricas de campañas en <strong style={{ color: '#ff007f' }}>Ads & Campañas</strong>.
+                {/* Lista de tiendas */}
+                {loadingTiendas ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#888', padding: '1rem 0' }}>
+                        <Loader size={16} className="spin" /> Cargando tiendas...
+                    </div>
+                ) : !hayTiendas ? (
+                    <div style={{ 
+                        border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', 
+                        padding: '2.5rem', textAlign: 'center', color: '#666'
+                    }}>
+                        <Store size={32} style={{ marginBottom: '0.75rem', opacity: 0.4 }} />
+                        <p style={{ margin: '0 0 1rem' }}>No tenés ninguna tienda conectada todavía.</p>
+                        <p style={{ margin: 0, fontSize: '0.82rem' }}>
+                            Conectá tu cuenta de Meta Business para visualizar métricas en <strong style={{ color: '#ff007f' }}>Ads & Campañas</strong>.
                         </p>
-                        <button className="meta-connect-btn" onClick={handleConnectMeta}>
-                            <span style={{ fontSize: '1.2rem' }}>∞</span> Conectar con Meta Business
-                        </button>
                     </div>
                 ) : (
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                            <span className="status-badge active">Conectado</span>
-                            {metaBusinessName && <span style={{ color: '#aaa' }}>{metaBusinessName}</span>}
-                        </div>
-                        <button
-                            onClick={handleDisconnectMeta}
-                            disabled={disconnecting}
-                            style={{
-                                background: 'transparent',
-                                border: '1px solid rgba(255,100,100,0.4)',
-                                color: '#ff6b6b',
-                                padding: '0.6rem 1.4rem',
-                                borderRadius: '8px',
-                                cursor: disconnecting ? 'not-allowed' : 'pointer',
-                                fontSize: '0.9rem',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            {disconnecting ? 'Desconectando...' : '⚠ Desconectar Meta'}
-                        </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {tiendas.map((tienda, idx) => (
+                            <div
+                                key={tienda.id}
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '0.85rem 1.1rem',
+                                    background: 'rgba(255,255,255,0.04)',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: '10px',
+                                    transition: 'border-color 0.2s'
+                                }}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    {/* Badge Principal */}
+                                    {idx === 0 && (
+                                        <span style={{
+                                            fontSize: '0.68rem', padding: '0.15rem 0.5rem',
+                                            background: 'rgba(255,0,127,0.15)', color: '#ff007f',
+                                            border: '1px solid rgba(255,0,127,0.3)', borderRadius: '4px',
+                                            fontWeight: 600, letterSpacing: '0.05em'
+                                        }}>PRINCIPAL</span>
+                                    )}
+                                    <div>
+                                        <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{tienda.nombre || tienda.business_name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.1rem' }}>
+                                            BM ID: {tienda.business_id}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    {tienda.estado === 'conectado' ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#6bff6b', fontSize: '0.8rem' }}>
+                                            <CheckCircle size={14} /> Conectada
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#ff6b6b', fontSize: '0.8rem' }}>
+                                            <XCircle size={14} /> Desconectada
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => handleDeleteTienda(tienda.id, tienda.nombre || tienda.business_name)}
+                                        disabled={deletingId === tienda.id}
+                                        title="Desconectar tienda"
+                                        style={{
+                                            background: 'transparent', border: '1px solid rgba(255,100,100,0.3)',
+                                            color: '#ff6b6b', padding: '0.4rem 0.6rem', borderRadius: '6px',
+                                            cursor: deletingId === tienda.id ? 'not-allowed' : 'pointer',
+                                            display: 'flex', alignItems: 'center', transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {deletingId === tienda.id ? <Loader size={14} className="spin" /> : <Trash2 size={14} />}
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

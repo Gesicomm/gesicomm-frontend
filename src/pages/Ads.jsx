@@ -58,6 +58,10 @@ const formatPercent = (value) => {
 };
 
 const Ads = () => {
+    // Tiendas
+    const [tiendas, setTiendas] = useState([]);
+    const [selectedStore, setSelectedStore] = useState(null); // { id, nombre }
+
     // Select options
     const [businesses, setBusinesses] = useState([]);
     const [adAccounts, setAdAccounts] = useState([]);
@@ -82,48 +86,71 @@ const Ads = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState(null);
 
-    // Initial load: Fetch filters
+    // Carga inicial: tiendas y filtros de la primera tienda
     useEffect(() => {
-        const fetchFilters = async () => {
+        const fetchInitial = async () => {
             try {
-                const status = await api.get('/api/meta/status');
-                if (status.status !== 'conectado') {
-                    setError('Meta Business no está conectado. Ve a Configuración para conectar tu cuenta.');
+                const storesRes = await api.get('/api/meta/stores');
+                const tiendasData = storesRes.tiendas || [];
+                setTiendas(tiendasData);
+
+                if (tiendasData.length === 0) {
+                    setError('No tenés tiendas conectadas. Ve a Configuración para conectar tu cuenta de Meta.');
                     setLoadingFilters(false);
                     return;
                 }
 
-                const res = await api.post('/api/meta/filters', {});
-                setBusinesses(res.businesses || []);
-                setAdAccounts(res.ad_accounts || []);
-                
-                if (res.businesses?.length > 0) {
-                    const firstBusiness = res.businesses[0].id;
-                    setSelectedBusiness(firstBusiness);
-                    // Preselect first ad account of this business
-                    const validAds = res.ad_accounts?.filter(a => a.business && a.business.id === firstBusiness) || [];
-                    if (validAds.length > 0) {
-                        setSelectedAdAccount(validAds[0].id);
-                    }
-                } else if (res.ad_accounts?.length > 0) {
-                    setSelectedAdAccount(res.ad_accounts[0].id);
-                }
+                // Auto-seleccionar la primera tienda
+                const firstStore = tiendasData[0];
+                setSelectedStore(firstStore);
+                await loadFiltersForStore(firstStore.id);
 
             } catch (err) {
                 setError(err.message);
-            } finally {
                 setLoadingFilters(false);
             }
         };
-        fetchFilters();
+        fetchInitial();
     }, []);
+
+    const loadFiltersForStore = async (storeId) => {
+        setLoadingFilters(true);
+        setBusinesses([]);
+        setAdAccounts([]);
+        setCampaignOptions([]);
+        setSelectedBusiness('');
+        setSelectedAdAccount('');
+        setSelectedCampaign('ALL');
+        setCampaigns([]);
+        try {
+            const res = await api.post('/api/meta/filters', { store_id: storeId });
+            setBusinesses(res.businesses || []);
+            setAdAccounts(res.ad_accounts || []);
+
+            if (res.businesses?.length > 0) {
+                const firstBusiness = res.businesses[0].id;
+                setSelectedBusiness(firstBusiness);
+                const validAds = res.ad_accounts?.filter(a => a.business && a.business.id === firstBusiness) || [];
+                if (validAds.length > 0) setSelectedAdAccount(validAds[0].id);
+            } else if (res.ad_accounts?.length > 0) {
+                setSelectedAdAccount(res.ad_accounts[0].id);
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoadingFilters(false);
+        }
+    };
 
     // Fetch Campaign Options when Ad Account changes
     useEffect(() => {
         const fetchCampaignOptions = async () => {
-            if (!selectedAdAccount) return;
+            if (!selectedAdAccount || !selectedStore) return;
             try {
-                const res = await api.post('/api/meta/campaign-list', { ad_account_id: selectedAdAccount });
+                const res = await api.post('/api/meta/campaign-list', { 
+                    ad_account_id: selectedAdAccount,
+                    store_id: selectedStore.id
+                });
                 setCampaignOptions(res.campaigns || []);
             } catch (err) {
                 console.error(err);
@@ -134,11 +161,12 @@ const Ads = () => {
 
     // Fetch Campaigns when filters or cursor changes
     const fetchCampaigns = async (cursor = null) => {
-        if (!selectedAdAccount) return;
+        if (!selectedAdAccount || !selectedStore) return;
         
         setLoadingData(true);
         try {
             const body = {
+                store_id: selectedStore.id,
                 business_id: selectedBusiness,
                 ad_account_id: selectedAdAccount,
                 campaign_id: selectedCampaign,
@@ -154,7 +182,6 @@ const Ads = () => {
             setCurrentCursor(cursor);
         } catch (err) {
             console.error(err);
-            // Optionally set error or toast
         } finally {
             setLoadingData(false);
         }
@@ -203,6 +230,41 @@ const Ads = () => {
 
             {/* Filter Bar */}
             <div className="filter-bar">
+                {/* Selector de Tienda */}
+                {tiendas.length > 1 && (
+                    <div className="filter-group" style={{ gridColumn: '1 / -1' }}>
+                        <label>Tienda</label>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {tiendas.map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => {
+                                        setSelectedStore(t);
+                                        loadFiltersForStore(t.id);
+                                    }}
+                                    style={{
+                                        padding: '0.4rem 1rem',
+                                        borderRadius: '20px',
+                                        border: selectedStore?.id === t.id
+                                            ? '1px solid var(--bg-primary)'
+                                            : '1px solid rgba(255,255,255,0.15)',
+                                        background: selectedStore?.id === t.id
+                                            ? 'rgba(255,0,127,0.15)'
+                                            : 'transparent',
+                                        color: selectedStore?.id === t.id ? '#ff007f' : '#aaa',
+                                        fontSize: '0.82rem',
+                                        fontWeight: selectedStore?.id === t.id ? 600 : 400,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {t.nombre || t.business_name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="filter-group">
                     <label>Portafolio (BM)</label>
                     <Select 
