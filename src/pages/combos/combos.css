@@ -1,0 +1,601 @@
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COMBOS — Estilos del módulo administrativo de pricing y rentabilidad
+   Usa los mismos tokens de color/tipografía que productos.css
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Layout de la página ────────────────────────────────────────────────── */
+.combo-page {
+  padding: 1.5rem 2rem;
+  max-width: 1380px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.combo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.combo-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.combo-icon-wrap {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+  flex-shrink: 0;
+}
+
+.combo-title    { font-size: 1.35rem; font-weight: 700; color: #e2e8f0; margin: 0; }
+.combo-subtitle { font-size: 0.8rem; color: #64748b; margin: 0.1rem 0 0; }
+
+/* ─── Secciones del editor ───────────────────────────────────────────────── */
+.combo-section {
+  background: #0f1117;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.combo-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.combo-section-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.combo-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.combo-section-label {
+  font-size: 0.7rem;
+  color: #475569;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.5rem;
+}
+
+/* ─── Grid de dos columnas ───────────────────────────────────────────────── */
+.combo-editor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 1024px) {
+  .combo-editor-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Tarjetas de métricas (Principal / Combo) ───────────────────────────── */
+.combo-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.75rem;
+}
+
+.combo-metric-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.combo-metric-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.combo-metric-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.combo-metric-value.positive { color: #10b981; }
+.combo-metric-value.negative { color: #ef4444; }
+.combo-metric-value.warning  { color: #f59e0b; }
+
+/* ─── Buscador de productos ──────────────────────────────────────────────── */
+.combo-search-wrap {
+  position: relative;
+}
+
+.combo-search-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #0a0a0b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.combo-search-input-wrap:focus-within {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.08);
+}
+
+.combo-search-input-wrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.combo-search-input-wrap input::placeholder { color: #475569; }
+
+.combo-search-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0; right: 0;
+  background: #1a1a1c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  z-index: 50;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+}
+
+.combo-search-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.combo-search-item:hover { background: rgba(255, 255, 255, 0.05); }
+.combo-search-item:last-child { border-bottom: none; }
+.combo-search-item.disabled { opacity: 0.4; cursor: not-allowed; }
+
+.combo-search-item-name { font-size: 0.875rem; font-weight: 600; color: #e2e8f0; }
+.combo-search-item-sub  { font-size: 0.73rem; color: #64748b; margin-top: 0.1rem; }
+
+/* ─── Producto Principal seleccionado ────────────────────────────────────── */
+.combo-principal-card {
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.combo-principal-info { flex: 1; }
+.combo-principal-name { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; }
+.combo-principal-sku  { font-size: 0.75rem; color: #64748b; margin-top: 0.15rem; }
+
+/* ─── Tabla de Upsells ───────────────────────────────────────────────────── */
+.combo-upsells-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.combo-upsells-table th {
+  text-align: left;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.combo-upsells-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  vertical-align: middle;
+}
+
+.combo-upsells-table tr:last-child td { border-bottom: none; }
+.combo-upsells-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+.combo-upsells-table .readonly { color: #64748b; }
+
+/* ─── Input de descuento en tabla ────────────────────────────────────────── */
+.combo-discount-input {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  width: 80px;
+  transition: border-color 0.2s;
+}
+
+.combo-discount-input:focus-within { border-color: rgba(245, 158, 11, 0.5); }
+
+.combo-discount-input input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  width: 45px;
+  text-align: right;
+  font-family: inherit;
+}
+
+.combo-discount-input span { color: #64748b; font-size: 0.8rem; }
+
+/* ─── Precio del combo editable ──────────────────────────────────────────── */
+.combo-price-editor {
+  background: rgba(245, 158, 11, 0.04);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.combo-price-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.combo-price-input-wrap label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.combo-price-real-margin {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.combo-price-real-margin.below-target { color: #f59e0b; }
+.combo-price-real-margin.healthy      { color: #10b981; }
+.combo-price-real-margin.no-rentable  { color: #ef4444; }
+
+/* ─── Botones de precios recomendados ────────────────────────────────────── */
+.combo-recs-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.combo-rec-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  color: #e2e8f0;
+}
+
+.combo-rec-btn:hover {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.combo-rec-btn-margin { font-size: 0.68rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+.combo-rec-btn-price  { font-size: 0.9rem; font-weight: 700; margin-top: 0.2rem; }
+.combo-rec-btn-profit { font-size: 0.72rem; color: #10b981; margin-top: 0.1rem; }
+
+/* ─── Comparativa Solo vs Combo ──────────────────────────────────────────── */
+.combo-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .combo-comparison-grid { grid-template-columns: 1fr; }
+}
+
+.combo-compare-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.combo-compare-card.highlight {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.combo-compare-card.alert {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.04);
+}
+
+.combo-compare-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+.combo-compare-value { font-size: 1.15rem; font-weight: 700; }
+
+/* ─── Badges de estado ────────────────────────────────────────────────────── */
+.combo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+}
+
+.combo-badge.borrador   { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+.combo-badge.activo     { background: rgba(16, 185, 129, 0.12);  color: #10b981; }
+.combo-badge.inactivo   { background: rgba(239, 68, 68, 0.12);   color: #ef4444; }
+.combo-badge.excelente  { background: rgba(99, 102, 241, 0.12);  color: #6366f1; }
+.combo-badge.buena      { background: rgba(16, 185, 129, 0.12);  color: #10b981; }
+.combo-badge.revisar    { background: rgba(239, 68, 68, 0.12);   color: #ef4444; }
+.combo-badge.saludable  { background: rgba(16, 185, 129, 0.12);  color: #10b981; }
+.combo-badge.margen-bajo{ background: rgba(245, 158, 11, 0.12);  color: #f59e0b; }
+.combo-badge.no-rentable{ background: rgba(239, 68, 68, 0.12);   color: #ef4444; }
+
+/* ─── Tabla de sensibilidad ──────────────────────────────────────────────── */
+.combo-sensitivity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+}
+
+.combo-sensitivity-table th {
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.combo-sensitivity-table th:first-child { text-align: left; }
+
+.combo-sensitivity-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  text-align: right;
+  color: #cbd5e1;
+}
+
+.combo-sensitivity-table td:first-child { text-align: left; font-weight: 600; }
+
+.combo-sensitivity-table tr.saludable  td { }
+.combo-sensitivity-table tr.margen-bajo td { color: #f59e0b; }
+.combo-sensitivity-table tr.no-rentable td { color: #ef4444; opacity: 0.8; }
+
+/* ─── Lista de combos ─────────────────────────────────────────────────────── */
+.combo-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+.combo-list-card {
+  background: #0f1117;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.combo-list-card:hover {
+  border-color: rgba(245, 158, 11, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.combo-list-card.inactivo { opacity: 0.55; }
+
+.combo-list-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.combo-list-card-name { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
+.combo-list-card-principal { font-size: 0.78rem; color: #64748b; margin-top: 0.15rem; }
+
+.combo-list-card-metrics {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.combo-list-card-metric { display: flex; flex-direction: column; gap: 0.15rem; }
+.combo-list-card-metric-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; }
+.combo-list-card-metric-value { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; }
+
+.combo-list-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* ─── Warnings ────────────────────────────────────────────────────────────── */
+.combo-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.combo-warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.8rem;
+  color: #f59e0b;
+}
+
+/* ─── Footer de acciones ─────────────────────────────────────────────────── */
+.combo-footer {
+  background: #0a0a0b;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  position: sticky;
+  bottom: 1rem;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+}
+
+.combo-footer-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+/* ─── Botón de activar ────────────────────────────────────────────────────── */
+.btn-activate {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none; border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-activate:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4); }
+.btn-activate:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.btn-deactivate {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-deactivate:hover { background: rgba(239, 68, 68, 0.18); }
+
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.combo-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.combo-empty-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: #f59e0b;
+}
+
+.combo-empty h3 { color: #94a3b8; margin: 0; font-size: 1rem; }
+.combo-empty p  { margin: 0; font-size: 0.85rem; }
+
+/* ─── Filtros ─────────────────────────────────────────────────────────────── */
+.combo-filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.combo-filter-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #64748b;
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+
+.combo-filter-btn.active, .combo-filter-btn:hover {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+
+/* ─── Divider ─────────────────────────────────────────────────────────────── */
+.combo-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0.25rem 0;
+}

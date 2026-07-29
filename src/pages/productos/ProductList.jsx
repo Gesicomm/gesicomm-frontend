@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
+import { getMediaUrl } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader
+  ToggleLeft, ToggleRight, Loader, Tag
 } from 'lucide-react';
+import ProductCombosDrawer from './ProductCombosDrawer';
 import './productos.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -22,6 +24,7 @@ export default function ProductList() {
   const [pagina, setPagina] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [categorias, setCategorias] = useState([]);
+  const [comboProductoSeleccionado, setComboProductoSeleccionado] = useState(null);
 
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
@@ -66,16 +69,16 @@ export default function ProductList() {
     }
   }, [textoBuscado, categoriaId, soloActivos, stockBajo]);
 
-  // Cada vez que cambian los filtros → volver a página 1 y buscar
-  useEffect(() => {
-    setPagina(1);
-    buscar(1);
-  }, [textoBuscado, categoriaId, soloActivos, stockBajo]);
-
-  // Cambio de página → buscar la página nueva
+  // Única fuente de búsqueda: se dispara al montar, al cambiar de página,
+  // y al cambiar cualquier filtro (porque `buscar` cambia de identidad
+  // cuando cambian sus dependencias). El reseteo a página 1 ante un cambio
+  // de filtro se hace directamente en cada handler (más abajo), no acá —
+  // antes había un efecto separado que también llamaba a buscar(1) en
+  // paralelo con este, duplicando la llamada al backend en cada carga y
+  // en cada cambio de filtro.
   useEffect(() => {
     buscar(pagina);
-  }, [pagina]);
+  }, [pagina, buscar]);
 
   // ── Acciones ──────────────────────────────────────────────
   const toggleActivo = async (producto) => {
@@ -100,7 +103,7 @@ export default function ProductList() {
   };
 
   const precioDisplay = (p) =>
-    `$${parseFloat(p.precio_base).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+    `${parseFloat(p.precio_base).toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
 
   // ── Render ────────────────────────────────────────────────
   return (
@@ -132,7 +135,7 @@ export default function ProductList() {
             className="filter-input"
             placeholder="Buscar por nombre, SKU..."
             value={texto}
-            onChange={e => setTexto(e.target.value)}
+            onChange={e => { setTexto(e.target.value); setPagina(1); }}
             autoComplete="off"
           />
           {cargando && texto && (
@@ -145,7 +148,7 @@ export default function ProductList() {
           id="filtro-categoria"
           className="filter-select"
           value={categoriaId}
-          onChange={e => setCategoriaId(e.target.value)}
+          onChange={e => { setCategoriaId(e.target.value); setPagina(1); }}
         >
           <option value="">Todas las categorías</option>
           {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
@@ -156,7 +159,7 @@ export default function ProductList() {
           id="filtro-estado"
           className="filter-select"
           value={soloActivos}
-          onChange={e => setSoloActivos(e.target.value)}
+          onChange={e => { setSoloActivos(e.target.value); setPagina(1); }}
         >
           <option value="true">Activos</option>
           <option value="false">Inactivos</option>
@@ -169,7 +172,7 @@ export default function ProductList() {
             id="filtro-stock-bajo"
             type="checkbox"
             checked={stockBajo}
-            onChange={e => setStockBajo(e.target.checked)}
+            onChange={e => { setStockBajo(e.target.checked); setPagina(1); }}
           />
           <AlertTriangle size={13} /> Stock bajo
         </label>
@@ -218,7 +221,7 @@ export default function ProductList() {
                           <div className="prod-cell-name">
                             <div className="prod-thumb">
                               {imagen
-                                ? <img src={imagen} alt={p.nombre} />
+                                ? <img src={getMediaUrl(imagen)} alt={p.nombre} />
                                 : <Package size={18} opacity={0.4} />
                               }
                             </div>
@@ -237,7 +240,7 @@ export default function ProductList() {
                               : '🔴 No disponible'}
                           </span>
                         </td>
-                        <td>{p.Categoria?.nombre || '—'}</td>
+                        <td>{p.categoria?.nombre || '—'}</td>
                         <td><span className="price-tag">{precioDisplay(p)}</span></td>
                         <td>
                           <span className={`stock-badge ${stockBajoItem ? 'stock-low' : 'stock-ok'}`}>
@@ -262,6 +265,13 @@ export default function ProductList() {
                               title="Editar"
                             >
                               <Edit2 size={15} />
+                            </button>
+                            <button
+                              className="btn-icon"
+                              onClick={() => setComboProductoSeleccionado(p)}
+                              title="Gestionar Combos"
+                            >
+                              <Tag size={15} />
                             </button>
                             <button
                               className="btn-icon danger"
@@ -334,6 +344,13 @@ export default function ProductList() {
           </>
         )}
       </div>
+
+      {comboProductoSeleccionado && (
+        <ProductCombosDrawer 
+          producto={comboProductoSeleccionado} 
+          onClose={() => setComboProductoSeleccionado(null)} 
+        />
+      )}
     </div>
   );
 }

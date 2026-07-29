@@ -6,6 +6,9 @@ import Ads from './pages/Ads';
 import ProductList from './pages/productos/ProductList';
 import ProductForm from './pages/productos/ProductForm';
 import CategoriaList from './pages/categorias/CategoriaList';
+import ComboList from './pages/combos/ComboList';
+import ComboEditor from './pages/combos/ComboEditor';
+import ComboConfiguracion from './pages/combos/ComboConfiguracion';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -50,6 +53,20 @@ function App() {
         } />
         <Route path="/settings" element={
           <ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>
+        } />
+
+        {/* Combos */}
+        <Route path="/combos" element={
+          <ProtectedRoute><DashboardLayout><ComboList /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/combos/nuevo" element={
+          <ProtectedRoute><DashboardLayout><ComboEditor /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/combos/:id/editar" element={
+          <ProtectedRoute><DashboardLayout><ComboEditor /></DashboardLayout></ProtectedRoute>
+        } />
+        <Route path="/combos/configuracion" element={
+          <ProtectedRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></ProtectedRoute>
         } />
       </Routes>
     </Router>
