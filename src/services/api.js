@@ -13,6 +13,18 @@ const API = axios.create({
   withCredentials: true,
 });
 
+// El backend guarda las imágenes con ruta relativa (ej: "/uploads/foto.jpg"),
+// servida en la raíz del backend (server.js: app.use('/uploads', ...)), NO
+// bajo /api. Si se usa esa ruta tal cual en un <img src>, el navegador la
+// resuelve contra el origen del FRONTEND (Vite, otro puerto) en vez del
+// backend, y la imagen sale rota. Este helper antepone el origen correcto.
+const backendOrigin = apiURL.replace(/\/api$/, '');
+export function getMediaUrl(url) {
+  if (!url) return url;
+  if (/^https?:\/\//.test(url) || url.startsWith('blob:') || url.startsWith('data:')) return url;
+  return backendOrigin + url;
+}
+
 // Interceptor para manejo global de errores (especialmente 401)
 let isRefreshing = false;
 let failedQueue = [];

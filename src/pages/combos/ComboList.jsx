@@ -32,13 +32,18 @@ function OfertaBadge({ status }) {
 export default function ComboList() {
   const navigate = useNavigate();
   const [combos, setCombos] = useState([]);
+  const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
   const [cambiandoEstado, setCambiandoEstado] = useState(null);
 
+  // Umbral configurado (Configuración económica > Margen mínimo), como fracción.
+  const margenMinimoDecimal = config?.margen_minimo !== undefined ? Number(config.margen_minimo) / 100 : 0.10;
+
   useEffect(() => {
     cargar();
+    comboAdminService.obtenerConfiguracion().then(setConfig).catch(() => {});
   }, []);
 
   async function cargar() {
@@ -180,7 +185,7 @@ export default function ComboList() {
                   {margen !== null && (
                     <div className="combo-list-card-metric">
                       <span className="combo-list-card-metric-label">Margen</span>
-                      <span className="combo-list-card-metric-value" style={{ color: margen >= 0.1 ? '#10b981' : margen > 0 ? '#f59e0b' : '#ef4444' }}>
+                      <span className="combo-list-card-metric-value" style={{ color: margen >= margenMinimoDecimal ? '#10b981' : margen > 0 ? '#f59e0b' : '#ef4444' }}>
                         {(margen * 100).toFixed(1)}%
                       </span>
                     </div>

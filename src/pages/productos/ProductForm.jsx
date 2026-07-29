@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { productService } from '../../services/productService';
+import { getMediaUrl } from '../../services/api';
 import { categoriaService } from '../../services/catalogoService';
 import { comboAdminService } from '../../services/comboAdminService';
 import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/comboPricingLocal';
@@ -75,8 +76,12 @@ export default function ProductForm() {
     },
   });
 
-  const { fields: variantesFields, append: appendVariante, remove: removeVariante } =
-    useFieldArray({ control, name: 'variantes' });
+  // keyName custom: por default react-hook-form usa "id" como su propia key
+  // interna y PISA el id real de la variante (viene de la base de datos) con
+  // un uuid generado — sin esto, el backend no puede saber qué fila es una
+  // variante existente a actualizar vs. una nueva a crear.
+  const { fields: variantesFields, append: appendVariante, remove: removeVariante, replace: replaceVariantes } =
+    useFieldArray({ control, name: 'variantes', keyName: '_rhfKey' });
 
   const nombre = watch('nombre');
 
@@ -133,22 +138,33 @@ export default function ProductForm() {
 
   const rentabilidad = React.useMemo(() => {
     if (!config) return null;
-    
-    // Si hay descuento, el precio de venta real sobre el cual se calcula rentabilidad baja
-    const finalPrice = precioBaseVal * (1 - (descuentoPctVal / 100));
 
-    const result = calcularPrincipal({ salePrice: finalPrice, cost: precioCostoVal }, {
-      cpaPercentage: Number(config.porcentaje_cpa) || 0,
+    // El CPA y los costos totales se calculan siempre sobre el precio base,
+    // igual que en combos y en la plantilla original: el CPA no depende del
+    // descuento que se aplique (es el costo de adquisición, no de venta).
+    const result = calcularPrincipal({ salePrice: precioBaseVal, cost: precioCostoVal }, {
+      cpaPercentage: Number(config.cpa_porcentaje) || 0,
       shipping: Number(config.costo_envio) || 0,
       confirmation: Number(config.costo_confirmacion) || 0,
       packaging: Number(config.costo_empaque) || 0
     });
-    
-    // Simulamos sobre el precio base completo (sin el descuento actual aplicado),
-    // para mostrar la tabla general de 0%, 10%, 20%...
-    const simulador = simularDescuentosPrincipal(precioBaseVal, result.totalCosts, [0, 10, 20, 30, 40]);
-    
-    return { ...result, finalPrice, simulador };
+
+    // Precio de venta real con el descuento actual aplicado: la utilidad y el
+    // margen se recalculan sobre este precio, pero contra los costos totales
+    // fijos de arriba (mismo criterio que el simulador de descuentos).
+    const finalPrice = precioBaseVal * (1 - (descuentoPctVal / 100));
+    const profit = finalPrice - result.totalCosts;
+    const margin = finalPrice > 0 ? profit / finalPrice : 0;
+
+    // Simulamos sobre el precio base completo, usando los mismos escenarios de
+    // descuento configurados en Configuración económica de combos — antes esto
+    // tenía [0,10,20,30,40] hardcodeado, ignorando lo que se configure ahí.
+    const escenarios = Array.isArray(config.escenarios_descuento) && config.escenarios_descuento.length > 0
+      ? config.escenarios_descuento
+      : [0, 10, 20, 30, 40];
+    const simulador = simularDescuentosPrincipal(precioBaseVal, result.totalCosts, escenarios);
+
+    return { ...result, finalPrice, profit, margin, simulador };
   }, [precioBaseVal, precioCostoVal, descuentoPctVal, config]);
 
   // ── Submit ────────────────────────────────────────────────
@@ -215,30 +231,66 @@ export default function ProductForm() {
   };
 
   // ── Imágenes ──────────────────────────────────────────────
+  const MAX_IMAGEN_BYTES = 1 * 1024 * 1024; // 1MB en total
+
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const totalActual = imagenes.length + imagenesNuevas.length;
+    if (totalActual + files.length > 6) {
+      setError(`Solo se permiten hasta 6 imágenes por producto. Tienes ${totalActual} y estás intentando subir ${files.length} más.`);
+      e.target.value = '';
+      return;
+    }
+
+    let pesoTotalNuevas = files.reduce((acc, file) => acc + file.size, 0);
+    if (!esEdicion) {
+      pesoTotalNuevas += imagenesNuevas.reduce((acc, img) => acc + img.file.size, 0);
+    }
+
+    if (pesoTotalNuevas > MAX_IMAGEN_BYTES) {
+      setError(`El peso total de las imágenes (nuevas) supera 1MB. Peso actual: ${(pesoTotalNuevas / 1024 / 1024).toFixed(2)}MB.`);
+      e.target.value = '';
+      return;
+    }
 
     if (!esEdicion) {
-      const preview = URL.createObjectURL(file);
-      setImagenesNuevas(imgs => [...imgs, { id: Date.now(), file, url: preview, es_principal: imgs.length === 0 }]);
+      const nuevasPreview = files.map((file, idx) => ({
+        id: Date.now() + idx,
+        file,
+        url: URL.createObjectURL(file),
+        es_principal: (imagenesNuevas.length === 0 && idx === 0)
+      }));
+      setImagenesNuevas(imgs => [...imgs, ...nuevasPreview]);
       e.target.value = '';
       return;
     }
 
     setSubiendoImg(true);
     setError(null);
-    try {
-      const fd = new FormData();
-      fd.append('imagen', file);
-      const nueva = await productService.subirImagen(id, fd);
-      setImagenes(imgs => [...imgs, nueva]);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Error al subir imagen. Máx. 1MB.');
-    } finally {
-      setSubiendoImg(false);
-      e.target.value = '';
+    let subidas = [];
+    let errores = [];
+    for (const file of files) {
+      try {
+        const fd = new FormData();
+        fd.append('imagen', file);
+        const nueva = await productService.subirImagen(id, fd);
+        subidas.push(nueva);
+      } catch (err) {
+        errores.push(err.response?.data?.message || `Error al subir la imagen.`);
+      }
     }
+    
+    if (subidas.length > 0) {
+      setImagenes(imgs => [...imgs, ...subidas]);
+    }
+    if (errores.length > 0) {
+      setError(errores.join('\n'));
+    }
+
+    setSubiendoImg(false);
+    e.target.value = '';
   };
 
   const eliminarImagen = async (imgId, esNueva = false) => {
@@ -446,7 +498,7 @@ export default function ProductForm() {
                 key={img.id}
                 className={`imagen-card ${img.es_principal ? 'principal' : ''}`}
               >
-                <img src={img.url} alt={img.alt_text || 'Imagen del producto'} />
+                <img src={getMediaUrl(img.url)} alt={img.alt_text || 'Imagen del producto'} />
                 <div className="imagen-actions">
                   <button
                     type="button"
@@ -474,7 +526,7 @@ export default function ProductForm() {
                 key={img.id}
                 className={`imagen-card nueva-img ${img.es_principal ? 'principal' : ''}`}
               >
-                <img src={img.url} alt="Nueva" />
+                <img src={getMediaUrl(img.url)} alt="Nueva" />
                 <div className="imagen-actions">
                   <button
                     type="button"
@@ -496,6 +548,7 @@ export default function ProductForm() {
               }
               <input
                 type="file"
+                multiple
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleImageUpload}
                 hidden
@@ -611,8 +664,11 @@ export default function ProductForm() {
           {config && rentabilidad && (
             <div className="combo-section" style={{ marginTop: '2rem', background: 'transparent', padding: 0, border: 'none' }}>
               <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad Individual Estimada</h2>
-              <p className="combo-section-desc">Cálculo basado en la configuración económica global de combos y el descuento actual aplicado.</p>
-              
+              <p className="combo-section-desc">
+                Cálculo basado en la configuración económica global de combos y el descuento actual aplicado.
+                {' '}<Link to="/combos/configuracion">Editar CPA, envío, confirmación y empaque</Link>.
+              </p>
+
               <div className="combo-metrics-grid">
                 <div className="combo-metric-card">
                   <span className="combo-metric-label">Venta (con desc)</span>
@@ -623,7 +679,7 @@ export default function ProductForm() {
                   <span className="combo-metric-value">{fmtGs(precioCostoVal)}</span>
                 </div>
                 <div className="combo-metric-card">
-                  <span className="combo-metric-label">CPA ({config.porcentaje_cpa}%)</span>
+                  <span className="combo-metric-label">CPA ({config.cpa_porcentaje}%)</span>
                   <span className="combo-metric-value">{fmtGs(rentabilidad.cpaMax)}</span>
                 </div>
                 <div className="combo-metric-card">
@@ -644,7 +700,7 @@ export default function ProductForm() {
                     {fmtGs(rentabilidad.profit)}
                   </span>
                 </div>
-                <div className={`combo-metric-card ${rentabilidad.margin >= 0.15 ? 'profit-positive' : (rentabilidad.margin > 0 ? 'profit-warning' : 'profit-negative')}`}>
+                <div className={`combo-metric-card ${rentabilidad.margin >= Number(config.margen_minimo) / 100 ? 'profit-positive' : (rentabilidad.margin > 0 ? 'profit-warning' : 'profit-negative')}`}>
                   <span className="combo-metric-label">Margen</span>
                   <span className="combo-metric-value">
                     {(rentabilidad.margin * 100).toFixed(1)}%
@@ -673,8 +729,8 @@ export default function ProductForm() {
                         <td className={`text-right ${sim.profit > 0 ? 'text-success' : 'text-danger'}`}>
                           {fmtGs(sim.profit)}
                         </td>
-                        <td className={`text-right ${sim.margin >= 0.15 ? 'text-success' : (sim.margin > 0 ? 'text-warning' : 'text-danger')}`}>
-                          {(sim.margin * 100).toFixed(1)}%
+                        <td className={`text-right ${sim.margin >= Number(config.margen_minimo) / 100 ? 'text-success' : (sim.margin > 0 ? 'text-warning' : 'text-danger')}`}>
+                          {(sim.margin * 100).toFixed(2)}%
                         </td>
                       </tr>
                     ))}
@@ -725,7 +781,13 @@ export default function ProductForm() {
               <input
                 type="checkbox"
                 checked={tieneVariantes}
-                onChange={e => setTieneVariantes(e.target.checked)}
+                onChange={e => {
+                  const activar = e.target.checked;
+                  setTieneVariantes(activar);
+                  // Al desactivar, limpiar el array — si no, las filas quedan
+                  // ocultas pero se siguen mandando al guardar.
+                  if (!activar) replaceVariantes([]);
+                }}
               />
               Activar variantes
             </label>
@@ -740,7 +802,7 @@ export default function ProductForm() {
                 <span></span>
               </div>
               {variantesFields.map((field, i) => (
-                <div key={field.id} className="variante-row variante-row-3">
+                <div key={field._rhfKey} className="variante-row variante-row-3">
                   <input
                     placeholder="Ej: Talle M - Rojo"
                     {...register(`variantes.${i}.nombre`)}

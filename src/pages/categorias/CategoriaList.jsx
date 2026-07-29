@@ -98,35 +98,44 @@ export default function CategoriaList() {
         setTotal(data.total || 0);
         setTotalPaginas(data.total_paginas || 1);
       }
-      // Para el selector del modal siempre traemos todas (sin paginación)
-      const todas = await categoriaService.buscar({ solo_activas: false });
-      setTodasLasCategorias(Array.isArray(todas) ? todas : todas.categorias || []);
     } finally {
       setCargando(false);
     }
   };
 
-  // Auto-search al cambiar texto (con debounce)
-  useEffect(() => {
-    setPagina(1);
-    cargar(1, textoBuscado);
-  }, [textoBuscado]);
+  // Lista completa (sin filtros ni paginación) para el selector "categoría padre"
+  // del modal. Solo hace falta pedirla una vez al montar y cuando se crea/edita/
+  // elimina una categoría — antes se volvía a pedir en cada búsqueda y cada
+  // cambio de página, duplicando innecesariamente la llamada al backend.
+  const cargarTodas = async () => {
+    const todas = await categoriaService.buscar({ solo_activas: false });
+    setTodasLasCategorias(Array.isArray(todas) ? todas : todas.categorias || []);
+  };
 
-  // Cambio de página
+  useEffect(() => {
+    cargarTodas();
+  }, []);
+
+  // Única fuente de búsqueda paginada: se dispara al montar y al cambiar de
+  // página. El reseteo a página 1 ante un cambio de texto se hace en el propio
+  // handler del input (más abajo) — antes había un efecto separado reaccionando
+  // a `textoBuscado` que también llamaba a cargar(), duplicando la llamada.
   useEffect(() => {
     cargar(pagina, textoBuscado);
-  }, [pagina]);
+  }, [pagina, textoBuscado]);
 
   const eliminar = async (id) => {
     if (!window.confirm('¿Dar de baja esta categoría?')) return;
     await categoriaService.eliminar(id);
     cargar(pagina, textoBuscado);
+    cargarTodas();
   };
 
   const cerrarModal = () => {
     setModal(null);
-    cargar(1, textoBuscado);
     setPagina(1);
+    cargar(1, textoBuscado);
+    cargarTodas();
   };
 
   return (
@@ -155,7 +164,7 @@ export default function CategoriaList() {
             className="filter-input"
             placeholder="Buscar categoría..."
             value={texto}
-            onChange={e => setTexto(e.target.value)}
+            onChange={e => { setTexto(e.target.value); setPagina(1); }}
             autoComplete="off"
           />
         </div>

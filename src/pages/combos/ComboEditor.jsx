@@ -30,9 +30,9 @@ function SectionHeader({ icon, title }) {
   );
 }
 
-function MetricCard({ label, value, valueClass = '' }) {
+function MetricCard({ label, value, valueClass = '', title }) {
   return (
-    <div className="combo-metric-card">
+    <div className="combo-metric-card" title={title}>
       <span className="combo-metric-label">{label}</span>
       <span className={`combo-metric-value ${valueClass}`}>{value}</span>
     </div>
@@ -348,6 +348,9 @@ export default function ComboEditor() {
   }
 
   const r = resultado;
+  // Umbral configurado (Configuración económica > Margen mínimo), como fracción.
+  // Antes estas 3 tarjetas usaban un 10% fijo sin importar lo que se configure.
+  const margenMinimoDecimal = config?.margen_minimo !== undefined ? Number(config.margen_minimo) / 100 : 0.10;
 
   return (
     <div className="combo-page">
@@ -434,7 +437,7 @@ export default function ComboEditor() {
             <MetricCard label="Empaque" value={fmtGs(config?.costo_empaque)} />
             <MetricCard label="Costo total" value={fmtGs(r.principal.totalCosts)} />
             <MetricCard label="Utilidad" value={fmtGs(r.principal.profit)} valueClass={r.principal.profit >= 0 ? 'positive' : 'negative'} />
-            <MetricCard label="Margen" value={fmtPct(r.principal.margin)} valueClass={r.principal.margin >= 0.10 ? 'positive' : r.principal.margin > 0 ? 'warning' : 'negative'} />
+            <MetricCard label="Margen" value={fmtPct(r.principal.margin)} valueClass={r.principal.margin >= margenMinimoDecimal ? 'positive' : r.principal.margin > 0 ? 'warning' : 'negative'} />
           </div>
 
           {/* Simulador de descuentos del principal — solo analítico */}
@@ -518,7 +521,7 @@ export default function ComboEditor() {
                       <td style={{ textAlign: 'right', color: ur ? (ur.profit >= 0 ? '#10b981' : '#ef4444') : undefined }}>
                         {ur ? fmtGs(ur.profit) : '—'}
                       </td>
-                      <td style={{ textAlign: 'right', color: ur ? (ur.margin >= 0.10 ? '#10b981' : ur.margin > 0 ? '#f59e0b' : '#ef4444') : undefined }}>
+                      <td style={{ textAlign: 'right', color: ur ? (ur.margin >= margenMinimoDecimal ? '#10b981' : ur.margin > 0 ? '#f59e0b' : '#ef4444') : undefined }}>
                         {ur ? fmtPct(ur.margin) : '—'}
                       </td>
                       <td>
@@ -553,9 +556,13 @@ export default function ComboEditor() {
             <MetricCard label="Descuento %" value={fmtPctDirect((r.combo.discountPercentage * 100).toFixed(1))} />
             <MetricCard label="Costo total" value={fmtGs(r.combo.totalCost)} />
             <MetricCard label="Utilidad" value={fmtGs(r.combo.profit)} valueClass={r.combo.profit >= 0 ? 'positive' : 'negative'} />
-            <MetricCard label="Margen" value={fmtPct(r.combo.margin)} valueClass={r.combo.margin >= 0.10 ? 'positive' : r.combo.margin > 0 ? 'warning' : 'negative'} />
+            <MetricCard label="Margen" value={fmtPct(r.combo.margin)} valueClass={r.combo.margin >= margenMinimoDecimal ? 'positive' : r.combo.margin > 0 ? 'warning' : 'negative'} />
             <MetricCard label="Precio mínimo" value={fmtGs(r.minimumPrice)} />
-            <MetricCard label="Desc. máximo" value={r.maximumDiscountPercentage !== null ? fmtPctDirect(r.maximumDiscountPercentage.toFixed(1)) : 'Sin margen'} />
+            <MetricCard
+              label="Desc. máximo (teórico)"
+              value={r.maximumDiscountPercentage !== null ? fmtPctDirect(r.maximumDiscountPercentage.toFixed(1)) : 'Sin margen'}
+              title="Referencia teórica: qué % de descuento uniforme sobre TODO el combo (incluido el producto principal) mantendría el margen mínimo. No es directamente accionable, porque el descuento real solo se configura por upsell — el producto principal nunca se descuenta."
+            />
           </div>
 
           {/* Precio del combo — editable por el admin */}
@@ -683,9 +690,13 @@ export default function ComboEditor() {
           </div>
           <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
             <span>Precio mínimo (equilibrio): <strong style={{ color: '#e2e8f0' }}>{fmtGs(r.minimumPrice)}</strong></span>
-            <span>Descuento máximo: <strong style={{ color: '#e2e8f0' }}>
-              {r.maximumDiscountPercentage !== null ? `${r.maximumDiscountPercentage.toFixed(1)}%` : 'No disponible'}
-            </strong></span>
+            <span
+              title="Referencia teórica: qué % de descuento uniforme sobre TODO el combo mantendría el margen mínimo. El descuento real solo se configura por upsell, así que esta cifra no es directamente accionable."
+            >
+              Descuento máximo (teórico, sobre todo el combo): <strong style={{ color: '#e2e8f0' }}>
+                {r.maximumDiscountPercentage !== null ? `${r.maximumDiscountPercentage.toFixed(1)}%` : 'No disponible'}
+              </strong>
+            </span>
           </div>
         </div>
       )}
