@@ -71,7 +71,7 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
             const normal = combo.items?.reduce((acc, item) => acc + ((parseFloat(item.producto_incluido?.precio_base || item._precio_base) || 0) * parseInt(item.cantidad)), 0) || 0;
             const final = parseFloat(combo.precio_total) || 0;
             const ahorro = normal - final;
-            const pct = normal > 0 ? ((ahorro / normal) * 100).toFixed(1) : 0;
+            const pct = normal > 0 ? ((ahorro / normal) * 100).toFixed(2) : 0;
 
             return (
               <div key={idx} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', opacity: combo.activo ? 1 : 0.6 }}>

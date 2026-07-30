@@ -121,7 +121,7 @@ const Sidebar = () => {
               )}
             </li>
 
-            {renderLink({ path: '/combos/configuracion', label: 'Configuración económica', icon: <Settings /> })}
+            {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
           </ul>
         </div>
 

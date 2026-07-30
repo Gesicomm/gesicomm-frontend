@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Layers, Search, X, Save, Power, PowerOff, ChevronRight,
-  TrendingUp, BarChart2, AlertTriangle, Package, Star, Zap, Info
+  BarChart2, AlertTriangle, Package, Star, Zap, Info
 } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import { productService } from '../../services/productService';
+import CurrencyInput from '../../components/CurrencyInput';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
 import './combos.css';
 
@@ -16,8 +17,8 @@ function fmt(n, decimals = 0) {
   return Number(n).toLocaleString('es-PY', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 function fmtGs(n)  { return n !== null && n !== undefined ? fmt(n) + ' Gs' : '—'; }
-function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(1) + '%' : '—'; }
-function fmtPctDirect(n) { return n !== null && n !== undefined ? Number(n).toFixed(1) + '%' : '—'; }
+function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
+function fmtPctDirect(n) { return n !== null && n !== undefined ? Number(n).toFixed(2) + '%' : '—'; }
 
 // ─── Subcomponentes ───────────────────────────────────────────────────────────
 
@@ -73,31 +74,49 @@ function ProductSearch({ placeholder, onSelect, exclude = [], label }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const timerRef = useRef(null);
   const wrapRef = useRef(null);
 
+  const fetchProducts = async (q) => {
+    setLoading(true);
+    try {
+      const res = await productService.buscar({ texto: q, activo: true, limit: 15 });
+      setResults((res.productos || []).filter(p => !exclude.includes(p.id)));
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (query.trim().length < 2) { setResults([]); return; }
+    if (!isFocused) return;
+    if (query.trim().length === 1) { setResults([]); return; }
+    
     clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(async () => {
-      setLoading(true);
-      try {
-        const res = await productService.buscar({ texto: query, activo: true, limit: 8 });
-        setResults((res.productos || []).filter(p => !exclude.includes(p.id)));
-      } catch { setResults([]); }
-      finally { setLoading(false); }
-    }, 280);
+    timerRef.current = setTimeout(() => fetchProducts(query), 280);
     return () => clearTimeout(timerRef.current);
-  }, [query, JSON.stringify(exclude)]);
+  }, [query, isFocused, JSON.stringify(exclude)]);
 
   // Cerrar al hacer click fuera
   useEffect(() => {
-    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setResults([]); };
+    const handler = (e) => { 
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setIsFocused(false);
+        setResults([]);
+      }
+    };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleSelect = (p) => { onSelect(p); setQuery(''); setResults([]); };
+  const handleSelect = (p) => { 
+    onSelect(p); 
+    setQuery(''); 
+    setIsFocused(false);
+    setResults([]); 
+  };
 
   return (
     <div ref={wrapRef} className="combo-search-wrap">
@@ -107,10 +126,11 @@ function ProductSearch({ placeholder, onSelect, exclude = [], label }) {
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
           placeholder={placeholder}
         />
       </div>
-      {(results.length > 0 || (loading && query.length >= 2)) && (
+      {(isFocused && (results.length > 0 || loading)) && (
         <div className="combo-search-dropdown">
           {loading ? (
             <div style={{ padding: '1rem', color: '#64748b', fontSize: '0.83rem', textAlign: 'center' }}>Buscando...</div>
@@ -119,7 +139,7 @@ function ProductSearch({ placeholder, onSelect, exclude = [], label }) {
               <div key={p.id} className="combo-search-item" onClick={() => handleSelect(p)}>
                 <div>
                   <div className="combo-search-item-name">{p.nombre}</div>
-                  <div className="combo-search-item-sub">SKU: {p.sku || '—'} · {fmtGs(p.precio_base)}</div>
+                  <div className="combo-search-item-sub">{fmtGs(p.precio_base)}</div>
                 </div>
                 <ChevronRight size={14} color="#475569" />
               </div>
@@ -144,6 +164,7 @@ export default function ComboEditor() {
   const [principal, setPrincipal] = useState(null);     // { id, nombre, precio_base, precio_costo, sku }
   const [upsells, setUpsells] = useState([]);           // [{ id, nombre, precio_base, precio_costo, sku, descuento_porcentaje }]
   const [precioTotal, setPrecioTotal] = useState('');   // string para el input
+  const [precioMinimo, setPrecioMinimo] = useState(''); // piso de venta, opcional
   const [config, setConfig] = useState(null);           // ComboConfiguracion del tenant
   const [estadoActual, setEstadoActual] = useState('BORRADOR');
 
@@ -168,6 +189,7 @@ export default function ComboEditor() {
           setNombre(combo.nombre || '');
           setDescripcion(combo.descripcion || '');
           setPrecioTotal(String(combo.precio_total || ''));
+          setPrecioMinimo(combo.precio_minimo ? String(combo.precio_minimo) : '');
           setEstadoActual(combo.estado || 'BORRADOR');
 
           if (combo.producto_padre) {
@@ -236,18 +258,6 @@ export default function ComboEditor() {
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
-  const handleSeleccionarPrincipal = (prod) => {
-    setPrincipal({
-      id: prod.id,
-      nombre: prod.nombre,
-      precio_base: Number(prod.precio_base),
-      precio_costo: Number(prod.precio_costo) || 0,
-      sku: prod.sku,
-    });
-    // Impedir que el principal sea upsell
-    setUpsells(prev => prev.filter(u => u.id !== prod.id));
-  };
-
   const handleAgregarUpsell = (prod) => {
     if (principal && prod.id === principal.id) return; // No puede ser el mismo que el principal
     if (upsells.find(u => u.id === prod.id)) return;   // No duplicados
@@ -266,6 +276,25 @@ export default function ComboEditor() {
   const handleDescuentoUpsell = (id, val) => {
     const num = Math.max(0, Math.min(100, parseFloat(val) || 0));
     setUpsells(prev => prev.map(u => u.id === id ? { ...u, descuento_porcentaje: num } : u));
+  };
+
+  // Marcar cualquier producto de la lista como "principal" — es una acción
+  // opcional sobre una fila, no un paso separado. El principal anterior
+  // (si había) vuelve a la lista como un producto más, con 0% descuento.
+  const handleMarcarPrincipal = (prodId) => {
+    const candidato = upsells.find(u => u.id === prodId);
+    if (!candidato) return;
+    setUpsells(prev => {
+      const sinCandidato = prev.filter(u => u.id !== prodId);
+      return principal ? [...sinCandidato, { ...principal, descuento_porcentaje: 0 }] : sinCandidato;
+    });
+    setPrincipal({
+      id: candidato.id,
+      nombre: candidato.nombre,
+      precio_base: candidato.precio_base,
+      precio_costo: candidato.precio_costo,
+      sku: candidato.sku,
+    });
   };
 
   const handleAplicarPrecioRecomendado = (precio) => {
@@ -289,12 +318,19 @@ export default function ComboEditor() {
   // ─── Guardar ──────────────────────────────────────────────────────────────
   async function handleGuardar(activar = false) {
     if (!nombre.trim()) return alert('El nombre del combo es obligatorio.');
-    if (!principal) return alert('Debe seleccionar un producto principal.');
+    if (!principal) return alert('Marcá un producto de la lista como principal (⭐) antes de guardar.');
+
+    const precioTotalNum = parseFloat(precioTotal) || 0;
+    const precioMinimoNum = precioMinimo ? parseFloat(precioMinimo) : null;
+    if (precioMinimoNum && precioTotalNum < precioMinimoNum) {
+      return alert(`El precio del combo (${fmtGs(precioTotalNum)}) no puede ser menor al precio mínimo configurado (${fmtGs(precioMinimoNum)}).`);
+    }
 
     const payload = {
       nombre: nombre.trim(),
       descripcion: descripcion.trim() || null,
-      precio_total: parseFloat(precioTotal) || 0,
+      precio_total: precioTotalNum,
+      precio_minimo: precioMinimoNum,
       principalProductId: principal.id,
       upsells: upsells.map(u => ({ productId: u.id, discountPercentage: u.descuento_porcentaje })),
     };
@@ -401,105 +437,67 @@ export default function ComboEditor() {
             />
           </div>
         </div>
-
-        {/* Buscador de producto principal */}
-        <ProductSearch
-          label="Producto principal *"
-          placeholder="Buscar producto principal..."
-          onSelect={handleSeleccionarPrincipal}
-          exclude={excludeIds}
-        />
-
-        {principal && (
-          <div className="combo-principal-card">
-            <div className="combo-section-icon" style={{ width: 36, height: 36 }}><Package size={16} /></div>
-            <div className="combo-principal-info">
-              <div className="combo-principal-name">{principal.nombre}</div>
-              <div className="combo-principal-sku">SKU: {principal.sku || '—'} · Precio: {fmtGs(principal.precio_base)} · Costo: {fmtGs(principal.precio_costo)}</div>
-            </div>
-            <button className="btn-icon" onClick={() => setPrincipal(null)} title="Quitar principal">
-              <X size={14} />
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* ══ Sección B — Producto principal (métricas) ═══════════════════════ */}
-      {r && (
-        <div className="combo-section">
-          <SectionHeader icon={<TrendingUp size={15} />} title="B — Rentabilidad del producto principal" />
-          <div className="combo-metrics-grid">
-            <MetricCard label="Precio venta" value={fmtGs(principal?.precio_base)} />
-            <MetricCard label="Costo producto" value={fmtGs(principal?.precio_costo)} />
-            <MetricCard label="CPA máximo" value={fmtGs(r.principal.cpaMax)} />
-            <MetricCard label="Envío" value={fmtGs(config?.costo_envio)} />
-            <MetricCard label="Confirmación" value={fmtGs(config?.costo_confirmacion)} />
-            <MetricCard label="Empaque" value={fmtGs(config?.costo_empaque)} />
-            <MetricCard label="Costo total" value={fmtGs(r.principal.totalCosts)} />
-            <MetricCard label="Utilidad" value={fmtGs(r.principal.profit)} valueClass={r.principal.profit >= 0 ? 'positive' : 'negative'} />
-            <MetricCard label="Margen" value={fmtPct(r.principal.margin)} valueClass={r.principal.margin >= margenMinimoDecimal ? 'positive' : r.principal.margin > 0 ? 'warning' : 'negative'} />
-          </div>
-
-          {/* Simulador de descuentos del principal — solo analítico */}
-          <div className="combo-section-label" style={{ marginTop: '0.75rem' }}>Simulador de descuentos (analítico — no modifica el precio del combo)</div>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="combo-sensitivity-table">
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left' }}>Descuento</th>
-                  <th>Precio final</th>
-                  <th>Utilidad</th>
-                  <th>Margen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {r.principal.discountSimulation.map(s => (
-                  <tr key={s.discountPercentage} className={s.margin <= 0 ? 'no-rentable' : s.margin < (Number(config?.margen_minimo) / 100) ? 'margen-bajo' : 'saludable'}>
-                    <td>{s.discountPercentage}%</td>
-                    <td style={{ textAlign: 'right' }}>{fmtGs(s.finalPrice)}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtGs(s.profit)}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtPct(s.margin)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ══ Sección C — Upsells ═════════════════════════════════════════════ */}
+      {/* ══ Sección B — Productos del combo ═════════════════════════════════ */}
       <div className="combo-section">
-        <SectionHeader icon={<Package size={15} />} title="C — Upsells (productos complementarios)" />
+        <SectionHeader icon={<Package size={15} />} title="B — Productos del combo" />
 
         <ProductSearch
-          placeholder="Buscar producto para agregar como upsell..."
+          placeholder="Buscar producto para agregar al combo..."
           onSelect={handleAgregarUpsell}
           exclude={excludeIds}
         />
 
-        {upsells.length > 0 && (
+        {(principal || upsells.length > 0) ? (
           <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
             <table className="combo-upsells-table">
               <thead>
                 <tr>
                   <th>Producto</th>
                   <th style={{ textAlign: 'right' }}>Costo</th>
-                  <th style={{ textAlign: 'right' }}>Precio original</th>
+                  <th style={{ textAlign: 'right' }}>Precio</th>
                   <th style={{ textAlign: 'center' }}>Descuento</th>
                   <th style={{ textAlign: 'right' }}>Precio final</th>
                   <th style={{ textAlign: 'right' }}>Utilidad</th>
                   <th style={{ textAlign: 'right' }}>Margen</th>
+                  <th style={{ textAlign: 'center' }}>Principal</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
+                {principal && (() => {
+                  const costo = principal.precio_costo || 0;
+                  const precio = principal.precio_base || 0;
+                  const utilidad = precio - costo;
+                  const margen = precio > 0 ? utilidad / precio : 0;
+                  return (
+                    <tr style={{ background: 'rgba(99,102,241,0.06)' }}>
+                      <td><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{principal.nombre}</div></td>
+                      <td className="readonly" style={{ textAlign: 'right' }}>{fmtGs(costo)}</td>
+                      <td className="readonly" style={{ textAlign: 'right' }}>{fmtGs(precio)}</td>
+                      <td style={{ textAlign: 'center', color: '#475569', fontSize: '0.78rem' }}>Sin descuento</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>{fmtGs(precio)}</td>
+                      <td style={{ textAlign: 'right', color: utilidad >= 0 ? '#10b981' : '#ef4444' }}>{fmtGs(utilidad)}</td>
+                      <td style={{ textAlign: 'right', color: margen >= margenMinimoDecimal ? '#10b981' : margen > 0 ? '#f59e0b' : '#ef4444' }}>{fmtPct(margen)}</td>
+                      <td style={{ textAlign: 'center' }} title="Producto principal del combo">
+                        <Star size={15} fill="#facc15" color="#facc15" />
+                      </td>
+                      <td>
+                        <button className="btn-icon" onClick={() => setPrincipal(null)} title="Quitar del combo">
+                          <X size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })()}
+
                 {upsells.map((u, idx) => {
                   const ur = r?.upsells?.[idx];
                   return (
                     <tr key={u.id}>
                       <td>
                         <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{u.nombre}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#475569' }}>{u.sku || '—'}</div>
                       </td>
                       <td className="readonly" style={{ textAlign: 'right' }}>{fmtGs(u.precio_costo)}</td>
                       <td className="readonly" style={{ textAlign: 'right' }}>{fmtGs(u.precio_base)}</td>
@@ -524,8 +522,13 @@ export default function ComboEditor() {
                       <td style={{ textAlign: 'right', color: ur ? (ur.margin >= margenMinimoDecimal ? '#10b981' : ur.margin > 0 ? '#f59e0b' : '#ef4444') : undefined }}>
                         {ur ? fmtPct(ur.margin) : '—'}
                       </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button className="btn-icon" onClick={() => handleMarcarPrincipal(u.id)} title="Marcar como producto principal">
+                          <Star size={15} />
+                        </button>
+                      </td>
                       <td>
-                        <button className="btn-icon" onClick={() => handleQuitarUpsell(u.id)} title="Quitar upsell">
+                        <button className="btn-icon" onClick={() => handleQuitarUpsell(u.id)} title="Quitar del combo">
                           <X size={14} />
                         </button>
                       </td>
@@ -535,34 +538,32 @@ export default function ComboEditor() {
               </tbody>
             </table>
           </div>
+        ) : (
+          <div style={{ textAlign: 'center', color: '#475569', fontSize: '0.83rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+            Buscá productos para agregarlos al combo. Marcá uno como principal con la estrella ⭐ — es opcional, pero hace falta para calcular la rentabilidad del combo.
+          </div>
         )}
 
-        {upsells.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#475569', fontSize: '0.83rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
-            Buscá un producto para agregarlo como upsell.
+        {!principal && upsells.length > 0 && (
+          <div className="combo-warning-item" style={{ marginTop: '0.75rem' }}>
+            <AlertTriangle size={14} /> Todavía no marcaste ningún producto como principal — los cálculos de rentabilidad del combo van a aparecer cuando marques uno.
           </div>
         )}
       </div>
 
-      {/* ══ Sección D — Resultado del combo ═════════════════════════════════ */}
+      {/* ══ Sección C — Resultado del combo ═════════════════════════════════ */}
       {r && (
         <div className="combo-section">
-          <SectionHeader icon={<BarChart2 size={15} />} title="D — Resultado del combo" />
+          <SectionHeader icon={<BarChart2 size={15} />} title="C — Resultado del combo" />
 
           <div className="combo-metrics-grid">
             <MetricCard label="Precio original" value={fmtGs(r.combo.originalPrice)} />
             <MetricCard label="Precio con upsells" value={fmtGs(r.combo.finalPrice)} />
             <MetricCard label="Descuento $" value={fmtGs(r.combo.discountAmount)} />
-            <MetricCard label="Descuento %" value={fmtPctDirect((r.combo.discountPercentage * 100).toFixed(1))} />
+            <MetricCard label="Descuento %" value={fmtPctDirect((r.combo.discountPercentage * 100).toFixed(2))} />
             <MetricCard label="Costo total" value={fmtGs(r.combo.totalCost)} />
             <MetricCard label="Utilidad" value={fmtGs(r.combo.profit)} valueClass={r.combo.profit >= 0 ? 'positive' : 'negative'} />
             <MetricCard label="Margen" value={fmtPct(r.combo.margin)} valueClass={r.combo.margin >= margenMinimoDecimal ? 'positive' : r.combo.margin > 0 ? 'warning' : 'negative'} />
-            <MetricCard label="Precio mínimo" value={fmtGs(r.minimumPrice)} />
-            <MetricCard
-              label="Desc. máximo (teórico)"
-              value={r.maximumDiscountPercentage !== null ? fmtPctDirect(r.maximumDiscountPercentage.toFixed(1)) : 'Sin margen'}
-              title="Referencia teórica: qué % de descuento uniforme sobre TODO el combo (incluido el producto principal) mantendría el margen mínimo. No es directamente accionable, porque el descuento real solo se configura por upsell — el producto principal nunca se descuenta."
-            />
           </div>
 
           {/* Precio del combo — editable por el admin */}
@@ -570,23 +571,37 @@ export default function ComboEditor() {
             <div className="combo-section-label">Precio del combo (editado por el administrador)</div>
             <div className="combo-price-input-wrap">
               <label>Precio:</label>
-              <input
-                type="number"
-                min="0"
+              <CurrencyInput
                 value={precioTotal}
-                onChange={e => setPrecioTotal(e.target.value)}
-                placeholder="0"
+                onChange={val => setPrecioTotal(val === '' ? '' : String(val))}
                 style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.55rem 0.9rem', color: '#e2e8f0', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
               />
-              <span style={{ color: '#64748b', fontSize: '0.85rem' }}>Gs</span>
               {margenReal !== null && (
                 <div className={`combo-price-real-margin ${margenRealClass}`}>
-                  Margen real: <strong>{(margenReal * 100).toFixed(1)}%</strong>
+                  Margen real: <strong>{(margenReal * 100).toFixed(2)}%</strong>
                   {margenRealClass === 'below-target' && <span>⚠ Por debajo del objetivo</span>}
                   {margenRealClass === 'no-rentable' && <span>✗ No rentable</span>}
                 </div>
               )}
             </div>
+
+            <div className="combo-price-input-wrap" style={{ marginTop: '0.5rem' }}>
+              <label>Precio mínimo de venta (opcional):</label>
+              <CurrencyInput
+                value={precioMinimo}
+                onChange={val => setPrecioMinimo(val === '' ? '' : String(val))}
+                placeholder="Sin piso configurado"
+                style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.55rem 0.9rem', color: '#e2e8f0', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
+              />
+            </div>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+              Si lo configurás, el sistema no va a permitir guardar el combo con un precio por debajo de este valor.
+            </p>
+            {precioMinimo && parseFloat(precioTotal) > 0 && parseFloat(precioTotal) < parseFloat(precioMinimo) && (
+              <div className="combo-warning-item" style={{ marginTop: '0.5rem' }}>
+                <AlertTriangle size={14} /> El precio actual ({fmtGs(parseFloat(precioTotal))}) está por debajo del mínimo configurado ({fmtGs(parseFloat(precioMinimo))}). No se va a poder guardar así.
+              </div>
+            )}
 
             {/* Botones de precio recomendado */}
             <div className="combo-section-label">Aplicar precio sugerido:</div>
@@ -610,10 +625,10 @@ export default function ComboEditor() {
         </div>
       )}
 
-      {/* ══ Sección E — Comparativa Solo vs Combo ═══════════════════════════ */}
+      {/* ══ Sección D — Comparativa Solo vs Combo ═══════════════════════════ */}
       {r && (
         <div className="combo-section">
-          <SectionHeader icon={<Zap size={15} />} title="E — Comparativa: venta individual vs combo" />
+          <SectionHeader icon={<Zap size={15} />} title="D — Comparativa: venta individual vs combo" />
           <div className="combo-comparison-grid">
             <div className="combo-compare-card">
               <span className="combo-compare-label">Utilidad individual</span>
@@ -635,7 +650,7 @@ export default function ComboEditor() {
                 {fmtGs(r.comparison.profitDifference)}
               </span>
               <span style={{ fontSize: '0.75rem', color: r.comparison.profitDifferencePercentage > 0 ? '#10b981' : '#ef4444' }}>
-                {r.comparison.profitDifferencePercentage !== null ? `${r.comparison.profitDifferencePercentage.toFixed(1)}% más` : 'N/A'}
+                {r.comparison.profitDifferencePercentage !== null ? `${r.comparison.profitDifferencePercentage.toFixed(2)}% más` : 'N/A'}
               </span>
             </div>
           </div>
@@ -652,10 +667,10 @@ export default function ComboEditor() {
         </div>
       )}
 
-      {/* ══ Sección F — Precios recomendados ════════════════════════════════ */}
+      {/* ══ Sección E — Precios recomendados ════════════════════════════════ */}
       {r && (
         <div className="combo-section">
-          <SectionHeader icon={<Star size={15} />} title="F — Precios recomendados" />
+          <SectionHeader icon={<Star size={15} />} title="E — Precios recomendados" />
           <div style={{ overflowX: 'auto' }}>
             <table className="combo-sensitivity-table">
               <thead>
@@ -682,51 +697,6 @@ export default function ComboEditor() {
                           Aplicar
                         </button>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
-            <span>Precio mínimo (equilibrio): <strong style={{ color: '#e2e8f0' }}>{fmtGs(r.minimumPrice)}</strong></span>
-            <span
-              title="Referencia teórica: qué % de descuento uniforme sobre TODO el combo mantendría el margen mínimo. El descuento real solo se configura por upsell, así que esta cifra no es directamente accionable."
-            >
-              Descuento máximo (teórico, sobre todo el combo): <strong style={{ color: '#e2e8f0' }}>
-                {r.maximumDiscountPercentage !== null ? `${r.maximumDiscountPercentage.toFixed(1)}%` : 'No disponible'}
-              </strong>
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ══ Sección G — Análisis de sensibilidad ════════════════════════════ */}
-      {r && (
-        <div className="combo-section">
-          <SectionHeader icon={<BarChart2 size={15} />} title="G — Análisis de sensibilidad" />
-          <div style={{ overflowX: 'auto' }}>
-            <table className="combo-sensitivity-table">
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left' }}>Descuento sobre precio final</th>
-                  <th>Precio</th>
-                  <th>Utilidad</th>
-                  <th>Margen</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {r.sensitivity.map(s => (
-                  <tr key={s.discountPercentage} className={s.status === 'SALUDABLE' ? 'saludable' : s.status === 'MARGEN_BAJO' ? 'margen-bajo' : 'no-rentable'}>
-                    <td>{s.discountPercentage}%</td>
-                    <td style={{ textAlign: 'right' }}>{fmtGs(s.price)}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtGs(s.profit)}</td>
-                    <td style={{ textAlign: 'right' }}>{fmtPct(s.margin)}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className={`combo-badge ${s.status === 'SALUDABLE' ? 'saludable' : s.status === 'MARGEN_BAJO' ? 'margen-bajo' : 'no-rentable'}`} style={{ fontSize: '0.65rem' }}>
-                        {s.status === 'SALUDABLE' ? '✓ Saludable' : s.status === 'MARGEN_BAJO' ? '⚠ Bajo' : '✗ Pérdida'}
-                      </span>
                     </td>
                   </tr>
                 ))}

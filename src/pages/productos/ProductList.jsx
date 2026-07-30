@@ -133,7 +133,7 @@ export default function ProductList() {
           <input
             id="filtro-texto"
             className="filter-input"
-            placeholder="Buscar por nombre, SKU..."
+            placeholder="Buscar por nombre..."
             value={texto}
             onChange={e => { setTexto(e.target.value); setPagina(1); }}
             autoComplete="off"
@@ -240,7 +240,7 @@ export default function ProductList() {
                               : '🔴 No disponible'}
                           </span>
                         </td>
-                        <td>{p.categoria?.nombre || '—'}</td>
+                        <td>{categorias.find(c => c.id === p.categoria_id)?.nombre || '—'}</td>
                         <td><span className="price-tag">{precioDisplay(p)}</span></td>
                         <td>
                           <span className={`stock-badge ${stockBajoItem ? 'stock-low' : 'stock-ok'}`}>
