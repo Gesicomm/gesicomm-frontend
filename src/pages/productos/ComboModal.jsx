@@ -172,7 +172,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
                         >
                           <div>
                             <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{p.nombre}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#888' }}>SKU: {p.sku || 'N/A'} - {parseFloat(p.precio_base).toLocaleString()} Gs</div>
+                            <div style={{ fontSize: '0.75rem', color: '#888' }}>{parseFloat(p.precio_base).toLocaleString()} Gs</div>
                           </div>
                           {yaAgregado && <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>✓ En combo ({yaAgregado.cantidad})</span>}
                         </div>
@@ -234,7 +234,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
             {finalTotal > 0 && (
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'right' }}>
                 {ahorro > 0 ? (
-                  <span style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Ahorro: {ahorro.toLocaleString()} Gs ({((ahorro / normalTotal) * 100).toFixed(1)}%)</span>
+                  <span style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Ahorro: {ahorro.toLocaleString()} Gs ({((ahorro / normalTotal) * 100).toFixed(2)}%)</span>
                 ) : ahorro < 0 ? (
                   <span style={{ color: '#ef4444', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.3rem' }}>
                     ⚠️ El combo es {Math.abs(ahorro).toLocaleString()} Gs más caro

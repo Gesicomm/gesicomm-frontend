@@ -4,6 +4,8 @@ export const productService = {
   buscar: (filtros) => API.post('/productos/buscar', filtros).then(r => r.data),
   crear: (data) => API.post('/productos', data).then(r => r.data),
   detalle: (id) => API.get(`/productos/${id}`).then(r => r.data),
+  variantes: (id) => API.get(`/productos/${id}/variantes`).then(r => r.data),
+  imagenes: (id) => API.get(`/productos/${id}/imagenes`).then(r => r.data),
   historialPrecios: (id) => API.get(`/productos/${id}/historial-precios`).then(r => r.data),
   actualizar: (id, data) => API.put(`/productos/${id}`, data).then(r => r.data),
   eliminar: (id) => API.delete(`/productos/${id}`).then(r => r.data),

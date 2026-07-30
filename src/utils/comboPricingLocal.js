@@ -162,11 +162,11 @@ export function calcular(input) {
   const comparativaResult = calcularComparativa(principalResult.profit, comboResult.profit, excellentThreshold, minimumMarginDecimal, comboResult.margin);
 
   upsellResults.forEach((u, i) => {
-    if (u.profit < 0) warnings.push(`El upsell "${upsells[i].name}" genera pérdida (margen ${(u.margin * 100).toFixed(1)}%).`);
+    if (u.profit < 0) warnings.push(`El upsell "${upsells[i].name}" genera pérdida (margen ${(u.margin * 100).toFixed(2)}%).`);
   });
 
   if (comboResult.margin > 0 && comboResult.margin < minimumMarginDecimal) {
-    warnings.push(`El margen del combo (${(comboResult.margin * 100).toFixed(1)}%) está por debajo del objetivo mínimo (${minimumMargin}%).`);
+    warnings.push(`El margen del combo (${(comboResult.margin * 100).toFixed(2)}%) está por debajo del objetivo mínimo (${minimumMargin}%).`);
   }
   if (comboResult.margin <= 0) warnings.push('El combo no genera rentabilidad con la configuración actual.');
 

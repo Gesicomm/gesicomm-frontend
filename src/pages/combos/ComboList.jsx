@@ -13,7 +13,7 @@ function formatMoney(n) {
 
 function formatPct(n) {
   if (n === null || n === undefined) return '—';
-  return (Number(n) * 100).toFixed(1) + '%';
+  return (Number(n) * 100).toFixed(2) + '%';
 }
 
 function EstadoBadge({ estado }) {
@@ -186,7 +186,7 @@ export default function ComboList() {
                     <div className="combo-list-card-metric">
                       <span className="combo-list-card-metric-label">Margen</span>
                       <span className="combo-list-card-metric-value" style={{ color: margen >= margenMinimoDecimal ? '#10b981' : margen > 0 ? '#f59e0b' : '#ef4444' }}>
-                        {(margen * 100).toFixed(1)}%
+                        {(margen * 100).toFixed(2)}%
                       </span>
                     </div>
                   )}

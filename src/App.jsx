@@ -65,7 +65,7 @@ function App() {
         <Route path="/combos/:id/editar" element={
           <ProtectedRoute><DashboardLayout><ComboEditor /></DashboardLayout></ProtectedRoute>
         } />
-        <Route path="/combos/configuracion" element={
+        <Route path="/configuracion-economica" element={
           <ProtectedRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></ProtectedRoute>
         } />
       </Routes>

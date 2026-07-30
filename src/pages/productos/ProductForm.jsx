@@ -97,7 +97,11 @@ export default function ProductForm() {
 
       if (esEdicion) {
         try {
-          const p = await productService.detalle(id);
+          const [p, vars, imgs] = await Promise.all([
+            productService.detalle(id),
+            productService.variantes(id).catch(() => []),
+            productService.imagenes(id).catch(() => [])
+          ]);
           reset({
             nombre: p.nombre || '',
             categoria_id: p.categoria_id || '',
@@ -117,10 +121,10 @@ export default function ProductForm() {
             activo: p.activo,
             estado_venta: p.estado_venta || 'en_venta',
             destacado: p.destacado,
-            variantes: p.variantes?.length ? p.variantes : [],
+            variantes: vars?.length ? vars : [],
           });
-          if (p.variantes?.length > 0) setTieneVariantes(true);
-          setImagenes(p.imagenes || []);
+          if (vars?.length > 0) setTieneVariantes(true);
+          setImagenes(imgs || []);
         } catch {
           setError('No se pudo cargar el producto.');
         } finally {
@@ -666,7 +670,7 @@ export default function ProductForm() {
               <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad Individual Estimada</h2>
               <p className="combo-section-desc">
                 Cálculo basado en la configuración económica global de combos y el descuento actual aplicado.
-                {' '}<Link to="/combos/configuracion">Editar CPA, envío, confirmación y empaque</Link>.
+                {' '}<Link to="/configuracion-economica">Editar CPA, envío, confirmación y empaque</Link>.
               </p>
 
               <div className="combo-metrics-grid">
@@ -703,7 +707,7 @@ export default function ProductForm() {
                 <div className={`combo-metric-card ${rentabilidad.margin >= Number(config.margen_minimo) / 100 ? 'profit-positive' : (rentabilidad.margin > 0 ? 'profit-warning' : 'profit-negative')}`}>
                   <span className="combo-metric-label">Margen</span>
                   <span className="combo-metric-value">
-                    {(rentabilidad.margin * 100).toFixed(1)}%
+                    {(rentabilidad.margin * 100).toFixed(2)}%
                   </span>
                 </div>
               </div>
