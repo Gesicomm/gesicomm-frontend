@@ -1,0 +1,97 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   TIENDA — Configuración (subdominio, dominio propio)
+   Reutiliza --vit-* (vitrina.css) y las clases .land-* (landing.css)
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* DominioPropio tiene su propio <form> — este wrapper no puede ser otro
+   <form> (HTML no permite forms anidados). display:contents lo saca del
+   flujo de layout sin afectar el grid de .land-editor-grid: sus hijos
+   (.land-section, .land-editor-footer) siguen siendo grid items directos. */
+.land-editor-grid-form { display: contents; }
+
+.tn-url-readonly {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  color: var(--vit-text);
+  font-size: 0.85rem;
+}
+
+.tn-disponibilidad { min-height: 1.2rem; }
+.tn-check { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; }
+.tn-check.ok { color: #10b981; }
+.tn-check.error { color: #ef4444; }
+.tn-check.cargando { color: var(--vit-muted); }
+
+.tn-warning {
+  display: flex; align-items: flex-start; gap: 0.4rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+  color: #f59e0b;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 0.4rem 0 0;
+}
+.tn-warning svg { flex-shrink: 0; margin-top: 0.15rem; }
+
+.tn-saved {
+  display: flex; align-items: center; gap: 0.3rem;
+  color: #10b981;
+  font-size: 0.82rem;
+  margin-right: 0.75rem;
+}
+
+/* ─── Dominio propio ──────────────────────────────────────────────────── */
+.dp-form, .dp-pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.dp-form label {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  font-size: 0.78rem; color: var(--vit-muted);
+}
+.dp-form input {
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  color: var(--vit-text);
+  font-size: 0.85rem;
+}
+
+.dp-verified {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--vit-text);
+}
+
+.dp-txt-box {
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.dp-txt-box p { margin: 0; font-size: 0.78rem; color: var(--vit-muted); }
+.dp-txt-row { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
+.dp-txt-row span { font-size: 0.72rem; color: var(--vit-muted-2); min-width: 50px; }
+.dp-txt-row code {
+  background: rgba(255,255,255,0.05);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: var(--vit-accent);
+  word-break: break-all;
+}
+
+.dp-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.dp-hint { margin: 0; font-size: 0.75rem; color: var(--vit-muted-2); }

@@ -1,0 +1,165 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LANDING — Gestión privada (MisLandings, LandingEditor)
+   Reutiliza las variables --vit-* definidas en vitrina.css
+═══════════════════════════════════════════════════════════════════════════ */
+
+.land-btn-primary {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--vit-accent);
+  color: #04140d;
+  border: none;
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.land-btn-primary:hover { filter: brightness(1.08); }
+.land-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.land-btn-ok, .land-btn-warn {
+  display: flex; align-items: center; gap: 0.35rem;
+  border: 1px solid var(--vit-border);
+  background: transparent;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.land-btn-ok { color: var(--vit-accent); }
+.land-btn-ok:hover { border-color: var(--vit-accent); }
+.land-btn-warn { color: #f59e0b; }
+.land-btn-warn:hover { border-color: #f59e0b; }
+
+.land-back-link {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  color: var(--vit-muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  margin-bottom: 0.4rem;
+}
+.land-back-link:hover { color: var(--vit-text); }
+
+/* ─── Listado ─────────────────────────────────────────────────────────── */
+.land-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.1rem;
+}
+
+.land-card {
+  background: var(--vit-card-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 14px;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.land-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.land-card-header h3 { margin: 0; font-size: 0.95rem; color: var(--vit-text); }
+.land-card-meta { font-size: 0.72rem; color: var(--vit-muted); }
+
+.land-card-link {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+.land-card-link code { flex: 1; font-size: 0.72rem; color: var(--vit-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.land-icon-btn {
+  background: transparent; border: none; color: var(--vit-muted); cursor: pointer;
+  display: flex; align-items: center; padding: 0.2rem;
+  text-decoration: none;
+}
+.land-icon-btn:hover { color: var(--vit-accent); }
+
+.land-card-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ─── Formulario del editor ───────────────────────────────────────────── */
+.land-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.1rem;
+}
+
+.land-section {
+  background: var(--vit-card-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.land-section-wide { grid-column: 1 / -1; }
+.land-section h2 { margin: 0; font-size: 0.85rem; color: var(--vit-text); text-transform: uppercase; letter-spacing: 0.4px; }
+
+.land-section label {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  font-size: 0.78rem; color: var(--vit-muted);
+}
+.land-section input[type="text"], .land-section input:not([type]), .land-section input[type="color"]:not(.land-color-row input), .land-section textarea {
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  color: var(--vit-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+.land-section textarea { resize: vertical; }
+
+.land-color-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.land-color-row label { flex-direction: row; align-items: center; gap: 0.5rem; font-size: 0.78rem; }
+.land-color-row input[type="color"] { width: 42px; height: 32px; border: 1px solid var(--vit-border); border-radius: 6px; background: transparent; cursor: pointer; padding: 2px; }
+
+.land-checks { display: flex; flex-direction: column; gap: 0.4rem; }
+.land-check { flex-direction: row !important; align-items: center; gap: 0.5rem !important; font-size: 0.82rem !important; color: var(--vit-text) !important; }
+
+.land-item-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.land-item-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+}
+.land-item-row.selected { border-color: rgba(16, 185, 129, 0.35); background: var(--vit-accent-soft); }
+.land-item-check {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.83rem; color: var(--vit-text);
+  flex: 1;
+  cursor: pointer;
+}
+.land-item-etiqueta {
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  color: var(--vit-text);
+  font-size: 0.75rem;
+  width: 160px;
+}
+
+.land-editor-footer { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+
+.land-alert-error {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+.land-alert-error ul { margin: 0.3rem 0 0 1.2rem; padding: 0; }
