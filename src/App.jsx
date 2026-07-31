@@ -11,6 +11,7 @@ import ComboEditor from './pages/combos/ComboEditor';
 import ComboConfiguracion from './pages/combos/ComboConfiguracion';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import RequireTienda from './components/RequireTienda';
 import DashboardLayout from './components/DashboardLayout';
 import UserLayout from './components/UserLayout';
 import VitrinaGrid from './pages/vitrina/VitrinaGrid';
@@ -18,6 +19,7 @@ import MisLandings from './pages/landing/MisLandings';
 import LandingEditor from './pages/landing/LandingEditor';
 import LandingPublica from './pages/landing/LandingPublica';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
+import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
 
 function App() {
@@ -77,24 +79,32 @@ function App() {
           <AdminRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></AdminRoute>
         } />
 
-        {/* Rutas protegidas — vitrina y pedidos del rol 'usuario' */}
+        {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario':
+            nombre de tienda + plan. No usa RequireTienda (sería un loop),
+            solo exige sesión; la propia página redirige si ya tiene tienda. */}
+        <Route path="/onboarding" element={
+          <ProtectedRoute><Onboarding /></ProtectedRoute>
+        } />
+
+        {/* Rutas protegidas — vitrina y pedidos del rol 'usuario'.
+            RequireTienda manda a /onboarding si todavía no tiene tienda. */}
         <Route path="/mi-catalogo" element={
-          <ProtectedRoute><UserLayout><VitrinaGrid /></UserLayout></ProtectedRoute>
+          <RequireTienda><UserLayout><VitrinaGrid /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-pedidos" element={
-          <ProtectedRoute><UserLayout><ControlCourier /></UserLayout></ProtectedRoute>
+          <RequireTienda><UserLayout><ControlCourier /></UserLayout></RequireTienda>
         } />
         <Route path="/mi-tienda" element={
-          <ProtectedRoute><UserLayout><ConfigurarTienda /></UserLayout></ProtectedRoute>
+          <RequireTienda><UserLayout><ConfigurarTienda /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-landings" element={
-          <ProtectedRoute><UserLayout><MisLandings /></UserLayout></ProtectedRoute>
+          <RequireTienda><UserLayout><MisLandings /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-landings/nuevo" element={
-          <ProtectedRoute><UserLayout><LandingEditor /></UserLayout></ProtectedRoute>
+          <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-landings/:id/editar" element={
-          <ProtectedRoute><UserLayout><LandingEditor /></UserLayout></ProtectedRoute>
+          <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
         } />
 
         {/* Rutas públicas — landing compartible, sin ningún guard */}

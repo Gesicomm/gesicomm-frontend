@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Plus, Layers, Edit2, Trash2, Power, PowerOff, Copy, Check, ExternalLink, Loader, Store, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Layers, Edit2, Trash2, Power, PowerOff, Copy, Check, ExternalLink, Loader, Home } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { tiendaService } from '../../services/tiendaService';
 import '../vitrina/vitrina.css';
@@ -73,20 +73,6 @@ export default function MisLandings() {
       setCopiadoId(landing.id);
       setTimeout(() => setCopiadoId(null), 1500);
     });
-  }
-
-  if (!cargando && !tienda) {
-    return (
-      <div className="vit-page">
-        <div className="vit-empty">
-          <Store size={32} opacity={0.3} />
-          <p>Necesitás configurar tu tienda antes de armar una landing.</p>
-          <Link to="/mi-tienda" className="land-btn-primary" style={{ textDecoration: 'none' }}>
-            Configurar mi tienda
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   return (

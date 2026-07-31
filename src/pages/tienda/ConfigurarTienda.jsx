@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Check, X, Loader, AlertCircle, Globe } from 'lucide-react';
+import { Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
 import DominioPropio from './DominioPropio';
@@ -16,6 +16,11 @@ function slugifyLigero(texto) {
     .slice(0, 63);
 }
 
+const PLANES = [
+  { id: 'free', icono: Sparkles, titulo: 'Free' },
+  { id: 'pago', icono: Crown, titulo: 'Pago' },
+];
+
 const FORM_INICIAL = {
   nombre: '',
   color_primario: '#10b981',
@@ -24,8 +29,13 @@ const FORM_INICIAL = {
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
+  plan: 'free',
 };
 
+// La creación de la tienda vive en /onboarding (nombre + plan, primer paso
+// de una cuenta nueva) — a esta pantalla solo se llega ya con una tienda
+// creada (lo garantiza el guard RequireTienda), así que acá es siempre
+// edición.
 export default function ConfigurarTienda() {
   const [tienda, setTienda] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -38,15 +48,14 @@ export default function ConfigurarTienda() {
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
 
-  const esCreacion = !tienda;
   // El subdominio no es un campo aparte: es siempre el nombre de la tienda
-  // slugificado, tanto al crear como al editar. Si no está disponible, la
-  // usuaria cambia el nombre, no un campo de URL independiente. Cambiar el
-  // nombre de una tienda ya publicada cambia su URL pública — cualquier
-  // link ya compartido (WhatsApp, anuncios) deja de funcionar. Se avisa en
-  // el formulario antes de guardar.
+  // slugificado. Si no está disponible, la usuaria cambia el nombre, no un
+  // campo de URL independiente. Cambiar el nombre de una tienda ya
+  // publicada cambia su URL pública — cualquier link ya compartido
+  // (WhatsApp, anuncios) deja de funcionar. Se avisa en el formulario
+  // antes de guardar.
   const subdominioDerivado = slugifyLigero(form.nombre);
-  const subdominioCambia = !esCreacion && tienda && subdominioDerivado !== tienda.subdominio;
+  const subdominioCambia = !!tienda && subdominioDerivado !== tienda.subdominio;
   const subdominioDebounced = useDebounce(subdominioDerivado, 500);
 
   const cargar = useCallback(async () => {
@@ -63,6 +72,7 @@ export default function ConfigurarTienda() {
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
+          plan: data.plan || 'free',
         });
       }
     } catch (err) {
@@ -74,12 +84,11 @@ export default function ConfigurarTienda() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  // Chequeo de disponibilidad en vivo. En edición, solo hace falta
-  // consultar cuando el subdominio derivado del nombre difiere del que ya
-  // tiene guardado (si no cambió, no hay nada que validar).
+  // Chequeo de disponibilidad en vivo — solo hace falta consultar cuando
+  // el subdominio derivado del nombre difiere del que ya tiene guardado
+  // (si no cambió, no hay nada que validar).
   useEffect(() => {
-    const hayCambio = esCreacion || subdominioCambia;
-    if (!hayCambio || !subdominioDebounced || subdominioDebounced.length < 3) {
+    if (!subdominioCambia || !subdominioDebounced || subdominioDebounced.length < 3) {
       setDisponibilidad(null);
       return;
     }
@@ -88,7 +97,7 @@ export default function ConfigurarTienda() {
     tiendaService.disponibilidadSubdominio(subdominioDebounced)
       .then(res => { if (idConsulta === ultimaConsulta.current) setDisponibilidad(res); })
       .catch(() => { if (idConsulta === ultimaConsulta.current) setDisponibilidad({ valido: false, disponible: false, motivo: 'Error al verificar.' }); });
-  }, [subdominioDebounced, esCreacion, subdominioCambia]);
+  }, [subdominioDebounced, subdominioCambia]);
 
   function handleChange(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
@@ -101,7 +110,7 @@ export default function ConfigurarTienda() {
     setOk(false);
 
     if (!form.nombre.trim()) return setError('El nombre de tu tienda es obligatorio.');
-    if (esCreacion || subdominioCambia) {
+    if (subdominioCambia) {
       if (!subdominioDerivado || subdominioDerivado.length < 3) {
         return setError('Ese nombre no alcanza para generar una URL válida — probá con un nombre más largo, con letras o números.');
       }
@@ -112,13 +121,8 @@ export default function ConfigurarTienda() {
 
     setGuardando(true);
     try {
-      if (esCreacion) {
-        const nueva = await tiendaService.crear({ ...form, subdominio: subdominioDerivado });
-        setTienda(nueva);
-      } else {
-        const actualizada = await tiendaService.actualizar({ ...form, subdominio: subdominioDerivado });
-        setTienda(actualizada);
-      }
+      const actualizada = await tiendaService.actualizar({ ...form, subdominio: subdominioDerivado });
+      setTienda(actualizada);
       setOk(true);
       setTimeout(() => setOk(false), 1800);
     } catch (err) {
@@ -139,12 +143,8 @@ export default function ConfigurarTienda() {
     <div className="vit-page">
       <div className="vit-header">
         <div>
-          <h1 className="vit-title">{esCreacion ? 'Configurá tu tienda' : 'Mi tienda'}</h1>
-          <p className="vit-subtitle">
-            {esCreacion
-              ? 'Antes de armar landings necesitás una tienda: es tu identidad pública, con tu propia URL.'
-              : 'Nombre, colores, contacto y URL pública de tu tienda.'}
-          </p>
+          <h1 className="vit-title">Mi tienda</h1>
+          <p className="vit-subtitle">Nombre, colores, contacto y URL pública de tu tienda.</p>
         </div>
       </div>
 
@@ -172,7 +172,7 @@ export default function ConfigurarTienda() {
                 <Globe size={13} /> {urlPreview}
               </div>
             </label>
-            {(esCreacion || subdominioCambia) && (
+            {subdominioCambia && (
               <div className="tn-disponibilidad">
                 {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={13} className="spin-icon" /> Verificando...</span>}
                 {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
@@ -189,6 +189,26 @@ export default function ConfigurarTienda() {
                 Cualquier link que ya hayas compartido con la URL vieja va a dejar de funcionar.
               </p>
             )}
+          </div>
+
+          <div className="land-section">
+            <h2>Plan</h2>
+            <div className="tn-plan-row">
+              {PLANES.map(p => {
+                const Icono = p.icono;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`tn-plan-chip ${form.plan === p.id ? 'selected' : ''}`}
+                    onClick={() => handleChange('plan', p.id)}
+                  >
+                    <Icono size={15} /> {p.titulo}
+                  </button>
+                );
+              })}
+            </div>
+            {form.plan === 'pago' && <p className="vit-subtitle">Un asesor te va a contactar para activar los beneficios del plan pago.</p>}
           </div>
 
           <div className="land-section">
@@ -218,17 +238,15 @@ export default function ConfigurarTienda() {
             {ok && <span className="tn-saved"><Check size={14} /> Guardado</span>}
             <button type="submit" className="land-btn-primary" disabled={guardando}>
               {guardando ? <Loader size={15} className="spin-icon" /> : <Save size={15} />}
-              {esCreacion ? 'Crear tienda' : 'Guardar cambios'}
+              Guardar cambios
             </button>
           </div>
         </form>
 
-        {!esCreacion && (
-          <div className="land-section">
-            <h2><Globe size={14} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Dominio propio</h2>
-            <DominioPropio tienda={tienda} onActualizado={cargar} />
-          </div>
-        )}
+        <div className="land-section">
+          <h2><Globe size={14} style={{ verticalAlign: 'middle', marginRight: '0.3rem' }} />Dominio propio</h2>
+          <DominioPropio tienda={tienda} onActualizado={cargar} />
+        </div>
       </div>
     </div>
   );

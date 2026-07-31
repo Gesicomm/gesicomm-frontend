@@ -21,6 +21,20 @@
   font-size: 0.85rem;
 }
 
+.tn-plan-row { display: flex; gap: 0.5rem; }
+.tn-plan-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  color: var(--vit-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.tn-plan-chip:hover { color: var(--vit-text); }
+.tn-plan-chip.selected { border-color: var(--vit-accent); color: var(--vit-accent); background: var(--vit-accent-soft); }
+
 .tn-disponibilidad { min-height: 1.2rem; }
 .tn-check { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; }
 .tn-check.ok { color: #10b981; }
