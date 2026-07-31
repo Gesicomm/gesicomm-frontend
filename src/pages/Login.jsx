@@ -59,11 +59,11 @@ export default function Login() {
     setLoading(true);
     setError(null);
     try {
-      await api.post('/api/auth/login', {
+      const res = await api.post('/api/auth/login', {
         email: formData.email,
         password: formData.password
       });
-      navigate('/dashboard');
+      navigate(res.usuario?.rol === 'administrador' ? '/dashboard' : '/mi-catalogo');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -133,7 +133,7 @@ export default function Login() {
   };
 
   return (
-    <>
+    <div className="splash-page">
       <Link to="/" className="back-home">
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
           <line x1="19" y1="12" x2="5" y2="12"></line>
@@ -234,6 +234,6 @@ export default function Login() {
           </form>
         )}
       </div>
-    </>
+    </div>
   );
 }

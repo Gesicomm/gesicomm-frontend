@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export default function Home() {
   return (
-    <>
+    <div className="splash-page">
       <header className="top-navbar">
         <div className="nav-brand"></div>
         <Link to="/login" className="login-btn" title="Iniciar Sesión">
@@ -13,7 +13,7 @@ export default function Home() {
           <span>Entrar</span>
         </Link>
       </header>
-      
+
       <div className="container">
         <h1 className="glitch" data-text="GESICOMM">GESICOMM</h1>
         <div className="message">
@@ -22,6 +22,6 @@ export default function Home() {
         </div>
         <div className="loader"></div>
       </div>
-    </>
+    </div>
   );
 }
