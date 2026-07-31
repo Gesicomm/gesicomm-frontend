@@ -1,0 +1,574 @@
+/* Container Principal Logístico */
+.courier-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  color: #e0e0e0;
+}
+
+/* Header del Módulo Logístico */
+.courier-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 1rem;
+}
+
+/* Tabs Superiores */
+.courier-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background-color: #141416;
+  padding: 0.35rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
+  color: #888888;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.tab-btn.active {
+  background-color: #ff007f;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(255, 0, 127, 0.3);
+}
+
+/* Botón Nuevo Pedido Top Bar */
+.btn-nuevo-pedido {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-nuevo-pedido:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+}
+
+/* Kanban Board */
+.kanban-board {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  padding-bottom: 1.5rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.kanban-column {
+  flex: 0 0 320px;
+  background: #0a0a0b;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s;
+}
+
+.kanban-column.is-over {
+  border-color: #ff007f;
+  background: #121216;
+}
+
+.kanban-col-header {
+  padding: 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.kanban-col-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.kanban-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.kanban-col-count {
+  font-size: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.15rem 0.6rem;
+  border-radius: 1rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.kanban-col-total {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: right;
+  font-family: monospace;
+}
+
+.kanban-cards {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: 200px;
+}
+
+/* Tarjetas de Pedidos / Envíos */
+.order-card {
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.order-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.order-card:active {
+  cursor: grabbing;
+}
+
+.order-card.dragging {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.order-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.order-card-client {
+  font-weight: 700;
+  color: #ffffff;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.order-card-address {
+  font-size: 0.8rem;
+  color: #888888;
+  margin: 0.2rem 0 0 0;
+  line-height: 1.3;
+}
+
+.order-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.tag-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ccc;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tag-badge.pay {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.order-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.order-card-price {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #10b981;
+  font-family: monospace;
+}
+
+.order-card-courier {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: rgba(255, 255, 255, 0.06);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  color: #e0e0e0;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.order-card-courier select {
+  background: transparent;
+  color: #fff;
+  border: none;
+  outline: none;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+/* Summary Bar Flexbox Grid */
+.summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-box {
+  background: #0a0a0b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.85rem;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  flex: 1 1 140px;
+}
+
+.stat-title {
+  font-size: 0.7rem;
+  color: #888888;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-family: inherit;
+}
+
+/* Day Filter */
+.day-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #0a0a0b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.day-filter button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888888;
+  transition: all 0.2s;
+}
+
+.day-filter button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.day-filter input[type="date"] {
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0 0.25rem;
+  color-scheme: dark;
+}
+
+/* Modal Nuevo Pedido */
+.np-modal-container {
+  max-width: 900px !important;
+  padding: 0 !important;
+  background: #0a0a0b !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  overflow: hidden !important;
+  color: #fff;
+}
+
+.np-header-banner {
+  background: linear-gradient(90deg, #1e3a8a, #2563eb);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.np-header-banner h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.np-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.np-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .np-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.np-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.2rem;
+  border-radius: 0.75rem;
+}
+
+.np-section-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #3b82f6;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.5rem;
+}
+
+.np-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.np-row label {
+  font-size: 0.8rem;
+  color: #aaaaaa;
+  font-weight: 600;
+}
+
+.np-full-width {
+  grid-column: 1 / -1;
+}
+
+.np-add-item-bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.np-items-table {
+  margin-top: 0.75rem !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.np-empty-items {
+  padding: 1.5rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.85rem;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.np-total-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.np-total-amount {
+  font-size: 1.3rem;
+  color: #10b981;
+  font-family: monospace;
+}
+
+.np-label-obs {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.np-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.btn-confirmar-pedido {
+  width: 100%;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #ffffff;
+  border: none;
+  padding: 0.9rem;
+  border-radius: 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(22, 163, 74, 0.4);
+  transition: all 0.2s ease;
+}
+
+.btn-confirmar-pedido:hover {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.5);
+}
+
+/* Modales y tablas genéricas en modo oscuro */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.form-input {
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  color-scheme: dark;
+}
+
+.form-input.input-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.field-error {
+  color: #f87171;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.req {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.form-input:focus {
+  border-color: #3b82f6;
+}
+
+.close-btn.dark {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.close-btn.dark:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Status colors en Kanban Header y Dot */
+.bg-amber-400 { background-color: #f59e0b; }
+.bg-blue-400 { background-color: #3b82f6; }
+.bg-emerald-400 { background-color: #10b981; }
+.bg-red-400 { background-color: #ef4444; }
+.bg-purple-400 { background-color: #8b5cf6; }
+
+.text-amber-700 { color: #fbbf24; }
+.text-blue-700 { color: #60a5fa; }
+.text-emerald-700 { color: #34d399; }
+.text-red-700 { color: #f87171; }
+.text-purple-700 { color: #a78bfa; }
+
+.text-emerald-600 { color: #10b981; }
+.text-red-600 { color: #ef4444; }
+.text-purple-600 { color: #8b5cf6; }
+.text-foreground { color: #ffffff; }
