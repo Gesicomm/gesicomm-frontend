@@ -10,7 +10,15 @@ import ComboList from './pages/combos/ComboList';
 import ComboEditor from './pages/combos/ComboEditor';
 import ComboConfiguracion from './pages/combos/ComboConfiguracion';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import DashboardLayout from './components/DashboardLayout';
+import UserLayout from './components/UserLayout';
+import VitrinaGrid from './pages/vitrina/VitrinaGrid';
+import MisLandings from './pages/landing/MisLandings';
+import LandingEditor from './pages/landing/LandingEditor';
+import LandingPublica from './pages/landing/LandingPublica';
+import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
+import { ControlCourier } from './pages/courier/control-courier';
 
 function App() {
   return (
@@ -20,54 +28,78 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
 
-        {/* Rutas protegidas */}
+        {/* Rutas protegidas — panel admin */}
         <Route path="/dashboard" element={
-          <ProtectedRoute><DashboardLayout><div><h1>Dashboard</h1><p>Bienvenido a Gesicomm.</p></div></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><div><h1>Dashboard</h1><p>Bienvenido a Gesicomm.</p></div></DashboardLayout></AdminRoute>
         } />
 
         {/* Productos */}
         <Route path="/products" element={
-          <ProtectedRoute><DashboardLayout><ProductList /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ProductList /></DashboardLayout></AdminRoute>
         } />
         <Route path="/products/nuevo" element={
-          <ProtectedRoute><DashboardLayout><ProductForm /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ProductForm /></DashboardLayout></AdminRoute>
         } />
         <Route path="/products/:id/editar" element={
-          <ProtectedRoute><DashboardLayout><ProductForm /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ProductForm /></DashboardLayout></AdminRoute>
         } />
 
         {/* Catálogo */}
         <Route path="/categorias" element={
-          <ProtectedRoute><DashboardLayout><CategoriaList /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><CategoriaList /></DashboardLayout></AdminRoute>
         } />
 
         {/* Otras secciones */}
         <Route path="/orders" element={
-          <ProtectedRoute><DashboardLayout><div><h1>Pedidos</h1><p>En construcción</p></div></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ControlCourier /></DashboardLayout></AdminRoute>
         } />
         <Route path="/customers" element={
-          <ProtectedRoute><DashboardLayout><div><h1>Clientes</h1><p>En construcción</p></div></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><div><h1>Clientes</h1><p>En construcción</p></div></DashboardLayout></AdminRoute>
         } />
         <Route path="/ads" element={
-          <ProtectedRoute><DashboardLayout><Ads /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><Ads /></DashboardLayout></AdminRoute>
         } />
         <Route path="/settings" element={
-          <ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><Settings /></DashboardLayout></AdminRoute>
         } />
 
         {/* Combos */}
         <Route path="/combos" element={
-          <ProtectedRoute><DashboardLayout><ComboList /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ComboList /></DashboardLayout></AdminRoute>
         } />
         <Route path="/combos/nuevo" element={
-          <ProtectedRoute><DashboardLayout><ComboEditor /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ComboEditor /></DashboardLayout></AdminRoute>
         } />
         <Route path="/combos/:id/editar" element={
-          <ProtectedRoute><DashboardLayout><ComboEditor /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ComboEditor /></DashboardLayout></AdminRoute>
         } />
         <Route path="/configuracion-economica" element={
-          <ProtectedRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></ProtectedRoute>
+          <AdminRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></AdminRoute>
         } />
+
+        {/* Rutas protegidas — vitrina y pedidos del rol 'usuario' */}
+        <Route path="/mi-catalogo" element={
+          <ProtectedRoute><UserLayout><VitrinaGrid /></UserLayout></ProtectedRoute>
+        } />
+        <Route path="/mis-pedidos" element={
+          <ProtectedRoute><UserLayout><ControlCourier /></UserLayout></ProtectedRoute>
+        } />
+        <Route path="/mi-tienda" element={
+          <ProtectedRoute><UserLayout><ConfigurarTienda /></UserLayout></ProtectedRoute>
+        } />
+        <Route path="/mis-landings" element={
+          <ProtectedRoute><UserLayout><MisLandings /></UserLayout></ProtectedRoute>
+        } />
+        <Route path="/mis-landings/nuevo" element={
+          <ProtectedRoute><UserLayout><LandingEditor /></UserLayout></ProtectedRoute>
+        } />
+        <Route path="/mis-landings/:id/editar" element={
+          <ProtectedRoute><UserLayout><LandingEditor /></UserLayout></ProtectedRoute>
+        } />
+
+        {/* Rutas públicas — landing compartible, sin ningún guard */}
+        <Route path="/l" element={<LandingPublica />} />
+        <Route path="/l/:slug" element={<LandingPublica />} />
       </Routes>
     </Router>
   );
