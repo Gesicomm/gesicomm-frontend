@@ -2,6 +2,54 @@ import { useState, useEffect, useMemo } from "react";
 import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle } from "lucide-react";
 import { productService } from "../../services/productService";
 import { getCouriers } from "../../services/courierApi";
+import CurrencyInput from "../../components/CurrencyInput";
+import CreatableSelect from "react-select/creatable";
+
+const selectStyles = {
+  control: (base, state) => ({
+    ...base,
+    background: '#1a1a1c',
+    borderColor: state.isFocused ? '#2563eb' : 'rgba(255,255,255,0.08)',
+    boxShadow: state.isFocused ? '0 0 0 1px #2563eb' : 'none',
+    borderRadius: '0.375rem',
+    minHeight: '38px',
+    color: '#fff',
+    '&:hover': {
+      borderColor: '#2563eb'
+    }
+  }),
+  menu: (base) => ({
+    ...base,
+    background: '#141416',
+    border: '1px solid rgba(255,255,255,0.12)',
+    zIndex: 999
+  }),
+  option: (base, state) => ({
+    ...base,
+    background: state.isSelected ? '#2563eb' : state.isFocused ? 'rgba(255, 255, 255, 0.08)' : '#141416',
+    color: '#fff',
+    cursor: 'pointer',
+    fontSize: '0.85rem',
+    '&:active': {
+      background: '#2563eb'
+    }
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: '#fff',
+    fontSize: '0.85rem'
+  }),
+  input: (base) => ({
+    ...base,
+    color: '#fff',
+    fontSize: '0.85rem'
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: '#666',
+    fontSize: '0.85rem'
+  })
+};
 
 export function NuevoPedidoModal({ open, onClose, onSubmit }) {
   const hoy = new Date().toISOString().slice(0, 10);
@@ -53,9 +101,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     }
   };
 
-  // Lista de ciudades únicas configuradas en los couriers del usuario
-  const ciudadesConfiguradas = useMemo(() => {
+  // Opciones de ciudades (únicamente configuradas en los couriers del usuario)
+  const optionsCiudades = useMemo(() => {
     const setCiudades = new Set();
+
     couriers.forEach(c => {
       if (c.tarifas && Array.isArray(c.tarifas)) {
         c.tarifas.forEach(t => {
@@ -63,46 +112,111 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
         });
       }
     });
-    return Array.from(setCiudades);
+
+    return Array.from(setCiudades).sort().map(c => ({ value: c, label: c }));
   }, [couriers]);
+
+  // Helper para buscar tarifa de un courier específico considerando el método de pago
+  const obtenerTarifaPara = (ciudad, courierId, metodoPago) => {
+    if (!ciudad || !courierId || couriers.length === 0) return null;
+    const c = couriers.find(curr => curr.id === Number(courierId));
+    if (!c || !c.tarifas || !Array.isArray(c.tarifas)) return null;
+
+    const targetTipoPago = (metodoPago === "Pagado" || metodoPago === "Transferencia") ? "Anticipado" : "Al Recibir";
+
+    // Buscar una tarifa que coincida exactamente con la ciudad/zona y el tipo de pago
+    const tarifa = c.tarifas.find(t => {
+      const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
+      const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
+      return ciudadCoincide && pagoCoincide;
+    });
+
+    return tarifa ? tarifa.costo : null;
+  };
+
+  // Helper para encontrar el primer courier que cubra la ciudad con el método de pago especificado
+  const buscarCourierYTarifa = (ciudad, metodoPago) => {
+    if (!ciudad || couriers.length === 0) return null;
+    const targetTipoPago = (metodoPago === "Pagado" || metodoPago === "Transferencia") ? "Anticipado" : "Al Recibir";
+
+    for (const c of couriers) {
+      if (c.tarifas && Array.isArray(c.tarifas)) {
+        const tarifa = c.tarifas.find(t => {
+          const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
+          const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
+          return ciudadCoincide && pagoCoincide;
+        });
+        if (tarifa) {
+          return { courierId: c.id, costo: tarifa.costo };
+        }
+      }
+    }
+    return null;
+  };
 
   // Al cambiar la ciudad, buscar tarifa configurada de delivery
   const handleCiudadChange = (valCiudad) => {
     setForm(prev => {
       const nextForm = { ...prev, ciudad: valCiudad };
       
-      // Buscar en los couriers si alguno tiene tarifa para esta ciudad
-      if (valCiudad && couriers.length > 0) {
-        let precioEncontrado = null;
-        let courierEncontradoId = null;
-
-        for (const c of couriers) {
-          if (c.tarifas && Array.isArray(c.tarifas)) {
-            const tarifa = c.tarifas.find(t => 
-              t.ciudad_zona.toLowerCase().trim() === valCiudad.toLowerCase().trim()
-            );
-            if (tarifa) {
-              precioEncontrado = tarifa.costo;
-              courierEncontradoId = c.id;
-              break;
-            }
+      if (valCiudad) {
+        // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
+        if (prev.courier_id) {
+          const costo = obtenerTarifaPara(valCiudad, prev.courier_id, prev.metodo_pago);
+          if (costo !== null) {
+            nextForm.costo_envio = costo;
+            return nextForm;
           }
         }
 
-        if (precioEncontrado !== null) {
-          nextForm.costo_envio = precioEncontrado;
-          if (courierEncontradoId) {
-            nextForm.courier_id = courierEncontradoId;
-          }
+        // Si no hay courier o el seleccionado no cubre la nueva ciudad, buscar el primero que la cubra
+        const resultado = buscarCourierYTarifa(valCiudad, prev.metodo_pago);
+        if (resultado) {
+          nextForm.courier_id = resultado.courierId;
+          nextForm.costo_envio = resultado.costo;
+        } else {
+          // Si nadie la cubre, dejamos el costo en 0
+          nextForm.costo_envio = 0;
         }
       }
-
       return nextForm;
     });
 
     if (errors.ciudad) {
       setErrors(prev => ({ ...prev, ciudad: null }));
     }
+  };
+
+  const handleCourierChange = (courierId) => {
+    setForm(prev => {
+      const nextForm = { ...prev, courier_id: courierId };
+      if (courierId && prev.ciudad) {
+        const costo = obtenerTarifaPara(prev.ciudad, courierId, prev.metodo_pago);
+        if (costo !== null) {
+          nextForm.costo_envio = costo;
+        }
+      }
+      return nextForm;
+    });
+  };
+
+  const handleMetodoPagoChange = (metodoPago) => {
+    setForm(prev => {
+      const nextForm = { ...prev, metodo_pago: metodoPago };
+      if (prev.ciudad && prev.courier_id) {
+        const costo = obtenerTarifaPara(prev.ciudad, prev.courier_id, metodoPago);
+        if (costo !== null) {
+          nextForm.costo_envio = costo;
+        }
+      } else if (prev.ciudad) {
+        const resultado = buscarCourierYTarifa(prev.ciudad, metodoPago);
+        if (resultado) {
+          nextForm.courier_id = resultado.courierId;
+          nextForm.costo_envio = resultado.costo;
+        }
+      }
+      return nextForm;
+    });
   };
 
   const handleAddItem = () => {
@@ -191,7 +305,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
         </div>
 
         {/* Banner Global de Errores */}
-        {Object.keys(errors).length > 0 && (
+        {Object.values(errors).some(Boolean) && (
           <div className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
             <AlertCircle size={18} />
             <div>
@@ -302,19 +416,20 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
               <div className="np-row">
                 <label>Ciudad <span className="req">*</span></label>
-                <input
-                  type="text"
-                  list="ciudades-list"
-                  className={`form-input ${errors.ciudad ? 'input-error' : ''}`}
-                  placeholder="Escribe o selecciona ciudad (Ej. Asunción)"
-                  value={form.ciudad}
-                  onChange={e => handleCiudadChange(e.target.value)}
+                <CreatableSelect
+                  isClearable
+                  placeholder="Escribe o selecciona ciudad..."
+                  styles={selectStyles}
+                  options={optionsCiudades}
+                  value={form.ciudad ? { value: form.ciudad, label: form.ciudad } : null}
+                  onChange={(newValue) => {
+                    const val = newValue ? newValue.value : "";
+                    handleCiudadChange(val);
+                  }}
+                  onCreateOption={(inputValue) => {
+                    handleCiudadChange(inputValue);
+                  }}
                 />
-                <datalist id="ciudades-list">
-                  {ciudadesConfiguradas.map((c, i) => (
-                    <option key={i} value={c} />
-                  ))}
-                </datalist>
                 {errors.ciudad && <span className="field-error">{errors.ciudad}</span>}
               </div>
 
@@ -362,7 +477,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
                   <select
                     className="form-input"
                     value={form.courier_id}
-                    onChange={e => setForm({ ...form, courier_id: e.target.value })}
+                    onChange={e => handleCourierChange(e.target.value)}
                   >
                     <option value="">-- Sin asignar --</option>
                     {couriers.map(c => (
@@ -373,13 +488,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
                 <div className="np-row">
                   <label style={{ color: '#10b981' }}>Costo Delivery (Gs)</label>
-                  <input
-                    type="number"
-                    min="0"
+                  <CurrencyInput
                     className="form-input"
                     style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                     value={form.costo_envio}
-                    onChange={e => setForm({ ...form, costo_envio: Number(e.target.value) })}
+                    onChange={val => setForm({ ...form, costo_envio: val })}
+                    prefix=""
                   />
                 </div>
               </div>
@@ -389,7 +503,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
                 <select
                   className="form-input"
                   value={form.metodo_pago}
-                  onChange={e => setForm({ ...form, metodo_pago: e.target.value })}
+                  onChange={e => handleMetodoPagoChange(e.target.value)}
                 >
                   <option value="Efectivo">Efectivo contra entrega</option>
                   <option value="Transferencia">Transferencia bancaria</option>

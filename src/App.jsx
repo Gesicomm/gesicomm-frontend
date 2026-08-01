@@ -15,7 +15,7 @@ import RequireTienda from './components/RequireTienda';
 import DashboardLayout from './components/DashboardLayout';
 import UserLayout from './components/UserLayout';
 import VitrinaGrid from './pages/vitrina/VitrinaGrid';
-import MisLandings from './pages/landing/MisLandings';
+import MiLandingEntry from './pages/landing/MiLandingEntry';
 import LandingEditor from './pages/landing/LandingEditor';
 import LandingPublica from './pages/landing/LandingPublica';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
@@ -97,14 +97,20 @@ function App() {
         <Route path="/mi-tienda" element={
           <RequireTienda><UserLayout><ConfigurarTienda /></UserLayout></RequireTienda>
         } />
-        <Route path="/mis-landings" element={
-          <RequireTienda><UserLayout><MisLandings /></UserLayout></RequireTienda>
+        {/* MVP: una sola landing por tienda (ver landing.service.js
+            MAX_LANDINGS_POR_TIENDA). /mi-landing decide sola si redirige a
+            editar la que ya existe o se queda en modo creación. */}
+        <Route path="/mi-landing" element={
+          <RequireTienda><UserLayout><MiLandingEntry /></UserLayout></RequireTienda>
         } />
-        <Route path="/mis-landings/nuevo" element={
+        <Route path="/mi-landing/:id" element={
           <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
         } />
-        <Route path="/mis-landings/:id/editar" element={
-          <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
+        <Route path="/mis-anuncios" element={
+          <RequireTienda><UserLayout><Ads /></UserLayout></RequireTienda>
+        } />
+        <Route path="/configuracion" element={
+          <RequireTienda><UserLayout><Settings /></UserLayout></RequireTienda>
         } />
 
         {/* Rutas públicas — landing compartible, sin ningún guard */}

@@ -19,7 +19,9 @@ export function OrderCard({
     ? `${envio.nombre_cliente} ${envio.apellido_cliente || ''}`.trim()
     : envio.cliente || "Cliente";
 
-  const ubicacion = [envio.ciudad, envio.departamento].filter(Boolean).join(", ") || envio.direccion;
+  const ciudadLabel = envio.ciudad ? `Ciudad: ${envio.ciudad}` : '';
+  const deptoLabel = envio.departamento ? `(${envio.departamento})` : '';
+  const ubicacionLabel = [ciudadLabel, deptoLabel].filter(Boolean).join(' ') || envio.direccion;
 
   return (
     <article
@@ -31,10 +33,10 @@ export function OrderCard({
       <div className="order-card-top">
         <div>
           <h4 className="order-card-client">{nombreCliente}</h4>
-          {ubicacion && (
-            <p className="order-card-address">
-              <MapPin size={11} style={{ display: 'inline', marginRight: '3px' }} />
-              {ubicacion}
+          {ubicacionLabel && (
+            <p className="order-card-address" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <MapPin size={11} style={{ color: '#ff007f' }} />
+              <span>{ubicacionLabel}</span>
             </p>
           )}
         </div>
@@ -58,12 +60,26 @@ export function OrderCard({
       </div>
 
       {/* Tags de Pago y Teléfono */}
-      <div className="order-card-tags">
+      <div className="order-card-tags" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', margin: '0.4rem 0' }}>
         {envio.metodo_pago && (
-          <span className="tag-badge pay">{envio.metodo_pago}</span>
+          <span className="tag-badge pay" style={{
+            padding: '0.2rem 0.5rem',
+            borderRadius: '0.25rem',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            background: envio.metodo_pago === 'Efectivo' ? 'rgba(16,185,129,0.15)' :
+                       envio.metodo_pago === 'Transferencia' ? 'rgba(59,130,246,0.15)' :
+                       envio.metodo_pago === 'POS' ? 'rgba(139,92,246,0.15)' : 'rgba(245,158,11,0.15)',
+            color: envio.metodo_pago === 'Efectivo' ? '#10b981' :
+                   envio.metodo_pago === 'Transferencia' ? '#3b82f6' :
+                   envio.metodo_pago === 'POS' ? '#8b5cf6' : '#f59e0b'
+          }}>
+            {envio.metodo_pago === 'Efectivo' ? 'Al Recibir (Efectivo)' : 
+             envio.metodo_pago === 'POS' ? 'Al Recibir (POS)' : envio.metodo_pago}
+          </span>
         )}
         {envio.telefono && (
-          <span className="tag-badge">
+          <span className="tag-badge" style={{ padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.72rem' }}>
             <Phone size={10} style={{ display: 'inline', marginRight: '3px' }} />
             {envio.telefono}
           </span>
@@ -80,10 +96,17 @@ export function OrderCard({
         </div>
       )}
 
-      <div className="order-card-bottom">
-        <span className="order-card-price">
-          {formatGs(envio.monto)}
-        </span>
+      <div className="order-card-bottom" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <span className="order-card-price" style={{ display: 'block' }}>
+            {formatGs(envio.monto)}
+          </span>
+          {Number(envio.costo_envio) > 0 && (
+            <span style={{ fontSize: '0.72rem', color: '#ff007f', fontWeight: 700, display: 'block', marginTop: '0.1rem' }}>
+              Delivery: {formatGs(envio.costo_envio)}
+            </span>
+          )}
+        </div>
 
         {courier ? (
           <div className="order-card-courier">
@@ -91,7 +114,7 @@ export function OrderCard({
             <span>{courier.nombre}</span>
           </div>
         ) : (
-          <span className="order-card-courier" style={{ opacity: 0.6 }}>Sin courier</span>
+          <span className="order-card-courier" style={{ opacity: 0.6 }}>Delivery propio</span>
         )}
       </div>
     </article>

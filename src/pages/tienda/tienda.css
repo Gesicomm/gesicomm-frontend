@@ -21,6 +21,14 @@
   font-size: 0.85rem;
 }
 
+.tn-checkbox-row {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  cursor: pointer;
+}
+.tn-checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--vit-accent); }
+
 .tn-plan-row { display: flex; gap: 0.5rem; }
 .tn-plan-chip {
   display: inline-flex; align-items: center; gap: 0.35rem;

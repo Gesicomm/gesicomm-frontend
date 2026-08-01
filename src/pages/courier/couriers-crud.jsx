@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { Bike, Car, Pencil, Phone, Plus, Trash2, Truck, X, Building2, MapPin, DollarSign, Layers } from "lucide-react"
+import CurrencyInput from "../../components/CurrencyInput"
 
 const VEHICULOS = ["Moto", "Auto", "Camioneta", "Bicicleta"]
 const TIPOS_PAGO = ["Anticipado", "Al Recibir", "Ambos"]
@@ -360,11 +361,12 @@ export function CouriersCrud({
                             />
                           </td>
                           <td>
-                            <input
-                              type="number" min="0"
-                              className="form-input" style={{ width: '90px', padding: '0.3rem 0.5rem', fontFamily: 'monospace' }}
+                            <CurrencyInput
+                              className="form-input"
+                              style={{ width: '100px', padding: '0.3rem 0.5rem', fontFamily: 'monospace', textAlign: 'right' }}
                               value={t.costo}
-                              onChange={(e) => updateTarifa(i, 'costo', Number(e.target.value))}
+                              onChange={(val) => updateTarifa(i, 'costo', val)}
+                              prefix=""
                             />
                           </td>
                           <td>

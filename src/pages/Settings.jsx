@@ -42,7 +42,8 @@ const Settings = () => {
 
     const handleConnectMeta = (mode = 'connect') => {
         const baseUrl = import.meta.env.VITE_API_URL || '';
-        window.location.href = `${baseUrl}/api/meta/connect?mode=${mode}`;
+        const currentPath = window.location.pathname;
+        window.location.href = `${baseUrl}/api/meta/connect?mode=${mode}&redirect_to=${encodeURIComponent(currentPath)}`;
     };
 
     const handleDeleteTienda = async (id, nombre) => {

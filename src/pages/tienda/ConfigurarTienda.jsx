@@ -30,6 +30,11 @@ const FORM_INICIAL = {
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
   plan: 'free',
+  meta_pixel_id: '',
+  meta_test_event_code: '',
+  meta_capi_activo: false,
+  google_analytics_id: '',
+  tiktok_pixel_id: '',
 };
 
 // La creación de la tienda vive en /onboarding (nombre + plan, primer paso
@@ -47,6 +52,12 @@ export default function ConfigurarTienda() {
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
+
+  // El access token nunca vuelve del backend (ni cifrado) — solo un flag
+  // de si ya hay uno guardado (tienda.meta_access_token_configurado). Este
+  // campo arranca vacío siempre; si la usuaria no escribe nada acá, el
+  // token guardado queda como está (no se manda esta clave en el payload).
+  const [metaTokenNuevo, setMetaTokenNuevo] = useState('');
 
   // El subdominio no es un campo aparte: es siempre el nombre de la tienda
   // slugificado. Si no está disponible, la usuaria cambia el nombre, no un
@@ -73,6 +84,11 @@ export default function ConfigurarTienda() {
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
           plan: data.plan || 'free',
+          meta_pixel_id: data.meta_pixel_id || '',
+          meta_test_event_code: data.meta_test_event_code || '',
+          meta_capi_activo: !!data.meta_capi_activo,
+          google_analytics_id: data.google_analytics_id || '',
+          tiktok_pixel_id: data.tiktok_pixel_id || '',
         });
       }
     } catch (err) {
@@ -121,8 +137,15 @@ export default function ConfigurarTienda() {
 
     setGuardando(true);
     try {
-      const actualizada = await tiendaService.actualizar({ ...form, subdominio: subdominioDerivado });
+      const payload = { ...form, subdominio: subdominioDerivado };
+      // Si no escribió un token nuevo, no se manda esta clave — el backend
+      // solo la toca cuando payload.meta_access_token !== undefined (ver
+      // tienda.service.js), así que omitirla deja el token guardado intacto.
+      if (metaTokenNuevo.trim()) payload.meta_access_token = metaTokenNuevo.trim();
+
+      const actualizada = await tiendaService.actualizar(payload);
       setTienda(actualizada);
+      setMetaTokenNuevo('');
       setOk(true);
       setTimeout(() => setOk(false), 1800);
     } catch (err) {
@@ -231,6 +254,60 @@ export default function ConfigurarTienda() {
             </label>
             <label>Mensaje de contacto
               <input value={form.mensaje_contacto} onChange={e => handleChange('mensaje_contacto', e.target.value)} placeholder="Usá {producto} para insertar el nombre" />
+            </label>
+          </div>
+
+          <div className="land-section">
+            <h2>Meta Pixel / CAPI</h2>
+            <p className="vit-subtitle">Para medir clics en "Consultar" como conversiones en tus campañas de Meta Ads.</p>
+            <label>Pixel ID
+              <input
+                value={form.meta_pixel_id}
+                onChange={e => handleChange('meta_pixel_id', e.target.value.replace(/\D/g, ''))}
+                placeholder="Ej: 1234567890123456"
+                inputMode="numeric"
+              />
+            </label>
+            <label>Access Token (Conversions API)
+              <input
+                type="password"
+                value={metaTokenNuevo}
+                onChange={e => setMetaTokenNuevo(e.target.value)}
+                placeholder={tienda?.meta_access_token_configurado ? '•••••••••• (ya configurado — dejá vacío para no cambiarlo)' : 'Pegá el token generado en Events Manager'}
+              />
+            </label>
+            <label>Test Event Code <span className="vit-subtitle" style={{ display: 'inline' }}>(opcional, solo mientras probás)</span>
+              <input
+                value={form.meta_test_event_code}
+                onChange={e => handleChange('meta_test_event_code', e.target.value)}
+                placeholder="Ej: TEST12345"
+              />
+            </label>
+            <label className="tn-checkbox-row">
+              <input type="checkbox" checked={form.meta_capi_activo} onChange={e => handleChange('meta_capi_activo', e.target.checked)} />
+              Enviar eventos también por Conversions API (recomendado)
+            </label>
+            {form.meta_capi_activo && !form.meta_pixel_id && (
+              <p className="tn-warning"><AlertCircle size={13} /> Activaste CAPI pero todavía no cargaste el Pixel ID — no se va a enviar nada hasta que lo completes.</p>
+            )}
+          </div>
+
+          <div className="land-section">
+            <h2>Google Analytics / TikTok Pixel</h2>
+            <p className="vit-subtitle">Solo el lado navegador — a diferencia de Meta, acá no hay envío server-side (CAPI/Events API).</p>
+            <label>Google Analytics — Measurement ID
+              <input
+                value={form.google_analytics_id}
+                onChange={e => handleChange('google_analytics_id', e.target.value.toUpperCase())}
+                placeholder="Ej: G-ABC1234DEF"
+              />
+            </label>
+            <label>TikTok Pixel ID
+              <input
+                value={form.tiktok_pixel_id}
+                onChange={e => handleChange('tiktok_pixel_id', e.target.value)}
+                placeholder="Pegá el Pixel ID de TikTok Ads Manager"
+              />
             </label>
           </div>
 

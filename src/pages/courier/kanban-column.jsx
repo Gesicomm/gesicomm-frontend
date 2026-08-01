@@ -61,7 +61,7 @@ export function KanbanColumn({
             <OrderCard
               key={envio.id}
               envio={envio}
-              courier={couriers.find((c) => c.id === envio.courierId)}
+              courier={couriers.find((c) => c.id === envio.courier_id)}
               dragging={draggingId === envio.id}
               onDragStart={onDragStartCard}
               onDragEnd={onDragEndCard}

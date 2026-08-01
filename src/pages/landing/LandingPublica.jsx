@@ -1,20 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff } from 'lucide-react';
-import { obtenerLandingPublica } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, registrarEventoLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
+import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
+import { inicializarGA, trackearEventoGA } from '../../lib/googleAnalytics';
+import { inicializarTikTokPixel, trackearEventoTikTok } from '../../lib/tiktokPixel';
+import { calcularEstiloLanding, cargarFuenteGoogle } from '../../lib/landingDiseno';
+import { useDocumentSeo } from '../../hooks/useDocumentSeo';
+import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
+import ProductDetailModal from './ProductDetailModal';
+import CartDrawer from './CartDrawer';
 import './landingPublica.css';
 
-function formatPrecio(n) {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 }) + ' Gs';
+function claveCarrito(item, varianteId) {
+  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}`;
 }
 
-function armarLinkWhatsapp(contacto, nombreItem) {
-  if (!contacto?.whatsapp) return null;
-  const plantilla = contacto.mensaje || 'Hola, me interesa {producto}';
-  const mensaje = plantilla.replace('{producto}', nombreItem);
-  return `https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+function cargarCarritoGuardado(slug) {
+  try {
+    const crudo = localStorage.getItem(`gesicomm-carrito-${slug || 'home'}`);
+    return crudo ? new Map(JSON.parse(crudo)) : new Map();
+  } catch {
+    return new Map(); // localStorage puede no estar disponible (modo privado) — el carrito solo vive en memoria.
+  }
 }
 
 export default function LandingPublica() {
@@ -28,6 +37,10 @@ export default function LandingPublica() {
   const [busqueda, setBusqueda] = useState('');
   const [orden, setOrden] = useState('');
 
+  const [itemAbierto, setItemAbierto] = useState(null); // item con el modal de detalle abierto
+  const [carrito, setCarrito] = useState(() => new Map());
+  const [carritoAbierto, setCarritoAbierto] = useState(false);
+
   useEffect(() => {
     let activo = true;
     setEstado('cargando');
@@ -38,10 +51,148 @@ export default function LandingPublica() {
         if (!res.disponible) return setEstado('no-disponible');
         setData(res);
         setEstado('ok');
+        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id);
+        if (res.meta?.google_analytics_id) inicializarGA(res.meta.google_analytics_id);
+        if (res.meta?.tiktok_pixel_id) inicializarTikTokPixel(res.meta.tiktok_pixel_id);
+        if (res.diseno?.fuente) cargarFuenteGoogle(res.diseno.fuente);
       })
       .catch(() => { if (activo) setEstado('no-encontrada'); });
     return () => { activo = false; };
   }, [slug]);
+
+  useDocumentSeo(data?.seo, typeof window !== 'undefined' ? window.location.href : undefined);
+
+  // Un slug por carrito: si la tienda tiene varias landings, cada una guarda
+  // el suyo por separado (no tiene sentido mezclar pedidos de vidrieras
+  // distintas). Se recarga desde localStorage cada vez que cambia el slug,
+  // y se persiste en cada cambio del carrito mismo.
+  useEffect(() => { setCarrito(cargarCarritoGuardado(slug)); }, [slug]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(`gesicomm-carrito-${slug || 'home'}`, JSON.stringify(Array.from(carrito.entries())));
+    } catch { /* modo privado / storage lleno — el carrito sigue funcionando solo en memoria */ }
+  }, [carrito, slug]);
+
+  function agregarAlCarrito({ item, variante, cantidad, precio }) {
+    const clave = claveCarrito(item, variante?.id);
+    const stockMax = variante ? variante.stock : item.stock;
+    setCarrito(prev => {
+      const copia = new Map(prev);
+      const existente = copia.get(clave);
+      const nuevaCantidad = stockMax != null
+        ? Math.min(stockMax, (existente?.cantidad || 0) + cantidad)
+        : (existente?.cantidad || 0) + cantidad;
+      copia.set(clave, {
+        clave,
+        tipo: item.tipo,
+        contentId: item.content_id,
+        nombre: item.nombre,
+        varianteId: variante?.id || null,
+        varianteNombre: variante?.nombre || null,
+        precio,
+        cantidad: nuevaCantidad,
+        imagen: item.imagenes?.[0] || item.imagen || null,
+        stockMax: stockMax ?? null,
+      });
+      return copia;
+    });
+  }
+
+  function cambiarCantidadCarrito(clave, delta) {
+    setCarrito(prev => {
+      const actual = prev.get(clave);
+      if (!actual) return prev;
+      const nueva = actual.cantidad + delta;
+      if (nueva <= 0) {
+        const copia = new Map(prev);
+        copia.delete(clave);
+        return copia;
+      }
+      if (actual.stockMax != null && nueva > actual.stockMax) return prev;
+      const copia = new Map(prev);
+      copia.set(clave, { ...actual, cantidad: nueva });
+      return copia;
+    });
+  }
+
+  function quitarDelCarrito(clave) {
+    setCarrito(prev => {
+      const copia = new Map(prev);
+      copia.delete(clave);
+      return copia;
+    });
+  }
+
+  function checkoutCarrito() {
+    const items = Array.from(carrito.values());
+    // El checkout solo se puede disparar desde el drawer, que solo se
+    // renderiza con estado==='ok' — data ya está poblado en ese punto.
+    const link = armarLinkWhatsappCarrito(data.contacto, items);
+    if (!link) return;
+
+    const eventId = generarEventId();
+    const { fbc, fbp } = leerCookiesFacebook();
+    const esUnSolo = items.length === 1;
+    const customData = {
+      content_ids: items.map(it => it.contentId),
+      content_name: esUnSolo ? items[0].nombre : `Carrito (${items.length} productos)`,
+      content_type: esUnSolo && items[0].tipo !== 'combo' ? 'product' : 'product_group',
+    };
+
+    trackearEvento('Contact', eventId, customData);
+    const valorTotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
+    trackearEventoGA('checkout_whatsapp', { valor: valorTotal, cantidad_items: items.length });
+    trackearEventoTikTok('Contact', { content_ids: customData.content_ids, value: valorTotal });
+
+    registrarEventoLanding(slug, {
+      event_name: 'Contact',
+      event_id: eventId,
+      event_source_url: window.location.href,
+      fbc,
+      fbp,
+      custom_data: customData,
+      // Detalle por producto para que "Productos con más consultas" en
+      // Estadísticas no pierda info cuando el evento junta varios (ver
+      // landing.service.js estadisticas()).
+      items: items.map(it => ({
+        content_id: it.contentId,
+        nombre: it.varianteNombre ? `${it.nombre} (${it.varianteNombre})` : it.nombre,
+        cantidad: it.cantidad,
+      })),
+    });
+
+    window.open(link, '_blank', 'noopener');
+    setCarrito(new Map());
+    setCarritoAbierto(false);
+  }
+
+  function contactar(item) {
+    const eventId = generarEventId();
+    const { fbc, fbp } = leerCookiesFacebook();
+    const customData = {
+      content_ids: [item.content_id],
+      content_name: item.nombre,
+      content_type: item.tipo === 'combo' ? 'product_group' : 'product',
+    };
+
+    trackearEvento('Contact', eventId, customData);
+    trackearEventoGA('contact_whatsapp', { producto: item.nombre });
+    trackearEventoTikTok('Contact', { content_id: item.content_id, content_name: item.nombre });
+
+    // Se manda siempre, tenga o no Meta CAPI configurado: el backend igual
+    // registra el evento en LandingEvento (ver landing.service.js) — es la
+    // única fuente de las Estadísticas de la landing. Antes esto quedaba
+    // gateado detrás de capi_activo y las tiendas sin CAPI no generaban
+    // ningún dato de conversión.
+    registrarEventoLanding(slug, {
+      event_name: 'Contact',
+      event_id: eventId,
+      event_source_url: window.location.href,
+      fbc,
+      fbp,
+      custom_data: customData,
+    });
+  }
 
   const categorias = useMemo(() => data ? [...new Set(data.items.map(i => i.categoria).filter(Boolean))] : [], [data]);
   const marcas = useMemo(() => data ? [...new Set(data.items.map(i => i.marca).filter(Boolean))] : [], [data]);
@@ -87,18 +238,38 @@ export default function LandingPublica() {
     );
   }
 
-  const { filtros, contacto } = data;
+  const { filtros, contacto, banner } = data;
   const hayFiltrosVisibles = filtros.categoria || filtros.marca || filtros.etiqueta || filtros.buscador || filtros.orden_precio;
+  // Sin link, el botón lleva a la grilla de productos de esta misma página.
+  const bannerLinkEsExterno = banner?.boton_link && /^https?:\/\//i.test(banner.boton_link);
 
   return (
     <div
-      className="lp-page"
-      style={{
-        '--l-primary': data.tema.primario || '#10b981',
-        '--l-secondary': data.tema.secundario || '#059669',
-        '--l-bg': data.tema.fondo || '#0a0a0a',
-      }}
+      className={`lp-page ${data.tema.modo === 'claro' ? 'claro' : ''}`}
+      style={calcularEstiloLanding({ tema: data.tema, diseno: data.diseno })}
     >
+      {banner && (
+        <div
+          className={`lp-banner ${banner.imagen ? 'con-imagen' : ''}`}
+          style={banner.imagen ? { backgroundImage: `url(${getMediaUrl(banner.imagen)})` } : undefined}
+        >
+          <div className="lp-banner-overlay">
+            {banner.titulo && <h2>{banner.titulo}</h2>}
+            {banner.subtitulo && <p>{banner.subtitulo}</p>}
+            {banner.boton_texto && (
+              <a
+                className="lp-banner-btn"
+                href={banner.boton_link || '#lp-productos'}
+                target={bannerLinkEsExterno ? '_blank' : undefined}
+                rel={bannerLinkEsExterno ? 'noopener noreferrer' : undefined}
+              >
+                {banner.boton_texto}
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="lp-header">
         <h1>{data.titulo}</h1>
         {data.descripcion && <p>{data.descripcion}</p>}
@@ -143,11 +314,12 @@ export default function LandingPublica() {
       {itemsFiltrados.length === 0 ? (
         <div className="lp-empty">No hay productos que coincidan con el filtro.</div>
       ) : (
-        <div className="lp-grid">
+        <div className="lp-grid" id="lp-productos">
           {itemsFiltrados.map(item => {
-            const linkWhatsapp = armarLinkWhatsapp(contacto, item.nombre);
+            const linkWhatsapp = armarLinkWhatsapp(contacto, item);
             return (
-              <div key={item.content_id} className="lp-card">
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+              <div key={item.content_id} className="lp-card" onClick={() => setItemAbierto(item)} role="button" tabIndex={0}>
                 <div className="lp-card-media">
                   {item.imagen ? (
                     <img src={getMediaUrl(item.imagen)} alt={item.nombre} />
@@ -157,6 +329,7 @@ export default function LandingPublica() {
                     </div>
                   )}
                   {item.tipo === 'combo' && <span className="lp-card-badge"><Layers size={11} /> Combo</span>}
+                  {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
                 </div>
                 <div className="lp-card-body">
                   {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
@@ -164,7 +337,13 @@ export default function LandingPublica() {
                   {item.descripcion && <p className="lp-card-desc">{item.descripcion}</p>}
                   <span className="lp-card-price">{formatPrecio(item.precio)}</span>
                   {linkWhatsapp && (
-                    <a className="lp-card-contact" href={linkWhatsapp} target="_blank" rel="noreferrer">
+                    <a
+                      className="lp-card-contact"
+                      href={linkWhatsapp}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => { e.stopPropagation(); contactar(item); }}
+                    >
                       <MessageCircle size={15} /> Consultar
                     </a>
                   )}
@@ -174,6 +353,25 @@ export default function LandingPublica() {
           })}
         </div>
       )}
+
+      {itemAbierto && (
+        <ProductDetailModal
+          item={itemAbierto}
+          onClose={() => setItemAbierto(null)}
+          onAgregar={agregarAlCarrito}
+        />
+      )}
+
+      <CartDrawer
+        items={Array.from(carrito.values())}
+        abierto={carritoAbierto}
+        onAbrir={() => setCarritoAbierto(true)}
+        onCerrar={() => setCarritoAbierto(false)}
+        onCantidad={cambiarCantidadCarrito}
+        onQuitar={quitarDelCarrito}
+        onCheckout={checkoutCarrito}
+        whatsappConfigurado={!!contacto?.whatsapp}
+      />
     </div>
   );
 }

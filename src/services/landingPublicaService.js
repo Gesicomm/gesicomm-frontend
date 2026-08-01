@@ -29,3 +29,22 @@ export async function obtenerLandingPublica(slug) {
   if (!res.ok) throw new Error('No se pudo cargar la landing.');
   return res.json();
 }
+
+/**
+ * Evento de conversión (Meta CAPI) — best-effort, nunca lanza: un fallo acá
+ * no puede interrumpir el flujo real del visitante (abrir WhatsApp). Ver
+ * pixel.js para el lado navegador (fbq) que dispara junto con esto, mismo
+ * event_id, para que Meta los deduplique como un solo evento.
+ */
+export async function registrarEventoLanding(slug, payload) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}/eventos` : '/api/l/eventos';
+  try {
+    await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // silencioso a propósito — ver comentario de arriba
+  }
+}

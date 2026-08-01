@@ -216,7 +216,12 @@ const Ads = () => {
             <div className="settings-header"><h1>Ads & Campañas</h1></div>
             <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
                 <p style={{ color: '#ff6b6b', marginBottom: '1rem' }}>{error}</p>
-                <a href="/settings" style={{ color: '#ff007f' }}>Ir a Configuración →</a>
+                <a 
+                  href={window.location.pathname.startsWith('/mis-anuncios') ? '/configuracion' : '/settings'} 
+                  style={{ color: 'var(--bg-primary, #ff007f)' }}
+                >
+                  Ir a Configuración →
+                </a>
             </div>
         </div>
     );
@@ -246,12 +251,12 @@ const Ads = () => {
                                         padding: '0.4rem 1rem',
                                         borderRadius: '20px',
                                         border: selectedStore?.id === t.id
-                                            ? '1px solid var(--bg-primary)'
+                                            ? '1px solid var(--bg-primary, #ff007f)'
                                             : '1px solid rgba(255,255,255,0.15)',
                                         background: selectedStore?.id === t.id
-                                            ? 'rgba(255,0,127,0.15)'
+                                            ? 'var(--vit-accent-soft, rgba(255,0,127,0.15))'
                                             : 'transparent',
-                                        color: selectedStore?.id === t.id ? '#ff007f' : '#aaa',
+                                        color: selectedStore?.id === t.id ? 'var(--bg-primary, #ff007f)' : '#aaa',
                                         fontSize: '0.82rem',
                                         fontWeight: selectedStore?.id === t.id ? 600 : 400,
                                         cursor: 'pointer',

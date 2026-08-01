@@ -1,46 +1,243 @@
 import { useMemo } from "react";
-import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
+import { formatGs } from "../../lib/courier";
 
 export function SummaryBar({ envios = [], couriers = [] }) {
   const stats = useMemo(() => {
-    const counts = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0]));
+    const counts = {
+      "Entregado": 0,
+      "Reagendado": 0,
+      "Devuelto": 0,
+      "Perdido": 0,
+      "Cancelado": 0,
+      "Pendiente": 0,
+      "En camino": 0
+    };
+
+    const amounts = {
+      "Entregado": 0,
+      "Reagendado": 0,
+      "Devuelto": 0,
+      "Perdido": 0,
+      "Cancelado": 0
+    };
+
+    let totalCostoDelivery = 0;
+    let cobradoCourier = 0;
+    let cobradoDirecto = 0;
+
     for (const e of envios) {
-      if (counts[e.estado] !== undefined) {
-        counts[e.estado]++;
+      const estadoNorm = e.estado || "Pendiente";
+      
+      // Contar estados
+      if (counts[estadoNorm] !== undefined) {
+        counts[estadoNorm]++;
+      } else {
+        counts[estadoNorm] = 1;
+      }
+
+      // Sumar montos para estados finales
+      if (amounts[estadoNorm] !== undefined) {
+        amounts[estadoNorm] += (Number(e.monto) || 0);
+      }
+
+      // Clasificación de cobros y costos de delivery
+      const esCancelado = estadoNorm === "Cancelado";
+      const esDevuelto = estadoNorm === "Devuelto";
+      const esEntregado = estadoNorm === "Entregado" || estadoNorm === "Rendido";
+      
+      const metodo = e.metodo_pago || "Efectivo";
+      const esPrepago = metodo === "Transferencia" || metodo === "Pagado";
+
+      // 1. Cobros en Efectivo o POS (se cobran por courier únicamente cuando están Entregados o Rendidos)
+      if (esEntregado && !esPrepago) {
+        cobradoCourier += (Number(e.monto) || 0);
+      }
+
+      // 2. Cobros anticipados (Transferencia o Pagado)
+      // Representan dinero que ingresa directo de inmediato, siempre que el pedido no se cancele o devuelva
+      if (esPrepago && !esCancelado && !esDevuelto) {
+        cobradoDirecto += (Number(e.monto) || 0);
+      }
+
+      // 3. Costo de envío pagado al courier
+      if (esEntregado) {
+        totalCostoDelivery += (Number(e.costo_envio) || 0);
       }
     }
 
-    const entregados = envios.filter(
-      (e) => e.estado === "Entregado" || e.estado === "entregado"
-    );
-    const rendidos = envios.filter(
-      (e) => e.estado === "Rendido" || e.estado === "rendido"
-    );
+    // Facturación Total: suma de todos los pedidos entregados + pedidos prepagos activos
+    let facturacion = 0;
+    for (const e of envios) {
+      const estadoNorm = e.estado || "Pendiente";
+      const esCancelado = estadoNorm === "Cancelado";
+      const esDevuelto = estadoNorm === "Devuelto";
+      const esEntregado = estadoNorm === "Entregado" || estadoNorm === "Rendido";
+      
+      const metodo = e.metodo_pago || "Efectivo";
+      const esPrepago = metodo === "Transferencia" || metodo === "Pagado";
 
-    const montoRendido = rendidos.reduce((s, e) => s + (Number(e.monto) || 0), 0);
-    const facturacion = entregados.reduce((s, e) => s + (Number(e.monto) || 0), 0);
+      if (esEntregado) {
+        facturacion += (Number(e.monto) || 0);
+      } else if (esPrepago && !esCancelado && !esDevuelto) {
+        facturacion += (Number(e.monto) || 0);
+      }
+    }
 
-    return { counts, facturacion, montoRendido, totalEnvios: envios.length };
-  }, [envios, couriers]);
+    const saldoCourier = cobradoCourier - totalCostoDelivery;
+    const cajaNeta = cobradoDirecto + saldoCourier;
+
+    return {
+      counts,
+      amounts,
+      facturacion,
+      cobradoCourier,
+      cobradoDirecto,
+      totalCostoDelivery,
+      saldoCourier,
+      cajaNeta
+    };
+  }, [envios]);
 
   return (
-    <div className="summary-bar">
-      <StatBox title="Total Envíos" value={stats.totalEnvios} color="#ffffff" />
-      <StatBox title="Pendientes" value={stats.counts["Pendiente"] || 0} color="#f59e0b" />
-      <StatBox title="En camino" value={stats.counts["En camino"] || 0} color="#3b82f6" />
-      <StatBox title="Entregados" value={stats.counts["Entregado"] || 0} color="#10b981" />
-      <StatBox title="Cancelados" value={stats.counts["Cancelado"] || 0} color="#ef4444" />
-      <StatBox title="Rendidos" value={stats.counts["Rendido"] || 0} color="#8b5cf6" />
-      <StatBox title="Monto Rendido" value={formatGs(stats.montoRendido)} color="#10b981" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', marginBottom: '0.5rem' }}>
+      
+      {/* Fila 1: Estados de Envíos */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '0.85rem',
+        width: '100%'
+      }}>
+        <StatusCard 
+          icon="✅" 
+          title="Entregados" 
+          count={stats.counts["Entregado"] || 0} 
+          amount={stats.amounts["Entregado"] || 0} 
+        />
+        <StatusCard 
+          icon="🍊" 
+          title="Reagendados" 
+          count={stats.counts["Reagendado"] || 0} 
+          amount={stats.amounts["Reagendado"] || 0} 
+        />
+        <StatusCard 
+          icon="🔄" 
+          title="Devueltos" 
+          count={stats.counts["Devuelto"] || 0} 
+          amount={stats.amounts["Devuelto"] || 0} 
+        />
+        <StatusCard 
+          icon="🔴" 
+          title="Perdidos" 
+          count={stats.counts["Perdido"] || 0} 
+          amount={stats.amounts["Perdido"] || 0} 
+        />
+        <StatusCard 
+          icon="🚫" 
+          title="Cancelados" 
+          count={stats.counts["Cancelado"] || 0} 
+          amount={stats.amounts["Cancelado"] || 0} 
+        />
+      </div>
+
+      {/* Fila 2: Métricas Económicas */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+        gap: '0.85rem',
+        width: '100%'
+      }}>
+        <MetricCard title="Facturación Total" value={stats.facturacion} />
+        <MetricCard title="Cobrado por Courier" value={stats.cobradoCourier} />
+        <MetricCard title="Cobrado Directamente" value={stats.cobradoDirecto} />
+        <MetricCard title="Costo Delivery" value={stats.totalCostoDelivery} />
+        
+        {/* Saldo Courier (Box Verde) */}
+        <MetricCard 
+          title="Saldo Courier" 
+          value={stats.saldoCourier} 
+          bg="rgba(16, 185, 129, 0.08)"
+          border="1px solid rgba(16, 185, 129, 0.3)"
+          textColor="#10b981"
+        />
+
+        {/* Caja Neta (Box Metálico/Gris Claro) */}
+        <MetricCard 
+          title="Caja Neta" 
+          value={stats.cajaNeta} 
+          bg="#e2e8f0"
+          border="1px solid #cbd5e1"
+          textColor="#0f172a"
+          labelColor="#475569"
+        />
+      </div>
+
     </div>
   );
 }
 
-function StatBox({ title, value, color = "#ffffff" }) {
+function StatusCard({ icon, title, count, amount }) {
   return (
-    <div className="stat-box">
-      <span className="stat-title">{title}</span>
-      <span className="stat-value" style={{ color }}>{value}</span>
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.02)',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      borderRadius: '12px',
+      padding: '0.85rem 1.1rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.35rem',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+    }}>
+      <span style={{
+        fontSize: '0.68rem',
+        color: '#64748b',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.3rem'
+      }}>
+        <span>{icon}</span> {title}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '0.1rem' }}>
+        <span style={{ fontSize: '1.4rem', fontWeight: 850, color: '#fff' }}>{count}</span>
+        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>{formatGs(amount)}</span>
+      </div>
+    </div>
+  );
+}
+
+function MetricCard({ title, value, bg = 'rgba(255, 255, 255, 0.02)', border = '1px solid rgba(255, 255, 255, 0.06)', textColor = '#fff', labelColor = '#64748b' }) {
+  return (
+    <div style={{
+      background: bg,
+      border: border,
+      borderRadius: '12px',
+      padding: '0.85rem 1.1rem',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.3rem',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+    }}>
+      <span style={{
+        fontSize: '0.65rem',
+        color: labelColor,
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em'
+      }}>
+        {title}
+      </span>
+      <span style={{
+        fontSize: '1.15rem',
+        fontWeight: 800,
+        color: textColor,
+        letterSpacing: '-0.01em',
+        marginTop: '0.1rem'
+      }}>
+        {formatGs(value)}
+      </span>
     </div>
   );
 }
