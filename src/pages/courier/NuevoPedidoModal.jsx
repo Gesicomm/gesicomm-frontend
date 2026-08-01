@@ -116,36 +116,66 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     return Array.from(setCiudades).sort().map(c => ({ value: c, label: c }));
   }, [couriers]);
 
-  // Helper para buscar tarifa de un courier específico considerando el método de pago
-  const obtenerTarifaPara = (ciudad, courierId, metodoPago) => {
+  // Helper para buscar tarifa de un courier específico considerando método de pago y cantidad total de unidades
+  const obtenerTarifaPara = (ciudad, courierId, metodoPago, listaItems = items) => {
     if (!ciudad || !courierId || couriers.length === 0) return null;
     const c = couriers.find(curr => curr.id === Number(courierId));
     if (!c || !c.tarifas || !Array.isArray(c.tarifas)) return null;
 
     const targetTipoPago = (metodoPago === "Pagado" || metodoPago === "Transferencia") ? "Anticipado" : "Al Recibir";
+    const totalCantidad = (listaItems || []).reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
+    const cantEval = totalCantidad > 0 ? totalCantidad : 1;
 
-    // Buscar una tarifa que coincida exactamente con la ciudad/zona y el tipo de pago
-    const tarifa = c.tarifas.find(t => {
+    // 1. Buscar coincidencia exacta por ciudad, tipo de pago y rango de cantidad
+    let tarifa = c.tarifas.find(t => {
       const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
       const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
-      return ciudadCoincide && pagoCoincide;
+      const rMin = Number(t.rango_min) || 0;
+      const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === "") ? Infinity : Number(t.rango_max);
+      const rangoCoincide = cantEval >= rMin && cantEval <= rMax;
+      return ciudadCoincide && pagoCoincide && rangoCoincide;
     });
+
+    // 2. Si no hay coincidencia exacta por rango, fallback a cualquier tarifa de la ciudad y tipo de pago
+    if (!tarifa) {
+      tarifa = c.tarifas.find(t => {
+        const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
+        const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
+        return ciudadCoincide && pagoCoincide;
+      });
+    }
 
     return tarifa ? tarifa.costo : null;
   };
 
-  // Helper para encontrar el primer courier que cubra la ciudad con el método de pago especificado
-  const buscarCourierYTarifa = (ciudad, metodoPago) => {
+  // Helper para encontrar el primer courier que cubra la ciudad con el método de pago y cantidad especificados
+  const buscarCourierYTarifa = (ciudad, metodoPago, listaItems = items) => {
     if (!ciudad || couriers.length === 0) return null;
     const targetTipoPago = (metodoPago === "Pagado" || metodoPago === "Transferencia") ? "Anticipado" : "Al Recibir";
+    const totalCantidad = (listaItems || []).reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
+    const cantEval = totalCantidad > 0 ? totalCantidad : 1;
 
     for (const c of couriers) {
       if (c.tarifas && Array.isArray(c.tarifas)) {
-        const tarifa = c.tarifas.find(t => {
+        // 1. Coincidencia con rango
+        let tarifa = c.tarifas.find(t => {
           const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
           const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
-          return ciudadCoincide && pagoCoincide;
+          const rMin = Number(t.rango_min) || 0;
+          const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === "") ? Infinity : Number(t.rango_max);
+          const rangoCoincide = cantEval >= rMin && cantEval <= rMax;
+          return ciudadCoincide && pagoCoincide && rangoCoincide;
         });
+
+        // 2. Fallback sin rango si no hubo match
+        if (!tarifa) {
+          tarifa = c.tarifas.find(t => {
+            const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
+            const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
+            return ciudadCoincide && pagoCoincide;
+          });
+        }
+
         if (tarifa) {
           return { courierId: c.id, costo: tarifa.costo };
         }
@@ -162,7 +192,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       if (valCiudad) {
         // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
         if (prev.courier_id) {
-          const costo = obtenerTarifaPara(valCiudad, prev.courier_id, prev.metodo_pago);
+          const costo = obtenerTarifaPara(valCiudad, prev.courier_id, prev.metodo_pago, items);
           if (costo !== null) {
             nextForm.costo_envio = costo;
             return nextForm;
@@ -170,7 +200,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
         }
 
         // Si no hay courier o el seleccionado no cubre la nueva ciudad, buscar el primero que la cubra
-        const resultado = buscarCourierYTarifa(valCiudad, prev.metodo_pago);
+        const resultado = buscarCourierYTarifa(valCiudad, prev.metodo_pago, items);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -191,7 +221,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     setForm(prev => {
       const nextForm = { ...prev, courier_id: courierId };
       if (courierId && prev.ciudad) {
-        const costo = obtenerTarifaPara(prev.ciudad, courierId, prev.metodo_pago);
+        const costo = obtenerTarifaPara(prev.ciudad, courierId, prev.metodo_pago, items);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
@@ -204,12 +234,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     setForm(prev => {
       const nextForm = { ...prev, metodo_pago: metodoPago };
       if (prev.ciudad && prev.courier_id) {
-        const costo = obtenerTarifaPara(prev.ciudad, prev.courier_id, metodoPago);
+        const costo = obtenerTarifaPara(prev.ciudad, prev.courier_id, metodoPago, items);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
       } else if (prev.ciudad) {
-        const resultado = buscarCourierYTarifa(prev.ciudad, metodoPago);
+        const resultado = buscarCourierYTarifa(prev.ciudad, metodoPago, items);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -236,14 +266,46 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       subtotal: Number(cant) * precioUnit
     };
 
-    setItems(prev => [...prev, nuevoItem]);
+    const nuevosItems = [...items, nuevoItem];
+    setItems(nuevosItems);
     setSelectedProdId("");
     setCant(1);
     setErrors(prev => ({ ...prev, items: null, producto: null }));
+
+    // Recalcular tarifa de delivery según el nuevo rango de unidades
+    if (form.ciudad) {
+      if (form.courier_id) {
+        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago, nuevosItems);
+        if (nuevoCosto !== null) {
+          setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
+        }
+      } else {
+        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago, nuevosItems);
+        if (resultado) {
+          setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
+        }
+      }
+    }
   };
 
   const handleRemoveItem = (index) => {
-    setItems(prev => prev.filter((_, i) => i !== index));
+    const nuevosItems = items.filter((_, i) => i !== index);
+    setItems(nuevosItems);
+
+    // Recalcular tarifa de delivery según el nuevo rango de unidades
+    if (form.ciudad) {
+      if (form.courier_id) {
+        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago, nuevosItems);
+        if (nuevoCosto !== null) {
+          setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
+        }
+      } else {
+        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago, nuevosItems);
+        if (resultado) {
+          setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
+        }
+      }
+    }
   };
 
   const subtotalProductos = items.reduce((acc, curr) => acc + curr.subtotal, 0);

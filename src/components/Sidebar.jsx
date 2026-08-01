@@ -2,71 +2,102 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
-  Settings, LogOut, Tag, ChevronDown, ChevronRight, Layers
+  Settings, LogOut, Tag, ChevronDown, ChevronRight, Layers, X,
+  GraduationCap
 } from 'lucide-react';
-import './dashboard.css';
 
-const Sidebar = () => {
+const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
+const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
+const SUB_LINK = 'flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors';
+const SUB_LINK_ACTIVE = 'bg-primary/10 text-primary';
+const SUB_LINK_INACTIVE = 'text-fg-subtle hover:bg-surface-2 hover:text-fg';
+const ICON_WRAP = 'flex h-4 w-4 items-center justify-center [&>svg]:h-4 [&>svg]:w-4';
+
+const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const location = useLocation();
   const [productosOpen, setProductosOpen] = useState(
-    location.pathname.startsWith('/products') ||
-    location.pathname.startsWith('/categorias')
+    location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias')
   );
-  const [combosOpen, setCombosOpen] = useState(
-    location.pathname.startsWith('/combos')
-  );
+  const [combosOpen, setCombosOpen] = useState(location.pathname.startsWith('/combos'));
 
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
 
-  const renderLink = (item) => {
-    const active = isActive(item.path);
+  const renderLink = ({ path, label, icon }) => {
+    const active = isActive(path);
     return (
-      <li key={item.path} className="sidebar-item">
+      <li key={path}>
         <Link
-          to={item.path}
-          className={`sidebar-link ${active ? 'active' : ''}`}
+          to={path}
+          onClick={onClose}
           aria-current={active ? 'page' : undefined}
+          className={`${NAV_LINK} ${active ? NAV_LINK_ACTIVE : ''}`}
         >
-          <span className="sidebar-icon">{item.icon}</span>
-          {item.label}
+          <span className={ICON_WRAP}>{icon}</span>
+          {label}
         </Link>
       </li>
     );
   };
 
   return (
-    <aside className="sidebar">
-      <header className="sidebar-header">
-        <h2>GESICOMM<span className="dot">.</span></h2>
-      </header>
+    <>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      <nav aria-label="Navegación principal" className="sidebar-nav-container">
-        <div className="sidebar-section-label">GENERAL</div>
-        <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-          <ul className="sidebar-list">
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-shrink-0 flex-col border-r border-border bg-surface transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4">
+          <h2 className="m-0 text-base font-bold tracking-tight text-fg">
+            GESICOMM<span className="text-primary">.</span>
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:hidden"
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
+        </header>
+
+        <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4">
+          <div className="mb-1.5 mt-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+            General
+          </div>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {renderLink({ path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard /> })}
 
-            {/* Productos con sub-menú colapsable */}
-            <li className="sidebar-item">
+            <li>
               <button
-                className={`sidebar-link sidebar-collapsible ${
-                isActivePrefix('/products') || isActivePrefix('/categorias') ? 'active' : ''
-              }`}  onClick={() => setProductosOpen(o => !o)}
+                type="button"
+                onClick={() => setProductosOpen((o) => !o)}
                 aria-expanded={productosOpen}
+                className={`${NAV_LINK} w-full cursor-pointer border-none bg-transparent text-left ${
+                  isActivePrefix('/products') || isActivePrefix('/categorias') ? NAV_LINK_ACTIVE : ''
+                }`}
               >
-                <span className="sidebar-icon"><Package /></span>
+                <span className={ICON_WRAP}><Package /></span>
                 Productos
-                <span className="sidebar-chevron">
+                <span className="ml-auto flex items-center text-fg-subtle">
                   {productosOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 </span>
               </button>
               {productosOpen && (
-                <ul className="sidebar-submenu">
+                <ul className="m-0 mt-0.5 flex list-none flex-col gap-0.5 py-1 pl-10 pr-0">
                   <li>
                     <Link
                       to="/products"
-                      className={`sidebar-sublink ${isActive('/products') || isActivePrefix('/products/') ? 'active' : ''}`}
+                      onClick={onClose}
+                      className={`${SUB_LINK} ${isActive('/products') || isActivePrefix('/products/') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
                     >
                       <Package size={13} /> Listado
                     </Link>
@@ -74,7 +105,8 @@ const Sidebar = () => {
                   <li>
                     <Link
                       to="/categorias"
-                      className={`sidebar-sublink ${isActive('/categorias') ? 'active' : ''}`}
+                      onClick={onClose}
+                      className={`${SUB_LINK} ${isActive('/categorias') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
                     >
                       <Tag size={13} /> Categorías
                     </Link>
@@ -85,26 +117,30 @@ const Sidebar = () => {
 
             {renderLink({ path: '/orders', label: 'Pedidos', icon: <ShoppingCart /> })}
             {renderLink({ path: '/customers', label: 'Clientes', icon: <Users /> })}
+            {renderLink({ path: '/admin/educacion', label: 'Academia LMS', icon: <GraduationCap /> })}
 
-            {/* Combos con sub-menú */}
-            <li className="sidebar-item">
+            <li>
               <button
-                className={`sidebar-link sidebar-collapsible ${isActivePrefix('/combos') ? 'active' : ''}`}
-                onClick={() => setCombosOpen(o => !o)}
+                type="button"
+                onClick={() => setCombosOpen((o) => !o)}
                 aria-expanded={combosOpen}
+                className={`${NAV_LINK} w-full cursor-pointer border-none bg-transparent text-left ${
+                  isActivePrefix('/combos') ? NAV_LINK_ACTIVE : ''
+                }`}
               >
-                <span className="sidebar-icon"><Layers /></span>
+                <span className={ICON_WRAP}><Layers /></span>
                 Combos
-                <span className="sidebar-chevron">
+                <span className="ml-auto flex items-center text-fg-subtle">
                   {combosOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                 </span>
               </button>
               {combosOpen && (
-                <ul className="sidebar-submenu">
+                <ul className="m-0 mt-0.5 flex list-none flex-col gap-0.5 py-1 pl-10 pr-0">
                   <li>
                     <Link
                       to="/combos"
-                      className={`sidebar-sublink ${isActive('/combos') ? 'active' : ''}`}
+                      onClick={onClose}
+                      className={`${SUB_LINK} ${isActive('/combos') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
                     >
                       <Layers size={13} /> Listado
                     </Link>
@@ -112,7 +148,8 @@ const Sidebar = () => {
                   <li>
                     <Link
                       to="/combos/nuevo"
-                      className={`sidebar-sublink ${isActive('/combos/nuevo') ? 'active' : ''}`}
+                      onClick={onClose}
+                      className={`${SUB_LINK} ${isActive('/combos/nuevo') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
                     >
                       <Layers size={13} /> Nuevo combo
                     </Link>
@@ -123,36 +160,32 @@ const Sidebar = () => {
 
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
           </ul>
-        </div>
 
-        <div className="sidebar-section-label">META</div>
-        <div className="sidebar-nav" style={{ paddingTop: 0 }}>
-          <ul className="sidebar-list">
+          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+            Meta
+          </div>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {renderLink({ path: '/ads', label: 'Ads & Campañas', icon: <Megaphone /> })}
           </ul>
-        </div>
-      </nav>
+        </nav>
 
-      <footer className="sidebar-footer">
-        <ul className="sidebar-list">
-          <li className="sidebar-item">
-            <Link
-              to="/settings"
-              className={`sidebar-link ${isActive('/settings') ? 'active' : ''}`}
-            >
-              <span className="sidebar-icon"><Settings /></span>
-              Configuración
-            </Link>
-          </li>
-          <li className="sidebar-item">
-            <button className="logout-btn destructive" onClick={() => { window.location.href = '/login'; }}>
-              <span className="sidebar-icon"><LogOut /></span>
-              Salir
-            </button>
-          </li>
-        </ul>
-      </footer>
-    </aside>
+        <footer className="flex-shrink-0 border-t border-border p-2">
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+            {renderLink({ path: '/settings', label: 'Configuración', icon: <Settings /> })}
+            <li>
+              <button
+                type="button"
+                onClick={() => { window.location.href = '/login'; }}
+                className={`${NAV_LINK} w-full cursor-pointer border-none bg-transparent text-left hover:bg-danger/10 hover:text-danger`}
+              >
+                <span className={ICON_WRAP}><LogOut /></span>
+                Salir
+              </button>
+            </li>
+          </ul>
+        </footer>
+      </aside>
+    </>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/api';
-import { Search, Filter, ChevronLeft, ChevronRight, MessageCircle, Globe } from 'lucide-react';
+import { Search, Filter, ChevronLeft, ChevronRight, MessageCircle, Globe, Store, ArrowRight, AlertTriangle } from 'lucide-react';
 import Select from 'react-select';
 
 const selectStyles = {
@@ -85,6 +85,7 @@ const Ads = () => {
     const [loadingFilters, setLoadingFilters] = useState(true);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState(null);
+    const [noStores, setNoStores] = useState(false);
 
     // Carga inicial: tiendas y filtros de la primera tienda
     useEffect(() => {
@@ -95,7 +96,7 @@ const Ads = () => {
                 setTiendas(tiendasData);
 
                 if (tiendasData.length === 0) {
-                    setError('No tenés tiendas conectadas. Ve a Configuración para conectar tu cuenta de Meta.');
+                    setNoStores(true);
                     setLoadingFilters(false);
                     return;
                 }
@@ -211,16 +212,39 @@ const Ads = () => {
         }
     };
 
+    // Estado informativo (setup pendiente): no es un error, es "todavía no conectaste nada".
+    if (noStores) return (
+        <div className="settings-container">
+            <div className="settings-header"><h1>Ads & Campañas</h1></div>
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-surface px-8 py-14 text-center">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Store size={20} />
+                </div>
+                <p className="m-0 max-w-sm text-sm text-fg-muted">No tenés tiendas conectadas todavía. Conectá tu cuenta de Meta para ver métricas acá.</p>
+                <a
+                  href={window.location.pathname.startsWith('/mis-anuncios') ? '/configuracion' : '/settings'}
+                  className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-hover"
+                >
+                  Ir a Configuración <ArrowRight size={14} />
+                </a>
+            </div>
+        </div>
+    );
+
+    // Error real (falló la petición a la API).
     if (error) return (
         <div className="settings-container">
             <div className="settings-header"><h1>Ads & Campañas</h1></div>
-            <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-                <p style={{ color: '#ff6b6b', marginBottom: '1rem' }}>{error}</p>
-                <a 
-                  href={window.location.pathname.startsWith('/mis-anuncios') ? '/configuracion' : '/settings'} 
-                  style={{ color: 'var(--bg-primary, #ff007f)' }}
+            <div className="flex flex-col items-center gap-3 rounded-xl border border-danger/20 bg-danger/5 px-8 py-14 text-center">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-danger/10 text-danger">
+                    <AlertTriangle size={20} />
+                </div>
+                <p className="m-0 max-w-sm text-sm text-danger">{error}</p>
+                <a
+                  href={window.location.pathname.startsWith('/mis-anuncios') ? '/configuracion' : '/settings'}
+                  className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-hover"
                 >
-                  Ir a Configuración →
+                  Ir a Configuración <ArrowRight size={14} />
                 </a>
             </div>
         </div>

@@ -21,6 +21,8 @@ import LandingPublica from './pages/landing/LandingPublica';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
+import EducacionView from './pages/educacion/EducacionView';
+import AdminEducacion from './pages/educacion/AdminEducacion';
 
 function App() {
   return (
@@ -58,6 +60,9 @@ function App() {
         <Route path="/customers" element={
           <AdminRoute><DashboardLayout><div><h1>Clientes</h1><p>En construcción</p></div></DashboardLayout></AdminRoute>
         } />
+        <Route path="/admin/educacion" element={
+          <AdminRoute><DashboardLayout><AdminEducacion /></DashboardLayout></AdminRoute>
+        } />
         <Route path="/ads" element={
           <AdminRoute><DashboardLayout><Ads /></DashboardLayout></AdminRoute>
         } />
@@ -79,15 +84,15 @@ function App() {
           <AdminRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></AdminRoute>
         } />
 
-        {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario':
-            nombre de tienda + plan. No usa RequireTienda (sería un loop),
-            solo exige sesión; la propia página redirige si ya tiene tienda. */}
+        {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}
         <Route path="/onboarding" element={
           <ProtectedRoute><Onboarding /></ProtectedRoute>
         } />
 
-        {/* Rutas protegidas — vitrina y pedidos del rol 'usuario'.
-            RequireTienda manda a /onboarding si todavía no tiene tienda. */}
+        {/* Rutas protegidas — vitrina, academia y pedidos del rol 'usuario' */}
+        <Route path="/academia" element={
+          <RequireTienda><UserLayout><EducacionView /></UserLayout></RequireTienda>
+        } />
         <Route path="/mi-catalogo" element={
           <RequireTienda><UserLayout><VitrinaGrid /></UserLayout></RequireTienda>
         } />

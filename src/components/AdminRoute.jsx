@@ -22,13 +22,7 @@ export default function AdminRoute({ children }) {
 
   if (estado === 'verificando') {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: '#050505',
-      }}>
+      <div className="flex h-screen items-center justify-center bg-canvas">
         <div className="loader"></div>
       </div>
     );

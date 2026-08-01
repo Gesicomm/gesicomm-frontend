@@ -1,19 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User
+  Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
+  GraduationCap, Lock, Sparkles, X, ChevronRight
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
-import './dashboard.css'; // Reutilizar estilos de la barra lateral del dashboard
+import { getProgresoSidebar } from '../services/educacionApi';
+import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
+import '../pages/educacion/EducacionView.css';
 
 const UserLayout = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
+  const [progresoSidebar, setProgresoSidebar] = useState({
+    menusDesbloqueados: [],
+    bloqueos: {},
+  });
+  const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     verificarSesion().then(setUsuario);
+    cargarProgreso();
   }, []);
+
+  const cargarProgreso = async () => {
+    try {
+      const data = await getProgresoSidebar();
+      setProgresoSidebar(data);
+    } catch (err) {
+      console.error('Error al cargar progreso del sidebar:', err);
+    }
+  };
 
   const handleLogout = async () => {
     await cerrarSesion();
@@ -23,16 +42,63 @@ const UserLayout = ({ children }) => {
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
 
+  // Comprueba si una ruta está bloqueada por requerimientos pedagógicos
+  const checkBloqueo = (menuKey) => {
+    if (!progresoSidebar?.bloqueos) return null;
+    return progresoSidebar.bloqueos[menuKey] || null;
+  };
+
+  const handleItemClick = (e, item, bloqueo) => {
+    if (bloqueo) {
+      e.preventDefault();
+      setModalBloqueo({
+        menu: item.label,
+        ...bloqueo,
+      });
+    }
+  };
+
   const renderLink = (item) => {
     const active = isActive(item.path) || (item.prefix && isActivePrefix(item.prefix));
+    const menuKey = item.menuKey || item.path.replace('/', '');
+    const bloqueo = checkBloqueo(menuKey);
+
     return (
       <li key={item.path} className="sidebar-item">
         <Link
-          to={item.path}
-          className={`sidebar-link ${active ? 'active' : ''}`}
+          to={bloqueo ? '#' : item.path}
+          onClick={(e) => handleItemClick(e, item, bloqueo)}
+          className={`sidebar-link ${active ? 'active' : ''} ${bloqueo ? 'locked-link' : ''}`}
+          style={bloqueo ? { opacity: 0.65 } : {}}
         >
-          <span className="sidebar-icon">{item.icon}</span>
-          {item.label}
+          <span className="sidebar-icon">
+            {bloqueo ? <Lock size={14} style={{ color: '#fbbf24' }} /> : item.icon}
+          </span>
+          <span style={{ flex: 1 }}>{item.label}</span>
+          {bloqueo && (
+            <span style={{
+              fontSize: '10px',
+              background: 'rgba(245, 158, 11, 0.15)',
+              color: '#fbbf24',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontWeight: 700
+            }}>
+              Bloqueado
+            </span>
+          )}
+          {item.badge && (
+            <span style={{
+              fontSize: '10px',
+              background: 'rgba(59, 130, 246, 0.2)',
+              color: '#60a5fa',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontWeight: 700
+            }}>
+              {item.badge}
+            </span>
+          )}
         </Link>
       </li>
     );
@@ -63,20 +129,32 @@ const UserLayout = ({ children }) => {
         </header>
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
+          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>APRENDIZAJE</div>
+          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+            <ul className="sidebar-list">
+              {renderLink({
+                path: '/academia',
+                label: 'Academia & Cursos',
+                icon: <GraduationCap size={14} style={{ color: '#60a5fa' }} />,
+                badge: 'PRO'
+              })}
+            </ul>
+          </div>
+
           <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>GENERAL</div>
           <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
             <ul className="sidebar-list">
-              {renderLink({ path: '/mi-catalogo', label: 'Mi catálogo', icon: <Grid size={14} /> })}
-              {renderLink({ path: '/mis-pedidos', label: 'Mis pedidos & Couriers', icon: <ShoppingCart size={14} /> })}
-              {renderLink({ path: '/mi-landing', label: 'Mi landing', icon: <Layers size={14} />, prefix: '/mi-landing' })}
-              {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} /> })}
+              {renderLink({ path: '/mi-catalogo', label: 'Mi catálogo', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
+              {renderLink({ path: '/mis-pedidos', label: 'Mis pedidos & Couriers', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
+              {renderLink({ path: '/mi-landing', label: 'Mi landing', icon: <Layers size={14} />, prefix: '/mi-landing', menuKey: 'mi-landing' })}
+              {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
             </ul>
           </div>
 
           <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>META</div>
           <div className="sidebar-nav" style={{ paddingTop: 0 }}>
             <ul className="sidebar-list">
-              {renderLink({ path: '/mis-anuncios', label: 'Ads & Campañas', icon: <Megaphone size={14} /> })}
+              {renderLink({ path: '/mis-anuncios', label: 'Ads & Campañas', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
             </ul>
           </div>
         </nav>
@@ -112,6 +190,42 @@ const UserLayout = ({ children }) => {
       <main className="dashboard-main" style={{ background: '#050505', flex: 1, padding: 0, overflowY: 'auto' }}>
         {children}
       </main>
+
+      {/* Modal de Advertencia de Bloqueo por Módulo no Aprobado */}
+      {modalBloqueo && (
+        <div className="examen-modal-overlay">
+          <div className="sidebar-locked-modal">
+            <div className="sidebar-locked-icon">
+              <Lock size={32} />
+            </div>
+            <h3>Sección Bloqueada</h3>
+            <p>
+              Para acceder a <strong>{modalBloqueo.menu}</strong>, primero debes completar y aprobar la evaluación del curso:
+              <br />
+              <strong style={{ color: '#60a5fa', display: 'block', marginTop: '0.5rem' }}>
+                "{modalBloqueo.tituloModulo || 'Módulo Requerido'}"
+              </strong>
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                className="btn-academia-action secondary"
+                onClick={() => setModalBloqueo(null)}
+              >
+                Entendido
+              </button>
+              <button
+                className="btn-academia-action primary"
+                onClick={() => {
+                  setModalBloqueo(null);
+                  navigate('/academia');
+                }}
+              >
+                <GraduationCap size={16} /> Ir a la Academia
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

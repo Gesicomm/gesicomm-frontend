@@ -1,299 +1,74 @@
+@import "tailwindcss";
+
+/* ─── Design tokens ──────────────────────────────────
+   Base oscura premium (estilo Linear/Raycast/Vercel).
+   Declarados en @theme para que Tailwind genere utilidades
+   (bg-canvas, text-fg, bg-primary, rounded-lg, etc). */
+@theme {
+    --color-canvas: #08080a;
+    --color-surface: #0e0e11;
+    --color-surface-2: #16161a;
+    --color-surface-3: #1c1c21;
+    --color-border: #232329;
+    --color-border-strong: #2e2e35;
+
+    --color-fg: #f4f4f6;
+    --color-fg-muted: #9a9aa6;
+    --color-fg-subtle: #6b6b76;
+
+    --color-primary: #6d5ef8;
+    --color-primary-hover: #7f71fa;
+    --color-primary-active: #5b4bd6;
+
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #60a5fa;
+
+    --font-sans: 'InterVariable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+}
+
+/* Alias de compatibilidad — usados por CSS legacy (dashboard.css,
+   Ads.jsx, vitrina.css) hasta que se migren a Tailwind pantalla por
+   pantalla. No borrar hasta terminar esa migración. */
+:root {
+    --bg-sidebar: var(--color-surface);
+    --text-sidebar-foreground: var(--color-fg);
+    --text-muted-foreground: var(--color-fg-muted);
+    --bg-primary: var(--color-primary);
+    --border-border: var(--color-border);
+}
+
 /* style.css & login styles combined */
 body, html {
     margin: 0;
     padding: 0;
     width: 100%;
-    background: #050505;
-    font-family: 'Outfit', sans-serif;
-    color: #fff;
+    background: var(--color-canvas);
+    font-family: var(--font-sans);
+    color: var(--color-fg);
 }
 
 #root {
     width: 100%;
 }
 
-/* Centrado a pantalla completa — SOLO para pantallas tipo splash (Home/Login).
-   No poner estas reglas en body/html/#root: son globales y romperían el
-   scroll normal de cualquier página nueva (ej. landings, grillas). */
-.splash-page {
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-}
-
-/* Home Container */
-.container {
-    text-align: center;
-    z-index: 10;
-    padding: 3rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    box-shadow: 0 0 50px rgba(255, 0, 128, 0.3);
-    border-radius: 12px;
-}
-
-/* Glitch Effect */
-.glitch {
-    font-size: 5rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    position: relative;
-    text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.025em -0.05em 0 rgba(0,255,0,0.75), 0.025em 0.05em 0 rgba(0,0,255,0.75);
-    animation: glitch 500ms infinite;
-    margin: 0 0 1rem 0;
-}
-
-.glitch span {
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-/* Typography */
-.message {
-    margin-top: 2rem;
-    font-size: 1.2rem;
-    letter-spacing: 2px;
-}
-
-.highlight {
-    color: #ff007f;
-    font-weight: 700;
-    margin-top: 1rem;
-    text-shadow: 0 0 10px rgba(255, 0, 127, 0.8);
-}
-
-/* Loader */
+/* Spinner de carga a pantalla completa — usado por los route guards
+   (ProtectedRoute, AdminRoute, RequireTienda) mientras verifican sesión. */
 .loader {
-    margin: 3rem auto 0;
-    width: 50px;
-    height: 50px;
-    border: 3px solid rgba(255,0,128,0.3);
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-border-strong);
     border-radius: 50%;
-    border-top-color: #ff007f;
-    animation: spin 1s ease-in-out infinite;
+    border-top-color: var(--color-primary);
+    animation: spin 0.7s linear infinite;
 }
 
 @keyframes spin {
     to { transform: rotate(360deg); }
-}
-
-@keyframes glitch {
-    0% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
-    14% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
-    15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
-    49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
-    50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
-    99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
-    100% { text-shadow: -0.025em 0 0 rgba(255,0,0,0.75), -0.025em -0.025em 0 rgba(0,255,0,0.75), -0.025em -0.05em 0 rgba(0,0,255,0.75); }
-}
-
-/* Navbar */
-.top-navbar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    padding: 1.5rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-sizing: border-box;
-    z-index: 20;
-}
-
-/* Login Button */
-.login-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #fff;
-    text-decoration: none;
-    font-weight: 700;
-    padding: 0.75rem 1.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50px;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
-}
-
-.login-btn:hover {
-    background: rgba(255, 0, 127, 0.2);
-    border-color: #ff007f;
-    box-shadow: 0 0 15px rgba(255, 0, 127, 0.5);
-    transform: translateY(-2px);
-}
-
-/* Authentication Container */
-.auth-container {
-    width: 100%;
-    max-width: 400px;
-    padding: 2.5rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    box-shadow: 0 0 50px rgba(255, 0, 128, 0.2);
-    border-radius: 12px;
-    text-align: center;
-}
-
-.auth-logo {
-    font-weight: 900;
-    color: #fff;
-    margin-bottom: 2rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-}
-
-.auth-title {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    color: #ff007f;
-}
-
-.input-group {
-    text-align: left;
-}
-
-.input-group label {
-    display: block;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    color: #aaa;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 0.8rem;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'Outfit', sans-serif;
-    box-sizing: border-box;
-    transition: border-color 0.3s;
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: #ff007f;
-    box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
-}
-
-.auth-btn {
-    background: linear-gradient(45deg, #ff007f, #7f00ff);
-    color: #fff;
-    border: none;
-    padding: 1rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: 'Outfit', sans-serif;
-    margin-top: 1rem;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.auth-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 0, 127, 0.4);
-}
-
-.auth-links {
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-}
-
-.auth-links a {
-    color: #ff007f;
-    text-decoration: none;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.auth-links a:hover {
-    color: #ff4da6;
-    text-decoration: underline;
-}
-
-.back-home {
-    position: absolute;
-    top: 2rem;
-    left: 2rem;
-    color: #fff;
-    text-decoration: none;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: color 0.3s;
-}
-
-.back-home:hover {
-    color: #ff007f;
-}
-
-/* Responsividad para móviles y tablets */
-@media (max-width: 768px) {
-    .container {
-        padding: 2rem 1.5rem;
-        width: 90%;
-        max-width: 400px;
-    }
-    
-    .glitch {
-        font-size: 3.5rem;
-    }
-    
-    .message {
-        font-size: 1rem;
-        margin-top: 1.5rem;
-    }
-    
-    .loader {
-        width: 40px;
-        height: 40px;
-        margin: 2rem auto 0;
-    }
-}
-
-@media (max-width: 480px) {
-    .container {
-        padding: 1.5rem 1rem;
-    }
-
-    .glitch {
-        font-size: 2.5rem;
-    }
-    
-    .message {
-        font-size: 0.9rem;
-    }
-
-    .login-btn {
-        top: 1rem;
-        right: 1rem;
-        padding: 0.5rem 1rem;
-    }
-    .login-btn span {
-        display: none;
-    }
-    
-    .back-home {
-        top: 1rem;
-        left: 1rem;
-    }
 }

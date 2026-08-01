@@ -1,27 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { api } from '../utils/api';
 
-// Ícono estético de alerta
-const AlertIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
-    <circle cx="12" cy="12" r="10"></circle>
-    <line x1="12" y1="8" x2="12" y2="12"></line>
-    <line x1="12" y1="16" x2="12.01" y2="16"></line>
-  </svg>
-);
-
-// Ícono estético de éxito
-const SuccessIcon = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '2px' }}>
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-  </svg>
-);
+const INPUT_CLASS = 'w-full rounded-md border border-border bg-surface-2 px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-fg-subtle focus:border-primary';
+const LABEL_CLASS = 'mb-1.5 block text-sm font-medium text-fg-muted';
+const LINK_CLASS = 'cursor-pointer font-medium text-primary hover:text-primary-hover';
 
 export default function Login() {
   const [activeForm, setActiveForm] = useState('login');
-  
+
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
@@ -50,7 +38,7 @@ export default function Login() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+
     // Validación JS antes de llamar a la API
     if (!formData.email) return setError("El correo electrónico es requerido.");
     if (!validateEmail(formData.email)) return setError("Ingresa un correo electrónico válido.");
@@ -73,7 +61,7 @@ export default function Login() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    
+
     // Validación JS
     if (!formData.nombre) return setError("El nombre completo es requerido.");
     if (formData.nombre.length < 3) return setError("El nombre debe tener al menos 3 caracteres.");
@@ -106,7 +94,7 @@ export default function Login() {
 
   const handleForgot = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.email) return setError("El correo electrónico es requerido.");
     if (!validateEmail(formData.email)) return setError("Ingresa un correo electrónico válido.");
 
@@ -133,104 +121,108 @@ export default function Login() {
   };
 
   return (
-    <div className="splash-page">
-      <Link to="/" className="back-home">
-        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
+    <div className="flex min-h-screen items-center justify-center bg-canvas px-4 py-12 text-fg">
+      <Link
+        to="/"
+        className="absolute left-6 top-6 flex items-center gap-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
+      >
+        <ArrowLeft size={18} />
         Volver
       </Link>
 
-      <div className="auth-container">
-        <Link to="/" className="auth-logo glitch" data-text="GESICOMM" style={{ fontSize: '2rem', textShadow: '0.025em 0 0 rgba(255,0,0,0.75), -0.0125em -0.025em 0 rgba(0,255,0,0.75), 0.0125em 0.025em 0 rgba(0,0,255,0.75)' }}>
-          GESICOMM
+      <div className="w-full max-w-[400px] rounded-xl border border-border bg-surface p-8">
+        <Link to="/" className="mb-8 block text-center text-lg font-bold tracking-tight text-fg">
+          GESICOMM<span className="text-primary">.</span>
         </Link>
 
-        {/* Alertas Estéticas */}
         {error && (
-          <div className="alert alert-error" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#ff4da6', marginBottom: '1.5rem', background: 'rgba(255,0,128,0.08)', border: '1px solid rgba(255,0,128,0.2)', padding: '1rem', borderRadius: '8px', fontSize: '0.95rem', lineHeight: '1.4' }}>
-            <AlertIcon />
+          <div className="mb-6 flex items-start gap-3 rounded-md border border-danger/20 bg-danger/10 p-3.5 text-sm leading-snug text-danger">
+            <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
             <div>
-              <strong>Error de Validación</strong>
-              <div style={{ opacity: 0.9, marginTop: '0.25rem' }}>{error}</div>
+              <strong className="font-semibold">Error de validación</strong>
+              <div className="mt-0.5 text-danger/90">{error}</div>
             </div>
           </div>
         )}
-        
+
         {success && (
-          <div className="alert alert-success" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', color: '#00ff88', marginBottom: '1.5rem', background: 'rgba(0,255,136,0.08)', border: '1px solid rgba(0,255,136,0.2)', padding: '1rem', borderRadius: '8px', fontSize: '0.95rem', lineHeight: '1.4' }}>
-            <SuccessIcon />
+          <div className="mb-6 flex items-start gap-3 rounded-md border border-success/20 bg-success/10 p-3.5 text-sm leading-snug text-success">
+            <CheckCircle2 size={18} className="mt-0.5 flex-shrink-0" />
             <div>
-              <strong>¡Éxito!</strong>
-              <div style={{ opacity: 0.9, marginTop: '0.25rem' }}>{success}</div>
+              <strong className="font-semibold">¡Éxito!</strong>
+              <div className="mt-0.5 text-success/90">{success}</div>
             </div>
           </div>
         )}
 
-        {/* Formulario de Login (con noValidate para evitar globos HTML nativos) */}
         {activeForm === 'login' && (
-          <form id="login-form" className="auth-form active" onSubmit={handleLogin} noValidate>
-            <h2 className="auth-title">Iniciar Sesión</h2>
-            <div className="input-group">
-              <label htmlFor="email">Correo Electrónico</label>
-              <input type="email" id="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} />
+          <form onSubmit={handleLogin} noValidate className="flex flex-col gap-4">
+            <h2 className="m-0 mb-1 text-xl font-semibold">Iniciar sesión</h2>
+            <div>
+              <label htmlFor="email" className={LABEL_CLASS}>Correo electrónico</label>
+              <input type="email" id="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} className={INPUT_CLASS} />
             </div>
-            <div className="input-group">
-              <label htmlFor="password">Contraseña</label>
-              <input type="password" id="password" placeholder="••••••••" value={formData.password} onChange={handleInputChange} />
+            <div>
+              <label htmlFor="password" className={LABEL_CLASS}>Contraseña</label>
+              <input type="password" id="password" placeholder="••••••••" value={formData.password} onChange={handleInputChange} className={INPUT_CLASS} />
             </div>
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? 'Ingresando...' : 'Ingresar'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? 'Ingresando…' : 'Ingresar'}
             </button>
-            <div className="auth-links">
-              <p><a onClick={() => switchForm('forgot')}>¿Olvidaste tu contraseña?</a></p>
-              <p>¿No tienes cuenta? <a onClick={() => switchForm('register')}>Regístrate aquí</a></p>
+            <div className="mt-1 flex flex-col gap-2 text-center text-sm text-fg-muted">
+              <button type="button" onClick={() => switchForm('forgot')} className={`${LINK_CLASS} bg-transparent border-none`}>¿Olvidaste tu contraseña?</button>
+              <p className="m-0">¿No tenés cuenta? <button type="button" onClick={() => switchForm('register')} className={`${LINK_CLASS} bg-transparent border-none`}>Registrate aquí</button></p>
             </div>
           </form>
         )}
 
-        {/* Formulario de Registro */}
         {activeForm === 'register' && (
-          <form id="register-form" className="auth-form active" onSubmit={handleRegister} noValidate>
-            <h2 className="auth-title">Crear Cuenta</h2>
-            <div className="input-group">
-              <label htmlFor="nombre">Nombre Completo</label>
-              <input type="text" id="nombre" placeholder="Tu nombre" value={formData.nombre} onChange={handleInputChange} />
+          <form onSubmit={handleRegister} noValidate className="flex flex-col gap-4">
+            <h2 className="m-0 mb-1 text-xl font-semibold">Crear cuenta</h2>
+            <div>
+              <label htmlFor="nombre" className={LABEL_CLASS}>Nombre completo</label>
+              <input type="text" id="nombre" placeholder="Tu nombre" value={formData.nombre} onChange={handleInputChange} className={INPUT_CLASS} />
             </div>
-            <div className="input-group">
-              <label htmlFor="email">Correo Electrónico</label>
-              <input type="email" id="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} />
+            <div>
+              <label htmlFor="email" className={LABEL_CLASS}>Correo electrónico</label>
+              <input type="email" id="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} className={INPUT_CLASS} />
             </div>
-            <div className="input-group">
-              <label htmlFor="password">Contraseña</label>
-              <input type="password" id="password" placeholder="••••••••" value={formData.password} onChange={handleInputChange} />
-              <small style={{ color: '#888', fontSize: '0.8rem', marginTop: '0.4rem', display: 'block' }}>Mínimo 8 caracteres, 1 mayúscula, 1 número.</small>
+            <div>
+              <label htmlFor="password" className={LABEL_CLASS}>Contraseña</label>
+              <input type="password" id="password" placeholder="••••••••" value={formData.password} onChange={handleInputChange} className={INPUT_CLASS} />
+              <small className="mt-1.5 block text-xs text-fg-subtle">Mínimo 8 caracteres, 1 mayúscula, 1 número.</small>
             </div>
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? 'Creando cuenta...' : 'Registrarse'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? 'Creando cuenta…' : 'Registrarse'}
             </button>
-            <div className="auth-links">
-              <p>¿Ya tienes cuenta? <a onClick={() => switchForm('login')}>Inicia sesión</a></p>
-            </div>
+            <p className="m-0 text-center text-sm text-fg-muted">¿Ya tenés cuenta? <button type="button" onClick={() => switchForm('login')} className={`${LINK_CLASS} bg-transparent border-none`}>Iniciá sesión</button></p>
           </form>
         )}
 
-        {/* Formulario de Recuperación */}
         {activeForm === 'forgot' && (
-          <form id="forgot-form" className="auth-form active" onSubmit={handleForgot} noValidate>
-            <h2 className="auth-title">Recuperar Contraseña</h2>
-            <p style={{ color: '#ccc', fontSize: '0.9rem', marginBottom: '1.5rem', textAlign: 'left', lineHeight: '1.5' }}>Ingresa tu correo y te enviaremos las instrucciones para restablecer tu contraseña.</p>
-            <div className="input-group">
-              <label htmlFor="email">Correo Electrónico</label>
-              <input type="email" id="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} />
+          <form onSubmit={handleForgot} noValidate className="flex flex-col gap-4">
+            <h2 className="m-0 mb-1 text-xl font-semibold">Recuperar contraseña</h2>
+            <p className="m-0 text-sm leading-relaxed text-fg-muted">Ingresá tu correo y te enviaremos las instrucciones para restablecer tu contraseña.</p>
+            <div>
+              <label htmlFor="email" className={LABEL_CLASS}>Correo electrónico</label>
+              <input type="email" id="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} className={INPUT_CLASS} />
             </div>
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? 'Enviando...' : 'Enviar Instrucciones'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-1 rounded-md bg-primary py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading ? 'Enviando…' : 'Enviar instrucciones'}
             </button>
-            <div className="auth-links">
-              <p>Volver a <a onClick={() => switchForm('login')}>Iniciar Sesión</a></p>
-            </div>
+            <p className="m-0 text-center text-sm text-fg-muted">Volver a <button type="button" onClick={() => switchForm('login')} className={`${LINK_CLASS} bg-transparent border-none`}>iniciar sesión</button></p>
           </form>
         )}
       </div>
