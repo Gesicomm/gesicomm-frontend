@@ -1,0 +1,371 @@
+import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
+import { X, Printer, Filter, Settings, Type } from "lucide-react";
+import { STATUS_ORDER, formatGs } from "../../lib/courier";
+import "./impresion-pedidos.css";
+
+export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
+  // Título principal del encabezado personalizable
+  const [tituloEncabezado, setTituloEncabezado] = useState("GESICOMM LOGÍSTICA");
+
+  // Estados seleccionados para filtrar (por defecto Pendiente y En camino)
+  const [estadosFiltro, setEstadosFiltro] = useState(["Pendiente", "En camino"]);
+  const [presetTamano, setPresetTamano] = useState("4x6"); // 4x6, 4x4, 80mm, custom
+  const [customAncho, setCustomAncho] = useState(100);
+  const [customAlto, setCustomAlto] = useState(150);
+
+  // IDs de pedidos individualmente seleccionados
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // Filtrar envíos según estados marcados
+  const enviosFiltrados = useMemo(() => {
+    return envios.filter(e => estadosFiltro.includes(e.estado));
+  }, [envios, estadosFiltro]);
+
+  // Al cambiar los envíos filtrados, por defecto seleccionar todos
+  useMemo(() => {
+    setSelectedIds(enviosFiltrados.map(e => e.id));
+  }, [enviosFiltrados]);
+
+  const toggleEstado = (estado) => {
+    setEstadosFiltro(prev => 
+      prev.includes(estado) ? prev.filter(e => e !== estado) : [...prev, estado]
+    );
+  };
+
+  const toggleSelectOrder = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === enviosFiltrados.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(enviosFiltrados.map(e => e.id));
+    }
+  };
+
+  const pedidosAImprimir = useMemo(() => {
+    return enviosFiltrados.filter(e => selectedIds.includes(e.id));
+  }, [enviosFiltrados, selectedIds]);
+
+  const handlePrint = () => {
+    if (pedidosAImprimir.length === 0) {
+      alert("Selecciona al menos un pedido para imprimir.");
+      return;
+    }
+    window.print();
+  };
+
+  if (!open) return null;
+
+  const getEtiquetaStyle = () => {
+    if (presetTamano === "custom") {
+      return { width: `${customAncho}mm`, height: `${customAlto}mm` };
+    }
+    return {};
+  };
+
+  // Regla @page dinamica segun preset de medida
+  const getPageStyleRule = () => {
+    if (presetTamano === "4x6") return `@page { size: 101mm 152mm; margin: 0; }`;
+    if (presetTamano === "4x4") return `@page { size: 101mm 101mm; margin: 0; }`;
+    if (presetTamano === "80mm") return `@page { size: 80mm auto; margin: 0; }`;
+    if (presetTamano === "custom") return `@page { size: ${customAncho}mm ${customAlto}mm; margin: 0; }`;
+    return `@page { size: auto; margin: 0; }`;
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content imprimir-modal-container" onClick={e => e.stopPropagation()}>
+        {/* Banner Superior */}
+        <div className="np-header-banner">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Printer size={22} />
+            <h2>IMPRIMIR NOTAS DE PEDIDO / ETIQUETAS</h2>
+          </div>
+          <button type="button" onClick={onClose} className="close-btn dark">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="imprimir-body">
+          {/* Sidebar de Configuración */}
+          <div className="imprimir-sidebar">
+            {/* Título de la Etiqueta Personalizable */}
+            <div className="imprimir-sidebar-section">
+              <h4 className="imprimir-sidebar-title">
+                <Type size={15} /> Título de la Etiqueta
+              </h4>
+              <input
+                type="text"
+                className="form-input"
+                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                value={tituloEncabezado}
+                onChange={e => setTituloEncabezado(e.target.value)}
+                placeholder="Ej: GESICOMM LOGÍSTICA"
+              />
+            </div>
+
+            {/* Filtros por Estado */}
+            <div className="imprimir-sidebar-section">
+              <h4 className="imprimir-sidebar-title">
+                <Filter size={15} /> ¿Qué estados imprimir?
+              </h4>
+              <div className="imprimir-checkbox-group">
+                {STATUS_ORDER.map(est => (
+                  <label key={est} className="imprimir-checkbox-item">
+                    <input
+                      type="checkbox"
+                      checked={estadosFiltro.includes(est)}
+                      onChange={() => toggleEstado(est)}
+                    />
+                    <span>{est}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Medidas de la Etiqueta */}
+            <div className="imprimir-sidebar-section">
+              <h4 className="imprimir-sidebar-title">
+                <Settings size={15} /> Medida de Etiqueta
+              </h4>
+              <select
+                className="form-input"
+                style={{ background: '#1c1c1f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                value={presetTamano}
+                onChange={e => setPresetTamano(e.target.value)}
+              >
+                <option value="4x6">4" x 6" (100mm x 150mm) - Térmica</option>
+                <option value="4x4">4" x 4" (100mm x 100mm)</option>
+                <option value="80mm">80mm (Ticket térmico)</option>
+                <option value="custom">Personalizado (mm)</option>
+              </select>
+
+              {presetTamano === "custom" && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#aaa' }}>Ancho (mm)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      value={customAncho}
+                      onChange={e => setCustomAncho(Number(e.target.value))}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#aaa' }}>Alto (mm)</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      value={customAlto}
+                      onChange={e => setCustomAlto(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Seleccionar Pedidos Específicos */}
+            <div className="imprimir-sidebar-section" style={{ flex: 1, minHeight: '150px', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 className="imprimir-sidebar-title" style={{ fontSize: '0.8rem' }}>
+                  Pedidos ({pedidosAImprimir.length}/{enviosFiltrados.length})
+                </h4>
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                >
+                  {selectedIds.length === enviosFiltrados.length ? "Desmarcar todos" : "Marcar todos"}
+                </button>
+              </div>
+
+              <div className="imprimir-checkbox-group" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                {enviosFiltrados.map(e => (
+                  <label key={e.id} className="imprimir-checkbox-item" style={{ fontSize: '0.78rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(e.id)}
+                      onChange={() => toggleSelectOrder(e.id)}
+                    />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      #{e.id} - {e.nombre_cliente ? `${e.nombre_cliente} ${e.apellido_cliente || ''}` : e.cliente || 'Cliente'}
+                    </span>
+                  </label>
+                ))}
+
+                {enviosFiltrados.length === 0 && (
+                  <div style={{ fontSize: '0.75rem', color: '#888', textAlign: 'center', padding: '1rem' }}>
+                    No hay pedidos en los estados seleccionados.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Botón Imprimir */}
+            <button
+              type="button"
+              className="btn-confirmar-pedido"
+              style={{
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '0.8rem',
+                marginTop: 'auto'
+              }}
+              onClick={handlePrint}
+            >
+              <Printer size={18} /> IMPRIMIR ({pedidosAImprimir.length})
+            </button>
+          </div>
+
+          {/* Área de Vista Previa */}
+          <div className="imprimir-preview-area">
+            {pedidosAImprimir.map(envio => (
+              <EtiquetaPedidoItem
+                key={envio.id}
+                envio={envio}
+                tituloHeader={tituloEncabezado}
+                presetClass={`preset-${presetTamano}`}
+                customStyle={getEtiquetaStyle()}
+              />
+            ))}
+
+            {pedidosAImprimir.length === 0 && (
+              <div style={{ color: '#888', marginTop: '5rem', textAlign: 'center' }}>
+                Selecciona al menos un pedido del panel izquierdo para visualizar la nota de pedido.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Contenedor Exclusivo para @media print portaleado al document.body para evitar que los contenedores modal rompan los saltos de página */}
+        {createPortal(
+          <div className="impresion-print-container">
+            <style>{getPageStyleRule()}</style>
+            {pedidosAImprimir.map(envio => (
+              <EtiquetaPedidoItem
+                key={envio.id}
+                envio={envio}
+                tituloHeader={tituloEncabezado}
+                presetClass={`preset-${presetTamano}`}
+                customStyle={getEtiquetaStyle()}
+              />
+            ))}
+          </div>,
+          document.body
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* Componente de la Etiqueta Individual */
+function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle }) {
+  const nombreCliente = envio.nombre_cliente
+    ? `${envio.nombre_cliente} ${envio.apellido_cliente || ''}`.trim()
+    : envio.cliente || "Cliente";
+
+  const ubicacion = [envio.direccion, envio.referencia].filter(Boolean).join(" - ");
+
+  return (
+    <div className={`etiqueta-pedido ${presetClass}`} style={customStyle}>
+      {/* Encabezado de la Etiqueta */}
+      <div>
+        <div className="etiqueta-header">
+          <h3 className="etiqueta-header-title">{tituloHeader || "LOGÍSTICA"}</h3>
+          <span className="etiqueta-header-date">{envio.fecha || envio.dispatchedAt}</span>
+        </div>
+
+        {/* Datos del Cliente */}
+        <div className="etiqueta-row">
+          <strong>CLIENTE:</strong> {nombreCliente}
+        </div>
+        {envio.telefono && (
+          <div className="etiqueta-row">
+            <strong>TELÉFONO:</strong> {envio.telefono}
+          </div>
+        )}
+        <div className="etiqueta-row">
+          <strong>CIUDAD:</strong> {[envio.ciudad, envio.departamento].filter(Boolean).join(", ") || 'No especificada'}
+        </div>
+
+        {/* Ubicación */}
+        <div className="etiqueta-box">
+          <div className="etiqueta-box-title">UBICACIÓN Y ENTREGA</div>
+          <div style={{ fontSize: '8.5pt', lineHeight: 1.3, color: '#000' }}>
+            {ubicacion || 'Sin dirección especificada'}
+          </div>
+        </div>
+
+        {/* Detalle del Pedido */}
+        <div className="etiqueta-box">
+          <div className="etiqueta-box-title">DETALLE DEL PEDIDO</div>
+          {envio.items && envio.items.length > 0 ? (
+            <ul className="etiqueta-items-list">
+              {envio.items.map((it, idx) => (
+                <li key={idx}>
+                  <span>• {it.cantidad}x {it.nombre_producto}</span>
+                  <span style={{ fontWeight: 'bold' }}>Gs. {(it.subtotal || 0).toLocaleString('es-PY')}</span>
+                </li>
+              ))}
+              {Number(envio.costo_envio) > 0 && (
+                <li style={{ borderTop: '1px dashed #000', marginTop: '3px', paddingTop: '3px' }}>
+                  <span>• Delivery / Envío</span>
+                  <span style={{ fontWeight: 'bold' }}>{formatGs(envio.costo_envio)}</span>
+                </li>
+              )}
+            </ul>
+          ) : (
+            <div style={{ fontSize: '8pt', color: '#000', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Envío / Pedido estándar</span>
+              {Number(envio.costo_envio) > 0 && (
+                <span><strong>Delivery:</strong> {formatGs(envio.costo_envio)}</span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sección Inferior: Monto, Método de Pago, Obs y Firmas */}
+      <div>
+        <div className="etiqueta-row" style={{ marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div><strong>MÉTODO DE PAGO:</strong> {envio.metodo_pago || 'Efectivo'}</div>
+          <div><strong>DELIVERY:</strong> {formatGs(envio.costo_envio || 0)}</div>
+        </div>
+
+        <div className="etiqueta-monto-box">
+          <div className="etiqueta-monto-title">MONTO A COBRAR</div>
+          <div className="etiqueta-monto-value">{formatGs(envio.monto)}</div>
+        </div>
+
+        {envio.observaciones && (
+          <div className="etiqueta-row" style={{ fontSize: '8pt', fontStyle: 'italic', margin: '4px 0' }}>
+            <strong>Obs:</strong> {envio.observaciones}
+          </div>
+        )}
+
+        {/* Sección de Firmas (Courier y Cliente) */}
+        <div className="etiqueta-firmas">
+          <div className="etiqueta-firma-col">
+            <div className="etiqueta-firma-linea"></div>
+            <span className="etiqueta-firma-label">Firma del Courier</span>
+          </div>
+          <div className="etiqueta-firma-col">
+            <div className="etiqueta-firma-linea"></div>
+            <span className="etiqueta-firma-label">Firma del Cliente</span>
+            <span style={{ fontSize: '6.5pt', color: '#444' }}>(Aclaración / C.I.)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
