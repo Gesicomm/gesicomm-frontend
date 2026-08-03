@@ -7,6 +7,7 @@ import {
 import { comboAdminService } from '../../services/comboAdminService';
 import { productService } from '../../services/productService';
 import CurrencyInput from '../../components/CurrencyInput';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
 import './combos.css';
 
@@ -174,6 +175,7 @@ export default function ComboEditor() {
   const [loadingInit, setLoadingInit] = useState(isEditing);
   const [guardando, setGuardando] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [estadoAConfirmar, setEstadoAConfirmar] = useState(null);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
 
@@ -356,20 +358,25 @@ export default function ComboEditor() {
     }
   }
 
-  async function handleCambiarEstado(nuevoEstado) {
-    if (!id) return;
-    const msgs = { ACTIVO: '¿Activar el combo?', INACTIVO: '¿Desactivar el combo?', BORRADOR: '¿Pasar el combo a borrador?' };
-    if (!window.confirm(msgs[nuevoEstado])) return;
+  async function confirmarCambioEstado() {
+    if (!id || !estadoAConfirmar) return;
     try {
       setCambiandoEstado(true);
-      await comboAdminService.cambiarEstado(id, nuevoEstado);
-      setEstadoActual(nuevoEstado);
+      await comboAdminService.cambiarEstado(id, estadoAConfirmar);
+      setEstadoActual(estadoAConfirmar);
+      setEstadoAConfirmar(null);
     } catch (err) {
       alert(err.response?.data?.message || 'Error al cambiar el estado.');
     } finally {
       setCambiandoEstado(false);
     }
   }
+
+  const ESTADO_CONFIRM_COPY = {
+    ACTIVO: { title: '¿Activar el combo?', description: 'El combo quedará disponible para la venta.' },
+    INACTIVO: { title: '¿Desactivar el combo?', description: 'El combo dejará de estar disponible para la venta.' },
+    BORRADOR: { title: '¿Pasar el combo a borrador?', description: 'Dejará de estar visible hasta que lo actives de nuevo.' },
+  };
 
   const excludeIds = [principal?.id, ...upsells.map(u => u.id)].filter(Boolean);
 
@@ -727,7 +734,7 @@ export default function ComboEditor() {
           {estadoActual !== 'ACTIVO' && (
             <button
               className="btn-activate"
-              onClick={isEditing ? () => handleCambiarEstado('ACTIVO') : () => handleGuardar(true)}
+              onClick={isEditing ? () => setEstadoAConfirmar('ACTIVO') : () => handleGuardar(true)}
               disabled={guardando || cambiandoEstado || !principal}
             >
               <Power size={15} /> {cambiandoEstado || guardando ? '...' : 'Activar combo'}
@@ -737,7 +744,7 @@ export default function ComboEditor() {
           {estadoActual === 'ACTIVO' && isEditing && (
             <button
               className="btn-deactivate"
-              onClick={() => handleCambiarEstado('INACTIVO')}
+              onClick={() => setEstadoAConfirmar('INACTIVO')}
               disabled={cambiandoEstado}
             >
               <PowerOff size={15} /> {cambiandoEstado ? '...' : 'Desactivar'}
@@ -745,6 +752,17 @@ export default function ComboEditor() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!estadoAConfirmar}
+        title={estadoAConfirmar ? ESTADO_CONFIRM_COPY[estadoAConfirmar].title : ''}
+        description={estadoAConfirmar ? ESTADO_CONFIRM_COPY[estadoAConfirmar].description : ''}
+        confirmLabel={estadoAConfirmar === 'ACTIVO' ? 'Activar' : 'Desactivar'}
+        danger={estadoAConfirmar !== 'ACTIVO'}
+        loading={cambiandoEstado}
+        onConfirm={confirmarCambioEstado}
+        onCancel={() => setEstadoAConfirmar(null)}
+      />
     </div>
   );
 }

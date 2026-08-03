@@ -1,511 +1,1282 @@
 import React, { useState, useEffect } from 'react';
 import {
-  GraduationCap,
-  Plus,
-  Edit2,
-  Trash2,
-  Video,
-  FileQuestion,
-  CheckCircle2,
-  X,
-  Save,
-  HelpCircle,
-  Clock,
-  Sparkles,
-  Layers
-} from 'lucide-react';
-import {
   adminListModulos,
   adminCreateModulo,
   adminUpdateModulo,
-  adminDeleteModulo
+  adminDeleteModulo,
+  adminReordenarModulos,
+  adminDuplicarModulo,
 } from '../../services/educacionApi';
-import './EducacionView.css';
+import {
+  GraduationCap,
+  Plus,
+  Trash2,
+  Edit3,
+  Video,
+  CheckCircle2,
+  Lock,
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  Layers,
+  Clock,
+  HelpCircle,
+  Rocket,
+  Package,
+  Truck,
+  Megaphone,
+  BarChart3,
+  X,
+  Eye,
+  Link as LinkIcon,
+} from 'lucide-react';
+import './AdminEducacion.css';
 
-const AdminEducacion = () => {
+const EMOJI_OPTIONS = ['🚀', '🎯', '🚚', '📦', '📊', '💡', '🎓', '⚡', '🔥', '⚙️', '💎', '📈'];
+const COLOR_OPTIONS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4'];
+
+const UNLOCK_OPTIONS = [
+  {
+    id: 'mi-landing',
+    titulo: 'Landing Pages',
+    desc: 'Creador visual y páginas de venta de alta conversión.',
+    icon: <Rocket size={20} color="#3b82f6" />,
+  },
+  {
+    id: 'productos',
+    titulo: 'Catálogo & Combos',
+    desc: 'Gestión de productos, variantes y descuentos por volumen.',
+    icon: <Package size={20} color="#8b5cf6" />,
+  },
+  {
+    id: 'pedidos',
+    titulo: 'Envíos & Couriers',
+    desc: 'Control de logística, estados de despacho y tarifas por rango.',
+    icon: <Truck size={20} color="#10b981" />,
+  },
+  {
+    id: 'ads',
+    titulo: 'Meta Ads & Campañas',
+    desc: 'Integración con Meta Pixel, CAPI y creador de anuncios.',
+    icon: <Megaphone size={20} color="#f59e0b" />,
+  },
+  {
+    id: 'reportes',
+    titulo: 'Reportes Financieros',
+    desc: 'Caja neta, facturación total y métricas de rentabilidad.',
+    icon: <BarChart3 size={20} color="#06b6d4" />,
+  },
+  {
+    id: '',
+    titulo: 'Módulo Libre',
+    desc: 'No bloquea ningún menú del sidebar (formación general).',
+    icon: <GraduationCap size={20} color="#94a3b8" />,
+  },
+];
+
+export default function AdminEducacion() {
   const [modulos, setModulos] = useState([]);
+  const [metricas, setMetricas] = useState({
+    total_modulos: 0,
+    total_lecciones: 0,
+    total_duracion_minutos: 0,
+    total_preguntas: 0,
+    menus_desbloqueables: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [moduloEditando, setModuloEditando] = useState(null);
-  const [guardando, setGuardando] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // Form State
+  // Estado del Modal de Studio
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [editingModuleId, setEditingModuleId] = useState(null);
+
+  // Formulario del Studio
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
-    orden: 1,
-    video_url: '',
-    duracion_minutos: 10,
-    menu_desbloqueado: '',
-    activo: true,
+    icono: '🚀',
+    color_accent: '#3b82f6',
+    estado: 'publicado',
+    duracion_minutos: 15,
+    menu_desbloqueado: 'mi-landing',
+    recursos_descarga: [],
+    lecciones: [
+      {
+        titulo: 'Clase 1: Introducción práctica',
+        descripcion: '',
+        url_video: 'https://www.youtube.com/watch?v=1F_47Z4G6o8',
+        duracion_min: 5,
+        tipo: 'video',
+      },
+    ],
     examen: {
-      titulo: 'Evaluación del Módulo',
-      descripcion: '',
-      puntaje_minimo: 70,
-      activo: true,
-      preguntas: [],
+      titulo: 'Evaluación de Conocimientos',
+      descripcion: 'Responde correctamente para aprobar y desbloquear la siguiente lección.',
+      puntaje_minimo: 80,
+      preguntas: [
+        {
+          pregunta: '¿Cuál es el principal beneficio de este módulo?',
+          opciones: [
+            { id: 'A', texto: 'Aprender a escalar ventas y pedidos de manera eficiente' },
+            { id: 'B', texto: 'Reducir el tiempo de despacho' },
+            { id: 'C', texto: 'Todas las anteriores' },
+          ],
+          respuesta_correcta: 'C',
+          explicacion: 'Este módulo integra conocimientos transversales del negocio.',
+        },
+      ],
     },
   });
 
-  useEffect(() => {
-    cargarModulos();
-  }, []);
-
-  const cargarModulos = async () => {
+  const cargarDatos = async () => {
     try {
       setLoading(true);
       const data = await adminListModulos();
       setModulos(data.modulos || []);
-    } catch (err) {
-      console.error('Error al cargar módulos (admin):', err);
+      if (data.metricas) {
+        setMetricas(data.metricas);
+      }
+    } catch (error) {
+      console.error('Error al cargar módulos:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAbrirNuevo = () => {
-    setModuloEditando(null);
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const handleOpenCreateModal = () => {
+    setEditingModuleId(null);
+    setCurrentStep(1);
     setFormData({
       titulo: '',
       descripcion: '',
-      orden: modulos.length + 1,
-      video_url: '',
+      icono: '🚀',
+      color_accent: '#3b82f6',
+      estado: 'publicado',
       duracion_minutos: 10,
       menu_desbloqueado: '',
-      activo: true,
+      recursos_descarga: [],
+      lecciones: [
+        {
+          titulo: 'Clase 1: Introducción',
+          descripcion: '',
+          url_video: 'https://www.youtube.com/watch?v=1F_47Z4G6o8',
+          duracion_min: 5,
+          tipo: 'video',
+        },
+      ],
       examen: {
         titulo: 'Evaluación del Módulo',
         descripcion: '',
-        puntaje_minimo: 70,
-        activo: true,
+        puntaje_minimo: 80,
         preguntas: [
           {
-            pregunta: 'Pregunta 1...',
-            tipo: 'opcion_multiple',
+            pregunta: '¿Pregunta clave de aprendizaje?',
             opciones: [
-              { id: 'A', texto: 'Opción A' },
-              { id: 'B', texto: 'Opción B' },
+              { id: 'A', texto: 'Opción 1' },
+              { id: 'B', texto: 'Opción 2' },
             ],
             respuesta_correcta: 'A',
-            explicacion: '',
-            orden: 1,
+            explicacion: 'Explicación didáctica de la respuesta correcta.',
           },
         ],
       },
     });
-    setModalAbierto(true);
+    setIsModalOpen(true);
   };
 
-  const handleAbrirEditar = (m) => {
-    setModuloEditando(m);
+  const handleOpenEditModal = (mod) => {
+    setEditingModuleId(mod.id);
+    setCurrentStep(1);
     setFormData({
-      titulo: m.titulo,
-      descripcion: m.descripcion || '',
-      orden: m.orden,
-      video_url: m.video_url,
-      duracion_minutos: m.duracion_minutos || 10,
-      menu_desbloqueado: m.menu_desbloqueado || '',
-      activo: m.activo,
-      examen: m.examen
-        ? {
-            titulo: m.examen.titulo,
-            descripcion: m.examen.descripcion || '',
-            puntaje_minimo: m.examen.puntaje_minimo,
-            activo: m.examen.activo,
-            preguntas: m.examen.preguntas || [],
-          }
-        : {
-            titulo: 'Evaluación del Módulo',
-            descripcion: '',
-            puntaje_minimo: 70,
-            activo: true,
-            preguntas: [],
-          },
-    });
-    setModalAbierto(true);
-  };
-
-  const handleEliminar = async (id) => {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este módulo de educación?')) return;
-    try {
-      await adminDeleteModulo(id);
-      await cargarModulos();
-    } catch (err) {
-      console.error('Error al eliminar módulo:', err);
-    }
-  };
-
-  const handleAgregarPregunta = () => {
-    setFormData(prev => ({
-      ...prev,
-      examen: {
-        ...prev.examen,
-        preguntas: [
-          ...prev.examen.preguntas,
-          {
-            pregunta: `Nueva Pregunta ${prev.examen.preguntas.length + 1}`,
-            tipo: 'opcion_multiple',
-            opciones: [
-              { id: 'A', texto: 'Opción A' },
-              { id: 'B', texto: 'Opción B' },
+      titulo: mod.titulo || '',
+      descripcion: mod.descripcion || '',
+      icono: mod.icono || '🎓',
+      color_accent: mod.color_accent || '#3b82f6',
+      estado: mod.estado || 'publicado',
+      duracion_minutos: mod.duracion_minutos || 10,
+      menu_desbloqueado: mod.menu_desbloqueado || '',
+      recursos_descarga: mod.recursos_descarga || [],
+      lecciones:
+        mod.lecciones && mod.lecciones.length > 0
+          ? mod.lecciones.map(l => ({
+              id: l.id,
+              titulo: l.titulo,
+              descripcion: l.descripcion || '',
+              url_video: l.url_video || '',
+              duracion_min: l.duracion_min || 5,
+              tipo: l.tipo || 'video',
+            }))
+          : [
+              {
+                titulo: 'Clase 1: Introducción',
+                descripcion: '',
+                url_video: '',
+                duracion_min: 5,
+                tipo: 'video',
+              },
             ],
-            respuesta_correcta: 'A',
-            explicacion: '',
-            orden: prev.examen.preguntas.length + 1,
-          },
-        ],
-      },
-    }));
+      examen: mod.examen
+        ? {
+            id: mod.examen.id,
+            titulo: mod.examen.titulo || '',
+            descripcion: mod.examen.descripcion || '',
+            puntaje_minimo: mod.examen.puntaje_minimo || 80,
+            preguntas:
+              mod.examen.preguntas && mod.examen.preguntas.length > 0
+                ? mod.examen.preguntas.map(p => ({
+                    id: p.id,
+                    pregunta: p.pregunta,
+                    opciones: Array.isArray(p.opciones) ? p.opciones : [],
+                    respuesta_correcta: p.respuesta_correcta,
+                    explicacion: p.explicacion || '',
+                  }))
+                : [],
+          }
+        : null,
+    });
+    setIsModalOpen(true);
   };
 
-  const handleEliminarPregunta = (pIdx) => {
-    setFormData(prev => ({
-      ...prev,
-      examen: {
-        ...prev.examen,
-        preguntas: prev.examen.preguntas.filter((_, idx) => idx !== pIdx),
-      },
-    }));
-  };
+  const handleSaveStudio = async () => {
+    if (!formData.titulo.trim()) {
+      alert('Por favor ingresa un título para el módulo.');
+      setCurrentStep(1);
+      return;
+    }
 
-  const handleGuardar = async (e) => {
-    e.preventDefault();
     try {
-      setGuardando(true);
-      if (moduloEditando) {
-        await adminUpdateModulo(moduloEditando.id, formData);
+      setSaving(true);
+      if (editingModuleId) {
+        await adminUpdateModulo(editingModuleId, formData);
       } else {
         await adminCreateModulo(formData);
       }
-      setModalAbierto(false);
-      await cargarModulos();
-    } catch (err) {
-      console.error('Error al guardar módulo:', err);
-      alert('Error al guardar el módulo de educación.');
+      setIsModalOpen(false);
+      await cargarDatos();
+    } catch (error) {
+      console.error('Error al guardar módulo en Studio:', error);
+      alert('Error al guardar el módulo. Revisa los datos ingresados.');
     } finally {
-      setGuardando(false);
+      setSaving(false);
     }
   };
 
-  return (
-    <div className="academia-container">
-      <header className="academia-header">
-        <div className="academia-title-row">
-          <div className="academia-title-group">
-            <h1>
-              <GraduationCap style={{ color: '#3b82f6' }} />
-              Gestión de Academia & Cursos (Admin)
-            </h1>
-            <p>Configura los módulos educativos, videos de YouTube y cuestionarios interactivos.</p>
-          </div>
+  const handleDeleteModule = async (id, titulo) => {
+    if (window.confirm(`¿Estás seguro de eliminar el módulo "${titulo}" de la ruta?`)) {
+      try {
+        await adminDeleteModulo(id);
+        await cargarDatos();
+      } catch (error) {
+        console.error('Error al eliminar módulo:', error);
+      }
+    }
+  };
 
-          <button className="btn-academia-action primary" onClick={handleAbrirNuevo}>
-            <Plus size={18} /> Crear Nuevo Módulo
+  const handleDuplicateModule = async (id) => {
+    try {
+      await adminDuplicarModulo(id);
+      await cargarDatos();
+    } catch (error) {
+      console.error('Error al duplicar módulo:', error);
+    }
+  };
+
+  const handleMoveOrder = async (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= modulos.length) return;
+
+    const newModulos = [...modulos];
+    const [moved] = newModulos.splice(index, 1);
+    newModulos.splice(targetIndex, 0, moved);
+
+    setModulos(newModulos);
+    try {
+      const idsOrdenados = newModulos.map(m => m.id);
+      await adminReordenarModulos(idsOrdenados);
+    } catch (error) {
+      console.error('Error al reordenar:', error);
+      await cargarDatos();
+    }
+  };
+
+  // Helper para embed de YouTube en live preview
+  const getEmbedUrl = (url) => {
+    if (!url) return '';
+    try {
+      if (url.includes('youtube.com/watch?v=')) {
+        const videoId = url.split('v=')[1]?.split('&')[0];
+        return `https://www.youtube.com/embed/${videoId}`;
+      } else if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        return `https://www.youtube.com/embed/${videoId}`;
+      } else if (url.includes('youtube.com/embed/')) {
+        return url;
+      }
+      return url;
+    } catch {
+      return '';
+    }
+  };
+
+  // Helpers para manejo dinámico de Lecciones
+  const handleAddLeccion = () => {
+    setFormData(prev => ({
+      ...prev,
+      lecciones: [
+        ...prev.lecciones,
+        {
+          titulo: `Clase ${prev.lecciones.length + 1}`,
+          descripcion: '',
+          url_video: '',
+          duracion_min: 5,
+          tipo: 'video',
+        },
+      ],
+    }));
+  };
+
+  const handleRemoveLeccion = (idx) => {
+    setFormData(prev => ({
+      ...prev,
+      lecciones: prev.lecciones.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const handleUpdateLeccion = (idx, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.lecciones];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return { ...prev, lecciones: updated };
+    });
+  };
+
+  // Helper para verificar si una opción está marcada como correcta
+  const isOptionCorrect = (respuesta, optId) => {
+    if (!respuesta || !optId) return false;
+    const optUpper = String(optId).trim().toUpperCase();
+    if (Array.isArray(respuesta)) {
+      return respuesta.map(r => String(r).trim().toUpperCase()).includes(optUpper);
+    }
+    if (typeof respuesta === 'string') {
+      return respuesta.split(',').map(r => r.trim().toUpperCase()).includes(optUpper);
+    }
+    return String(respuesta).trim().toUpperCase() === optUpper;
+  };
+
+  // Helpers para manejo dinámico de Preguntas de Examen
+  const handleAddPregunta = () => {
+    const defaultExamen = formData.examen || {
+      titulo: 'Evaluación del Módulo',
+      descripcion: '',
+      puntaje_minimo: 80,
+      preguntas: [],
+    };
+    const totalPreguntas = defaultExamen.preguntas?.length || 0;
+    const nuevaPregunta = {
+      pregunta: `Pregunta ${totalPreguntas + 1}`,
+      opciones: [
+        { id: 'A', texto: 'Opción A' },
+        { id: 'B', texto: 'Opción B' },
+      ],
+      respuesta_correcta: 'A',
+      explicacion: '',
+    };
+    
+    setFormData(prev => ({
+      ...prev,
+      examen: {
+        ...defaultExamen,
+        preguntas: [...(defaultExamen.preguntas || []), nuevaPregunta],
+      },
+    }));
+
+    // Auto-scroll directo a la nueva pregunta creada
+    setTimeout(() => {
+      const cards = document.querySelectorAll('.lms-quiz-question-card');
+      if (cards && cards.length > 0) {
+        const lastCard = cards[cards.length - 1];
+        lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        lastCard.classList.add('lms-newly-added-pulse');
+        setTimeout(() => lastCard.classList.remove('lms-newly-added-pulse'), 1500);
+      }
+    }, 80);
+  };
+
+  const handleRemovePregunta = (pIdx) => {
+    if (!formData.examen) return;
+    setFormData(prev => ({
+      ...prev,
+      examen: {
+        ...prev.examen,
+        preguntas: prev.examen.preguntas.filter((_, i) => i !== pIdx),
+      },
+    }));
+  };
+
+  const handleUpdatePregunta = (pIdx, field, value) => {
+    setFormData(prev => {
+      if (!prev.examen) return prev;
+      const updatedPreguntas = prev.examen.preguntas.map((preg, idx) => {
+        if (idx !== pIdx) return preg;
+        return { ...preg, [field]: value };
+      });
+      return { ...prev, examen: { ...prev.examen, preguntas: updatedPreguntas } };
+    });
+  };
+
+  // Toggle para permitir marcar 1 o varias respuestas correctas
+  const handleToggleRespuestaCorrecta = (pIdx, optId) => {
+    setFormData(prev => {
+      if (!prev.examen) return prev;
+      const updatedPreguntas = prev.examen.preguntas.map((preg, idx) => {
+        if (idx !== pIdx) return preg;
+        const optUpper = String(optId).trim().toUpperCase();
+        let currentArr = [];
+        if (Array.isArray(preg.respuesta_correcta)) {
+          currentArr = preg.respuesta_correcta.map(r => String(r).trim().toUpperCase());
+        } else if (typeof preg.respuesta_correcta === 'string') {
+          currentArr = preg.respuesta_correcta.split(',').map(r => r.trim().toUpperCase()).filter(Boolean);
+        } else if (preg.respuesta_correcta) {
+          currentArr = [String(preg.respuesta_correcta).trim().toUpperCase()];
+        }
+
+        let nextArr;
+        if (currentArr.includes(optUpper)) {
+          // Deseleccionar
+          nextArr = currentArr.filter(id => id !== optUpper);
+          // Mantener al menos 1 seleccionada
+          if (nextArr.length === 0) nextArr = [optUpper];
+        } else {
+          // Agregar a respuestas correctas
+          nextArr = [...currentArr, optUpper].sort();
+        }
+
+        return {
+          ...preg,
+          respuesta_correcta: nextArr.join(','),
+        };
+      });
+
+      return { ...prev, examen: { ...prev.examen, preguntas: updatedPreguntas } };
+    });
+  };
+
+  // Agregar alternativa de forma inmutable (sin duplicación de estado)
+  const handleAddOpcion = (pIdx) => {
+    setFormData(prev => {
+      if (!prev.examen) return prev;
+      const updatedPreguntas = prev.examen.preguntas.map((preg, idx) => {
+        if (idx !== pIdx) return preg;
+        const opciones = preg.opciones ? [...preg.opciones] : [];
+        const letter = String.fromCharCode(65 + opciones.length); // A, B, C, D...
+        return {
+          ...preg,
+          opciones: [...opciones, { id: letter, texto: `Opción ${letter}` }],
+        };
+      });
+      return { ...prev, examen: { ...prev.examen, preguntas: updatedPreguntas } };
+    });
+  };
+
+  // Eliminar alternativa específica
+  const handleRemoveOpcion = (pIdx, optIdx) => {
+    setFormData(prev => {
+      if (!prev.examen) return prev;
+      const updatedPreguntas = prev.examen.preguntas.map((preg, idx) => {
+        if (idx !== pIdx) return preg;
+        const opciones = (preg.opciones || []).filter((_, i) => i !== optIdx);
+        // Re-indexar letras A, B, C...
+        const remappedOpciones = opciones.map((opt, i) => ({
+          ...opt,
+          id: String.fromCharCode(65 + i),
+        }));
+
+        const removedOpt = (preg.opciones || [])[optIdx];
+        const removedId = removedOpt ? String(removedOpt.id).toUpperCase() : null;
+
+        let currentArr = typeof preg.respuesta_correcta === 'string'
+          ? preg.respuesta_correcta.split(',').map(r => r.trim().toUpperCase()).filter(Boolean)
+          : [String(preg.respuesta_correcta || 'A').toUpperCase()];
+
+        let nextArr = currentArr.filter(id => id !== removedId);
+        if (nextArr.length === 0 && remappedOpciones.length > 0) {
+          nextArr = [remappedOpciones[0].id];
+        }
+
+        return {
+          ...preg,
+          opciones: remappedOpciones,
+          respuesta_correcta: nextArr.join(','),
+        };
+      });
+
+      return { ...prev, examen: { ...prev.examen, preguntas: updatedPreguntas } };
+    });
+  };
+
+  const handleUpdateOpcionTexto = (pIdx, optIdx, texto) => {
+    setFormData(prev => {
+      if (!prev.examen) return prev;
+      const updatedPreguntas = prev.examen.preguntas.map((preg, idx) => {
+        if (idx !== pIdx) return preg;
+        const opciones = (preg.opciones || []).map((opt, oIdx) => {
+          if (oIdx !== optIdx) return opt;
+          return { ...opt, texto };
+        });
+        return { ...preg, opciones };
+      });
+      return { ...prev, examen: { ...prev.examen, preguntas: updatedPreguntas } };
+    });
+  };
+
+  return (
+    <div className="lms-studio-container">
+      {/* 1. HERO HEADER & METRICS BAR (Linear / Notion Style) */}
+      <header className="lms-studio-header">
+        <div className="lms-header-top">
+          <div className="lms-header-title-area">
+            <span className="lms-badge-tag">
+              <GraduationCap size={16} /> Gesicomm Learning Journey Studio
+            </span>
+            <h1 className="lms-studio-title">Ruta de Aprendizaje & Academia</h1>
+            <p className="lms-studio-subtitle">
+              Diseña el recorrido formativo para que tus usuarios dominen el e-commerce, desbloqueen
+              herramientas clave y escalen sus ventas.
+            </p>
+          </div>
+          <button className="lms-btn-primary" onClick={handleOpenCreateModal}>
+            <Plus size={16} /> Crear Nuevo Módulo
           </button>
+        </div>
+
+        {/* Dynamic Metric Counters */}
+        <div className="lms-stats-grid">
+          <div className="lms-stat-item">
+            <div className="lms-stat-icon-wrapper" style={{ color: '#60a5fa' }}>
+              <Layers size={20} />
+            </div>
+            <div className="lms-stat-info">
+              <span className="lms-stat-value">{metricas.total_modulos}</span>
+              <span className="lms-stat-label">Módulos en Ruta</span>
+            </div>
+          </div>
+          <div className="lms-stat-item">
+            <div className="lms-stat-icon-wrapper" style={{ color: '#34d399' }}>
+              <Video size={20} />
+            </div>
+            <div className="lms-stat-info">
+              <span className="lms-stat-value">{metricas.total_lecciones}</span>
+              <span className="lms-stat-label">Lecciones / Videos</span>
+            </div>
+          </div>
+          <div className="lms-stat-item">
+            <div className="lms-stat-icon-wrapper" style={{ color: '#fbbf24' }}>
+              <Clock size={20} />
+            </div>
+            <div className="lms-stat-info">
+              <span className="lms-stat-value">{metricas.total_duracion_minutos} min</span>
+              <span className="lms-stat-label">Tiempo Total</span>
+            </div>
+          </div>
+          <div className="lms-stat-item">
+            <div className="lms-stat-icon-wrapper" style={{ color: '#c084fc' }}>
+              <HelpCircle size={20} />
+            </div>
+            <div className="lms-stat-info">
+              <span className="lms-stat-value">{metricas.total_preguntas}</span>
+              <span className="lms-stat-label">Preguntas Activas</span>
+            </div>
+          </div>
+          <div className="lms-stat-item">
+            <div className="lms-stat-icon-wrapper" style={{ color: '#f43f5e' }}>
+              <Lock size={20} />
+            </div>
+            <div className="lms-stat-info">
+              <span className="lms-stat-value">{metricas.menus_desbloqueables}</span>
+              <span className="lms-stat-label">Menús Vinculados</span>
+            </div>
+          </div>
         </div>
       </header>
 
-      {loading ? (
-        <p style={{ color: '#94a3b8' }}>Cargando módulos...</p>
-      ) : (
-        <div className="academia-playlist-card" style={{ padding: '1rem' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', color: '#f1f5f9' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', textAlign: 'left' }}>
-                <th style={{ padding: '0.75rem' }}>Orden</th>
-                <th style={{ padding: '0.75rem' }}>Título</th>
-                <th style={{ padding: '0.75rem' }}>Video</th>
-                <th style={{ padding: '0.75rem' }}>Menú Desbloqueado</th>
-                <th style={{ padding: '0.75rem' }}>Examen</th>
-                <th style={{ padding: '0.75rem', textAlign: 'right' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {modulos.map(m => (
-                <tr key={m.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '0.75rem' }}>
-                    <span className="module-badge-index">{m.orden}</span>
-                  </td>
-                  <td style={{ padding: '0.75rem', fontWeight: 600 }}>{m.titulo}</td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <a
-                      href={m.video_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                    >
-                      <Video size={15} /> Ver Video
-                    </a>
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    {m.menu_desbloqueado ? (
-                      <span className="module-tag-status in-progress">
-                        🔓 {m.menu_desbloqueado}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#64748b' }}>-</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    {m.examen ? (
-                      <span style={{ color: '#34d399', fontSize: '0.85rem' }}>
-                        ✅ {m.examen.preguntas?.length || 0} preguntas
-                      </span>
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Sin examen</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                    <button
-                      className="btn-academia-action secondary"
-                      style={{ padding: '0.4rem 0.75rem', marginRight: '0.5rem' }}
-                      onClick={() => handleAbrirEditar(m)}
-                    >
-                      <Edit2 size={14} /> Editar
-                    </button>
-                    <button
-                      className="btn-academia-action secondary"
-                      style={{ padding: '0.4rem 0.75rem', color: '#f87171' }}
-                      onClick={() => handleEliminar(m.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* 2. TIMELINE JOURNEY ROADMAP (Notion + Kajabi Cards) */}
+      <main className="lms-journey-wrapper">
+        <div className="lms-journey-line" />
 
-      {/* Modal Crear / Editar */}
-      {modalAbierto && (
-        <div className="examen-modal-overlay">
-          <div className="examen-modal-card" style={{ maxWidth: '800px' }}>
-            <header className="examen-modal-header">
-              <h3>
-                <GraduationCap style={{ color: '#3b82f6' }} />
-                {moduloEditando ? 'Editar Módulo de Educación' : 'Crear Nuevo Módulo'}
-              </h3>
-              <button
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-                onClick={() => setModalAbierto(false)}
-              >
-                <X size={20} />
-              </button>
-            </header>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+            <p>Cargando ruta de aprendizaje...</p>
+          </div>
+        ) : (
+          <div className="lms-journey-list">
+            {modulos.map((mod, index) => {
+              const duracion = mod.duracion_minutos || 10;
+              const leccionesCount = mod.total_lecciones || mod.lecciones?.length || 0;
+              const preguntasCount = mod.examen?.preguntas?.length || mod.examen?.total_preguntas || 0;
+              const menuObj = UNLOCK_OPTIONS.find(u => u.id === mod.menu_desbloqueado);
 
-            <form onSubmit={handleGuardar} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-              <div className="examen-modal-body">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                      Título del Módulo *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.titulo}
-                      onChange={e => setFormData({ ...formData, titulo: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                      Orden Secuencial
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={formData.orden}
-                      onChange={e => setFormData({ ...formData, orden: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                    Descripción
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.descripcion}
-                    onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                      Link del Video de YouTube *
-                    </label>
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://www.youtube.com/watch?v=..."
-                      value={formData.video_url}
-                      onChange={e => setFormData({ ...formData, video_url: e.target.value })}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                      Duración (min)
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.duracion_minutos}
-                      onChange={e => setFormData({ ...formData, duracion_minutos: Number(e.target.value) })}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
-                    Menú del Sidebar que Desbloquea (opcional)
-                  </label>
-                  <select
-                    value={formData.menu_desbloqueado}
-                    onChange={e => setFormData({ ...formData, menu_desbloqueado: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
+              return (
+                <div key={mod.id} className="lms-journey-step">
+                  {/* Big Numbered Node */}
+                  <div
+                    className="lms-step-node"
+                    style={{ borderColor: mod.color_accent || '#3b82f6' }}
                   >
-                    <option value="">-- Ninguno (Módulo Libre) --</option>
-                    <option value="mi-landing">Mi Landing Page (/mi-landing)</option>
-                    <option value="mis-anuncios">Anuncios & Campañas (/mis-anuncios)</option>
-                    <option value="mis-pedidos">Mis Pedidos (/mis-pedidos)</option>
-                    <option value="control-courier">Control de Couriers (/control-courier)</option>
-                  </select>
-                </div>
-
-                {/* Sección Examen */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h4 style={{ margin: 0, color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <FileQuestion size={18} style={{ color: '#fbbf24' }} />
-                      Evaluación / Examen del Módulo
-                    </h4>
-                    <button
-                      type="button"
-                      className="btn-academia-action secondary"
-                      style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-                      onClick={handleAgregarPregunta}
-                    >
-                      <Plus size={14} /> Agregar Pregunta
-                    </button>
+                    {index + 1}
                   </div>
 
-                  {formData.examen.preguntas.map((preg, pIdx) => (
-                    <div key={pIdx} className="examen-question-block" style={{ position: 'relative' }}>
-                      <button
-                        type="button"
-                        onClick={() => handleEliminarPregunta(pIdx)}
-                        style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                  {/* High-Impact Journey Card */}
+                  <div
+                    className="lms-journey-card"
+                    style={{ '--accent-color': mod.color_accent || '#3b82f6' }}
+                  >
+                    <div className="lms-card-accent-bar" />
 
-                      <div style={{ marginBottom: '0.75rem' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Pregunta {pIdx + 1}</label>
-                        <input
-                          type="text"
-                          required
-                          value={preg.pregunta}
-                          onChange={e => {
-                            const nuevasPreg = [...formData.examen.preguntas];
-                            nuevasPreg[pIdx].pregunta = e.target.value;
-                            setFormData({ ...formData, examen: { ...formData.examen, preguntas: nuevasPreg } });
-                          }}
-                          style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
-                        />
+                    <div className="lms-card-header">
+                      <div className="lms-card-title-group">
+                        <span className="lms-card-emoji">{mod.icono || '🎓'}</span>
+                        <div>
+                          <h3 className="lms-card-title">{mod.titulo}</h3>
+                        </div>
                       </div>
+                      <span className={`lms-status-badge lms-status-${mod.estado || 'publicado'}`}>
+                        ● {mod.estado || 'publicado'}
+                      </span>
+                    </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                        {preg.opciones.map((opt, oIdx) => (
-                          <div key={opt.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#60a5fa' }}>{opt.id}:</span>
-                            <input
-                              type="text"
-                              required
-                              value={opt.texto}
-                              onChange={e => {
-                                const nuevasPreg = [...formData.examen.preguntas];
-                                nuevasPreg[pIdx].opciones[oIdx].texto = e.target.value;
-                                setFormData({ ...formData, examen: { ...formData.examen, preguntas: nuevasPreg } });
-                              }}
-                              style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '6px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', fontSize: '0.85rem' }}
-                            />
+                    <p className="lms-card-desc">{mod.descripcion}</p>
+
+                    {/* Metadata Badges */}
+                    <div className="lms-card-meta-grid">
+                      <span className="lms-meta-pill">
+                        <Clock size={14} /> {duracion} min
+                      </span>
+                      <span className="lms-meta-pill">
+                        <Video size={14} /> {leccionesCount} {leccionesCount === 1 ? 'video' : 'videos'}
+                      </span>
+                      <span className="lms-meta-pill">
+                        <HelpCircle size={14} /> {preguntasCount} preguntas
+                      </span>
+                      {mod.menu_desbloqueado && (
+                        <span className="lms-meta-pill lms-meta-pill-unlock">
+                          <Lock size={14} /> Desbloquea: {menuObj?.titulo || mod.menu_desbloqueado}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Multi-Lesson List Preview */}
+                    {mod.lecciones && mod.lecciones.length > 0 && (
+                      <div className="lms-card-lessons-preview">
+                        {mod.lecciones.map((lec, lIdx) => (
+                          <div key={lec.id || lIdx} className="lms-lesson-sub-item">
+                            <span className="lms-lesson-sub-title">
+                              <Video color="#60a5fa" size={12} />
+                              {lec.titulo}
+                            </span>
+                            <span className="lms-lesson-sub-duration">
+                              ⏱ {lec.duracion_min || 5} min
+                            </span>
                           </div>
                         ))}
                       </div>
+                    )}
 
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Respuesta Correcta:</label>
-                          <select
-                            value={preg.respuesta_correcta}
-                            onChange={e => {
-                              const nuevasPreg = [...formData.examen.preguntas];
-                              nuevasPreg[pIdx].respuesta_correcta = e.target.value;
-                              setFormData({ ...formData, examen: { ...formData.examen, preguntas: nuevasPreg } });
-                            }}
-                            style={{ width: '100%', padding: '0.45rem', borderRadius: '6px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}
+                    {/* Actions & Reordering */}
+                    <div className="lms-card-actions">
+                      <div className="lms-card-order-controls">
+                        <button
+                          className="lms-btn-icon-sm"
+                          title="Subir de posición"
+                          disabled={index === 0}
+                          onClick={() => handleMoveOrder(index, -1)}
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                        <button
+                          className="lms-btn-icon-sm"
+                          title="Bajar de posición"
+                          disabled={index === modulos.length - 1}
+                          onClick={() => handleMoveOrder(index, 1)}
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                      </div>
+
+                      <div className="lms-card-btn-group">
+                        <button
+                          className="lms-btn-secondary"
+                          onClick={() => handleDuplicateModule(mod.id)}
+                          title="Duplicar módulo y contenido"
+                        >
+                          <Copy size={14} /> Duplicar
+                        </button>
+                        <button
+                          className="lms-btn-secondary"
+                          onClick={() => handleOpenEditModal(mod)}
+                        >
+                          <Edit3 size={14} /> Editar en Studio
+                        </button>
+                        <button
+                          className="lms-btn-secondary lms-btn-danger"
+                          onClick={() => handleDeleteModule(mod.id, mod.titulo)}
+                          title="Eliminar de la ruta"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Seamless Add Step Node at the End */}
+            <div className="lms-journey-add-step">
+              <div className="lms-node-add">
+                <Plus size={20} />
+              </div>
+              <div className="lms-card-add-trigger" onClick={handleOpenCreateModal}>
+                <Plus size={16} /> Agregar Siguiente Módulo a la Ruta
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* 3. STUDIO MODAL & 4-STEP BUILDER WITH LIVE SIMULATOR */}
+      {isModalOpen && (
+        <div className="lms-modal-backdrop">
+          <div className="lms-studio-modal">
+            {/* Modal Header with 4-Step Nav */}
+            <div className="lms-studio-modal-header">
+              <h2 className="lms-studio-modal-title">
+                <GraduationCap color="#3b82f6" />
+                {editingModuleId ? 'Studio: Editar Módulo' : 'Studio: Diseñar Nuevo Módulo'}
+              </h2>
+
+              <nav className="lms-step-nav">
+                <button
+                  className={`lms-step-nav-btn ${currentStep === 1 ? 'active' : ''}`}
+                  onClick={() => setCurrentStep(1)}
+                >
+                  ① Información
+                </button>
+                <button
+                  className={`lms-step-nav-btn ${currentStep === 2 ? 'active' : ''}`}
+                  onClick={() => setCurrentStep(2)}
+                >
+                  ② Lecciones Multi-Video
+                </button>
+                <button
+                  className={`lms-step-nav-btn ${currentStep === 3 ? 'active' : ''}`}
+                  onClick={() => setCurrentStep(3)}
+                >
+                  ③ Desbloqueos
+                </button>
+                <button
+                  className={`lms-step-nav-btn ${currentStep === 4 ? 'active' : ''}`}
+                  onClick={() => setCurrentStep(4)}
+                >
+                  ④ Evaluación
+                </button>
+              </nav>
+
+              <button
+                className="lms-btn-icon-sm"
+                onClick={() => setIsModalOpen(false)}
+                title="Cerrar Studio"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Split Screen Body */}
+            <div className="lms-studio-body">
+              {/* Left Pane: Active Step Form */}
+              <div className="lms-studio-form-pane">
+                {/* STEP 1: INFORMACIÓN & BRANDING */}
+                {currentStep === 1 && (
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: '#f8fafc' }}>
+                      Paso 1: Información General & Estilo
+                    </h3>
+
+                    <div className="lms-form-group">
+                      <label className="lms-form-label">Título del Módulo</label>
+                      <input
+                        type="text"
+                        className="lms-input-text"
+                        placeholder="Ej: Fundamentos de E-commerce y Landing Pages"
+                        value={formData.titulo}
+                        onChange={e => setFormData({ ...formData, titulo: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="lms-form-group">
+                      <label className="lms-form-label">Descripción Pedagógica</label>
+                      <textarea
+                        className="lms-textarea"
+                        rows={3}
+                        placeholder="Explica a los alumnos qué aprenderán en este módulo..."
+                        value={formData.descripcion}
+                        onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="lms-form-group">
+                      <label className="lms-form-label">Icono / Emoji Temático</label>
+                      <div className="lms-emoji-picker-grid">
+                        {EMOJI_OPTIONS.map(emoji => (
+                          <div
+                            key={emoji}
+                            className={`lms-emoji-pill ${formData.icono === emoji ? 'selected' : ''}`}
+                            onClick={() => setFormData({ ...formData, icono: emoji })}
                           >
-                            {preg.opciones.map(opt => (
-                              <option key={opt.id} value={opt.id}>
-                                Opción {opt.id} ({opt.texto.substring(0, 20)}...)
-                              </option>
-                            ))}
-                          </select>
+                            {emoji}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="lms-form-group">
+                      <label className="lms-form-label">Color de Acento / Aura</label>
+                      <div className="lms-color-picker-grid">
+                        {COLOR_OPTIONS.map(color => (
+                          <div
+                            key={color}
+                            className={`lms-color-pill ${formData.color_accent === color ? 'selected' : ''}`}
+                            style={{ backgroundColor: color }}
+                            onClick={() => setFormData({ ...formData, color_accent: color })}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="lms-form-group">
+                      <label className="lms-form-label">Estado de Publicación</label>
+                      <select
+                        className="lms-select"
+                        value={formData.estado}
+                        onChange={e => setFormData({ ...formData, estado: e.target.value })}
+                      >
+                        <option value="publicado">🟢 Publicado (Disponible para alumnos)</option>
+                        <option value="borrador">🟡 Borrador (En edición)</option>
+                        <option value="construccion">⚪ En Construcción</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: LECCIONES & VIDEOS MÚLTIPLES */}
+                {currentStep === 2 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#f8fafc' }}>
+                          Paso 2: Lecciones y Videos de YouTube
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
+                          Puedes agregar tantas clases o videos como desees dentro de este módulo.
+                        </p>
+                      </div>
+                      <button className="lms-btn-primary" onClick={handleAddLeccion}>
+                        <Plus size={16} /> Agregar Video / Clase
+                      </button>
+                    </div>
+
+                    <div className="lms-lessons-builder-list">
+                      {formData.lecciones.map((lec, idx) => (
+                        <div key={idx} className="lms-lesson-builder-card">
+                          <div className="lms-lesson-builder-header">
+                            <span className="lms-lesson-badge">Lección #{idx + 1}</span>
+                            {formData.lecciones.length > 1 && (
+                              <button
+                                className="lms-btn-icon-sm lms-btn-danger"
+                                title="Eliminar lección"
+                                onClick={() => handleRemoveLeccion(idx)}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="lms-form-group">
+                            <label className="lms-form-label">Título de la Lección</label>
+                            <input
+                              type="text"
+                              className="lms-input-text"
+                              placeholder="Ej: Clase 1: Configuración de Métodos de Pago"
+                              value={lec.titulo}
+                              onChange={e => handleUpdateLeccion(idx, 'titulo', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="lms-form-group">
+                            <label className="lms-form-label">Enlace de YouTube</label>
+                            <input
+                              type="text"
+                              className="lms-input-text"
+                              placeholder="https://www.youtube.com/watch?v=..."
+                              value={lec.url_video}
+                              onChange={e => handleUpdateLeccion(idx, 'url_video', e.target.value)}
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div className="lms-form-group">
+                              <label className="lms-form-label">Duración Estimada (minutos)</label>
+                              <input
+                                type="number"
+                                className="lms-input-text"
+                                min={1}
+                                value={lec.duracion_min}
+                                onChange={e => handleUpdateLeccion(idx, 'duracion_min', e.target.value)}
+                              />
+                            </div>
+                            <div className="lms-form-group">
+                              <label className="lms-form-label">Tipo de Contenido</label>
+                              <select
+                                className="lms-select"
+                                value={lec.tipo || 'video'}
+                                onChange={e => handleUpdateLeccion(idx, 'tipo', e.target.value)}
+                              >
+                                <option value="video">📹 Video YouTube</option>
+                                <option value="articulo">📄 Guía / Texto</option>
+                                <option value="recurso">📦 Archivo Descargable</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: DESBLOQUEOS DE ECOSISTEMA */}
+                {currentStep === 3 && (
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: '#f8fafc' }}>
+                      Paso 3: Desbloqueos del Ecosistema
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1.5rem' }}>
+                      Selecciona qué menú o herramienta se desbloqueará en el Sidebar cuando el alumno
+                      apruebe este módulo:
+                    </p>
+
+                    <div className="lms-ecosystem-grid">
+                      {UNLOCK_OPTIONS.map(opt => {
+                        const isSelected = formData.menu_desbloqueado === opt.id;
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`lms-ecosystem-card ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setFormData({ ...formData, menu_desbloqueado: opt.id })}
+                          >
+                            <div className="lms-ecosystem-card-title">
+                              {opt.icon} {opt.titulo}
+                            </div>
+                            <p className="lms-ecosystem-card-desc">{opt.desc}</p>
+                            {isSelected && (
+                              <span style={{ fontSize: '0.75rem', color: '#c084fc', fontWeight: 'bold' }}>
+                                ✓ Seleccionado para desbloquear
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4: EXAMEN & EVALUACIÓN */}
+                {currentStep === 4 && (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#f8fafc' }}>
+                          Paso 4: Constructor de Examen
+                        </h3>
+                        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
+                          Crea preguntas interactivas. Puedes marcar <strong>una o varias respuestas correctas</strong> por pregunta.
+                        </p>
+                      </div>
+                      <button type="button" className="lms-btn-primary" onClick={handleAddPregunta}>
+                        <Plus size={16} /> Agregar Pregunta
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                      <div>
+                        <label className="lms-form-label">Título de la Evaluación</label>
+                        <input
+                          type="text"
+                          className="lms-input-text"
+                          value={formData.examen?.titulo || ''}
+                          onChange={e =>
+                            setFormData(prev => ({
+                              ...prev,
+                              examen: { ...(prev.examen || {}), titulo: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="lms-form-label">Nota Mínima Aprobatoria (%)</label>
+                        <input
+                          type="number"
+                          className="lms-input-text"
+                          min={50}
+                          max={100}
+                          value={formData.examen?.puntaje_minimo || 80}
+                          onChange={e =>
+                            setFormData(prev => ({
+                              ...prev,
+                              examen: { ...(prev.examen || {}), puntaje_minimo: Number(e.target.value) },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Question Cards */}
+                    {(formData.examen?.preguntas || []).map((preg, pIdx) => (
+                      <div key={pIdx} className="lms-quiz-question-card">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontWeight: 'bold', color: '#60a5fa', fontSize: '0.92rem' }}>
+                              Pregunta #{pIdx + 1}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(255,255,255,0.06)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                              {String(preg.respuesta_correcta || '').includes(',') ? 'Múltiples correctas' : 'Opción simple'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="lms-btn-icon-sm lms-btn-danger"
+                            onClick={() => handleRemovePregunta(pIdx)}
+                            title="Eliminar pregunta"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
 
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Explicación Didáctica:</label>
+                        <div className="lms-form-group">
+                          <label className="lms-form-label">Enunciado de la Pregunta</label>
                           <input
                             type="text"
-                            placeholder="Feedback didáctico al calificar"
-                            value={preg.explicacion || ''}
-                            onChange={e => {
-                              const nuevasPreg = [...formData.examen.preguntas];
-                              nuevasPreg[pIdx].explicacion = e.target.value;
-                              setFormData({ ...formData, examen: { ...formData.examen, preguntas: nuevasPreg } });
-                            }}
-                            style={{ width: '100%', padding: '0.45rem 0.6rem', borderRadius: '6px', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff', fontSize: '0.85rem' }}
+                            className="lms-input-text"
+                            placeholder="Ej: ¿Cuál es el objetivo principal de una landing page?"
+                            value={preg.pregunta}
+                            onChange={e => handleUpdatePregunta(pIdx, 'pregunta', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="lms-form-group">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                            <label className="lms-form-label" style={{ margin: 0 }}>
+                              Alternativas de Respuesta:
+                            </label>
+                            <span style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                              (Haz clic en "Marcar Correcta" para seleccionar 1 o varias)
+                            </span>
+                          </div>
+
+                          {(preg.opciones || []).map((opt, optIdx) => {
+                            const isCorrect = isOptionCorrect(preg.respuesta_correcta, opt.id);
+                            return (
+                              <div key={optIdx} className="lms-option-row">
+                                <span className="lms-option-label-badge">{opt.id}</span>
+                                <input
+                                  type="text"
+                                  className="lms-input-text"
+                                  value={opt.texto}
+                                  onChange={e => handleUpdateOpcionTexto(pIdx, optIdx, e.target.value)}
+                                  placeholder={`Texto de la opción ${opt.id}...`}
+                                />
+                                <button
+                                  type="button"
+                                  className={`lms-option-radio-btn ${isCorrect ? 'is-correct' : ''}`}
+                                  onClick={() => handleToggleRespuestaCorrecta(pIdx, opt.id)}
+                                  title={isCorrect ? 'Desmarcar como correcta' : 'Marcar como correcta'}
+                                >
+                                  {isCorrect ? '✓ Correcta' : '+ Marcar Correcta'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="lms-option-delete-btn"
+                                  disabled={(preg.opciones || []).length <= 2}
+                                  onClick={() => handleRemoveOpcion(pIdx, optIdx)}
+                                  title={(preg.opciones || []).length <= 2 ? 'Mínimo 2 alternativas por pregunta' : 'Eliminar alternativa'}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            );
+                          })}
+
+                          <button
+                            type="button"
+                            className="lms-btn-secondary"
+                            style={{ marginTop: '0.5rem' }}
+                            onClick={() => handleAddOpcion(pIdx)}
+                          >
+                            <Plus size={14} /> Agregar Alternativa
+                          </button>
+                        </div>
+
+                        <div className="lms-form-group" style={{ marginBottom: 0 }}>
+                          <label className="lms-form-label">Explicación Didáctica (Feedback para el alumno)</label>
+                          <input
+                            type="text"
+                            className="lms-input-text"
+                            placeholder="Por qué esta respuesta es la correcta..."
+                            value={preg.explicacion}
+                            onChange={e => handleUpdatePregunta(pIdx, 'explicacion', e.target.value)}
                           />
                         </div>
                       </div>
+                    ))}
+
+                    {/* Bottom Add Question Button */}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.25rem', marginBottom: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className="lms-btn-secondary"
+                        style={{ width: '100%', padding: '0.85rem', borderStyle: 'dashed' }}
+                        onClick={handleAddPregunta}
+                      >
+                        <Plus size={16} /> + Agregar Otra Pregunta al Examen
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
 
-              <footer className="examen-modal-footer">
-                <button
-                  type="button"
-                  className="btn-academia-action secondary"
-                  onClick={() => setModalAbierto(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="btn-academia-action primary"
-                  disabled={guardando}
-                >
-                  <Save size={16} /> {guardando ? 'Guardando...' : 'Guardar Módulo'}
-                </button>
-              </footer>
-            </form>
+              {/* Right Pane: Live Student Simulator (Editor Visual en Tiempo Real) */}
+              <div className="lms-studio-preview-pane">
+                <div className="lms-preview-title">
+                  <span>
+                    <Eye size={16} /> Simulador en Vivo (Vista del Alumno)
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#60a5fa' }}>Live Preview</span>
+                </div>
+
+                <div className="lms-simulator-device">
+                  <div className="lms-simulator-screen">
+                    {/* Simulator Course Card */}
+                    <div
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: `1px solid ${formData.color_accent}`,
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        marginBottom: '1rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '1.5rem' }}>{formData.icono}</span>
+                        <h4 style={{ margin: 0, fontSize: '1rem', color: 'white' }}>
+                          {formData.titulo || 'Título del Módulo'}
+                        </h4>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                        {formData.descripcion || 'Sin descripción ingresada aún.'}
+                      </p>
+                    </div>
+
+                    {/* Simulator Video Player */}
+                    {formData.lecciones[0]?.url_video ? (
+                      <div className="lms-video-preview-embed">
+                        <iframe
+                          src={getEmbedUrl(formData.lecciones[0].url_video)}
+                          title="Live Preview Video"
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          aspectRatio: '16/9',
+                          background: '#090a0f',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#64748b',
+                          fontSize: '0.85rem',
+                          marginBottom: '1rem',
+                        }}
+                      >
+                        Ingresa una URL de YouTube para ver la reproducción en vivo
+                      </div>
+                    )}
+
+                    {/* Simulator Playlist */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8' }}>
+                        Contenido del Módulo ({formData.lecciones.length} clases):
+                      </span>
+                      {formData.lecciones.map((lec, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: idx === 0 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            border: idx === 0 ? '1px solid #3b82f6' : '1px solid transparent',
+                            fontSize: '0.8rem',
+                          }}
+                        >
+                          <span style={{ color: idx === 0 ? '#60a5fa' : '#cbd5e1' }}>
+                            ▶ {lec.titulo || `Clase ${idx + 1}`}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                            ⏱ {lec.duracion_min || 5} min
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="lms-studio-modal-footer">
+              <div>
+                {currentStep > 1 && (
+                  <button className="lms-btn-secondary" onClick={() => setCurrentStep(currentStep - 1)}>
+                    ← Anterior
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                {currentStep < 4 ? (
+                  <button className="lms-btn-primary" onClick={() => setCurrentStep(currentStep + 1)}>
+                    Siguiente →
+                  </button>
+                ) : (
+                  <button className="lms-btn-primary" disabled={saving} onClick={handleSaveStudio}>
+                    {saving ? 'Guardando en la Ruta...' : '✓ Guardar y Publicar en Ruta'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default AdminEducacion;
+}

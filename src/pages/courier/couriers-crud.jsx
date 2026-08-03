@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Bike, Car, Pencil, Phone, Plus, Trash2, Truck, X, Building2, MapPin, DollarSign, Layers } from "lucide-react"
 import CurrencyInput from "../../components/CurrencyInput"
+import ConfirmDialog from "../../components/ConfirmDialog"
 
 const VEHICULOS = ["Moto", "Auto", "Camioneta", "Bicicleta"]
 const TIPOS_PAGO = ["Anticipado", "Al Recibir", "Ambos"]
@@ -29,6 +30,7 @@ export function CouriersCrud({
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  const [courierABorrar, setCourierABorrar] = useState(null)
 
   function openCreate() {
     setEditing(null)
@@ -80,7 +82,7 @@ export function CouriersCrud({
 
   return (
     <div style={{ background: '#0a0a0b', borderRadius: '0.85rem', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', color: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>Directorio de Couriers</h2>
           <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#888888' }}>Gestioná tu red de repartidores y sus tarifas dinámicas</p>
@@ -88,8 +90,7 @@ export function CouriersCrud({
         <button
           type="button"
           onClick={openCreate}
-          className="btn-primary"
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none' }}
+          className="btn-nuevo-pedido"
         >
           <Plus size={16} />
           Nuevo courier
@@ -150,11 +151,7 @@ export function CouriersCrud({
                     <button type="button" className="btn-icon" onClick={() => openEdit(c)}>
                       <Pencil size={15} />
                     </button>
-                    <button type="button" className="btn-icon danger" onClick={() => {
-                      if (window.confirm("¿Estás seguro de eliminar este courier?")) {
-                        onDelete(c.id);
-                      }
-                    }}>
+                    <button type="button" className="btn-icon danger" onClick={() => setCourierABorrar(c)}>
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -411,16 +408,16 @@ export function CouriersCrud({
               </button>
               <button
                 type="submit"
-                style={{ 
-                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', 
-                  color: '#ffffff', 
-                  border: 'none', 
-                  padding: '0.65rem 1.6rem', 
-                  borderRadius: '0.6rem', 
-                  fontWeight: 700, 
+                style={{
+                  background: 'linear-gradient(135deg, #6d5ef8, #5b4bd6)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.65rem 1.6rem',
+                  borderRadius: '0.6rem',
+                  fontWeight: 700,
                   fontSize: '0.875rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)',
+                  boxShadow: '0 4px 14px rgba(109, 94, 248, 0.4)',
                   transition: 'all 0.2s'
                 }}
               >
@@ -430,6 +427,16 @@ export function CouriersCrud({
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!courierABorrar}
+        title={`¿Eliminar "${courierABorrar?.nombre}"?`}
+        description="Esta acción no se puede deshacer. Los envíos ya asignados a este courier no se ven afectados."
+        confirmLabel="Eliminar"
+        danger
+        onConfirm={() => { onDelete(courierABorrar.id); setCourierABorrar(null); }}
+        onCancel={() => setCourierABorrar(null)}
+      />
     </div>
   )
 }

@@ -34,3 +34,9 @@ export const updateEstadoEnvio = async (id, estado, courier_id) => {
   const { data } = await api.put(`/envios/${id}/estado`, { estado, courier_id });
   return data;
 };
+
+export const getMetricasDashboardPedidos = async (filtros = {}) => {
+  const { data } = await api.post('/envios/metricas-dashboard', filtros);
+  return data;
+};
+

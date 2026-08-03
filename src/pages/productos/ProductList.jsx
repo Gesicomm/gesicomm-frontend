@@ -10,6 +10,7 @@ import {
   ToggleLeft, ToggleRight, Loader, Tag
 } from 'lucide-react';
 import ProductCombosDrawer from './ProductCombosDrawer';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import './productos.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -25,6 +26,8 @@ export default function ProductList() {
   const [cargando, setCargando] = useState(true);
   const [categorias, setCategorias] = useState([]);
   const [comboProductoSeleccionado, setComboProductoSeleccionado] = useState(null);
+  const [productoABajar, setProductoABajar] = useState(null);
+  const [dandoBaja, setDandoBaja] = useState(false);
 
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
@@ -88,12 +91,18 @@ export default function ProductList() {
     } catch (err) { console.error(err); }
   };
 
-  const darDeBaja = async (id) => {
-    if (!window.confirm('¿Dar de baja este producto?')) return;
+  const confirmarDarDeBaja = async () => {
+    if (!productoABajar) return;
+    setDandoBaja(true);
     try {
-      await productService.eliminar(id);
+      await productService.eliminar(productoABajar.id);
+      setProductoABajar(null);
       buscar(pagina);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDandoBaja(false);
+    }
   };
 
   const cambiarPagina = (nueva) => {
@@ -235,9 +244,10 @@ export default function ProductList() {
                         </td>
                         <td>
                           <span className={`estado-venta-badge estado-${p.estado_venta || 'en_venta'}`}>
-                            {p.estado_venta === 'en_venta' ? '🟢 En venta'
-                              : p.estado_venta === 'fuera_de_stock' ? '🟡 Fuera de stock'
-                              : '🔴 No disponible'}
+                            <span className="estado-venta-dot" />
+                            {p.estado_venta === 'en_venta' ? 'En venta'
+                              : p.estado_venta === 'fuera_de_stock' ? 'Fuera de stock'
+                              : 'No disponible'}
                           </span>
                         </td>
                         <td>{categorias.find(c => c.id === p.categoria_id)?.nombre || '—'}</td>
@@ -275,7 +285,7 @@ export default function ProductList() {
                             </button>
                             <button
                               className="btn-icon danger"
-                              onClick={() => darDeBaja(p.id)}
+                              onClick={() => setProductoABajar(p)}
                               title="Dar de baja"
                             >
                               <Trash2 size={15} />
@@ -346,11 +356,22 @@ export default function ProductList() {
       </div>
 
       {comboProductoSeleccionado && (
-        <ProductCombosDrawer 
-          producto={comboProductoSeleccionado} 
-          onClose={() => setComboProductoSeleccionado(null)} 
+        <ProductCombosDrawer
+          producto={comboProductoSeleccionado}
+          onClose={() => setComboProductoSeleccionado(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={!!productoABajar}
+        title={`¿Dar de baja "${productoABajar?.nombre}"?`}
+        description="El producto dejará de estar disponible para la venta. Podés reactivarlo después desde el listado."
+        confirmLabel="Dar de baja"
+        danger
+        loading={dandoBaja}
+        onConfirm={confirmarDarDeBaja}
+        onCancel={() => setProductoABajar(null)}
+      />
     </div>
   );
 }

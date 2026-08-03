@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
-  GraduationCap, Lock, Sparkles, X, ChevronRight
+  GraduationCap, Lock, Sparkles, X, ChevronRight, Menu
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -17,6 +17,7 @@ const UserLayout = ({ children }) => {
     bloqueos: {},
   });
   const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
+  const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,6 +56,8 @@ const UserLayout = ({ children }) => {
         menu: item.label,
         ...bloqueo,
       });
+    } else {
+      setMobileOpen(false);
     }
   };
 
@@ -105,9 +108,22 @@ const UserLayout = ({ children }) => {
   };
 
   return (
-    <div className="dashboard-layout user-layout-container" style={{ '--bg-primary': '#10b981' }}>
-      <aside className="sidebar" style={{ borderRight: '1px solid rgba(255, 255, 255, 0.08)' }}>
-        <header className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+    <div className="dashboard-layout user-layout-container" style={{ '--bg-primary': '#10b981', '--bg-primary-soft': 'rgba(16, 185, 129, 0.1)' }}>
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`sidebar fixed inset-y-0 left-0 transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ borderRight: '1px solid rgba(255, 255, 255, 0.08)' }}
+      >
+        <header className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
@@ -126,6 +142,14 @@ const UserLayout = ({ children }) => {
               </span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:hidden"
+            aria-label="Cerrar menú"
+          >
+            <X size={18} />
+          </button>
         </header>
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
@@ -187,9 +211,25 @@ const UserLayout = ({ children }) => {
         </footer>
       </aside>
 
-      <main className="dashboard-main" style={{ background: '#050505', flex: 1, padding: 0, overflowY: 'auto' }}>
-        {children}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-border px-4 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+            aria-label="Abrir menú"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="text-sm font-bold tracking-tight text-fg">
+            GESICOMM<span style={{ color: '#10b981' }}>.</span>
+          </span>
+        </header>
+
+        <main className="dashboard-main" style={{ background: '#050505', flex: 1, padding: 0, overflowY: 'auto' }}>
+          {children}
+        </main>
+      </div>
 
       {/* Modal de Advertencia de Bloqueo por Módulo no Aprobado */}
       {modalBloqueo && (

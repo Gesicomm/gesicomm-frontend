@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Settings, Save, AlertTriangle, Info } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
+import CurrencyInput from '../../components/CurrencyInput';
 import './combos.css';
 
 function fmtNumber(n) {
@@ -155,16 +156,16 @@ export default function ComboConfiguracion() {
             </div>
           </div>
           <div>
-            <div className="combo-section-label">Costo de envío (Gs)</div>
-            <input style={inputStyle} type="number" min="0" step="1" value={envio} onChange={e => setEnvio(e.target.value)} />
+            <div className="combo-section-label">Costo de envío</div>
+            <CurrencyInput style={inputStyle} value={envio} onChange={setEnvio} />
           </div>
           <div>
-            <div className="combo-section-label">Costo de confirmación (Gs)</div>
-            <input style={inputStyle} type="number" min="0" step="1" value={confirmacion} onChange={e => setConfirmacion(e.target.value)} />
+            <div className="combo-section-label">Costo de confirmación</div>
+            <CurrencyInput style={inputStyle} value={confirmacion} onChange={setConfirmacion} />
           </div>
           <div>
-            <div className="combo-section-label">Costo de empaque (Gs)</div>
-            <input style={inputStyle} type="number" min="0" step="1" value={empaque} onChange={e => setEmpaque(e.target.value)} />
+            <div className="combo-section-label">Costo de empaque</div>
+            <CurrencyInput style={inputStyle} value={empaque} onChange={setEmpaque} />
           </div>
         </div>
       </div>

@@ -1,584 +1,698 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  GraduationCap,
-  PlayCircle,
-  CheckCircle2,
-  Lock,
-  Clock,
-  Award,
-  BookOpen,
-  Sparkles,
-  ChevronRight,
-  FileCheck,
-  RotateCcw,
-  X,
-  AlertCircle,
-  HelpCircle
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import {
   getModulosEducacion,
   getDetalleModulo,
-  marcarVideoVisto,
-  enviarExamenModulo
+  marcarLeccionCompletada,
+  enviarExamenModulo,
 } from '../../services/educacionApi';
+import confetti from '../../utils/confetti';
+import {
+  GraduationCap,
+  Video,
+  CheckCircle2,
+  Lock,
+  Clock,
+  Play,
+  Award,
+  HelpCircle,
+  X,
+  RotateCcw,
+  FileText,
+} from 'lucide-react';
 import './EducacionView.css';
 
-// Helper para convertir cualquier link de YouTube en URL de Embed segura
-function getYouTubeEmbedUrl(url) {
-  if (!url) return '';
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  if (match && match[1]) {
-    return `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1`;
-  }
-  if (url.includes('embed/')) return url;
-  return url;
-}
-
-// Micro-celebración con confetti canvas (slack-gif)
-function lanzarConfetti() {
-  const canvas = document.createElement('canvas');
-  canvas.style.position = 'fixed';
-  canvas.style.top = '0';
-  canvas.style.left = '0';
-  canvas.style.width = '100vw';
-  canvas.style.height = '100vh';
-  canvas.style.pointerEvents = 'none';
-  canvas.style.zIndex = '9999';
-  document.body.appendChild(canvas);
-
-  const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  const particles = [];
-  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#38bdf8'];
-
-  for (let i = 0; i < 90; i++) {
-    particles.push({
-      x: canvas.width / 2,
-      y: canvas.height / 2,
-      vx: (Math.random() - 0.5) * 14,
-      vy: (Math.random() - 0.7) * 16,
-      size: Math.random() * 8 + 4,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      rotation: Math.random() * 360,
-      vRot: (Math.random() - 0.5) * 10,
-      opacity: 1,
-    });
-  }
-
-  let animationFrame;
-  function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let alive = false;
-
-    particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.35; // Gravedad
-      p.rotation += p.vRot;
-      p.opacity -= 0.012;
-
-      if (p.opacity > 0) {
-        alive = true;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate((p.rotation * Math.PI) / 180);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = Math.max(0, p.opacity);
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-        ctx.restore();
-      }
-    });
-
-    if (alive) {
-      animationFrame = requestAnimationFrame(animate);
-    } else {
-      cancelAnimationFrame(animationFrame);
-      if (canvas.parentNode) {
-        canvas.parentNode.removeChild(canvas);
-      }
-    }
-  }
-
-  animate();
-}
-
-const EducacionView = () => {
+export default function EducacionView() {
   const [modulos, setModulos] = useState([]);
-  const [resumen, setResumen] = useState({ totalModulos: 0, completados: 0, porcentajeProgreso: 0 });
-  const [moduloActivo, setModuloActivo] = useState(null);
-  const [detalleModulo, setDetalleModulo] = useState(null);
+  const [estadisticas, setEstadisticas] = useState({
+    total_modulos: 0,
+    modulos_completados: 0,
+    total_lecciones: 0,
+    lecciones_completadas: 0,
+    porcentaje_global: 0,
+    nivel_actual: 'Iniciante 🌱',
+  });
   const [loading, setLoading] = useState(true);
-  const [loadingDetalle, setLoadingDetalle] = useState(false);
 
-  // Estados del Modal de Examen
-  const [modalExamenAbierto, setModalExamenAbierto] = useState(false);
+  // Módulo y Lección Activa
+  const [moduloActivo, setModuloActivo] = useState(null);
+  const [leccionActiva, setLeccionActiva] = useState(null);
+  const [savingLeccion, setSavingLeccion] = useState(false);
+
+  // Modal de Examen
+  const [isExamModalOpen, setIsExamModalOpen] = useState(false);
+  const [examenData, setExamenData] = useState(null);
   const [respuestasUsuario, setRespuestasUsuario] = useState({});
-  const [enviandoExamen, setEnviandoExamen] = useState(false);
   const [resultadoExamen, setResultadoExamen] = useState(null);
+  const [submittingExamen, setSubmittingExamen] = useState(false);
+
+  // Timer de cuenta regresiva para exámenes bloqueados por penalización
+  const [segundosRestantesBloqueo, setSegundosRestantesBloqueo] = useState(0);
 
   useEffect(() => {
-    cargarModulos();
-  }, []);
+    let timer = null;
+    const segsIniciales = resultadoExamen?.segundos_restantes ?? moduloActivo?.progreso_usuario?.segundos_restantes_bloqueo ?? 0;
 
-  const cargarModulos = async (mantenerId = null) => {
+    if (segsIniciales > 0) {
+      setSegundosRestantesBloqueo(segsIniciales);
+      timer = setInterval(() => {
+        setSegundosRestantesBloqueo(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            if (moduloActivo?.id) {
+              cargarDatos(moduloActivo.id);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setSegundosRestantesBloqueo(0);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [resultadoExamen, moduloActivo]);
+
+  const formatTiempoRestante = (totalSegundos) => {
+    if (!totalSegundos || totalSegundos <= 0) return '00:00:00';
+    const hrs = Math.floor(totalSegundos / 3600);
+    const mins = Math.floor((totalSegundos % 3600) / 60);
+    const secs = totalSegundos % 60;
+    if (hrs > 0) {
+      return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const estaExamenBloqueado = Boolean(
+    segundosRestantesBloqueo > 0 ||
+    resultadoExamen?.bloqueado ||
+    moduloActivo?.progreso_usuario?.examen_bloqueado
+  );
+
+  const cargarDatos = async (preferModuloId = null) => {
     try {
       setLoading(true);
       const data = await getModulosEducacion();
       setModulos(data.modulos || []);
-      setResumen(data.resumen || { totalModulos: 0, completados: 0, porcentajeProgreso: 0 });
+      if (data.estadisticas) {
+        setEstadisticas(data.estadisticas);
+      }
 
-      // Seleccionar el primer módulo desbloqueado o el solicitado
+      // Seleccionar módulo activo (el preferido o el primer desbloqueado)
       if (data.modulos && data.modulos.length > 0) {
-        let moduloTarget = null;
-        if (mantenerId) {
-          moduloTarget = data.modulos.find(m => m.id === Number(mantenerId));
+        let targetModulo = null;
+        if (preferModuloId) {
+          targetModulo = data.modulos.find(m => m.id === preferModuloId && m.desbloqueado);
         }
-        if (!moduloTarget) {
-          moduloTarget = data.modulos.find(m => m.desbloqueado && !m.completado) || data.modulos[0];
+        if (!targetModulo) {
+          targetModulo = data.modulos.find(m => m.desbloqueado) || data.modulos[0];
         }
-        if (moduloTarget) {
-          setModuloActivo(moduloTarget);
-          try {
-            const detalle = await getDetalleModulo(moduloTarget.id);
-            setDetalleModulo(detalle);
-          } catch (e) {
-            console.error('Error al recargar detalle:', e);
-          }
+
+        if (targetModulo) {
+          await seleccionarModulo(targetModulo.id);
         }
       }
-    } catch (err) {
-      console.error('Error al cargar módulos de educación:', err);
+    } catch (error) {
+      console.error('Error al cargar academia:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const seleccionarModulo = async (modulo) => {
-    if (!modulo || !modulo.desbloqueado) return;
-    setModuloActivo(modulo);
-    setResultadoExamen(null);
-    setRespuestasUsuario({});
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  const seleccionarModulo = async (moduloId) => {
     try {
-      setLoadingDetalle(true);
-      const detalle = await getDetalleModulo(modulo.id);
-      setDetalleModulo(detalle);
-    } catch (err) {
-      console.error('Error al cargar detalle del módulo:', err);
+      const detalle = await getDetalleModulo(moduloId);
+      setModuloActivo(detalle);
+      if (detalle.lecciones && detalle.lecciones.length > 0) {
+        // Seleccionar la primera lección no completada o la primera disponible
+        const primeraNoCompletada = detalle.lecciones.find(l => !l.completada) || detalle.lecciones[0];
+        setLeccionActiva(primeraNoCompletada);
+      } else {
+        setLeccionActiva(null);
+      }
+    } catch (error) {
+      console.error('Error al seleccionar módulo:', error);
+    }
+  };
+
+  const handleCompletarLeccion = async () => {
+    if (!leccionActiva) return;
+    try {
+      setSavingLeccion(true);
+      await marcarLeccionCompletada(leccionActiva.id);
+
+      // Disparar micro confetti
+      confetti({
+        particleCount: 40,
+        spread: 60,
+        origin: { y: 0.8 },
+      });
+
+      // Recargar datos y mantener módulo activo
+      await cargarDatos(moduloActivo.id);
+    } catch (error) {
+      console.error('Error al marcar lección como completada:', error);
     } finally {
-      setLoadingDetalle(false);
+      setSavingLeccion(false);
     }
   };
 
-  const handleMarcarVideoVisto = async () => {
-    if (!moduloActivo) return;
-    try {
-      await marcarVideoVisto(moduloActivo.id);
-      // Recargar datos
-      await cargarModulos(moduloActivo.id);
-    } catch (err) {
-      console.error('Error al marcar video como visto:', err);
-    }
-  };
-
-  const handleAbrirExamen = () => {
+  const handleOpenExam = () => {
+    if (!moduloActivo?.examen) return;
+    setExamenData(moduloActivo.examen);
     setRespuestasUsuario({});
     setResultadoExamen(null);
-    setModalExamenAbierto(true);
+    setIsExamModalOpen(true);
   };
 
-  const handleSeleccionarOpcion = (preguntaId, opcionId) => {
-    setRespuestasUsuario(prev => ({
-      ...prev,
-      [preguntaId]: opcionId
-    }));
+  const handleSelectRespuesta = (preguntaId, opcionId, isMulti = false) => {
+    setRespuestasUsuario(prev => {
+      if (!isMulti) {
+        return { ...prev, [preguntaId]: opcionId };
+      }
+      const current = prev[preguntaId];
+      let arr = [];
+      if (Array.isArray(current)) arr = [...current];
+      else if (typeof current === 'string') arr = current.split(',').map(s => s.trim()).filter(Boolean);
+      else if (current) arr = [current];
+
+      if (arr.includes(opcionId)) {
+        arr = arr.filter(x => x !== opcionId);
+      } else {
+        arr = [...arr, opcionId].sort();
+      }
+      return {
+        ...prev,
+        [preguntaId]: arr.join(','),
+      };
+    });
   };
 
   const handleEnviarExamen = async () => {
     if (!moduloActivo) return;
     try {
-      setEnviandoExamen(true);
-      const res = await enviarExamenModulo(moduloActivo.id, respuestasUsuario);
-      setResultadoExamen(res);
+      setSubmittingExamen(true);
+      const resultado = await enviarExamenModulo(moduloActivo.id, respuestasUsuario);
+      setResultadoExamen(resultado);
 
-      if (res.aprobado) {
-        lanzarConfetti();
-        // Recargar listado para reflejar el desbloqueo del siguiente módulo
-        await cargarModulos(moduloActivo.id);
+      if (resultado.aprobado) {
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.6 },
+        });
+        // Disparar evento para actualizar Sidebar
+        window.dispatchEvent(new CustomEvent('sidebar-refresh'));
       }
-    } catch (err) {
-      console.error('Error al calificar el examen:', err);
+      // Recargar datos
+      await cargarDatos(moduloActivo.id);
+    } catch (error) {
+      console.error('Error al enviar examen:', error);
+      const errorData = error?.response?.data;
+      if (errorData?.bloqueado) {
+        setResultadoExamen({
+          aprobado: false,
+          bloqueado: true,
+          bloqueado_hasta: errorData.bloqueado_hasta,
+          segundos_restantes: errorData.segundos_restantes,
+          puntaje: 0,
+          puntaje_minimo: moduloActivo?.examen?.puntaje_minimo || 80,
+          correctas: 0,
+          total_preguntas: moduloActivo?.examen?.preguntas?.length || 0,
+        });
+      } else {
+        alert(errorData?.message || 'Error al calificar el examen. Por favor intenta de nuevo.');
+      }
     } finally {
-      setEnviandoExamen(false);
+      setSubmittingExamen(false);
     }
   };
 
-  if (loading && modulos.length === 0) {
-    return (
-      <div className="academia-container" style={{ textAlign: 'center', padding: '5rem 0' }}>
-        <GraduationCap size={48} className="animate-spin" style={{ color: '#3b82f6', margin: '0 auto 1rem auto' }} />
-        <p style={{ color: '#94a3b8' }}>Cargando contenidos de la Academia...</p>
-      </div>
-    );
-  }
+  // Helper para URL de embed de YouTube
+  const getEmbedUrl = (url) => {
+    if (!url) return '';
+    try {
+      if (url.includes('youtube.com/watch?v=')) {
+        const videoId = url.split('v=')[1]?.split('&')[0];
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      } else if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
+      } else if (url.includes('youtube.com/embed/')) {
+        return url;
+      }
+      return url;
+    } catch {
+      return '';
+    }
+  };
 
   return (
-    <div className="academia-container">
-      {/* Header & Stats Banner */}
-      <header className="academia-header">
-        <div className="academia-title-row">
-          <div className="academia-title-group">
-            <h1>
-              <GraduationCap style={{ color: '#3b82f6' }} />
-              Academia Gesicomm
-            </h1>
-            <p>Aprende las mejores estrategias para escalar tus ventas y dominar la plataforma.</p>
-          </div>
+    <div className="aca-container">
+      {/* 1. HERO HEADER & GLOBAL PROGRESS */}
+      <header className="aca-header-card">
+        <div className="aca-header-left">
+          <span className="aca-badge-pill">
+            <GraduationCap size={16} /> Academia Gesicomm
+          </span>
+          <h1 className="aca-title">Ruta de Formación E-commerce</h1>
+          <p className="aca-subtitle">
+            Aprende paso a paso a dominar cada herramienta del ecosistema y desbloquea nuevas capacidades.
+          </p>
         </div>
 
-        {/* Stats Banner */}
-        <div className="academia-stats-banner">
-          <div className="academia-stats-content">
-            <div className="academia-stat-item">
-              <div className="academia-stat-icon">
-                <BookOpen size={22} />
-              </div>
-              <div className="academia-stat-info">
-                <div className="stat-value">{resumen.completados} / {resumen.totalModulos}</div>
-                <div className="stat-label">Módulos Completados</div>
-              </div>
-            </div>
-
-            <div className="academia-stat-item">
-              <div className="academia-stat-icon trophy">
-                <Award size={22} />
-              </div>
-              <div className="academia-stat-info">
-                <div className="stat-value">
-                  {resumen.porcentajeProgreso === 100 ? 'Master E-commerce 🏆' : 'En Progreso 🚀'}
-                </div>
-                <div className="stat-label">Nivel de Aprendizaje</div>
-              </div>
-            </div>
-
-            <div className="academia-stat-item">
-              <div className="academia-stat-icon check">
-                <Sparkles size={22} />
-              </div>
-              <div className="academia-stat-info">
-                <div className="stat-value">{resumen.porcentajeProgreso}%</div>
-                <div className="stat-label">Progreso Global</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="academia-progress-wrapper">
-            <div className="academia-progress-text">
-              <span>Progreso de la Formación</span>
-              <span>{resumen.porcentajeProgreso}% completado</span>
-            </div>
-            <div className="academia-progress-bar">
+        {/* Global Progress Radial Cluster */}
+        <div className="aca-progress-cluster">
+          <div className="aca-progress-info">
+            <span className="aca-progress-label">Progreso Global</span>
+            <span className="aca-progress-percent">{estadisticas.porcentaje_global}%</span>
+            <div className="aca-progress-bar-wrap">
               <div
-                className="academia-progress-fill"
-                style={{ width: `${resumen.porcentajeProgreso}%` }}
+                className="aca-progress-bar-fill"
+                style={{ width: `${estadisticas.porcentaje_global}%` }}
               />
             </div>
+          </div>
+          <div style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.08)', paddingLeft: '1.25rem' }}>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Nivel</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'white' }}>
+              {estadisticas.nivel_actual}
+            </span>
           </div>
         </div>
       </header>
 
-      {/* Grid Principal */}
-      <div className="academia-grid">
-        {/* Playlist de Módulos (Sidebar Izquierdo) */}
-        <aside className="academia-playlist-card">
-          <div className="academia-playlist-header">
-            <h3>
-              <BookOpen size={18} />
-              Temario del Curso
+      {/* 2. MAIN LEARNING SPLIT WORKSPACE */}
+      {loading && !moduloActivo ? (
+        <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+          <p>Cargando tu ruta de aprendizaje...</p>
+        </div>
+      ) : (
+        <main className="aca-main-workspace">
+          {/* Left Sidebar: Modules Roadmap */}
+          <aside className="aca-modules-nav-list">
+            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', margin: '0 0 0.5rem 0' }}>
+              Módulos del Programa ({modulos.length})
             </h3>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-              {modulos.length} lecciones
-            </span>
-          </div>
 
-          <ul className="academia-modules-list">
-            {modulos.map((m, idx) => {
-              const isActive = moduloActivo?.id === m.id;
-              const isLocked = !m.desbloqueado;
-              const isDone = m.completado;
+            {modulos.map((mod, index) => {
+              const isSelected = moduloActivo?.id === mod.id;
+              const isLocked = !mod.desbloqueado;
 
               return (
-                <li
-                  key={m.id}
-                  className={`academia-module-item ${isActive ? 'active' : ''} ${isDone ? 'completed' : ''} ${isLocked ? 'locked' : ''}`}
-                  onClick={() => !isLocked && seleccionarModulo(m)}
-                  title={isLocked ? 'Completa el módulo anterior para desbloquear' : ''}
+                <div
+                  key={mod.id}
+                  className={`aca-module-nav-card ${isSelected ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
+                  onClick={() => !isLocked && seleccionarModulo(mod.id)}
                 >
-                  <div className="module-badge-index">
-                    {isDone ? (
-                      <CheckCircle2 size={16} />
-                    ) : isLocked ? (
-                      <Lock size={14} />
+                  <div className="aca-nav-card-header">
+                    <div className="aca-nav-card-emoji-title">
+                      <span className="aca-nav-card-emoji">{mod.icono || '🎓'}</span>
+                      <h4 className="aca-nav-card-title">{mod.titulo}</h4>
+                    </div>
+                    {isLocked ? (
+                      <Lock size={16} color="#64748b" />
+                    ) : mod.examen_aprobado ? (
+                      <CheckCircle2 size={16} color="#10b981" />
                     ) : (
-                      idx + 1
+                      <span style={{ fontSize: '0.75rem', color: '#60a5fa', fontWeight: 'bold' }}>
+                        #{index + 1}
+                      </span>
                     )}
                   </div>
 
-                  <div className="module-meta-content">
-                    <div className="module-meta-title">{m.titulo}</div>
-                    <div className="module-meta-badges">
-                      {m.duracion_minutos && (
-                        <span className="module-tag-duration">
-                          <Clock size={12} /> {m.duracion_minutos} min
-                        </span>
-                      )}
-                      {isDone ? (
-                        <span className="module-tag-status done">Completado</span>
-                      ) : isLocked ? (
-                        <span className="module-tag-status locked">Bloqueado 🔒</span>
-                      ) : (
-                        <span className="module-tag-status in-progress">En curso ▶️</span>
-                      )}
-                    </div>
+                  <div className="aca-nav-card-meta">
+                    <span>⏱ {mod.duracion_minutos || 10} min</span>
+                    <span>
+                      📹 {mod.total_lecciones || 0} {mod.total_lecciones === 1 ? 'clase' : 'clases'}
+                    </span>
                   </div>
-                </li>
+                </div>
               );
             })}
-          </ul>
-        </aside>
+          </aside>
 
-        {/* Reproductor de Video y Contenido */}
-        <main className="academia-player-card">
-          {moduloActivo ? (
-            <>
-              <div className="academia-player-wrapper">
-                <iframe
-                  src={getYouTubeEmbedUrl(moduloActivo.video_url)}
-                  title={moduloActivo.titulo}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-
-              <div className="academia-player-details">
-                <div className="academia-player-title-row">
+          {/* Right Workspace: Video Player, Multi-Lesson Playlist & Exam */}
+          {moduloActivo && (
+            <section className="aca-player-workspace">
+              <div className="aca-player-header">
+                <div className="aca-player-title-group">
+                  <span style={{ fontSize: '2rem' }}>{moduloActivo.icono || '🚀'}</span>
                   <div>
-                    <h2>{moduloActivo.titulo}</h2>
-                    <p className="academia-player-description">
-                      {moduloActivo.descripcion || 'Sin descripción disponible para este módulo.'}
+                    <h2 className="aca-player-title">{moduloActivo.titulo}</h2>
+                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                      {moduloActivo.descripcion}
                     </p>
                   </div>
-
-                  {moduloActivo.menu_desbloqueado && (
-                    <div className="academia-unlocked-menu-hint">
-                      <Sparkles size={16} />
-                      Desbloquea: <strong>{moduloActivo.menu_desbloqueado}</strong>
-                    </div>
-                  )}
-                </div>
-
-                {/* Barra de Acciones del Módulo */}
-                <div className="academia-actions-row">
-                  {detalleModulo?.progreso?.video_completado ? (
-                    <button className="btn-academia-action success" disabled>
-                      <CheckCircle2 size={18} /> Video Completado
-                    </button>
-                  ) : (
-                    <button
-                      className="btn-academia-action primary"
-                      onClick={handleMarcarVideoVisto}
-                    >
-                      <CheckCircle2 size={18} /> Marcar Video como Visto
-                    </button>
-                  )}
-
-                  {detalleModulo?.examen && (
-                    <button
-                      className={`btn-academia-action ${detalleModulo.progreso?.examen_aprobado ? 'gold' : 'primary'}`}
-                      onClick={handleAbrirExamen}
-                    >
-                      <FileCheck size={18} />
-                      {detalleModulo.progreso?.examen_aprobado
-                        ? `Examen Aprobado (${detalleModulo.progreso.puntaje_obtenido}%) - Repasar`
-                        : 'Rendir Evaluación'}
-                    </button>
-                  )}
                 </div>
               </div>
-            </>
-          ) : (
-            <div style={{ padding: '4rem 2rem', textAlign: 'center', color: '#94a3b8' }}>
-              <BookOpen size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
-              <p>Selecciona un módulo del temario para comenzar a estudiar.</p>
-            </div>
+
+              {/* YouTube Video Player Screen */}
+              {leccionActiva?.url_video ? (
+                <div className="aca-video-screen-container">
+                  <iframe
+                    src={getEmbedUrl(leccionActiva.url_video)}
+                    title={leccionActiva.titulo}
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    aspectRatio: '16/9',
+                    background: '#090a0f',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#64748b',
+                    marginBottom: '1.5rem',
+                  }}
+                >
+                  Selecciona una clase de la playlist para iniciar la reproducción
+                </div>
+              )}
+
+              {/* Multi-Video Lesson Playlist Selector */}
+              {moduloActivo.lecciones && moduloActivo.lecciones.length > 0 && (
+                <div className="aca-playlist-drawer">
+                  <div className="aca-playlist-header">
+                    <span>Temario del Módulo ({moduloActivo.lecciones.length} Clases)</span>
+                    <span style={{ color: '#34d399' }}>
+                      {moduloActivo.lecciones.filter(l => l.completada).length} / {moduloActivo.lecciones.length} Completadas
+                    </span>
+                  </div>
+
+                  <div className="aca-playlist-items-grid">
+                    {moduloActivo.lecciones.map((lec, idx) => {
+                      const isPlaying = leccionActiva?.id === lec.id;
+                      return (
+                        <div
+                          key={lec.id || idx}
+                          className={`aca-playlist-item ${isPlaying ? 'playing' : ''}`}
+                          onClick={() => setLeccionActiva(lec)}
+                        >
+                          <div className="aca-playlist-item-left">
+                            <div className={`aca-lesson-check-circle ${lec.completada ? 'completed' : ''}`}>
+                              {lec.completada ? '✓' : idx + 1}
+                            </div>
+                            <span className="aca-playlist-item-title">{lec.titulo}</span>
+                          </div>
+                          <span className="aca-playlist-item-duration">
+                            ⏱ {lec.duracion_min || 5} min
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Control Strip */}
+              <div className="aca-action-strip">
+                <div>
+                  {leccionActiva && (
+                    <button
+                      className={`aca-btn-complete-video ${leccionActiva.completada ? 'done' : ''}`}
+                      disabled={savingLeccion}
+                      onClick={handleCompletarLeccion}
+                    >
+                      <CheckCircle2 size={16} />
+                      {leccionActiva.completada ? '✓ Lección Completada' : 'Marcar Lección como Vista'}
+                    </button>
+                  )}
+                </div>
+
+                {moduloActivo.examen && (
+                  <button 
+                    className={`aca-btn-take-quiz ${estaExamenBloqueado ? 'cooldown-locked' : ''}`}
+                    onClick={handleOpenExam}
+                  >
+                    {estaExamenBloqueado ? (
+                      <>
+                        <Clock size={16} className="spin-slow" />
+                        <span>Examen Bloqueado ({formatTiempoRestante(segundosRestantesBloqueo)})</span>
+                      </>
+                    ) : moduloActivo.progreso_usuario?.examen_aprobado ? (
+                      <>
+                        <CheckCircle2 size={16} />
+                        <span>Evaluación Aprobada ✓</span>
+                      </>
+                    ) : (
+                      <>
+                        <HelpCircle size={16} />
+                        <span>
+                          Realizar Evaluación
+                          {(moduloActivo.progreso_usuario?.intentos_fallidos || 0) > 0
+                            ? ` (${Math.max(0, 3 - moduloActivo.progreso_usuario.intentos_fallidos)} intentos restantes)`
+                            : ''}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </section>
           )}
         </main>
-      </div>
+      )}
 
-      {/* Modal de Examen / Formulario */}
-      {modalExamenAbierto && detalleModulo?.examen && (
-        <div className="examen-modal-overlay">
-          <div className="examen-modal-card">
-            <header className="examen-modal-header">
-              <h3>
-                <FileCheck style={{ color: '#3b82f6' }} />
-                {detalleModulo.examen.titulo}
+      {/* 3. EXAM & EVALUATION MODAL */}
+      {isExamModalOpen && examenData && (
+        <div className="aca-quiz-modal-backdrop">
+          <div className="aca-quiz-modal-card">
+            <div className="aca-quiz-modal-header">
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Award color="#f59e0b" />
+                {examenData.titulo || 'Evaluación del Módulo'}
               </h3>
               <button
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
-                onClick={() => setModalExamenAbierto(false)}
+                className="lms-btn-icon-sm"
+                onClick={() => setIsExamModalOpen(false)}
+                title="Cerrar"
               >
-                <X size={20} />
+                <X size={16} />
               </button>
-            </header>
+            </div>
 
-            <div className="examen-modal-body">
-              {!resultadoExamen ? (
-                <>
-                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-                    {detalleModulo.examen.descripcion ||
-                      `Responde las siguientes preguntas. Necesitas al menos un ${detalleModulo.examen.puntaje_minimo}% para aprobar y desbloquear el siguiente módulo.`}
+            <div className="aca-quiz-modal-body">
+              {estaExamenBloqueado && !resultadoExamen ? (
+                /* Cooldown Lockout View */
+                <div className="aca-score-card examen-cooldown-view">
+                  <div className="aca-cooldown-badge">
+                    <Clock size={32} color="#f43f5e" />
+                  </div>
+                  <h3 style={{ fontSize: '1.4rem', color: 'white', margin: '0.75rem 0 0.5rem 0' }}>
+                    Examen Bloqueado Temporalmente (4 Horas)
+                  </h3>
+                  <p style={{ color: '#94a3b8', fontSize: '0.92rem', marginBottom: '1.25rem', maxWidth: '480px', margin: '0 auto 1.25rem auto' }}>
+                    Has alcanzado el límite de <strong>3 intentos fallidos</strong>. Para garantizar la asimilación de los conceptos, el examen permanecerá bloqueado durante 4 horas.
                   </p>
 
-                  {detalleModulo.examen.preguntas && detalleModulo.examen.preguntas.map((p, idx) => (
-                    <div key={p.id} className="examen-question-block">
-                      <div className="examen-question-title">
-                        {idx + 1}. {p.pregunta}
-                      </div>
+                  <div className="aca-countdown-clock">
+                    <span className="aca-countdown-digits">{formatTiempoRestante(segundosRestantesBloqueo)}</span>
+                    <span className="aca-countdown-label">Tiempo restante para volver a intentar</span>
+                  </div>
 
-                      <div className="examen-options-list">
-                        {Array.isArray(p.opciones) && p.opciones.map(opt => {
-                          const isSelected = String(respuestasUsuario[p.id]) === String(opt.id);
-                          return (
-                            <label
-                              key={opt.id}
-                              className={`examen-option-label ${isSelected ? 'selected' : ''}`}
-                            >
-                              <input
-                                type="radio"
-                                name={`pregunta_${p.id}`}
-                                value={opt.id}
-                                checked={isSelected}
-                                onChange={() => handleSeleccionarOpcion(p.id, opt.id)}
-                              />
-                              <span>{opt.texto}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
+                  <div className="aca-recommendation-box">
+                    <div className="aca-rec-icon">📺</div>
+                    <div className="aca-rec-content">
+                      <h4 className="aca-rec-title">Recomendación Pedagógica</h4>
+                      <p className="aca-rec-desc">
+                        Aprovechá este período de espera para <strong>volver a mirar las clases en video</strong> del módulo. Repasar con atención los temas clave te asegurará aprobar con éxito en tu próximo intento.
+                      </p>
                     </div>
-                  ))}
-                </>
+                  </div>
+                </div>
+              ) : !resultadoExamen ? (
+                /* Question List */
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0 }}>
+                      {examenData.descripcion ||
+                        `Responde las siguientes preguntas. Necesitas al menos un ${examenData.puntaje_minimo}% para aprobar.`}
+                    </p>
+                    {(moduloActivo.progreso_usuario?.intentos_fallidos || 0) > 0 && (
+                      <span className="aca-attempts-remaining-pill" style={{ margin: 0, padding: '0.35rem 0.85rem', fontSize: '0.78rem' }}>
+                        Intentos restantes: <strong>{Math.max(0, 3 - moduloActivo.progreso_usuario.intentos_fallidos)}</strong> / 3
+                      </span>
+                    )}
+                  </div>
+
+                  {(examenData.preguntas || []).map((preg, pIdx) => {
+                    const isMulti = String(preg.respuesta_correcta || '').includes(',') ||
+                      (Array.isArray(preg.respuesta_correcta) && preg.respuesta_correcta.length > 1);
+
+                    const isSelected = (optId) => {
+                      const val = respuestasUsuario[preg.id];
+                      if (!val) return false;
+                      if (Array.isArray(val)) return val.includes(optId);
+                      if (typeof val === 'string') return val.split(',').map(s => s.trim().toUpperCase()).includes(String(optId).trim().toUpperCase());
+                      return String(val).toUpperCase() === String(optId).toUpperCase();
+                    };
+
+                    return (
+                      <div key={preg.id || pIdx} className="aca-quiz-question-box examen-question-block">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <p style={{ fontWeight: 700, color: '#f8fafc', margin: 0, fontSize: '1rem' }}>
+                            {pIdx + 1}. {preg.pregunta}
+                          </p>
+                          {isMulti && (
+                            <span style={{ fontSize: '0.75rem', color: '#60a5fa', background: 'rgba(59,130,246,0.12)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(59,130,246,0.25)' }}>
+                              Selección múltiple
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="aca-quiz-options-group">
+                          {(preg.opciones || []).map((opt, optIdx) => {
+                            const selected = isSelected(opt.id);
+                            return (
+                              <label
+                                key={optIdx}
+                                className={`aca-quiz-option-label ${selected ? 'selected' : ''}`}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleSelectRespuesta(preg.id, opt.id, isMulti);
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                <input
+                                  type={isMulti ? 'checkbox' : 'radio'}
+                                  name={`pregunta_${preg.id}`}
+                                  value={opt.id}
+                                  checked={selected}
+                                  onChange={() => {}}
+                                  style={{ accentColor: '#3b82f6' }}
+                                />
+                                <span style={{ fontSize: '0.9rem', color: selected ? 'white' : '#cbd5e1', fontWeight: selected ? 600 : 400 }}>
+                                  <strong style={{ color: '#93c5fd', marginRight: '0.4rem' }}>{opt.id}.</strong> {opt.texto}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
-                /* Resultados del Examen */
-                <div className="examen-result-view">
-                  <div className={`examen-score-circle ${resultadoExamen.aprobado ? 'pass' : 'fail'}`}>
+                /* Exam Results Breakdown View */
+                <div className={`aca-score-card examen-result-view ${resultadoExamen.aprobado ? '' : 'failed'}`}>
+                  <div
+                    className={`aca-score-circle examen-score-circle ${resultadoExamen.aprobado ? '' : 'failed'}`}
+                  >
                     {resultadoExamen.puntaje}%
                   </div>
 
-                  <div className={`examen-result-title ${resultadoExamen.aprobado ? 'pass' : 'fail'}`}>
+                  <h3 style={{ fontSize: '1.5rem', color: 'white', margin: '0 0 0.5rem 0' }}>
                     {resultadoExamen.aprobado
-                      ? '🎉 ¡Felicitaciones! Has aprobado'
-                      : '⚠️ No alcanzaste el puntaje requerido'}
-                  </div>
+                      ? '🎉 ¡Felicitaciones! Has Aprobado el Módulo'
+                      : '⚠️ No alcanzaste la nota mínima'}
+                  </h3>
 
-                  <p className="examen-result-text">
+                  <p style={{ color: '#cbd5e1', fontSize: '0.92rem', marginBottom: '1.25rem' }}>
                     {resultadoExamen.aprobado
-                      ? `Obtuviste ${resultadoExamen.correctas} de ${resultadoExamen.total_preguntas} correctas. ¡Has desbloqueado el siguiente nivel!`
-                      : `Obtuviste ${resultadoExamen.correctas} de ${resultadoExamen.total_preguntas} correctas. El mínimo requerido es ${resultadoExamen.puntaje_minimo}%. Repasa el video y vuelve a intentarlo.`}
+                      ? 'Has desbloqueado el siguiente módulo y las herramientas correspondientes en tu barra lateral.'
+                      : `Obtuviste ${resultadoExamen.correctas} de ${resultadoExamen.total_preguntas} preguntas correctas. Se requiere un ${resultadoExamen.puntaje_minimo}% para aprobar.`}
                   </p>
 
-                  {resultadoExamen.menu_desbloqueado && (
-                    <div style={{
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
-                      color: '#34d399',
-                      padding: '0.85rem 1.25rem',
-                      borderRadius: '12px',
-                      fontWeight: '600',
-                      marginBottom: '1.5rem',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.5rem'
-                    }}>
-                      <Sparkles size={18} />
-                      ¡Sección "{resultadoExamen.menu_desbloqueado}" habilitada en tu menú!
+                  {resultadoExamen.bloqueado ? (
+                    <div className="aca-cooldown-lock-notice">
+                      <div className="aca-cooldown-header-notice">
+                        <Clock size={20} color="#f43f5e" />
+                        <span>Límite de 3 intentos alcanzado · Examen bloqueado por 4 horas</span>
+                      </div>
+                      <div className="aca-countdown-clock small">
+                        <span className="aca-countdown-digits">{formatTiempoRestante(segundosRestantesBloqueo)}</span>
+                      </div>
+                    </div>
+                  ) : !resultadoExamen.aprobado ? (
+                    <div className="aca-attempts-remaining-pill">
+                      <span>
+                        Te {resultadoExamen.intentos_restantes === 1 ? 'queda' : 'quedan'}{' '}
+                        <strong style={{ color: '#f59e0b' }}>
+                          {resultadoExamen.intentos_restantes} {resultadoExamen.intentos_restantes === 1 ? 'intento' : 'intentos'}
+                        </strong>{' '}
+                        antes del bloqueo de 4 horas.
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {/* Recommendation Card */}
+                  {!resultadoExamen.aprobado && (
+                    <div className="aca-recommendation-box">
+                      <div className="aca-rec-icon">📺</div>
+                      <div className="aca-rec-content">
+                        <h4 className="aca-rec-title">Recomendación Pedagógica</h4>
+                        <p className="aca-rec-desc">
+                          {resultadoExamen.recomendacion ||
+                            'Para asimilar correctamente los conocimientos, te sugerimos volver a mirar las clases en video y repasar el contenido del módulo antes de volver a rendir la evaluación.'}
+                        </p>
+                      </div>
                     </div>
                   )}
-
-                  {/* Detalle de Corrección */}
-                  <div className="examen-detail-list">
-                    {resultadoExamen.detalles && resultadoExamen.detalles.map((det, idx) => (
-                      <div
-                        key={det.pregunta_id}
-                        className={`examen-detail-card ${det.es_correcta ? 'correct' : 'incorrect'}`}
-                      >
-                        <div className="detail-q-title">
-                          {idx + 1}. {det.pregunta}
-                        </div>
-                        <div style={{ fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                          <strong>Estado: </strong>
-                          <span style={{ color: det.es_correcta ? '#34d399' : '#f87171' }}>
-                            {det.es_correcta ? '✅ Correcta' : '❌ Incorrecta'}
-                          </span>
-                        </div>
-                        {det.explicacion && (
-                          <div className="detail-explanation">
-                            💡 {det.explicacion}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
 
-            <footer className="examen-modal-footer">
-              {!resultadoExamen ? (
-                <>
+            <div className="aca-quiz-modal-footer">
+              {estaExamenBloqueado && !resultadoExamen ? (
+                <button
+                  className="aca-btn-take-quiz"
+                  onClick={() => setIsExamModalOpen(false)}
+                >
+                  📺 Volver a Repasar Clases en Video
+                </button>
+              ) : !resultadoExamen ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                    Intentos fallidos acumulados: {moduloActivo.progreso_usuario?.intentos_fallidos || 0} / 3
+                  </span>
                   <button
-                    className="btn-academia-action secondary"
-                    onClick={() => setModalExamenAbierto(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="btn-academia-action primary"
-                    disabled={enviandoExamen}
+                    className="aca-btn-take-quiz"
+                    disabled={submittingExamen}
                     onClick={handleEnviarExamen}
                   >
-                    {enviandoExamen ? 'Calificando...' : 'Entregar Examen'}
+                    {submittingExamen ? 'Calificando...' : 'Entregar Examen'}
                   </button>
-                </>
+                </div>
               ) : (
-                <>
-                  {!resultadoExamen.aprobado ? (
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', width: '100%' }}>
+                  {!resultadoExamen.aprobado && !resultadoExamen.bloqueado && (
                     <button
-                      className="btn-academia-action gold"
+                      className="lms-btn-secondary"
                       onClick={() => {
                         setResultadoExamen(null);
                         setRespuestasUsuario({});
                       }}
                     >
-                      <RotateCcw size={16} /> Reintentar Evaluación
+                      <RotateCcw size={14} /> Reintentar Evaluación
                     </button>
-                  ) : null}
+                  )}
                   <button
-                    className="btn-academia-action primary"
-                    onClick={() => setModalExamenAbierto(false)}
+                    className="aca-btn-take-quiz"
+                    onClick={() => setIsExamModalOpen(false)}
                   >
-                    Cerrar
+                    {resultadoExamen.aprobado ? 'Continuar en la Academia →' : '📺 Repasar Videos del Módulo'}
                   </button>
-                </>
+                </div>
               )}
-            </footer>
+            </div>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-export default EducacionView;
+}

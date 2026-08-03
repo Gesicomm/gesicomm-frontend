@@ -59,6 +59,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     fecha: hoy,
     hora: horaActual,
     confirmador: "",
+    origen: "WEB",
+    campaign_name: "",
     nombre_cliente: "",
     apellido_cliente: "",
     telefono: "",
@@ -418,6 +420,32 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
                   placeholder="Nombre de quien confirmó"
                   value={form.confirmador}
                   onChange={e => setForm({ ...form, confirmador: e.target.value })}
+                />
+              </div>
+
+              <div className="np-row">
+                <label>Canal / Origen</label>
+                <select
+                  className="form-input"
+                  value={form.origen}
+                  onChange={e => setForm({ ...form, origen: e.target.value })}
+                >
+                  <option value="WEB">Web / Tienda Online</option>
+                  <option value="WHATSAPP">WhatsApp</option>
+                  <option value="LANDING">Landing Page</option>
+                  <option value="META_ADS">Meta Ads / Facebook</option>
+                  <option value="MANUAL">Manual / Directo</option>
+                </select>
+              </div>
+
+              <div className="np-row">
+                <label>Campaña Publicitaria (Opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ej. BlackFriday_Set2026"
+                  value={form.campaign_name}
+                  onChange={e => setForm({ ...form, campaign_name: e.target.value })}
                 />
               </div>
 

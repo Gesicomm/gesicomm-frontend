@@ -17,7 +17,7 @@
     border-right: 1px solid var(--border-border);
     display: flex;
     flex-direction: column;
-    z-index: 10;
+    z-index: 40;
 }
 
 .sidebar-header {
@@ -104,7 +104,7 @@
 }
 
 .sidebar-link.active {
-    background-color: rgba(255, 0, 127, 0.1); /* bg-primary/10 */
+    background-color: var(--bg-primary-soft, rgba(109, 94, 248, 0.1));
     color: var(--bg-primary);
 }
 
@@ -528,4 +528,77 @@
     from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ─── Botones globales del panel admin ───────────────
+   Antes vivían solo en productos.css, que no carga a menos que la
+   sesión haya pasado por /products — así que Combos, Categorías,
+   Marcas, Vitrina, etc. mostraban estos botones sin estilo si eran la
+   primera pantalla visitada. Este archivo sí carga siempre (vía
+   DashboardLayout), así que es la única fuente de verdad para estas
+   clases. */
+.btn-back {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8;
+    border-radius: 8px;
+    padding: 0.45rem;
+    cursor: pointer;
+    display: flex; align-items: center;
+    transition: all 0.2s;
+}
+.btn-back:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+.btn-primary {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: linear-gradient(135deg, #6d5ef8, #5b4bd6);
+    color: #fff;
+    border: none; border-radius: 8px;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.875rem; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(109, 94, 248, 0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(109, 94, 248, 0.4); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.btn-secondary {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: rgba(255,255,255,0.06);
+    color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+.btn-ghost {
+    display: flex; align-items: center; gap: 0.4rem;
+    background: transparent;
+    color: #8577fa;
+    border: 1px dashed rgba(109, 94, 248, 0.4);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+}
+.btn-ghost:hover { background: rgba(109, 94, 248, 0.08); }
+
+.btn-icon {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #94a3b8;
+    border-radius: 7px;
+    padding: 0.35rem;
+    cursor: pointer;
+    display: flex; align-items: center;
+    transition: all 0.2s;
+}
+.btn-icon:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+.btn-icon.danger:hover { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
 

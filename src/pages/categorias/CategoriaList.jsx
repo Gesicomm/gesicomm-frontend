@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { categoriaService } from '../../services/catalogoService';
 import { useDebounce } from '../../hooks/useDebounce';
-import { Tag, Plus, Edit2, Trash2, ChevronRight, X, Save, Search } from 'lucide-react';
+import { Tag, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, X, Save, Search } from 'lucide-react';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import '../productos/productos.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -72,6 +73,8 @@ export default function CategoriaList() {
   const [pagina, setPagina] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [modal, setModal] = useState(null);
+  const [categoriaABajar, setCategoriaABajar] = useState(null);
+  const [dandoBaja, setDandoBaja] = useState(false);
 
   const [texto, setTexto] = useState('');
   const textoBuscado = useDebounce(texto, 300);
@@ -124,11 +127,17 @@ export default function CategoriaList() {
     cargar(pagina, textoBuscado);
   }, [pagina, textoBuscado]);
 
-  const eliminar = async (id) => {
-    if (!window.confirm('¿Dar de baja esta categoría?')) return;
-    await categoriaService.eliminar(id);
-    cargar(pagina, textoBuscado);
-    cargarTodas();
+  const confirmarEliminar = async () => {
+    if (!categoriaABajar) return;
+    setDandoBaja(true);
+    try {
+      await categoriaService.eliminar(categoriaABajar.id);
+      setCategoriaABajar(null);
+      cargar(pagina, textoBuscado);
+      cargarTodas();
+    } finally {
+      setDandoBaja(false);
+    }
   };
 
   const cerrarModal = () => {
@@ -173,6 +182,16 @@ export default function CategoriaList() {
       <div className="prod-table-wrap">
         {cargando && categorias.length === 0 ? (
           <div className="prod-loading"><div className="spinner" /></div>
+        ) : !cargando && categorias.length === 0 ? (
+          <div className="prod-empty">
+            <Tag size={48} opacity={0.3} />
+            <p>{textoBuscado ? 'No se encontraron categorías' : 'Todavía no hay categorías'}</p>
+            {!textoBuscado && (
+              <button className="btn-primary" onClick={() => setModal('nuevo')}>
+                <Plus size={14} /> Crear la primera
+              </button>
+            )}
+          </div>
         ) : (
           <div className={`prod-table-inner ${cargando ? 'is-loading' : ''}`}>
             <table className="prod-table">
@@ -200,7 +219,7 @@ export default function CategoriaList() {
                       <td>
                         <div className="action-btns">
                           <button className="btn-icon" onClick={() => setModal(cat)} title="Editar"><Edit2 size={14} /></button>
-                          <button className="btn-icon danger" onClick={() => eliminar(cat.id)} title="Dar de baja"><Trash2 size={14} /></button>
+                          <button className="btn-icon danger" onClick={() => setCategoriaABajar(cat)} title="Dar de baja"><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>
@@ -221,18 +240,13 @@ export default function CategoriaList() {
                         <td>
                           <div className="action-btns">
                             <button className="btn-icon" onClick={() => setModal(sub)} title="Editar"><Edit2 size={14} /></button>
-                            <button className="btn-icon danger" onClick={() => eliminar(sub.id)} title="Dar de baja"><Trash2 size={14} /></button>
+                            <button className="btn-icon danger" onClick={() => setCategoriaABajar(sub)} title="Dar de baja"><Trash2 size={14} /></button>
                           </div>
                         </td>
                       </tr>
                     ))}
                   </React.Fragment>
                 ))}
-                {!cargando && categorias.length === 0 && (
-                  <tr><td colSpan={5} style={{ textAlign: 'center', color: '#64748b', padding: '2rem' }}>
-                    No se encontraron categorías
-                  </td></tr>
-                )}
               </tbody>
             </table>
           </div>
@@ -260,6 +274,17 @@ export default function CategoriaList() {
           onSave={cerrarModal}
         />
       )}
+
+      <ConfirmDialog
+        open={!!categoriaABajar}
+        title={`¿Dar de baja "${categoriaABajar?.nombre}"?`}
+        description="La categoría dejará de estar activa. Los productos que la usan no se ven afectados."
+        confirmLabel="Dar de baja"
+        danger
+        loading={dandoBaja}
+        onConfirm={confirmarEliminar}
+        onCancel={() => setCategoriaABajar(null)}
+      />
     </div>
   );
 }

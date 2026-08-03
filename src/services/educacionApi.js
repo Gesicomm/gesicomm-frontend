@@ -14,8 +14,8 @@ export const getDetalleModulo = async (id) => {
   return data;
 };
 
-export const marcarVideoVisto = async (id) => {
-  const { data } = await api.post(`/educacion/modulos/${id}/video-visto`);
+export const marcarLeccionCompletada = async (leccionId) => {
+  const { data } = await api.post(`/educacion/lecciones/${leccionId}/completar`);
   return data;
 };
 
@@ -30,7 +30,7 @@ export const getProgresoSidebar = async () => {
 };
 
 // ==========================================
-// Rutas de Administrador (ABM Cursos y Exámenes)
+// Rutas de Administrador (LMS Journey Studio)
 // ==========================================
 
 export const adminListModulos = async () => {
@@ -40,6 +40,16 @@ export const adminListModulos = async () => {
 
 export const adminCreateModulo = async (moduloData) => {
   const { data } = await api.post('/admin/educacion/modulos', moduloData);
+  return data;
+};
+
+export const adminReordenarModulos = async (modulosOrdenados) => {
+  const { data } = await api.post('/admin/educacion/modulos/reordenar', { modulosOrdenados });
+  return data;
+};
+
+export const adminDuplicarModulo = async (id) => {
+  const { data } = await api.post(`/admin/educacion/modulos/${id}/duplicar`);
   return data;
 };
 

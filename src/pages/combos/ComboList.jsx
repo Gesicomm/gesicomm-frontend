@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, Plus, Edit, Power, PowerOff, AlertTriangle } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import './combos.css';
 
 const ESTADOS = ['TODOS', 'BORRADOR', 'ACTIVO', 'INACTIVO'];
@@ -37,6 +38,7 @@ export default function ComboList() {
   const [error, setError] = useState(null);
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
   const [cambiandoEstado, setCambiandoEstado] = useState(null);
+  const [comboAConfirmar, setComboAConfirmar] = useState(null); // { combo, nuevoEstado }
 
   // Umbral configurado (Configuración económica > Margen mínimo), como fracción.
   const margenMinimoDecimal = config?.margen_minimo !== undefined ? Number(config.margen_minimo) / 100 : 0.10;
@@ -59,12 +61,13 @@ export default function ComboList() {
     }
   }
 
-  async function handleCambiarEstado(combo, nuevoEstado) {
-    if (nuevoEstado === 'INACTIVO' && !window.confirm(`¿Desactivar "${combo.nombre}"?\nEl combo dejará de estar disponible.`)) return;
-    if (nuevoEstado === 'ACTIVO' && !window.confirm(`¿Activar "${combo.nombre}"?\nEl combo quedará disponible.`)) return;
+  async function confirmarCambioEstado() {
+    if (!comboAConfirmar) return;
+    const { combo, nuevoEstado } = comboAConfirmar;
     try {
       setCambiandoEstado(combo.id);
       await comboAdminService.cambiarEstado(combo.id, nuevoEstado);
+      setComboAConfirmar(null);
       await cargar();
     } catch (err) {
       alert(err.response?.data?.message || 'Error al cambiar el estado.');
@@ -206,7 +209,7 @@ export default function ComboList() {
                       className="btn-activate"
                       style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                       disabled={cambiandoEstado === combo.id}
-                      onClick={() => handleCambiarEstado(combo, 'ACTIVO')}
+                      onClick={() => setComboAConfirmar({ combo, nuevoEstado: 'ACTIVO' })}
                     >
                       <Power size={13} /> {cambiandoEstado === combo.id ? '...' : 'Activar'}
                     </button>
@@ -216,7 +219,7 @@ export default function ComboList() {
                       className="btn-deactivate"
                       style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}
                       disabled={cambiandoEstado === combo.id}
-                      onClick={() => handleCambiarEstado(combo, 'INACTIVO')}
+                      onClick={() => setComboAConfirmar({ combo, nuevoEstado: 'INACTIVO' })}
                     >
                       <PowerOff size={13} /> {cambiandoEstado === combo.id ? '...' : 'Desactivar'}
                     </button>
@@ -227,6 +230,25 @@ export default function ComboList() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!comboAConfirmar}
+        title={
+          comboAConfirmar?.nuevoEstado === 'ACTIVO'
+            ? `¿Activar "${comboAConfirmar?.combo?.nombre}"?`
+            : `¿Desactivar "${comboAConfirmar?.combo?.nombre}"?`
+        }
+        description={
+          comboAConfirmar?.nuevoEstado === 'ACTIVO'
+            ? 'El combo quedará disponible para la venta.'
+            : 'El combo dejará de estar disponible para la venta.'
+        }
+        confirmLabel={comboAConfirmar?.nuevoEstado === 'ACTIVO' ? 'Activar' : 'Desactivar'}
+        danger={comboAConfirmar?.nuevoEstado !== 'ACTIVO'}
+        loading={cambiandoEstado === comboAConfirmar?.combo?.id}
+        onConfirm={confirmarCambioEstado}
+        onCancel={() => setComboAConfirmar(null)}
+      />
     </div>
   );
 }

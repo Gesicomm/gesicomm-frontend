@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { marcaService } from '../../services/catalogoService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Briefcase, Plus, Edit2, Trash2, X, Save, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import '../productos/productos.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -61,6 +62,8 @@ export default function MarcaList() {
   const [pagina, setPagina] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [modal, setModal] = useState(null);
+  const [marcaABajar, setMarcaABajar] = useState(null);
+  const [dandoBaja, setDandoBaja] = useState(false);
 
   const [texto, setTexto] = useState('');
   const textoBuscado = useDebounce(texto, 300);
@@ -98,10 +101,16 @@ export default function MarcaList() {
     cargar(pagina, textoBuscado);
   }, [pagina]);
 
-  const eliminar = async (id) => {
-    if (!window.confirm('¿Dar de baja esta marca?')) return;
-    await marcaService.eliminar(id);
-    cargar(pagina, textoBuscado);
+  const confirmarEliminar = async () => {
+    if (!marcaABajar) return;
+    setDandoBaja(true);
+    try {
+      await marcaService.eliminar(marcaABajar.id);
+      setMarcaABajar(null);
+      cargar(pagina, textoBuscado);
+    } finally {
+      setDandoBaja(false);
+    }
   };
 
   return (
@@ -163,7 +172,7 @@ export default function MarcaList() {
                     <td>
                       <div className="action-btns">
                         <button className="btn-icon" onClick={() => setModal(m)} title="Editar"><Edit2 size={14} /></button>
-                        <button className="btn-icon danger" onClick={() => eliminar(m.id)} title="Dar de baja"><Trash2 size={14} /></button>
+                        <button className="btn-icon danger" onClick={() => setMarcaABajar(m)} title="Dar de baja"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -199,6 +208,17 @@ export default function MarcaList() {
           onSave={() => { setModal(null); cargar(1, textoBuscado); setPagina(1); }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!marcaABajar}
+        title={`¿Dar de baja "${marcaABajar?.nombre}"?`}
+        description="La marca dejará de estar activa. Los productos que la usan no se ven afectados."
+        confirmLabel="Dar de baja"
+        danger
+        loading={dandoBaja}
+        onConfirm={confirmarEliminar}
+        onCancel={() => setMarcaABajar(null)}
+      />
     </div>
   );
 }

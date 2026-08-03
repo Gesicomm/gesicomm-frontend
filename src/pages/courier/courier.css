@@ -26,6 +26,8 @@
   padding: 0.35rem;
   border-radius: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .tab-btn {
@@ -49,14 +51,14 @@
 }
 
 .tab-btn.active {
-  background-color: #ff007f;
+  background-color: #6d5ef8;
   color: #ffffff;
-  box-shadow: 0 2px 10px rgba(255, 0, 127, 0.3);
+  box-shadow: 0 2px 10px rgba(109, 94, 248, 0.35);
 }
 
 /* Botón Nuevo Pedido Top Bar */
 .btn-nuevo-pedido {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: linear-gradient(135deg, #6d5ef8, #5b4bd6);
   color: #ffffff;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -67,14 +69,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 14px rgba(109, 94, 248, 0.3);
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .btn-nuevo-pedido:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 6px 18px rgba(109, 94, 248, 0.45);
 }
 
 /* Kanban Board */
@@ -99,7 +101,7 @@
 }
 
 .kanban-column.is-over {
-  border-color: #ff007f;
+  border-color: #6d5ef8;
   background: #121216;
 }
 

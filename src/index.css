@@ -41,6 +41,7 @@
     --text-sidebar-foreground: var(--color-fg);
     --text-muted-foreground: var(--color-fg-muted);
     --bg-primary: var(--color-primary);
+    --bg-primary-soft: rgba(109, 94, 248, 0.1);
     --border-border: var(--color-border);
 }
 

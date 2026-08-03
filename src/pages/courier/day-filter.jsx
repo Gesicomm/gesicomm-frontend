@@ -20,7 +20,7 @@ export function DayFilter({ date, onChange, count }) {
           value={date}
           onChange={(e) => onChange(e.target.value)}
         />
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', background: '#e2e8f0', padding: '0.1rem 0.4rem', borderRadius: '1rem' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#e2e8f0', background: 'rgba(255,255,255,0.08)', padding: '0.1rem 0.4rem', borderRadius: '1rem' }}>
           {count}
         </span>
       </div>

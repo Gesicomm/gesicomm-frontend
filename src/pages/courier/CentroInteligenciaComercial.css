@@ -1,0 +1,675 @@
+/* ==========================================================================
+   CENTRO DE INTELIGENCIA COMERCIAL & ANALYTICS - GESICOMM
+   Estética Premium Dark ERP, Glassmorphism, Micro-animaciones y Responsive
+   ========================================================================== */
+
+.cic-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: #f1f5f9;
+  font-family: inherit;
+  width: 100%;
+}
+
+/* Header & Controls */
+.cic-top-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, rgba(20, 22, 34, 0.85) 0%, rgba(13, 14, 22, 0.95) 100%);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.cic-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cic-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.cic-badge-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cic-badge-live .pulse-dot {
+  width: 6px;
+  height: 6px;
+  background: #10b981;
+  border-radius: 50%;
+  animation: pulseLive 1.8s infinite;
+}
+
+@keyframes pulseLive {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.cic-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cic-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cic-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.cic-btn-primary {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-color: #6366f1;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+}
+
+.cic-btn-primary:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+/* Preset Pills */
+.cic-presets-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 1rem;
+}
+
+.cic-preset-pill {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cic-preset-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+.cic-preset-pill.active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: #6366f1;
+  color: #a5b4fc;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+}
+
+/* Dropdown Filters */
+.cic-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.cic-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cic-filter-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.cic-select {
+  background: #12131a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.cic-select:focus {
+  border-color: #6366f1;
+}
+
+/* ==========================================================================
+   A. VISUAL CONVERSION FUNNEL (EMBUDO COMPLETO)
+   ========================================================================== */
+.cic-funnel-card {
+  background: linear-gradient(135deg, rgba(18, 20, 30, 0.95) 0%, rgba(12, 13, 20, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+}
+
+.cic-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cic-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.cic-card-subtitle {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0.2rem 0 0 0;
+}
+
+.cic-funnel-track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem;
+  position: relative;
+}
+
+.cic-funnel-step {
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.cic-funnel-step:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.cic-funnel-step.step-created { border-left: 4px solid #3b82f6; }
+.cic-funnel-step.step-confirmed { border-left: 4px solid #10b981; }
+.cic-funnel-step.step-dispatched { border-left: 4px solid #8b5cf6; }
+.cic-funnel-step.step-delivered { border-left: 4px solid #06b6d4; }
+.cic-funnel-step.step-returned { border-left: 4px solid #f43f5e; }
+
+.cic-step-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cic-step-val {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.cic-step-rate-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.rate-green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.rate-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.rate-purple { background: rgba(139, 92, 246, 0.15); color: #c084fc; }
+.rate-red { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+
+.cic-step-progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+  margin-top: 0.3rem;
+}
+
+.cic-step-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   B. SMART INSIGHTS & ALERTAS ACCIONABLES
+   ========================================================================== */
+.cic-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.85rem;
+}
+
+.cic-insight-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.cic-insight-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.cic-insight-icon {
+  padding: 0.55rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-positivo { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.icon-alerta { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.icon-critico { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.icon-info { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+
+.cic-insight-content h4 {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.25rem 0;
+}
+
+.cic-insight-content p {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   C. FINANCIAL & OPERATIONAL KPIS GRID
+   ========================================================================== */
+.cic-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.85rem;
+}
+
+.cic-kpi-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
+}
+
+.cic-kpi-card:hover {
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+.cic-kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cic-kpi-val {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.cic-kpi-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+/* ==========================================================================
+   D. SPARKLINES & TIMELINES
+   ========================================================================== */
+.cic-trends-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+}
+
+.cic-trend-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cic-trend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.cic-sparkline-box {
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 100%;
+  padding-top: 5px;
+}
+
+.cic-spark-bar {
+  flex: 1;
+  min-width: 4px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s ease, opacity 0.2s ease;
+  position: relative;
+}
+
+.cic-spark-bar:hover {
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   E. TABLAS ANALÍTICAS (PRODUCTOS & CONFIRMADORES)
+   ========================================================================== */
+.cic-table-card {
+  background: linear-gradient(135deg, rgba(18, 20, 30, 0.95) 0%, rgba(12, 13, 20, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.35rem;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.cic-table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 1rem;
+}
+
+.cic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  text-align: left;
+}
+
+.cic-table thead tr {
+  background: #13151f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cic-table th {
+  padding: 0.85rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.cic-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.cic-table th.sortable:hover {
+  color: #fff;
+}
+
+.cic-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s ease;
+}
+
+.cic-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.cic-table td {
+  padding: 0.85rem 1rem;
+  color: #f1f5f9;
+  vertical-align: middle;
+}
+
+/* Badges semafóricos de tabla */
+.cic-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.badge-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.25); }
+.badge-yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.25); }
+.badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.25); }
+
+/* Channel Tag */
+.cic-channel-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+}
+
+.tag-web { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.tag-whatsapp { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.tag-landing { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+
+/* ==========================================================================
+   F. COURIER CARDS GRID
+   ========================================================================== */
+.cic-courier-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.cic-courier-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  transition: all 0.25s ease;
+}
+
+.cic-courier-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+.cic-courier-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cic-courier-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 0.65rem 0.5rem;
+  text-align: center;
+}
+
+.cic-courier-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.cic-courier-stat-item span:first-child {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.cic-courier-stat-item span:last-child {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.cic-courier-finance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.65rem;
+}
+
+/* ==========================================================================
+   MODAL DE PROGRAMAR REPORTE
+   ========================================================================== */
+.cic-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.cic-modal-box {
+  background: #141622;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cic-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cic-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cic-input-group label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.cic-input {
+  background: #0f1017;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.cic-input:focus {
+  border-color: #6366f1;
+}

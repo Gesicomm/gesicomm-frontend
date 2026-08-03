@@ -1,24 +1,25 @@
 import { useMemo, useState, useEffect } from "react";
-import { LayoutGrid, PackageCheck, Users, Plus, List } from "lucide-react";
+import { LayoutGrid, PackageCheck, Users, Plus, List, TrendingUp } from "lucide-react";
 import { KanbanBoard } from "./kanban-board";
 import { SummaryBar } from "./summary-bar";
 import { DayFilter } from "./day-filter";
 import { CouriersCrud } from "./couriers-crud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
+import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import { 
   getCouriers, 
   getEnvios, 
   updateEstadoEnvio, 
   createCourier, 
   updateCourier, 
-  deleteCourier,
+  deleteCourier, 
   createEnvio 
 } from "../../services/courierApi";
 import { STATUS, formatGs } from "../../lib/courier";
 import "./courier.css";
 
 export function ControlCourier() {
-  const [tab, setTab] = useState("tablero");
+  const [tab, setTab] = useState("analytics");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [couriers, setCouriers] = useState([]);
   const [envios, setEnvios] = useState([]);
@@ -96,19 +97,19 @@ export function ControlCourier() {
   };
 
   return (
-    <div className="prod-page" style={{ background: '#050505', minHeight: '100vh', color: '#fff', maxWidth: '100%' }}>
+    <div className="prod-page" style={{ maxWidth: '100%' }}>
       <div className="courier-header">
         <div className="prod-header-left">
-          <div className="prod-icon-wrap" style={{ background: 'rgba(255, 0, 127, 0.1)', color: '#ff007f' }}>
+          <div className="prod-icon-wrap" style={{ background: 'rgba(109, 94, 248, 0.12)', color: '#8577fa' }}>
             <PackageCheck size={22} />
           </div>
           <div>
-            <h1 className="prod-title" style={{ color: '#fff' }}>Control de Pedidos y Couriers</h1>
-            <p className="prod-subtitle" style={{ color: '#888' }}>Módulo logístico centralizado</p>
+            <h1 className="prod-title">Centro de Control de Pedidos & Logística</h1>
+            <p className="prod-subtitle">Centro de Inteligencia Comercial, Seguimiento Logístico y Tablero Operativo</p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             className="btn-nuevo-pedido"
@@ -119,6 +120,9 @@ export function ControlCourier() {
           </button>
 
           <nav className="courier-tabs">
+            <TabButton active={tab === "analytics"} onClick={() => setTab("analytics")} icon={<TrendingUp size={16} />}>
+              Centro de Inteligencia
+            </TabButton>
             <TabButton active={tab === "tablero"} onClick={() => setTab("tablero")} icon={<LayoutGrid size={16} />}>
               Tablero
             </TabButton>
@@ -133,7 +137,9 @@ export function ControlCourier() {
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
-        {tab === "tablero" || tab === "envios" ? (
+        {tab === "analytics" ? (
+          <CentroInteligenciaComercial />
+        ) : tab === "tablero" || tab === "envios" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
@@ -218,34 +224,36 @@ export function ControlCourier() {
                         let rowBg = 'transparent';
                         if (e.estado === 'Entregado') rowBg = 'rgba(16, 185, 129, 0.08)';
                         else if (e.estado === 'Rendido') rowBg = 'rgba(139, 92, 246, 0.08)';
-                        else if (e.estado === 'Cancelado') rowBg = 'rgba(239, 68, 68, 0.05)';
-                        else if (e.estado === 'En camino') rowBg = 'rgba(59, 130, 246, 0.04)';
-                        else if (e.estado === 'Reagendado') rowBg = 'rgba(249, 115, 22, 0.04)';
-                        else if (e.estado === 'Devuelto') rowBg = 'rgba(129, 140, 248, 0.04)';
+                        else if (e.estado === 'Cancelado') rowBg = 'rgba(239, 68, 68, 0.08)';
 
                         return (
-                          <tr key={e.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: rowBg }}>
-                            <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#3b82f6' }}>{idPedido}</td>
-                            <td style={{ padding: '0.85rem 1rem', fontWeight: 600, color: '#fff' }}>{nombreCliente}</td>
-                            <td style={{ padding: '0.85rem 1rem' }}>{e.ciudad || '-'}</td>
-                            <td style={{ padding: '0.85rem 1rem' }}>{e.direccion || '-'}</td>
-                            <td style={{ padding: '0.85rem 1rem' }}>{nombresProds}</td>
-                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontWeight: 600 }}>{cantTotal}</td>
-                            <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#10b981' }}>{formatGs(e.monto)}</td>
-                            <td style={{ padding: '0.85rem 1rem', color: '#888' }}>{formatGs(e.costo_envio)}</td>
-                            <td style={{ padding: '0.85rem 1rem', fontWeight: 500 }}>{nombreCourier}</td>
-                            <td style={{ padding: '0.85rem 1rem' }}>{metodoFormat}</td>
-                            <td style={{ padding: '0.85rem 1rem', color: '#a78bfa', fontWeight: 600 }}>{rendidoElStr}</td>
-                            <td style={{ padding: '0.85rem 1rem' }}>
+                          <tr key={e.id} style={{ background: rowBg, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td style={{ padding: '1rem', fontWeight: 600, color: '#8577fa' }}>{idPedido}</td>
+                            <td style={{ padding: '1rem', fontWeight: 500 }}>
+                              <div>{nombreCliente}</div>
+                              <div style={{ fontSize: '0.75rem', color: '#666' }}>{e.telefono || '-'}</div>
+                            </td>
+                            <td style={{ padding: '1rem', color: '#aaa' }}>{e.ciudad || '-'}</td>
+                            <td style={{ padding: '1rem', color: '#888', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {e.direccion || '-'}
+                            </td>
+                            <td style={{ padding: '1rem', color: '#ddd' }}>{nombresProds}</td>
+                            <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600 }}>{cantTotal}</td>
+                            <td style={{ padding: '1rem', fontWeight: 700, color: '#10b981' }}>{formatGs(e.monto)}</td>
+                            <td style={{ padding: '1rem', color: '#888' }}>{formatGs(e.costo_envio)}</td>
+                            <td style={{ padding: '1rem', color: '#aaa' }}>{nombreCourier}</td>
+                            <td style={{ padding: '1rem', color: '#888' }}>{metodoFormat}</td>
+                            <td style={{ padding: '1rem', color: '#aaa' }}>{rendidoElStr}</td>
+                            <td style={{ padding: '1rem' }}>
                               <span style={{
+                                display: 'inline-block',
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '9999px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
                                 background: metaEstado.chipBg,
                                 color: metaEstado.chipText,
-                                padding: '0.25rem 0.6rem',
-                                borderRadius: '999px',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                display: 'inline-block'
+                                border: '1px solid rgba(255,255,255,0.1)'
                               }}>
                                 {metaEstado.label}
                               </span>

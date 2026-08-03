@@ -35,7 +35,7 @@ export function OrderCard({
           <h4 className="order-card-client">{nombreCliente}</h4>
           {ubicacionLabel && (
             <p className="order-card-address" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <MapPin size={11} style={{ color: '#ff007f' }} />
+              <MapPin size={11} style={{ color: '#8577fa' }} />
               <span>{ubicacionLabel}</span>
             </p>
           )}
@@ -102,7 +102,7 @@ export function OrderCard({
             {formatGs(envio.monto)}
           </span>
           {Number(envio.costo_envio) > 0 && (
-            <span style={{ fontSize: '0.72rem', color: '#ff007f', fontWeight: 700, display: 'block', marginTop: '0.1rem' }}>
+            <span style={{ fontSize: '0.72rem', color: '#8577fa', fontWeight: 700, display: 'block', marginTop: '0.1rem' }}>
               Delivery: {formatGs(envio.costo_envio)}
             </span>
           )}

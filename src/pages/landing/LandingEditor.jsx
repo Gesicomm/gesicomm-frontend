@@ -12,6 +12,7 @@ import { getMediaUrl } from '../../services/api';
 import ProductPicker from './ProductPicker';
 import LandingPreview from './LandingPreview';
 import EstadisticasPanel from './EstadisticasPanel';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import '../vitrina/vitrina.css';
 import './landing.css';
 
@@ -119,6 +120,8 @@ export default function LandingEditor() {
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState(null);
   const [erroresValidacion, setErroresValidacion] = useState([]);
+  const [confirmDespublicar, setConfirmDespublicar] = useState(null); // landing actualizada, pendiente de confirmar
+  const [confirmEliminar, setConfirmEliminar] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -457,10 +460,14 @@ export default function LandingEditor() {
     }
 
     const nuevoEstado = !actual.activo;
-    if (!nuevoEstado && !window.confirm('Si tenés anuncios o links compartidos apuntando acá, van a dejar de mostrar productos. ¿Despublicar de todos modos?')) {
+    if (!nuevoEstado) {
+      setConfirmDespublicar(actual);
       return;
     }
+    await ejecutarCambioEstado(actual, nuevoEstado);
+  }
 
+  async function ejecutarCambioEstado(actual, nuevoEstado) {
     setPublicando(true);
     try {
       const actualizada = await landingService.cambiarEstado(actual.id, nuevoEstado);
@@ -473,9 +480,19 @@ export default function LandingEditor() {
     }
   }
 
-  async function eliminarLanding() {
+  async function confirmarDespublicar() {
+    const actual = confirmDespublicar;
+    setConfirmDespublicar(null);
+    if (actual) await ejecutarCambioEstado(actual, false);
+  }
+
+  function eliminarLanding() {
     if (!landing?.id) return;
-    if (!window.confirm(`¿Eliminar "${landing.nombre}"? No se puede deshacer, y tu tienda va a quedar sin landing hasta que crees una nueva.`)) return;
+    setConfirmEliminar(true);
+  }
+
+  async function confirmarEliminarLanding() {
+    setConfirmEliminar(false);
     setGuardando(true);
     setError(null);
     try {
@@ -1152,6 +1169,28 @@ export default function LandingEditor() {
           </aside>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDespublicar}
+        title="¿Despublicar esta landing?"
+        description="Si tenés anuncios o links compartidos apuntando acá, van a dejar de mostrar productos."
+        confirmLabel="Despublicar"
+        danger
+        loading={publicando}
+        onConfirm={confirmarDespublicar}
+        onCancel={() => setConfirmDespublicar(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmEliminar}
+        title={`¿Eliminar "${landing?.nombre}"?`}
+        description="No se puede deshacer, y tu tienda va a quedar sin landing hasta que crees una nueva."
+        confirmLabel="Eliminar"
+        danger
+        loading={guardando}
+        onConfirm={confirmarEliminarLanding}
+        onCancel={() => setConfirmEliminar(false)}
+      />
     </div>
   );
 }
