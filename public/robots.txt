@@ -1,0 +1,32 @@
+# Gesicomm — https://gesicomm.com
+
+User-agent: *
+Allow: /
+
+# Panel de la aplicación: contenido privado detrás de autenticación, no hay
+# nada que indexar y evita que los crawlers gasten presupuesto de rastreo.
+Disallow: /login
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /settings
+Disallow: /configuracion
+Disallow: /products
+Disallow: /categorias
+Disallow: /combos
+Disallow: /orders
+Disallow: /customers
+Disallow: /ads
+Disallow: /admin/
+Disallow: /academia
+Disallow: /mi-catalogo
+Disallow: /mi-tienda
+Disallow: /mi-landing
+Disallow: /mis-pedidos
+Disallow: /mis-anuncios
+Disallow: /configuracion-economica
+
+# Páginas de estado de solicitudes de eliminación: son privadas por código,
+# no deben aparecer en resultados de búsqueda.
+Disallow: /data-deletion/estado/
+
+Sitemap: https://gesicomm.com/sitemap.xml

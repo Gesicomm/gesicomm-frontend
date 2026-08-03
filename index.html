@@ -2,10 +2,93 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gesicomm - Gestor de E-Commerce</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!--
+      Metadatos estáticos de la portada.
+
+      Los componentes <Seo> de cada ruta los reemplazan en el navegador, pero
+      esto es lo único que ven los bots que NO ejecutan JavaScript — entre
+      ellos el crawler de Facebook y el de WhatsApp, que son los que arman el
+      preview cuando alguien comparte gesicomm.com. Por eso acá va la ficha
+      de la portada completa y no un título genérico.
+    -->
+    <title>Gesicomm · Gestión de eCommerce en un solo panel</title>
+    <meta
+      name="description"
+      content="Plataforma SaaS para administrar toda la operación de tu eCommerce: productos, pedidos, inventario, clientes, logística, CRM, campañas y métricas. Integrada con Shopify, Meta, Facebook, Instagram y WhatsApp Cloud API."
+    />
+    <link rel="canonical" href="https://gesicomm.com/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="author" content="Gesicomm" />
+    <meta name="theme-color" content="#6D5EF8" />
+
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Gesicomm" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Gesicomm · Gestión de eCommerce en un solo panel" />
+    <meta
+      property="og:description"
+      content="Productos, pedidos, inventario, clientes, logística y campañas en un solo panel. Integrado con Shopify, Meta, Facebook, Instagram y WhatsApp Cloud API."
+    />
+    <meta property="og:url" content="https://gesicomm.com/" />
+    <meta property="og:image" content="https://gesicomm.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Gesicomm — toda la operación de tu eCommerce, en un solo lugar." />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Gesicomm · Gestión de eCommerce en un solo panel" />
+    <meta
+      name="twitter:description"
+      content="Productos, pedidos, inventario, clientes, logística y campañas en un solo panel."
+    />
+    <meta name="twitter:image" content="https://gesicomm.com/og-image.png" />
+
+    <!-- Iconos. El SVG es el que usan los navegadores modernos; los PNG son
+         el respaldo y el icono de iOS. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Outfit la usan las landings públicas que arman los usuarios
+         (src/lib/landingDiseno.js la ofrece como tipografía elegible), no el
+         sitio institucional, que va con la Inter Variable que importa
+         main.jsx. No borrar: sin esto las landings que eligieron Outfit
+         caen a la fuente del sistema. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap"
+      rel="stylesheet"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Gesicomm",
+        "url": "https://gesicomm.com",
+        "logo": "https://gesicomm.com/icons/icon-512.png",
+        "description": "Plataforma SaaS de gestión de eCommerce.",
+        "contactPoint": [
+          {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "email": "support@gesicomm.com"
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "privacy",
+            "email": "privacy@gesicomm.com"
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

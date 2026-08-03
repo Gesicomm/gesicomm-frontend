@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Gesicomm">
+  <title>Gesicomm</title>
+  <!--
+    Versión para app icon: Meta App Icon, Apple Touch Icon, Android e
+    instalación PWA. Sin texto y a sangre completa, porque cada plataforma
+    aplica su propia máscara de esquinas. El glifo ocupa el 58% del lienzo,
+    dentro de la zona segura del 80% que exigen los iconos maskable.
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C6BFF"/>
+      <stop offset="1" stop-color="#4A38CF"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#tile)"/>
+  <g transform="translate(63.3 67.2) scale(5.9)">
+    <path d="M43.47 15.62 A20 20 0 1 0 50.13 40.45"
+          fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="51.32" cy="26.82" r="6.5" fill="#67E8F9"/>
+  </g>
+</svg>

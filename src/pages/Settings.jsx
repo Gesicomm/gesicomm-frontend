@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../utils/api';
 import { Plus, Trash2, Store, CheckCircle, XCircle, Loader } from 'lucide-react';
+import PrivacidadDatosCard from '../components/PrivacidadDatosCard';
 
 const Settings = () => {
     const [tiendas, setTiendas] = useState([]);
@@ -185,6 +186,10 @@ const Settings = () => {
                     </div>
                 )}
             </div>
+
+            {/* Metodo 1 de /data-deletion: la pantalla que un revisor de Meta
+                sigue paso a paso durante la revision de la aplicacion. */}
+            <PrivacidadDatosCard />
         </div>
     );
 };

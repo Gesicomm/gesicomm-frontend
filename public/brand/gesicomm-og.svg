@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!--
+    Fuente de la imagen para Open Graph y Twitter Cards (1200x630).
+    Se rasteriza a public/og-image.png con scripts/generate-brand-assets.mjs.
+  -->
+  <defs>
+    <linearGradient id="og-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9E92FF"/>
+      <stop offset="1" stop-color="#6D5EF8"/>
+    </linearGradient>
+    <radialGradient id="og-glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6D5EF8" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#6D5EF8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="og-rule" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6D5EF8"/>
+      <stop offset="1" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#08080A"/>
+  <ellipse cx="1010" cy="120" rx="520" ry="400" fill="url(#og-glow)"/>
+
+  <!-- Isotipo a escala 1.15 sobre la caja original de 64. -->
+  <g transform="translate(76 68) scale(1.15)">
+    <path d="M43.47 15.62 A20 20 0 1 0 50.13 40.45"
+          fill="none" stroke="url(#og-ring)" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="51.32" cy="26.82" r="6.5" fill="#22D3EE"/>
+  </g>
+  <text x="167" y="122"
+        font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif"
+        font-size="34" font-weight="700" letter-spacing="-1" fill="#F4F4F6">Gesicomm</text>
+
+  <text x="76" y="290"
+        font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif"
+        font-size="64" font-weight="700" letter-spacing="-2.2" fill="#F4F4F6">Toda la operación de tu</text>
+  <text x="76" y="366"
+        font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif"
+        font-size="64" font-weight="700" letter-spacing="-2.2" fill="#F4F4F6">eCommerce, en un solo lugar.</text>
+
+  <text x="76" y="432"
+        font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif"
+        font-size="27" font-weight="400" letter-spacing="-0.3" fill="#9A9AA6">Productos, pedidos, inventario, clientes, logística y campañas.</text>
+
+  <rect x="76" y="492" width="120" height="3" rx="1.5" fill="url(#og-rule)"/>
+
+  <text x="76" y="552"
+        font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif"
+        font-size="25" font-weight="600" letter-spacing="-0.2" fill="#6D5EF8">gesicomm.com</text>
+  <text x="286" y="552"
+        font-family="Inter, Segoe UI, Helvetica Neue, Arial, sans-serif"
+        font-size="25" font-weight="400" letter-spacing="-0.2" fill="#6B6B76">Shopify · Meta · WhatsApp Cloud API</text>
+</svg>

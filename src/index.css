@@ -33,6 +33,53 @@
     --radius-xl: 16px;
 }
 
+/* ─── Tema claro ─────────────────────────────────────
+   Solo el sitio público (landing + páginas legales) lo usa: lo activa
+   ThemeProvider poniendo data-theme="light" en <html> mientras
+   PublicLayout está montado, y lo quita al desmontarse. El panel de la
+   aplicación no tiene selector de tema y sigue siendo oscuro siempre.
+
+   Redeclarar las variables acá alcanza porque las utilidades que genera
+   Tailwind v4 (bg-canvas, text-fg, …) apuntan a var(--color-*), así que
+   heredan el valor del tema activo sin duplicar ninguna clase. */
+:root[data-theme='light'] {
+    --color-canvas: #ffffff;
+    --color-surface: #fafafb;
+    --color-surface-2: #f4f4f6;
+    --color-surface-3: #ededf0;
+    --color-border: #e4e4e9;
+    --color-border-strong: #d3d3da;
+
+    --color-fg: #0b0b10;
+    --color-fg-muted: #5b5b67;
+    --color-fg-subtle: #82828f;
+
+    /* #6d5ef8 sobre blanco da 3.9:1 — no llega a AA para texto. El
+       primario se oscurece en claro solo para que enlaces y texto de
+       acento pasen 4.5:1; el violeta de marca original se mantiene en
+       superficies grandes (botones con texto blanco), donde el contraste
+       lo aporta el fondo. */
+    --color-primary: #5b4bd6;
+    --color-primary-hover: #4f3fc4;
+    --color-primary-active: #4536ad;
+
+    --color-success: #047857;
+    --color-warning: #b45309;
+    --color-danger: #dc2626;
+    --color-info: #1d4ed8;
+
+    color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+}
+
+:root[data-theme='light'] body {
+    background: var(--color-canvas);
+    color: var(--color-fg);
+}
+
 /* Alias de compatibilidad — usados por CSS legacy (dashboard.css,
    Ads.jsx, vitrina.css) hasta que se migren a Tailwind pantalla por
    pantalla. No borrar hasta terminar esa migración. */
@@ -72,4 +119,153 @@ body, html {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════
+   Sitio público (landing + páginas legales)
+   ═══════════════════════════════════════════════════ */
+
+/* Anclas de la tabla de contenidos: sin esto el título queda tapado por
+   la navbar fija al saltar a una sección. */
+html {
+    scroll-behavior: smooth;
+}
+
+[id] {
+    scroll-margin-top: 6rem;
+}
+
+/* Foco visible y consistente en todo el sitio público. :focus-visible y no
+   :focus para que el anillo aparezca al navegar con teclado pero no al
+   hacer clic con el mouse. */
+.sitio-publico :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Enlace de salto al contenido: primer elemento tabulable de la página,
+   invisible hasta que recibe foco. */
+.saltar-al-contenido {
+    position: absolute;
+    left: 1rem;
+    top: -100%;
+    z-index: 100;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: top 0.2s ease;
+}
+
+.saltar-al-contenido:focus {
+    top: 1rem;
+}
+
+/* ─── Cuerpo de los documentos legales ───────────────
+   Los textos legales son largos y se leen de corrido: el interlineado
+   ancho y el ancho de medida acotado (~72 caracteres) son lo que hace la
+   diferencia entre un documento legible y un muro de texto. */
+.texto-legal {
+    line-height: 1.75;
+}
+
+.texto-legal p,
+.texto-legal ul,
+.texto-legal ol {
+    max-width: 72ch;
+}
+
+/* El espaciado va por hermanos anidados y no por `> * + *`: el contenido de
+   cada sección vive dentro de <section><div>…</div></section>, así que una
+   regla de hijo directo no llega a los párrafos y el documento queda
+   apelmazado. Con :where() la especificidad es 0 y cualquier utilidad de
+   Tailwind puntual (mt-*, mb-*) sigue ganando. */
+.texto-legal :where(p, ul, ol, table, blockquote) + :where(p, ul, ol, table, blockquote) {
+    margin-top: 1.25rem;
+}
+
+.texto-legal ul,
+.texto-legal ol {
+    padding-left: 1.5rem;
+}
+
+.texto-legal ul { list-style: disc; }
+.texto-legal ol { list-style: decimal; }
+.texto-legal li::marker { color: var(--color-fg-subtle); }
+.texto-legal li + li { margin-top: 0.5rem; }
+
+.texto-legal a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.texto-legal a:hover { color: var(--color-primary-hover); }
+
+.texto-legal strong {
+    color: var(--color-fg);
+    font-weight: 600;
+}
+
+/* ─── Animaciones de entrada ─────────────────────────
+   Suaves y cortas: el contenido tiene que estar legible enseguida, la
+   animación acompaña la lectura, no la retrasa. */
+@keyframes aparecer {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.animar-entrada {
+    animation: aparecer 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.revelar {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.revelar-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Quien pidió menos movimiento ve el contenido directamente en su estado
+   final, nunca oculto a la espera de una animación que no va a correr. */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+
+    .animar-entrada,
+    .revelar {
+        animation: none;
+        transition: none;
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* ─── Impresión ──────────────────────────────────────
+   Las políticas se imprimen y se archivan: navbar, footer y controles
+   sobran, y el texto va en negro sobre blanco. */
+@media print {
+    .no-imprimir { display: none !important; }
+
+    .sitio-publico {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .texto-legal p,
+    .texto-legal ul,
+    .texto-legal ol { max-width: none; }
+
+    a[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: 0.75em;
+        color: #555;
+    }
 }

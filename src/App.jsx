@@ -1,5 +1,5 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
 import Login from './pages/Login';
 import Settings from './pages/Settings';
 import Ads from './pages/Ads';
@@ -24,12 +24,82 @@ import { ControlCourier } from './pages/courier/control-courier';
 import EducacionView from './pages/educacion/EducacionView';
 import AdminEducacion from './pages/educacion/AdminEducacion';
 
+// Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
+// el App Dashboard de Meta para la revisión de la aplicación, así que tienen
+// que quedar siempre accesibles sin sesión.
+//
+// La landing va con import normal porque es la portada: tiene que pintar sin
+// esperar un chunk adicional. Los documentos legales van con lazy() porque
+// son mucho texto que casi nadie lee de corrido, y cargarlos siempre sumaba
+// ~190 kB al bundle que descarga cualquiera que entre a gesicomm.com.
+import PublicLayout from './components/public/PublicLayout';
+import Landing from './pages/public/Landing';
+
+const Contact = lazy(() => import('./pages/public/Contact'));
+const NotFound = lazy(() => import('./pages/public/NotFound'));
+const Privacy = lazy(() => import('./pages/legal/Privacy'));
+const Terms = lazy(() => import('./pages/legal/Terms'));
+const Cookies = lazy(() => import('./pages/legal/Cookies'));
+const Security = lazy(() => import('./pages/legal/Security'));
+const Compliance = lazy(() => import('./pages/legal/Compliance'));
+const DataDeletion = lazy(() => import('./pages/legal/DataDeletion'));
+const DataDeletionStatus = lazy(() => import('./pages/legal/DataDeletionStatus'));
+
+/**
+ * Envoltorio de las páginas públicas diferidas.
+ *
+ * El fallback ocupa alto de pantalla para que la navbar y el pie no salten
+ * hacia arriba mientras llega el chunk. role="status" hace que un lector de
+ * pantalla anuncie la carga en vez de quedarse en silencio.
+ */
+function PaginaPublica({ children }) {
+  return (
+    <PublicLayout>
+      <Suspense
+        fallback={
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex min-h-[60vh] items-center justify-center"
+          >
+            <span className="loader" />
+            <span className="sr-only">Cargando página…</span>
+          </div>
+        }
+      >
+        {children}
+      </Suspense>
+    </PublicLayout>
+  );
+}
+
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Rutas públicas */}
-        <Route path="/" element={<Home />} />
+        {/* ─────────────────────────────────────────────────────────
+            Sitio institucional público (gesicomm.com) — sin guards.
+
+            Estas URLs son las que se cargan en el App Dashboard de Meta
+            para la revisión de la app, así que tienen que responder
+            siempre sin sesión:
+              /privacy        → Privacy Policy URL
+              /terms          → Terms of Service URL
+              /data-deletion  → Data Deletion Instructions URL
+            El Data Deletion Callback en cambio es del backend:
+            POST https://api.gesicomm.com/api/meta/data-deletion-callback
+            ───────────────────────────────────────────────────────── */}
+        <Route path="/" element={<PublicLayout><Landing /></PublicLayout>} />
+        <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
+        <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
+        <Route path="/cookies" element={<PaginaPublica><Cookies /></PaginaPublica>} />
+        <Route path="/security" element={<PaginaPublica><Security /></PaginaPublica>} />
+        <Route path="/compliance" element={<PaginaPublica><Compliance /></PaginaPublica>} />
+        <Route path="/contact" element={<PaginaPublica><Contact /></PaginaPublica>} />
+        <Route path="/data-deletion" element={<PaginaPublica><DataDeletion /></PaginaPublica>} />
+        <Route path="/data-deletion/estado" element={<PaginaPublica><DataDeletionStatus /></PaginaPublica>} />
+        <Route path="/data-deletion/estado/:codigo" element={<PaginaPublica><DataDeletionStatus /></PaginaPublica>} />
+
         <Route path="/login" element={<Login />} />
 
         {/* Rutas protegidas — panel admin */}
@@ -121,6 +191,10 @@ function App() {
         {/* Rutas públicas — landing compartible, sin ningún guard */}
         <Route path="/l" element={<LandingPublica />} />
         <Route path="/l/:slug" element={<LandingPublica />} />
+
+        {/* Comodín: sin esto una URL mal escrita renderiza una página en
+            blanco, porque React Router no encuentra ninguna coincidencia. */}
+        <Route path="*" element={<PaginaPublica><NotFound /></PaginaPublica>} />
       </Routes>
     </Router>
   );
