@@ -30,6 +30,7 @@ import {
   X,
   Eye,
   Link as LinkIcon,
+  Play,
 } from 'lucide-react';
 import './AdminEducacion.css';
 
@@ -91,6 +92,7 @@ export default function AdminEducacion() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [editingModuleId, setEditingModuleId] = useState(null);
+  const [previewLeccionIndex, setPreviewLeccionIndex] = useState(0);
 
   // Formulario del Studio
   const [formData, setFormData] = useState({
@@ -187,12 +189,14 @@ export default function AdminEducacion() {
         ],
       },
     });
+    setPreviewLeccionIndex(0);
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (mod) => {
     setEditingModuleId(mod.id);
     setCurrentStep(1);
+    setPreviewLeccionIndex(0);
     setFormData({
       titulo: mod.titulo || '',
       descripcion: mod.descripcion || '',
@@ -307,19 +311,23 @@ export default function AdminEducacion() {
 
   // Helpers para manejo dinámico de Lecciones
   const handleAddLeccion = () => {
-    setFormData(prev => ({
-      ...prev,
-      lecciones: [
-        ...prev.lecciones,
-        {
-          titulo: `Clase ${prev.lecciones.length + 1}`,
-          descripcion: '',
-          url_video: '',
-          duracion_min: 5,
-          tipo: 'video',
-        },
-      ],
-    }));
+    setFormData(prev => {
+      const nextIndex = prev.lecciones.length;
+      setPreviewLeccionIndex(nextIndex);
+      return {
+        ...prev,
+        lecciones: [
+          ...prev.lecciones,
+          {
+            titulo: `Clase ${nextIndex + 1}`,
+            descripcion: '',
+            url_video: '',
+            duracion_min: 5,
+            tipo: 'video',
+          },
+        ],
+      };
+    });
   };
 
   const handleRemoveLeccion = (idx) => {
@@ -327,6 +335,7 @@ export default function AdminEducacion() {
       ...prev,
       lecciones: prev.lecciones.filter((_, i) => i !== idx),
     }));
+    setPreviewLeccionIndex(prev => (prev >= idx ? Math.max(0, prev - 1) : prev));
   };
 
   const handleUpdateLeccion = (idx, field, value) => {
@@ -335,6 +344,9 @@ export default function AdminEducacion() {
       updated[idx] = { ...updated[idx], [field]: value };
       return { ...prev, lecciones: updated };
     });
+    if (field === 'url_video') {
+      setPreviewLeccionIndex(idx);
+    }
   };
 
   // Helper para verificar si una opción está marcada como correcta
@@ -860,10 +872,10 @@ export default function AdminEducacion() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                       <div>
                         <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#f8fafc' }}>
-                          Paso 2: Lecciones y Videos de YouTube
+                          Paso 2: Lecciones y Videos del Módulo
                         </h3>
                         <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
-                          Puedes agregar tantas clases o videos como desees dentro de este módulo.
+                          Puedes agregar tantas clases o videos como desees (Drive, YouTube, Loom, Vimeo).
                         </p>
                       </div>
                       <button className="lms-btn-primary" onClick={handleAddLeccion}>
@@ -872,20 +884,46 @@ export default function AdminEducacion() {
                     </div>
 
                     <div className="lms-lessons-builder-list">
-                      {formData.lecciones.map((lec, idx) => (
-                        <div key={idx} className="lms-lesson-builder-card">
-                          <div className="lms-lesson-builder-header">
-                            <span className="lms-lesson-badge">Lección #{idx + 1}</span>
-                            {formData.lecciones.length > 1 && (
-                              <button
-                                className="lms-btn-icon-sm lms-btn-danger"
-                                title="Eliminar lección"
-                                onClick={() => handleRemoveLeccion(idx)}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
-                          </div>
+                      {formData.lecciones.map((lec, idx) => {
+                        const isPreviewing = previewLeccionIndex === idx;
+                        return (
+                          <div key={idx} className="lms-lesson-builder-card">
+                            <div className="lms-lesson-builder-header">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span className="lms-lesson-badge">Lección #{idx + 1}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewLeccionIndex(idx)}
+                                  style={{
+                                    background: isPreviewing ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                                    border: isPreviewing ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
+                                    color: isPreviewing ? '#60a5fa' : '#94a3b8',
+                                    borderRadius: '6px',
+                                    fontSize: '0.72rem',
+                                    padding: '2px 8px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontWeight: isPreviewing ? 600 : 400,
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title="Mostrar este video en el Simulador en Vivo"
+                                >
+                                  <Play size={10} fill={isPreviewing ? '#60a5fa' : 'none'} />
+                                  {isPreviewing ? 'En Simulador' : 'Ver en Simulador'}
+                                </button>
+                              </div>
+                              {formData.lecciones.length > 1 && (
+                                <button
+                                  className="lms-btn-icon-sm lms-btn-danger"
+                                  title="Eliminar lección"
+                                  onClick={() => handleRemoveLeccion(idx)}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
 
                           <div className="lms-form-group">
                             <label className="lms-form-label">Título de la Lección</label>
@@ -964,8 +1002,9 @@ export default function AdminEducacion() {
                               </select>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1203,66 +1242,127 @@ export default function AdminEducacion() {
                     </div>
 
                     {/* Simulator Video Player */}
-                    {formData.lecciones[0]?.url_video ? (
-                      <div className="lms-video-preview-embed">
-                        <iframe
-                          src={getEmbedUrl(formData.lecciones[0].url_video)}
-                          title="Live Preview Video"
-                          width="100%"
-                          height="100%"
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          aspectRatio: '16/9',
-                          background: '#090a0f',
-                          borderRadius: '10px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#64748b',
-                          fontSize: '0.85rem',
-                          marginBottom: '1rem',
-                          textAlign: 'center',
-                          padding: '1rem',
-                        }}
-                      >
-                        Ingresa una URL de video (Google Drive, YouTube, Loom, Vimeo) para ver la reproducción en vivo
-                      </div>
-                    )}
+                    {(() => {
+                      const safePreviewIndex = Math.min(previewLeccionIndex, Math.max(0, formData.lecciones.length - 1));
+                      const activePreviewLeccion = formData.lecciones[safePreviewIndex] || formData.lecciones[0];
 
-                    {/* Simulator Playlist */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8' }}>
-                        Contenido del Módulo ({formData.lecciones.length} clases):
-                      </span>
-                      {formData.lecciones.map((lec, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: idx === 0 ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '8px',
-                            border: idx === 0 ? '1px solid #3b82f6' : '1px solid transparent',
-                            fontSize: '0.8rem',
-                          }}
-                        >
-                          <span style={{ color: idx === 0 ? '#60a5fa' : '#cbd5e1' }}>
-                            ▶ {lec.titulo || `Clase ${idx + 1}`}
-                          </span>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                            ⏱ {lec.duracion_min || 5} min
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                      return (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Play size={12} fill="#38bdf8" /> Clase {safePreviewIndex + 1} de {formData.lecciones.length}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                              ⏱ {activePreviewLeccion?.duracion_min || 5} min
+                            </span>
+                          </div>
+
+                          {activePreviewLeccion?.url_video ? (
+                            <div className="lms-video-preview-embed">
+                              <iframe
+                                key={`preview-video-${safePreviewIndex}-${activePreviewLeccion.url_video}`}
+                                src={getEmbedUrl(activePreviewLeccion.url_video)}
+                                title={activePreviewLeccion.titulo || `Clase ${safePreviewIndex + 1}`}
+                                width="100%"
+                                height="100%"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                aspectRatio: '16/9',
+                                background: '#090a0f',
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#64748b',
+                                fontSize: '0.85rem',
+                                marginBottom: '1rem',
+                                textAlign: 'center',
+                                padding: '1rem',
+                                border: '1px dashed rgba(255, 255, 255, 0.1)',
+                              }}
+                            >
+                              La Clase #{safePreviewIndex + 1} no tiene enlace de video aún.
+                            </div>
+                          )}
+
+                          {/* Simulator Playlist */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.75rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8' }}>
+                                Contenido del Módulo ({formData.lecciones.length} clases):
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                                Clic para previsualizar
+                              </span>
+                            </div>
+                            {formData.lecciones.map((lec, idx) => {
+                              const isCurrent = safePreviewIndex === idx;
+                              return (
+                                <div
+                                  key={idx}
+                                  onClick={() => setPreviewLeccionIndex(idx)}
+                                  role="button"
+                                  tabIndex={0}
+                                  title={`Clic para ver preview de la Clase ${idx + 1}`}
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    background: isCurrent ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                                    padding: '0.55rem 0.75rem',
+                                    borderRadius: '8px',
+                                    border: isCurrent ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.06)',
+                                    boxShadow: isCurrent ? '0 0 12px rgba(59, 130, 246, 0.25)' : 'none',
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (!isCurrent) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (!isCurrent) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                                    <span style={{ color: isCurrent ? '#38bdf8' : '#64748b', display: 'flex', alignItems: 'center' }}>
+                                      {isCurrent ? <Play size={12} fill="#38bdf8" /> : '▶'}
+                                    </span>
+                                    <span
+                                      style={{
+                                        color: isCurrent ? '#ffffff' : '#cbd5e1',
+                                        fontWeight: isCurrent ? 600 : 400,
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                      }}
+                                    >
+                                      {lec.titulo || `Clase ${idx + 1}`}
+                                    </span>
+                                  </div>
+                                  <span
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      color: isCurrent ? '#93c5fd' : '#64748b',
+                                      flexShrink: 0,
+                                      marginLeft: '8px',
+                                    }}
+                                  >
+                                    ⏱ {lec.duracion_min || 5} min
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
