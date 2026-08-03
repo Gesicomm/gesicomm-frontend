@@ -7,6 +7,7 @@ import {
   adminReordenarModulos,
   adminDuplicarModulo,
 } from '../../services/educacionApi';
+import { getEmbedUrl, detectVideoPlatform } from '../../utils/videoEmbed';
 import {
   GraduationCap,
   Plus,
@@ -301,25 +302,6 @@ export default function AdminEducacion() {
     } catch (error) {
       console.error('Error al reordenar:', error);
       await cargarDatos();
-    }
-  };
-
-  // Helper para embed de YouTube en live preview
-  const getEmbedUrl = (url) => {
-    if (!url) return '';
-    try {
-      if (url.includes('youtube.com/watch?v=')) {
-        const videoId = url.split('v=')[1]?.split('&')[0];
-        return `https://www.youtube.com/embed/${videoId}`;
-      } else if (url.includes('youtu.be/')) {
-        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-        return `https://www.youtube.com/embed/${videoId}`;
-      } else if (url.includes('youtube.com/embed/')) {
-        return url;
-      }
-      return url;
-    } catch {
-      return '';
     }
   };
 
@@ -917,14 +899,45 @@ export default function AdminEducacion() {
                           </div>
 
                           <div className="lms-form-group">
-                            <label className="lms-form-label">Enlace de YouTube</label>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                              <label className="lms-form-label" style={{ margin: 0 }}>
+                                Enlace del Video (YouTube, Google Drive, Loom, Vimeo, etc.)
+                              </label>
+                              {(() => {
+                                const detected = detectVideoPlatform(lec.url_video);
+                                if (!detected) return null;
+                                return (
+                                  <span
+                                    style={{
+                                      fontSize: '0.72rem',
+                                      fontWeight: '600',
+                                      padding: '2px 8px',
+                                      borderRadius: '12px',
+                                      background: `${detected.color}22`,
+                                      color: detected.color,
+                                      border: `1px solid ${detected.color}44`,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                    }}
+                                  >
+                                    <span>{detected.icon}</span> {detected.badge} Detectado
+                                  </span>
+                                );
+                              })()}
+                            </div>
                             <input
                               type="text"
                               className="lms-input-text"
-                              placeholder="https://www.youtube.com/watch?v=..."
+                              placeholder="Ej: https://drive.google.com/file/d/... o https://youtube.com/watch?v=..."
                               value={lec.url_video}
                               onChange={e => handleUpdateLeccion(idx, 'url_video', e.target.value)}
                             />
+                            {lec.url_video?.includes('drive.google.com') && (
+                              <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                💡 <strong>Drive:</strong> Se convertirá a /preview automáticamente. Recuerda configurar el archivo en Drive como "Cualquier persona con el enlace (Lector)".
+                              </p>
+                            )}
                           </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -1214,9 +1227,11 @@ export default function AdminEducacion() {
                           color: '#64748b',
                           fontSize: '0.85rem',
                           marginBottom: '1rem',
+                          textAlign: 'center',
+                          padding: '1rem',
                         }}
                       >
-                        Ingresa una URL de YouTube para ver la reproducción en vivo
+                        Ingresa una URL de video (Google Drive, YouTube, Loom, Vimeo) para ver la reproducción en vivo
                       </div>
                     )}
 

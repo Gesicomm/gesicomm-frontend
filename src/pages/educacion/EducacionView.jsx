@@ -5,6 +5,7 @@ import {
   marcarLeccionCompletada,
   enviarExamenModulo,
 } from '../../services/educacionApi';
+import { getEmbedUrl } from '../../utils/videoEmbed';
 import confetti from '../../utils/confetti';
 import {
   GraduationCap,
@@ -232,25 +233,6 @@ export default function EducacionView() {
       }
     } finally {
       setSubmittingExamen(false);
-    }
-  };
-
-  // Helper para URL de embed de YouTube
-  const getEmbedUrl = (url) => {
-    if (!url) return '';
-    try {
-      if (url.includes('youtube.com/watch?v=')) {
-        const videoId = url.split('v=')[1]?.split('&')[0];
-        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
-      } else if (url.includes('youtu.be/')) {
-        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-        return `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
-      } else if (url.includes('youtube.com/embed/')) {
-        return url;
-      }
-      return url;
-    } catch {
-      return '';
     }
   };
 
