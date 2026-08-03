@@ -633,8 +633,7 @@
 }
 
 .lms-input-text,
-.lms-textarea,
-.lms-select {
+.lms-textarea {
   width: 100%;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -647,12 +646,40 @@
   font-family: inherit;
 }
 
+.lms-select {
+  width: 100%;
+  background-color: #151824;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: #f8fafc;
+  font-size: 0.92rem;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  color-scheme: dark;
+  cursor: pointer;
+}
+
+.lms-select option {
+  background-color: #151824 !important;
+  color: #f8fafc !important;
+  padding: 0.75rem 1rem;
+  font-size: 0.92rem;
+}
+
+.lms-select option:checked,
+.lms-select option:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
 .lms-input-text:focus,
 .lms-textarea:focus,
 .lms-select:focus {
   border-color: var(--lms-accent-blue);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: #1b1f30;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 
 /* Step 1: Emoji and Color Picker Pills */
