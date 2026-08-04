@@ -1,69 +1,99 @@
-import {
-  ArrowRight,
-  BarChart3,
-  Boxes,
-  Building2,
-  Eye,
-  KeyRound,
-  Lock,
-  Megaphone,
-  Package,
-  ScrollText,
-  ShieldCheck,
-  ShoppingCart,
-  Truck,
-  Users,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import Seo, { SITIO, SCHEMA_ORGANIZACION } from '../../components/public/Seo';
 import { Container, Section, SectionHeading, Eyebrow } from '../../components/public/Section';
 import Accordion from '../../components/public/Accordion';
-import Badge from '../../components/public/Badge';
 import Button from '../../components/public/Button';
 import CTA from '../../components/public/CTA';
 import Reveal from '../../components/public/Reveal';
 
-const CARACTERISTICAS = [
+/**
+ * Contenido del registro de la portada.
+ *
+ * Son datos de ejemplo y la página lo dice al pie, con todas las letras. Se
+ * eligieron para mostrar lo único que el producto hace y una planilla no: la
+ * inversión en anuncios y el margen real del producto en la misma columna.
+ * Ninguna cifra pretende ser una métrica de la empresa ni de un cliente.
+ */
+const REGISTRO_PEDIDOS = [
+  { id: '1044', destino: 'Rosario, SF', estado: 'En armado', tono: 'fg-muted' },
+  { id: '1043', destino: 'Córdoba', estado: 'Despachado', tono: 'fg-muted' },
+  { id: '1042', destino: 'CABA', estado: 'Entregado', tono: 'success' },
+];
+
+const REGISTRO_STOCK = [
+  { deposito: 'Depósito Central', unidades: '412', alerta: false },
+  { deposito: 'Sucursal Norte', unidades: '88', alerta: false },
+  { deposito: 'Sucursal Sur', unidades: '12', alerta: true },
+];
+
+const REGISTRO_CAMPANA = [
+  { concepto: 'Inversión en anuncios', valor: '84.200' },
+  { concepto: 'Ingreso atribuido', valor: '261.000' },
+  { concepto: 'Margen real', valor: '96.400', destacado: true },
+];
+
+/**
+ * Los módulos agrupados por dónde caen en la operación, no en una grilla
+ * suelta. El agrupamiento es la información: dice que el catálogo, el pedido
+ * y el envío son etapas de una misma cadena y no ocho productos distintos.
+ */
+const MODULOS = [
   {
-    icono: Package,
-    titulo: 'Catálogo y productos',
-    texto: 'Productos, variantes, categorías, marcas y combos con reglas de precio propias. Una sola fuente de verdad para todos tus canales.',
+    grupo: 'Catálogo y venta',
+    filas: [
+      {
+        modulo: 'Catálogo y productos',
+        resuelve:
+          'Productos, variantes, categorías, marcas y combos con reglas de precio propias. Una sola fuente de verdad para todos tus canales.',
+      },
+      {
+        modulo: 'Pedidos',
+        resuelve:
+          'Cada pedido con su estado, su historial y su responsable, en un tablero que se mueve con la operación. Sin planillas paralelas.',
+      },
+    ],
   },
   {
-    icono: ShoppingCart,
-    titulo: 'Pedidos en un tablero',
-    texto: 'Cada pedido con su estado, su historial y su responsable, en un tablero que se mueve con la operación. Sin planillas paralelas.',
+    grupo: 'Cumplimiento',
+    filas: [
+      {
+        modulo: 'Inventario',
+        resuelve:
+          'Stock por sucursal y por depósito, descontado a medida que se vende. Alertas antes de quedarte sin producto, no después.',
+      },
+      {
+        modulo: 'Logística y envíos',
+        resuelve:
+          'Couriers, tarifas por zona, hojas de ruta e impresión de etiquetas. Del pedido confirmado a la puerta del cliente.',
+      },
+    ],
   },
   {
-    icono: Boxes,
-    titulo: 'Inventario en tiempo real',
-    texto: 'Stock por sucursal y por depósito, descontado a medida que se vende. Alertas antes de quedarte sin producto, no después.',
-  },
-  {
-    icono: Users,
-    titulo: 'CRM y clientes',
-    texto: 'Ficha completa de cada cliente: qué compró, cuándo, a qué precio y cómo le llegó el pedido.',
-  },
-  {
-    icono: Truck,
-    titulo: 'Logística y envíos',
-    texto: 'Couriers, tarifas por zona, hojas de ruta e impresión de etiquetas. Del pedido confirmado a la puerta del cliente.',
-  },
-  {
-    icono: Megaphone,
-    titulo: 'Campañas de marketing',
-    texto: 'Campañas conectadas a tu catálogo real, con el rendimiento de cada anuncio al lado del producto que promociona.',
-  },
-  {
-    icono: BarChart3,
-    titulo: 'Métricas y reportes',
-    texto: 'Ventas, márgenes, rotación y costo por adquisición. Números que se calculan solos, no que alguien arma el lunes.',
-  },
-  {
-    icono: Building2,
-    titulo: 'Múltiples tiendas y equipos',
-    texto: 'Varias tiendas, varias sucursales y los empleados que necesites, cada uno con los permisos exactos de su rol.',
+    grupo: 'Crecimiento y control',
+    filas: [
+      {
+        modulo: 'CRM y clientes',
+        resuelve:
+          'Ficha completa de cada cliente: qué compró, cuándo, a qué precio y cómo le llegó el pedido.',
+      },
+      {
+        modulo: 'Campañas de marketing',
+        resuelve:
+          'Campañas conectadas a tu catálogo real, con el rendimiento de cada anuncio al lado del producto que promociona.',
+      },
+      {
+        modulo: 'Métricas y reportes',
+        resuelve:
+          'Ventas, márgenes, rotación y costo por adquisición. Números que se calculan solos, no que alguien arma el lunes.',
+      },
+      {
+        modulo: 'Tiendas y equipos',
+        resuelve:
+          'Varias tiendas, varias sucursales y los empleados que necesites, cada uno con los permisos exactos de su rol.',
+      },
+    ],
   },
 ];
 
@@ -71,10 +101,14 @@ const CARACTERISTICAS = [
 // propósito: anunciar conexiones que no existen es lo que hace que una
 // revisión de plataforma se rechace, y obliga a describir en la Política de
 // Privacidad datos que nunca se tratan.
+//
+// `alcance` es el permiso literal que se pide. Va en la tabla, no en la letra
+// chica: es el dato que alguien evaluando la plataforma viene a buscar.
 const INTEGRACIONES = [
   {
     nombre: 'Meta Business',
     color: '#0081FB',
+    alcance: 'business_management',
     descripcion:
       'Conectás tu Business Manager por OAuth y Gesicomm lee las cuentas publicitarias a las que ya tenés acceso. No creamos ni modificamos activos por tu cuenta.',
     datos: 'Business Managers y cuentas publicitarias que administrás.',
@@ -82,6 +116,7 @@ const INTEGRACIONES = [
   {
     nombre: 'Facebook Ads',
     color: '#1877F2',
+    alcance: 'ads_management',
     descripcion:
       'Campañas, conjuntos de anuncios y su rendimiento, al lado del producto y del margen real que estás promocionando.',
     datos: 'Campañas, presupuestos, impresiones, clics, alcance, gasto y conversiones.',
@@ -89,6 +124,7 @@ const INTEGRACIONES = [
   {
     nombre: 'Meta Pixel',
     color: '#7C6BFF',
+    alcance: 'Sin permiso de API',
     descripcion:
       'Cargás el identificador de tu propio píxel y tu vitrina lo dispara, para que las conversiones vuelvan a tus campañas.',
     datos: 'Solo el identificador del píxel. Los eventos los recibe Meta directamente.',
@@ -108,24 +144,24 @@ const CANALES_SIN_API = [
 
 const SEGURIDAD = [
   {
-    icono: Lock,
-    titulo: 'Cifrado de extremo a extremo del canal',
-    texto: 'Todo el tráfico viaja por HTTPS con TLS 1.2 o superior y HSTS. Las credenciales de integraciones se guardan cifradas con AES-256-GCM.',
+    titulo: 'Cifrado del canal y de las credenciales',
+    texto:
+      'Todo el tráfico viaja por HTTPS con TLS 1.2 o superior y HSTS. Las credenciales de integraciones se guardan cifradas con AES-256-GCM.',
   },
   {
-    icono: KeyRound,
     titulo: 'Roles y permisos granulares',
-    texto: 'Cada acción del sistema está detrás de un permiso concreto. Un empleado ve exactamente lo que su rol necesita, nada más.',
+    texto:
+      'Cada acción del sistema está detrás de un permiso concreto. Un empleado ve exactamente lo que su rol necesita, nada más.',
   },
   {
-    icono: ScrollText,
     titulo: 'Auditoría de eventos',
-    texto: 'Los accesos y las acciones sensibles quedan registrados con usuario, fecha e IP. Nunca se registran contraseñas ni tokens.',
+    texto:
+      'Los accesos y las acciones sensibles quedan registrados con usuario, fecha e IP. Nunca se registran contraseñas ni tokens.',
   },
   {
-    icono: Eye,
     titulo: 'Aislamiento entre cuentas',
-    texto: 'Los datos de cada cuenta están separados a nivel de modelo de datos, no solo por un filtro en la interfaz.',
+    texto:
+      'Los datos de cada cuenta están separados a nivel de modelo de datos, no solo por un filtro en la interfaz.',
   },
 ];
 
@@ -167,6 +203,16 @@ const PREGUNTAS = [
   },
 ];
 
+/** Bloque con rótulo dentro del registro de la portada. */
+function BloqueRegistro({ rotulo, children }) {
+  return (
+    <div className="border-t border-border px-4 py-3.5 sm:px-5">
+      <p className="etiqueta mb-2.5 text-fg-subtle">{rotulo}</p>
+      {children}
+    </div>
+  );
+}
+
 export default function Landing() {
   const schema = {
     '@context': 'https://schema.org',
@@ -201,6 +247,11 @@ export default function Landing() {
     ],
   };
 
+  // Contador continuo para escalonar la entrada de las filas del registro
+  // sin reiniciar el retardo en cada bloque.
+  let ordenFila = 0;
+  const retardo = () => ({ animationDelay: `${180 + ordenFila++ * 55}ms` });
+
   return (
     <>
       <Seo
@@ -210,28 +261,28 @@ export default function Landing() {
         schema={schema}
       />
 
-      {/* ───────── Hero ───────── */}
-      <section className="relative overflow-hidden">
-        <Container className="relative pb-20 pt-16 text-center sm:pb-28 sm:pt-24">
+      {/* ───────── Portada ─────────
+          Dos columnas: el argumento a la izquierda, el registro a la
+          derecha. El registro es la tesis de la página — lo característico
+          de este producto no es una promesa, es una fila de datos reales de
+          la operación con el gasto en anuncios y el margen en la misma
+          columna. */}
+      <section className="border-b border-border">
+        <Container className="grid items-center gap-12 pb-14 pt-14 lg:grid-cols-[1fr_minmax(0,26rem)] lg:gap-16 lg:pb-16 lg:pt-18">
           <div className="animar-entrada">
-            <p className="mb-6 font-mono text-xs uppercase tracking-[0.15em] text-fg-subtle">
-              Panel operativo · Meta Business conectado
-            </p>
+            <p className="etiqueta text-fg-subtle">Gestión de eCommerce</p>
 
-            <h1
-              className="mx-auto max-w-4xl text-4xl font-bold text-fg sm:text-6xl sm:leading-[1.05]"
-              style={{ letterSpacing: '-0.04em' }}
-            >
+            <h1 className="titular mt-5 text-[2.15rem] text-fg sm:text-5xl lg:text-6xl">
               Toda la operación de tu eCommerce, en un solo lugar.
             </h1>
 
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-fg-muted sm:text-lg">
               Gesicomm reúne catálogo, pedidos, inventario, clientes, logística y campañas en un
               único panel, con el rendimiento de tus anuncios de Facebook al lado del margen real
               de cada producto.
             </p>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button to="/login" tamano="lg" className="w-full sm:w-auto">
                 Entrar al panel
                 <ArrowRight size={17} aria-hidden="true" />
@@ -248,160 +299,255 @@ export default function Landing() {
               </Link>
             </p>
           </div>
-        </Container>
 
-        {/* Franja de canales conectados */}
-        <Container className="relative pb-16">
-          <div className="rounded-xl border border-border bg-surface/60 px-6 py-6 backdrop-blur-sm">
-            <p className="text-center text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-              Lo que se conecta hoy
+          {/* Registro operativo. aria-hidden no: el contenido se lee bien en
+              orden y aporta contexto real de qué hace el producto. */}
+          <div>
+            <div className="overflow-hidden rounded-xl border border-border bg-surface">
+              <div className="flex items-baseline justify-between gap-4 px-4 py-3 sm:px-5">
+                <p className="etiqueta text-fg">Registro operativo</p>
+                <p className="etiqueta text-fg-subtle">Hoy</p>
+              </div>
+
+              <BloqueRegistro rotulo="Pedidos">
+                <ul className="space-y-2">
+                  {REGISTRO_PEDIDOS.map((pedido) => (
+                    <li
+                      key={pedido.id}
+                      style={retardo()}
+                      className="registro-fila flex items-baseline gap-3 text-sm"
+                    >
+                      <span className="cifra text-xs text-fg-subtle">{pedido.id}</span>
+                      <span className="min-w-0 flex-1 truncate text-fg">{pedido.destino}</span>
+                      <span
+                        className={`cifra text-xs ${
+                          pedido.tono === 'success' ? 'text-success' : 'text-fg-muted'
+                        }`}
+                      >
+                        {pedido.estado}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </BloqueRegistro>
+
+              <BloqueRegistro rotulo="Stock disponible">
+                <ul className="space-y-2">
+                  {REGISTRO_STOCK.map((linea) => (
+                    <li
+                      key={linea.deposito}
+                      style={retardo()}
+                      className="registro-fila flex items-baseline gap-3 text-sm"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-fg">{linea.deposito}</span>
+                      {linea.alerta && (
+                        <span className="etiqueta text-warning">Bajo</span>
+                      )}
+                      <span
+                        className={`cifra text-sm ${
+                          linea.alerta ? 'text-warning' : 'text-fg-muted'
+                        }`}
+                      >
+                        {linea.unidades}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </BloqueRegistro>
+
+              <BloqueRegistro rotulo="Campañas · Facebook Ads">
+                <ul className="space-y-2">
+                  {REGISTRO_CAMPANA.map((linea) => (
+                    <li
+                      key={linea.concepto}
+                      style={retardo()}
+                      className={`registro-fila flex items-baseline gap-3 text-sm ${
+                        linea.destacado ? 'border-t border-border pt-2.5' : ''
+                      }`}
+                    >
+                      <span
+                        className={`min-w-0 flex-1 truncate ${
+                          linea.destacado ? 'font-semibold text-fg' : 'text-fg-muted'
+                        }`}
+                      >
+                        {linea.concepto}
+                      </span>
+                      <span
+                        className={`cifra text-sm ${
+                          linea.destacado ? 'font-semibold text-fg' : 'text-fg-muted'
+                        }`}
+                      >
+                        $ {linea.valor}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </BloqueRegistro>
+            </div>
+
+            <p className="mt-3 text-xs leading-relaxed text-fg-subtle">
+              Representación del panel. Los datos son de ejemplo.
             </p>
-            <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-              {INTEGRACIONES.map((integracion) => (
-                <li key={integracion.nombre} className="flex items-center gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: integracion.color }}
-                  />
-                  <span className="text-sm font-medium text-fg-muted">{integracion.nombre}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </Container>
       </section>
 
-      {/* ───────── Características ───────── */}
-      <Section id="producto" className="border-t border-border">
+      {/* Franja de lo conectado: una línea de registro, no una tarjeta. */}
+      <section className="border-b border-border bg-surface">
+        <Container className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:gap-8">
+          <p className="etiqueta flex-shrink-0 text-fg-subtle">Conectado hoy</p>
+          <ul className="flex flex-wrap items-center gap-x-7 gap-y-2">
+            {INTEGRACIONES.map((integracion) => (
+              <li key={integracion.nombre} className="flex items-center gap-2.5">
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: integracion.color }}
+                />
+                <span className="text-sm text-fg-muted">{integracion.nombre}</span>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </section>
+
+      {/* ───────── Módulos ─────────
+          Registro de módulos, agrupado por etapa de la operación. Una grilla
+          de ocho tarjetas iguales diría que son ocho cosas sueltas; la tabla
+          agrupada dice lo que el producto realmente es. */}
+      <Section id="producto">
         <Reveal>
           <SectionHeading
             eyebrow="Producto"
             titulo="Un panel que cubre la operación completa"
             descripcion="No es un módulo suelto conectado a otros seis. Catálogo, venta, stock, cliente y envío comparten los mismos datos, así que lo que cambiás en un lado se refleja en el resto."
-            centrado
           />
         </Reveal>
 
-        <div className="mt-14 grid gap-x-10 sm:grid-cols-2">
-          {CARACTERISTICAS.map((caracteristica, indice) => (
-            <Reveal key={caracteristica.titulo} delay={(indice % 4) * 60}>
-              <div className="flex flex-col gap-2 border-t border-border py-6">
-                <div className="flex items-center gap-2.5">
-                  <caracteristica.icono size={16} className="text-primary" aria-hidden="true" />
-                  <h3 className="text-base font-semibold text-fg" style={{ letterSpacing: '-0.01em' }}>
-                    {caracteristica.titulo}
-                  </h3>
-                </div>
-                <p className="text-sm leading-relaxed text-fg-muted">{caracteristica.texto}</p>
+        <div className="mt-16 space-y-12">
+          {MODULOS.map((grupo) => (
+            <Reveal key={grupo.grupo}>
+              <div className="grid gap-4 lg:grid-cols-[13rem_1fr] lg:gap-10">
+                <p className="etiqueta pt-5 text-primary lg:pt-6">{grupo.grupo}</p>
+
+                {/* La regla de apertura va en la <dl> y la de cierre en cada
+                    fila: así el grupo queda encerrado y no se cuela una
+                    última fila sin línea de abajo. */}
+                <dl className="min-w-0 border-t border-border">
+                  {grupo.filas.map((fila) => (
+                    <div
+                      key={fila.modulo}
+                      className="grid gap-x-8 gap-y-1.5 border-b border-border py-5 sm:grid-cols-[minmax(0,13rem)_1fr] sm:py-6"
+                    >
+                      <dt className="text-base font-semibold text-fg">{fila.modulo}</dt>
+                      <dd className="text-sm leading-relaxed text-fg-muted">{fila.resuelve}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             </Reveal>
           ))}
         </div>
       </Section>
 
-      {/* ───────── Integraciones ───────── */}
+      {/* ───────── Integraciones ─────────
+          Cada integración es una fila con su permiso literal y los datos que
+          toca. Esa es la información que viene a buscar quien evalúa la
+          plataforma, así que va en la tabla y no en un pie de página. */}
       <Section id="integraciones" className="border-t border-border bg-surface">
         <Reveal>
           <SectionHeading
             eyebrow="Integraciones"
             titulo="Una sola integración, y bien hecha"
-            descripcion="Hoy Gesicomm se conecta con Meta y nada más. Pide exactamente dos permisos —ads_management y business_management— y podés revocarla en cualquier momento desde Configuración."
-            centrado
+            descripcion="Hoy Gesicomm se conecta con Meta y nada más. Pide exactamente dos permisos y podés revocarla en cualquier momento desde Configuración."
           />
         </Reveal>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {INTEGRACIONES.map((integracion, indice) => (
-            <Reveal key={integracion.nombre} delay={(indice % 3) * 70}>
-              <div className="h-full rounded-xl border border-border bg-canvas p-6 transition-colors hover:border-border-strong">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 flex-shrink-0 rounded-full"
-                    style={{ backgroundColor: integracion.color }}
-                  />
-                  <h3
-                    className="text-base font-semibold text-fg"
-                    style={{ letterSpacing: '-0.02em' }}
-                  >
-                    {integracion.nombre}
-                  </h3>
+        <div className="mt-16">
+          {INTEGRACIONES.map((integracion) => (
+            <Reveal key={integracion.nombre}>
+              <div className="grid gap-x-10 gap-y-5 border-t border-border py-7 lg:grid-cols-[15rem_1fr]">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: integracion.color }}
+                    />
+                    <h3 className="text-base font-semibold text-fg">{integracion.nombre}</h3>
+                  </div>
+                  <p className="cifra mt-2 pl-4 text-xs text-fg-subtle">{integracion.alcance}</p>
                 </div>
 
-                <p className="mt-4 text-sm leading-relaxed text-fg-muted">
-                  {integracion.descripcion}
-                </p>
-
-                <div className="mt-5 border-t border-border pt-4">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-                    Datos que se usan
+                <div className="min-w-0">
+                  <p className="max-w-2xl text-sm leading-relaxed text-fg-muted">
+                    {integracion.descripcion}
                   </p>
-                  <p className="mt-1.5 text-xs leading-relaxed text-fg-muted">{integracion.datos}</p>
+                  <p className="etiqueta mt-4 text-fg-subtle">Datos que se usan</p>
+                  <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fg-subtle">
+                    {integracion.datos}
+                  </p>
                 </div>
               </div>
             </Reveal>
           ))}
+
+          {/* Canales sin API: van separados y explicados, porque presentarlos
+              como "integración" daría a entender un acceso a datos que no
+              existe. El borde punteado es la señal de que esta fila no
+              pertenece a la tabla de arriba. */}
+          {CANALES_SIN_API.map((canal) => (
+            <Reveal key={canal.nombre}>
+              <div className="grid gap-x-10 gap-y-5 border-t border-dashed border-border-strong py-7 lg:grid-cols-[15rem_1fr]">
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      aria-hidden="true"
+                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                      style={{ backgroundColor: canal.color }}
+                    />
+                    <h3 className="text-base font-semibold text-fg">{canal.nombre}</h3>
+                  </div>
+                  <p className="cifra mt-2 pl-4 text-xs text-fg-subtle">No es una integración</p>
+                </div>
+
+                <p className="min-w-0 max-w-2xl text-sm leading-relaxed text-fg-muted">
+                  {canal.descripcion}
+                </p>
+              </div>
+            </Reveal>
+          ))}
+
+          <div className="border-t border-border" />
         </div>
 
-        {/* Canales sin API: van separados y explicados, porque presentarlos
-            como "integración" daría a entender un acceso a datos que no
-            existe. */}
-        {CANALES_SIN_API.map((canal) => (
-          <Reveal key={canal.nombre}>
-            <div className="mt-5 rounded-xl border border-dashed border-border bg-canvas p-6">
-              <div className="flex items-center gap-2.5">
-                <span
-                  aria-hidden="true"
-                  className="h-2 w-2 flex-shrink-0 rounded-full"
-                  style={{ backgroundColor: canal.color }}
-                />
-                <h3
-                  className="text-base font-semibold text-fg"
-                  style={{ letterSpacing: '-0.02em' }}
-                >
-                  {canal.nombre}
-                </h3>
-                <Badge tono="neutro">Sin API · no es una integración</Badge>
-              </div>
-              <p className="mt-2.5 text-sm leading-relaxed text-fg-muted">
-                {canal.descripcion}
-              </p>
-            </div>
-          </Reveal>
-        ))}
-
         <Reveal>
-          <p className="mt-8 text-center text-sm text-fg-muted">
-            Instagram, WhatsApp Cloud API y Shopify <strong className="font-semibold text-fg">no
-            están integrados</strong> hoy. Si se agregan, se anuncian acá y en la Política de
-            Privacidad antes de activarse.
-          </p>
-        </Reveal>
-
-        <Reveal>
-          <p className="mt-10 text-center text-sm text-fg-muted">
-            El detalle de qué se recopila, con qué base legal y por cuánto tiempo está en la{' '}
-            <Link to="/privacy" className="font-medium text-primary underline underline-offset-4">
-              Política de Privacidad
-            </Link>
-            .
-          </p>
+          <div className="mt-10 max-w-2xl space-y-3 text-sm leading-relaxed text-fg-muted">
+            <p>
+              Instagram, WhatsApp Cloud API y Shopify{' '}
+              <strong className="font-semibold text-fg">no están integrados</strong> hoy. Si se
+              agregan, se anuncian acá y en la Política de Privacidad antes de activarse.
+            </p>
+            <p>
+              El detalle de qué se recopila, con qué base legal y por cuánto tiempo está en la{' '}
+              <Link to="/privacy" className="font-medium text-primary underline underline-offset-4">
+                Política de Privacidad
+              </Link>
+              .
+            </p>
+          </div>
         </Reveal>
       </Section>
 
       {/* ───────── Seguridad ───────── */}
       <Section id="seguridad" className="border-t border-border">
-        <div className="grid gap-14 lg:grid-cols-[1fr_1.15fr] lg:items-start lg:gap-20">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-start lg:gap-20">
           <Reveal>
-            <Eyebrow className="mb-3">Seguridad</Eyebrow>
-            <h2
-              className="text-3xl font-bold text-fg sm:text-4xl"
-              style={{ letterSpacing: '-0.03em' }}
-            >
+            <Eyebrow className="mb-4">Seguridad</Eyebrow>
+            <h2 className="titular text-3xl text-fg sm:text-[2.6rem]">
               La información de tus clientes no es un detalle de implementación
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-fg-muted">
+            <p className="mt-5 text-base leading-relaxed text-fg-muted">
               Gesicomm procesa datos de compradores reales: nombres, direcciones, teléfonos e
               historial de compra. El control de acceso, el cifrado y la auditoría son parte del
               diseño del sistema, no una capa agregada después.
@@ -418,69 +564,57 @@ export default function Landing() {
             </div>
           </Reveal>
 
-          <div className="grid gap-x-8 sm:grid-cols-2">
-            {SEGURIDAD.map((item, indice) => (
-              <Reveal key={item.titulo} delay={(indice % 2) * 80}>
-                <div className="flex flex-col gap-2 border-t border-border py-6">
-                  <div className="flex items-center gap-2.5">
-                    <item.icono size={16} className="text-primary" aria-hidden="true" />
-                    <h3 className="text-base font-semibold text-fg" style={{ letterSpacing: '-0.01em' }}>
-                      {item.titulo}
-                    </h3>
-                  </div>
-                  <p className="text-sm leading-relaxed text-fg-muted">{item.texto}</p>
+          <dl className="border-t border-border">
+            {SEGURIDAD.map((item) => (
+              <Reveal key={item.titulo}>
+                <div className="border-b border-border py-6">
+                  <dt className="text-base font-semibold text-fg">{item.titulo}</dt>
+                  <dd className="mt-1.5 text-sm leading-relaxed text-fg-muted">{item.texto}</dd>
                 </div>
               </Reveal>
             ))}
-          </div>
+          </dl>
         </div>
       </Section>
 
       {/* ───────── Cumplimiento ───────── */}
-      <section className="border-t border-border bg-surface py-16">
+      <section className="border-t border-border bg-surface py-14">
         <Container>
-        <Reveal>
-          <div className="flex flex-col items-center gap-6 text-center">
-            <ShieldCheck size={26} className="text-primary" aria-hidden="true" />
-            <p className="max-w-3xl text-base leading-relaxed text-fg-muted">
-              Nuestras prácticas de tratamiento de datos están alineadas con el{' '}
-              <strong className="font-semibold text-fg">RGPD</strong> europeo, la{' '}
-              <strong className="font-semibold text-fg">CCPA/CPRA</strong> de California y las{' '}
-              <strong className="font-semibold text-fg">Meta Platform Terms</strong>, además de la
-              normativa de protección de datos de los países de Latinoamérica donde operamos.
-            </p>
-            <Link
-              to="/compliance"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-            >
-              Leer la página de cumplimiento
-              <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </div>
-        </Reveal>
+          <Reveal>
+            <div className="grid gap-5 lg:grid-cols-[13rem_1fr] lg:gap-10">
+              <p className="etiqueta text-fg-subtle lg:pt-1">Marco legal</p>
+              <div className="min-w-0">
+                <p className="max-w-3xl text-base leading-relaxed text-fg-muted">
+                  Nuestras prácticas de tratamiento de datos están alineadas con el{' '}
+                  <strong className="font-semibold text-fg">RGPD</strong> europeo, la{' '}
+                  <strong className="font-semibold text-fg">CCPA/CPRA</strong> de California y las{' '}
+                  <strong className="font-semibold text-fg">Meta Platform Terms</strong>, además de
+                  la normativa de protección de datos de los países de Latinoamérica donde
+                  operamos.
+                </p>
+                <Link
+                  to="/compliance"
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  Leer la página de cumplimiento
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          </Reveal>
         </Container>
       </section>
 
-      {/* ───────── FAQ ───────── */}
-      <Section id="faq" className="border-t border-border" ancho="normal">
-        <div className="mx-auto max-w-3xl">
+      {/* ───────── Preguntas frecuentes ───────── */}
+      <Section id="faq" className="border-t border-border">
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:gap-20">
           <Reveal>
             <SectionHeading
               eyebrow="Preguntas frecuentes"
               titulo="Lo que más nos preguntan"
               descripcion="Sobre datos, permisos e integraciones. Si te falta algo, escribinos."
-              centrado
             />
-          </Reveal>
-
-          <Reveal>
-            <div className="mt-12 rounded-xl border border-border bg-surface px-6 sm:px-8">
-              <Accordion items={PREGUNTAS.map((item) => ({ pregunta: item.pregunta, respuesta: item.respuesta }))} />
-            </div>
-          </Reveal>
-
-          <Reveal>
-            <p className="mt-8 text-center text-sm text-fg-muted">
+            <p className="mt-6 text-sm leading-relaxed text-fg-muted">
               ¿Tenés otra consulta?{' '}
               <Link to="/contact" className="font-medium text-primary underline underline-offset-4">
                 Escribinos
@@ -494,6 +628,17 @@ export default function Landing() {
               </a>
               .
             </p>
+          </Reveal>
+
+          <Reveal>
+            <div className="border-t border-border">
+              <Accordion
+                items={PREGUNTAS.map((item) => ({
+                  pregunta: item.pregunta,
+                  respuesta: item.respuesta,
+                }))}
+              />
+            </div>
           </Reveal>
         </div>
       </Section>

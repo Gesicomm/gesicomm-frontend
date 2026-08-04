@@ -55,15 +55,28 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Outfit la usan las landings públicas que arman los usuarios
-         (src/lib/landingDiseno.js la ofrece como tipografía elegible), no el
-         sitio institucional, que va con la Inter Variable que importa
-         main.jsx. No borrar: sin esto las landings que eligieron Outfit
-         caen a la fuente del sistema. -->
+    <!-- Tres familias, tres trabajos distintos:
+
+         · Archivo — titulares del sitio institucional. Es una grotesca de
+           ancho variable derivada de las góticas que se usaban en formularios
+           y grillas impresas; en su eje expandido da un titular que se lee
+           como el encabezado de una planilla y no como la Inter de siempre.
+         · IBM Plex Mono — etiquetas, cifras y todo lo tabular. El registro
+           operativo de la portada necesita cifras de ancho fijo que aliñen en
+           columna; una proporcional ahí se ve mal y encima miente sobre la
+           naturaleza del dato.
+         · Outfit — NO la usa el sitio institucional. Es para las landings
+           que arman los usuarios (src/lib/landingDiseno.js la ofrece como
+           tipografía elegible). No borrar: sin esto las landings que la
+           eligieron caen a la fuente del sistema.
+
+         El cuerpo de texto sigue siendo la Inter Variable que importa
+         main.jsx desde node_modules: es una neutra excelente para leer
+         párrafos y ya está local, sin costo de red. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;700;900&display=swap"
       rel="stylesheet"
     />
 

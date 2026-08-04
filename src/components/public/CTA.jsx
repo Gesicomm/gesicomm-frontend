@@ -13,38 +13,28 @@ export default function CTA({
   accionSecundaria = { etiqueta: 'Hablar con nosotros', to: '/contact' },
 }) {
   return (
-    <section className="no-imprimir border-t border-border bg-surface py-20 sm:py-24">
+    <section className="no-imprimir border-t border-border bg-surface py-16 sm:py-20">
       <Container>
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-canvas px-8 py-14 text-center sm:px-14">
-          {/* Barra de marca: marcador de sección, no resplandor decorativo. */}
-          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-primary" />
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between lg:gap-16">
+          <div className="max-w-xl">
+            <h2 className="titular text-3xl text-fg sm:text-[2.4rem]">{titulo}</h2>
+            <p className="mt-4 text-base leading-relaxed text-fg-muted">{descripcion}</p>
+          </div>
 
-          <div className="relative">
-            <h2
-              className="mx-auto max-w-2xl text-3xl font-bold text-fg sm:text-4xl"
-              style={{ letterSpacing: '-0.03em' }}
-            >
-              {titulo}
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-fg-muted">
-              {descripcion}
-            </p>
-
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button to={accionPrimaria.to} tamano="lg" className="w-full sm:w-auto">
-                {accionPrimaria.etiqueta}
+          <div className="flex flex-shrink-0 flex-col gap-3 sm:flex-row">
+            <Button to={accionPrimaria.to} tamano="lg" className="w-full sm:w-auto">
+              {accionPrimaria.etiqueta}
+            </Button>
+            {accionSecundaria && (
+              <Button
+                to={accionSecundaria.to}
+                variante="secundario"
+                tamano="lg"
+                className="w-full sm:w-auto"
+              >
+                {accionSecundaria.etiqueta}
               </Button>
-              {accionSecundaria && (
-                <Button
-                  to={accionSecundaria.to}
-                  variante="secundario"
-                  tamano="lg"
-                  className="w-full sm:w-auto"
-                >
-                  {accionSecundaria.etiqueta}
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </Container>

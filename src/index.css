@@ -27,6 +27,15 @@
 
     --font-sans: 'InterVariable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
+    /* Titulares del sitio institucional. Archivo es una grotesca de ancho
+       variable: en el eje expandido da encabezados con aire de planilla
+       impresa, que es exactamente de lo que habla el producto. */
+    --font-display: 'Archivo', 'InterVariable', ui-sans-serif, system-ui, sans-serif;
+
+    /* Etiquetas, cifras y todo lo tabular. Ancho fijo para que las columnas
+       de números aliñen de verdad. */
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
@@ -43,16 +52,20 @@
    Tailwind v4 (bg-canvas, text-fg, …) apuntan a var(--color-*), así que
    heredan el valor del tema activo sin duplicar ninguna clase. */
 :root[data-theme='light'] {
-    --color-canvas: #ffffff;
-    --color-surface: #fafafb;
-    --color-surface-2: #f4f4f6;
-    --color-surface-3: #ededf0;
-    --color-border: #e4e4e9;
-    --color-border-strong: #d3d3da;
+    /* Papel, no blanco de laboratorio: un gris levemente frío, como el
+       formulario impreso en papel de oficina. El blanco puro queda
+       reservado para las superficies elevadas, así el contraste entre
+       fondo y tarjeta lo da el papel y no una sombra. */
+    --color-canvas: #f7f8fa;
+    --color-surface: #ffffff;
+    --color-surface-2: #eef0f4;
+    --color-surface-3: #e4e7ee;
+    --color-border: #dcdfe7;
+    --color-border-strong: #c3c8d4;
 
-    --color-fg: #0b0b10;
-    --color-fg-muted: #5b5b67;
-    --color-fg-subtle: #82828f;
+    --color-fg: #111420;
+    --color-fg-muted: #545b6c;
+    --color-fg-subtle: #7b8294;
 
     /* #6d5ef8 sobre blanco da 3.9:1 — no llega a AA para texto. El
        primario se oscurece en claro solo para que enlaces y texto de
@@ -71,8 +84,30 @@
     color-scheme: light;
 }
 
+/* data-theme sólo existe mientras está montado PublicLayout, así que este
+   bloque es "el oscuro del sitio público" y no toca al panel.
+
+   El negro neutro del panel (#08080a) acá se corre hacia el azul: es la
+   diferencia entre un fondo apagado y uno con temperatura de tinta. Sobre
+   ese fondo el violeta de marca deja de leerse como un neón sobre negro. */
 :root[data-theme='dark'] {
+    --color-canvas: #0a0b0f;
+    --color-surface: #101219;
+    --color-surface-2: #171a23;
+    --color-surface-3: #1e2230;
+    --color-border: #232733;
+    --color-border-strong: #333846;
+
+    --color-fg: #f2f3f7;
+    --color-fg-muted: #9aa0b0;
+    --color-fg-subtle: #6b7183;
+
     color-scheme: dark;
+}
+
+:root[data-theme='dark'] body {
+    background: var(--color-canvas);
+    color: var(--color-fg);
 }
 
 :root[data-theme='light'] body {
@@ -142,6 +177,52 @@ html {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
+}
+
+/* ─── Tipografía del sitio institucional ─────────────
+   Tres roles bien separados. La regla es simple: si es un titular va en
+   Archivo, si es un dato o una etiqueta va en mono, y todo lo demás —o
+   sea, todo lo que se lee de corrido— va en Inter. */
+
+/* Titulares. Archivo en su eje expandido (font-stretch mapea al eje wdth
+   de la variable) con el tracking cerrado: glifos anchos y huecos
+   apretados, que es como se componen los encabezados de una planilla. */
+.sitio-publico .titular {
+    font-family: var(--font-display);
+    font-stretch: 112%;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.04;
+}
+
+/* Etiqueta de campo: lo que en un formulario impreso va sobre la línea de
+   puntos. Nunca es contenido, siempre nombra al dato que sigue. */
+.sitio-publico .etiqueta {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+/* Cifras tabulares: sin esto los números de una columna no aliñan y la
+   tabla deja de leerse como tabla. */
+.sitio-publico .cifra {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+}
+
+/* Filas del registro de la portada. Entran en cascada al cargar, como una
+   pantalla que se puebla; el retardo lo pone cada fila por estilo en
+   línea. Es la única animación orquestada de la página. */
+@keyframes poblar-fila {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.sitio-publico .registro-fila {
+    animation: poblar-fila 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* Enlace de salto al contenido: primer elemento tabulable de la página,
@@ -240,7 +321,8 @@ html {
     html { scroll-behavior: auto; }
 
     .animar-entrada,
-    .revelar {
+    .revelar,
+    .sitio-publico .registro-fila {
         animation: none;
         transition: none;
         opacity: 1;

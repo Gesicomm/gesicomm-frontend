@@ -28,36 +28,29 @@ export function Section({ children, className = '', id, ancho = 'normal', ...res
   );
 }
 
-/** Etiqueta chica en mayúsculas que antecede al título de sección. */
+/**
+ * Etiqueta de campo que antecede al título de sección. Va en mono porque
+ * nombra la sección, no la narra: es el rótulo de la carpeta, no su
+ * contenido.
+ */
 export function Eyebrow({ children, className = '' }) {
-  return (
-    <p
-      className={`text-xs font-semibold uppercase text-primary ${className}`}
-      style={{ letterSpacing: '0.08em' }}
-    >
-      {children}
-    </p>
-  );
+  return <p className={`etiqueta text-fg-subtle ${className}`}>{children}</p>;
 }
 
 /**
  * Encabezado de sección: eyebrow + título + bajada.
- * `centrado` alinea al medio y acota la medida de la bajada.
+ *
+ * Alineado a la izquierda por defecto. `centrado` sigue existiendo para las
+ * páginas que lo piden explícitamente, pero dejó de ser el comportamiento
+ * normal: una página entera centrada no tiene dónde apoyar la lectura.
  */
 export function SectionHeading({ eyebrow, titulo, descripcion, centrado = false, className = '' }) {
   return (
-    <div className={`${centrado ? 'mx-auto max-w-2xl text-center' : 'max-w-3xl'} ${className}`}>
-      {eyebrow && <Eyebrow className="mb-3">{eyebrow}</Eyebrow>}
-      <h2
-        className="text-3xl font-bold text-fg sm:text-4xl"
-        style={{ letterSpacing: '-0.03em' }}
-      >
-        {titulo}
-      </h2>
+    <div className={`${centrado ? 'mx-auto max-w-2xl text-center' : 'max-w-2xl'} ${className}`}>
+      {eyebrow && <Eyebrow className="mb-4">{eyebrow}</Eyebrow>}
+      <h2 className="titular text-3xl text-fg sm:text-[2.6rem]">{titulo}</h2>
       {descripcion && (
-        <p className="mt-4 text-base leading-relaxed text-fg-muted sm:text-lg">
-          {descripcion}
-        </p>
+        <p className="mt-5 text-base leading-relaxed text-fg-muted">{descripcion}</p>
       )}
     </div>
   );

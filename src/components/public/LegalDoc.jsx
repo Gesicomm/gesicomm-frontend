@@ -126,12 +126,7 @@ export default function LegalDoc({
         <Container className="py-12 sm:py-16">
           <Breadcrumb migas={migas} className="mb-7 no-imprimir" />
 
-          <h1
-            className="max-w-3xl text-3xl font-bold text-fg sm:text-[2.6rem] sm:leading-[1.1]"
-            style={{ letterSpacing: '-0.035em' }}
-          >
-            {titulo}
-          </h1>
+          <h1 className="titular max-w-3xl text-3xl text-fg sm:text-[2.6rem]">{titulo}</h1>
 
           {resumen && (
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">
@@ -183,7 +178,7 @@ export default function LegalDoc({
                   className="text-xl font-bold text-fg sm:text-2xl"
                   style={{ letterSpacing: '-0.025em' }}
                 >
-                  <span className="mr-2.5 text-fg-subtle tabular-nums">{indice + 1}.</span>
+                  <span className="cifra mr-2.5 text-base text-fg-subtle">{indice + 1}.</span>
                   {seccion.titulo}
                 </h2>
                 <div className="mt-4">{seccion.contenido}</div>
