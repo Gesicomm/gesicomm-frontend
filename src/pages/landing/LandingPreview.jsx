@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Search, MessageCircle, Layers, ImageOff, Monitor, Smartphone } from 'lucide-react';
+import { Search, MessageCircle, Layers, ImageOff, Monitor, Smartphone, ExternalLink } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { calcularEstiloLanding } from '../../lib/landingDiseno';
 
@@ -20,7 +20,7 @@ function formatPrecio(n) {
   return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 }) + ' Gs';
 }
 
-export default function LandingPreview({ titulo, descripcion, filtros, items, tema, diseno, contacto, banner }) {
+export default function LandingPreview({ titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica }) {
   const [dispositivo, setDispositivo] = useState('desktop');
 
   const categorias = useMemo(() => [...new Set(items.map(i => i.categoria).filter(Boolean))], [items]);
@@ -42,23 +42,37 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
     <div className="lb-preview">
       <div className="lb-preview-bar">
         <span className="lb-preview-label">Vista previa</span>
-        <div className="lb-device-toggle">
-          <button
-            type="button"
-            className={dispositivo === 'desktop' ? 'active' : ''}
-            onClick={() => setDispositivo('desktop')}
-            title="Escritorio"
-          >
-            <Monitor size={13} />
-          </button>
-          <button
-            type="button"
-            className={dispositivo === 'mobile' ? 'active' : ''}
-            onClick={() => setDispositivo('mobile')}
-            title="Celular"
-          >
-            <Smartphone size={13} />
-          </button>
+        <div className="lb-preview-actions">
+          {urlPublica && (
+            <a
+              href={urlPublica}
+              target="_blank"
+              rel="noreferrer"
+              className="lb-preview-ext-btn"
+              title="Abrir web real en pestaña nueva"
+            >
+              <ExternalLink size={12} />
+              <span>Ver web</span>
+            </a>
+          )}
+          <div className="lb-device-toggle">
+            <button
+              type="button"
+              className={dispositivo === 'desktop' ? 'active' : ''}
+              onClick={() => setDispositivo('desktop')}
+              title="Escritorio"
+            >
+              <Monitor size={13} />
+            </button>
+            <button
+              type="button"
+              className={dispositivo === 'mobile' ? 'active' : ''}
+              onClick={() => setDispositivo('mobile')}
+              title="Celular"
+            >
+              <Smartphone size={13} />
+            </button>
+          </div>
         </div>
       </div>
 

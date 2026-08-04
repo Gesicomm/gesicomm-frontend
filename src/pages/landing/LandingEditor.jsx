@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   Save, Loader, AlertCircle, Check, Copy, ExternalLink, Eye, EyeOff,
   FileText, LayoutGrid, SlidersHorizontal, Rocket, Palette, MessageCircle,
-  Power, PowerOff, CircleAlert, ImagePlus, Trash2, Sun, Moon, Search, BarChart3, Globe,
+  Power, PowerOff, CircleAlert, ImagePlus, Trash2, Sun, Moon, Search, BarChart3, Globe, Sparkles,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -778,6 +778,21 @@ export default function LandingEditor() {
                 </p>
               )}
 
+              <div className="lb-banner-guide-box">
+                <div className="lb-banner-guide-title">
+                  <Sparkles size={14} color="#10b981" />
+                  <strong>Recomendaciones para tu Banner</strong>
+                </div>
+                <div className="lb-banner-guide-specs">
+                  <span className="lb-guide-tag">📐 Tamaño ideal: <strong>1200 x 400 px</strong> (Proporción 3:1)</span>
+                  <span className="lb-guide-tag">🖼️ Formato: <strong>Horizontal / Panorámico</strong></span>
+                  <span className="lb-guide-tag">📁 Formatos: <strong>JPG, PNG o WebP (hasta 1MB)</strong></span>
+                </div>
+                <p className="lb-banner-guide-tip">
+                  💡 <em>Consejo:</em> Utilizá fotos apaisadas y ubicá a las personas o productos en el centro para que no se recorten en celulares ni en pantallas grandes.
+                </p>
+              </div>
+
               <div className="lb-banner-editor">
                 <div className="lb-banner-imagen">
                   {landing?.banner_imagen ? (
@@ -791,7 +806,7 @@ export default function LandingEditor() {
                     <label className="lb-banner-upload">
                       {subiendoBanner ? <Loader size={20} className="spin-icon" /> : <ImagePlus size={20} />}
                       <span>{subiendoBanner ? 'Subiendo...' : 'Subir imagen'}</span>
-                      <small>JPG, PNG o WebP · hasta 1MB</small>
+                      <small>1200 x 400 px · hasta 1MB</small>
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
@@ -1213,6 +1228,7 @@ export default function LandingEditor() {
                 boton_texto: form.banner_boton_texto,
                 boton_link: form.banner_boton_link,
               } : null}
+              urlPublica={urlPublica}
             />
           </aside>
         )}
