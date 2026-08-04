@@ -29,7 +29,7 @@ const SECCIONES = [
           <a href="#roles">Nuestro rol según el tipo de dato</a>.
         </p>
         <p>
-          Contacto en materia de privacidad: <Correo direccion="privacy@gesicomm.com" />.
+          Contacto en materia de privacidad: <Correo direccion="contacto@gesicomm.com" />.
         </p>
       </>
     ),
@@ -45,8 +45,8 @@ const SECCIONES = [
           <li>La aplicación web de Gesicomm y el panel de administración.</li>
           <li>La API de Gesicomm (api.gesicomm.com).</li>
           <li>
-            Las integraciones con plataformas de terceros que vos decidas conectar: Shopify, Meta,
-            Facebook, Instagram y WhatsApp Cloud API.
+            La integración con Meta que decidas conectar, para el seguimiento de tus campañas de
+            Facebook Ads. Es la única integración con acceso a datos que existe hoy.
           </li>
           <li>
             Las tiendas y páginas públicas que publicás con Gesicomm bajo un subdominio de
@@ -133,7 +133,7 @@ const SECCIONES = [
             inicios de sesión y sus fallos, cambios de contraseña, alta y baja de usuarios,
             conexión y desconexión de integraciones, y modificaciones de permisos. Por diseño
             explícito, en estos registros <strong>nunca</strong> se escriben contraseñas, tokens
-            de sesión, tokens de acceso de Meta o Shopify, ni ningún otro secreto.
+            de sesión, tokens de acceso de Meta, ni ningún otro secreto.
           </p>
         </Subseccion>
 
@@ -150,107 +150,105 @@ const SECCIONES = [
   },
   {
     id: 'integraciones',
-    titulo: 'Información que recibimos de las plataformas que conectás',
+    titulo: 'Información que recibimos de Meta',
     contenido: (
       <>
         <p>
-          Gesicomm solo accede a una plataforma externa si vos la conectás explícitamente, y solo
-          con los permisos que autorizás en la pantalla de consentimiento de esa plataforma.
-          Podés revocar cualquier conexión en cualquier momento desde Configuración.
+          <strong>Meta es hoy la única plataforma externa que Gesicomm integra.</strong> No hay
+          integración con Instagram, con WhatsApp Business Platform, con Shopify ni con ninguna
+          otra plataforma. Si alguna se agrega en el futuro, esta política se actualiza y se
+          notifica <strong>antes</strong> de activarla.
+        </p>
+        <p>
+          La conexión es opcional: Gesicomm solo accede a Meta si vos la habilitás explícitamente
+          desde Configuración, y podés revocarla en cualquier momento.
         </p>
 
         <Subseccion titulo="4.1 Información obtenida mediante OAuth">
           <p>
-            Las conexiones se establecen mediante el protocolo <strong>OAuth 2.0</strong>. Eso
-            significa que <strong>nunca vemos ni recibimos tu contraseña</strong> de la plataforma
-            externa: recibimos un token de acceso emitido por esa plataforma, limitado a los
-            permisos concedidos y revocable por vos.
+            La conexión se establece mediante el protocolo <strong>OAuth 2.0</strong>. Eso
+            significa que <strong>nunca vemos ni recibimos tu contraseña</strong> de Facebook:
+            recibimos un token de acceso emitido por Meta, limitado a los permisos concedidos y
+            revocable por vos en cualquier momento, tanto desde Gesicomm como desde tu propia
+            configuración de Facebook.
           </p>
           <p>
-            Los tokens de acceso y de actualización se almacenan <strong>cifrados con
-            AES-256-GCM</strong>, nunca en texto plano, y no se exponen en ninguna respuesta de la
-            API ni en los registros.
+            Los tokens de acceso se almacenan <strong>cifrados con AES-256-GCM</strong>, nunca en
+            texto plano, y no se exponen en ninguna respuesta de la API ni en los registros.
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.2 Facebook Login e información de Meta">
+        <Subseccion titulo="4.2 Los dos únicos permisos que pedimos">
           <p>
-            Si iniciás sesión o conectás tu cuenta con Facebook, recibimos de Meta:
+            Gesicomm solicita exactamente dos permisos de la plataforma de Meta, y ninguno más:
+          </p>
+
+          <TablaLegal
+            encabezados={['Permiso', 'Para qué lo usamos', 'Qué obtenemos']}
+            filas={[
+              [
+                'ads_management',
+                'Leer el rendimiento de tus campañas de Facebook Ads y mostrarlo junto al producto y al margen que promocionan.',
+                'Campañas, conjuntos de anuncios y anuncios, con su objetivo, presupuesto, impresiones, clics, alcance, gasto y conversiones.',
+              ],
+              [
+                'business_management',
+                'Listar los Business Managers y las cuentas publicitarias a las que ya tenés acceso, para que elijas cuál conectar.',
+                'Identificador y nombre de los Business Managers y de las cuentas publicitarias que administrás.',
+              ],
+            ]}
+            notaAlPie="Podés verificar esta lista vos mismo: Meta muestra los permisos solicitados en su propia pantalla de autorización antes de que confirmes la conexión."
+          />
+        </Subseccion>
+
+        <Subseccion titulo="4.3 Lo que explícitamente NO recibimos de Meta">
+          <p>
+            Con esos dos permisos, Meta <strong>no</strong> nos entrega —y por lo tanto nunca
+            tratamos— nada de lo siguiente:
           </p>
           <ul>
-            <li>Tu identificador de usuario de Facebook y tu nombre público.</li>
-            <li>Tu foto de perfil pública, si la compartís.</li>
-            <li>Tu dirección de correo, si concedés ese permiso.</li>
-            <li>
-              La lista de <strong>páginas de Facebook</strong> que administrás, con su nombre e
-              identificador.
-            </li>
-            <li>
-              Los <strong>Business Managers</strong>, <strong>cuentas publicitarias</strong> y{' '}
-              <strong>catálogos de productos</strong> a los que tenés acceso.
-            </li>
-            <li>
-              Métricas de rendimiento de campañas, conjuntos de anuncios y anuncios: impresiones,
-              clics, alcance, gasto y conversiones.
-            </li>
+            <li>Tu perfil personal, tu nombre, tu foto o tu dirección de correo de Facebook.</li>
+            <li>Tu lista de amigos o cualquier dato de tus contactos.</li>
+            <li>Tus publicaciones, tu muro o el contenido de tu actividad personal.</li>
+            <li>Tus páginas de Facebook ni el contenido publicado en ellas.</li>
+            <li>Cuentas de Instagram, sus publicaciones o sus métricas.</li>
+            <li>Mensajes de Messenger, de Instagram Direct ni de WhatsApp.</li>
+            <li>Catálogos de productos de Meta ni sus artículos.</li>
           </ul>
+        </Subseccion>
+
+        <Subseccion titulo="4.4 No usamos Facebook Login para autenticarte">
           <p>
-            <strong>No</strong> accedemos a tu lista de amigos, a tus publicaciones personales, a
-            tu mensajería privada ni a ningún contenido de tu perfil personal más allá de lo
-            enumerado.
+            El acceso a Gesicomm se hace con <strong>correo electrónico y contraseña propios</strong>,
+            gestionados por nosotros. Conectar Meta es una acción posterior e independiente, que
+            solo vincula tus cuentas publicitarias. Desconectar Meta no te deja fuera de Gesicomm.
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.3 Información de Instagram">
+        <Subseccion titulo="4.5 Meta Pixel en tu vitrina">
           <p>
-            Para las cuentas profesionales de Instagram vinculadas a tus páginas de Facebook,
-            recibimos el identificador y nombre de usuario de la cuenta, las publicaciones que
-            promocionás desde Gesicomm y sus métricas de rendimiento. No accedemos a mensajes
-            directos ni al contenido de cuentas personales de terceros.
+            Aparte de la conexión anterior, podés cargar el identificador de{' '}
+            <strong>tu propio Meta Pixel</strong> para que se dispare en la vitrina pública de tu
+            tienda. En ese caso Gesicomm solo almacena ese identificador: los eventos de navegación
+            los recibe Meta directamente desde el navegador de tu visitante, y su tratamiento se
+            rige por la política de datos de Meta. Sos vos, como titular de esa vitrina, quien
+            responde por informarlo y por recabar el consentimiento de tus visitantes. Está
+            detallado en la <Link to="/cookies">Política de Cookies</Link>.
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.4 Información de WhatsApp Cloud API">
+        <Subseccion titulo="4.6 WhatsApp: un enlace, no una integración">
           <p>
-            Si conectás un número mediante WhatsApp Cloud API, procesamos:
+            El botón de WhatsApp de tu vitrina genera un enlace <code>wa.me</code> con el mensaje
+            ya escrito. Al tocarlo, se abre la aplicación de WhatsApp en el dispositivo de tu
+            visitante y la conversación ocurre <strong>directamente entre esa persona y vos</strong>.
           </p>
-          <ul>
-            <li>El número de teléfono comercial que conectás y su identificador.</li>
-            <li>
-              Los <strong>números de teléfono de las personas que se comunican con ese número</strong>{' '}
-              y el nombre de perfil que WhatsApp expone.
-            </li>
-            <li>
-              El <strong>contenido de los mensajes</strong> intercambiados a través de la
-              plataforma, y su estado de envío, entrega y lectura.
-            </li>
-            <li>Las plantillas de mensaje que aprobás y su estado.</li>
-          </ul>
           <p>
-            Estos mensajes se tratan como datos de tus clientes: los procesamos por cuenta tuya,
-            para que puedas atender la conversación desde Gesicomm, y no los usamos con fines
-            propios ni los cedemos a terceros.
-          </p>
-        </Subseccion>
-
-        <Subseccion titulo="4.5 Información de Shopify">
-          <p>Si conectás una tienda de Shopify, sincronizamos:</p>
-          <ul>
-            <li>Datos de la tienda: nombre, dominio, moneda y zona horaria.</li>
-            <li>Catálogo: productos, variantes, precios, imágenes, colecciones e inventario.</li>
-            <li>
-              Pedidos: número, fecha, artículos, importes, impuestos, estado de pago y estado de
-              cumplimiento.
-            </li>
-            <li>
-              Datos del comprador asociados al pedido: nombre, correo, teléfono y direcciones de
-              envío y facturación.
-            </li>
-          </ul>
-          <p>
-            Gesicomm <strong>no recibe ni almacena números completos de tarjeta</strong> ni datos
-            de autenticación de medios de pago de tus compradores: esa información permanece en
-            Shopify y en su procesador de pagos.
+            Gesicomm <strong>no usa la API de WhatsApp Business</strong>, no envía mensajes, no
+            recibe mensajes y <strong>no almacena ninguna conversación ni número de teléfono de
+            tus compradores por esa vía</strong>. El único número de WhatsApp que guardamos es{' '}
+            <strong>el tuyo</strong>, el que configurás como contacto de tu tienda para que el
+            enlace apunte a algún lado.
           </p>
         </Subseccion>
       </>
@@ -282,11 +280,6 @@ const SECCIONES = [
             [
               'Datos de clientes (compradores)',
               'Nombre, correo electrónico, teléfono, direcciones de envío y facturación, documento de identidad si lo cargás, historial de compras y notas internas.',
-              'Encargado',
-            ],
-            [
-              'Datos de conversaciones',
-              'Mensajes de WhatsApp asociados a un número conectado, con su remitente, fecha y estado de entrega.',
               'Encargado',
             ],
             [
@@ -328,9 +321,8 @@ const SECCIONES = [
         <p>Tratamos los datos exclusivamente para las siguientes finalidades:</p>
         <ul>
           <li>
-            <strong>Prestar el servicio:</strong> crear y mantener tu cuenta, sincronizar tu
-            catálogo y tus pedidos, calcular precios y márgenes, gestionar inventario, envíos y
-            conversaciones.
+            <strong>Prestar el servicio:</strong> crear y mantener tu cuenta, administrar tu
+            catálogo y tus pedidos, calcular precios y márgenes, y gestionar inventario y envíos.
           </li>
           <li>
             <strong>Autenticar y autorizar:</strong> verificar tu identidad al iniciar sesión y
@@ -363,9 +355,9 @@ const SECCIONES = [
         </ul>
         <p>
           <strong>Lo que no hacemos:</strong> no vendemos datos personales; no los compartimos con
-          terceros para su publicidad; no usamos el contenido de tus pedidos ni las conversaciones
-          de tus clientes para entrenar modelos de inteligencia artificial de terceros; y no
-          construimos perfiles de tus compradores para fines ajenos a tu negocio.
+          terceros para su publicidad; no usamos el contenido de tus pedidos ni los datos de tus
+          clientes para entrenar modelos de inteligencia artificial de terceros; y no construimos
+          perfiles de tus compradores para fines ajenos a tu negocio.
         </p>
       </>
     ),
@@ -389,7 +381,7 @@ const SECCIONES = [
               'Sin estos datos no es materialmente posible darte el servicio que contrataste.',
             ],
             [
-              'Conexión de integraciones externas',
+              'Conexión de la integración con Meta',
               'Consentimiento (art. 6.1.a RGPD)',
               'Se pide en la pantalla de autorización de cada plataforma y es revocable en cualquier momento.',
             ],
@@ -464,7 +456,7 @@ const SECCIONES = [
         <Alert tono="info" titulo="Si sos comprador de una tienda que usa Gesicomm" className="mt-5">
           Tus datos están en Gesicomm porque el comercio donde compraste usa nuestra plataforma.
           Para ejercer tus derechos, dirigite primero a ese comercio, que es el responsable. Si no
-          obtenés respuesta, escribinos a <Correo direccion="privacy@gesicomm.com" /> y te ayudamos
+          obtenés respuesta, escribinos a <Correo direccion="contacto@gesicomm.com" /> y te ayudamos
           a canalizar el pedido con el comercio correspondiente.
         </Alert>
         <p>
@@ -506,7 +498,7 @@ const SECCIONES = [
             ],
             [
               'Plataformas que vos conectás',
-              'Meta, Facebook, Instagram, WhatsApp Cloud API y Shopify.',
+              'Meta, únicamente si conectás la integración de Facebook Ads.',
               'Únicamente los datos necesarios para la integración autorizada.',
             ],
             [
@@ -530,7 +522,7 @@ const SECCIONES = [
               'Lo que la orden exija, revisando su validez antes de responder.',
             ],
           ]}
-          notaAlPie="La lista nominal y actualizada de subprocesadores está disponible escribiendo a privacy@gesicomm.com. Notificamos con antelación razonable la incorporación de un subprocesador nuevo."
+          notaAlPie="La lista nominal y actualizada de subprocesadores está disponible escribiendo a contacto@gesicomm.com. Notificamos con antelación razonable la incorporación de un subprocesador nuevo."
         />
 
         <p>
@@ -553,8 +545,8 @@ const SECCIONES = [
       <>
         <p>
           Gesicomm opera con proveedores de infraestructura que pueden estar ubicados fuera de tu
-          país de residencia, y las plataformas que conectás (Meta, Shopify) procesan datos en
-          Estados Unidos y en otras jurisdicciones.
+          país de residencia, y Meta —si conectás la integración— procesa datos en Estados Unidos
+          y en otras jurisdicciones.
         </p>
         <p>Cuando una transferencia sale del Espacio Económico Europeo o del Reino Unido, se ampara en:</p>
         <ul>
@@ -573,7 +565,7 @@ const SECCIONES = [
         </ul>
         <p>
           Podés solicitar copia de las garantías aplicables escribiendo a{' '}
-          <Correo direccion="privacy@gesicomm.com" />.
+          <Correo direccion="contacto@gesicomm.com" />.
         </p>
       </>
     ),
@@ -633,13 +625,8 @@ const SECCIONES = [
               'Prestación del servicio.',
             ],
             [
-              'Conversaciones de WhatsApp',
-              'Mientras la cuenta esté activa, o el plazo menor que configures.',
-              'Prestación del servicio.',
-            ],
-            [
-              'Tokens de integraciones',
-              'Hasta que revoques la conexión. Se eliminan de inmediato al desconectar.',
+              'Token de acceso de Meta',
+              'Hasta que revoques la conexión. Se elimina de inmediato al desconectar.',
               'Consentimiento.',
             ],
             [
@@ -685,7 +672,7 @@ const SECCIONES = [
             superior, con HSTS habilitado.
           </li>
           <li>
-            <strong>Cifrado de secretos:</strong> los tokens de integraciones se guardan cifrados
+            <strong>Cifrado de secretos:</strong> el token de acceso de Meta se guarda cifrado
             con AES-256-GCM y claves gestionadas fuera del código.
           </li>
           <li>
@@ -787,7 +774,7 @@ const SECCIONES = [
             <Link to="/data-deletion">Eliminación de Datos</Link>.
           </li>
           <li>
-            <strong>Por correo.</strong> Escribinos a <Correo direccion="privacy@gesicomm.com" />{' '}
+            <strong>Por correo.</strong> Escribinos a <Correo direccion="contacto@gesicomm.com" />{' '}
             indicando qué derecho querés ejercer.
           </li>
         </ol>
@@ -820,7 +807,7 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Responsable:</strong> Gesicomm. Contacto en materia de protección de datos:{' '}
-            <Correo direccion="privacy@gesicomm.com" />.
+            <Correo direccion="contacto@gesicomm.com" />.
           </li>
           <li>
             <strong>Bases jurídicas:</strong> las detalladas en la sección{' '}
@@ -838,7 +825,7 @@ const SECCIONES = [
           <li>
             <strong>Encargados de tratamiento:</strong> cuando actuamos como encargado, firmamos un
             Acuerdo de Tratamiento de Datos (DPA) con las cláusulas del artículo 28 del RGPD.
-            Solicitalo en <Correo direccion="legal@gesicomm.com" />.
+            Solicitalo en <Correo direccion="contacto@gesicomm.com" />.
           </li>
           <li>
             <strong>Evaluaciones de impacto:</strong> realizamos evaluaciones de impacto relativas
@@ -893,7 +880,7 @@ const SECCIONES = [
           </li>
         </ul>
         <p>
-          Para ejercerlos, escribí a <Correo direccion="privacy@gesicomm.com" /> con el asunto
+          Para ejercerlos, escribí a <Correo direccion="contacto@gesicomm.com" /> con el asunto
           «Solicitud CCPA» o usá el formulario de{' '}
           <Link to="/data-deletion">Eliminación de Datos</Link>. Respondemos dentro de los 45 días,
           prorrogables por 45 días adicionales con aviso previo.
@@ -950,7 +937,7 @@ const SECCIONES = [
         </ul>
         <p>
           En todos los casos el canal para ejercer derechos es el mismo:{' '}
-          <Correo direccion="privacy@gesicomm.com" /> o el formulario de{' '}
+          <Correo direccion="contacto@gesicomm.com" /> o el formulario de{' '}
           <Link to="/data-deletion">Eliminación de Datos</Link>. Si tu país reconoce un derecho más
           amplio que el descrito en esta política, prevalece el derecho local.
         </p>
@@ -970,7 +957,7 @@ const SECCIONES = [
         <p>
           Si detectamos que se creó una cuenta con datos de un menor sin la autorización que exija
           la ley aplicable, la eliminamos. Si sos madre, padre o tutor y creés que un menor a tu
-          cargo nos proporcionó datos, escribinos a <Correo direccion="privacy@gesicomm.com" /> y
+          cargo nos proporcionó datos, escribinos a <Correo direccion="contacto@gesicomm.com" /> y
           procedemos a eliminarlos.
         </p>
       </>
@@ -1017,7 +1004,7 @@ const SECCIONES = [
         </ul>
         <p>
           <strong>Eliminación iniciada desde Meta.</strong> Si quitás la aplicación desde la
-          configuración de tu cuenta de Facebook o Instagram, Meta nos notifica automáticamente a
+          configuración de tu cuenta de Facebook, Meta nos notifica automáticamente a
           través de nuestro <em>Data Deletion Callback</em>. Al recibir esa notificación
           verificamos criptográficamente que provenga realmente de Meta, registramos la solicitud y
           te devolvemos un código de confirmación con una URL pública donde podés seguir el estado
@@ -1056,7 +1043,7 @@ const SECCIONES = [
         </ul>
         <p>
           Conservamos las versiones anteriores de esta política y podés solicitarlas a{' '}
-          <Correo direccion="legal@gesicomm.com" />.
+          <Correo direccion="contacto@gesicomm.com" />.
         </p>
       </>
     ),
@@ -1070,14 +1057,14 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Privacidad y ejercicio de derechos:</strong>{' '}
-            <Correo direccion="privacy@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Consultas legales y contractuales:</strong>{' '}
-            <Correo direccion="legal@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
-            <strong>Soporte del producto:</strong> <Correo direccion="support@gesicomm.com" />
+            <strong>Soporte del producto:</strong> <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Formulario de contacto:</strong> <Link to="/contact">gesicomm.com/contact</Link>
@@ -1100,7 +1087,7 @@ export default function Privacy() {
   return (
     <LegalDoc
       titulo="Política de Privacidad"
-      descripcion="Cómo Gesicomm recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta, Facebook, Instagram, WhatsApp y Shopify, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
+      descripcion="Cómo Gesicomm recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta al conectar Facebook Ads, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
       resumen="Esta política explica qué datos trata Gesicomm, por qué, durante cuánto tiempo y qué control tenés sobre ellos. Está escrita para que se entienda sin ser abogado, sin perder precisión jurídica."
       ruta="/privacy"
       actualizado="2026-08-03"

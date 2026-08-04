@@ -1205,6 +1205,22 @@
 }
 .lb-color-opcion .lb-swatch { width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; }
 
+.lb-color-hex {
+  margin-top: 0.5rem;
+  width: 100%;
+  background: var(--vit-surface);
+  border: 1px solid var(--vit-border);
+  border-radius: 9px;
+  padding: 0.45rem 0.7rem;
+  color: var(--vit-text);
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+.lb-color-hex:focus { outline: none; border-color: rgba(16, 185, 129, 0.4); }
+.lb-color-hex::placeholder { color: var(--vit-muted); text-transform: none; }
+
 /* ═══════════════════════════════════════════════════════════════════════
    SEO
 ═══════════════════════════════════════════════════════════════════════ */

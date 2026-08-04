@@ -1,0 +1,454 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&display=swap');
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MI DASHBOARD — sistema propio, no genérico.
+
+   La idea central del diseño: separar visualmente "plata confirmada"
+   (Envio con estado Entregado — la vendedora la carga a mano después de
+   cerrar una venta real) de "interés en la landing" (Meta Pixel/CAPI —
+   visitas y clics a WhatsApp, señal de intención, no una venta). Esa
+   distinción no es cosmética: es la razón por la que este dashboard
+   existe sin inventar datos que el sistema no tiene. El layout la
+   refuerza — un hero grande para lo confirmado, un cluster más chico y
+   de otro color para lo que es señal de marketing.
+═══════════════════════════════════════════════════════════════════════ */
+
+.md-page {
+  --md-bg: #050505;
+  --md-surface: #0b0d12;
+  --md-surface-2: #12151d;
+  --md-border: rgba(255, 255, 255, 0.07);
+  --md-border-strong: rgba(255, 255, 255, 0.15);
+  --md-ink: #f4f6f8;
+  --md-ink-muted: #8b95a3;
+  --md-ink-faint: #565f6c;
+  --md-confirmado: #10b981;
+  --md-confirmado-soft: rgba(16, 185, 129, 0.14);
+  --md-visitas: #38bdf8;
+  --md-contactos: #10b981;
+  --md-ratio: #a78bfa;
+
+  background: var(--md-bg);
+  min-height: 100vh;
+  padding: 2rem 2rem 3rem;
+  color: var(--md-ink);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.md-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--md-ink-faint);
+}
+
+.md-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 6rem 0;
+  color: var(--md-ink-muted);
+  font-size: 0.9rem;
+}
+.md-spin { animation: md-spin 0.8s linear infinite; }
+@keyframes md-spin { to { transform: rotate(360deg); } }
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.md-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 0.25rem;
+}
+.md-h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: 1.55rem;
+  letter-spacing: -0.01em;
+  margin: 0.15rem 0 0;
+  color: var(--md-ink);
+}
+
+.md-filtros {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.md-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  background: var(--md-surface);
+  border: 1px solid var(--md-border);
+  border-radius: 10px;
+  padding: 0.25rem;
+}
+.md-tab {
+  background: transparent;
+  border: none;
+  color: var(--md-ink-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.4rem 0.65rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.md-tab:hover { color: var(--md-ink); }
+.md-tab.activo { background: var(--md-confirmado-soft); color: #6ee7b7; }
+
+.md-selects { display: flex; gap: 0.4rem; }
+.md-select {
+  background: var(--md-surface);
+  border: 1px solid var(--md-border);
+  color: var(--md-ink);
+  font-size: 0.78rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  outline: none;
+}
+.md-select:focus { border-color: var(--md-confirmado); }
+
+/* ── Hero: plata confirmada ────────────────────────────────────────── */
+.md-hero {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(16, 185, 129, 0.10), transparent 60%),
+    linear-gradient(155deg, var(--md-surface-2) 0%, var(--md-surface) 100%);
+  border: 1px solid var(--md-border);
+  border-radius: 20px;
+  padding: 1.9rem 2.1rem 1.7rem;
+  animation: md-rise 0.45s ease both;
+}
+@keyframes md-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .md-hero { animation: none; }
+}
+
+.md-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.md-confirmado-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6ee7b7;
+  background: var(--md-confirmado-soft);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.md-pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--md-confirmado);
+  animation: md-pulse 1.8s infinite;
+}
+@keyframes md-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.65); }
+  70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.md-hero-numero {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+  font-weight: 560;
+  font-size: clamp(2.6rem, 6vw, 4.2rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--md-ink);
+  margin: 0.15rem 0 0.85rem;
+}
+
+.md-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--md-ink-muted);
+  flex-wrap: wrap;
+}
+.md-hero-stats strong { color: var(--md-ink); font-weight: 700; }
+.md-hero-div {
+  width: 1px;
+  height: 14px;
+  background: var(--md-border-strong);
+}
+
+/* ── Tarjeta base ──────────────────────────────────────────────────── */
+.md-card {
+  background: var(--md-surface);
+  border: 1px solid var(--md-border);
+  border-radius: 16px;
+  padding: 1.35rem 1.5rem;
+}
+.md-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--md-ink);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.md-card-title-sub {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--md-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Interés en la landing ────────────────────────────────────────── */
+.md-intent-card { padding-bottom: 1.1rem; }
+.md-intent-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-top: 1.1rem;
+}
+.md-intent-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 1rem;
+  border-left: 1px solid var(--md-border);
+}
+.md-intent-stat:first-child { padding-left: 0; border-left: none; }
+.md-icon-intent { color: var(--md-visitas); flex-shrink: 0; }
+.md-icon-contactos { color: var(--md-contactos); flex-shrink: 0; }
+.md-icon-ratio {
+  color: var(--md-ratio);
+  font-size: 0.85rem;
+  font-weight: 800;
+  width: 15px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.md-intent-val {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--md-ink);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.md-intent-label {
+  font-size: 0.72rem;
+  color: var(--md-ink-muted);
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 720px) {
+  .md-intent-grid { grid-template-columns: repeat(2, 1fr); row-gap: 1rem; }
+  .md-intent-stat:nth-child(3) { border-left: none; padding-left: 0; }
+}
+
+/* ── Botones ───────────────────────────────────────────────────────── */
+.md-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--md-border-strong);
+  color: var(--md-ink-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  text-decoration: none;
+}
+.md-btn-ghost:hover { color: var(--md-ink); border-color: rgba(255, 255, 255, 0.3); }
+
+.md-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--md-confirmado);
+  color: #04140d;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  border-radius: 9px;
+  text-decoration: none;
+}
+.md-btn-primary:hover { filter: brightness(1.08); }
+
+/* ── Gráfico de tendencia ──────────────────────────────────────────── */
+.md-chart-card { display: flex; flex-direction: column; gap: 1rem; }
+.md-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.md-legend { display: flex; gap: 1rem; margin-top: 0.5rem; }
+.md-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: var(--md-ink-muted);
+  font-weight: 600;
+}
+.md-dot-visitas, .md-dot-contactos {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.md-dot-visitas { background: var(--md-visitas); }
+.md-dot-contactos { background: var(--md-contactos); }
+
+.md-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.75rem 1rem;
+  color: var(--md-ink-faint);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.md-chart-svg-wrap { position: relative; width: 100%; }
+.md-chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.md-chart-grid { stroke: rgba(255, 255, 255, 0.045); stroke-width: 1; }
+.md-chart-baseline { stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
+.md-bar { transition: opacity 0.15s; }
+.md-bar-visitas { fill: var(--md-visitas); }
+.md-bar-contactos { fill: var(--md-contactos); }
+.md-bar.activa { opacity: 0.7; }
+.md-chart-label { font-size: 9.5px; fill: var(--md-ink-faint); }
+
+.md-chart-tooltip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: #14161e;
+  border: 1px solid var(--md-border-strong);
+  border-radius: 9px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--md-ink);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  z-index: 5;
+}
+.md-chart-tooltip strong { margin-bottom: 0.1rem; }
+.md-chart-tooltip span { display: flex; align-items: center; gap: 0.4rem; color: var(--md-ink-muted); }
+.md-chart-tooltip small { color: var(--md-ink-faint); margin-top: 0.1rem; }
+
+.md-table-wrap { overflow-x: auto; }
+.md-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.md-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--md-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--md-border);
+}
+.md-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--md-border); color: var(--md-ink); }
+
+/* ── Rankings (más vendidos / más consultados) ────────────────────── */
+.md-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.md-empty-hint {
+  font-size: 0.82rem;
+  color: var(--md-ink-faint);
+  margin: 0.75rem 0 0;
+  line-height: 1.5;
+}
+
+.md-rank-lista {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.9rem;
+}
+.md-rank-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--md-border);
+}
+.md-rank-fila:last-child { border-bottom: none; }
+.md-rank-num {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--md-ink-faint);
+  width: 1.1rem;
+  flex-shrink: 0;
+}
+.md-rank-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.md-rank-linea { display: flex; justify-content: space-between; gap: 0.75rem; }
+.md-rank-nombre {
+  font-size: 0.82rem;
+  color: var(--md-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.md-rank-valor { font-size: 0.78rem; font-weight: 700; color: var(--md-ink); white-space: nowrap; }
+.md-rank-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.md-rank-barra { height: 100%; border-radius: 999px; }
+.md-rank-barra-confirmado { background: var(--md-confirmado); }
+.md-rank-barra-intent { background: var(--md-visitas); }
+
+.md-footer-link {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .md-page { padding: 1.25rem 1rem 2.5rem; }
+  .md-header { flex-direction: column; align-items: flex-start; }
+  .md-filtros { align-items: flex-start; width: 100%; }
+  .md-hero { padding: 1.5rem 1.25rem; }
+  .md-card { padding: 1.1rem 1.15rem; }
+}

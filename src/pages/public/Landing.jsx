@@ -5,6 +5,7 @@ import {
   Building2,
   Eye,
   KeyRound,
+  LineChart,
   Lock,
   Megaphone,
   MessageCircle,
@@ -14,7 +15,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   Sparkles,
-  Store,
   Truck,
   Users,
 } from 'lucide-react';
@@ -37,8 +37,8 @@ const CARACTERISTICAS = [
   },
   {
     icono: ShoppingCart,
-    titulo: 'Pedidos sincronizados',
-    texto: 'Los pedidos de cada canal entran al mismo tablero, con su estado, su historial y su responsable. Sin planillas paralelas.',
+    titulo: 'Pedidos en un tablero',
+    texto: 'Cada pedido con su estado, su historial y su responsable, en un tablero que se mueve con la operación. Sin planillas paralelas.',
   },
   {
     icono: Boxes,
@@ -48,7 +48,7 @@ const CARACTERISTICAS = [
   {
     icono: Users,
     titulo: 'CRM y clientes',
-    texto: 'Ficha completa de cada cliente: qué compró, cuándo, por qué canal y qué conversaciones tuvo con tu equipo.',
+    texto: 'Ficha completa de cada cliente: qué compró, cuándo, a qué precio y cómo le llegó el pedido.',
   },
   {
     icono: Truck,
@@ -72,41 +72,46 @@ const CARACTERISTICAS = [
   },
 ];
 
+// Integraciones REALMENTE disponibles hoy. La lista se mantiene corta a
+// propósito: anunciar conexiones que no existen es lo que hace que una
+// revisión de plataforma se rechace, y obliga a describir en la Política de
+// Privacidad datos que nunca se tratan.
 const INTEGRACIONES = [
   {
-    nombre: 'Shopify',
-    color: '#95BF47',
-    icono: Store,
-    descripcion: 'Sincronización bidireccional de productos, variantes, stock y pedidos con tu tienda Shopify.',
-    datos: 'Productos, inventario, pedidos y datos de contacto del comprador.',
-  },
-  {
-    nombre: 'Meta',
+    nombre: 'Meta Business',
     color: '#0081FB',
     icono: Network,
-    descripcion: 'Conexión con tu Business Manager para administrar activos publicitarios y catálogos.',
-    datos: 'Cuentas publicitarias, catálogos, campañas y métricas de rendimiento.',
+    descripcion:
+      'Conectás tu Business Manager por OAuth y Gesicomm lee las cuentas publicitarias a las que ya tenés acceso. No creamos ni modificamos activos por tu cuenta.',
+    datos: 'Business Managers y cuentas publicitarias que administrás.',
   },
   {
-    nombre: 'Facebook',
+    nombre: 'Facebook Ads',
     color: '#1877F2',
     icono: Megaphone,
-    descripcion: 'Inicio de sesión con Facebook y gestión de las páginas vinculadas a tu negocio.',
-    datos: 'Perfil público básico, correo y páginas que administrás.',
+    descripcion:
+      'Campañas, conjuntos de anuncios y su rendimiento, al lado del producto y del margen real que estás promocionando.',
+    datos: 'Campañas, presupuestos, impresiones, clics, alcance, gasto y conversiones.',
   },
   {
-    nombre: 'Instagram',
-    color: '#E1306C',
-    icono: Sparkles,
-    descripcion: 'Cuentas profesionales de Instagram vinculadas a tus páginas y a tu catálogo de productos.',
-    datos: 'Cuenta profesional, publicaciones promocionadas y métricas.',
+    nombre: 'Meta Pixel',
+    color: '#7C6BFF',
+    icono: LineChart,
+    descripcion:
+      'Cargás el identificador de tu propio píxel y tu vitrina lo dispara, para que las conversiones vuelvan a tus campañas.',
+    datos: 'Solo el identificador del píxel. Los eventos los recibe Meta directamente.',
   },
+];
+
+// Canales de venta que la vitrina usa sin API de por medio. Se listan aparte
+// para no dar a entender que son integraciones con acceso a datos.
+const CANALES_SIN_API = [
   {
-    nombre: 'WhatsApp Cloud API',
+    nombre: 'WhatsApp',
     color: '#25D366',
     icono: MessageCircle,
-    descripcion: 'Conversaciones con clientes desde el mismo lugar donde ves su pedido y su historial.',
-    datos: 'Número de teléfono, mensajes y estado de entrega de cada conversación.',
+    descripcion:
+      'El botón de tu vitrina abre un chat en el WhatsApp de quien te consulta, con el producto y el precio ya escritos. Es un enlace: la conversación ocurre entre tu cliente y vos, y Gesicomm no la ve ni la guarda.',
   },
 ];
 
@@ -135,29 +140,34 @@ const SEGURIDAD = [
 
 const PREGUNTAS = [
   {
-    pregunta: '¿Qué datos de Meta, Facebook, Instagram y WhatsApp usa Gesicomm?',
+    pregunta: '¿Qué datos de Meta usa Gesicomm exactamente?',
     respuesta:
-      'Solo los permisos que autorizás explícitamente durante la conexión: tu perfil público básico, el correo de la cuenta, las páginas e cuentas profesionales que administrás, tus catálogos y tus cuentas publicitarias, además de las conversaciones de WhatsApp de los números que conectás. No accedemos a tus contactos personales, a tu muro ni a mensajes privados ajenos al número que conectaste. El detalle completo está en la Política de Privacidad.',
+      'Al conectar tu cuenta pedimos dos permisos y nada más: ads_management y business_management. Con eso leemos los Business Managers y las cuentas publicitarias a las que ya tenés acceso, y las métricas de tus campañas de Facebook Ads. No pedimos tu perfil, ni tu correo, ni tus páginas, ni tus contactos, ni tu muro, ni ningún tipo de mensajería. Podés verificarlo vos mismo en la pantalla de permisos que te muestra Meta al conectar.',
   },
   {
-    pregunta: '¿Puedo desconectar una integración sin perder mis datos?',
+    pregunta: '¿Gesicomm tiene integración con Instagram, WhatsApp o Shopify?',
     respuesta:
-      'Sí. Desde Configuración podés desvincular cualquier integración en cualquier momento. Al hacerlo revocamos los tokens de acceso y dejamos de sincronizar; tu catálogo, tus pedidos y tu historial dentro de Gesicomm quedan intactos.',
+      'No. Hoy la única integración con acceso a datos es la de Meta para Facebook Ads. El botón de WhatsApp de tu vitrina es un enlace wa.me que abre la aplicación en el teléfono de quien te consulta: no usa la API de WhatsApp y Gesicomm no ve ni guarda esas conversaciones. Instagram y Shopify no están integrados. Si en algún momento se agregan, esta página y la Política de Privacidad se actualizan antes de activarlos.',
+  },
+  {
+    pregunta: '¿Usan Facebook Login para entrar a Gesicomm?',
+    respuesta:
+      'No. El acceso a Gesicomm es con correo y contraseña propios. La conexión con Meta es una acción aparte, dentro de Configuración, y sirve únicamente para vincular tus cuentas publicitarias.',
+  },
+  {
+    pregunta: '¿Puedo desconectar Meta sin perder mis datos?',
+    respuesta:
+      'Sí. Desde Configuración podés desvincular la conexión en cualquier momento. Al hacerlo eliminamos el token de acceso y dejamos de consultar la API; tu catálogo, tus pedidos y tu historial dentro de Gesicomm quedan intactos.',
   },
   {
     pregunta: '¿Cómo pido que eliminen mis datos?',
     respuesta:
-      'De dos maneras: desde Configuración → Eliminar cuenta si tenés sesión activa, o completando el formulario público de la página de Eliminación de Datos si ya no podés entrar. Verificamos tu identidad y procesamos la eliminación en un plazo máximo de 30 días.',
-  },
-  {
-    pregunta: '¿Dónde se almacenan los datos?',
-    respuesta:
-      'En servidores de nuestro proveedor de infraestructura, con copias de seguridad cifradas. Si un dato tiene que salir de su región por una integración —por ejemplo, al consultar la Graph API de Meta— la transferencia se ampara en cláusulas contractuales tipo. Está detallado en la sección de transferencias internacionales de la Política de Privacidad.',
+      'De dos maneras: desde Configuración → Privacidad y datos si tenés sesión activa, o completando el formulario público de la página de Eliminación de Datos si ya no podés entrar. Verificamos tu identidad y procesamos la eliminación en un plazo máximo de 30 días.',
   },
   {
     pregunta: '¿Gesicomm vende o comparte mis datos con terceros?',
     respuesta:
-      'No. No vendemos datos personales ni los compartimos con fines publicitarios de terceros. Solo intervienen los subprocesadores necesarios para prestar el servicio (infraestructura, correo transaccional, las propias plataformas que conectás), listados uno por uno en la Política de Privacidad.',
+      'No. No vendemos datos personales ni los compartimos con fines publicitarios de terceros. Solo intervienen los subprocesadores necesarios para prestar el servicio (infraestructura, red de distribución) y la propia API de Meta cuando la conectás, listados uno por uno en la Política de Privacidad.',
   },
   {
     pregunta: '¿Qué pasa si dejo de pagar la suscripción?',
@@ -186,7 +196,7 @@ export default function Landing() {
         operatingSystem: 'Web',
         url: SITIO,
         description:
-          'Plataforma SaaS de gestión de eCommerce: sincroniza productos, pedidos, inventario, clientes, logística, CRM, campañas y métricas desde un solo panel, con integraciones a Shopify, Meta, Facebook, Instagram y WhatsApp Cloud API.',
+          'Plataforma SaaS de gestión de eCommerce: catálogo, pedidos, inventario, clientes, logística, CRM y métricas en un solo panel, con integración a Meta Business para el seguimiento de campañas de Facebook Ads.',
         publisher: { '@id': `${SITIO}/#organizacion` },
       },
       {
@@ -204,7 +214,7 @@ export default function Landing() {
     <>
       <Seo
         titulo="Gesicomm · Gestión de eCommerce en un solo panel"
-        descripcion="Plataforma SaaS para administrar toda la operación de tu eCommerce: productos, pedidos, inventario, clientes, logística, CRM, campañas y métricas. Integrada con Shopify, Meta, Facebook, Instagram y WhatsApp Cloud API."
+        descripcion="Plataforma SaaS para administrar toda la operación de tu eCommerce: productos, pedidos, inventario, clientes, logística, CRM y métricas en un solo panel, con integración a Meta Business para seguir el rendimiento de tus campañas de Facebook Ads."
         ruta="/"
         schema={schema}
       />
@@ -223,7 +233,7 @@ export default function Landing() {
         <Container className="relative pb-20 pt-16 text-center sm:pb-28 sm:pt-24">
           <div className="animar-entrada">
             <Badge tono="primario" icono={Sparkles} className="mb-7">
-              Integrado con Shopify, Meta y WhatsApp Cloud API
+              Integrado con Meta Business y Facebook Ads
             </Badge>
 
             <h1
@@ -235,7 +245,8 @@ export default function Landing() {
 
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">
               Gesicomm reúne catálogo, pedidos, inventario, clientes, logística y campañas en un
-              único panel. Conectás tus canales una vez y dejás de reconciliar planillas.
+              único panel, con el rendimiento de tus anuncios de Facebook al lado del margen real
+              de cada producto.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -261,7 +272,7 @@ export default function Landing() {
         <Container className="relative pb-16">
           <div className="rounded-xl border border-border bg-surface/60 px-6 py-6 backdrop-blur-sm">
             <p className="text-center text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-              Canales que se conectan
+              Lo que se conecta hoy
             </p>
             <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
               {INTEGRACIONES.map((integracion) => (
@@ -311,8 +322,8 @@ export default function Landing() {
         <Reveal>
           <SectionHeading
             eyebrow="Integraciones"
-            titulo="Conectá tus canales, no los migres"
-            descripcion="Cada integración pide únicamente los permisos que necesita para funcionar, y podés revocarla en cualquier momento desde Configuración."
+            titulo="Una sola integración, y bien hecha"
+            descripcion="Hoy Gesicomm se conecta con Meta y nada más. Pide exactamente dos permisos —ads_management y business_management— y podés revocarla en cualquier momento desde Configuración."
             centrado
           />
         </Reveal>
@@ -354,6 +365,50 @@ export default function Landing() {
             </Reveal>
           ))}
         </div>
+
+        {/* Canales sin API: van separados y explicados, porque presentarlos
+            como "integración" daría a entender un acceso a datos que no
+            existe. */}
+        {CANALES_SIN_API.map((canal) => (
+          <Reveal key={canal.nombre}>
+            <div className="mt-5 rounded-xl border border-dashed border-border bg-canvas p-6">
+              {/* Un solo <h3>: duplicarlo para mostrar uno u otro según el
+                  ancho dejaría dos encabezados en el árbol de accesibilidad
+                  para un mismo bloque. El icono se reordena con flex. */}
+              <div className="flex gap-4">
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: `${canal.color}1f`, color: canal.color }}
+                >
+                  <canal.icono size={19} />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                    <h3
+                      className="text-base font-semibold text-fg"
+                      style={{ letterSpacing: '-0.02em' }}
+                    >
+                      {canal.nombre}
+                    </h3>
+                    <Badge tono="neutro">Sin API · no es una integración</Badge>
+                  </div>
+                  <p className="mt-2.5 text-sm leading-relaxed text-fg-muted">
+                    {canal.descripcion}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        ))}
+
+        <Reveal>
+          <p className="mt-8 text-center text-sm text-fg-muted">
+            Instagram, WhatsApp Cloud API y Shopify <strong className="font-semibold text-fg">no
+            están integrados</strong> hoy. Si se agregan, se anuncian acá y en la Política de
+            Privacidad antes de activarse.
+          </p>
+        </Reveal>
 
         <Reveal>
           <p className="mt-10 text-center text-sm text-fg-muted">
@@ -415,9 +470,8 @@ export default function Landing() {
             <p className="max-w-3xl text-base leading-relaxed text-fg-muted">
               Nuestras prácticas de tratamiento de datos están alineadas con el{' '}
               <strong className="font-semibold text-fg">RGPD</strong> europeo, la{' '}
-              <strong className="font-semibold text-fg">CCPA/CPRA</strong> de California, las{' '}
-              <strong className="font-semibold text-fg">Meta Platform Terms</strong> y los{' '}
-              <strong className="font-semibold text-fg">Shopify API Terms</strong>, además de la
+              <strong className="font-semibold text-fg">CCPA/CPRA</strong> de California y las{' '}
+              <strong className="font-semibold text-fg">Meta Platform Terms</strong>, además de la
               normativa de protección de datos de los países de Latinoamérica donde operamos.
             </p>
             <Link
@@ -458,10 +512,10 @@ export default function Landing() {
               </Link>{' '}
               o mandanos un correo a{' '}
               <a
-                href="mailto:support@gesicomm.com"
+                href="mailto:contacto@gesicomm.com"
                 className="font-medium text-primary underline underline-offset-4"
               >
-                support@gesicomm.com
+                contacto@gesicomm.com
               </a>
               .
             </p>

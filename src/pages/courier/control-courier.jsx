@@ -1,24 +1,33 @@
 import { useMemo, useState, useEffect } from "react";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp } from "lucide-react";
 import { KanbanBoard } from "./kanban-board";
 import { SummaryBar } from "./summary-bar";
 import { DayFilter } from "./day-filter";
 import { CouriersCrud } from "./couriers-crud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
-import { 
-  getCouriers, 
-  getEnvios, 
-  updateEstadoEnvio, 
-  createCourier, 
-  updateCourier, 
+import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
+import {
+  getCouriers,
+  getEnvios,
+  updateEstadoEnvio,
+  createCourier,
+  updateCourier,
   deleteCourier,
-  createEnvio 
+  createEnvio
 } from "../../services/courierApi";
 import "./courier.css";
 
+const TABS_VALIDOS = new Set(["tablero", "couriers", "analitica"]);
+
 export function ControlCourier() {
-  const [tab, setTab] = useState("tablero");
+  // Permite llegar directo a una pestaña con un link (ej: "Mi Dashboard"
+  // linkeando a /mis-pedidos?tab=analitica) en vez de siempre abrir en
+  // Tablero y obligar a la usuaria a encontrar la pestaña ella misma.
+  const [searchParams] = useSearchParams();
+  const tabInicial = searchParams.get("tab");
+  const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [couriers, setCouriers] = useState([]);
   const [envios, setEnvios] = useState([]);
@@ -136,6 +145,9 @@ export function ControlCourier() {
             <TabButton active={tab === "couriers"} onClick={() => setTab("couriers")} icon={<Users size={16} />}>
               Couriers
             </TabButton>
+            <TabButton active={tab === "analitica"} onClick={() => setTab("analitica")} icon={<TrendingUp size={16} />}>
+              Analítica
+            </TabButton>
           </nav>
         </div>
       </div>
@@ -169,7 +181,7 @@ export function ControlCourier() {
               />
             )}
           </div>
-        ) : (
+        ) : tab === "couriers" ? (
           <CouriersCrud
             couriers={couriers}
             enviosCountByCourier={enviosCountByCourier}
@@ -186,6 +198,8 @@ export function ControlCourier() {
               setCouriers(prev => prev.filter(x => x.id !== id));
             }}
           />
+        ) : (
+          <CentroInteligenciaComercial />
         )}
       </main>
 

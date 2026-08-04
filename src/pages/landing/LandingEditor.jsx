@@ -13,6 +13,7 @@ import ProductPicker from './ProductPicker';
 import LandingPreview from './LandingPreview';
 import EstadisticasPanel from './EstadisticasPanel';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { MODOS } from '../../lib/landingDiseno';
 import '../vitrina/vitrina.css';
 import './landing.css';
 
@@ -43,6 +44,10 @@ const RADIOS_BORDE = [
   { valor: 'grande', label: 'Grande' },
 ];
 
+// Equivalente hex aproximado del cardBg semitransparente de MODOS (ver
+// landingDiseno.js) — el <input type="color"> nativo no acepta rgba.
+const CARD_HEX_DEFAULT = { oscuro: '#181818', claro: '#ffffff' };
+
 const FUENTES = [
   { valor: 'outfit', label: 'Outfit', familia: "'Outfit', sans-serif" },
   { valor: 'inter', label: 'Inter', familia: "'Inter', sans-serif" },
@@ -67,6 +72,8 @@ const FORM_INICIAL = {
   tema_modo: 'oscuro',
   color_primario: '',
   color_fondo: '',
+  color_texto: '',
+  color_tarjeta: '',
   radio_bordes: 'mediano',
   fuente: 'outfit',
   mostrar_whatsapp: true,
@@ -95,6 +102,58 @@ function tiempoRelativo(fecha) {
   if (horas < 24) return `hace ${horas} h`;
   const dias = Math.floor(horas / 24);
   return dias === 1 ? 'ayer' : `hace ${dias} días`;
+}
+
+/** Filtra a solo dígitos hexadecimales y antepone "#" — acepta pegar "#AABBCC" o "AABBCC" por igual. */
+function limpiarHex(valor) {
+  const limpio = valor.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+  return limpio ? `#${limpio}` : '';
+}
+
+/**
+ * Selector de color con swatch nativo + campo de texto para el hexadecimal.
+ * `colorHeredado` es lo que se muestra en el swatch "Heredado" (puede ser
+ * cualquier color CSS, incluso rgba). `colorPicker` es el valor de arranque
+ * del <input type="color"> nativo al activar "Personalizado" — ese input
+ * solo acepta hex de 6 dígitos, así que si `colorHeredado` no es hex (ej.
+ * el fondo semitransparente de las tarjetas en modo oscuro) hace falta un
+ * equivalente aproximado.
+ */
+function CampoColor({ label, valor, colorHeredado, colorPicker, onChange }) {
+  return (
+    <div className="lb-field">
+      <span>{label}</span>
+      <div className="lb-color-opciones">
+        <button
+          type="button"
+          className={`lb-color-opcion ${!valor ? 'active' : ''}`}
+          onClick={() => onChange('')}
+        >
+          <span className="lb-swatch" style={{ background: colorHeredado }} />
+          Heredado
+        </button>
+        <label className={`lb-color-opcion ${valor ? 'active' : ''}`}>
+          <input
+            type="color"
+            value={valor || colorPicker || colorHeredado}
+            onChange={e => onChange(e.target.value)}
+          />
+          Personalizado
+        </label>
+      </div>
+      {valor && (
+        <input
+          type="text"
+          className="lb-color-hex"
+          value={valor}
+          onChange={e => onChange(limpiarHex(e.target.value))}
+          placeholder={colorHeredado}
+          maxLength={7}
+          spellCheck={false}
+        />
+      )}
+    </div>
+  );
 }
 
 export default function LandingEditor() {
@@ -154,6 +213,8 @@ export default function LandingEditor() {
           tema_modo: guardada.tema_modo || 'oscuro',
           color_primario: guardada.color_primario || '',
           color_fondo: guardada.color_fondo || '',
+          color_texto: guardada.color_texto || '',
+          color_tarjeta: guardada.color_tarjeta || '',
           radio_bordes: guardada.radio_bordes || 'mediano',
           fuente: guardada.fuente || 'outfit',
           mostrar_whatsapp: guardada.mostrar_whatsapp !== false,
@@ -798,49 +859,34 @@ export default function LandingEditor() {
               </div>
 
               <div className="lb-diseno-grid">
-                <div className="lb-field">
-                  <span>Color principal</span>
-                  <div className="lb-color-opciones">
-                    <button
-                      type="button"
-                      className={`lb-color-opcion ${!form.color_primario ? 'active' : ''}`}
-                      onClick={() => handleChange('color_primario', '')}
-                    >
-                      <span className="lb-swatch" style={{ background: tienda?.color_primario || '#10b981' }} />
-                      Heredado
-                    </button>
-                    <label className={`lb-color-opcion ${form.color_primario ? 'active' : ''}`}>
-                      <input
-                        type="color"
-                        value={form.color_primario || tienda?.color_primario || '#10b981'}
-                        onChange={e => handleChange('color_primario', e.target.value)}
-                      />
-                      Personalizado
-                    </label>
-                  </div>
-                </div>
+                <CampoColor
+                  label="Color principal"
+                  valor={form.color_primario}
+                  colorHeredado={tienda?.color_primario || '#10b981'}
+                  onChange={v => handleChange('color_primario', v)}
+                />
 
-                <div className="lb-field">
-                  <span>Color de fondo</span>
-                  <div className="lb-color-opciones">
-                    <button
-                      type="button"
-                      className={`lb-color-opcion ${!form.color_fondo ? 'active' : ''}`}
-                      onClick={() => handleChange('color_fondo', '')}
-                    >
-                      <span className="lb-swatch" style={{ background: fondoHeredado }} />
-                      Heredado
-                    </button>
-                    <label className={`lb-color-opcion ${form.color_fondo ? 'active' : ''}`}>
-                      <input
-                        type="color"
-                        value={form.color_fondo || fondoHeredado}
-                        onChange={e => handleChange('color_fondo', e.target.value)}
-                      />
-                      Personalizado
-                    </label>
-                  </div>
-                </div>
+                <CampoColor
+                  label="Color de fondo"
+                  valor={form.color_fondo}
+                  colorHeredado={fondoHeredado}
+                  onChange={v => handleChange('color_fondo', v)}
+                />
+
+                <CampoColor
+                  label="Color de las letras"
+                  valor={form.color_texto}
+                  colorHeredado={(MODOS[form.tema_modo] || MODOS.oscuro).text}
+                  onChange={v => handleChange('color_texto', v)}
+                />
+
+                <CampoColor
+                  label="Color de las tarjetas"
+                  valor={form.color_tarjeta}
+                  colorHeredado={(MODOS[form.tema_modo] || MODOS.oscuro).cardBg}
+                  colorPicker={CARD_HEX_DEFAULT[form.tema_modo] || CARD_HEX_DEFAULT.oscuro}
+                  onChange={v => handleChange('color_tarjeta', v)}
+                />
               </div>
 
               <div className="lb-field">
@@ -1155,6 +1201,8 @@ export default function LandingEditor() {
                 primario: form.color_primario || tienda?.color_primario,
                 secundario: tienda?.color_secundario,
                 fondo: form.color_fondo || fondoHeredado,
+                texto: form.color_texto || undefined,
+                tarjeta: form.color_tarjeta || undefined,
               }}
               diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
               contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}

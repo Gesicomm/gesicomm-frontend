@@ -11,6 +11,7 @@ import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
 import ProductDetailModal from './ProductDetailModal';
 import CartDrawer from './CartDrawer';
+import LandingDropdown from './LandingDropdown';
 import './landingPublica.css';
 
 function claveCarrito(item, varianteId) {
@@ -158,6 +159,7 @@ export default function LandingPublica() {
         content_id: it.contentId,
         nombre: it.varianteNombre ? `${it.nombre} (${it.varianteNombre})` : it.nombre,
         cantidad: it.cantidad,
+        precio: it.precio,
       })),
     });
 
@@ -284,29 +286,36 @@ export default function LandingPublica() {
             </div>
           )}
           {filtros.categoria && categorias.length > 0 && (
-            <select value={filtroCategoria} onChange={e => setFiltroCategoria(e.target.value)}>
-              <option value="">Todas las categorías</option>
-              {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <LandingDropdown
+              value={filtroCategoria}
+              onChange={setFiltroCategoria}
+              options={[{ value: '', label: 'Todas las categorías' }, ...categorias.map(c => ({ value: c, label: c }))]}
+            />
           )}
           {filtros.marca && marcas.length > 0 && (
-            <select value={filtroMarca} onChange={e => setFiltroMarca(e.target.value)}>
-              <option value="">Todas las marcas</option>
-              {marcas.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <LandingDropdown
+              value={filtroMarca}
+              onChange={setFiltroMarca}
+              options={[{ value: '', label: 'Todas las marcas' }, ...marcas.map(m => ({ value: m, label: m }))]}
+            />
           )}
           {filtros.etiqueta && etiquetas.length > 0 && (
-            <select value={filtroEtiqueta} onChange={e => setFiltroEtiqueta(e.target.value)}>
-              <option value="">Todas las etiquetas</option>
-              {etiquetas.map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
+            <LandingDropdown
+              value={filtroEtiqueta}
+              onChange={setFiltroEtiqueta}
+              options={[{ value: '', label: 'Todas las etiquetas' }, ...etiquetas.map(e => ({ value: e, label: e }))]}
+            />
           )}
           {filtros.orden_precio && (
-            <select value={orden} onChange={e => setOrden(e.target.value)}>
-              <option value="">Orden por defecto</option>
-              <option value="asc">Precio: menor a mayor</option>
-              <option value="desc">Precio: mayor a menor</option>
-            </select>
+            <LandingDropdown
+              value={orden}
+              onChange={setOrden}
+              options={[
+                { value: '', label: 'Orden por defecto' },
+                { value: 'asc', label: 'Precio: menor a mayor' },
+                { value: 'desc', label: 'Precio: mayor a menor' },
+              ]}
+            />
           )}
         </div>
       )}

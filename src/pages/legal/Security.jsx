@@ -105,8 +105,8 @@ const SECCIONES = [
           </li>
         </ul>
         <p>
-          Las llamadas a las APIs de terceros —Graph API de Meta, Admin API de Shopify, WhatsApp
-          Cloud API— también se realizan exclusivamente sobre HTTPS.
+          Las llamadas a la Graph API de Meta, la única API externa que Gesicomm consume, también
+          se realizan exclusivamente sobre HTTPS.
         </p>
       </>
     ),
@@ -118,8 +118,7 @@ const SECCIONES = [
       <>
         <Subseccion titulo="3.1 Credenciales de integraciones">
           <p>
-            Los tokens de acceso y de actualización de Meta, Shopify y WhatsApp{' '}
-            <strong>nunca se almacenan en texto plano</strong>. Se cifran con{' '}
+            El token de acceso de Meta <strong>nunca se almacena en texto plano</strong>. Se cifran con{' '}
             <strong>AES-256-GCM</strong>, un algoritmo de cifrado autenticado: además de ocultar el
             contenido, detecta cualquier manipulación del dato cifrado.
           </p>
@@ -194,8 +193,9 @@ const SECCIONES = [
 
         <Subseccion titulo="4.1 OAuth 2.0 para integraciones">
           <p>
-            Las conexiones con Meta, Facebook, Instagram, WhatsApp y Shopify usan OAuth 2.0.
-            Gesicomm <strong>nunca recibe ni almacena tu contraseña</strong> de esas plataformas.
+            La conexión con Meta usa OAuth 2.0. Gesicomm <strong>nunca recibe ni almacena tu
+            contraseña</strong> de Facebook, y solo solicita los permisos{' '}
+            <code>ads_management</code> y <code>business_management</code>.
           </p>
           <p>
             El flujo incluye un <strong>parámetro <code>state</code> aleatorio</strong> generado por
@@ -356,7 +356,7 @@ const SECCIONES = [
 
         <Alert tono="exito" titulo="Lo que nunca se escribe en un log" className="mt-5">
           Por diseño explícito, el registrador filtra y descarta contraseñas, tokens de sesión,
-          tokens de acceso de Meta o Shopify, claves de cifrado y cualquier otro secreto{' '}
+          el token de acceso de Meta, claves de cifrado y cualquier otro secreto{' '}
           <strong>antes</strong> de escribir la entrada. Un volcado de logs no expone credenciales.
         </Alert>
 
@@ -492,7 +492,7 @@ const SECCIONES = [
       <>
         <p>
           Si encontraste una vulnerabilidad en Gesicomm, queremos saberlo. Escribinos a{' '}
-          <Correo direccion="security@gesicomm.com" /> con:
+          <Correo direccion="contacto@gesicomm.com" /> con:
         </p>
         <ul>
           <li>Una descripción de la vulnerabilidad y del componente afectado.</li>
@@ -552,18 +552,18 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Reportar una vulnerabilidad:</strong>{' '}
-            <Correo direccion="security@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Consultas de seguridad y cuestionarios de proveedores:</strong>{' '}
-            <Correo direccion="security@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Privacidad y datos personales:</strong>{' '}
-            <Correo direccion="privacy@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
-            <strong>Soporte general:</strong> <Correo direccion="support@gesicomm.com" />
+            <strong>Soporte general:</strong> <Correo direccion="contacto@gesicomm.com" />
           </li>
         </ul>
         <p>

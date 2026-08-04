@@ -297,7 +297,7 @@ const SECCIONES = [
             </li>
             <li>
               <strong>Preferencias de anuncios de Meta:</strong> podés gestionarlas desde la
-              configuración de tu cuenta de Facebook o Instagram.
+              configuración de tu cuenta de Facebook.
             </li>
             <li>
               <strong>Complemento de inhabilitación de Google Analytics:</strong> disponible para
@@ -361,7 +361,7 @@ const SECCIONES = [
     contenido: (
       <p>
         Para consultas sobre esta política escribinos a{' '}
-        <Correo direccion="privacy@gesicomm.com" /> o usá el{' '}
+        <Correo direccion="contacto@gesicomm.com" /> o usá el{' '}
         <Link to="/contact">formulario de contacto</Link>.
       </p>
     ),

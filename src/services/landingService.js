@@ -21,4 +21,5 @@ export const landingService = {
   eliminarSeoImagen: (id) => API.delete(`/mis-landings/${id}/seo-imagen`).then(r => r.data),
 
   estadisticas: (id, dias = 30) => API.get(`/mis-landings/${id}/estadisticas`, { params: { dias } }).then(r => r.data),
+  estadisticasRango: (id, filtros = {}) => API.post(`/mis-landings/${id}/estadisticas-rango`, filtros).then(r => r.data),
 };

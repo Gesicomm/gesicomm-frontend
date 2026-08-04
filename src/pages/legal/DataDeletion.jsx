@@ -26,10 +26,10 @@ const PASOS = [
       'Localizamos tu cuenta, tus datos operativos, las integraciones conectadas y los registros asociados en todos los sistemas donde estén.',
   },
   {
-    titulo: 'Revocamos las integraciones',
+    titulo: 'Revocamos la conexión con Meta',
     plazo: 'Inmediato tras la verificación',
     descripcion:
-      'Se revocan y eliminan los tokens de acceso de Meta, Facebook, Instagram, WhatsApp y Shopify, y cesa toda sincronización de datos nuevos.',
+      'Se revoca y elimina el token de acceso de Meta y cesa toda consulta a su API.',
   },
   {
     titulo: 'Eliminamos los datos',
@@ -163,7 +163,7 @@ const SECCIONES = [
         </div>
 
         <p className="mt-7">
-          También podés escribirnos directamente a <Correo direccion="privacy@gesicomm.com" /> con
+          También podés escribirnos directamente a <Correo direccion="contacto@gesicomm.com" /> con
           el asunto <strong>«Solicitud de eliminación de datos»</strong>. El plazo y el proceso son
           los mismos.
         </p>
@@ -176,7 +176,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Si conectaste Gesicomm con Facebook o Instagram, podés iniciar la eliminación desde la
+          Si conectaste Gesicomm con tu cuenta de Facebook, podés iniciar la eliminación desde la
           propia configuración de Meta:
         </p>
         <ol>
@@ -288,10 +288,9 @@ const SECCIONES = [
             <li>El catálogo completo: productos, variantes, categorías, marcas, combos e imágenes.</li>
             <li>Los pedidos, sus artículos y todo su historial de estados.</li>
             <li>Los datos de tus clientes cargados en el CRM.</li>
-            <li>Las conversaciones de WhatsApp sincronizadas.</li>
             <li>Los envíos, couriers, tarifas y hojas de ruta.</li>
             <li>Las tiendas y landings publicadas, que dejan de estar accesibles.</li>
-            <li>Los tokens de acceso de todas las integraciones conectadas.</li>
+            <li>El token de acceso de Meta, si conectaste la integración.</li>
             <li>Los usuarios y empleados asociados a la cuenta.</li>
             <li>La configuración económica, los precios propios y los reportes.</li>
           </ul>
@@ -398,7 +397,7 @@ const SECCIONES = [
           </li>
           <li>
             Si no obtenés respuesta en un plazo razonable, escribinos a{' '}
-            <Correo direccion="privacy@gesicomm.com" /> indicando el nombre de la tienda. Vamos a
+            <Correo direccion="contacto@gesicomm.com" /> indicando el nombre de la tienda. Vamos a
             trasladarle el pedido y a asistirlo para que lo resuelva.
           </li>
           <li>
@@ -417,7 +416,7 @@ const SECCIONES = [
         <Subseccion titulo="¿Puedo cancelar una solicitud ya enviada?">
           <p>
             Sí, siempre que todavía no se haya completado. Escribinos a{' '}
-            <Correo direccion="privacy@gesicomm.com" /> con tu código de seguimiento y la
+            <Correo direccion="contacto@gesicomm.com" /> con tu código de seguimiento y la
             detenemos. Una vez que el estado pasa a «completada», la información ya no existe y no
             hay nada que cancelar.
           </p>
@@ -428,16 +427,16 @@ const SECCIONES = [
             Eliminar la cuenta sí implica el fin de la suscripción. Eliminar solo los datos
             operativos, conservando la cuenta, no la cancela: si querés dar de baja el cobro,
             hacelo por separado desde Configuración o escribiendo a{' '}
-            <Correo direccion="support@gesicomm.com" />.
+            <Correo direccion="contacto@gesicomm.com" />.
           </p>
         </Subseccion>
 
-        <Subseccion titulo="¿Se eliminan también mis datos en Meta o en Shopify?">
+        <Subseccion titulo="¿Se eliminan también mis datos en Meta?">
           <p>
             No. Gesicomm elimina lo que tiene en <strong>sus</strong> sistemas y revoca su acceso a
-            esas plataformas. Los datos que residan en Facebook, Instagram, WhatsApp o Shopify
-            siguen bajo el control de esas empresas, y para eliminarlos hay que pedírselo
-            directamente a cada una.
+            la API de Meta. Los datos que residan en Facebook —tus campañas, tus cuentas
+            publicitarias, tu perfil— siguen bajo el control de Meta, y para eliminarlos hay que
+            pedírselo directamente a ellos.
           </p>
         </Subseccion>
 
@@ -467,13 +466,13 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Privacidad y eliminación de datos:</strong>{' '}
-            <Correo direccion="privacy@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
-            <strong>Soporte del producto:</strong> <Correo direccion="support@gesicomm.com" />
+            <strong>Soporte del producto:</strong> <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
-            <strong>Consultas legales:</strong> <Correo direccion="legal@gesicomm.com" />
+            <strong>Consultas legales:</strong> <Correo direccion="contacto@gesicomm.com" />
           </li>
         </ul>
         <p>

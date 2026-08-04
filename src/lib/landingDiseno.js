@@ -43,7 +43,7 @@ export function cargarFuenteGoogle(fuenteId) {
   fuentesCargadas.add(fuenteId);
 }
 
-const MODOS = {
+export const MODOS = {
   oscuro: {
     text: '#f1f5f9',
     textMuted: '#94a3b8',
@@ -72,9 +72,9 @@ export function calcularEstiloLanding({ tema, diseno }) {
     '--l-primary': tema?.primario || '#10b981',
     '--l-secondary': tema?.secundario || '#059669',
     '--l-bg': tema?.fondo || (tema?.modo === 'claro' ? '#f8fafc' : '#0a0a0a'),
-    '--l-text': modo.text,
+    '--l-text': tema?.texto || modo.text,
     '--l-text-muted': modo.textMuted,
-    '--l-card-bg': modo.cardBg,
+    '--l-card-bg': tema?.tarjeta || modo.cardBg,
     '--l-card-border': modo.cardBorder,
     '--l-surface': modo.surface,
     '--l-surface-border': modo.surfaceBorder,

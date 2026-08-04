@@ -40,7 +40,7 @@ const ESTADOS = {
   rechazada: {
     etiqueta: 'Rechazada',
     descripcion:
-      'No pudimos procesar la solicitud. Te enviamos el motivo por correo. Si creés que fue un error, escribinos a privacy@gesicomm.com.',
+      'No pudimos procesar la solicitud. Te enviamos el motivo por correo. Si creés que fue un error, escribinos a contacto@gesicomm.com.',
     Icono: XCircle,
     clases: 'border-danger/35 bg-danger/8 text-danger',
   },
@@ -169,10 +169,10 @@ export default function DataDeletionStatus() {
                 Verificá que el código esté completo y sin espacios. Si el problema persiste,
                 escribinos a{' '}
                 <a
-                  href="mailto:privacy@gesicomm.com"
+                  href="mailto:contacto@gesicomm.com"
                   className="text-primary underline underline-offset-4"
                 >
-                  privacy@gesicomm.com
+                  contacto@gesicomm.com
                 </a>{' '}
                 y lo revisamos.
               </p>

@@ -21,8 +21,8 @@ const SECCIONES = [
             nacionales de Latinoamérica.
           </li>
           <li>
-            <strong>Condiciones de plataformas:</strong> Meta Platform Terms, Developer Policies y
-            Shopify API Terms.
+            <strong>Condiciones de plataforma:</strong> Meta Platform Terms y Meta Developer
+            Policies.
           </li>
           <li>
             <strong>Normativa de comercio electrónico y consumo</strong> aplicable en los países
@@ -40,7 +40,7 @@ const SECCIONES = [
           criterios de SOC 2, pero <strong>no declara estar certificada</strong> en ninguno de
           ellos. Preferimos decirlo con claridad antes que insinuar una certificación que no
           tenemos. Si necesitás completar un cuestionario de seguridad de proveedores, escribinos a{' '}
-          <Correo direccion="security@gesicomm.com" /> y lo respondemos con el detalle real de
+          <Correo direccion="contacto@gesicomm.com" /> y lo respondemos con el detalle real de
           nuestros controles.
         </Alert>
       </>
@@ -114,7 +114,7 @@ const SECCIONES = [
             de interesados, las obligaciones de confidencialidad, las medidas de seguridad, el
             régimen de subencargados, la asistencia en el ejercicio de derechos, la notificación de
             brechas y el destino de los datos al finalizar. Solicitalo a{' '}
-            <Correo direccion="legal@gesicomm.com" />.
+            <Correo direccion="contacto@gesicomm.com" />.
           </p>
         </Subseccion>
 
@@ -252,54 +252,19 @@ const SECCIONES = [
           ]}
         />
 
-        <Subseccion titulo="4.1 WhatsApp Business Messaging Policy">
+        <Subseccion titulo="4.1 Alcance real de nuestra integración">
           <p>
-            Trasladamos a nuestros clientes las obligaciones de la política de mensajería de
-            WhatsApp: consentimiento previo del destinatario, uso de plantillas aprobadas, respeto
-            de las ventanas de conversación y prohibición del envío masivo no solicitado. Estas
-            obligaciones están en la sección de integraciones de los{' '}
-            <Link to="/terms">Términos y Condiciones</Link>, y su incumplimiento es causal de
-            suspensión.
+            Gesicomm usa <strong>un solo producto</strong> de la plataforma de Meta: la Marketing
+            API, con los permisos <code>ads_management</code> y <code>business_management</code>.
+            No usamos Facebook Login como método de autenticación, no usamos la Pages API, no
+            usamos la Instagram Graph API y no usamos la WhatsApp Business Platform.
+          </p>
+          <p>
+            Lo declaramos explícitamente porque el principio de minimización de permisos es un
+            requisito de las Developer Policies, y porque solicitar alcances que no se usan es una
+            de las causas más frecuentes de rechazo en la revisión de aplicaciones.
           </p>
         </Subseccion>
-      </>
-    ),
-  },
-  {
-    id: 'shopify',
-    titulo: 'Shopify API Terms',
-    contenido: (
-      <>
-        <p>
-          El uso de la API de Shopify está sujeto a los Shopify API License and Terms of Use y a las
-          Partner Program Agreements. Nuestros compromisos:
-        </p>
-        <ul>
-          <li>
-            Acceder únicamente a los <strong>scopes</strong> necesarios para la funcionalidad
-            contratada, y no solicitar alcances de más.
-          </li>
-          <li>
-            Respetar los límites de tasa de la API y aplicar reintentos con espera progresiva en
-            lugar de insistir.
-          </li>
-          <li>
-            No almacenar datos de tarjetas ni credenciales de pago de los compradores: esa
-            información permanece en Shopify y en su procesador.
-          </li>
-          <li>
-            Usar los datos de la tienda exclusivamente para prestar el servicio al comerciante
-            titular de esa tienda.
-          </li>
-          <li>
-            Eliminar los datos sincronizados cuando el comerciante desinstala la aplicación o
-            revoca el acceso.
-          </li>
-          <li>
-            Atender los webhooks obligatorios de cumplimiento relativos a la solicitud y borrado de
-            datos de clientes y de la tienda.
-          </li>
-        </ul>
       </>
     ),
   },
@@ -380,7 +345,7 @@ const SECCIONES = [
         </ul>
         <p>
           La accesibilidad es un proceso, no un estado. Si encontrás una barrera, escribinos a{' '}
-          <Correo direccion="support@gesicomm.com" /> y la corregimos.
+          <Correo direccion="contacto@gesicomm.com" /> y la corregimos.
         </p>
       </>
     ),
@@ -400,7 +365,7 @@ const SECCIONES = [
         </ul>
         <p>
           Mantenemos una lista actualizada de subprocesadores, disponible a pedido en{' '}
-          <Correo direccion="privacy@gesicomm.com" />, y notificamos con antelación razonable
+          <Correo direccion="contacto@gesicomm.com" />, y notificamos con antelación razonable
           antes de incorporar uno nuevo, para que puedas oponerte si tenés motivos fundados.
         </p>
       </>
@@ -444,7 +409,7 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Responsable de privacidad</strong> designado, con contacto público en{' '}
-            <Correo direccion="privacy@gesicomm.com" />.
+            <Correo direccion="contacto@gesicomm.com" />.
           </li>
           <li>
             <strong>Registro de actividades de tratamiento</strong> mantenido conforme al artículo
@@ -477,19 +442,19 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Consultas de cumplimiento y contractuales:</strong>{' '}
-            <Correo direccion="legal@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Protección de datos y ejercicio de derechos:</strong>{' '}
-            <Correo direccion="privacy@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Cuestionarios de seguridad de proveedores:</strong>{' '}
-            <Correo direccion="security@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Solicitud de DPA o de la lista de subprocesadores:</strong>{' '}
-            <Correo direccion="legal@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
         </ul>
       </>
@@ -501,7 +466,7 @@ export default function Compliance() {
   return (
     <LegalDoc
       titulo="Cumplimiento Legal"
-      descripcion="Cómo cumple Gesicomm con el RGPD, la CCPA/CPRA, las Meta Platform Terms, los Shopify API Terms y la normativa de protección de datos de Latinoamérica, incluyendo el Data Deletion Callback de Meta, los DPA y la gestión de subprocesadores."
+      descripcion="Cómo cumple Gesicomm con el RGPD, la CCPA/CPRA, las Meta Platform Terms y la normativa de protección de datos de Latinoamérica, incluyendo el Data Deletion Callback de Meta, los DPA y la gestión de subprocesadores."
       resumen="Un resumen del marco normativo que nos aplica y de las medidas concretas con las que lo cumplimos. Incluye lo que sí tenemos y, con la misma claridad, lo que todavía no."
       ruta="/compliance"
       actualizado="2026-08-03"

@@ -33,11 +33,10 @@ const COLUMNAS = [
   },
 ];
 
-const CORREOS = [
-  { etiqueta: 'Soporte', correo: 'support@gesicomm.com' },
-  { etiqueta: 'Privacidad', correo: 'privacy@gesicomm.com' },
-  { etiqueta: 'Legal', correo: 'legal@gesicomm.com' },
-];
+// Una sola casilla para todo: soporte, privacidad y legal. Publicar
+// direcciones separadas que en realidad llegan al mismo lugar solo genera
+// expectativas de equipos distintos que no existen.
+const CORREO_CONTACTO = 'contacto@gesicomm.com';
 
 export default function PublicFooter() {
   const anio = new Date().getFullYear();
@@ -50,23 +49,21 @@ export default function PublicFooter() {
             <Logo size={30} />
             <p className="mt-4 text-sm leading-relaxed text-fg-muted">
               Plataforma de gestión de eCommerce. Productos, pedidos, inventario, clientes,
-              logística y campañas, sincronizados en un solo panel.
+              logística y campañas en un solo panel.
             </p>
 
-            <ul className="mt-6 space-y-2">
-              {CORREOS.map((item) => (
-                <li key={item.correo} className="flex items-center gap-2 text-sm">
-                  <Mail size={14} className="flex-shrink-0 text-fg-subtle" aria-hidden="true" />
-                  <span className="text-fg-subtle">{item.etiqueta}:</span>
-                  <a
-                    href={`mailto:${item.correo}`}
-                    className="text-fg-muted transition-colors hover:text-primary"
-                  >
-                    {item.correo}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-6 flex items-center gap-2 text-sm">
+              <Mail size={14} className="flex-shrink-0 text-fg-subtle" aria-hidden="true" />
+              <a
+                href={`mailto:${CORREO_CONTACTO}`}
+                className="text-fg-muted transition-colors hover:text-primary"
+              >
+                {CORREO_CONTACTO}
+              </a>
+            </p>
+            <p className="mt-1.5 text-xs text-fg-subtle">
+              Soporte, privacidad y consultas legales.
+            </p>
           </div>
 
           {COLUMNAS.map((columna) => (
@@ -107,10 +104,9 @@ export default function PublicFooter() {
         </div>
 
         <p className="mt-6 max-w-4xl text-xs leading-relaxed text-fg-subtle">
-          Gesicomm no está afiliada, patrocinada ni respaldada por Meta Platforms, Inc.,
-          Shopify Inc. ni ninguna de sus filiales. Facebook, Instagram y WhatsApp son marcas
-          registradas de Meta Platforms, Inc. Shopify es una marca registrada de Shopify Inc.
-          Los nombres se usan únicamente para describir las integraciones disponibles.
+          Gesicomm no está afiliada, patrocinada ni respaldada por Meta Platforms, Inc. ni por
+          ninguna de sus filiales. Facebook y WhatsApp son marcas registradas de Meta Platforms,
+          Inc. Los nombres se usan únicamente para describir la integración disponible.
         </p>
       </Container>
     </footer>

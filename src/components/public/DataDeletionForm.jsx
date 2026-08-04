@@ -97,8 +97,8 @@ export default function DataDeletionForm() {
             Nuestro equipo de privacidad se va a comunicar a la dirección que indicaste para
             verificar tu identidad. Si necesitás apurar el trámite o agregar información,
             escribinos a{' '}
-            <a href="mailto:privacy@gesicomm.com" className="text-primary underline underline-offset-4">
-              privacy@gesicomm.com
+            <a href="mailto:contacto@gesicomm.com" className="text-primary underline underline-offset-4">
+              contacto@gesicomm.com
             </a>{' '}
             citando tu código.
           </p>

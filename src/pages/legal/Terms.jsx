@@ -58,7 +58,7 @@ const SECCIONES = [
           </li>
           <li>
             <strong>Integraciones:</strong> las conexiones con plataformas de terceros, incluyendo
-            Shopify, Meta, Facebook, Instagram y WhatsApp Cloud API.
+            hoy únicamente Meta, para el seguimiento de campañas de Facebook Ads.
           </li>
           <li>
             <strong>Suscripción:</strong> el plan contratado, con su alcance funcional, sus límites
@@ -115,7 +115,7 @@ const SECCIONES = [
             <li>No compartas tu contraseña ni permitas que varias personas usen un mismo usuario.</li>
             <li>Usá contraseñas robustas y distintas de las de otros servicios.</li>
             <li>
-              Notificanos de inmediato a <Correo direccion="support@gesicomm.com" /> ante cualquier
+              Notificanos de inmediato a <Correo direccion="contacto@gesicomm.com" /> ante cualquier
               uso no autorizado o sospecha de compromiso.
             </li>
           </ul>
@@ -187,15 +187,16 @@ const SECCIONES = [
         <Subseccion titulo="6.2 Spam y comunicaciones no solicitadas">
           <ul>
             <li>
-              Enviar comunicaciones comerciales masivas no solicitadas, por correo, WhatsApp o
-              cualquier otro canal conectado.
+              Enviar comunicaciones comerciales masivas no solicitadas por cualquier canal,
+              incluidos los contactos que obtengas a través de tu vitrina.
             </li>
             <li>
               Usar listas de contactos obtenidas sin consentimiento o compradas a terceros.
             </li>
             <li>
-              Contactar por WhatsApp a personas que no hayan optado por recibir mensajes, o
-              incumplir las políticas de mensajería de WhatsApp Business.
+              Contactar por WhatsApp a personas que no hayan iniciado ellas la conversación, o
+              incumplir las políticas de mensajería de WhatsApp. El botón de tu vitrina existe
+              para que sea tu comprador quien te escriba primero.
             </li>
             <li>Omitir un mecanismo simple y efectivo de baja en las comunicaciones comerciales.</li>
           </ul>
@@ -340,19 +341,12 @@ const SECCIONES = [
           </ul>
         </Subseccion>
 
-        <Subseccion titulo="8.2 Shopify">
+        <Subseccion titulo="8.2 Meta y Facebook Ads">
           <p>
-            El uso de la integración con Shopify está sujeto a los Shopify API License and Terms of
-            Use y a las políticas para socios de Shopify. Sos responsable de mantener tu tienda de
-            Shopify en cumplimiento de esos términos. Gesicomm no responde por cargos, comisiones
-            ni sanciones que Shopify aplique a tu tienda.
-          </p>
-        </Subseccion>
-
-        <Subseccion titulo="8.3 Meta, Facebook e Instagram">
-          <p>
-            El uso de estas integraciones está sujeto a las Meta Platform Terms, las Developer
-            Policies, las Community Standards y las Advertising Policies de Meta. En particular:
+            La integración con Meta solicita exactamente dos permisos —<code>ads_management</code>{' '}
+            y <code>business_management</code>— y su uso está sujeto a las Meta Platform Terms, las
+            Developer Policies, las Community Standards y las Advertising Policies de Meta. En
+            particular:
           </p>
           <ul>
             <li>
@@ -371,26 +365,18 @@ const SECCIONES = [
           </ul>
         </Subseccion>
 
-        <Subseccion titulo="8.4 WhatsApp Cloud API">
+        <Subseccion titulo="8.3 WhatsApp: enlace, no integración">
           <p>
-            El uso de WhatsApp a través de Gesicomm está sujeto a los WhatsApp Business Terms, la
-            WhatsApp Business Messaging Policy y la WhatsApp Business Solution Terms. Sos
-            responsable de:
+            Gesicomm <strong>no usa la API de WhatsApp Business</strong>. El botón de tu vitrina
+            genera un enlace <code>wa.me</code> que abre la aplicación en el dispositivo de quien
+            te consulta, y la conversación transcurre directamente entre esa persona y vos.
           </p>
-          <ul>
-            <li>
-              Obtener el <strong>consentimiento previo (opt-in)</strong> de cada persona antes de
-              enviarle mensajes.
-            </li>
-            <li>Usar plantillas aprobadas y respetar las ventanas de conversación.</li>
-            <li>
-              Los costos de conversación que Meta facture por el uso del número conectado.
-            </li>
-            <li>
-              La calidad de tu número: las restricciones o bloqueos que Meta aplique por baja
-              calificación son ajenos a Gesicomm.
-            </li>
-          </ul>
+          <p>
+            En consecuencia, Gesicomm no envía ni recibe mensajes, no accede a su contenido y no
+            responde por lo que ocurra en esas conversaciones. El cumplimiento de las políticas de
+            WhatsApp respecto del número que publicás, y de la normativa de protección de datos
+            aplicable a esos intercambios, corresponde exclusivamente a vos.
+          </p>
         </Subseccion>
       </>
     ),
@@ -470,7 +456,7 @@ const SECCIONES = [
         <Subseccion titulo="9.5 Cancelación">
           <p>
             Podés cancelar tu suscripción en cualquier momento desde Configuración o escribiendo a{' '}
-            <Correo direccion="support@gesicomm.com" />. La cancelación surte efecto{' '}
+            <Correo direccion="contacto@gesicomm.com" />. La cancelación surte efecto{' '}
             <strong>al final del período ya facturado</strong>: conservás el acceso hasta esa
             fecha y no se genera un cobro nuevo.
           </p>
@@ -500,7 +486,7 @@ const SECCIONES = [
             </li>
           </ul>
           <p>
-            Las solicitudes se envían a <Correo direccion="support@gesicomm.com" /> y se responden
+            Las solicitudes se envían a <Correo direccion="contacto@gesicomm.com" /> y se responden
             dentro de los 15 días hábiles.
           </p>
         </Subseccion>
@@ -528,7 +514,7 @@ const SECCIONES = [
           </li>
           <li>
             <strong>Soporte:</strong> se presta por correo electrónico en{' '}
-            <Correo direccion="support@gesicomm.com" />, en días hábiles, con los tiempos de
+            <Correo direccion="contacto@gesicomm.com" />, en días hábiles, con los tiempos de
             respuesta que corresponda a tu plan.
           </li>
         </ul>
@@ -612,7 +598,7 @@ const SECCIONES = [
         </p>
         <p>
           Si necesitás un Acuerdo de Tratamiento de Datos (DPA) firmado con las cláusulas del
-          artículo 28 del RGPD, solicitalo a <Correo direccion="legal@gesicomm.com" />.
+          artículo 28 del RGPD, solicitalo a <Correo direccion="contacto@gesicomm.com" />.
         </p>
       </>
     ),
@@ -696,9 +682,9 @@ const SECCIONES = [
             al hecho que motiva la reclamación.
           </li>
           <li>
-            Gesicomm no responde por hechos de plataformas de terceros, incluyendo suspensiones de
-            cuentas publicitarias, bloqueos de números de WhatsApp, cambios de API o pérdida de
-            datos en el origen.
+            Gesicomm no responde por hechos de plataformas de terceros, incluyendo suspensiones o
+            inhabilitaciones de cuentas publicitarias, cambios en la API de Meta o pérdida de datos
+            en el origen.
           </li>
         </ul>
         <p>
@@ -826,7 +812,7 @@ const SECCIONES = [
         <ol>
           <li>
             <strong>Notificación.</strong> La parte afectada comunica el conflicto por escrito a{' '}
-            <Correo direccion="legal@gesicomm.com" />, describiendo los hechos y la solución
+            <Correo direccion="contacto@gesicomm.com" />, describiendo los hechos y la solución
             pretendida.
           </li>
           <li>
@@ -877,7 +863,7 @@ const SECCIONES = [
           </li>
           <li>
             <strong>Notificaciones.</strong> Las notificaciones a Gesicomm se envían a{' '}
-            <Correo direccion="legal@gesicomm.com" />. Las dirigidas al Cliente se envían a la
+            <Correo direccion="contacto@gesicomm.com" />. Las dirigidas al Cliente se envían a la
             dirección de correo registrada en la Cuenta, y se tienen por recibidas al día hábil
             siguiente de su envío.
           </li>
@@ -897,13 +883,13 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>Consultas legales y contractuales:</strong>{' '}
-            <Correo direccion="legal@gesicomm.com" />
+            <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
-            <strong>Soporte y facturación:</strong> <Correo direccion="support@gesicomm.com" />
+            <strong>Soporte y facturación:</strong> <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
-            <strong>Privacidad:</strong> <Correo direccion="privacy@gesicomm.com" />
+            <strong>Privacidad:</strong> <Correo direccion="contacto@gesicomm.com" />
           </li>
           <li>
             <strong>Formulario de contacto:</strong> <Link to="/contact">gesicomm.com/contact</Link>
@@ -918,7 +904,7 @@ export default function Terms() {
   return (
     <LegalDoc
       titulo="Términos y Condiciones"
-      descripcion="Condiciones de uso del servicio Gesicomm: registro y cuenta, responsabilidades, propiedad intelectual, integraciones con Shopify y Meta, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
+      descripcion="Condiciones de uso del servicio Gesicomm: registro y cuenta, responsabilidades, propiedad intelectual, integración con Meta para Facebook Ads, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
       resumen="Estas condiciones regulan la relación entre Gesicomm y quienes usan la plataforma. Definen qué podés hacer, qué nos comprometemos a hacer y qué pasa cuando algo sale mal."
       ruta="/terms"
       actualizado="2026-08-03"

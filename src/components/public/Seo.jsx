@@ -130,26 +130,13 @@ export const SCHEMA_ORGANIZACION = {
   logo: `${SITIO}/icons/icon-512.png`,
   description:
     'Plataforma SaaS de gestión de eCommerce: productos, pedidos, inventario, clientes, logística, CRM y campañas en un solo panel.',
-  contactPoint: [
-    {
-      '@type': 'ContactPoint',
-      contactType: 'customer support',
-      email: 'support@gesicomm.com',
-      availableLanguage: ['Spanish', 'English'],
-    },
-    {
-      '@type': 'ContactPoint',
-      contactType: 'privacy',
-      email: 'privacy@gesicomm.com',
-      availableLanguage: ['Spanish', 'English'],
-    },
-    {
-      '@type': 'ContactPoint',
-      contactType: 'legal',
-      email: 'legal@gesicomm.com',
-      availableLanguage: ['Spanish', 'English'],
-    },
-  ],
+  email: 'contacto@gesicomm.com',
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    email: 'contacto@gesicomm.com',
+    availableLanguage: ['Spanish'],
+  },
 };
 
 /** Migas de pan en formato Schema.org, para el breadcrumb de las páginas internas. */

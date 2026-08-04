@@ -7,6 +7,7 @@ import {
   LifeBuoy,
   Loader2,
   Lock,
+  Mail,
   Send,
   ShieldCheck,
   Trash2,
@@ -20,32 +21,33 @@ import { Container } from '../../components/public/Section';
 import { Campo, CampoSeleccion, CampoTexto, CampoTrampa } from '../../components/public/FormFields';
 import { enviarMensajeContacto } from '../../services/publicoService';
 
-const CANALES = [
+const CORREO_CONTACTO = 'contacto@gesicomm.com';
+
+// Un solo correo, y los temas que atiende con su plazo. Se listan los temas
+// —no direcciones distintas— porque publicar cuatro casillas que llegan a la
+// misma bandeja promete equipos separados que no existen.
+const TEMAS = [
   {
     icono: LifeBuoy,
-    titulo: 'Soporte',
-    correo: 'support@gesicomm.com',
-    descripcion: 'Problemas con el producto, dudas de uso, facturación y suscripciones.',
+    titulo: 'Soporte y facturación',
+    descripcion: 'Problemas con el producto, dudas de uso, suscripciones y cobros.',
     plazo: 'Respuesta dentro de un día hábil',
   },
   {
     icono: Lock,
-    titulo: 'Privacidad',
-    correo: 'privacy@gesicomm.com',
-    descripcion: 'Ejercicio de derechos sobre datos personales, consultas sobre el tratamiento y DPA.',
-    plazo: 'Acuse dentro de 5 días hábiles',
+    titulo: 'Privacidad y datos personales',
+    descripcion: 'Ejercicio de derechos sobre tus datos, consultas sobre el tratamiento y DPA.',
+    plazo: 'Acuse en 5 días hábiles · resolución en 30 días',
   },
   {
     icono: FileText,
-    titulo: 'Legal',
-    correo: 'legal@gesicomm.com',
-    descripcion: 'Cuestiones contractuales, términos de servicio, cumplimiento y requerimientos.',
+    titulo: 'Legal y contractual',
+    descripcion: 'Términos de servicio, cumplimiento normativo y requerimientos formales.',
     plazo: 'Respuesta dentro de 5 días hábiles',
   },
   {
     icono: ShieldCheck,
     titulo: 'Seguridad',
-    correo: 'security@gesicomm.com',
     descripcion: 'Reporte de vulnerabilidades y cuestionarios de seguridad de proveedores.',
     plazo: 'Acuse dentro de 3 días hábiles',
   },
@@ -130,8 +132,8 @@ export default function Contact() {
             Hablemos
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-fg-muted sm:text-lg">
-            Escribinos por el canal que corresponda y te respondemos. Si es sobre tus datos
-            personales, tenemos un canal específico y plazos comprometidos.
+            Una sola dirección para soporte, privacidad, legal y seguridad. Si tu consulta es
+            sobre tus datos personales, tiene plazos comprometidos y los cumplimos.
           </p>
         </Container>
       </div>
@@ -141,40 +143,55 @@ export default function Contact() {
           {/* ───── Canales ───── */}
           <div>
             <h2 className="text-xl font-bold text-fg" style={{ letterSpacing: '-0.025em' }}>
-              Canales directos
+              Escribinos
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-              Si preferís el correo, escribí directo a la casilla del área.
+              Una sola dirección para todo. Indicá el tema en el asunto y lo derivamos internamente.
             </p>
 
-            <ul className="mt-7 space-y-4">
-              {CANALES.map((canal) => (
-                <li key={canal.correo} className="rounded-xl border border-border bg-surface p-5">
-                  <div className="flex items-start gap-3.5">
-                    <span
-                      aria-hidden="true"
-                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
+            <a
+              href={`mailto:${CORREO_CONTACTO}`}
+              className="mt-6 flex items-center gap-3.5 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong"
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
+              >
+                <Mail size={18} />
+              </span>
+              <span className="min-w-0">
+                <span className="block break-all text-base font-semibold text-primary">
+                  {CORREO_CONTACTO}
+                </span>
+                <span className="mt-0.5 block text-sm text-fg-muted">
+                  Soporte, privacidad, legal y seguridad
+                </span>
+              </span>
+            </a>
+
+            <h3 className="mt-9 text-xs font-semibold uppercase tracking-wider text-fg-subtle">
+              Temas que atendemos
+            </h3>
+            <ul className="mt-4 space-y-4">
+              {TEMAS.map((tema) => (
+                <li key={tema.titulo} className="flex items-start gap-3.5">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border bg-surface text-fg-muted"
+                  >
+                    <tema.icono size={15} />
+                  </span>
+                  <div className="min-w-0">
+                    <h4
+                      className="text-sm font-semibold text-fg"
+                      style={{ letterSpacing: '-0.01em' }}
                     >
-                      <canal.icono size={17} />
-                    </span>
-                    <div className="min-w-0">
-                      <h3
-                        className="text-sm font-semibold text-fg"
-                        style={{ letterSpacing: '-0.01em' }}
-                      >
-                        {canal.titulo}
-                      </h3>
-                      <a
-                        href={`mailto:${canal.correo}`}
-                        className="mt-0.5 block break-all text-sm text-primary hover:underline"
-                      >
-                        {canal.correo}
-                      </a>
-                      <p className="mt-2 text-sm leading-relaxed text-fg-muted">
-                        {canal.descripcion}
-                      </p>
-                      <p className="mt-2 text-xs text-fg-subtle">{canal.plazo}</p>
-                    </div>
+                      {tema.titulo}
+                    </h4>
+                    <p className="mt-1 text-sm leading-relaxed text-fg-muted">
+                      {tema.descripcion}
+                    </p>
+                    <p className="mt-1.5 text-xs text-fg-subtle">{tema.plazo}</p>
                   </div>
                 </li>
               ))}
@@ -229,10 +246,6 @@ export default function Contact() {
                       <div className="min-w-0 text-sm leading-relaxed text-fg-muted">
                         <p className="font-semibold text-fg">Mensaje enviado</p>
                         <p className="mt-1">{enviado.message}</p>
-                        <p className="mt-2">
-                          Derivado a{' '}
-                          <strong className="text-fg">{enviado.mensaje.derivado_a}</strong>.
-                        </p>
                       </div>
                     </div>
                   </div>

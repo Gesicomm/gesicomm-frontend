@@ -15,6 +15,7 @@ import RequireTienda from './components/RequireTienda';
 import DashboardLayout from './components/DashboardLayout';
 import UserLayout from './components/UserLayout';
 import VitrinaGrid from './pages/vitrina/VitrinaGrid';
+import MiDashboard from './pages/dashboard/MiDashboard';
 import MiLandingEntry from './pages/landing/MiLandingEntry';
 import LandingEditor from './pages/landing/LandingEditor';
 import LandingPublica from './pages/landing/LandingPublica';
@@ -34,6 +35,7 @@ import AdminEducacion from './pages/educacion/AdminEducacion';
 // ~190 kB al bundle que descarga cualquiera que entre a gesicomm.com.
 import PublicLayout from './components/public/PublicLayout';
 import Landing from './pages/public/Landing';
+import { esHostnameDeTienda } from './lib/hostname';
 
 const Contact = lazy(() => import('./pages/public/Contact'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
@@ -73,6 +75,17 @@ function PaginaPublica({ children }) {
   );
 }
 
+// Misma URL raíz, dos dueños distintos según el hostname: en gesicomm.com
+// (o localhost) es la portada institucional; en <tienda>.gesicomm.com es
+// la landing pública de esa tienda. Nginx ya resuelve esto del lado
+// servidor para bots (ver tiendas.gesicomm.com + landingHtml.js: internamente
+// reescribe "/" a "/l" solo en el vhost de tiendas) — esto es la mitad
+// cliente, para cuando el visitante SÍ ejecuta JS. esHostnameDeTienda() es
+// la misma lógica que middleware/resolverTienda.js del backend.
+function RaizSegunHostname() {
+  return esHostnameDeTienda() ? <LandingPublica /> : <PublicLayout><Landing /></PublicLayout>;
+}
+
 function App() {
   return (
     <Router>
@@ -89,7 +102,7 @@ function App() {
             El Data Deletion Callback en cambio es del backend:
             POST https://api.gesicomm.com/api/meta/data-deletion-callback
             ───────────────────────────────────────────────────────── */}
-        <Route path="/" element={<PublicLayout><Landing /></PublicLayout>} />
+        <Route path="/" element={<RaizSegunHostname />} />
         <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
         <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
         <Route path="/cookies" element={<PaginaPublica><Cookies /></PaginaPublica>} />
@@ -163,6 +176,9 @@ function App() {
         <Route path="/academia" element={
           <RequireTienda><UserLayout><EducacionView /></UserLayout></RequireTienda>
         } />
+        <Route path="/mi-dashboard" element={
+          <RequireTienda><UserLayout><MiDashboard /></UserLayout></RequireTienda>
+        } />
         <Route path="/mi-catalogo" element={
           <RequireTienda><UserLayout><VitrinaGrid /></UserLayout></RequireTienda>
         } />
@@ -188,7 +204,10 @@ function App() {
           <RequireTienda><UserLayout><Settings /></UserLayout></RequireTienda>
         } />
 
-        {/* Rutas públicas — landing compartible, sin ningún guard */}
+        {/* /l y /l/:slug: compatibilidad hacia atrás — desde la IP dedicada,
+            "/" en el hostname de una tienda ya sirve lo mismo (ver
+            RaizSegunHostname arriba). Nginx sigue proxyeando estas dos rutas
+            al backend igual que "/", así que un link viejo con /l no rompe. */}
         <Route path="/l" element={<LandingPublica />} />
         <Route path="/l/:slug" element={<LandingPublica />} />
 
