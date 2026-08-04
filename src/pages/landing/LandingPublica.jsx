@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Search, MessageCircle, Package, Layers, ImageOff } from 'lucide-react';
+import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check } from 'lucide-react';
 import { obtenerLandingPublica, registrarEventoLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
@@ -41,6 +41,7 @@ export default function LandingPublica() {
   const [itemAbierto, setItemAbierto] = useState(null); // item con el modal de detalle abierto
   const [carrito, setCarrito] = useState(() => new Map());
   const [carritoAbierto, setCarritoAbierto] = useState(false);
+  const [agregadoRapido, setAgregadoRapido] = useState(null);
 
   useEffect(() => {
     let activo = true;
@@ -240,6 +241,22 @@ export default function LandingPublica() {
     );
   }
 
+  function handleAgregarRapido(e, item) {
+    e.stopPropagation();
+    if (item.variantes?.length > 0) {
+      setItemAbierto(item);
+      return;
+    }
+    agregarAlCarrito({
+      item,
+      variante: null,
+      cantidad: 1,
+      precio: item.precio,
+    });
+    setAgregadoRapido(item.content_id);
+    setTimeout(() => setAgregadoRapido(null), 1400);
+  }
+
   const { filtros, contacto, banner } = data;
   const hayFiltrosVisibles = filtros.categoria || filtros.marca || filtros.etiqueta || filtros.buscador || filtros.orden_precio;
   // Sin link, el botón lleva a la grilla de productos de esta misma página.
@@ -331,13 +348,14 @@ export default function LandingPublica() {
               <div key={item.content_id} className="lp-card" onClick={() => setItemAbierto(item)} role="button" tabIndex={0}>
                 <div className="lp-card-media">
                   {item.imagen ? (
-                    <img src={getMediaUrl(item.imagen)} alt={item.nombre} />
+                    <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
                   ) : (
                     <div className="lp-card-media-placeholder">
-                      {item.tipo === 'combo' ? <Layers size={26} /> : <ImageOff size={26} />}
+                      {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
+                      <span>Sin imagen</span>
                     </div>
                   )}
-                  {item.tipo === 'combo' && <span className="lp-card-badge"><Layers size={11} /> Combo</span>}
+                  {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
                   {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
                 </div>
                 <div className="lp-card-body">
@@ -345,17 +363,35 @@ export default function LandingPublica() {
                   <h3>{item.nombre}</h3>
                   {item.descripcion && <p className="lp-card-desc">{item.descripcion}</p>}
                   <span className="lp-card-price">{formatPrecio(item.precio)}</span>
-                  {linkWhatsapp && (
-                    <a
-                      className="lp-card-contact"
-                      href={linkWhatsapp}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => { e.stopPropagation(); contactar(item); }}
+                  
+                  <div className="lp-card-actions">
+                    <button
+                      type="button"
+                      className={`lp-card-btn-add ${agregadoRapido === item.content_id ? 'agregado' : ''}`}
+                      onClick={(e) => handleAgregarRapido(e, item)}
+                      title="Agregar al carrito"
                     >
-                      <MessageCircle size={15} /> Consultar
-                    </a>
-                  )}
+                      {agregadoRapido === item.content_id ? (
+                        <><Check size={14} /> Agregado</>
+                      ) : item.variantes?.length > 0 ? (
+                        <><ShoppingCart size={14} /> Ver opciones</>
+                      ) : (
+                        <><Plus size={14} /> Agregar</>
+                      )}
+                    </button>
+                    {linkWhatsapp && (
+                      <a
+                        className="lp-card-contact-btn"
+                        href={linkWhatsapp}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Consultar por WhatsApp"
+                        onClick={(e) => { e.stopPropagation(); contactar(item); }}
+                      >
+                        <MessageCircle size={15} />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -368,6 +404,8 @@ export default function LandingPublica() {
           item={itemAbierto}
           onClose={() => setItemAbierto(null)}
           onAgregar={agregarAlCarrito}
+          contacto={contacto}
+          onContactar={contactar}
         />
       )}
 

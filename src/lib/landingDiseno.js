@@ -45,20 +45,24 @@ export function cargarFuenteGoogle(fuenteId) {
 
 export const MODOS = {
   oscuro: {
-    text: '#f1f5f9',
+    bg: '#0a0d14',
+    text: '#f8fafc',
     textMuted: '#94a3b8',
-    cardBg: 'rgba(255,255,255,0.04)',
+    cardBg: '#131722',
     cardBorder: 'rgba(255,255,255,0.08)',
-    surface: 'rgba(255,255,255,0.05)',
-    surfaceBorder: 'rgba(255,255,255,0.1)',
+    surface: '#0c0f17',
+    surfaceBorder: 'rgba(255,255,255,0.12)',
+    modalBg: '#161a28',
   },
   claro: {
+    bg: '#f8fafc',
     text: '#0f172a',
     textMuted: '#64748b',
     cardBg: '#ffffff',
     cardBorder: 'rgba(15,23,42,0.08)',
-    surface: '#eef2f7',
+    surface: '#f1f5f9',
     surfaceBorder: 'rgba(15,23,42,0.12)',
+    modalBg: '#ffffff',
   },
 };
 
@@ -71,13 +75,14 @@ export function calcularEstiloLanding({ tema, diseno }) {
   return {
     '--l-primary': tema?.primario || '#10b981',
     '--l-secondary': tema?.secundario || '#059669',
-    '--l-bg': tema?.fondo || (tema?.modo === 'claro' ? '#f8fafc' : '#0a0a0a'),
+    '--l-bg': tema?.fondo || modo.bg,
     '--l-text': tema?.texto || modo.text,
     '--l-text-muted': modo.textMuted,
     '--l-card-bg': tema?.tarjeta || modo.cardBg,
     '--l-card-border': modo.cardBorder,
     '--l-surface': modo.surface,
     '--l-surface-border': modo.surfaceBorder,
+    '--l-modal-bg': modo.modalBg,
     '--l-radius': radios.radius,
     '--l-radius-sm': radios.radiusSm,
     '--l-font': fuente,

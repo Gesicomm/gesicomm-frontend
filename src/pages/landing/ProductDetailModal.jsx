@@ -1,15 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
-import { formatPrecio } from '../../lib/mensajeWhatsapp';
+import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
 
 /**
  * "Entrar" a un producto de la landing pública: galería, variante (si
- * tiene), cantidad y agregar al carrito. Es un overlay, no una ruta propia
- * — usa los datos que ya trajo obtenerPublica() (imagenes[]/variantes[]
- * por item), sin pedir nada más al backend.
+ * tiene), cantidad y agregar al carrito o consultar por WhatsApp.
  */
-export default function ProductDetailModal({ item, onClose, onAgregar }) {
+export default function ProductDetailModal({ item, onClose, onAgregar, contacto, onContactar }) {
   const tieneVariantes = item.variantes && item.variantes.length > 0;
 
   const [varianteId, setVarianteId] = useState(() => {
@@ -28,8 +26,6 @@ export default function ProductDetailModal({ item, onClose, onAgregar }) {
     return propia && propia.length ? propia : [];
   }, [variante, item.imagenes]);
 
-  // Si cambia la variante y la imagen actual queda fuera de rango, o si la
-  // variante tiene su propia foto, se vuelve a la primera.
   useEffect(() => { setIndiceImagen(0); }, [varianteId]);
 
   const precio = variante ? variante.precio_efectivo : item.precio;
@@ -37,6 +33,16 @@ export default function ProductDetailModal({ item, onClose, onAgregar }) {
   const stockConocido = stock !== null && stock !== undefined;
   const sinStock = stockConocido && stock <= 0;
   const maxCantidad = stockConocido && stock > 0 ? Math.min(stock, 99) : 99;
+
+  const linkWhatsapp = useMemo(() => {
+    if (!contacto?.whatsapp) return null;
+    const itemParaWhatsapp = {
+      ...item,
+      nombre: variante ? `${item.nombre} (${variante.nombre})` : item.nombre,
+      precio,
+    };
+    return armarLinkWhatsapp(contacto, itemParaWhatsapp);
+  }, [contacto, item, variante, precio]);
 
   function cambiarVariante(id) {
     setVarianteId(id);
@@ -57,7 +63,7 @@ export default function ProductDetailModal({ item, onClose, onAgregar }) {
       precio,
     });
     setAgregado(true);
-    setTimeout(() => setAgregado(false), 1400);
+    setTimeout(() => setAgregado(false), 1600);
   }
 
   function onKeyDown(e) {
@@ -107,26 +113,42 @@ export default function ProductDetailModal({ item, onClose, onAgregar }) {
             </>
           ) : (
             <div className="lp-modal-imagen-grande placeholder">
-              {item.tipo === 'combo' ? <Layers size={40} /> : <ImageOff size={40} />}
+              <div className="lp-placeholder-content">
+                {item.tipo === 'combo' ? <Layers size={44} /> : <ImageOff size={44} />}
+                <span>Sin imagen disponible</span>
+              </div>
             </div>
           )}
         </div>
 
         <div className="lp-modal-info">
-          {item.tipo === 'combo' && <span className="lp-modal-badge"><Layers size={11} /> Combo</span>}
-          {item.etiqueta && <span className="lp-modal-tag">{item.etiqueta}</span>}
+          <div className="lp-modal-header-tags">
+            {item.tipo === 'combo' && <span className="lp-modal-badge combo"><Layers size={12} /> Combo especial</span>}
+            {item.etiqueta && <span className="lp-modal-tag">{item.etiqueta}</span>}
+          </div>
+
           <h2>{item.nombre}</h2>
-          <div className="lp-modal-precio">{formatPrecio(precio)}</div>
+          <div className="lp-modal-precio-row">
+            <span className="lp-modal-precio">{formatPrecio(precio)}</span>
+            {stockConocido && (
+              <span className={`lp-modal-stock-badge ${sinStock ? 'agotado' : 'disponible'}`}>
+                {sinStock ? 'Sin stock' : `✓ ${stock} disponibles`}
+              </span>
+            )}
+          </div>
 
           {item.tipo === 'combo' && item.productos_incluidos?.length > 0 && (
-            <p className="lp-modal-incluye">Incluye: {item.productos_incluidos.join(', ')}</p>
+            <div className="lp-modal-incluye-box">
+              <strong>Incluye:</strong>
+              <p>{item.productos_incluidos.join(' · ')}</p>
+            </div>
           )}
 
           {descripcion && <p className="lp-modal-desc">{descripcion}</p>}
 
           {tieneVariantes && (
             <div className="lp-modal-variantes">
-              <span className="lp-modal-label">Opciones</span>
+              <span className="lp-modal-label">Selecciona una opción:</span>
               <div className="lp-modal-variante-pills">
                 {item.variantes.map(v => (
                   <button
@@ -137,29 +159,48 @@ export default function ProductDetailModal({ item, onClose, onAgregar }) {
                     disabled={v.stock <= 0}
                     title={v.stock <= 0 ? 'Sin stock' : undefined}
                   >
-                    {v.nombre}
+                    <span>{v.nombre}</span>
+                    {v.precio_efectivo && v.precio_efectivo !== item.precio && (
+                      <small className="lp-pill-precio">{formatPrecio(v.precio_efectivo)}</small>
+                    )}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {stockConocido && (
-            <p className={`lp-modal-stock ${sinStock ? 'agotado' : ''}`}>
-              {sinStock ? 'Sin stock' : `${stock} disponibles`}
-            </p>
-          )}
-
-          <div className="lp-modal-acciones">
-            <div className="lp-modal-stepper">
-              <button type="button" onClick={() => ajustarCantidad(-1)} disabled={cantidad <= 1}><Minus size={14} /></button>
-              <span>{cantidad}</span>
-              <button type="button" onClick={() => ajustarCantidad(1)} disabled={cantidad >= maxCantidad}><Plus size={14} /></button>
+          <div className="lp-modal-acciones-wrapper">
+            <div className="lp-modal-cantidad-row">
+              <span className="lp-modal-label">Cantidad:</span>
+              <div className="lp-modal-stepper">
+                <button type="button" onClick={() => ajustarCantidad(-1)} disabled={cantidad <= 1}><Minus size={14} /></button>
+                <span>{cantidad}</span>
+                <button type="button" onClick={() => ajustarCantidad(1)} disabled={cantidad >= maxCantidad}><Plus size={14} /></button>
+              </div>
             </div>
 
-            <button type="button" className="lp-modal-agregar" onClick={agregar} disabled={sinStock}>
-              {agregado ? <><Check size={16} /> Agregado</> : <><ShoppingCart size={16} /> Agregar al carrito</>}
-            </button>
+            <div className="lp-modal-botones-grid">
+              <button
+                type="button"
+                className={`lp-modal-agregar ${agregado ? 'agregado' : ''}`}
+                onClick={agregar}
+                disabled={sinStock}
+              >
+                {agregado ? <><Check size={18} /> ¡Agregado al carrito!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
+              </button>
+
+              {linkWhatsapp && (
+                <a
+                  className="lp-modal-whatsapp"
+                  href={linkWhatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => onContactar && onContactar(item)}
+                >
+                  <MessageCircle size={17} /> Consultar por WhatsApp
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>

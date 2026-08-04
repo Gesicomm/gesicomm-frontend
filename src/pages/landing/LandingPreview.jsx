@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Search, MessageCircle, Layers, ImageOff, Monitor, Smartphone, ExternalLink } from 'lucide-react';
+import { Search, MessageCircle, Layers, ImageOff, Monitor, Smartphone, ExternalLink, Plus } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { calcularEstiloLanding } from '../../lib/landingDiseno';
 
@@ -135,10 +135,11 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
                     ) : (
                       <div className="lpv-card-media-placeholder">
                         {item.tipo === 'combo' ? <Layers size={22} /> : <ImageOff size={22} />}
+                        <span>Sin imagen</span>
                       </div>
                     )}
                     {item.tipo === 'combo' && (
-                      <span className="lpv-card-badge"><Layers size={10} /> Combo</span>
+                      <span className="lpv-card-badge combo"><Layers size={10} /> Combo</span>
                     )}
                   </div>
                   <div className="lpv-card-body">
@@ -146,9 +147,16 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
                     <h3>{item.nombre}</h3>
                     {item.descripcion && <p className="lpv-card-desc">{item.descripcion}</p>}
                     <span className="lpv-card-price">{formatPrecio(item.precio_efectivo)}</span>
-                    {contacto?.whatsapp && (
-                      <span className="lpv-card-contact"><MessageCircle size={13} /> Consultar</span>
-                    )}
+                    <div className="lpv-card-actions">
+                      <span className="lpv-card-btn-add">
+                        <Plus size={13} /> Agregar
+                      </span>
+                      {contacto?.whatsapp && (
+                        <span className="lpv-card-contact-btn" title="Consultar">
+                          <MessageCircle size={14} />
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

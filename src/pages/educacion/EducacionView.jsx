@@ -6,6 +6,7 @@ import {
   enviarExamenModulo,
 } from '../../services/educacionApi';
 import { getEmbedUrl } from '../../utils/videoEmbed';
+import { verificarSesion } from '../../utils/auth';
 import confetti from '../../utils/confetti';
 import {
   GraduationCap,
@@ -19,10 +20,13 @@ import {
   X,
   RotateCcw,
   FileText,
+  ShieldAlert,
+  ShieldCheck,
 } from 'lucide-react';
 import './EducacionView.css';
 
 export default function EducacionView() {
+  const [usuario, setUsuario] = useState(null);
   const [modulos, setModulos] = useState([]);
   const [estadisticas, setEstadisticas] = useState({
     total_modulos: 0,
@@ -33,6 +37,10 @@ export default function EducacionView() {
     nivel_actual: 'Iniciante 🌱',
   });
   const [loading, setLoading] = useState(true);
+
+  // Protección anti-grabación y captura de pantalla
+  const [pantallaOculta, setPantallaOculta] = useState(false);
+  const [alertaCaptura, setAlertaCaptura] = useState(false);
 
   // Módulo y Lección Activa
   const [moduloActivo, setModuloActivo] = useState(null);
@@ -122,6 +130,50 @@ export default function EducacionView() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    verificarSesion().then(setUsuario);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setPantallaOculta(true);
+      }
+    };
+
+    const handleWindowBlur = () => {
+      // Bloquear pantalla al perder foco (ej. snipping tools, grabadores externos de pantalla)
+      setPantallaOculta(true);
+    };
+
+    const handleKeyDown = (e) => {
+      const isPrintScreen = e.key === 'PrintScreen' || e.keyCode === 44;
+      const isDevTools = (e.ctrlKey && e.shiftKey && ['I', 'i', 'C', 'c', 'J', 'j'].includes(e.key)) || e.key === 'F12';
+      const isSaveOrSource = e.ctrlKey && ['s', 'S', 'u', 'U', 'p', 'P'].includes(e.key);
+      const isMacScreenshot = (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key));
+
+      if (isPrintScreen || isDevTools || isSaveOrSource || isMacScreenshot) {
+        e.preventDefault();
+        try {
+          if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText('');
+          }
+        } catch { /* clipboard api no disponible */ }
+        setPantallaOculta(true);
+        setAlertaCaptura(true);
+        setTimeout(() => setAlertaCaptura(false), 4000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     cargarDatos();
@@ -336,9 +388,12 @@ export default function EducacionView() {
                 </div>
               </div>
 
-              {/* YouTube Video Player Screen */}
+              {/* YouTube Video Player Screen con Protección Anti-Grabación */}
               {leccionActiva?.url_video ? (
-                <div className="aca-video-screen-container">
+                <div
+                  className={`aca-video-screen-container ${pantallaOculta ? 'protegido' : ''}`}
+                  onContextMenu={(e) => e.preventDefault()}
+                >
                   <iframe
                     src={getEmbedUrl(leccionActiva.url_video)}
                     title={leccionActiva.titulo}
@@ -348,6 +403,36 @@ export default function EducacionView() {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
+
+                  {/* Marca de agua dinámica de seguridad */}
+                  <div className="aca-watermark-overlay" aria-hidden="true">
+                    <span>
+                      <ShieldCheck size={11} /> Gesicomm Academia • {usuario?.email || usuario?.nombre || 'Alumno'} • ID: #{usuario?.id || 'PRO'}
+                    </span>
+                  </div>
+
+                  {/* Escudo opaco cuando se detecta pérdida de foco / captura de pantalla */}
+                  {pantallaOculta && (
+                    <div className="aca-shield-overlay" onClick={() => setPantallaOculta(false)}>
+                      <div className="aca-shield-content">
+                        <ShieldAlert size={44} className="aca-shield-icon" />
+                        <h3>Contenido protegido contra grabación</h3>
+                        <p>
+                          Por políticas de seguridad y derechos de autor, el video se oculta automáticamente si la ventana pierde el foco o se detectan herramientas de captura.
+                        </p>
+                        <button
+                          type="button"
+                          className="aca-shield-resume-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPantallaOculta(false);
+                          }}
+                        >
+                          <Play size={14} /> Reanudar reproducción
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div
@@ -363,6 +448,13 @@ export default function EducacionView() {
                   }}
                 >
                   Selecciona una clase de la playlist para iniciar la reproducción
+                </div>
+              )}
+
+              {/* Toast de alerta de captura bloqueada */}
+              {alertaCaptura && (
+                <div className="aca-capture-toast">
+                  <ShieldAlert size={16} /> Captura de pantalla bloqueada: el contenido de la Academia está protegido.
                 </div>
               )}
 

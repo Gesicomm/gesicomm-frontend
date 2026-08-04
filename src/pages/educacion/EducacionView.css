@@ -246,8 +246,9 @@
   color: white;
 }
 
-/* YouTube Player Screen */
+/* YouTube Player Screen con Protección Anti-Grabación */
 .aca-video-screen-container {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
   border-radius: 16px;
@@ -256,6 +257,132 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   margin-bottom: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.aca-video-screen-container.protegido iframe {
+  filter: blur(20px) brightness(0.2);
+  pointer-events: none;
+}
+
+/* Marca de agua flotante de seguridad */
+.aca-watermark-overlay {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.45;
+  animation: aca-watermark-drift 18s ease-in-out infinite alternate;
+}
+.aca-watermark-overlay span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+@keyframes aca-watermark-drift {
+  0% { transform: translate(0, 0); opacity: 0.35; }
+  50% { transform: translate(-25vw, 60vh); opacity: 0.55; }
+  100% { transform: translate(-50vw, 20vh); opacity: 0.4; }
+}
+
+/* Escudo opaco de protección */
+.aca-shield-overlay {
+  position: absolute;
+  inset: 0;
+  background: #06070a;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  animation: aca-fade-in 0.2s ease;
+}
+.aca-shield-content {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #f8fafc;
+}
+.aca-shield-icon {
+  color: #ef4444;
+  margin-bottom: 0.25rem;
+  animation: aca-pulse 2s infinite ease-in-out;
+}
+@keyframes aca-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.5)); }
+}
+.aca-shield-content h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+.aca-shield-content p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+.aca-shield-resume-btn {
+  margin-top: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 0.65rem 1.4rem;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+  transition: all 0.15s ease;
+}
+.aca-shield-resume-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Toast de captura bloqueada */
+.aca-capture-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: #1e1b4b;
+  border: 1px solid #6366f1;
+  color: #e0e7ff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0.85rem 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: aca-slide-up 0.25s ease;
+}
+@keyframes aca-slide-up {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Multi-Video Lesson Playlist Selector Tabs */
