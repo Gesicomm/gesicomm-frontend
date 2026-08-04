@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
-  ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, ExternalLink, Key
+  ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, ExternalLink, Key, CheckCircle2
 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -52,6 +52,7 @@ export default function ConfigurarTienda() {
   const [error, setError] = useState(null);
   const [erroresValidacion, setErroresValidacion] = useState([]);
   const [ok, setOk] = useState(false);
+  const [mensajeExito, setMensajeExito] = useState(null);
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
@@ -142,9 +143,12 @@ export default function ConfigurarTienda() {
     setGuardando(true);
     try {
       const payload = { ...form, subdominio: subdominioDerivado };
+      const tokenFueIngresado = Boolean(metaTokenNuevo.trim());
+      const tokenFueEliminado = eliminarMetaToken;
+
       if (eliminarMetaToken) {
         payload.meta_access_token = '';
-      } else if (metaTokenNuevo.trim()) {
+      } else if (tokenFueIngresado) {
         payload.meta_access_token = metaTokenNuevo.trim();
       }
 
@@ -153,7 +157,16 @@ export default function ConfigurarTienda() {
       setMetaTokenNuevo('');
       setEliminarMetaToken(false);
       setOk(true);
-      setTimeout(() => setOk(false), 1800);
+
+      if (tokenFueIngresado) {
+        setMensajeExito('✓ ¡Tu Token de Meta Conversions API (CAPI) fue guardado y encriptado exitosamente en el servidor!');
+      } else if (tokenFueEliminado) {
+        setMensajeExito('✓ El Token de Meta CAPI fue eliminado correctamente.');
+      } else {
+        setMensajeExito('✓ Configuración guardada correctamente.');
+      }
+
+      setTimeout(() => setOk(false), 4500);
     } catch (err) {
       setError(err.response?.data?.message || 'Error al guardar la tienda.');
       setErroresValidacion(err.response?.data?.errores || []);
@@ -176,6 +189,13 @@ export default function ConfigurarTienda() {
       </div>
 
       <div className="vit-card">
+        {ok && mensajeExito && (
+          <div className="land-alert-success" style={{ marginBottom: '1.25rem' }}>
+            <CheckCircle2 size={18} />
+            <span>{mensajeExito}</span>
+          </div>
+        )}
+
         {error && (
           <div className="land-alert-error" style={{ marginBottom: '1.25rem' }}>
             <span><AlertCircle size={15} /> {error}</span>
@@ -350,6 +370,15 @@ export default function ConfigurarTienda() {
                     {mostrarToken ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 )}
+              </div>
+
+              <div className="tn-token-info-note">
+                <ShieldCheck size={14} color="#10b981" />
+                <span>
+                  {tienda?.meta_access_token_configurado && !eliminarMetaToken
+                    ? 'Tu token de CAPI está activo y protegido con cifrado AES-256 en el servidor. Por seguridad no se expone en texto plano en la pantalla.'
+                    : 'Pegá acá tu token generado en Meta Events Manager para que las compras se registren por el servidor.'}
+                </span>
               </div>
 
               {mostrarGuiaCapi && (

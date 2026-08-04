@@ -150,6 +150,24 @@
 }
 .land-alert-error ul { margin: 0.3rem 0 0 1.2rem; padding: 0; }
 
+.land-alert-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  animation: landFadeIn 0.2s ease-out;
+}
+@keyframes landFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LANDING BUILDER (.lb-*) — constructor de tienda: hero + pasos + panel +
