@@ -108,7 +108,9 @@
   display: flex; flex-direction: column; gap: 0.3rem;
   font-size: 0.78rem; color: var(--vit-muted);
 }
-.land-section input[type="text"], .land-section input:not([type]), .land-section input[type="color"]:not(.land-color-row input), .land-section textarea {
+.land-section input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+.land-section input[type="color"]:not(.land-color-row input),
+.land-section textarea {
   background: #0a0c10;
   border: 1px solid var(--vit-border);
   border-radius: 8px;
@@ -116,6 +118,15 @@
   color: var(--vit-text);
   font-size: 0.85rem;
   font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.land-section input:focus,
+.land-section textarea:focus {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 2px var(--vit-accent-soft);
 }
 .land-section textarea { resize: vertical; }
 

@@ -5,16 +5,12 @@ import {
   Building2,
   Eye,
   KeyRound,
-  LineChart,
   Lock,
   Megaphone,
-  MessageCircle,
-  Network,
   Package,
   ScrollText,
   ShieldCheck,
   ShoppingCart,
-  Sparkles,
   Truck,
   Users,
 } from 'lucide-react';
@@ -22,7 +18,6 @@ import { Link } from 'react-router-dom';
 
 import Seo, { SITIO, SCHEMA_ORGANIZACION } from '../../components/public/Seo';
 import { Container, Section, SectionHeading, Eyebrow } from '../../components/public/Section';
-import { FeatureCard } from '../../components/public/Card';
 import Accordion from '../../components/public/Accordion';
 import Badge from '../../components/public/Badge';
 import Button from '../../components/public/Button';
@@ -80,7 +75,6 @@ const INTEGRACIONES = [
   {
     nombre: 'Meta Business',
     color: '#0081FB',
-    icono: Network,
     descripcion:
       'Conectás tu Business Manager por OAuth y Gesicomm lee las cuentas publicitarias a las que ya tenés acceso. No creamos ni modificamos activos por tu cuenta.',
     datos: 'Business Managers y cuentas publicitarias que administrás.',
@@ -88,7 +82,6 @@ const INTEGRACIONES = [
   {
     nombre: 'Facebook Ads',
     color: '#1877F2',
-    icono: Megaphone,
     descripcion:
       'Campañas, conjuntos de anuncios y su rendimiento, al lado del producto y del margen real que estás promocionando.',
     datos: 'Campañas, presupuestos, impresiones, clics, alcance, gasto y conversiones.',
@@ -96,7 +89,6 @@ const INTEGRACIONES = [
   {
     nombre: 'Meta Pixel',
     color: '#7C6BFF',
-    icono: LineChart,
     descripcion:
       'Cargás el identificador de tu propio píxel y tu vitrina lo dispara, para que las conversiones vuelvan a tus campañas.',
     datos: 'Solo el identificador del píxel. Los eventos los recibe Meta directamente.',
@@ -109,7 +101,6 @@ const CANALES_SIN_API = [
   {
     nombre: 'WhatsApp',
     color: '#25D366',
-    icono: MessageCircle,
     descripcion:
       'El botón de tu vitrina abre un chat en el WhatsApp de quien te consulta, con el producto y el precio ya escritos. Es un enlace: la conversación ocurre entre tu cliente y vos, y Gesicomm no la ve ni la guarda.',
   },
@@ -221,20 +212,11 @@ export default function Landing() {
 
       {/* ───────── Hero ───────── */}
       <section className="relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 -top-40 h-[32rem] opacity-45"
-          style={{
-            background:
-              'radial-gradient(60% 60% at 50% 40%, #6d5ef8 0%, rgba(109,94,248,0.18) 45%, transparent 75%)',
-          }}
-        />
-
         <Container className="relative pb-20 pt-16 text-center sm:pb-28 sm:pt-24">
           <div className="animar-entrada">
-            <Badge tono="primario" icono={Sparkles} className="mb-7">
-              Integrado con Meta Business y Facebook Ads
-            </Badge>
+            <p className="mb-6 font-mono text-xs uppercase tracking-[0.15em] text-fg-subtle">
+              Panel operativo · Meta Business conectado
+            </p>
 
             <h1
               className="mx-auto max-w-4xl text-4xl font-bold text-fg sm:text-6xl sm:leading-[1.05]"
@@ -279,14 +261,9 @@ export default function Landing() {
                 <li key={integracion.nombre} className="flex items-center gap-2.5">
                   <span
                     aria-hidden="true"
-                    className="flex h-7 w-7 items-center justify-center rounded-md"
-                    style={{
-                      backgroundColor: `${integracion.color}1f`,
-                      color: integracion.color,
-                    }}
-                  >
-                    <integracion.icono size={15} />
-                  </span>
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: integracion.color }}
+                  />
                   <span className="text-sm font-medium text-fg-muted">{integracion.nombre}</span>
                 </li>
               ))}
@@ -306,12 +283,18 @@ export default function Landing() {
           />
         </Reveal>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-14 grid gap-x-10 sm:grid-cols-2">
           {CARACTERISTICAS.map((caracteristica, indice) => (
-            <Reveal key={caracteristica.titulo} delay={(indice % 4) * 70}>
-              <FeatureCard icono={caracteristica.icono} titulo={caracteristica.titulo} className="h-full">
-                {caracteristica.texto}
-              </FeatureCard>
+            <Reveal key={caracteristica.titulo} delay={(indice % 4) * 60}>
+              <div className="flex flex-col gap-2 border-t border-border py-6">
+                <div className="flex items-center gap-2.5">
+                  <caracteristica.icono size={16} className="text-primary" aria-hidden="true" />
+                  <h3 className="text-base font-semibold text-fg" style={{ letterSpacing: '-0.01em' }}>
+                    {caracteristica.titulo}
+                  </h3>
+                </div>
+                <p className="text-sm leading-relaxed text-fg-muted">{caracteristica.texto}</p>
+              </div>
             </Reveal>
           ))}
         </div>
@@ -332,17 +315,12 @@ export default function Landing() {
           {INTEGRACIONES.map((integracion, indice) => (
             <Reveal key={integracion.nombre} delay={(indice % 3) * 70}>
               <div className="h-full rounded-xl border border-border bg-canvas p-6 transition-colors hover:border-border-strong">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <span
                     aria-hidden="true"
-                    className="flex h-10 w-10 items-center justify-center rounded-lg"
-                    style={{
-                      backgroundColor: `${integracion.color}1f`,
-                      color: integracion.color,
-                    }}
-                  >
-                    <integracion.icono size={19} />
-                  </span>
+                    className="h-2 w-2 flex-shrink-0 rounded-full"
+                    style={{ backgroundColor: integracion.color }}
+                  />
                   <h3
                     className="text-base font-semibold text-fg"
                     style={{ letterSpacing: '-0.02em' }}
@@ -372,32 +350,23 @@ export default function Landing() {
         {CANALES_SIN_API.map((canal) => (
           <Reveal key={canal.nombre}>
             <div className="mt-5 rounded-xl border border-dashed border-border bg-canvas p-6">
-              {/* Un solo <h3>: duplicarlo para mostrar uno u otro según el
-                  ancho dejaría dos encabezados en el árbol de accesibilidad
-                  para un mismo bloque. El icono se reordena con flex. */}
-              <div className="flex gap-4">
+              <div className="flex items-center gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: `${canal.color}1f`, color: canal.color }}
+                  className="h-2 w-2 flex-shrink-0 rounded-full"
+                  style={{ backgroundColor: canal.color }}
+                />
+                <h3
+                  className="text-base font-semibold text-fg"
+                  style={{ letterSpacing: '-0.02em' }}
                 >
-                  <canal.icono size={19} />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                    <h3
-                      className="text-base font-semibold text-fg"
-                      style={{ letterSpacing: '-0.02em' }}
-                    >
-                      {canal.nombre}
-                    </h3>
-                    <Badge tono="neutro">Sin API · no es una integración</Badge>
-                  </div>
-                  <p className="mt-2.5 text-sm leading-relaxed text-fg-muted">
-                    {canal.descripcion}
-                  </p>
-                </div>
+                  {canal.nombre}
+                </h3>
+                <Badge tono="neutro">Sin API · no es una integración</Badge>
               </div>
+              <p className="mt-2.5 text-sm leading-relaxed text-fg-muted">
+                {canal.descripcion}
+              </p>
             </div>
           </Reveal>
         ))}
@@ -449,12 +418,18 @@ export default function Landing() {
             </div>
           </Reveal>
 
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-x-8 sm:grid-cols-2">
             {SEGURIDAD.map((item, indice) => (
               <Reveal key={item.titulo} delay={(indice % 2) * 80}>
-                <FeatureCard icono={item.icono} titulo={item.titulo} className="h-full">
-                  {item.texto}
-                </FeatureCard>
+                <div className="flex flex-col gap-2 border-t border-border py-6">
+                  <div className="flex items-center gap-2.5">
+                    <item.icono size={16} className="text-primary" aria-hidden="true" />
+                    <h3 className="text-base font-semibold text-fg" style={{ letterSpacing: '-0.01em' }}>
+                      {item.titulo}
+                    </h3>
+                  </div>
+                  <p className="text-sm leading-relaxed text-fg-muted">{item.texto}</p>
+                </div>
               </Reveal>
             ))}
           </div>

@@ -117,3 +117,138 @@
 
 .dp-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .dp-hint { margin: 0; font-size: 0.75rem; color: var(--vit-muted-2); }
+
+/* ─── CAPI Token Management ─────────────────────────────────────────── */
+.tn-token-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tn-token-status-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  border: 1px solid var(--vit-border);
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #10b981;
+}
+
+.tn-token-status-pill.removed {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+
+.tn-token-status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 500;
+}
+
+.tn-token-btn-remove {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.15s ease;
+}
+
+.tn-token-btn-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.tn-token-btn-undo {
+  background: transparent;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tn-token-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.tn-token-input-group input {
+  padding-right: 2.5rem !important;
+}
+
+.tn-token-toggle-btn {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--vit-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+
+.tn-token-toggle-btn:hover {
+  color: var(--vit-text);
+}
+
+.tn-token-guide-toggle {
+  background: transparent;
+  border: none;
+  color: var(--vit-accent);
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  margin-top: 0.2rem;
+  width: fit-content;
+}
+
+.tn-token-guide-toggle:hover {
+  text-decoration: underline;
+}
+
+.tn-token-guide-box {
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.75rem;
+  color: var(--vit-muted);
+  line-height: 1.5;
+  margin-top: 0.3rem;
+}
+
+.tn-token-guide-box ol {
+  margin: 0.4rem 0 0 1.1rem;
+  padding: 0;
+}
+
+.tn-token-guide-box li {
+  margin-bottom: 0.25rem;
+}
+
+.tn-token-guide-box strong {
+  color: var(--vit-text);
+}

@@ -16,12 +16,8 @@ export default function CTA({
     <section className="no-imprimir border-t border-border bg-surface py-20 sm:py-24">
       <Container>
         <div className="relative overflow-hidden rounded-2xl border border-border bg-canvas px-8 py-14 text-center sm:px-14">
-          {/* Resplandor de marca. aria-hidden: es decoración pura. */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-28 left-1/2 h-64 w-[36rem] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
-            style={{ background: 'radial-gradient(circle, #6d5ef8 0%, transparent 70%)' }}
-          />
+          {/* Barra de marca: marcador de sección, no resplandor decorativo. */}
+          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px] bg-primary" />
 
           <div className="relative">
             <h2

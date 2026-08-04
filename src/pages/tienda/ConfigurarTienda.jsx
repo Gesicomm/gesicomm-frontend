@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown } from 'lucide-react';
+import {
+  Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
+  ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, ExternalLink, Key
+} from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
 import DominioPropio from './DominioPropio';
@@ -54,10 +57,11 @@ export default function ConfigurarTienda() {
   const ultimaConsulta = useRef(0);
 
   // El access token nunca vuelve del backend (ni cifrado) — solo un flag
-  // de si ya hay uno guardado (tienda.meta_access_token_configurado). Este
-  // campo arranca vacío siempre; si la usuaria no escribe nada acá, el
-  // token guardado queda como está (no se manda esta clave en el payload).
+  // de si ya hay uno guardado (tienda.meta_access_token_configurado).
   const [metaTokenNuevo, setMetaTokenNuevo] = useState('');
+  const [eliminarMetaToken, setEliminarMetaToken] = useState(false);
+  const [mostrarToken, setMostrarToken] = useState(false);
+  const [mostrarGuiaCapi, setMostrarGuiaCapi] = useState(false);
 
   // El subdominio no es un campo aparte: es siempre el nombre de la tienda
   // slugificado. Si no está disponible, la usuaria cambia el nombre, no un
@@ -138,14 +142,16 @@ export default function ConfigurarTienda() {
     setGuardando(true);
     try {
       const payload = { ...form, subdominio: subdominioDerivado };
-      // Si no escribió un token nuevo, no se manda esta clave — el backend
-      // solo la toca cuando payload.meta_access_token !== undefined (ver
-      // tienda.service.js), así que omitirla deja el token guardado intacto.
-      if (metaTokenNuevo.trim()) payload.meta_access_token = metaTokenNuevo.trim();
+      if (eliminarMetaToken) {
+        payload.meta_access_token = '';
+      } else if (metaTokenNuevo.trim()) {
+        payload.meta_access_token = metaTokenNuevo.trim();
+      }
 
       const actualizada = await tiendaService.actualizar(payload);
       setTienda(actualizada);
       setMetaTokenNuevo('');
+      setEliminarMetaToken(false);
       setOk(true);
       setTimeout(() => setOk(false), 1800);
     } catch (err) {
@@ -160,79 +166,79 @@ export default function ConfigurarTienda() {
     return <div className="vit-page"><div className="vit-empty"><Loader size={22} className="spin-icon" /><p>Cargando...</p></div></div>;
   }
 
-  const urlPreview = `https://${subdominioDerivado || '...'}.gesicomm.com`;
-
   return (
     <div className="vit-page">
       <div className="vit-header">
         <div>
-          <h1 className="vit-title">Mi tienda</h1>
-          <p className="vit-subtitle">Nombre, colores, contacto y URL pública de tu tienda.</p>
+          <h1>Configuración de tu Tienda</h1>
+          <p className="vit-subtitle">Ajustá la identidad visual, datos de contacto y analítica de todas tus landings.</p>
         </div>
       </div>
 
-      {error && (
-        <div className="land-alert-error"><AlertCircle size={14} /> {error}
-          {erroresValidacion.length > 0 && <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>}
-        </div>
-      )}
-
-      <div className="land-editor-grid">
-        {/* DominioPropio tiene su propio <form> (guarda su dominio por
-            separado, con su propio submit) — no puede ir anidado dentro de
-            este. display:contents en land-editor-grid-form hace que el
-            <form> no altere el layout de grid: sus hijos siguen siendo
-            grid items directos, igual que si no existiera el wrapper. */}
-        <form onSubmit={handleSubmit} className="land-editor-grid-form">
-          <div className="land-section">
-            <h2>Datos generales</h2>
-            <label>Nombre de tu tienda
-              <input value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} placeholder="Ej: Ropa Fina" required />
-            </label>
-
-            <label>Tu URL
-              <div className="tn-url-readonly">
-                <Globe size={13} /> {urlPreview}
-              </div>
-            </label>
-            {subdominioCambia && (
-              <div className="tn-disponibilidad">
-                {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={13} className="spin-icon" /> Verificando...</span>}
-                {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
-                  <span className="tn-check ok"><Check size={13} /> Disponible</span>
-                )}
-                {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
-                  <span className="tn-check error"><X size={13} /> {disponibilidad.motivo || 'Ese nombre ya está en uso — probá con otro.'}</span>
-                )}
-              </div>
-            )}
-            {subdominioCambia && (
-              <p className="tn-warning">
-                <AlertCircle size={13} /> Tu URL va a cambiar de <strong>{tienda.subdominio}</strong> a <strong>{subdominioDerivado || '...'}</strong> al guardar.
-                Cualquier link que ya hayas compartido con la URL vieja va a dejar de funcionar.
-              </p>
+      <div className="vit-card">
+        {error && (
+          <div className="land-alert-error" style={{ marginBottom: '1.25rem' }}>
+            <span><AlertCircle size={15} /> {error}</span>
+            {erroresValidacion.length > 0 && (
+              <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>
             )}
           </div>
+        )}
 
+        <form onSubmit={handleSubmit} className="land-editor-grid land-editor-grid-form">
           <div className="land-section">
-            <h2>Plan</h2>
+            <h2>Identidad</h2>
+            <label>Nombre de la tienda
+              <input value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} />
+            </label>
+
+            <label>URL pública
+              <div className="tn-url-readonly">
+                <Globe size={14} color="var(--vit-muted)" />
+                <code>{subdominioDerivado || 'tu-tienda'}.{tienda?.dominio_base || 'gesicomm.com'}</code>
+              </div>
+            </label>
+
+            {subdominioCambia && (
+              <div className="tn-disponibilidad">
+                {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
+                {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
+                  <span className="tn-check ok"><Check size={12} /> URL disponible</span>
+                )}
+                {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
+                  <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
+                )}
+              </div>
+            )}
+
+            {subdominioCambia && (
+              <p className="tn-warning">
+                <AlertCircle size={14} />
+                <span><strong>Atención:</strong> Cambiar el nombre va a modificar la URL pública de tu catálogo y de todas tus landings. Links que ya hayas compartido dejarán de funcionar.</span>
+              </p>
+            )}
+
+            <label>Plan de tu cuenta</label>
             <div className="tn-plan-row">
               {PLANES.map(p => {
                 const Icono = p.icono;
+                const activo = form.plan === p.id;
                 return (
                   <button
                     key={p.id}
                     type="button"
-                    className={`tn-plan-chip ${form.plan === p.id ? 'selected' : ''}`}
+                    className={`tn-plan-chip ${activo ? 'selected' : ''}`}
                     onClick={() => handleChange('plan', p.id)}
                   >
-                    <Icono size={15} /> {p.titulo}
+                    <Icono size={14} />
+                    {p.titulo}
                   </button>
                 );
               })}
             </div>
-            {form.plan === 'pago' && <p className="vit-subtitle">Un asesor te va a contactar para activar los beneficios del plan pago.</p>}
           </div>
+
+          <DominioPropio tienda={tienda} plan={form.plan} onActualizada={setTienda} />
 
           <div className="land-section">
             <h2>Colores</h2>
@@ -241,25 +247,25 @@ export default function ConfigurarTienda() {
               <label>Secundario<input type="color" value={form.color_secundario} onChange={e => handleChange('color_secundario', e.target.value)} /></label>
               <label>Fondo<input type="color" value={form.color_fondo} onChange={e => handleChange('color_fondo', e.target.value)} /></label>
             </div>
-            <p className="vit-subtitle">Estos colores son el default de todas tus landings.</p>
           </div>
 
           <div className="land-section">
             <h2>Contacto</h2>
             <label>WhatsApp
-              <input value={form.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)} placeholder="Ej: 595981234567 (código de país + número, sin +)" />
+              <input value={form.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)} placeholder="Ej: 595981234567" />
             </label>
             <label>Teléfono (opcional)
               <input value={form.telefono} onChange={e => handleChange('telefono', e.target.value)} />
             </label>
             <label>Mensaje de contacto
-              <input value={form.mensaje_contacto} onChange={e => handleChange('mensaje_contacto', e.target.value)} placeholder="Usá {producto} para insertar el nombre" />
+              <input value={form.mensaje_contacto} onChange={e => handleChange('mensaje_contacto', e.target.value)} />
             </label>
           </div>
 
           <div className="land-section">
             <h2>Meta Pixel / CAPI</h2>
             <p className="vit-subtitle">Para medir clics en "Consultar" como conversiones en tus campañas de Meta Ads.</p>
+            
             <label>Pixel ID
               <input
                 value={form.meta_pixel_id}
@@ -268,14 +274,98 @@ export default function ConfigurarTienda() {
                 inputMode="numeric"
               />
             </label>
-            <label>Access Token (Conversions API)
-              <input
-                type="password"
-                value={metaTokenNuevo}
-                onChange={e => setMetaTokenNuevo(e.target.value)}
-                placeholder={tienda?.meta_access_token_configurado ? '•••••••••• (ya configurado — dejá vacío para no cambiarlo)' : 'Pegá el token generado en Events Manager'}
-              />
-            </label>
+
+            <div className="tn-token-wrapper">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ margin: 0 }}>Access Token (Conversions API)</label>
+                <button
+                  type="button"
+                  className="tn-token-guide-toggle"
+                  onClick={() => setMostrarGuiaCapi(prev => !prev)}
+                >
+                  <HelpCircle size={13} />
+                  {mostrarGuiaCapi ? 'Ocultar ayuda' : '¿De dónde saco este token?'}
+                </button>
+              </div>
+
+              {tienda?.meta_access_token_configurado && !eliminarMetaToken && (
+                <div className="tn-token-status-pill">
+                  <div className="tn-token-status-left">
+                    <ShieldCheck size={15} />
+                    <span>Token CAPI guardado en el servidor</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="tn-token-btn-remove"
+                    onClick={() => {
+                      setEliminarMetaToken(true);
+                      setMetaTokenNuevo('');
+                    }}
+                    title="Eliminar token guardado"
+                  >
+                    <Trash2 size={12} />
+                    Quitar token
+                  </button>
+                </div>
+              )}
+
+              {eliminarMetaToken && (
+                <div className="tn-token-status-pill removed">
+                  <div className="tn-token-status-left">
+                    <AlertCircle size={15} />
+                    <span>El token se eliminará al guardar cambios.</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="tn-token-btn-undo"
+                    onClick={() => setEliminarMetaToken(false)}
+                  >
+                    Deshacer
+                  </button>
+                </div>
+              )}
+
+              <div className="tn-token-input-group">
+                <input
+                  type={mostrarToken ? 'text' : 'password'}
+                  value={metaTokenNuevo}
+                  onChange={e => {
+                    setMetaTokenNuevo(e.target.value);
+                    if (eliminarMetaToken) setEliminarMetaToken(false);
+                  }}
+                  placeholder={
+                    tienda?.meta_access_token_configurado && !eliminarMetaToken
+                      ? 'Escribe acá para reemplazar el token actual...'
+                      : 'Pegá acá el token de Events Manager (EAAB...)'
+                  }
+                  autoComplete="new-password"
+                />
+                {metaTokenNuevo && (
+                  <button
+                    type="button"
+                    className="tn-token-toggle-btn"
+                    onClick={() => setMostrarToken(prev => !prev)}
+                    title={mostrarToken ? 'Ocultar token' : 'Ver token'}
+                  >
+                    {mostrarToken ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                )}
+              </div>
+
+              {mostrarGuiaCapi && (
+                <div className="tn-token-guide-box">
+                  <strong>¿Cómo obtener tu Access Token de Conversions API?</strong>
+                  <ol>
+                    <li>Entrá a <strong>Meta Events Manager</strong> con tu cuenta comercial de Meta.</li>
+                    <li>Seleccioná tu <strong>Píxel / Conjunto de datos</strong> en la columna izquierda.</li>
+                    <li>Hacé clic en la pestaña <strong>Configuración</strong>.</li>
+                    <li>Bajá hasta la sección <strong>API de conversiones</strong> y haz clic en <strong>"Generar token de acceso"</strong>.</li>
+                    <li>Copiá ese token largo (comienza con <code>EAAB...</code>) y pegalo en el campo de arriba.</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+
             <label>Test Event Code <span className="vit-subtitle" style={{ display: 'inline' }}>(opcional, solo mientras probás)</span>
               <input
                 value={form.meta_test_event_code}
@@ -283,10 +373,12 @@ export default function ConfigurarTienda() {
                 placeholder="Ej: TEST12345"
               />
             </label>
+
             <label className="tn-checkbox-row">
               <input type="checkbox" checked={form.meta_capi_activo} onChange={e => handleChange('meta_capi_activo', e.target.checked)} />
               Enviar eventos también por Conversions API (recomendado)
             </label>
+
             {form.meta_capi_activo && !form.meta_pixel_id && (
               <p className="tn-warning"><AlertCircle size={13} /> Activaste CAPI pero todavía no cargaste el Pixel ID — no se va a enviar nada hasta que lo completes.</p>
             )}
