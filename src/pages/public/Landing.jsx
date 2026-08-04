@@ -17,21 +17,24 @@ import Reveal from '../../components/public/Reveal';
  * Ninguna cifra pretende ser una métrica de la empresa ni de un cliente.
  */
 const REGISTRO_PEDIDOS = [
-  { id: '1044', destino: 'Rosario, SF', estado: 'En armado', tono: 'fg-muted' },
-  { id: '1043', destino: 'Córdoba', estado: 'Despachado', tono: 'fg-muted' },
-  { id: '1042', destino: 'CABA', estado: 'Entregado', tono: 'success' },
+  { id: '1044', destino: 'Asunción', estado: 'En armado', tono: 'fg-muted' },
+  { id: '1043', destino: 'Ciudad del Este', estado: 'Despachado', tono: 'fg-muted' },
+  { id: '1042', destino: 'Encarnación', estado: 'Entregado', tono: 'success' },
 ];
 
 const REGISTRO_STOCK = [
   { deposito: 'Depósito Central', unidades: '412', alerta: false },
-  { deposito: 'Sucursal Norte', unidades: '88', alerta: false },
-  { deposito: 'Sucursal Sur', unidades: '12', alerta: true },
+  { deposito: 'Sucursal San Lorenzo', unidades: '88', alerta: false },
+  { deposito: 'Sucursal Luque', unidades: '12', alerta: true },
 ];
 
+// Importes en guaraníes, con el punto como separador de miles y sin
+// decimales, que es como se escribe la moneda acá. Mismo criterio que
+// formatPYG en pages/Ads.jsx: es-PY / PYG / cero decimales.
 const REGISTRO_CAMPANA = [
-  { concepto: 'Inversión en anuncios', valor: '84.200' },
-  { concepto: 'Ingreso atribuido', valor: '261.000' },
-  { concepto: 'Margen real', valor: '96.400', destacado: true },
+  { concepto: 'Inversión en anuncios', valor: '4.850.000' },
+  { concepto: 'Ingreso atribuido', valor: '15.200.000' },
+  { concepto: 'Margen real', valor: '5.640.000', destacado: true },
 ];
 
 /**
@@ -377,7 +380,7 @@ export default function Landing() {
                           linea.destacado ? 'font-semibold text-fg' : 'text-fg-muted'
                         }`}
                       >
-                        $ {linea.valor}
+                        Gs. {linea.valor}
                       </span>
                     </li>
                   ))}
