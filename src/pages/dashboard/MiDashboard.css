@@ -338,20 +338,20 @@
   font-size: 0.85rem;
 }
 
-.md-chart-svg-wrap { position: relative; width: 100%; }
-.md-chart-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.md-chart-svg-wrap { position: relative; width: 100%; cursor: crosshair; touch-action: none; }
+.md-chart-svg { width: 100%; height: auto; display: block; overflow: visible; pointer-events: none; }
 .md-chart-grid { stroke: rgba(255, 255, 255, 0.045); stroke-width: 1; }
 .md-chart-baseline { stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
-.md-bar { transition: opacity 0.15s; }
+.md-bar { transition: opacity 0.15s, filter 0.15s; }
 .md-bar-visitas { fill: var(--md-visitas); }
 .md-bar-contactos { fill: var(--md-contactos); }
-.md-bar.activa { opacity: 0.7; }
-.md-chart-label { font-size: 9.5px; fill: var(--md-ink-faint); }
+.md-bar.activa { opacity: 1; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5)); }
+.md-bar-contactos.activa { filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5)); }
+.md-chart-label { font-size: 9.5px; fill: var(--md-ink-faint); user-select: none; }
 
 .md-chart-tooltip {
   position: absolute;
-  top: 0;
-  transform: translateX(-50%);
+  top: -8px;
   background: #14161e;
   border: 1px solid var(--md-border-strong);
   border-radius: 9px;
@@ -360,15 +360,20 @@
   color: var(--md-ink);
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  z-index: 5;
+  z-index: 10;
+  animation: md-tooltip-pop 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.md-chart-tooltip strong { margin-bottom: 0.1rem; }
+@keyframes md-tooltip-pop {
+  from { opacity: 0; scale: 0.95; }
+  to { opacity: 1; scale: 1; }
+}
+.md-chart-tooltip strong { margin-bottom: 0.1rem; color: #fff; font-size: 0.78rem; }
 .md-chart-tooltip span { display: flex; align-items: center; gap: 0.4rem; color: var(--md-ink-muted); }
-.md-chart-tooltip small { color: var(--md-ink-faint); margin-top: 0.1rem; }
+.md-chart-tooltip small { color: #a78bfa; margin-top: 0.1rem; font-weight: 500; }
 
 .md-table-wrap { overflow-x: auto; }
 .md-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }

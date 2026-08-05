@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Eye, MessageCircle, Percent, Loader, AlertCircle, Table2, BarChart3, Package } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 
@@ -36,12 +36,14 @@ function pathBarraRedondeada(x, yTop, ancho, alto, radio) {
 function GraficoVisitas({ serie }) {
   const [vistaTabla, setVistaTabla] = useState(false);
   const [hover, setHover] = useState(null);
+  const wrapRef = useRef(null);
 
   const ANCHO = 720;
   const ALTO = 130;
   const PAD_INF = 18;
   const max = Math.max(1, ...serie.map(d => d.cantidad));
-  const anchoBarra = Math.max(1.5, (ANCHO / serie.length) - 2);
+  const anchoColumna = ANCHO / (serie.length || 1);
+  const anchoBarra = Math.max(1.5, anchoColumna - 2);
 
   // Etiquetas selectivas: primera, última y una intermedia — nunca un
   // número por punto (hasta 90 puntos no entrarían).
@@ -50,6 +52,34 @@ function GraficoVisitas({ serie }) {
     if (n <= 1) return new Set([0]);
     return new Set([0, Math.floor((n - 1) / 2), n - 1]);
   }, [serie.length]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!wrapRef.current || !serie.length) return;
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const rect = wrapRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    if (x < 0 || x > rect.width) {
+      setHover(null);
+      return;
+    }
+    const idx = Math.floor((x / rect.width) * serie.length);
+    const clamped = Math.max(0, Math.min(serie.length - 1, idx));
+    setHover(clamped);
+  }, [serie.length]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHover(null);
+  }, []);
+
+  const tooltipStyle = useMemo(() => {
+    if (hover === null || !serie.length) return {};
+    const pct = ((hover + 0.5) / serie.length) * 100;
+    const transform = pct < 18 ? 'translateX(0%)' : pct > 82 ? 'translateX(-100%)' : 'translateX(-50%)';
+    return {
+      left: `${pct}%`,
+      transform,
+    };
+  }, [hover, serie.length]);
 
   if (serie.every(d => d.cantidad === 0)) {
     return (
@@ -80,21 +110,34 @@ function GraficoVisitas({ serie }) {
           </table>
         </div>
       ) : (
-        <div className="lb-chart-svg-wrap">
+        <div
+          ref={wrapRef}
+          className="lb-chart-svg-wrap"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={handleMouseMove}
+          onTouchMove={handleMouseMove}
+          onTouchEnd={handleMouseLeave}
+        >
           <svg viewBox={`0 0 ${ANCHO} ${ALTO + PAD_INF}`} preserveAspectRatio="none" className="lb-chart-svg">
             <line x1="0" y1={ALTO} x2={ANCHO} y2={ALTO} className="lb-chart-baseline" />
+            {hover !== null && (
+              <rect
+                x={hover * anchoColumna}
+                y={0}
+                width={anchoColumna}
+                height={ALTO}
+                fill="rgba(255, 255, 255, 0.06)"
+                rx={3}
+                style={{ pointerEvents: 'none' }}
+              />
+            )}
             {serie.map((d, i) => {
-              const x = i * (ANCHO / serie.length) + 1;
+              const x = i * anchoColumna + 1;
               const alto = (d.cantidad / max) * (ALTO - 8);
               const activo = hover === i;
               return (
-                <g key={d.fecha}>
-                  <rect
-                    x={x} y={0} width={anchoBarra + 2} height={ALTO}
-                    fill="transparent"
-                    onMouseEnter={() => setHover(i)}
-                    onMouseLeave={() => setHover(null)}
-                  />
+                <g key={d.fecha} style={{ pointerEvents: 'none' }}>
                   {d.cantidad > 0 ? (
                     <path
                       d={pathBarraRedondeada(x, ALTO - alto, anchoBarra, alto, 3)}
@@ -112,10 +155,10 @@ function GraficoVisitas({ serie }) {
               );
             })}
           </svg>
-          {hover !== null && (
+          {hover !== null && serie[hover] && (
             <div
               className="lb-chart-tooltip"
-              style={{ left: `${((hover + 0.5) / serie.length) * 100}%` }}
+              style={tooltipStyle}
             >
               <strong>{serie[hover].cantidad}</strong> visita{serie[hover].cantidad === 1 ? '' : 's'}
               <small>{formatFecha(serie[hover].fecha)}</small>

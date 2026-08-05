@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Eye, MessageCircle, ShoppingCart, ArrowRight, Loader, Table2, BarChart3, Store,
@@ -75,12 +75,13 @@ function FilaRanking({ posicion, nombre, valor, valorLabel, max, tono }) {
 function GraficoTendencia({ serie }) {
   const [vistaTabla, setVistaTabla] = useState(false);
   const [hover, setHover] = useState(null);
+  const wrapRef = useRef(null);
 
   const ANCHO = 800;
   const ALTO = 168;
   const PAD_INF = 22;
   const max = Math.max(1, ...serie.map(d => Math.max(d.visitas, d.contactos)));
-  const grupoAncho = ANCHO / serie.length;
+  const grupoAncho = ANCHO / (serie.length || 1);
   const barAncho = Math.max(1.5, (grupoAncho - 4) / 2);
   const lineasGrid = [0.25, 0.5, 0.75, 1];
 
@@ -91,6 +92,34 @@ function GraficoTendencia({ serie }) {
   }, [serie.length]);
 
   const sinDatos = serie.every(d => d.visitas === 0 && d.contactos === 0);
+
+  const handleMouseMove = useCallback((e) => {
+    if (!wrapRef.current || !serie.length) return;
+    const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+    const rect = wrapRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    if (x < 0 || x > rect.width) {
+      setHover(null);
+      return;
+    }
+    const idx = Math.floor((x / rect.width) * serie.length);
+    const clamped = Math.max(0, Math.min(serie.length - 1, idx));
+    setHover(clamped);
+  }, [serie.length]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHover(null);
+  }, []);
+
+  const tooltipStyle = useMemo(() => {
+    if (hover === null || !serie.length) return {};
+    const pct = ((hover + 0.5) / serie.length) * 100;
+    const transform = pct < 18 ? 'translateX(0%)' : pct > 82 ? 'translateX(-100%)' : 'translateX(-50%)';
+    return {
+      left: `${pct}%`,
+      transform,
+    };
+  }, [hover, serie.length]);
 
   return (
     <section className="md-card md-chart-card">
@@ -130,25 +159,40 @@ function GraficoTendencia({ serie }) {
           </table>
         </div>
       ) : (
-        <div className="md-chart-svg-wrap">
+        <div
+          ref={wrapRef}
+          className="md-chart-svg-wrap"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={handleMouseMove}
+          onTouchMove={handleMouseMove}
+          onTouchEnd={handleMouseLeave}
+        >
           <svg viewBox={`0 0 ${ANCHO} ${ALTO + PAD_INF}`} preserveAspectRatio="none" className="md-chart-svg">
             {lineasGrid.map(f => (
               <line key={f} x1="0" y1={ALTO * (1 - f)} x2={ANCHO} y2={ALTO * (1 - f)} className="md-chart-grid" />
             ))}
             <line x1="0" y1={ALTO} x2={ANCHO} y2={ALTO} className="md-chart-baseline" />
+
+            {hover !== null && (
+              <rect
+                x={hover * grupoAncho}
+                y={0}
+                width={grupoAncho}
+                height={ALTO}
+                fill="rgba(255, 255, 255, 0.06)"
+                rx={3}
+                style={{ pointerEvents: 'none' }}
+              />
+            )}
+
             {serie.map((d, i) => {
               const xGrupo = i * grupoAncho;
               const altoV = (d.visitas / max) * (ALTO - 6);
               const altoC = (d.contactos / max) * (ALTO - 6);
               const activo = hover === i;
               return (
-                <g key={d.fecha}>
-                  <rect
-                    x={xGrupo} y={0} width={grupoAncho} height={ALTO}
-                    fill="transparent"
-                    onMouseEnter={() => setHover(i)}
-                    onMouseLeave={() => setHover(null)}
-                  />
+                <g key={d.fecha} style={{ pointerEvents: 'none' }}>
                   <path
                     d={pathBarraRedondeada(xGrupo + 1, ALTO - altoV, barAncho, altoV, 2.5)}
                     className={`md-bar md-bar-visitas ${activo ? 'activa' : ''}`}
@@ -166,8 +210,8 @@ function GraficoTendencia({ serie }) {
               );
             })}
           </svg>
-          {hover !== null && (
-            <div className="md-chart-tooltip" style={{ left: `${((hover + 0.5) / serie.length) * 100}%` }}>
+          {hover !== null && serie[hover] && (
+            <div className="md-chart-tooltip" style={tooltipStyle}>
               <strong>{formatFechaCorta(serie[hover].fecha)}</strong>
               <span><i className="md-dot-visitas" /> {serie[hover].visitas} visitas</span>
               <span><i className="md-dot-contactos" /> {serie[hover].contactos} contactos</span>
