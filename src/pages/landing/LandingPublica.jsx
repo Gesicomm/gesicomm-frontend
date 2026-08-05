@@ -450,7 +450,6 @@ export default function LandingPublica() {
                   <div className="lp-card-body">
                     {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
                     <h3>{item.nombre}</h3>
-                    {item.descripcion && <p className="lp-card-desc">{item.descripcion}</p>}
                     <span className="lp-card-price">{formatPrecio(item.precio)}</span>
                   
                     <div className="lp-card-actions">
