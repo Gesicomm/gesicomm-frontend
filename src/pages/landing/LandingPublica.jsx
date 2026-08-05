@@ -53,7 +53,7 @@ export default function LandingPublica() {
         if (!res.disponible) return setEstado('no-disponible');
         setData(res);
         setEstado('ok');
-        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id);
+        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id, res.meta.test_event_code);
         if (res.meta?.google_analytics_id) inicializarGA(res.meta.google_analytics_id);
         if (res.meta?.tiktok_pixel_id) inicializarTikTokPixel(res.meta.tiktok_pixel_id);
         if (res.diseno?.fuente) cargarFuenteGoogle(res.diseno.fuente);
@@ -98,6 +98,52 @@ export default function LandingPublica() {
       });
       return copia;
     });
+
+    // Tracking del evento AddToCart (Meta Pixel, CAPI, GA, TikTok y Estadísticas)
+    try {
+      const eventId = generarEventId();
+      const { fbc, fbp } = leerCookiesFacebook();
+      const nombreCompleto = variante?.nombre ? `${item.nombre} (${variante.nombre})` : item.nombre;
+      const valorTotal = (precio || 0) * cantidad;
+      const customData = {
+        content_ids: [item.content_id],
+        content_name: nombreCompleto,
+        content_type: item.tipo === 'combo' ? 'product_group' : 'product',
+        value: valorTotal,
+        currency: 'PYG',
+        num_items: cantidad,
+      };
+
+      trackearEvento('AddToCart', eventId, customData, data?.meta?.test_event_code);
+      trackearEventoGA('add_to_cart', {
+        item_id: item.content_id,
+        item_name: nombreCompleto,
+        price: precio,
+        quantity: cantidad,
+      });
+      trackearEventoTikTok('AddToCart', {
+        content_id: item.content_id,
+        content_name: nombreCompleto,
+        value: valorTotal,
+      });
+
+      registrarEventoLanding(slug, {
+        event_name: 'AddToCart',
+        event_id: eventId,
+        event_source_url: window.location.href,
+        fbc,
+        fbp,
+        custom_data: customData,
+        items: [{
+          content_id: item.content_id,
+          nombre: nombreCompleto,
+          cantidad,
+          precio,
+        }],
+      });
+    } catch (err) {
+      console.warn('[tracking] AddToCart error:', err);
+    }
   }
 
   function cambiarCantidadCarrito(clave, delta) {
@@ -135,14 +181,18 @@ export default function LandingPublica() {
     const eventId = generarEventId();
     const { fbc, fbp } = leerCookiesFacebook();
     const esUnSolo = items.length === 1;
+    const valorTotal = items.reduce((s, it) => s + (it.precio || 0) * it.cantidad, 0);
     const customData = {
       content_ids: items.map(it => it.contentId),
       content_name: esUnSolo ? items[0].nombre : `Carrito (${items.length} productos)`,
       content_type: esUnSolo && items[0].tipo !== 'combo' ? 'product' : 'product_group',
+      value: valorTotal,
+      currency: 'PYG',
+      num_items: items.reduce((s, it) => s + it.cantidad, 0),
     };
 
-    trackearEvento('Contact', eventId, customData);
-    const valorTotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
+    trackearEvento('InitiateCheckout', eventId, customData, data?.meta?.test_event_code);
+    trackearEvento('Contact', eventId + '-contact', customData, data?.meta?.test_event_code);
     trackearEventoGA('checkout_whatsapp', { valor: valorTotal, cantidad_items: items.length });
     trackearEventoTikTok('Contact', { content_ids: customData.content_ids, value: valorTotal });
 
@@ -153,9 +203,6 @@ export default function LandingPublica() {
       fbc,
       fbp,
       custom_data: customData,
-      // Detalle por producto para que "Productos con más consultas" en
-      // Estadísticas no pierda info cuando el evento junta varios (ver
-      // landing.service.js estadisticas()).
       items: items.map(it => ({
         content_id: it.contentId,
         nombre: it.varianteNombre ? `${it.nombre} (${it.varianteNombre})` : it.nombre,
@@ -176,17 +223,18 @@ export default function LandingPublica() {
       content_ids: [item.content_id],
       content_name: item.nombre,
       content_type: item.tipo === 'combo' ? 'product_group' : 'product',
+      value: item.precio || 0,
+      currency: 'PYG',
+      num_items: 1,
     };
 
-    trackearEvento('Contact', eventId, customData);
+    trackearEvento('Contact', eventId, customData, data?.meta?.test_event_code);
     trackearEventoGA('contact_whatsapp', { producto: item.nombre });
     trackearEventoTikTok('Contact', { content_id: item.content_id, content_name: item.nombre });
 
     // Se manda siempre, tenga o no Meta CAPI configurado: el backend igual
     // registra el evento en LandingEvento (ver landing.service.js) — es la
-    // única fuente de las Estadísticas de la landing. Antes esto quedaba
-    // gateado detrás de capi_activo y las tiendas sin CAPI no generaban
-    // ningún dato de conversión.
+    // única fuente de las Estadísticas de la landing.
     registrarEventoLanding(slug, {
       event_name: 'Contact',
       event_id: eventId,
@@ -194,6 +242,12 @@ export default function LandingPublica() {
       fbc,
       fbp,
       custom_data: customData,
+      items: [{
+        content_id: item.content_id,
+        nombre: item.nombre,
+        cantidad: 1,
+        precio: item.precio,
+      }],
     });
   }
 

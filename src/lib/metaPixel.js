@@ -12,7 +12,7 @@
 
 let cargado = false;
 
-export function inicializarPixel(pixelId) {
+export function inicializarPixel(pixelId, testEventCode) {
   if (!pixelId || cargado || typeof window === 'undefined') return;
   if (window.fbq) { cargado = true; return; } // ya lo cargó otra instancia
 
@@ -25,7 +25,8 @@ export function inicializarPixel(pixelId) {
   /* eslint-enable */
 
   window.fbq('init', pixelId);
-  window.fbq('track', 'PageView');
+  const options = testEventCode ? { test_event_code: testEventCode } : undefined;
+  window.fbq('track', 'PageView', {}, options);
   cargado = true;
 }
 
@@ -49,7 +50,9 @@ export function leerCookiesFacebook() {
  * responsable de mandar el mismo event_id a metaCapi vía
  * registrarEventoLanding, ver landingPublicaService.js.
  */
-export function trackearEvento(eventName, eventId, params) {
+export function trackearEvento(eventName, eventId, params, testEventCode) {
   if (typeof window === 'undefined' || !window.fbq) return;
-  window.fbq('track', eventName, params, { eventID: eventId });
+  const options = { eventID: eventId };
+  if (testEventCode) options.test_event_code = testEventCode;
+  window.fbq('track', eventName, params, options);
 }
