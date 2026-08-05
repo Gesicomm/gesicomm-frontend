@@ -286,11 +286,13 @@ export default function LandingEditor() {
 
   // Una sola landing por tienda, siempre en la raíz — el link es
   // conocido en cuanto se conoce la tienda, ni siquiera hace falta haber
-  // guardado todavía. "/l" (no la raíz sin path) porque ahí es donde
-  // Nginx decide bot-vs-humano — ver deploy/nginx/tiendas.gesicomm.com y
-  // routes/landingHtml.js.
+  // guardado todavía. Raíz del hostname, SIN "/l": eso quedó como
+  // compatibilidad hacia atrás nada más — Nginx ya decide bot-vs-humano
+  // sobre "/" en el vhost de tiendas (ver deploy/nginx/tiendas.gesicomm.com
+  // y routes/landingHtml.js), así que la URL que se muestra acá tiene que
+  // ser la misma que la real.
   const urlPublica = useMemo(() => (
-    tienda ? `https://${tienda.subdominio}.gesicomm.com/l` : null
+    tienda ? `https://${tienda.subdominio}.gesicomm.com` : null
   ), [tienda]);
 
   const publicada = !!landing?.activo;
