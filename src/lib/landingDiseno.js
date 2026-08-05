@@ -50,8 +50,9 @@ export const MODOS = {
     textMuted: '#94a3b8',
     cardBg: '#131722',
     cardBorder: 'rgba(255,255,255,0.08)',
-    surface: '#0c0f17',
+    surface: '#181d2a',
     surfaceBorder: 'rgba(255,255,255,0.12)',
+    popoverBg: '#161a28',
     modalBg: '#161a28',
   },
   claro: {
@@ -62,9 +63,23 @@ export const MODOS = {
     cardBorder: 'rgba(15,23,42,0.08)',
     surface: '#f1f5f9',
     surfaceBorder: 'rgba(15,23,42,0.12)',
+    popoverBg: '#ffffff',
     modalBg: '#ffffff',
   },
 };
+
+/**
+ * Sanitiza colores para evitar que valores transparentes o semi-transparentes
+ * guardados en versiones anteriores de la BD rompan la legibilidad y solidez de los componentes.
+ */
+function sanitizarColorSolido(color, fallback) {
+  if (!color || typeof color !== 'string') return fallback;
+  const c = color.trim().toLowerCase();
+  if (c === 'transparent' || c.startsWith('rgba') || c.startsWith('hsla')) {
+    return fallback;
+  }
+  return color;
+}
 
 /** @returns {object} variables CSS listas para pasar como `style` de un contenedor. */
 export function calcularEstiloLanding({ tema, diseno }) {
@@ -75,13 +90,14 @@ export function calcularEstiloLanding({ tema, diseno }) {
   return {
     '--l-primary': tema?.primario || '#10b981',
     '--l-secondary': tema?.secundario || '#059669',
-    '--l-bg': tema?.fondo || modo.bg,
-    '--l-text': tema?.texto || modo.text,
+    '--l-bg': sanitizarColorSolido(tema?.fondo, modo.bg),
+    '--l-text': sanitizarColorSolido(tema?.texto, modo.text),
     '--l-text-muted': modo.textMuted,
-    '--l-card-bg': tema?.tarjeta || modo.cardBg,
+    '--l-card-bg': sanitizarColorSolido(tema?.tarjeta, modo.cardBg),
     '--l-card-border': modo.cardBorder,
     '--l-surface': modo.surface,
     '--l-surface-border': modo.surfaceBorder,
+    '--l-popover-bg': modo.popoverBg,
     '--l-modal-bg': modo.modalBg,
     '--l-radius': radios.radius,
     '--l-radius-sm': radios.radiusSm,

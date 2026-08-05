@@ -1203,12 +1203,13 @@
 }
 .lpv-search, .lpv-select {
   display: inline-flex; align-items: center; gap: 0.3rem;
-  background: var(--l-surface, rgba(255,255,255,0.05));
-  border: 1px solid var(--l-surface-border, rgba(255,255,255,0.1));
+  background: var(--l-surface, #181d2a);
+  border: 1px solid var(--l-surface-border, rgba(255,255,255,0.12));
   border-radius: var(--l-radius-sm, 7px);
-  color: var(--l-text-muted, #94a3b8);
-  padding: 0.3rem 0.5rem;
-  font-size: 0.68rem;
+  color: var(--l-text, #f8fafc);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 500;
 }
 
 .lpv-empty {
