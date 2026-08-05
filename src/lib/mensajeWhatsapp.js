@@ -2,8 +2,9 @@
  * Construcción del link de WhatsApp — un solo lugar para las dos formas de
  * llegar ahí desde la landing pública: "Consultar" en una tarjeta (un solo
  * producto) y "Finalizar pedido" desde el carrito (varios). Comparten la
- * misma plantilla configurable (Tienda.mensaje_contacto, placeholder
- * {producto}) para que el comportamiento sea predecible en los dos casos.
+ * misma plantilla configurable (Tienda.mensaje_contacto, placeholders
+ * {producto}, {precio}, {url}) para que el comportamiento sea predecible
+ * en los dos casos.
  */
 
 function formatPrecio(n) {
@@ -11,13 +12,39 @@ function formatPrecio(n) {
   return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 }) + ' Gs';
 }
 
+/**
+ * Reemplaza todos los placeholders conocidos en la plantilla de mensaje.
+ * @param {string} plantilla - Texto con variables como {producto}, {precio}, {url}
+ * @param {object} datos - { nombre, precio, url }
+ */
+function aplicarPlantilla(plantilla, datos) {
+  let msg = plantilla;
+  if (datos.nombre != null)  msg = msg.replace(/\{producto\}/gi, datos.nombre);
+  if (datos.precio != null)  msg = msg.replace(/\{precio\}/gi, formatPrecio(datos.precio));
+  if (datos.url != null)     msg = msg.replace(/\{url\}/gi, datos.url);
+  return msg;
+}
+
 /** @param {{whatsapp, mensaje, incluir_precio, incluir_url}} contacto @param {{nombre, precio}} item */
 export function armarLinkWhatsapp(contacto, item) {
   if (!contacto?.whatsapp) return null;
   const plantilla = contacto.mensaje || 'Hola, me interesa {producto}';
-  let mensaje = plantilla.replace('{producto}', item.nombre);
-  if (contacto.incluir_precio) mensaje += `\nPrecio: ${formatPrecio(item.precio)}`;
-  if (contacto.incluir_url) mensaje += `\n${window.location.href}`;
+  const tieneInlinePrecio = /\{precio\}/i.test(plantilla);
+  const tieneInlineUrl    = /\{url\}/i.test(plantilla);
+
+  let mensaje = aplicarPlantilla(plantilla, {
+    nombre: item.nombre,
+    precio: item.precio,
+    url: typeof window !== 'undefined' ? window.location.href : '',
+  });
+
+  // Solo append si el flag booleano está activo Y la variable no está inline
+  if (contacto.incluir_precio && !tieneInlinePrecio) {
+    mensaje += `\nPrecio: ${formatPrecio(item.precio)}`;
+  }
+  if (contacto.incluir_url && !tieneInlineUrl) {
+    mensaje += `\n${window.location.href}`;
+  }
   return `https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
 }
 
@@ -43,13 +70,50 @@ export function armarLinkWhatsappCarrito(contacto, items) {
     ? plantilla.replace('{producto}', `estos productos:\n${resumen}`)
     : `${plantilla}\n${resumen}`;
 
-  if (contacto.incluir_precio) {
-    const total = items.reduce((suma, it) => suma + it.precio * it.cantidad, 0);
+  // {precio} en carrito → total
+  const total = items.reduce((suma, it) => suma + it.precio * it.cantidad, 0);
+  const tieneInlinePrecio = /\{precio\}/i.test(mensaje);
+  if (tieneInlinePrecio) {
+    mensaje = mensaje.replace(/\{precio\}/gi, `Total: ${formatPrecio(total)}`);
+  }
+  // {url} inline
+  const tieneInlineUrl = /\{url\}/i.test(mensaje);
+  if (tieneInlineUrl) {
+    mensaje = mensaje.replace(/\{url\}/gi, window.location.href);
+  }
+
+  if (contacto.incluir_precio && !tieneInlinePrecio) {
     mensaje += `\nTotal: ${formatPrecio(total)}`;
   }
-  if (contacto.incluir_url) mensaje += `\n${window.location.href}`;
+  if (contacto.incluir_url && !tieneInlineUrl) {
+    mensaje += `\n${window.location.href}`;
+  }
 
   return `https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+}
+
+/**
+ * Genera un preview del mensaje de WhatsApp con datos de ejemplo.
+ * Usado por el builder en /mi-tienda para mostrar cómo se va a ver.
+ */
+export function generarPreviewMensaje(plantilla, opciones = {}) {
+  const datos = {
+    nombre: 'Chomba Lacoste Clásica',
+    precio: 150000,
+    url: 'sommix.gesicomm.com',
+  };
+  let msg = aplicarPlantilla(plantilla || 'Hola, me interesa {producto}', datos);
+
+  const tieneInlinePrecio = /\{precio\}/i.test(plantilla || '');
+  const tieneInlineUrl = /\{url\}/i.test(plantilla || '');
+
+  if (opciones.incluir_precio && !tieneInlinePrecio) {
+    msg += `\nPrecio: ${formatPrecio(datos.precio)}`;
+  }
+  if (opciones.incluir_url && !tieneInlineUrl) {
+    msg += `\n${datos.url}`;
+  }
+  return msg;
 }
 
 export { formatPrecio };

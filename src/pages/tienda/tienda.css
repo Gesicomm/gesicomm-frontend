@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TIENDA — Configuración (subdominio, dominio propio)
+   TIENDA — Configuración (rediseño con tabs + message builder)
    Reutiliza --vit-* (vitrina.css) y las clases .land-* (landing.css)
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -9,6 +9,124 @@
    (.land-section, .land-editor-footer) siguen siendo grid items directos. */
 .land-editor-grid-form { display: contents; }
 
+/* ─── Tabs ────────────────────────────────────────────────────────────── */
+.tn-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.tn-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--vit-muted);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  white-space: nowrap;
+}
+
+.tn-tab:hover {
+  color: var(--vit-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tn-tab.activo {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  box-shadow: 0 1px 6px rgba(16, 185, 129, 0.08);
+}
+
+.tn-tab .tn-tab-icon {
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.tn-tab.activo .tn-tab-icon {
+  opacity: 1;
+}
+
+/* ─── Tab Content Transition ─────────────────────────────────────────── */
+.tn-tab-content {
+  animation: tnFadeIn 0.25s ease-out;
+}
+
+@keyframes tnFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Section Header with Icon ───────────────────────────────────────── */
+.tn-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.15rem;
+}
+
+.tn-section-header h2 {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--vit-text);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.tn-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  flex-shrink: 0;
+}
+
+.tn-section-icon.purple {
+  background: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.tn-section-icon.blue {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.tn-section-icon.amber {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.tn-section-icon.rose {
+  background: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
+}
+
+.tn-section-desc {
+  font-size: 0.75rem;
+  color: var(--vit-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ─── URL Readonly ───────────────────────────────────────────────────── */
 .tn-url-readonly {
   display: flex;
   align-items: center;
@@ -21,6 +139,7 @@
   font-size: 0.85rem;
 }
 
+/* ─── Checkbox Row ───────────────────────────────────────────────────── */
 .tn-checkbox-row {
   flex-direction: row !important;
   align-items: center;
@@ -29,6 +148,7 @@
 }
 .tn-checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--vit-accent); }
 
+/* ─── Plan Chips ─────────────────────────────────────────────────────── */
 .tn-plan-row { display: flex; gap: 0.5rem; }
 .tn-plan-chip {
   display: inline-flex; align-items: center; gap: 0.35rem;
@@ -39,10 +159,12 @@
   color: var(--vit-muted);
   font-size: 0.82rem;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .tn-plan-chip:hover { color: var(--vit-text); }
 .tn-plan-chip.selected { border-color: var(--vit-accent); color: var(--vit-accent); background: var(--vit-accent-soft); }
 
+/* ─── Availability & Warnings ────────────────────────────────────────── */
 .tn-disponibilidad { min-height: 1.2rem; }
 .tn-check { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; }
 .tn-check.ok { color: #10b981; }
@@ -67,6 +189,172 @@
   color: #10b981;
   font-size: 0.82rem;
   margin-right: 0.75rem;
+}
+
+/* ─── Message Builder ────────────────────────────────────────────────── */
+.tn-msg-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tn-msg-builder-label {
+  font-size: 0.78rem;
+  color: var(--vit-muted);
+  margin: 0;
+}
+
+.tn-msg-textarea {
+  background: #0a0c10;
+  border: 1px solid var(--vit-border);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  color: var(--vit-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tn-msg-textarea:focus {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 2px var(--vit-accent-soft);
+}
+
+.tn-msg-vars-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--vit-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.tn-msg-vars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tn-msg-var-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.78rem;
+  color: #10b981;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-weight: 500;
+  position: relative;
+}
+
+.tn-msg-var-chip:hover {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12);
+}
+
+.tn-msg-var-chip:active {
+  transform: scale(0.97);
+}
+
+.tn-msg-var-chip .tn-var-desc {
+  font-family: inherit;
+  font-weight: 400;
+  color: var(--vit-muted);
+  font-size: 0.72rem;
+}
+
+/* ─── WhatsApp Preview Bubble ────────────────────────────────────────── */
+.tn-msg-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tn-msg-preview-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--vit-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.tn-msg-preview-bubble {
+  position: relative;
+  background: #005c4b;
+  border-radius: 0 12px 12px 12px;
+  padding: 0.65rem 0.85rem;
+  padding-bottom: 1.1rem;
+  color: #e9edef;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  max-width: 380px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tn-msg-preview-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 0px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #005c4b;
+}
+
+.tn-msg-preview-bubble .tn-preview-time {
+  position: absolute;
+  bottom: 0.35rem;
+  right: 0.65rem;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.tn-msg-preview-bg {
+  background: linear-gradient(135deg, #0b141a 0%, #0d1b25 100%);
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background-image:
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.tn-msg-preview-empty {
+  color: var(--vit-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Highlighted variables inside preview */
+.tn-preview-var {
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 3px;
+  padding: 0 2px;
+  color: #6ee7b7;
+  font-weight: 500;
 }
 
 /* ─── Dominio propio ──────────────────────────────────────────────────── */
@@ -270,4 +558,17 @@
 .tn-token-info-note svg {
   flex-shrink: 0;
   margin-top: 0.1rem;
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .tn-tabs {
+    flex-direction: column;
+  }
+  .tn-tab {
+    justify-content: flex-start;
+  }
+  .tn-msg-preview-bubble {
+    max-width: 100%;
+  }
 }
