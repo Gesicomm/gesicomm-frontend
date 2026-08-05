@@ -97,6 +97,11 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
           )}
 
           <header className="lpv-header">
+            {items.length > 0 && (
+              <span className="lpv-header-eyebrow">
+                {items.length} producto{items.length === 1 ? '' : 's'}
+              </span>
+            )}
             <h1>{titulo || 'Título de tu tienda'}</h1>
             {descripcion && <p>{descripcion}</p>}
           </header>
@@ -162,6 +167,13 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
               ))}
             </div>
           )}
+
+          <footer className="lpv-footer">
+            <span>{titulo || 'Tu tienda'}</span>
+            {contacto?.whatsapp && (
+              <span className="lpv-footer-wsp"><MessageCircle size={11} /> Escribinos por WhatsApp</span>
+            )}
+          </footer>
         </div>
       </div>
 

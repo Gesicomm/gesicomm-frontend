@@ -178,6 +178,7 @@ export default function LandingEditor() {
   const [subiendoSeoImagen, setSubiendoSeoImagen] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState(null);
+  const [exito, setExito] = useState(null);
   const [erroresValidacion, setErroresValidacion] = useState([]);
   const [confirmDespublicar, setConfirmDespublicar] = useState(null); // landing actualizada, pendiente de confirmar
   const [confirmEliminar, setConfirmEliminar] = useState(false);
@@ -245,6 +246,18 @@ export default function LandingEditor() {
   }, [id, esEdicion]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  /**
+   * El aviso de guardado se borra solo: es una confirmación, no un estado.
+   * Si quedara fijo, al rato dejaría de estar claro si corresponde al último
+   * guardado o a uno de hace diez minutos. Los errores NO se autodescartan
+   * — esos hay que leerlos y resolverlos.
+   */
+  useEffect(() => {
+    if (!exito) return;
+    const t = setTimeout(() => setExito(null), 4000);
+    return () => clearTimeout(t);
+  }, [exito]);
 
   /* ─── Derivados ──────────────────────────────────────────────────────── */
 
@@ -467,6 +480,7 @@ export default function LandingEditor() {
   /** @returns {object|null} la landing guardada, o null si falló. */
   async function guardar() {
     setError(null);
+    setExito(null);
     setErroresValidacion([]);
 
     if (!form.nombre.trim()) {
@@ -498,6 +512,7 @@ export default function LandingEditor() {
       setLanding(guardada);
       setForm(prev => ({ ...prev, slug: guardada.slug || prev.slug }));
       setSucio(false);
+      setExito('Cambios guardados.');
       return guardada;
     } catch (err) {
       setError(err.response?.data?.message || 'Error al guardar la landing.');
@@ -535,6 +550,7 @@ export default function LandingEditor() {
     try {
       const actualizada = await landingService.cambiarEstado(actual.id, nuevoEstado);
       setLanding(prev => ({ ...prev, ...actualizada }));
+      setExito(nuevoEstado ? 'Landing publicada.' : 'Landing despublicada.');
       if (!esEdicion) navigate(`/mi-landing/${actual.id}`, { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo cambiar el estado.');
@@ -650,11 +666,19 @@ export default function LandingEditor() {
       </header>
 
       {error && (
-        <div className="land-alert-error">
+        <div className="land-alert-error" role="alert">
           <span><AlertCircle size={14} /> {error}</span>
           {erroresValidacion.length > 0 && (
             <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>
           )}
+        </div>
+      )}
+
+      {/* role=status y no role=alert: es una confirmación, se anuncia sin
+          interrumpir lo que esté leyendo un lector de pantalla. */}
+      {exito && (
+        <div className="land-alert-success" role="status">
+          <Check size={14} /> {exito}
         </div>
       )}
 

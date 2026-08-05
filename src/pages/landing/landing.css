@@ -1134,17 +1134,28 @@
   transition: background-color 0.15s, color 0.15s;
 }
 
+/* Espeja la proporción nueva de .lp-banner: allá el alto lo fija el
+   viewport, acá —dentro de un panel de ~420px— se aproxima con una razón
+   más chata. Lo importante es que el constructor muestre la misma forma
+   que la web real. */
 .lpv-banner {
   position: relative;
   margin: -1.25rem -0.9rem 1.1rem;
-  min-height: 160px;
-  aspect-ratio: 16 / 7;
+  min-height: 120px;
+  aspect-ratio: 16 / 5;
   display: flex; align-items: center; justify-content: center;
-  background-color: #111827;
+  background-color: var(--l-surface, #111827);
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
   overflow: hidden;
+}
+.lpv-banner:not(.con-imagen) {
+  min-height: 92px;
+  aspect-ratio: 16 / 4;
+  background-image:
+    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--l-primary) 20%, transparent) 0%, transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--l-primary) 7%, var(--l-bg)) 0%, var(--l-bg) 100%);
 }
 .lpv-banner.con-imagen::before {
   content: '';
@@ -1179,7 +1190,7 @@
   margin-top: 0.35rem;
   display: inline-flex; align-items: center;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   font-size: 0.74rem;
   font-weight: 700;
   padding: 0.4rem 0.9rem;
@@ -1188,14 +1199,25 @@
 }
 
 .lpv-header { text-align: center; margin-bottom: 1rem; }
+.lpv-header-eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--l-text-muted, #94a3b8);
+}
 .lpv-header h1 {
-  margin: 0 0 0.3rem;
+  margin: 0;
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--l-primary);
+  letter-spacing: -0.03em;
+  /* Como en la web real: el acento se reserva para las acciones. */
+  color: var(--l-text, #f8fafc);
   overflow-wrap: anywhere;
 }
-.lpv-header p { margin: 0; font-size: 0.76rem; color: var(--l-text-muted, #94a3b8); line-height: 1.45; }
+.lpv-header p { margin: 0.35rem 0 0; font-size: 0.76rem; color: var(--l-text-muted, #94a3b8); line-height: 1.45; }
 
 .lpv-filters {
   display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center;
@@ -1239,20 +1261,23 @@
 
 .lpv-card-media {
   position: relative;
-  height: 105px;
+  aspect-ratio: 1 / 1;
   background: var(--l-surface, #0c0f17);
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
 }
 .lpv-card-media img { width: 100%; height: 100%; object-fit: cover; }
 .lpv-card-media-placeholder {
-  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
-  color: var(--l-text-muted, #64748b); opacity: 0.6;
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.25rem;
+  color: color-mix(in srgb, var(--l-primary) 55%, var(--l-text-muted, #64748b));
+  background: radial-gradient(80% 80% at 50% 40%, color-mix(in srgb, var(--l-primary) 12%, transparent) 0%, transparent 100%);
 }
-.lpv-card-media-placeholder span { font-size: 0.58rem; font-weight: 600; }
+.lpv-card-media-placeholder span { font-size: 0.58rem; font-weight: 600; opacity: 0.75; }
 .lpv-card-badge {
   position: absolute; top: 0.4rem; left: 0.4rem;
   display: flex; align-items: center; gap: 0.2rem;
-  background: rgba(10, 13, 20, 0.85);
+  background: color-mix(in srgb, var(--l-bg) 82%, transparent);
   color: var(--l-primary);
   border: 1px solid color-mix(in srgb, var(--l-primary) 30%, transparent);
   font-size: 0.58rem; font-weight: 700;
@@ -1280,6 +1305,27 @@
 }
 .lpv-card-price { font-size: 0.88rem; font-weight: 800; color: var(--l-text, #f8fafc); margin-top: auto; padding-top: 0.2rem; }
 
+.lpv-footer {
+  margin-top: 1.5rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--l-text, #f8fafc);
+}
+.lpv-footer-wsp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 600;
+  color: var(--l-text-muted, #94a3b8);
+}
+
 .lpv-card-actions {
   display: flex;
   align-items: center;
@@ -1293,7 +1339,7 @@
   justify-content: center;
   gap: 0.25rem;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   font-size: 0.68rem;
   font-weight: 700;
   padding: 0.38rem 0.5rem;

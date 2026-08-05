@@ -68,6 +68,41 @@ export const MODOS = {
   },
 };
 
+/** Luminancia relativa (WCAG 2.x). `null` si el color no es un hex parseable. */
+function luminanciaRelativa(color) {
+  if (typeof color !== 'string') return null;
+  let h = color.trim().replace(/^#/, '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+  const canal = (par) => {
+    const s = parseInt(par, 16) / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * canal(h.slice(0, 2)) + 0.7152 * canal(h.slice(2, 4)) + 0.0722 * canal(h.slice(4, 6));
+}
+
+const TINTA_CLARA = '#ffffff';
+const TINTA_OSCURA = '#0b1211';
+const LUM_TINTA_OSCURA = 0.00545; // luminanciaRelativa(TINTA_OSCURA), constante
+
+/**
+ * Color de texto para escribir ENCIMA del primario (botones, píldora de
+ * opción elegida, FAB del carrito).
+ *
+ * Antes era el literal `#04140d` en seis reglas distintas, lo que daba por
+ * sentado que el comercio siempre elige un primario claro: con un primario
+ * azul, bordó o violeta oscuro el texto quedaba negro sobre oscuro, sin
+ * contraste. Acá se elige entre tinta clara y oscura por razón de contraste
+ * WCAG real, así que funciona con cualquier color que elija el comercio.
+ */
+function tintaSobre(color) {
+  const l = luminanciaRelativa(color);
+  if (l === null) return TINTA_OSCURA; // formato exótico: se mantiene el comportamiento previo
+  const contrasteClaro = 1.05 / (l + 0.05);
+  const contrasteOscuro = (l + 0.05) / (LUM_TINTA_OSCURA + 0.05);
+  return contrasteOscuro >= contrasteClaro ? TINTA_OSCURA : TINTA_CLARA;
+}
+
 /**
  * Sanitiza colores para evitar que valores transparentes o semi-transparentes
  * guardados en versiones anteriores de la BD rompan la legibilidad y solidez de los componentes.
@@ -86,9 +121,11 @@ export function calcularEstiloLanding({ tema, diseno }) {
   const modo = MODOS[tema?.modo] || MODOS.oscuro;
   const radios = RADIOS[diseno?.radio_bordes] || RADIOS.mediano;
   const fuente = FUENTES[diseno?.fuente] || FUENTES.outfit;
+  const primario = tema?.primario || '#10b981';
 
   return {
-    '--l-primary': tema?.primario || '#10b981',
+    '--l-primary': primario,
+    '--l-on-primary': tintaSobre(primario),
     '--l-secondary': tema?.secundario || '#059669',
     '--l-bg': sanitizarColorSolido(tema?.fondo, modo.bg),
     '--l-text': sanitizarColorSolido(tema?.texto, modo.text),

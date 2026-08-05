@@ -311,10 +311,24 @@ export default function LandingPublica() {
     setTimeout(() => setAgregadoRapido(null), 1400);
   }
 
+  function limpiarFiltros() {
+    setFiltroCategoria('');
+    setFiltroMarca('');
+    setFiltroEtiqueta('');
+    setBusqueda('');
+    setOrden('');
+  }
+
   const { filtros, contacto, banner } = data;
   const hayFiltrosVisibles = filtros.categoria || filtros.marca || filtros.etiqueta || filtros.buscador || filtros.orden_precio;
+  const hayFiltroActivo = !!(filtroCategoria || filtroMarca || filtroEtiqueta || busqueda.trim() || orden);
   // Sin link, el botón lleva a la grilla de productos de esta misma página.
   const bannerLinkEsExterno = banner?.boton_link && /^https?:\/\//i.test(banner.boton_link);
+
+  const totalItems = data.items.length;
+  const conteo = hayFiltroActivo && itemsFiltrados.length !== totalItems
+    ? `${itemsFiltrados.length} de ${totalItems} productos`
+    : `${totalItems} producto${totalItems === 1 ? '' : 's'}`;
 
   return (
     <div
@@ -343,115 +357,141 @@ export default function LandingPublica() {
         </div>
       )}
 
-      <header className="lp-header">
-        <h1>{data.titulo}</h1>
-        {data.descripcion && <p>{data.descripcion}</p>}
-      </header>
+      <main className="lp-shell">
+        <header className="lp-header">
+          <span className="lp-header-eyebrow">{conteo}</span>
+          <h1>{data.titulo}</h1>
+          {data.descripcion && <p>{data.descripcion}</p>}
+        </header>
 
-      {hayFiltrosVisibles && (
-        <div className="lp-filters">
-          {filtros.buscador && (
-            <div className="lp-search">
-              <Search size={14} />
-              <input placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-            </div>
-          )}
-          {filtros.categoria && categorias.length > 0 && (
-            <LandingDropdown
-              value={filtroCategoria}
-              onChange={setFiltroCategoria}
-              options={[{ value: '', label: 'Todas las categorías' }, ...categorias.map(c => ({ value: c, label: c }))]}
-            />
-          )}
-          {filtros.marca && marcas.length > 0 && (
-            <LandingDropdown
-              value={filtroMarca}
-              onChange={setFiltroMarca}
-              options={[{ value: '', label: 'Todas las marcas' }, ...marcas.map(m => ({ value: m, label: m }))]}
-            />
-          )}
-          {filtros.etiqueta && etiquetas.length > 0 && (
-            <LandingDropdown
-              value={filtroEtiqueta}
-              onChange={setFiltroEtiqueta}
-              options={[{ value: '', label: 'Todas las etiquetas' }, ...etiquetas.map(e => ({ value: e, label: e }))]}
-            />
-          )}
-          {filtros.orden_precio && (
-            <LandingDropdown
-              value={orden}
-              onChange={setOrden}
-              options={[
-                { value: '', label: 'Orden por defecto' },
-                { value: 'asc', label: 'Precio: menor a mayor' },
-                { value: 'desc', label: 'Precio: mayor a menor' },
-              ]}
-            />
-          )}
-        </div>
-      )}
-
-      {itemsFiltrados.length === 0 ? (
-        <div className="lp-empty">No hay productos que coincidan con el filtro.</div>
-      ) : (
-        <div className="lp-grid" id="lp-productos">
-          {itemsFiltrados.map(item => {
-            const linkWhatsapp = armarLinkWhatsapp(contacto, item);
-            return (
-              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-              <div key={item.content_id} className="lp-card" onClick={() => setItemAbierto(item)} role="button" tabIndex={0}>
-                <div className="lp-card-media">
-                  {item.imagen ? (
-                    <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
-                  ) : (
-                    <div className="lp-card-media-placeholder">
-                      {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
-                      <span>Sin imagen</span>
-                    </div>
-                  )}
-                  {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
-                  {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
+        {hayFiltrosVisibles && (
+          <div className="lp-filterbar">
+            <div className="lp-filters">
+              {filtros.buscador && (
+                <div className="lp-search">
+                  <Search size={14} />
+                  <input placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                 </div>
-                <div className="lp-card-body">
-                  {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
-                  <h3>{item.nombre}</h3>
-                  {item.descripcion && <p className="lp-card-desc">{item.descripcion}</p>}
-                  <span className="lp-card-price">{formatPrecio(item.precio)}</span>
-                  
-                  <div className="lp-card-actions">
-                    <button
-                      type="button"
-                      className={`lp-card-btn-add ${agregadoRapido === item.content_id ? 'agregado' : ''}`}
-                      onClick={(e) => handleAgregarRapido(e, item)}
-                      title="Agregar al carrito"
-                    >
-                      {agregadoRapido === item.content_id ? (
-                        <><Check size={14} /> Agregado</>
-                      ) : item.variantes?.length > 0 ? (
-                        <><ShoppingCart size={14} /> Ver opciones</>
-                      ) : (
-                        <><Plus size={14} /> Agregar</>
-                      )}
-                    </button>
-                    {linkWhatsapp && (
-                      <a
-                        className="lp-card-contact-btn"
-                        href={linkWhatsapp}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Consultar por WhatsApp"
-                        onClick={(e) => { e.stopPropagation(); contactar(item); }}
-                      >
-                        <MessageCircle size={15} />
-                      </a>
+              )}
+              {filtros.categoria && categorias.length > 0 && (
+                <LandingDropdown
+                  value={filtroCategoria}
+                  onChange={setFiltroCategoria}
+                  options={[{ value: '', label: 'Todas las categorías' }, ...categorias.map(c => ({ value: c, label: c }))]}
+                />
+              )}
+              {filtros.marca && marcas.length > 0 && (
+                <LandingDropdown
+                  value={filtroMarca}
+                  onChange={setFiltroMarca}
+                  options={[{ value: '', label: 'Todas las marcas' }, ...marcas.map(m => ({ value: m, label: m }))]}
+                />
+              )}
+              {filtros.etiqueta && etiquetas.length > 0 && (
+                <LandingDropdown
+                  value={filtroEtiqueta}
+                  onChange={setFiltroEtiqueta}
+                  options={[{ value: '', label: 'Todas las etiquetas' }, ...etiquetas.map(e => ({ value: e, label: e }))]}
+                />
+              )}
+              {filtros.orden_precio && (
+                <LandingDropdown
+                  value={orden}
+                  onChange={setOrden}
+                  options={[
+                    { value: '', label: 'Orden por defecto' },
+                    { value: 'asc', label: 'Precio: menor a mayor' },
+                    { value: 'desc', label: 'Precio: mayor a menor' },
+                  ]}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {itemsFiltrados.length === 0 ? (
+          <div className="lp-empty">
+            <p>Ningún producto coincide con lo que buscaste.</p>
+            {hayFiltroActivo && (
+              <button type="button" className="lp-empty-reset" onClick={limpiarFiltros}>
+                Ver todo el catálogo
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="lp-grid" id="lp-productos">
+            {itemsFiltrados.map(item => {
+              const linkWhatsapp = armarLinkWhatsapp(contacto, item);
+              return (
+                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+                <div key={item.content_id} className="lp-card" onClick={() => setItemAbierto(item)} role="button" tabIndex={0}>
+                  <div className="lp-card-media">
+                    {item.imagen ? (
+                      <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
+                    ) : (
+                      <div className="lp-card-media-placeholder">
+                        {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
+                        <span>Sin imagen</span>
+                      </div>
                     )}
+                    {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
+                    {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
+                  </div>
+                  <div className="lp-card-body">
+                    {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
+                    <h3>{item.nombre}</h3>
+                    {item.descripcion && <p className="lp-card-desc">{item.descripcion}</p>}
+                    <span className="lp-card-price">{formatPrecio(item.precio)}</span>
+                  
+                    <div className="lp-card-actions">
+                      <button
+                        type="button"
+                        className={`lp-card-btn-add ${agregadoRapido === item.content_id ? 'agregado' : ''}`}
+                        onClick={(e) => handleAgregarRapido(e, item)}
+                        title="Agregar al carrito"
+                      >
+                        {agregadoRapido === item.content_id ? (
+                          <><Check size={14} /> Agregado</>
+                        ) : item.variantes?.length > 0 ? (
+                          <><ShoppingCart size={14} /> Ver opciones</>
+                        ) : (
+                          <><Plus size={14} /> Agregar</>
+                        )}
+                      </button>
+                      {linkWhatsapp && (
+                        <a
+                          className="lp-card-contact-btn"
+                          href={linkWhatsapp}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Consultar por WhatsApp"
+                          onClick={(e) => { e.stopPropagation(); contactar(item); }}
+                        >
+                          <MessageCircle size={15} />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+
+        <footer className="lp-footer">
+          <p className="lp-footer-nombre">{data.titulo}</p>
+          {contacto?.whatsapp && (
+            <a
+              className="lp-footer-wsp"
+              href={`https://wa.me/${contacto.whatsapp}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <MessageCircle size={15} /> Escribinos por WhatsApp
+            </a>
+          )}
+        </footer>
+      </main>
 
       {itemAbierto && (
         <ProductDetailModal

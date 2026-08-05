@@ -4,16 +4,45 @@
    landing (--l-primary/--l-secondary/--l-bg), no de la paleta del panel.
 ═══════════════════════════════════════════════════════════════════════════ */
 
+/* El proyecto no define box-sizing global. Sin esto, `--l-max` y el clamp de
+   alto del banner se aplican a la caja de contenido y el padding se suma
+   encima: el banner medía 402px donde el clamp pedía 306, y la grilla 1320px
+   donde --l-max pide 1240. Mismo criterio que .lb-page en landing.css. */
+.lp-page, .lp-page *, .lp-page *::before, .lp-page *::after { box-sizing: border-box; }
+
 .lp-page {
   --l-primary: #10b981;
   --l-secondary: #059669;
+  --l-on-primary: #0b1211;
   --l-bg: #0a0a0a;
+
+  /* Una sola medida para toda la página. Antes el banner era full-bleed, su
+     texto se cortaba en 750px y el resto en 1100px: tres anchos distintos,
+     ninguna columna vertical. Con un solo valor la página tiene eje. */
+  --l-max: 1240px;
+  --l-gutter: clamp(1rem, 4vw, 2.5rem);
+
+  /* Escala de espaciado. Reemplaza los márgenes sueltos (2rem / 1.5rem /
+     1.75rem / 4rem) que no guardaban relación entre sí. */
+  --l-s1: 0.5rem;
+  --l-s2: 0.75rem;
+  --l-s3: 1.25rem;
+  --l-s4: 2rem;
+  --l-s5: 3rem;
+  --l-s6: 4.5rem;
+
   min-height: 100vh;
   background: var(--l-bg);
   color: var(--l-text, #f1f5f9);
   font-family: var(--l-font, 'Outfit', system-ui, sans-serif);
-  padding: 2rem 1.5rem 4rem;
   transition: background-color 0.15s, color 0.15s;
+}
+
+/* Contenedor único: header, filtros, grilla y pie comparten esta medida. */
+.lp-shell {
+  max-width: var(--l-max);
+  margin-inline: auto;
+  padding-inline: var(--l-gutter);
 }
 
 .lp-status-page {
@@ -40,58 +69,74 @@
 }
 @keyframes lp-spin { to { transform: rotate(360deg); } }
 
+/* El alto lo fija el VIEWPORT, no el ancho. Antes era `aspect-ratio: 16/6`
+   sin tope: en una pantalla de 1920px daba 720px de banner —media pantalla
+   para mostrar tres líneas de texto— y empujaba todos los productos abajo
+   del pliegue. Con clamp() sobre vh el banner nunca se come más de un
+   tercio del alto visible y la primera fila de productos entra siempre. */
 .lp-banner {
   position: relative;
-  margin: -2rem -1.5rem 2rem;
-  min-height: 280px;
-  aspect-ratio: 16 / 6;
-  display: flex; align-items: center; justify-content: center;
-  background-color: #111827;
+  display: grid;
+  place-items: center;
+  min-height: clamp(15rem, 34vh, 25rem);
+  padding: var(--l-s5) var(--l-gutter);
+  background-color: var(--l-surface, #111827);
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
   overflow: hidden;
 }
+/* Sin imagen el banner es solo texto: no necesita alto de foto, y el gris
+   plano `#111827` que había ignoraba por completo el tema del comercio. */
+.lp-banner:not(.con-imagen) {
+  min-height: clamp(11rem, 24vh, 17rem);
+  background-image:
+    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--l-primary) 20%, transparent) 0%, transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--l-primary) 7%, var(--l-bg)) 0%, var(--l-bg) 100%);
+}
 .lp-banner.con-imagen::before {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%);
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.72) 100%);
   pointer-events: none;
 }
 .lp-banner-overlay {
   position: relative;
   text-align: center;
-  padding: 3rem 1.5rem;
-  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-  max-width: 750px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--l-s2);
+  max-width: 46rem;
   z-index: 1;
 }
 .lp-banner-overlay h2 {
   margin: 0;
-  font-size: 2.2rem;
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
   font-weight: 800;
+  letter-spacing: -0.03em;
   color: #fff;
-  line-height: 1.2;
+  line-height: 1.1;
   text-shadow: 0 2px 10px rgba(0,0,0,0.85), 0 0 20px rgba(0,0,0,0.5);
+  text-wrap: balance;
 }
 .lp-banner-overlay p {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+  line-height: 1.5;
   color: rgba(255,255,255,0.92);
   text-shadow: 0 1px 6px rgba(0,0,0,0.85);
+  text-wrap: balance;
 }
 .lp-banner-btn {
-  margin-top: 0.5rem;
+  margin-top: var(--l-s1);
   display: inline-flex; align-items: center;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 700;
-  padding: 0.65rem 1.4rem;
+  padding: 0.7rem 1.5rem;
   border-radius: var(--l-radius-sm, 9px);
   box-shadow: 0 4px 14px rgba(0,0,0,0.35);
-  transition: all 0.15s;
+  transition: filter 0.15s, transform 0.15s;
 }
 .lp-banner-btn:hover {
   filter: brightness(1.08);
@@ -99,30 +144,64 @@
 }
 
 .lp-header {
-  max-width: 1100px;
-  margin: 0 auto 1.5rem;
+  padding-block: var(--l-s5) var(--l-s3);
   text-align: center;
 }
+/* Con banner, el encabezado no repite el mismo bloque centrado grande que
+   ya está justo arriba: se achica y hace de rótulo de la grilla. */
+.lp-banner + .lp-shell .lp-header { padding-block: var(--l-s4) var(--l-s3); }
+
+.lp-header-eyebrow {
+  display: block;
+  margin-bottom: var(--l-s2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--l-text-muted, #94a3b8);
+}
 .lp-header h1 {
-  font-size: 1.8rem;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
   font-weight: 800;
-  margin: 0 0 0.4rem;
-  color: var(--l-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0;
+  /* Antes iba en --l-primary, el mismo color de todos los botones: con el
+     acento repartido por toda la página nada leía como "tocá acá". El
+     acento queda reservado para las acciones. */
+  color: var(--l-text, #f8fafc);
+  text-wrap: balance;
 }
 .lp-header p {
   color: var(--l-text-muted, #94a3b8);
   font-size: 0.95rem;
-  max-width: 560px;
-  margin: 0 auto;
+  line-height: 1.55;
+  max-width: 34rem;
+  margin: var(--l-s2) auto 0;
+  text-wrap: pretty;
 }
 
+/* Los filtros son la navegación real de un catálogo: acompañan el scroll
+   en vez de quedar sueltos arriba de todo. */
+.lp-filterbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin-bottom: var(--l-s4);
+  padding-block: var(--l-s2);
+  background: color-mix(in srgb, var(--l-bg) 85%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid transparent;
+}
 .lp-filters {
-  max-width: 1100px;
-  margin: 0 auto 1.75rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: center;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .lp-filterbar { background: var(--l-bg); }
 }
 .lp-search {
   background: var(--l-surface, #181d2a);
@@ -193,22 +272,75 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 .lp-dropdown-opcion:hover { background: rgba(255,255,255,0.08); }
-.lp-dropdown-opcion.selected { background: var(--l-primary); color: #04140d !important; font-weight: 700; }
+.lp-dropdown-opcion.selected { background: var(--l-primary); color: var(--l-on-primary, #0b1211) !important; font-weight: 700; }
 
 .lp-empty {
-  max-width: 1100px;
-  margin: 3rem auto;
+  margin: var(--l-s6) auto;
+  max-width: 26rem;
   text-align: center;
   color: var(--l-text-muted, #64748b);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--l-s3);
+}
+.lp-empty p { margin: 0; font-size: 0.95rem; line-height: 1.55; }
+.lp-empty-reset {
+  background: transparent;
+  border: 1px solid var(--l-surface-border, rgba(255,255,255,0.14));
+  color: var(--l-text, #f8fafc);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--l-radius-sm, 9px);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lp-empty-reset:hover {
+  border-color: var(--l-primary);
+  background: color-mix(in srgb, var(--l-primary) 10%, transparent);
 }
 
 .lp-grid {
-  max-width: 1100px;
-  margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1.25rem;
+  /* 210px de mínimo contra 240px: a 1240px de medida entran 5 columnas en
+     vez de 4, así que en pantallas anchas la grilla llena el espacio en
+     lugar de dejar dos franjas muertas a los costados. */
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: var(--l-s3);
+  padding-bottom: var(--l-s5);
+  /* El botón del banner apunta acá (#lp-productos). Sin esto el salto deja
+     la primera fila tapada por la barra de filtros pegajosa. */
+  scroll-margin-top: 4.5rem;
 }
+
+.lp-footer {
+  border-top: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
+  padding-block: var(--l-s4) var(--l-s5);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--l-s3);
+}
+.lp-footer-nombre {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--l-text, #f8fafc);
+}
+.lp-footer-wsp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--l-text-muted, #94a3b8);
+  transition: color 0.15s;
+}
+.lp-footer-wsp:hover { color: var(--l-primary); }
 
 .lp-card {
   background: var(--l-card-bg, #131722);
@@ -227,9 +359,12 @@
   box-shadow: 0 12px 30px rgba(0,0,0,0.35);
 }
 
+/* Cuadrada en vez de 190px fijos: el alto ya no depende del ancho de la
+   columna, así que todas las tarjetas de una fila recortan igual y la
+   grilla queda pareja en cualquier viewport. */
 .lp-card-media {
   position: relative;
-  height: 190px;
+  aspect-ratio: 1 / 1;
   background: var(--l-surface, #0c0f17);
   display: flex;
   align-items: center;
@@ -246,19 +381,26 @@
   transform: scale(1.05);
 }
 
+/* Un catálogo recién armado tiene muchos productos sin foto todavía. En
+   gris al 60% leían como tarjetas rotas; teñidos con el color del comercio
+   leen como parte del diseño. */
 .lp-card-media-placeholder {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  color: var(--l-text-muted, #64748b);
-  opacity: 0.6;
+  gap: 0.5rem;
+  color: color-mix(in srgb, var(--l-primary) 55%, var(--l-text-muted, #64748b));
+  background:
+    radial-gradient(80% 80% at 50% 40%, color-mix(in srgb, var(--l-primary) 12%, transparent) 0%, transparent 100%);
 }
 .lp-card-media-placeholder span {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.2px;
+  opacity: 0.75;
 }
 
 .lp-card-badge {
@@ -268,8 +410,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(10, 13, 20, 0.85);
+  /* Derivado del fondo del tema: el `rgba(10,13,20,.85)` fijo que había
+     ponía una píldora negra sobre una landing en modo claro. */
+  background: color-mix(in srgb, var(--l-bg) 82%, transparent);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   color: var(--l-primary);
   border: 1px solid color-mix(in srgb, var(--l-primary) 30%, transparent);
   font-size: 0.68rem;
@@ -281,16 +426,15 @@
 .lp-card-badge.variantes {
   left: auto;
   right: 0.65rem;
-  background: rgba(10, 13, 20, 0.85);
   color: var(--l-text, #f8fafc);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-color: var(--l-surface-border, rgba(255, 255, 255, 0.12));
 }
 
 .lp-card-body {
-  padding: 1.1rem 1.15rem 1.2rem;
+  padding: 0.9rem 1rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.35rem;
   flex: 1;
 }
 .lp-card-tag {
@@ -307,10 +451,17 @@
 }
 .lp-card-body h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--l-text, #f8fafc);
   line-height: 1.35;
+  /* Sin tope, un nombre largo empujaba precio y botón fuera de línea con
+     los de al lado. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .lp-card-desc {
   margin: 0;
@@ -344,7 +495,7 @@
   justify-content: center;
   gap: 0.4rem;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   font-family: inherit;
   font-size: 0.84rem;
   font-weight: 700;
@@ -751,7 +902,7 @@
   justify-content: center;
   gap: 0.5rem;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   border: none;
   font-size: 0.95rem;
   font-weight: 700;
@@ -807,7 +958,7 @@
   height: 58px;
   border-radius: 50%;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   border: none;
   display: flex;
   align-items: center;
@@ -1042,7 +1193,7 @@
   justify-content: center;
   gap: 0.55rem;
   background: var(--l-primary);
-  color: #04140d;
+  color: var(--l-on-primary, #0b1211);
   border: none;
   font-size: 0.92rem;
   font-weight: 700;
@@ -1077,13 +1228,48 @@
   }
 }
 
+/* En celular la escala baja un escalón: el banner deja de competir con la
+   grilla y el buscador ocupa el ancho completo en vez de quedar en una
+   píldora de 170px. Los tamaños de texto ya los resuelve clamp(). */
+@media (max-width: 560px) {
+  .lp-page {
+    --l-s4: 1.5rem;
+    --l-s5: 2rem;
+    --l-s6: 3rem;
+  }
+  .lp-banner { min-height: clamp(12rem, 30vh, 16rem); padding-block: var(--l-s4); }
+  .lp-banner:not(.con-imagen) { min-height: clamp(9rem, 22vh, 12rem); }
+  .lp-filters { gap: 0.45rem; }
+  .lp-search { flex: 1 1 100%; }
+  .lp-search input { width: 100%; }
+  .lp-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+  .lp-card-body { padding: 0.7rem 0.75rem 0.8rem; }
+  .lp-card-price { font-size: 1.05rem; }
+  .lp-footer { justify-content: center; text-align: center; }
+}
+
 @media (max-width: 480px) {
-  .lp-page { padding: 1.25rem 1rem 3rem; }
-  .lp-header h1 { font-size: 1.4rem; }
-  .lp-banner { margin: -1.25rem -1rem 1.5rem; min-height: 200px; }
-  .lp-banner-overlay { padding: 2rem 1rem; }
-  .lp-banner-overlay h2 { font-size: 1.5rem; }
   .lp-cart-drawer { max-width: 100%; }
   .lp-cart-fab { bottom: 1rem; right: 1rem; width: 52px; height: 52px; }
   .lp-modal-info { padding: 1.25rem; }
+}
+
+/* Quality floor: foco visible en todo lo accionable y respeto por
+   prefers-reduced-motion, que la página no tenía. */
+.lp-page :is(a, button, input, [role="button"]):focus-visible {
+  outline: 2px solid var(--l-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-page *,
+  .lp-modal-overlay *,
+  .lp-cart-overlay * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .lp-card:hover { transform: none; }
+  .lp-card:hover .lp-card-media img { transform: none; }
 }
