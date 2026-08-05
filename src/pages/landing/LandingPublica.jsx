@@ -53,7 +53,7 @@ export default function LandingPublica() {
         if (!res.disponible) return setEstado('no-disponible');
         setData(res);
         setEstado('ok');
-        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id, res.meta.test_event_code);
+        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id);
         if (res.meta?.google_analytics_id) inicializarGA(res.meta.google_analytics_id);
         if (res.meta?.tiktok_pixel_id) inicializarTikTokPixel(res.meta.tiktok_pixel_id);
         if (res.diseno?.fuente) cargarFuenteGoogle(res.diseno.fuente);
@@ -114,7 +114,7 @@ export default function LandingPublica() {
         num_items: cantidad,
       };
 
-      trackearEvento('AddToCart', eventId, customData, data?.meta?.test_event_code);
+      trackearEvento('AddToCart', eventId, customData);
       trackearEventoGA('add_to_cart', {
         item_id: item.content_id,
         item_name: nombreCompleto,
@@ -191,14 +191,12 @@ export default function LandingPublica() {
       num_items: items.reduce((s, it) => s + it.cantidad, 0),
     };
 
-    trackearEvento('InitiateCheckout', eventId, customData, data?.meta?.test_event_code);
-    trackearEvento('Contact', eventId + '-contact', customData, data?.meta?.test_event_code);
+    trackearEvento('InitiateCheckout', eventId, customData);
+    trackearEvento('Contact', eventId + '-contact', customData);
     trackearEventoGA('checkout_whatsapp', { valor: valorTotal, cantidad_items: items.length });
     trackearEventoTikTok('Contact', { content_ids: customData.content_ids, value: valorTotal });
 
-    registrarEventoLanding(slug, {
-      event_name: 'Contact',
-      event_id: eventId,
+    const basePayload = {
       event_source_url: window.location.href,
       fbc,
       fbp,
@@ -209,6 +207,18 @@ export default function LandingPublica() {
         cantidad: it.cantidad,
         precio: it.precio,
       })),
+    };
+
+    registrarEventoLanding(slug, {
+      ...basePayload,
+      event_name: 'InitiateCheckout',
+      event_id: eventId,
+    });
+    
+    registrarEventoLanding(slug, {
+      ...basePayload,
+      event_name: 'Contact',
+      event_id: eventId + '-contact',
     });
 
     window.open(link, '_blank', 'noopener');
@@ -228,7 +238,7 @@ export default function LandingPublica() {
       num_items: 1,
     };
 
-    trackearEvento('Contact', eventId, customData, data?.meta?.test_event_code);
+    trackearEvento('Contact', eventId, customData);
     trackearEventoGA('contact_whatsapp', { producto: item.nombre });
     trackearEventoTikTok('Contact', { content_id: item.content_id, content_name: item.nombre });
 

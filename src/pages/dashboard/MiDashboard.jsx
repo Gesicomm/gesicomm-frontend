@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Eye, MessageCircle, ShoppingCart, ArrowRight, Loader, Table2, BarChart3, Store,
+  Eye, MessageCircle, ShoppingCart, CreditCard, ArrowRight, Loader, Table2, BarChart3, Store,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
@@ -340,37 +340,61 @@ export default function MiDashboard() {
       </section>
 
       {/* ── Interés en la landing (Pixel/CAPI) — intención, no venta ──── */}
-      <section className="md-card md-intent-card">
-        <h3 className="md-card-title">Interés en tu landing <span className="md-card-title-sub">Meta Pixel / CAPI</span></h3>
-        <div className="md-intent-grid">
-          <div className="md-intent-stat">
-            <Eye size={15} className="md-icon-intent" />
-            <div>
-              <div className="md-intent-val">{pixel?.visitas ?? 0}</div>
-              <div className="md-intent-label">Visitas</div>
+      <section className="md-card md-funnel-card">
+        <h3 className="md-card-title">Embudo de Conversión <span className="md-card-title-sub">Meta Pixel / CAPI</span></h3>
+        <div className="md-funnel">
+          <div className="md-funnel-step">
+            <div className="md-funnel-icon md-icon-visitas"><Eye size={18} /></div>
+            <div className="md-funnel-info">
+              <span className="md-funnel-val">{pixel?.visitas ?? 0}</span>
+              <span className="md-funnel-label">Visitas</span>
             </div>
           </div>
-          <div className="md-intent-stat">
-            <MessageCircle size={15} className="md-icon-contactos" />
-            <div>
-              <div className="md-intent-val">{pixel?.conversaciones_whatsapp ?? 0}</div>
-              <div className="md-intent-label">Contactos WhatsApp</div>
+          
+          <div className="md-funnel-arrow">
+            <span className="md-funnel-pct">{pixel?.visitas > 0 ? ((pixel?.añadidos_carrito || 0) / pixel.visitas * 100).toFixed(1) : 0}%</span>
+            <div className="md-funnel-line"></div>
+          </div>
+
+          <div className="md-funnel-step">
+            <div className="md-funnel-icon md-icon-carrito"><ShoppingCart size={18} /></div>
+            <div className="md-funnel-info">
+              <span className="md-funnel-val">{pixel?.añadidos_carrito ?? 0}</span>
+              <span className="md-funnel-label">Al carrito</span>
             </div>
           </div>
-          <div className="md-intent-stat">
-            <span className="md-icon-ratio">%</span>
-            <div>
-              <div className="md-intent-val">{ctrPct}%</div>
-              <div className="md-intent-label">Conversión</div>
+
+          <div className="md-funnel-arrow">
+            <span className="md-funnel-pct">{pixel?.añadidos_carrito > 0 ? ((pixel?.checkouts_iniciados || 0) / pixel.añadidos_carrito * 100).toFixed(1) : 0}%</span>
+            <div className="md-funnel-line"></div>
+          </div>
+
+          <div className="md-funnel-step">
+            <div className="md-funnel-icon md-icon-checkout"><CreditCard size={18} /></div>
+            <div className="md-funnel-info">
+              <span className="md-funnel-val">{pixel?.checkouts_iniciados ?? 0}</span>
+              <span className="md-funnel-label">Checkout</span>
             </div>
           </div>
-          <div className="md-intent-stat">
-            <ShoppingCart size={15} className="md-icon-intent" />
-            <div>
-              <div className="md-intent-val">{gs(pixel?.valor_carritos || 0)}</div>
-              <div className="md-intent-label">Valor en carritos</div>
+
+          <div className="md-funnel-arrow">
+            <span className="md-funnel-pct">{pixel?.checkouts_iniciados > 0 ? ((pixel?.contactos_whatsapp || 0) / pixel.checkouts_iniciados * 100).toFixed(1) : 0}%</span>
+            <div className="md-funnel-line"></div>
+          </div>
+
+          <div className="md-funnel-step md-funnel-step-final">
+            <div className="md-funnel-icon md-icon-contactos"><MessageCircle size={18} /></div>
+            <div className="md-funnel-info">
+              <span className="md-funnel-val">{pixel?.contactos_whatsapp ?? 0}</span>
+              <span className="md-funnel-label">Contactos</span>
             </div>
           </div>
+        </div>
+        
+        <div className="md-funnel-footer">
+          <span>Conversión final (Visitas a Contactos): <strong>{ctrPct}%</strong></span>
+          <span className="md-funnel-div" />
+          <span>Valor total en carritos (intención de compra): <strong>{gs(pixel?.valor_carritos || 0)}</strong></span>
         </div>
       </section>
 

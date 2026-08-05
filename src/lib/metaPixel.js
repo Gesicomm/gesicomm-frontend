@@ -12,7 +12,7 @@
 
 let cargado = false;
 
-export function inicializarPixel(pixelId, testEventCode) {
+export function inicializarPixel(pixelId) {
   if (!pixelId || cargado || typeof window === 'undefined') return;
   if (window.fbq) { cargado = true; return; } // ya lo cargó otra instancia
 
@@ -25,8 +25,7 @@ export function inicializarPixel(pixelId, testEventCode) {
   /* eslint-enable */
 
   window.fbq('init', pixelId);
-  const options = testEventCode ? { test_event_code: testEventCode } : undefined;
-  window.fbq('track', 'PageView', {}, options);
+  window.fbq('track', 'PageView');
   cargado = true;
 }
 
@@ -49,10 +48,13 @@ export function leerCookiesFacebook() {
  * Dispara un evento por Pixel (si está cargado) — el llamador es
  * responsable de mandar el mismo event_id a metaCapi vía
  * registrarEventoLanding, ver landingPublicaService.js.
+ *
+ * Sin test_event_code: ese dato es de depuración de la dueña de la tienda y
+ * ya no viaja al navegador (era legible por cualquier visitante en el JSON
+ * público de la landing). Los eventos de prueba los sigue etiquetando el
+ * backend en su llamada a la Graph API — ver metaCapi.service.js.
  */
-export function trackearEvento(eventName, eventId, params, testEventCode) {
+export function trackearEvento(eventName, eventId, params) {
   if (typeof window === 'undefined' || !window.fbq) return;
-  const options = { eventID: eventId };
-  if (testEventCode) options.test_event_code = testEventCode;
-  window.fbq('track', eventName, params, options);
+  window.fbq('track', eventName, params, { eventID: eventId });
 }

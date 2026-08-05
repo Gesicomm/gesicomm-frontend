@@ -35,16 +35,30 @@ export async function obtenerLandingPublica(slug) {
  * no puede interrumpir el flujo real del visitante (abrir WhatsApp). Ver
  * pixel.js para el lado navegador (fbq) que dispara junto con esto, mismo
  * event_id, para que Meta los deduplique como un solo evento.
+ *
+ * "Best-effort" es que no lanza, NO que no se entera. Chequear res.ok es
+ * indispensable: en una request same-origin el navegador no valida CORS, así
+ * que un rechazo del backend llega como una respuesta 4xx/5xx perfectamente
+ * resuelta — el fetch no rechaza y el catch nunca corre. Sin este warning,
+ * un backend que rebotaba el 100% de los eventos con 500 pasó inadvertido
+ * (whitelist de CORS en server.js, ver el comentario de RUTAS_PUBLICAS_TIENDA)
+ * y las estadísticas de la landing quedaron con visitas pero sin ninguna
+ * conversión, sin una sola señal en consola.
  */
 export async function registrarEventoLanding(slug, payload) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}/eventos` : '/api/l/eventos';
   try {
-    await fetch(path, {
+    const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-  } catch {
-    // silencioso a propósito — ver comentario de arriba
+    if (!res.ok) {
+      console.warn(`[landing] evento "${payload?.event_name}" rechazado por el backend: HTTP ${res.status}`);
+    }
+  } catch (err) {
+    // La red falló de verdad (offline, DNS, request abortada al navegar).
+    // No se propaga: el visitante no puede ver un error por un pixel.
+    console.warn(`[landing] evento "${payload?.event_name}" no pudo enviarse:`, err?.message || err);
   }
 }
