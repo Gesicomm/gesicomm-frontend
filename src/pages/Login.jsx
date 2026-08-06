@@ -377,6 +377,12 @@ export default function Login() {
               </p>
             </div>
 
+            {/* Aviso spam — siempre visible antes de ingresar el código */}
+            <div className="flex items-start gap-2.5 rounded-lg border border-warning/25 bg-warning/8 px-3.5 py-3 text-xs text-fg-muted leading-relaxed">
+              <Mail size={14} className="mt-0.5 flex-shrink-0 text-warning" />
+              <span>¿No ves el correo? <strong className="text-fg-muted">Revisá la carpeta de Spam</strong> o Correo no deseado antes de pedir uno nuevo.</span>
+            </div>
+
             <form onSubmit={handleVerify} className="flex flex-col gap-5">
               <OTPInput value={otpCode} onChange={setOtpCode} disabled={loading || !!success} />
 
@@ -398,12 +404,6 @@ export default function Login() {
                 {loading ? 'Verificando…' : 'Confirmar código'}
               </button>
             </form>
-
-            {/* Aviso spam */}
-            <div className="flex items-start gap-2 rounded-md border border-info/20 bg-info/8 p-3 text-xs text-fg-muted leading-relaxed">
-              <Mail size={14} className="mt-0.5 flex-shrink-0 text-info" />
-              <span>Si no ves el correo en tu bandeja de entrada, <strong>revisá la carpeta de Spam</strong> o Correo no deseado.</span>
-            </div>
 
             {/* Reenviar código */}
             <div className="text-center">
