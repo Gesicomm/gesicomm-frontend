@@ -84,6 +84,10 @@ export default function DataDeletionForm() {
           </p>
         </div>
 
+        <Alert tono="info" titulo="¿No ves el correo de confirmación?" className="mt-5">
+          Te enviamos un correo con tu código y los detalles. Si no lo encontrás en tu bandeja de entrada en los próximos minutos, <strong>revisá tu carpeta de Spam o Correo no deseado</strong> y marcalo como «No es spam» para recibir las actualizaciones del trámite.
+        </Alert>
+
         <div className="mt-5 space-y-2 text-sm text-fg-muted">
           <p>
             <strong className="text-fg">Fecha límite de procesamiento:</strong>{' '}
