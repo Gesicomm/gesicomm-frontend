@@ -589,8 +589,6 @@ export default function LandingPublica() {
                       >
                         {agregadoRapido === item.content_id ? (
                           <><Check size={14} /> Agregado</>
-                        ) : item.variantes?.length > 0 ? (
-                          <><ShoppingCart size={14} /> Ver opciones</>
                         ) : (
                           <><Plus size={14} /> Agregar</>
                         )}
