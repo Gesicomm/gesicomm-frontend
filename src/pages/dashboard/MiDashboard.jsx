@@ -224,6 +224,81 @@ function GraficoTendencia({ serie }) {
   );
 }
 
+/**
+ * Cruza dos rankings que hoy viven en fuentes separadas: el interés en la
+ * landing (LandingEvento, vía pixel.productos_mas_consultados) y las ventas
+ * cargadas a mano (Envio/EnvioItem, vía ventas.ranking_productos). No hay un
+ * ID compartido entre ambos — se cruza por nombre normalizado. Funciona en la
+ * práctica porque el nombre que llega por el Pixel ya es el nombre canónico
+ * del catálogo (ver nombreCanonico() en landingPublica.controller.js), y
+ * nombre_producto de un pedido se carga desde el mismo selector de productos.
+ * Si alguna vendedora tipeara un nombre distinto a mano, esa fila no cruza y
+ * aparece como dos entradas separadas — más seguro que ocultar el dato.
+ */
+function useEmbudoPorProducto(ventas, pixel) {
+  return useMemo(() => {
+    const normalizar = (s) => (s || '').trim().toLowerCase();
+    const mapa = new Map();
+
+    (pixel?.productos_mas_consultados || []).forEach(p => {
+      const clave = normalizar(p.nombre);
+      if (!clave) return;
+      mapa.set(clave, { nombre: p.nombre, leads: p.consultas, confirmados: 0 });
+    });
+
+    // "confirmados" = pedidos ENTREGADOS que incluyeron este producto — mismo
+    // criterio que usa el hero de arriba ("Ventas confirmadas" = entregados),
+    // no pedidos_confirmados en tránsito ni unidades (un pedido de 2 unidades
+    // sigue siendo 1 venta).
+    (ventas?.ranking_productos || []).forEach(p => {
+      const clave = normalizar(p.nombre);
+      if (!clave) return;
+      const previo = mapa.get(clave);
+      if (previo) previo.confirmados = p.entregados;
+      else mapa.set(clave, { nombre: p.nombre, leads: 0, confirmados: p.entregados });
+    });
+
+    return [...mapa.values()]
+      .filter(p => p.leads > 0 || p.confirmados > 0)
+      .map(p => ({ ...p, conversion: p.leads > 0 ? (p.confirmados / p.leads) * 100 : null }))
+      .sort((a, b) => b.leads - a.leads || b.confirmados - a.confirmados);
+  }, [ventas, pixel]);
+}
+
+function TablaEmbudoProductos({ filas }) {
+  if (filas.length === 0) {
+    return (
+      <p className="md-empty-hint">
+        Todavía no hay suficiente actividad por producto en este período — en cuanto tengas consultas o ventas, aparece acá.
+      </p>
+    );
+  }
+  return (
+    <div className="md-table-wrap">
+      <table className="md-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Leads</th>
+            <th>Confirmados</th>
+            <th>Conversión</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filas.map(p => (
+            <tr key={p.nombre}>
+              <td>{p.nombre}</td>
+              <td>{p.leads}</td>
+              <td>{p.confirmados}</td>
+              <td>{p.conversion === null ? '—' : `${p.conversion.toFixed(1).replace(/\.0$/, '')}%`}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function MiDashboard() {
   const [periodo, setPeriodo] = useState('este_mes');
   const [mes, setMes] = useState(new Date().getMonth() + 1);
@@ -277,6 +352,8 @@ export default function MiDashboard() {
 
   const productosConsultados = pixel?.productos_mas_consultados || [];
   const maxConsultados = productosConsultados[0]?.consultas || 0;
+
+  const embudoProductos = useEmbudoPorProducto(ventas, pixel);
 
   const ctrPct = pixel ? (pixel.ctr * 100).toFixed(1).replace(/\.0$/, '') : '0';
 
@@ -396,6 +473,15 @@ export default function MiDashboard() {
           <span className="md-funnel-div" />
           <span>Valor total en carritos (intención de compra): <strong>{gs(pixel?.valor_carritos || 0)}</strong></span>
         </div>
+      </section>
+
+      {/* ── Por producto: cuántos llegaron como lead vs cuántos se vendieron ── */}
+      <section className="md-card">
+        <h3 className="md-card-title">
+          Leads vs. Confirmados por producto
+          <span className="md-card-title-sub">pixel + confirmado a mano</span>
+        </h3>
+        <TablaEmbudoProductos filas={embudoProductos} />
       </section>
 
       {pixel ? (

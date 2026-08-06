@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check } from 'lucide-react';
+import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
 import { obtenerLandingPublica, registrarEventoLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
@@ -12,7 +12,16 @@ import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../..
 import ProductDetailModal from './ProductDetailModal';
 import CartDrawer from './CartDrawer';
 import LandingDropdown from './LandingDropdown';
+import LandingHeader from './LandingHeader';
+import LandingHero from './LandingHero';
+import LandingBenefits from './LandingBenefits';
+import LandingCategoryStrip from './LandingCategoryStrip';
+import LandingFeatured from './LandingFeatured';
+import LandingTestimonials from './LandingTestimonials';
+import LandingFaq from './LandingFaq';
 import './landingPublica.css';
+
+const VENTANA_NUEVO_DIAS = 14;
 
 function claveCarrito(item, varianteId) {
   return `${item.tipo}:${item.content_id}:${varianteId || 'base'}`;
@@ -25,6 +34,21 @@ function cargarCarritoGuardado(slug) {
   } catch {
     return new Map(); // localStorage puede no estar disponible (modo privado) — el carrito solo vive en memoria.
   }
+}
+
+/** Mismo criterio que el carrito, pero un Set: no hay cantidad/variante que trackear. */
+function cargarWishlistGuardada(slug) {
+  try {
+    const crudo = localStorage.getItem(`gesicomm-wishlist-${slug || 'home'}`);
+    return crudo ? new Set(JSON.parse(crudo)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function esNuevo(item) {
+  if (!item.creado) return false;
+  return Date.now() - new Date(item.creado).getTime() < VENTANA_NUEVO_DIAS * 86400000;
 }
 
 export default function LandingPublica() {
@@ -42,6 +66,7 @@ export default function LandingPublica() {
   const [carrito, setCarrito] = useState(() => new Map());
   const [carritoAbierto, setCarritoAbierto] = useState(false);
   const [agregadoRapido, setAgregadoRapido] = useState(null);
+  const [wishlist, setWishlist] = useState(() => new Set());
 
   useEffect(() => {
     let activo = true;
@@ -74,6 +99,22 @@ export default function LandingPublica() {
       localStorage.setItem(`gesicomm-carrito-${slug || 'home'}`, JSON.stringify(Array.from(carrito.entries())));
     } catch { /* modo privado / storage lleno — el carrito sigue funcionando solo en memoria */ }
   }, [carrito, slug]);
+
+  useEffect(() => { setWishlist(cargarWishlistGuardada(slug)); }, [slug]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(`gesicomm-wishlist-${slug || 'home'}`, JSON.stringify(Array.from(wishlist)));
+    } catch { /* modo privado / storage lleno — la wishlist sigue funcionando solo en memoria */ }
+  }, [wishlist, slug]);
+
+  function toggleWishlist(e, contentId) {
+    e.stopPropagation();
+    setWishlist(prev => {
+      const copia = new Set(prev);
+      if (copia.has(contentId)) copia.delete(contentId); else copia.add(contentId);
+      return copia;
+    });
+  }
 
   function agregarAlCarrito({ item, variante, cantidad, precio }) {
     const clave = claveCarrito(item, variante?.id);
@@ -264,6 +305,18 @@ export default function LandingPublica() {
   const categorias = useMemo(() => data ? [...new Set(data.items.map(i => i.categoria).filter(Boolean))] : [], [data]);
   const marcas = useMemo(() => data ? [...new Set(data.items.map(i => i.marca).filter(Boolean))] : [], [data]);
 
+  // Imagen de cada categoría para LandingCategoryStrip: la primera foto
+  // disponible entre los items curados de ESTA landing en esa categoría —
+  // no un campo propio (Categoria no tiene imagen, es un modelo global).
+  const categoriaImagen = useMemo(() => {
+    const mapa = new Map();
+    if (!data) return mapa;
+    data.items.forEach(i => {
+      if (i.categoria && i.imagen && !mapa.has(i.categoria)) mapa.set(i.categoria, i.imagen);
+    });
+    return mapa;
+  }, [data]);
+
   // Etiquetas agrupadas case-insensitive: "Ofertas" y "ofertas " son el mismo filtro.
   const etiquetas = useMemo(() => {
     if (!data) return [];
@@ -276,6 +329,10 @@ export default function LandingPublica() {
     });
     return Array.from(mapa.values());
   }, [data]);
+
+  // Producto.destacado ya existe en el catálogo (lo marca la dueña en el
+  // picker de la landing) — ver LandingFeatured.jsx.
+  const itemsDestacados = useMemo(() => data ? data.items.filter(i => i.destacado) : [], [data]);
 
   const itemsFiltrados = useMemo(() => {
     if (!data) return [];
@@ -340,11 +397,64 @@ export default function LandingPublica() {
     ? `${itemsFiltrados.length} de ${totalItems} productos`
     : `${totalItems} producto${totalItems === 1 ? '' : 's'}`;
 
+  const cantidadOpiniones = data.testimonios?.length || 0;
+  const ratingPromedio = cantidadOpiniones > 0
+    ? data.testimonios.reduce((s, t) => s + t.calificacion, 0) / cantidadOpiniones
+    : 0;
+
+  function seleccionarCategoria(cat) {
+    setFiltroCategoria(cat);
+    document.getElementById('lp-productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
     <div
       className={`lp-page ${data.tema.modo === 'claro' ? 'claro' : ''}`}
       style={calcularEstiloLanding({ tema: data.tema, diseno: data.diseno })}
     >
+      <LandingHeader
+        nombre={data.titulo}
+        mostrarBuscador={!!filtros.buscador}
+        mostrarCategorias={categorias.length > 0}
+        mostrarTestimonios={cantidadOpiniones > 0}
+        mostrarFaq={(data.faq?.length || 0) > 0}
+        cantidadCarrito={Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0)}
+        onAbrirCarrito={() => setCarritoAbierto(true)}
+      />
+
+      <LandingHero
+        titulo={data.titulo}
+        descripcion={data.descripcion}
+        totalItems={totalItems}
+        totalCategorias={categorias.length}
+        ratingPromedio={ratingPromedio}
+        cantidadOpiniones={cantidadOpiniones}
+        whatsapp={contacto?.whatsapp}
+      />
+
+      <LandingBenefits />
+
+      {categorias.length > 0 && (
+        <LandingCategoryStrip
+          categorias={categorias}
+          categoriaImagen={categoriaImagen}
+          onSeleccionar={seleccionarCategoria}
+        />
+      )}
+
+      {itemsDestacados.length > 0 && (
+        <LandingFeatured
+          items={itemsDestacados}
+          contacto={contacto}
+          wishlist={wishlist}
+          onToggleWishlist={toggleWishlist}
+          agregadoRapido={agregadoRapido}
+          onAgregarRapido={handleAgregarRapido}
+          onAbrir={setItemAbierto}
+          onContactar={contactar}
+        />
+      )}
+
       {banner && (
         <div
           className={`lp-banner ${banner.imagen ? 'con-imagen' : ''}`}
@@ -370,8 +480,7 @@ export default function LandingPublica() {
       <main className="lp-shell">
         <header className="lp-header">
           <span className="lp-header-eyebrow">{conteo}</span>
-          <h1>{data.titulo}</h1>
-          {data.descripcion && <p>{data.descripcion}</p>}
+          <h2 className="lp-header-titulo">Todos los productos</h2>
         </header>
 
         {hayFiltrosVisibles && (
@@ -380,7 +489,7 @@ export default function LandingPublica() {
               {filtros.buscador && (
                 <div className="lp-search">
                   <Search size={14} />
-                  <input placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+                  <input id="lp-buscador-input" placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
                 </div>
               )}
               {filtros.categoria && categorias.length > 0 && (
@@ -444,14 +553,33 @@ export default function LandingPublica() {
                         <span>Sin imagen</span>
                       </div>
                     )}
-                    {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
+                    <div className="lp-card-badges">
+                      {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
+                      {esNuevo(item) && <span className="lp-card-badge nuevo">Nuevo</span>}
+                    </div>
                     {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
+                    <button
+                      type="button"
+                      className={`lp-card-wishlist ${wishlist.has(item.content_id) ? 'activo' : ''}`}
+                      onClick={(e) => toggleWishlist(e, item.content_id)}
+                      title={wishlist.has(item.content_id) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                      aria-pressed={wishlist.has(item.content_id)}
+                    >
+                      <Heart size={14} fill={wishlist.has(item.content_id) ? 'currentColor' : 'none'} />
+                    </button>
+                    <button
+                      type="button"
+                      className="lp-card-quickview"
+                      onClick={(e) => { e.stopPropagation(); setItemAbierto(item); }}
+                    >
+                      <Eye size={13} /> Vista rápida
+                    </button>
                   </div>
                   <div className="lp-card-body">
                     {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
                     <h3>{item.nombre}</h3>
                     <span className="lp-card-price">{formatPrecio(item.precio)}</span>
-                  
+
                     <div className="lp-card-actions">
                       <button
                         type="button"
@@ -486,9 +614,23 @@ export default function LandingPublica() {
             })}
           </div>
         )}
+      </main>
 
-        <footer className="lp-footer">
-          <p className="lp-footer-nombre">{data.titulo}</p>
+      {cantidadOpiniones > 0 && <LandingTestimonials testimonios={data.testimonios} />}
+      {(data.faq?.length || 0) > 0 && <LandingFaq items={data.faq} />}
+
+      <footer id="lp-contacto" className="lp-footer">
+        <div className="lp-footer-inner">
+          <div>
+            <p className="lp-footer-nombre">{data.titulo}</p>
+            {data.descripcion && <p className="lp-footer-desc">{data.descripcion}</p>}
+          </div>
+          <nav className="lp-footer-links">
+            {categorias.length > 0 && <a href="#lp-categorias">Categorías</a>}
+            <a href="#lp-productos">Productos</a>
+            {cantidadOpiniones > 0 && <a href="#lp-opiniones">Opiniones</a>}
+            {(data.faq?.length || 0) > 0 && <a href="#lp-faq">Preguntas frecuentes</a>}
+          </nav>
           {contacto?.whatsapp && (
             <a
               className="lp-footer-wsp"
@@ -499,8 +641,8 @@ export default function LandingPublica() {
               <MessageCircle size={15} /> Escribinos por WhatsApp
             </a>
           )}
-        </footer>
-      </main>
+        </div>
+      </footer>
 
       {itemAbierto && (
         <ProductDetailModal

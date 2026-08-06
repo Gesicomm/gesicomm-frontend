@@ -285,7 +285,8 @@
 .lb-estado.off { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
 
 .lb-alert-warn {
-  display: flex; align-items: center; gap: 0.5rem;
+  display: flex; align-items: center; gap: 0.6rem;
+  flex-wrap: wrap;
   background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.25);
   color: #f59e0b;
@@ -293,6 +294,21 @@
   border-radius: 10px;
   font-size: 0.8rem;
 }
+.lb-alert-warn span { flex: 1; min-width: 200px; }
+.lb-alert-warn-btn {
+  flex-shrink: 0;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #f59e0b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.7rem;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-left: auto;
+}
+.lb-alert-warn-btn:hover { background: rgba(245, 158, 11, 0.26); }
 
 /* ─── Cuerpo: rail · panel · preview ──────────────────────────────────── */
 .lb-body {
@@ -648,6 +664,96 @@
 }
 .lb-tema-contacto strong { color: var(--vit-text); }
 .lb-tema .lb-btn-ghost { margin-left: auto; border-color: var(--vit-border); }
+
+/* ─── Paso Opiniones y FAQ (PasoContenido.jsx) ───────────────────────────── */
+.lb-contenido-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+.lb-contenido-fila {
+  background: var(--vit-card-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem;
+}
+.lb-contenido-fila-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+.lb-contenido-orden {
+  display: flex;
+  gap: 0.15rem;
+}
+.lb-contenido-orden button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  background: transparent;
+  border: 1px solid var(--vit-border);
+  color: var(--vit-muted);
+  cursor: pointer;
+}
+.lb-contenido-orden button:hover:not(:disabled) { color: var(--vit-text); border-color: var(--vit-accent); }
+.lb-contenido-orden button:disabled { opacity: 0.3; cursor: not-allowed; }
+.lb-contenido-numero {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--vit-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.lb-contenido-quitar {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--vit-muted);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.lb-contenido-quitar:hover { color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+.lb-testimonio-cuerpo {
+  display: flex;
+  gap: 0.85rem;
+}
+.lb-testimonio-foto { flex-shrink: 0; }
+.lb-testimonio-foto img {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.lb-testimonio-foto-vacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px dashed var(--vit-border);
+  color: var(--vit-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lb-testimonio-foto-vacia:hover { border-color: var(--vit-accent); color: var(--vit-accent); }
+.lb-testimonio-campos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
 
 /* ─── Paso publicar ───────────────────────────────────────────────────── */
 .lb-publicar { display: flex; flex-direction: column; gap: 1.1rem; }
@@ -1198,6 +1304,134 @@
   box-shadow: 0 3px 10px rgba(0,0,0,0.4);
 }
 
+/* Barra superior — espejo chico de LandingHeader.jsx. Sin nav de anclas ni
+   buscador: en un panel de ~340-420px no entran y no aportan nada inertes. */
+.lpv-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -1.25rem -0.9rem 1.1rem;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
+  background: color-mix(in srgb, var(--l-bg, #0a0a0a) 85%, transparent);
+}
+.lpv-topbar-nombre {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--l-text, #f8fafc);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lpv-topbar-carrito {
+  display: flex;
+  color: var(--l-text-muted, #94a3b8);
+  flex-shrink: 0;
+}
+
+/* Hero — espejo chico de LandingHero.jsx. Sin imagen de fondo ambiental ni
+   grid de 2 columnas: a este ancho todo se apila. */
+.lpv-hero { text-align: center; margin-bottom: 1.25rem; }
+.lpv-hero-eyebrow {
+  display: inline-flex;
+  margin-bottom: 0.5rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--l-card-border, rgba(255,255,255,0.12));
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--l-text-muted, #94a3b8);
+}
+.lpv-hero h1 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  color: var(--l-text, #f8fafc);
+  overflow-wrap: anywhere;
+}
+.lpv-hero p { margin: 0.4rem 0 0; font-size: 0.74rem; color: var(--l-text-muted, #94a3b8); line-height: 1.45; }
+.lpv-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.65rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--l-radius-sm, 8px);
+  background: var(--l-primary);
+  color: var(--l-on-primary, #0b1211);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.lpv-hero-stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.75rem;
+  font-size: 0.66rem;
+  color: var(--l-text-muted, #94a3b8);
+}
+.lpv-hero-stats strong { color: var(--l-text, #f8fafc); }
+
+/* Productos destacados — espejo chico de LandingFeatured.jsx: misma grilla
+   de tarjetas que la sección de productos (.lpv-grid/.lpv-card), con un
+   heading propio. Antes esto vivía como una tarjeta sola dentro del Hero
+   mostrando "el primer producto" — se sacó por completo: ahora refleja los
+   productos que la dueña marcó como destacados de verdad, o no aparece. */
+.lpv-destacados { margin-bottom: 1.1rem; }
+.lpv-destacados h2 {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--l-text, #f8fafc);
+}
+
+/* Beneficios — espejo chico de LandingBenefits.jsx, 2x2 en vez de 4-across. */
+.lpv-benefits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0 -0.9rem 1.1rem;
+  padding: 0.9rem;
+  border-block: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
+  background: var(--l-surface, #181d2a);
+}
+.lpv-benefit {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--l-text, #f8fafc);
+}
+.lpv-benefit svg { color: var(--l-primary); flex-shrink: 0; }
+.lpv-benefit span { font-size: 0.64rem; font-weight: 600; line-height: 1.25; }
+
+/* Categorías — espejo chico de LandingCategoryStrip.jsx: chips en vez de
+   tiles con imagen (a este ancho una imagen de fondo no se lee bien). */
+.lpv-categorias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+}
+.lpv-categoria-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--l-card-border, rgba(255,255,255,0.1));
+  background: var(--l-surface, #181d2a);
+  color: var(--l-text, #f8fafc);
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+
 .lpv-header { text-align: center; margin-bottom: 1rem; }
 .lpv-header-eyebrow {
   display: block;
@@ -1208,16 +1442,69 @@
   letter-spacing: 0.14em;
   color: var(--l-text-muted, #94a3b8);
 }
-.lpv-header h1 {
+.lpv-header h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
-  /* Como en la web real: el acento se reserva para las acciones. */
+  letter-spacing: -0.02em;
   color: var(--l-text, #f8fafc);
   overflow-wrap: anywhere;
 }
-.lpv-header p { margin: 0.35rem 0 0; font-size: 0.76rem; color: var(--l-text-muted, #94a3b8); line-height: 1.45; }
+
+/* Opiniones — espejo chico de LandingTestimonials.jsx: una sola tarjeta
+   estática (sin carrusel/drag, no aporta nada en un panel de preview). */
+.lpv-testimonios { margin-top: 1.4rem; }
+.lpv-testimonios h2, .lpv-faq h2 {
+  margin: 0 0 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--l-text, #f8fafc);
+}
+.lpv-testimonio-card {
+  padding: 0.9rem;
+  border-radius: var(--l-radius, 12px);
+  border: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
+  background: var(--l-card-bg, #131722);
+  text-align: center;
+}
+.lpv-testimonio-quote { color: var(--l-primary); opacity: 0.5; margin-bottom: 0.4rem; }
+.lpv-testimonio-card p {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--l-text, #f8fafc);
+}
+.lpv-testimonio-estrellas {
+  display: flex;
+  justify-content: center;
+  gap: 0.1rem;
+  margin: 0.55rem 0 0.3rem;
+  color: var(--l-primary);
+}
+.lpv-testimonio-card strong { font-size: 0.7rem; color: var(--l-text, #f8fafc); }
+.lpv-testimonio-mas {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.6rem;
+  color: var(--l-text-muted, #94a3b8);
+}
+
+/* FAQ — espejo chico de LandingFaq.jsx: lista estática, sin acordeón
+   interactivo (no hace falta en una preview). */
+.lpv-faq { margin-top: 1.4rem; }
+.lpv-faq-item {
+  padding-block: 0.6rem;
+  border-bottom: 1px solid var(--l-card-border, rgba(255,255,255,0.08));
+}
+.lpv-faq-item:last-child { border-bottom: none; }
+.lpv-faq-item strong { display: block; font-size: 0.74rem; color: var(--l-text, #f8fafc); }
+.lpv-faq-item p {
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--l-text-muted, #94a3b8);
+}
 
 .lpv-filters {
   display: flex; flex-wrap: wrap; gap: 0.35rem; justify-content: center;

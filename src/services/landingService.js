@@ -20,6 +20,15 @@ export const landingService = {
     }).then(r => r.data),
   eliminarSeoImagen: (id) => API.delete(`/mis-landings/${id}/seo-imagen`).then(r => r.data),
 
+  // A diferencia de subirBanner, no devuelve la landing actualizada — los
+  // testimonios se guardan en bloque con el resto del form (ver PasoContenido
+  // .jsx), no tienen id estable entre guardados. Devuelve { url } y esa URL
+  // se pega en el campo "foto" de la fila que se esté editando en memoria.
+  subirTestimonioFoto: (id, formData) =>
+    API.post(`/mis-landings/${id}/testimonio-foto`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+
   estadisticas: (id, dias = 30) => API.get(`/mis-landings/${id}/estadisticas`, { params: { dias } }).then(r => r.data),
   estadisticasRango: (id, filtros = {}) => API.post(`/mis-landings/${id}/estadisticas-rango`, filtros).then(r => r.data),
 };

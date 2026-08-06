@@ -1,18 +1,22 @@
 import React, { useMemo, useState } from 'react';
-import { Search, MessageCircle, Layers, ImageOff, Monitor, Smartphone, ExternalLink, Plus } from 'lucide-react';
+import {
+  Search, MessageCircle, Layers, ImageOff, Monitor, Smartphone, ExternalLink, Plus,
+  ShoppingCart, ArrowRight, RefreshCw, Handshake, UserCheck, Package, Quote, Star,
+} from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { calcularEstiloLanding } from '../../lib/landingDiseno';
 
 /**
  * Vista previa en vivo de la landing pública, dentro del constructor.
  *
- * Es un espejo visual de LandingPublica.jsx, no el componente real: la
- * página pública se alimenta del endpoint público (precios recalculados
- * contra el piso vigente, items ya filtrados por activo/en_venta) y acá
- * todavía no existe ni la landing guardada. Duplicar el markup es
- * deliberado — permite previsualizar una landing que aún no se guardó.
- * Los controles de filtro se dibujan inertes: muestran qué va a ver el
- * visitante, no filtran la previsualización.
+ * Es un espejo visual de LandingPublica.jsx (y de sus componentes Landing
+ * Header/Hero/Benefits/CategoryStrip/Testimonials/Faq), no el componente
+ * real: la página pública se alimenta del endpoint público (precios
+ * recalculados contra el piso vigente, items ya filtrados por activo/
+ * en_venta) y acá todavía no existe ni la landing guardada. Duplicar el
+ * markup es deliberado — permite previsualizar una landing que aún no se
+ * guardó. Los controles se dibujan inertes: muestran qué va a ver el
+ * visitante, no accionan nada dentro del panel de edición.
  */
 
 function formatPrecio(n) {
@@ -20,7 +24,17 @@ function formatPrecio(n) {
   return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 }) + ' Gs';
 }
 
-export default function LandingPreview({ titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica }) {
+const BENEFICIOS_PREVIEW = [
+  { icono: MessageCircle, texto: 'Pedís por WhatsApp' },
+  { icono: RefreshCw, texto: 'Catálogo al día' },
+  { icono: Handshake, texto: 'Pago y entrega directo' },
+  { icono: UserCheck, texto: 'Atención personalizada' },
+];
+
+export default function LandingPreview({
+  titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica,
+  mostrarTestimonios, testimonios, mostrarFaq, faqs,
+}) {
   const [dispositivo, setDispositivo] = useState('desktop');
 
   const categorias = useMemo(() => [...new Set(items.map(i => i.categoria).filter(Boolean))], [items]);
@@ -37,6 +51,11 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
   }, [items]);
 
   const hayFiltros = filtros.categoria || filtros.marca || filtros.etiqueta || filtros.buscador || filtros.orden_precio;
+  // Producto.destacado ya viene en cada item del catálogo (lo marca la
+  // dueña en el picker) — no es "el primero de la lista".
+  const itemsDestacados = useMemo(() => items.filter(i => i.destacado), [items]);
+  const testimoniosVisibles = mostrarTestimonios ? (testimonios || []).filter(t => t.nombre?.trim() || t.comentario?.trim()) : [];
+  const faqsVisibles = mostrarFaq ? (faqs || []).filter(f => f.pregunta?.trim() || f.respuesta?.trim()) : [];
 
   return (
     <div className="lb-preview">
@@ -81,6 +100,67 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
           className={`lpv-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
           style={calcularEstiloLanding({ tema, diseno })}
         >
+          <header className="lpv-topbar">
+            <span className="lpv-topbar-nombre">{titulo || 'Tu tienda'}</span>
+            <span className="lpv-topbar-carrito"><ShoppingCart size={13} /></span>
+          </header>
+
+          <section className="lpv-hero">
+            <span className="lpv-hero-eyebrow">Catálogo online</span>
+            <h1>{titulo || 'Título de tu tienda'}</h1>
+            {descripcion && <p>{descripcion}</p>}
+            <span className="lpv-hero-cta">Ver catálogo <ArrowRight size={11} /></span>
+            <div className="lpv-hero-stats">
+              <span><strong>{items.length}</strong> productos</span>
+              {categorias.length > 0 && <span><strong>{categorias.length}</strong> categorías</span>}
+              {testimoniosVisibles.length > 0 && <span><strong>{testimoniosVisibles.length}</strong> opiniones</span>}
+            </div>
+          </section>
+
+          <section className="lpv-benefits">
+            {BENEFICIOS_PREVIEW.map(b => (
+              <div key={b.texto} className="lpv-benefit">
+                <b.icono size={15} strokeWidth={1.7} />
+                <span>{b.texto}</span>
+              </div>
+            ))}
+          </section>
+
+          {categorias.length > 0 && (
+            <section className="lpv-categorias">
+              {categorias.map(c => (
+                <span key={c} className="lpv-categoria-chip"><Package size={11} /> {c}</span>
+              ))}
+            </section>
+          )}
+
+          {itemsDestacados.length > 0 && (
+            <section className="lpv-destacados">
+              <h2>Productos destacados</h2>
+              <div className="lpv-grid">
+                {itemsDestacados.map(item => (
+                  <div key={`destacado-${item.tipo}-${item.id}`} className="lpv-card">
+                    <div className="lpv-card-media">
+                      {item.imagen ? (
+                        <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
+                      ) : (
+                        <div className="lpv-card-media-placeholder">
+                          {item.tipo === 'combo' ? <Layers size={22} /> : <ImageOff size={22} />}
+                          <span>Sin imagen</span>
+                        </div>
+                      )}
+                      <span className="lpv-card-badge destacado">Destacado</span>
+                    </div>
+                    <div className="lpv-card-body">
+                      <h3>{item.nombre}</h3>
+                      <span className="lpv-card-price">{formatPrecio(item.precio_efectivo)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {banner && (
             <div
               className={`lpv-banner ${banner.imagen ? 'con-imagen' : ''}`}
@@ -96,15 +176,14 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
             </div>
           )}
 
-          <header className="lpv-header">
+          <div className="lpv-header">
             {items.length > 0 && (
               <span className="lpv-header-eyebrow">
                 {items.length} producto{items.length === 1 ? '' : 's'}
               </span>
             )}
-            <h1>{titulo || 'Título de tu tienda'}</h1>
-            {descripcion && <p>{descripcion}</p>}
-          </header>
+            <h2>Todos los productos</h2>
+          </div>
 
           {hayFiltros && (
             <div className="lpv-filters">
@@ -166,6 +245,37 @@ export default function LandingPreview({ titulo, descripcion, filtros, items, te
                 </div>
               ))}
             </div>
+          )}
+
+          {testimoniosVisibles.length > 0 && (
+            <section className="lpv-testimonios">
+              <h2>Opiniones</h2>
+              <div className="lpv-testimonio-card">
+                <Quote size={16} className="lpv-testimonio-quote" />
+                <p>&ldquo;{testimoniosVisibles[0].comentario || 'Lo que dijo tu cliente'}&rdquo;</p>
+                <div className="lpv-testimonio-estrellas">
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <Star key={n} size={11} fill={n <= testimoniosVisibles[0].calificacion ? 'currentColor' : 'none'} />
+                  ))}
+                </div>
+                <strong>{testimoniosVisibles[0].nombre || 'Tu cliente'}</strong>
+                {testimoniosVisibles.length > 1 && (
+                  <span className="lpv-testimonio-mas">+{testimoniosVisibles.length - 1} más en la landing real</span>
+                )}
+              </div>
+            </section>
+          )}
+
+          {faqsVisibles.length > 0 && (
+            <section className="lpv-faq">
+              <h2>Preguntas frecuentes</h2>
+              {faqsVisibles.map((f, i) => (
+                <div key={i} className="lpv-faq-item">
+                  <strong>{f.pregunta || '¿Pregunta?'}</strong>
+                  <p>{f.respuesta || 'Respuesta...'}</p>
+                </div>
+              ))}
+            </section>
           )}
 
           <footer className="lpv-footer">

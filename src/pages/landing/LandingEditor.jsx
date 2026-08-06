@@ -4,6 +4,7 @@ import {
   Save, Loader, AlertCircle, Check, Copy, ExternalLink, Eye, EyeOff,
   FileText, LayoutGrid, SlidersHorizontal, Rocket, Palette, MessageCircle,
   Power, PowerOff, CircleAlert, ImagePlus, Trash2, Sun, Moon, Search, BarChart3, Globe, Sparkles,
+  MessageSquareQuote,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -12,6 +13,7 @@ import { getMediaUrl } from '../../services/api';
 import ProductPicker from './ProductPicker';
 import LandingPreview from './LandingPreview';
 import EstadisticasPanel from './EstadisticasPanel';
+import PasoContenido from './PasoContenido';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { MODOS } from '../../lib/landingDiseno';
 import '../vitrina/vitrina.css';
@@ -25,6 +27,7 @@ const PASOS = [
   { id: 'productos', label: 'Productos', icono: LayoutGrid, descripcion: 'Qué vas a mostrar' },
   { id: 'diseno', label: 'Diseño', icono: Palette, descripcion: 'Banner, colores y tipografía' },
   { id: 'filtros', label: 'Filtros', icono: SlidersHorizontal, descripcion: 'Navegación y WhatsApp' },
+  { id: 'contenido', label: 'Opiniones y FAQ', icono: MessageSquareQuote, descripcion: 'Testimonios y preguntas frecuentes' },
   { id: 'seo', label: 'SEO', icono: Search, descripcion: 'Cómo se comparte y se busca' },
   { id: 'estadisticas', label: 'Estadísticas', icono: BarChart3, descripcion: 'Visitas y conversaciones' },
   { id: 'publicar', label: 'Publicar', icono: Rocket, descripcion: 'Link público y estado' },
@@ -79,6 +82,8 @@ const FORM_INICIAL = {
   mostrar_whatsapp: true,
   whatsapp_incluir_precio: false,
   whatsapp_incluir_url: false,
+  mostrar_testimonios: false,
+  mostrar_faq: false,
   seo_titulo: '',
   seo_descripcion: '',
   seo_keywords: '',
@@ -163,6 +168,12 @@ export default function LandingEditor() {
 
   const [form, setForm] = useState(FORM_INICIAL);
   const [seleccion, setSeleccion] = useState(new Map()); // clave -> { tipo, referencia_id, etiqueta }
+  // Testimonios/FAQ se guardan en bloque junto con el resto del form (ver
+  // armarPayload) — igual que `seleccion`, no tienen persistencia propia
+  // fila por fila hasta el próximo Guardar.
+  const [testimonios, setTestimonios] = useState([]); // [{ nombre, foto, calificacion, comentario }]
+  const [faqs, setFaqs] = useState([]); // [{ pregunta, respuesta }]
+  const [subiendoFotoTestimonio, setSubiendoFotoTestimonio] = useState(null); // índice de la fila, o null
   const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [tienda, setTienda] = useState(null);
   const [landing, setLanding] = useState(null); // metadatos del registro guardado
@@ -221,23 +232,71 @@ export default function LandingEditor() {
           mostrar_whatsapp: guardada.mostrar_whatsapp !== false,
           whatsapp_incluir_precio: !!guardada.whatsapp_incluir_precio,
           whatsapp_incluir_url: !!guardada.whatsapp_incluir_url,
+          mostrar_testimonios: !!guardada.mostrar_testimonios,
+          mostrar_faq: !!guardada.mostrar_faq,
           seo_titulo: guardada.seo_titulo || '',
           seo_descripcion: guardada.seo_descripcion || '',
           seo_keywords: guardada.seo_keywords || '',
         });
+        // Ya vienen ordenados por "orden" (ver include en landing.service.js
+        // obtener()) — se copian los campos editables nada más, sin
+        // arrastrar id/landing_id/timestamps que no hace falta mandar de
+        // vuelta (armarPayload reconstruye el orden por índice).
+        setTestimonios((guardada.testimonios || []).map(t => ({
+          nombre: t.nombre, foto: t.foto || null, calificacion: t.calificacion, comentario: t.comentario,
+        })));
+        setFaqs((guardada.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
+        // Un producto/combo puede haberse dado de baja (o quedado sin
+        // stock/"en_venta") desde que se agregó a esta landing. Antes esos
+        // items huérfanos entraban igual a `seleccion` y se mostraban en
+        // "Orden y etiquetas" marcados "ya no disponible" — inofensivo en
+        // apariencia, pero armarPayload() los manda tal cual al guardar, y
+        // el backend rechaza la landing ENTERA por un solo item inválido
+        // (LandingService.resolverItemsCatalogo no hace guardado parcial).
+        // Resultado real: cualquier intento de guardar volvía a fallar con
+        // "El producto #N no existe..." hasta que alguien los sacara a mano
+        // uno por uno. Se filtran acá, ANTES de que entren a `seleccion`, así
+        // ya no aparecen en ningún lado del editor ni pueden volver a romper
+        // un guardado — no requieren que la usuaria haga nada.
+        const clavesCatalogo = new Set([
+          ...(datosCatalogo.productos || []).map(p => claveItem('producto', p.id)),
+          ...(datosCatalogo.combos || []).map(c => claveItem('combo', c.id)),
+        ]);
+
         const mapa = new Map();
+        let descartados = 0;
         [...(guardada.items || [])]
           .sort((a, b) => a.orden - b.orden)
           .forEach(item => {
-            mapa.set(claveItem(item.tipo, item.referencia_id), {
+            const clave = claveItem(item.tipo, item.referencia_id);
+            if (!clavesCatalogo.has(clave)) { descartados++; return; }
+            mapa.set(clave, {
               tipo: item.tipo,
               referencia_id: item.referencia_id,
               etiqueta: item.etiqueta || '',
             });
           });
         setSeleccion(mapa);
+
+        // sucio=true a propósito cuando hubo descarte: lo que quedó en
+        // memoria ya no coincide con lo guardado en la base (que todavía
+        // tiene esas filas huérfanas) hasta el próximo Guardar — el badge
+        // "Cambios sin guardar" no es un falso positivo acá, es exacto.
+        // Siempre se llama a setSucio acá (nunca condicionalmente omitido):
+        // si el usuario navega de una landing con cambios pendientes a otra
+        // (mismo componente, cambia solo el :id de la ruta), sucio=true de
+        // la anterior no debe quedar pegado en la que recién carga.
+        if (descartados > 0) {
+          setExito(
+            descartados === 1
+              ? 'Se quitó 1 producto que ya no está en tu catálogo (dado de baja o sin stock).'
+              : `Se quitaron ${descartados} productos que ya no están en tu catálogo (dados de baja o sin stock).`
+          );
+        }
+        setSucio(descartados > 0);
+      } else {
+        setSucio(false);
       }
-      setSucio(false);
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo cargar la información.');
     } finally {
@@ -320,18 +379,36 @@ export default function LandingEditor() {
     productos: seleccion.size > 0,
     diseno: true,
     filtros: true,
+    contenido: true,
     seo: true,
     publicar: publicada,
   };
 
   /* ─── Mutadores ──────────────────────────────────────────────────────── */
 
+  /**
+   * `error`/`erroresValidacion` solo se tocan dentro de guardar() — nada
+   * más los limpia. Sin esto, el mensaje de un intento de guardado fallido
+   * ("El producto #6 no existe...") queda pegado en pantalla pase lo que
+   * pase después: seguís tocando el picker, el error sigue ahí, y da la
+   * impresión de que CUALQUIER cambio lo vuelve a disparar — no es así, es
+   * el mismo mensaje viejo sin borrar. Cada mutador lo descarta al primer
+   * cambio, para que el usuario sepa que ese error ya no aplica al estado
+   * actual (se vuelve a mostrar de cero si el próximo guardado falla).
+   */
+  function limpiarErrorPrevio() {
+    setError(null);
+    setErroresValidacion([]);
+  }
+
   function handleChange(campo, valor) {
+    limpiarErrorPrevio();
     setForm(prev => ({ ...prev, [campo]: valor }));
     setSucio(true);
   }
 
   function toggleItem(item) {
+    limpiarErrorPrevio();
     const clave = claveItem(item.tipo, item.id);
     setSeleccion(prev => {
       const copia = new Map(prev);
@@ -347,6 +424,7 @@ export default function LandingEditor() {
   }
 
   function actualizarEtiqueta(item, etiqueta) {
+    limpiarErrorPrevio();
     const clave = claveItem(item.tipo, item.id);
     setSeleccion(prev => {
       if (!prev.has(clave)) return prev;
@@ -357,12 +435,131 @@ export default function LandingEditor() {
     setSucio(true);
   }
 
+  /**
+   * Un producto o combo puede darse de baja (o quedar sin stock/estado
+   * "en_venta") después de agregarse a la landing — sigue en `seleccion`
+   * pero ya no está en `catalogo` (ver itemsOrdenados: se marca
+   * no_disponible). armarPayload() manda `seleccion` tal cual al guardar, y
+   * el backend rechaza la landing ENTERA si cualquier item referencia un
+   * producto que no está activo (LandingService.resolverItemsCatalogo) — no
+   * hay guardado parcial. Este botón es la salida: saca de una sola vez
+   * todo lo que ya no es válido, sin tocar el resto de la selección.
+   */
+  function quitarNoDisponibles() {
+    limpiarErrorPrevio();
+    const claves = itemsOrdenados.filter(i => i.no_disponible).map(i => claveItem(i.tipo, i.id));
+    if (!claves.length) return;
+    setSeleccion(prev => {
+      const copia = new Map(prev);
+      claves.forEach(clave => copia.delete(clave));
+      return copia;
+    });
+    setSucio(true);
+  }
+
   function reordenar(desde, hasta) {
+    limpiarErrorPrevio();
     setSeleccion(prev => {
       const entradas = Array.from(prev.entries());
       const [movida] = entradas.splice(desde, 1);
       entradas.splice(hasta, 0, movida);
       return new Map(entradas);
+    });
+    setSucio(true);
+  }
+
+  /* ─── Testimonios y FAQ ──────────────────────────────────────────────────
+     Listas planas en useState (este archivo no usa react-hook-form en
+     ningún lado, así que no se introduce acá solo para esto) con flechas
+     arriba/abajo en vez de arrastrar — más simple que ListaOrden de
+     ProductPicker.jsx, que es lo que pidió explícitamente el alcance. */
+  function agregarTestimonio() {
+    limpiarErrorPrevio();
+    setTestimonios(prev => [...prev, { nombre: '', foto: null, calificacion: 5, comentario: '' }]);
+    setSucio(true);
+  }
+  function actualizarTestimonio(idx, campo, valor) {
+    limpiarErrorPrevio();
+    setTestimonios(prev => prev.map((t, i) => (i === idx ? { ...t, [campo]: valor } : t)));
+    setSucio(true);
+  }
+  function quitarTestimonio(idx) {
+    limpiarErrorPrevio();
+    setTestimonios(prev => prev.filter((_, i) => i !== idx));
+    setSucio(true);
+  }
+  function moverTestimonio(idx, delta) {
+    const destino = idx + delta;
+    if (destino < 0 || destino >= testimonios.length) return;
+    limpiarErrorPrevio();
+    setTestimonios(prev => {
+      const copia = [...prev];
+      [copia[idx], copia[destino]] = [copia[destino], copia[idx]];
+      return copia;
+    });
+    setSucio(true);
+  }
+
+  /**
+   * Mismo criterio que handleBannerFile: si todavía no hay landing
+   * guardada, guarda primero para tener un id contra el cual subir. A
+   * diferencia del banner, la respuesta es solo { url } — no hay fila con
+   * id estable a la que colgarle la imagen (ver sincronizarTestimonios en
+   * el backend, destroy-all + bulkCreate en cada guardado) — la URL se
+   * pega directo en el campo "foto" de la fila que se está editando.
+   */
+  async function handleTestimonioFoto(idx, file) {
+    if (!file) return;
+    if (file.size > MAX_IMAGEN_BYTES) {
+      setError('La foto supera el máximo permitido de 1MB.');
+      return;
+    }
+
+    let idActual = id || landing?.id;
+    if (!idActual) {
+      const guardada = await guardar();
+      if (!guardada) return;
+      idActual = guardada.id;
+      if (!esEdicion) navigate(`/mi-landing/${guardada.id}`, { replace: true });
+    }
+
+    setSubiendoFotoTestimonio(idx);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('imagen', file);
+      const { url } = await landingService.subirTestimonioFoto(idActual, fd);
+      actualizarTestimonio(idx, 'foto', url);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al subir la foto del testimonio.');
+    } finally {
+      setSubiendoFotoTestimonio(null);
+    }
+  }
+
+  function agregarFaq() {
+    limpiarErrorPrevio();
+    setFaqs(prev => [...prev, { pregunta: '', respuesta: '' }]);
+    setSucio(true);
+  }
+  function actualizarFaq(idx, campo, valor) {
+    limpiarErrorPrevio();
+    setFaqs(prev => prev.map((f, i) => (i === idx ? { ...f, [campo]: valor } : f)));
+    setSucio(true);
+  }
+  function quitarFaq(idx) {
+    limpiarErrorPrevio();
+    setFaqs(prev => prev.filter((_, i) => i !== idx));
+    setSucio(true);
+  }
+  function moverFaq(idx, delta) {
+    const destino = idx + delta;
+    if (destino < 0 || destino >= faqs.length) return;
+    limpiarErrorPrevio();
+    setFaqs(prev => {
+      const copia = [...prev];
+      [copia[idx], copia[destino]] = [copia[destino], copia[idx]];
+      return copia;
     });
     setSucio(true);
   }
@@ -474,6 +671,14 @@ export default function LandingEditor() {
       // lo que muestra la vista previa.
       titulo: form.titulo.trim() || form.nombre.trim(),
       items: Array.from(seleccion.values()).map((item, idx) => ({ ...item, orden: idx })),
+      testimonios: testimonios.map((t, idx) => ({
+        nombre: t.nombre.trim(),
+        foto: t.foto || null,
+        calificacion: Number(t.calificacion),
+        comentario: t.comentario.trim(),
+        orden: idx,
+      })),
+      faq: faqs.map((f, idx) => ({ pregunta: f.pregunta.trim(), respuesta: f.respuesta.trim(), orden: idx })),
     };
   }
 
@@ -685,8 +890,15 @@ export default function LandingEditor() {
       {hayNoDisponibles && (
         <div className="lb-alert-warn">
           <CircleAlert size={14} />
-          Hay productos que ya no están en tu catálogo. No se muestran en la landing pública —
-          quitalos en <strong>Productos → Orden y etiquetas</strong>.
+          <span>
+            Hay {itemsOrdenados.filter(i => i.no_disponible).length === 1 ? 'un producto' : 'productos'} que
+            {' '}ya no {itemsOrdenados.filter(i => i.no_disponible).length === 1 ? 'está' : 'están'} en tu catálogo
+            (dado de baja o sin stock). No se muestra en la landing pública, y <strong>el próximo guardado va a fallar</strong> mientras
+            siga en la lista.
+          </span>
+          <button type="button" className="lb-alert-warn-btn" onClick={quitarNoDisponibles}>
+            Quitar {itemsOrdenados.filter(i => i.no_disponible).length === 1 ? '' : `(${itemsOrdenados.filter(i => i.no_disponible).length})`}
+          </button>
         </div>
       )}
 
@@ -1042,6 +1254,26 @@ export default function LandingEditor() {
             </div>
           )}
 
+          {paso === 'contenido' && (
+            <PasoContenido
+              mostrarTestimonios={form.mostrar_testimonios}
+              mostrarFaq={form.mostrar_faq}
+              onChange={handleChange}
+              testimonios={testimonios}
+              onAgregarTestimonio={agregarTestimonio}
+              onActualizarTestimonio={actualizarTestimonio}
+              onQuitarTestimonio={quitarTestimonio}
+              onMoverTestimonio={moverTestimonio}
+              onSubirFotoTestimonio={handleTestimonioFoto}
+              subiendoFotoTestimonio={subiendoFotoTestimonio}
+              faqs={faqs}
+              onAgregarFaq={agregarFaq}
+              onActualizarFaq={actualizarFaq}
+              onQuitarFaq={quitarFaq}
+              onMoverFaq={moverFaq}
+            />
+          )}
+
           {paso === 'seo' && (
             <div className="lb-section">
               <header className="lb-section-head">
@@ -1255,6 +1487,10 @@ export default function LandingEditor() {
                 boton_link: form.banner_boton_link,
               } : null}
               urlPublica={urlPublica}
+              mostrarTestimonios={form.mostrar_testimonios}
+              testimonios={testimonios}
+              mostrarFaq={form.mostrar_faq}
+              faqs={faqs}
             />
           </aside>
         )}
