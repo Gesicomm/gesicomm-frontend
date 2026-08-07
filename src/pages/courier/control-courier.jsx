@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard } from "lucide-react";
 import { SummaryBar } from "./summary-bar";
-import { DayFilter } from "./day-filter";
 import { PedidosTable } from "./PedidosTable";
 import { CouriersCrud } from "./couriers-crud";
 import { MetodosPagoCrud } from "./MetodosPagoCrud";
@@ -23,19 +22,17 @@ import "./courier.css";
 const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "analitica"]);
 
 export function ControlCourier() {
-  // Permite llegar directo a una pestaña con un link (ej: "Mi Dashboard"
-  // linkeando a /mis-pedidos?tab=analitica) en vez de siempre abrir en
-  // Tablero y obligar a la usuaria a encontrar la pestaña ella misma.
   const [searchParams] = useSearchParams();
   const tabInicial = searchParams.get("tab");
   const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [couriers, setCouriers] = useState([]);
-  const [envios, setEnvios] = useState([]);                 // solo para el SummaryBar del día
+  const [envios, setEnvios] = useState([]);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
   const [openImprimir, setOpenImprimir] = useState(false);
   const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [refrescarKey, setRefrescarKey] = useState(0);
 
   useEffect(() => {
     cargarDatos();
@@ -69,33 +66,9 @@ export function ControlCourier() {
     return acc;
   }, [envios]);
 
-  const handleDropCard = async (nuevoEstado) => {
-    if (!draggingId) return;
-    const envioId = draggingId;
-    setDraggingId(null);
-
-    // "Confirmado" no se aplica directo: abre el modal para completar
-    // courier/costo de envío primero — recién ese submit dispara el PUT.
+  const handleChangeEstado = async (id, nuevoEstado, envioDirecto = null) => {
     if (nuevoEstado === "Confirmado") {
-      const envio = envios.find(e => e.id === envioId);
-      if (envio) setEnvioParaCompletar(envio);
-      return;
-    }
-
-    // Optimistic update
-    setEnvios(prev => prev.map(e => e.id === envioId ? { ...e, estado: nuevoEstado } : e));
-
-    try {
-      await updateEstadoEnvio(envioId, { estado: nuevoEstado });
-    } catch (err) {
-      console.error("Error actualizando estado:", err);
-      cargarDatos(); // Revert back on error
-    }
-  };
-
-  const handleChangeEstado = async (id, nuevoEstado) => {
-    if (nuevoEstado === "Confirmado") {
-      const envio = envios.find(e => e.id === id);
+      const envio = envioDirecto || envios.find(e => e.id === id);
       if (envio) setEnvioParaCompletar(envio);
       return;
     }
@@ -103,6 +76,7 @@ export function ControlCourier() {
     setEnvios(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
     try {
       await updateEstadoEnvio(id, { estado: nuevoEstado });
+      cargarDatos();
     } catch (err) {
       console.error("Error actualizando estado:", err);
       cargarDatos();
@@ -113,18 +87,18 @@ export function ControlCourier() {
     const actualizado = await updateEstadoEnvio(payload.id, payload);
     setEnvios(prev => prev.map(e => e.id === payload.id ? actualizado : e));
     setEnvioParaCompletar(null);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
   };
 
   const handleCreateNuevoPedido = async (payload) => {
     const res = await createEnvio(payload);
     setEnvios(prev => [res, ...prev]);
     setOpenNuevoPedido(false);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
   };
 
-  // El modal único de Pedido llama a esto tanto al crear como al completar
-  // (mismo formulario — ver NuevoPedidoModal.jsx). Los errores del backend
-  // (RUC obligatorio, comprobante duplicado, etc.) se propagan al modal,
-  // que los muestra inline en vez de un alert() bloqueante.
   const handleModalSubmit = (payload, modoCompletar) => (
     modoCompletar ? handleConfirmarPedido(payload) : handleCreateNuevoPedido(payload)
   );
@@ -182,17 +156,6 @@ export function ControlCourier() {
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
         {tab === "tablero" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* ── Resumen del día ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#fff' }}>Resumen del día</h2>
-                <p style={{ fontSize: '0.8rem', color: '#888', margin: '0.2rem 0 0 0' }}>
-                  KPIs en tiempo real. Usá los filtros de abajo para buscar pedidos históricos.
-                </p>
-              </div>
-              <DayFilter date={date} onChange={setDate} count={enviosDelDia.length} />
-            </div>
-
             <SummaryBar envios={enviosDelDia} couriers={couriers} />
 
             {/* ── Tabla de pedidos con paginación y filtros ── */}
@@ -200,6 +163,7 @@ export function ControlCourier() {
               couriers={couriers}
               onChangeEstado={handleChangeEstado}
               onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
+              refrescarKey={refrescarKey}
             />
           </div>
         ) : tab === "couriers" ? (

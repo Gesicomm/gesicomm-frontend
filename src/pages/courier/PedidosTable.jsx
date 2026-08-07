@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
   ChevronDown, MapPin, Truck, User,
@@ -20,31 +20,130 @@ const FILTROS_VACIOS = {
   origen: "TODOS",
 };
 
-function EstadoBadge({ estado, onChange }) {
-  const s = STATUS[estado] || { chipBg: "rgba(255,255,255,0.1)", chipText: "#aaa" };
+function EstadoBadgeDropdown({ estado, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const s = STATUS[estado] || { chipBg: "rgba(255,255,255,0.08)", chipText: "#aaa" };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
   return (
-    <select
-      value={estado}
-      onChange={(e) => { e.stopPropagation(); onChange(e.target.value); }}
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        background: s.chipBg,
-        color: s.chipText,
-        border: `1px solid ${s.chipText}33`,
-        borderRadius: "6px",
-        padding: "3px 8px",
-        fontSize: "0.72rem",
-        fontWeight: 700,
-        cursor: "pointer",
-        outline: "none",
-        appearance: "none",
-        WebkitAppearance: "none",
-        minWidth: "110px",
-        textAlign: "center",
-      }}
-    >
-      {STATUS_ORDER.map((st) => <option key={st} value={st}>{st}</option>)}
-    </select>
+    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+        style={{
+          background: s.chipBg,
+          color: s.chipText,
+          border: `1px solid ${s.chipText}40`,
+          borderRadius: "6px",
+          padding: "4px 10px",
+          fontSize: "0.74rem",
+          fontWeight: 700,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
+          transition: "all 0.15s ease",
+          outline: "none",
+          whiteSpace: "nowrap",
+          userSelect: "none",
+        }}
+      >
+        <span>{estado || "Pendiente"}</span>
+        <ChevronDown
+          size={12}
+          style={{
+            opacity: 0.8,
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 0.15s",
+          }}
+        />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            right: 0,
+            zIndex: 9999,
+            background: "#18181b",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            borderRadius: "8px",
+            padding: "4px",
+            minWidth: "150px",
+            boxShadow: "0 12px 32px rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {STATUS_ORDER.map((st) => {
+            const config = STATUS[st] || { chipBg: "rgba(255,255,255,0.05)", chipText: "#aaa" };
+            const isSelected = st === estado;
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onChange(st);
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "6px 10px",
+                  borderRadius: "5px",
+                  background: isSelected ? "rgba(255, 255, 255, 0.1)" : "transparent",
+                  color: isSelected ? "#fff" : "#ccc",
+                  border: "none",
+                  fontSize: "0.78rem",
+                  fontWeight: isSelected ? 700 : 500,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background 0.12s",
+                  width: "100%",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.currentTarget.style.background = "rgba(255, 255, 255, 0.07)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <span
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    backgroundColor: config.chipText || "#aaa",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ flex: 1 }}>{st}</span>
+                {isSelected && (
+                  <span style={{ color: config.chipText, fontSize: "0.75rem", fontWeight: "bold" }}>
+                    ✓
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -53,7 +152,9 @@ function MultiEstadoSelect({ value, onChange }) {
   const ref = useRef(null);
 
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
@@ -63,9 +164,11 @@ function MultiEstadoSelect({ value, onChange }) {
   };
 
   const label =
-    value.length === 0 ? "Todos los estados" :
-    value.length === 1 ? value[0] :
-    `${value.length} estados`;
+    value.length === 0
+      ? "Todos los estados"
+      : value.length === 1
+      ? value[0]
+      : `${value.length} estados`;
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
@@ -87,12 +190,24 @@ function MultiEstadoSelect({ value, onChange }) {
               <label key={estado} className="pt-estado-option" onClick={() => toggle(estado)}>
                 <span className="pt-estado-dot" style={{ background: st.chipText || "#aaa" }} />
                 <span style={{ color: checked ? "#fff" : "#888", flex: 1 }}>{estado}</span>
-                <input type="checkbox" checked={checked} readOnly style={{ accentColor: st.chipText }} />
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  readOnly
+                  style={{ accentColor: st.chipText }}
+                />
               </label>
             );
           })}
           {value.length > 0 && (
-            <button type="button" onClick={() => { onChange([]); setOpen(false); }} className="pt-clear-estados">
+            <button
+              type="button"
+              onClick={() => {
+                onChange([]);
+                setOpen(false);
+              }}
+              className="pt-clear-estados"
+            >
               Limpiar estados
             </button>
           )}
@@ -102,31 +217,25 @@ function MultiEstadoSelect({ value, onChange }) {
   );
 }
 
-export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) {
+export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, refrescarKey = 0 }) {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [masFilters, setMasFilters] = useState(false);
 
-  // Versión estable del ref de filtros para el debounce
-  const filtrosRef = useRef(filtros);
-  const pageRef = useRef(page);
-  filtrosRef.current = filtros;
-  pageRef.current = page;
-
   const cargar = useCallback(async (f, p) => {
     setLoading(true);
     try {
       const payload = { page: p, limit: LIMITE };
-      if (f.cliente.trim())      payload.cliente     = f.cliente.trim();
-      if (f.ciudad.trim())       payload.ciudad      = f.ciudad.trim();
-      if (f.fecha_desde)         payload.fecha_desde = f.fecha_desde;
-      if (f.fecha_hasta)         payload.fecha_hasta = f.fecha_hasta;
-      if (f.estados.length > 0)  payload.estados     = f.estados;
+      if (f.cliente.trim()) payload.cliente = f.cliente.trim();
+      if (f.ciudad.trim()) payload.ciudad = f.ciudad.trim();
+      if (f.fecha_desde) payload.fecha_desde = f.fecha_desde;
+      if (f.fecha_hasta) payload.fecha_hasta = f.fecha_hasta;
+      if (f.estados.length > 0) payload.estados = f.estados;
       if (f.courier_id !== "TODOS") payload.courier_id = f.courier_id;
-      if (f.confirmador.trim())  payload.confirmador = f.confirmador.trim();
-      if (f.origen !== "TODOS")  payload.origen      = f.origen;
+      if (f.confirmador.trim()) payload.confirmador = f.confirmador.trim();
+      if (f.origen !== "TODOS") payload.origen = f.origen;
       const res = await getEnviosPaginados(payload);
       setData(res);
     } catch (err) {
@@ -136,7 +245,6 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
     }
   }, []);
 
-  // Un solo efecto con debounce que maneja tanto filtros como página
   const timerRef = useRef(null);
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -144,16 +252,40 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
       cargar(filtros, page);
     }, 300);
     return () => clearTimeout(timerRef.current);
-  }, [filtros, page, cargar]);
+  }, [filtros, page, refrescarKey, cargar]);
 
   const setFiltro = (key, val) => {
     setFiltros((prev) => ({ ...prev, [key]: val }));
-    setPage(1); // reset página al cambiar cualquier filtro
+    setPage(1);
   };
 
   const resetFiltros = () => {
     setFiltros(FILTROS_VACIOS);
     setPage(1);
+  };
+
+  const handleItemEstadoChange = (item, nuevoEstado) => {
+    if (item.estado === nuevoEstado) return;
+
+    if (nuevoEstado === "Confirmado") {
+      if (onAbrirDetalle) {
+        onAbrirDetalle(item);
+      } else if (onChangeEstado) {
+        onChangeEstado(item.id, "Confirmado", item);
+      }
+      return;
+    }
+
+    setData((prev) => ({
+      ...prev,
+      data: (prev.data || []).map((row) =>
+        row.id === item.id ? { ...row, estado: nuevoEstado } : row
+      ),
+    }));
+
+    if (onChangeEstado) {
+      onChangeEstado(item.id, nuevoEstado, item);
+    }
   };
 
   const hayFiltros = Object.entries(filtros).some(([, v]) =>
@@ -165,9 +297,18 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
   return (
     <div className="pt-root">
       {/* ── Sección título tabla ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.5rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: "0.5rem",
+        }}
+      >
         <div>
-          <h2 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "#fff" }}>Todos los Pedidos</h2>
+          <h2 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "#fff" }}>
+            Todos los Pedidos
+          </h2>
           <p style={{ fontSize: "0.78rem", color: "#666", margin: "2px 0 0 0" }}>
             Filtrá por estado, fecha, cliente, ciudad o courier. 10 registros por página.
           </p>
@@ -256,7 +397,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
         )}
 
         {/* Contador */}
-        <span className="pt-count">{loading ? "…" : `${data.total.toLocaleString("es-PY")} pedidos`}</span>
+        <span className="pt-count">
+          {loading ? "…" : `${data.total.toLocaleString("es-PY")} pedidos`}
+        </span>
       </div>
 
       {/* ── Filtros extra (courier, confirmador, origen) ── */}
@@ -273,7 +416,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
               <option value="TODOS">Todos los couriers</option>
               <option value="null">Sin courier</option>
               {couriers.map((c) => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
               ))}
             </select>
           </label>
@@ -295,7 +440,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
             onChange={(e) => setFiltro("origen", e.target.value)}
           >
             {ORIGENES.map((o) => (
-              <option key={o} value={o}>{o === "TODOS" ? "Todos los orígenes" : o}</option>
+              <option key={o} value={o}>
+                {o === "TODOS" ? "Todos los orígenes" : o}
+              </option>
             ))}
           </select>
         </div>
@@ -326,25 +473,36 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
               </tr>
             ) : envios.length === 0 ? (
               <tr>
-                <td colSpan={9} className="pt-empty">No hay pedidos que coincidan con los filtros.</td>
+                <td colSpan={9} className="pt-empty">
+                  No hay pedidos que coincidan con los filtros.
+                </td>
               </tr>
             ) : (
               envios.map((e) => {
                 const items = e.items || [];
                 const resumenItems =
-                  items.length === 0 ? "—" :
-                  items.length === 1
-                    ? `${items[0].nombre_producto}${items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""}`
+                  items.length === 0
+                    ? "—"
+                    : items.length === 1
+                    ? `${items[0].nombre_producto}${
+                        items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""
+                      }`
                     : `${items[0].nombre_producto} +${items.length - 1} más`;
 
                 return (
-                  <tr key={e.id} className="pt-row" onClick={() => onAbrirDetalle && onAbrirDetalle(e)}>
+                  <tr
+                    key={e.id}
+                    className="pt-row"
+                    onClick={() => onAbrirDetalle && onAbrirDetalle(e)}
+                  >
                     <td className="pt-td pt-td-id">#{e.id}</td>
                     <td className="pt-td pt-td-fecha">{e.dispatchedAt || e.fecha || "—"}</td>
                     <td className="pt-td">
                       <div className="pt-cliente">
                         <span className="pt-cliente-nombre">
-                          {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "—"}
+                          {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
+                            e.cliente ||
+                            "—"}
                         </span>
                         {e.telefono && <span className="pt-cliente-tel">{e.telefono}</span>}
                       </div>
@@ -361,20 +519,24 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
                     </td>
                     <td className="pt-td pt-td-num">
                       <span>{formatGs(e.monto)}</span>
-                      {e.costo_envio > 0 && <span className="pt-delivery">+{formatGs(e.costo_envio)}</span>}
+                      {e.costo_envio > 0 && (
+                        <span className="pt-delivery">+{formatGs(e.costo_envio)}</span>
+                      )}
                     </td>
                     <td className="pt-td">
                       <span className="pt-pago">{e.metodo_pago || "—"}</span>
                     </td>
                     <td className="pt-td">
-                      {e.Courier
-                        ? <span className="pt-courier">{e.Courier.nombre}</span>
-                        : <span className="pt-sin-courier">—</span>}
+                      {e.Courier ? (
+                        <span className="pt-courier">{e.Courier.nombre}</span>
+                      ) : (
+                        <span className="pt-sin-courier">—</span>
+                      )}
                     </td>
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
-                      <EstadoBadge
+                      <EstadoBadgeDropdown
                         estado={e.estado}
-                        onChange={(nuevoEstado) => onChangeEstado && onChangeEstado(e.id, nuevoEstado)}
+                        onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
                       />
                     </td>
                   </tr>
@@ -388,7 +550,11 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
       {/* ── Paginación ── */}
       {data.totalPages > 1 && (
         <div className="pt-pagination">
-          <button className="pt-pag-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+          <button
+            className="pt-pag-btn"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+          >
             <ChevronLeft size={16} />
           </button>
 
@@ -401,7 +567,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
             }, [])
             .map((p, idx) =>
               p === "..." ? (
-                <span key={`e${idx}`} className="pt-pag-ellipsis">…</span>
+                <span key={`e${idx}`} className="pt-pag-ellipsis">
+                  …
+                </span>
               ) : (
                 <button
                   key={p}
@@ -413,11 +581,16 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
               )
             )}
 
-          <button className="pt-pag-btn" onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))} disabled={page >= data.totalPages}>
+          <button
+            className="pt-pag-btn"
+            onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+            disabled={page >= data.totalPages}
+          >
             <ChevronRight size={16} />
           </button>
           <span className="pt-pag-info">
-            {Math.min((page - 1) * LIMITE + 1, data.total)}–{Math.min(page * LIMITE, data.total)} de {data.total.toLocaleString("es-PY")}
+            {Math.min((page - 1) * LIMITE + 1, data.total)}–
+            {Math.min(page * LIMITE, data.total)} de {data.total.toLocaleString("es-PY")}
           </span>
         </div>
       )}

@@ -173,7 +173,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   // Ítems a considerar para calcular tarifa de courier: en modo "completar"
   // ya están comprometidos (no editables acá), en modo alta son los que se
   // van agregando en el formulario.
-  const itemsParaTarifa = modoCompletar ? (envio?.items || []) : items;
+  // Normalizamos siempre el subtotal porque los items que vienen del endpoint
+  // paginado no tienen el campo "subtotal" precalculado — lo calculamos acá.
+  const itemsParaTarifa = modoCompletar
+    ? (envio?.items || []).map(it => ({
+        ...it,
+        subtotal: Number(it.subtotal) || (Number(it.precio_unitario) * Number(it.cantidad)),
+      }))
+    : items;
 
   // Si se está completando un pedido sin courier asignado, intenta
   // autocompletarlo apenas ciudad + couriers + métodos de pago están listos.
@@ -342,8 +349,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     }
   };
 
-  const subtotalProductos = itemsParaTarifa.reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
-  const precioTotalVendido = subtotalProductos + (Number(form.costo_envio) || 0);
+  const subtotalProductos = itemsParaTarifa.reduce((acc, curr) => {
+    const pUnit = Number(curr.precio_unitario) || 0;
+    const cant = Number(curr.cantidad) || 1;
+    const sub = Number(curr.subtotal) || (pUnit * cant);
+    return acc + (Number(sub) || 0);
+  }, 0);
+  const precioTotalVendido = (Number(subtotalProductos) || 0) + (Number(form.costo_envio) || 0);
 
   // Validaciones personalizadas en español (sin HTML native form tooltips)
   const validarFormulario = () => {
@@ -788,25 +800,30 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {itemsParaTarifa.map((it, idx) => (
-                    <tr key={idx}>
-                      <td style={{ color: '#fff', fontWeight: 600 }}>{it.nombre_producto}</td>
-                      <td style={{ textAlign: 'center' }}>{it.cantidad}</td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
-                        Gs. {Number(it.precio_unitario).toLocaleString('es-PY')}
-                      </td>
-                      <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10b981', fontWeight: 'bold' }}>
-                        Gs. {Number(it.subtotal).toLocaleString('es-PY')}
-                      </td>
-                      {!modoCompletar && (
-                        <td style={{ textAlign: 'right' }}>
-                          <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger">
-                            <Trash2 size={14} />
-                          </button>
+                  {itemsParaTarifa.map((it, idx) => {
+                    const pUnit = Number(it.precio_unitario) || 0;
+                    const cant = Number(it.cantidad) || 1;
+                    const sub = Number(it.subtotal) || (pUnit * cant);
+                    return (
+                      <tr key={idx}>
+                        <td style={{ color: '#fff', fontWeight: 600 }}>{it.nombre_producto}</td>
+                        <td style={{ textAlign: 'center' }}>{cant}</td>
+                        <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
+                          Gs. {pUnit.toLocaleString('es-PY')}
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10b981', fontWeight: 'bold' }}>
+                          Gs. {sub.toLocaleString('es-PY')}
+                        </td>
+                        {!modoCompletar && (
+                          <td style={{ textAlign: 'right' }}>
+                            <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger">
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
@@ -818,11 +835,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
             {/* Resumen Total Desglosado */}
             <div className="np-total-row">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: '#aaa' }}>
-                <span>Subtotal productos: Gs. {subtotalProductos.toLocaleString('es-PY')}</span>
+                <span>Subtotal productos: Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</span>
                 <span>Costo Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
               </div>
               <strong className="np-total-amount">
-                Total: Gs. {precioTotalVendido.toLocaleString('es-PY')}
+                Total: Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}
               </strong>
             </div>
           </div>
