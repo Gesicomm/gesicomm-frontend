@@ -25,6 +25,15 @@ export const getEnvios = async (fecha = null, estado = null) => {
   return data;
 };
 
+/**
+ * Versión paginada de getEnvios para la vista de tabla.
+ * @param {object} filtros - { page, limit, fecha_desde, fecha_hasta, estados[], cliente, ciudad, courier_id, confirmador, origen }
+ */
+export const getEnviosPaginados = async (filtros = {}) => {
+  const { data } = await api.post('/envios/list-paginado', filtros);
+  return data;
+};
+
 export const createEnvio = async (envioData) => {
   const { data } = await api.post('/envios', envioData);
   return data;

@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard } from "lucide-react";
-import { KanbanBoard } from "./kanban-board";
 import { SummaryBar } from "./summary-bar";
 import { DayFilter } from "./day-filter";
+import { PedidosTable } from "./PedidosTable";
 import { CouriersCrud } from "./couriers-crud";
 import { MetodosPagoCrud } from "./MetodosPagoCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
@@ -31,8 +31,7 @@ export function ControlCourier() {
   const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [couriers, setCouriers] = useState([]);
-  const [envios, setEnvios] = useState([]);
-  const [draggingId, setDraggingId] = useState(null);
+  const [envios, setEnvios] = useState([]);                 // solo para el SummaryBar del día
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
   const [openImprimir, setOpenImprimir] = useState(false);
   const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
@@ -183,11 +182,12 @@ export function ControlCourier() {
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
         {tab === "tablero" ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* ── Resumen del día ── */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#fff' }}>Envíos del día</h2>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: '#fff' }}>Resumen del día</h2>
                 <p style={{ fontSize: '0.8rem', color: '#888', margin: '0.2rem 0 0 0' }}>
-                  Arrastrá las tarjetas entre columnas para actualizar el estado instantáneamente.
+                  KPIs en tiempo real. Usá los filtros de abajo para buscar pedidos históricos.
                 </p>
               </div>
               <DayFilter date={date} onChange={setDate} count={enviosDelDia.length} />
@@ -195,19 +195,12 @@ export function ControlCourier() {
 
             <SummaryBar envios={enviosDelDia} couriers={couriers} />
 
-            {loading ? (
-              <div style={{ padding: '3rem', textAlign: 'center', color: '#888' }}>Cargando envíos...</div>
-            ) : (
-              <KanbanBoard
-                envios={enviosDelDia}
-                couriers={couriers}
-                draggingId={draggingId}
-                onDragStartCard={(id) => setDraggingId(id)}
-                onDragEndCard={() => setDraggingId(null)}
-                onDropCard={handleDropCard}
-                onChangeEstado={handleChangeEstado}
-              />
-            )}
+            {/* ── Tabla de pedidos con paginación y filtros ── */}
+            <PedidosTable
+              couriers={couriers}
+              onChangeEstado={handleChangeEstado}
+              onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
+            />
           </div>
         ) : tab === "couriers" ? (
           <CouriersCrud
