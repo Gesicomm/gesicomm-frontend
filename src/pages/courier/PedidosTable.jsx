@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, Calendar,
+  ChevronDown, MapPin, Truck, User,
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados } from "../../services/courierApi";
@@ -43,7 +43,7 @@ function EstadoBadge({ estado, onChange }) {
         textAlign: "center",
       }}
     >
-      {STATUS_ORDER.map((s) => <option key={s} value={s}>{s}</option>)}
+      {STATUS_ORDER.map((st) => <option key={st} value={st}>{st}</option>)}
     </select>
   );
 }
@@ -59,8 +59,7 @@ function MultiEstadoSelect({ value, onChange }) {
   }, []);
 
   const toggle = (estado) => {
-    if (value.includes(estado)) onChange(value.filter((e) => e !== estado));
-    else onChange([...value, estado]);
+    onChange(value.includes(estado) ? value.filter((e) => e !== estado) : [...value, estado]);
   };
 
   const label =
@@ -74,10 +73,10 @@ function MultiEstadoSelect({ value, onChange }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="pt-filter-select"
-        style={{ minWidth: "160px", justifyContent: "space-between", display: "flex", alignItems: "center", gap: "0.5rem" }}
+        style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: "155px" }}
       >
-        <span>{label}</span>
-        <ChevronDown size={14} />
+        <span style={{ flex: 1, textAlign: "left" }}>{label}</span>
+        <ChevronDown size={13} />
       </button>
       {open && (
         <div className="pt-estado-dropdown">
@@ -85,10 +84,10 @@ function MultiEstadoSelect({ value, onChange }) {
             const st = STATUS[estado] || {};
             const checked = value.includes(estado);
             return (
-              <label key={estado} className="pt-estado-option" style={{ cursor: "pointer" }} onClick={() => toggle(estado)}>
+              <label key={estado} className="pt-estado-option" onClick={() => toggle(estado)}>
                 <span className="pt-estado-dot" style={{ background: st.chipText || "#aaa" }} />
-                <span style={{ color: checked ? "#fff" : "#999", flex: 1 }}>{estado}</span>
-                <input type="checkbox" checked={checked} readOnly style={{ accentColor: st.chipText, cursor: "pointer" }} />
+                <span style={{ color: checked ? "#fff" : "#888", flex: 1 }}>{estado}</span>
+                <input type="checkbox" checked={checked} readOnly style={{ accentColor: st.chipText }} />
               </label>
             );
           })}
@@ -108,24 +107,26 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const debounceRef = useRef(null);
+  const [masFilters, setMasFilters] = useState(false);
+
+  // Versión estable del ref de filtros para el debounce
+  const filtrosRef = useRef(filtros);
+  const pageRef = useRef(page);
+  filtrosRef.current = filtros;
+  pageRef.current = page;
 
   const cargar = useCallback(async (f, p) => {
     setLoading(true);
     try {
-      const payload = {
-        page: p,
-        limit: LIMITE,
-        ...(f.cliente.trim() ? { cliente: f.cliente.trim() } : {}),
-        ...(f.ciudad.trim() ? { ciudad: f.ciudad.trim() } : {}),
-        ...(f.fecha_desde ? { fecha_desde: f.fecha_desde } : {}),
-        ...(f.fecha_hasta ? { fecha_hasta: f.fecha_hasta } : {}),
-        ...(f.estados.length > 0 ? { estados: f.estados } : {}),
-        ...(f.courier_id !== "TODOS" ? { courier_id: f.courier_id } : {}),
-        ...(f.confirmador.trim() ? { confirmador: f.confirmador.trim() } : {}),
-        ...(f.origen !== "TODOS" ? { origen: f.origen } : {}),
-      };
+      const payload = { page: p, limit: LIMITE };
+      if (f.cliente.trim())      payload.cliente     = f.cliente.trim();
+      if (f.ciudad.trim())       payload.ciudad      = f.ciudad.trim();
+      if (f.fecha_desde)         payload.fecha_desde = f.fecha_desde;
+      if (f.fecha_hasta)         payload.fecha_hasta = f.fecha_hasta;
+      if (f.estados.length > 0)  payload.estados     = f.estados;
+      if (f.courier_id !== "TODOS") payload.courier_id = f.courier_id;
+      if (f.confirmador.trim())  payload.confirmador = f.confirmador.trim();
+      if (f.origen !== "TODOS")  payload.origen      = f.origen;
       const res = await getEnviosPaginados(payload);
       setData(res);
     } catch (err) {
@@ -135,24 +136,19 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
     }
   }, []);
 
+  // Un solo efecto con debounce que maneja tanto filtros como página
+  const timerRef = useRef(null);
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setPage(1);
-      cargar(filtros, 1);
-    }, 350);
-    return () => clearTimeout(debounceRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtros]);
-
-  useEffect(() => {
-    cargar(filtros, page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      cargar(filtros, page);
+    }, 300);
+    return () => clearTimeout(timerRef.current);
+  }, [filtros, page, cargar]);
 
   const setFiltro = (key, val) => {
     setFiltros((prev) => ({ ...prev, [key]: val }));
-    setPage(1);
+    setPage(1); // reset página al cambiar cualquier filtro
   };
 
   const resetFiltros = () => {
@@ -168,10 +164,21 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
 
   return (
     <div className="pt-root">
-      {/* Toolbar de filtros */}
+      {/* ── Sección título tabla ── */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "0.5rem" }}>
+        <div>
+          <h2 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "#fff" }}>Todos los Pedidos</h2>
+          <p style={{ fontSize: "0.78rem", color: "#666", margin: "2px 0 0 0" }}>
+            Filtrá por estado, fecha, cliente, ciudad o courier. 10 registros por página.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Toolbar de filtros principales ── */}
       <div className="pt-toolbar">
+        {/* Búsqueda cliente */}
         <div className="pt-search-wrap">
-          <Search size={15} className="pt-search-icon" />
+          <Search size={14} className="pt-search-icon" />
           <input
             type="text"
             className="pt-search"
@@ -186,10 +193,29 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
           )}
         </div>
 
+        {/* Ciudad VISIBLE directamente */}
+        <div className="pt-search-wrap" style={{ flex: "0 0 auto", minWidth: "140px" }}>
+          <MapPin size={14} className="pt-search-icon" style={{ color: "#666" }} />
+          <input
+            type="text"
+            className="pt-search"
+            placeholder="Ciudad..."
+            value={filtros.ciudad}
+            onChange={(e) => setFiltro("ciudad", e.target.value)}
+          />
+          {filtros.ciudad && (
+            <button className="pt-clear-btn" onClick={() => setFiltro("ciudad", "")}>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        {/* Multi-estado */}
         <MultiEstadoSelect value={filtros.estados} onChange={(v) => setFiltro("estados", v)} />
 
+        {/* Fecha desde */}
         <label className="pt-date-label" title="Fecha desde">
-          <Calendar size={13} />
+          <span style={{ fontSize: "0.72rem", color: "#666", whiteSpace: "nowrap" }}>Desde</span>
           <input
             type="date"
             className="pt-date-input"
@@ -198,8 +224,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
           />
         </label>
 
+        {/* Fecha hasta */}
         <label className="pt-date-label" title="Fecha hasta">
-          <Calendar size={13} />
+          <span style={{ fontSize: "0.72rem", color: "#666", whiteSpace: "nowrap" }}>Hasta</span>
           <input
             type="date"
             className="pt-date-input"
@@ -208,45 +235,38 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
           />
         </label>
 
+        {/* Más filtros toggle */}
         <button
           type="button"
-          className={`pt-filter-toggle ${filtersOpen ? "active" : ""}`}
-          onClick={() => setFiltersOpen((o) => !o)}
+          className={`pt-filter-toggle ${masFilters ? "active" : ""}`}
+          onClick={() => setMasFilters((o) => !o)}
         >
-          <Filter size={15} />
-          Más filtros
-          {(filtros.ciudad || filtros.courier_id !== "TODOS" || filtros.origen !== "TODOS" || filtros.confirmador) && (
+          <Filter size={14} />
+          Más
+          {(filtros.courier_id !== "TODOS" || filtros.origen !== "TODOS" || filtros.confirmador) && (
             <span className="pt-filter-dot" />
           )}
         </button>
 
+        {/* Reset */}
         {hayFiltros && (
-          <button type="button" className="pt-reset-btn" onClick={resetFiltros} title="Limpiar filtros">
+          <button type="button" className="pt-reset-btn" onClick={resetFiltros} title="Limpiar todo">
             <RotateCcw size={14} />
           </button>
         )}
 
-        <span className="pt-count">{loading ? "…" : `${data.total} pedidos`}</span>
+        {/* Contador */}
+        <span className="pt-count">{loading ? "…" : `${data.total.toLocaleString("es-PY")} pedidos`}</span>
       </div>
 
-      {/* Filtros extra */}
-      {filtersOpen && (
+      {/* ── Filtros extra (courier, confirmador, origen) ── */}
+      {masFilters && (
         <div className="pt-extra-filters">
-          <label className="pt-extra-label">
-            <MapPin size={13} />
-            <input
-              type="text"
-              className="pt-extra-input"
-              placeholder="Ciudad..."
-              value={filtros.ciudad}
-              onChange={(e) => setFiltro("ciudad", e.target.value)}
-            />
-          </label>
-
           <label className="pt-extra-label">
             <Truck size={13} />
             <select
               className="pt-filter-select"
+              style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }}
               value={filtros.courier_id}
               onChange={(e) => setFiltro("courier_id", e.target.value)}
             >
@@ -281,7 +301,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
         </div>
       )}
 
-      {/* Tabla */}
+      {/* ── Tabla ── */}
       <div className="pt-table-wrap">
         <table className="pt-table">
           <thead>
@@ -301,8 +321,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
             {loading ? (
               <tr>
                 <td colSpan={9} className="pt-empty">
-                  <span className="pt-spinner" />
-                  Cargando pedidos...
+                  <span className="pt-spinner" /> Cargando pedidos...
                 </td>
               </tr>
             ) : envios.length === 0 ? (
@@ -311,19 +330,15 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
               </tr>
             ) : (
               envios.map((e) => {
-                const st = STATUS[e.estado] || { chipBg: "rgba(255,255,255,0.06)", chipText: "#888" };
                 const items = e.items || [];
                 const resumenItems =
                   items.length === 0 ? "—" :
-                  items.length === 1 ? `${items[0].nombre_producto}${items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""}` :
-                  `${items[0].nombre_producto} +${items.length - 1} más`;
+                  items.length === 1
+                    ? `${items[0].nombre_producto}${items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""}`
+                    : `${items[0].nombre_producto} +${items.length - 1} más`;
 
                 return (
-                  <tr
-                    key={e.id}
-                    className="pt-row"
-                    onClick={() => onAbrirDetalle && onAbrirDetalle(e)}
-                  >
+                  <tr key={e.id} className="pt-row" onClick={() => onAbrirDetalle && onAbrirDetalle(e)}>
                     <td className="pt-td pt-td-id">#{e.id}</td>
                     <td className="pt-td pt-td-fecha">{e.dispatchedAt || e.fecha || "—"}</td>
                     <td className="pt-td">
@@ -338,7 +353,10 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
                       <span>{e.ciudad || "—"}</span>
                       {e.departamento && <span className="pt-depto">{e.departamento}</span>}
                     </td>
-                    <td className="pt-td pt-td-items" title={items.map((i) => `${i.nombre_producto} x${i.cantidad}`).join(", ")}>
+                    <td
+                      className="pt-td pt-td-items"
+                      title={items.map((i) => `${i.nombre_producto} x${i.cantidad}`).join(", ")}
+                    >
                       {resumenItems}
                     </td>
                     <td className="pt-td pt-td-num">
@@ -349,11 +367,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
                       <span className="pt-pago">{e.metodo_pago || "—"}</span>
                     </td>
                     <td className="pt-td">
-                      {e.Courier ? (
-                        <span className="pt-courier">{e.Courier.nombre}</span>
-                      ) : (
-                        <span className="pt-sin-courier">—</span>
-                      )}
+                      {e.Courier
+                        ? <span className="pt-courier">{e.Courier.nombre}</span>
+                        : <span className="pt-sin-courier">—</span>}
                     </td>
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
                       <EstadoBadge
@@ -369,12 +385,13 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
         </table>
       </div>
 
-      {/* Paginación */}
+      {/* ── Paginación ── */}
       {data.totalPages > 1 && (
         <div className="pt-pagination">
           <button className="pt-pag-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
             <ChevronLeft size={16} />
           </button>
+
           {Array.from({ length: data.totalPages }, (_, i) => i + 1)
             .filter((p) => p === 1 || p === data.totalPages || Math.abs(p - page) <= 2)
             .reduce((acc, p, idx, arr) => {
@@ -386,16 +403,21 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle }) 
               p === "..." ? (
                 <span key={`e${idx}`} className="pt-pag-ellipsis">…</span>
               ) : (
-                <button key={p} className={`pt-pag-btn ${p === page ? "active" : ""}`} onClick={() => setPage(p)}>
+                <button
+                  key={p}
+                  className={`pt-pag-btn ${p === page ? "active" : ""}`}
+                  onClick={() => setPage(p)}
+                >
                   {p}
                 </button>
               )
             )}
+
           <button className="pt-pag-btn" onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))} disabled={page >= data.totalPages}>
             <ChevronRight size={16} />
           </button>
           <span className="pt-pag-info">
-            {Math.min((page - 1) * LIMITE + 1, data.total)}–{Math.min(page * LIMITE, data.total)} de {data.total}
+            {Math.min((page - 1) * LIMITE + 1, data.total)}–{Math.min(page * LIMITE, data.total)} de {data.total.toLocaleString("es-PY")}
           </span>
         </div>
       )}
