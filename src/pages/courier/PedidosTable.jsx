@@ -217,6 +217,27 @@ function MultiEstadoSelect({ value, onChange }) {
   );
 }
 
+function formatFechaYHora(fecha, hora, createdAt) {
+  let fechaStr = fecha || "—";
+  let horaStr = hora || "";
+
+  if (createdAt) {
+    try {
+      const d = new Date(createdAt);
+      if (!isNaN(d.getTime())) {
+        fechaStr = d.toLocaleDateString("en-CA", { timeZone: "America/Asuncion" });
+        horaStr = d.toLocaleTimeString("es-PY", {
+          timeZone: "America/Asuncion",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      }
+    } catch (err) {}
+  }
+
+  return { fecha: fechaStr, hora: horaStr };
+}
+
 export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, refrescarKey = 0 }) {
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [page, setPage] = useState(1);
@@ -489,6 +510,12 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
                       }`
                     : `${items[0].nombre_producto} +${items.length - 1} más`;
 
+                const { fecha: fechaVisual, hora: horaVisual } = formatFechaYHora(
+                  e.dispatchedAt || e.fecha,
+                  e.hora,
+                  e.createdAt
+                );
+
                 return (
                   <tr
                     key={e.id}
@@ -496,7 +523,16 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
                     onClick={() => onAbrirDetalle && onAbrirDetalle(e)}
                   >
                     <td className="pt-td pt-td-id">#{e.id}</td>
-                    <td className="pt-td pt-td-fecha">{e.dispatchedAt || e.fecha || "—"}</td>
+                    <td className="pt-td pt-td-fecha">
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ color: "#fff", fontWeight: 500 }}>{fechaVisual}</span>
+                        {horaVisual && (
+                          <span style={{ fontSize: "0.72rem", color: "#9ca3af", fontFamily: "monospace" }}>
+                            {horaVisual}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="pt-td">
                       <div className="pt-cliente">
                         <span className="pt-cliente-nombre">

@@ -53,8 +53,8 @@ const selectStyles = {
 };
 
 function buildFormFromEnvio(envio) {
-  const hoy = new Date().toISOString().slice(0, 10);
-  const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
+  const horaActual = new Date().toLocaleTimeString('es-PY', { timeZone: 'America/Asuncion', hour: '2-digit', minute: '2-digit' });
 
   if (!envio) {
     return {
@@ -83,14 +83,34 @@ function buildFormFromEnvio(envio) {
     };
   }
 
+  const nombreCompleto = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
+  const tieneFactura = Boolean(
+    envio.quiere_factura ||
+    (envio.ruc && String(envio.ruc).trim().length > 0)
+  );
+
+  let horaFinal = envio.hora || horaActual;
+  if (envio.createdAt) {
+    try {
+      const d = new Date(envio.createdAt);
+      if (!isNaN(d.getTime())) {
+        horaFinal = d.toLocaleTimeString('es-PY', {
+          timeZone: 'America/Asuncion',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+    } catch (e) {}
+  }
+
   return {
-    fecha: envio.fecha || hoy,
-    hora: envio.hora || horaActual,
+    fecha: envio.fecha || (envio.createdAt ? new Date(envio.createdAt).toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' }) : hoy),
+    hora: horaFinal,
     confirmador: envio.confirmador || "",
     origen: envio.origen || "WEB",
     campaign_name: envio.campaign_name || "",
-    nombre_cliente: envio.nombre_cliente || "",
-    apellido_cliente: envio.apellido_cliente || "",
+    nombre_cliente: nombreCompleto,
+    apellido_cliente: "",
     telefono: envio.telefono || "",
     departamento: envio.departamento || "",
     ciudad: envio.ciudad || "",
@@ -99,8 +119,8 @@ function buildFormFromEnvio(envio) {
     link_maps: envio.link_maps || "",
     metodo_pago: envio.metodo_pago || "Efectivo",
     metodo_pago_id: envio.metodo_pago_id || "",
-    quiere_factura: !!envio.quiere_factura,
-    razon_social: envio.razon_social || "",
+    quiere_factura: tieneFactura,
+    razon_social: envio.razon_social || (tieneFactura ? nombreCompleto : ""),
     ruc: envio.ruc || "",
     nro_comprobante: envio.nro_comprobante || "",
     observaciones: envio.observaciones || "",
@@ -535,7 +555,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 <input
                   type="text"
                   className={`form-input ${errors.nombre_cliente ? 'input-error' : ''}`}
-                  placeholder="Ej. Juan"
+                  placeholder="Ej. Juan Pérez"
                   value={form.nombre_cliente}
                   onChange={e => {
                     setForm({ ...form, nombre_cliente: e.target.value });
@@ -543,17 +563,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                   }}
                 />
                 {errors.nombre_cliente && <span className="field-error">{errors.nombre_cliente}</span>}
-              </div>
-
-              <div className="np-row">
-                <label>Apellido del cliente</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Ej. Pérez"
-                  value={form.apellido_cliente}
-                  onChange={e => setForm({ ...form, apellido_cliente: e.target.value })}
-                />
               </div>
 
               <div className="np-row">
