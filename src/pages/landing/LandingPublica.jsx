@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
-import { obtenerLandingPublica, registrarEventoLanding } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, registrarEventoLanding, crearCheckoutLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA, trackearEventoGA } from '../../lib/googleAnalytics';
@@ -212,12 +212,30 @@ export default function LandingPublica() {
     });
   }
 
-  function checkoutCarrito() {
+  /**
+   * Reemplaza el viejo checkoutCarrito() que iba directo a WhatsApp: ahora
+   * primero crea el pedido (Envío) real en el backend — el link de
+   * WhatsApp, si corresponde, es un paso DESPUÉS de que el pedido ya
+   * existe, no el checkout entero. El tracking (Meta/GA/TikTok/
+   * Estadísticas) se sigue disparando igual que antes, ahora recién
+   * después de que el backend confirma que el pedido se creó.
+   *
+   * @param {object} datosFormulario - lo que completó el visitante en CartDrawer.
+   * @returns {{redirigido: boolean, pedido_id: number}}
+   * @throws {Error} si el backend rechaza el pedido (ej. sin stock) — CartDrawer lo muestra.
+   */
+  async function confirmarPedido(datosFormulario) {
     const items = Array.from(carrito.values());
-    // El checkout solo se puede disparar desde el drawer, que solo se
-    // renderiza con estado==='ok' — data ya está poblado en ese punto.
-    const link = armarLinkWhatsappCarrito(data.contacto, items);
-    if (!link) return;
+    if (!items.length) throw new Error('Tu carrito está vacío.');
+
+    const resultado = await crearCheckoutLanding(slug, {
+      ...datosFormulario,
+      items: items.map(it => ({
+        content_id: it.contentId,
+        variante_id: it.varianteId || undefined,
+        cantidad: it.cantidad,
+      })),
+    });
 
     const eventId = generarEventId();
     const { fbc, fbp } = leerCookiesFacebook();
@@ -250,21 +268,20 @@ export default function LandingPublica() {
       })),
     };
 
-    registrarEventoLanding(slug, {
-      ...basePayload,
-      event_name: 'InitiateCheckout',
-      event_id: eventId,
-    });
-    
-    registrarEventoLanding(slug, {
-      ...basePayload,
-      event_name: 'Contact',
-      event_id: eventId + '-contact',
-    });
+    registrarEventoLanding(slug, { ...basePayload, event_name: 'InitiateCheckout', event_id: eventId });
+    registrarEventoLanding(slug, { ...basePayload, event_name: 'Contact', event_id: eventId + '-contact' });
 
-    window.open(link, '_blank', 'noopener');
+    let redirigido = false;
+    if (resultado.redirigir_whatsapp && contacto?.whatsapp) {
+      const link = armarLinkWhatsappCarrito(contacto, items);
+      if (link) {
+        window.open(link, '_blank', 'noopener');
+        redirigido = true;
+      }
+    }
+
     setCarrito(new Map());
-    setCarritoAbierto(false);
+    return { redirigido, pedido_id: resultado.pedido_id };
   }
 
   function contactar(item) {
@@ -659,8 +676,7 @@ export default function LandingPublica() {
         onCerrar={() => setCarritoAbierto(false)}
         onCantidad={cambiarCantidadCarrito}
         onQuitar={quitarDelCarrito}
-        onCheckout={checkoutCarrito}
-        whatsappConfigurado={!!contacto?.whatsapp}
+        onConfirmarPedido={confirmarPedido}
       />
     </div>
   );

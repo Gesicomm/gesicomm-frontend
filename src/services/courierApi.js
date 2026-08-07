@@ -30,13 +30,39 @@ export const createEnvio = async (envioData) => {
   return data;
 };
 
-export const updateEstadoEnvio = async (id, estado, courier_id) => {
-  const { data } = await api.put(`/envios/${id}/estado`, { estado, courier_id });
+/**
+ * `datos` acepta estado/courier_id (uso normal, drag-and-drop o el select
+ * de la card) y, cuando se confirma un pedido desde CompletarPedidoModal,
+ * también ruc/direccion/referencia/link_maps/costo_envio/metodo_pago — el
+ * backend solo toca los campos que vienen definidos.
+ */
+export const updateEstadoEnvio = async (id, datos) => {
+  const { data } = await api.put(`/envios/${id}/estado`, datos);
   return data;
 };
 
 export const getMetricasDashboardPedidos = async (filtros = {}) => {
   const { data } = await api.post('/envios/metricas-dashboard', filtros);
+  return data;
+};
+
+export const getMetodosPago = async () => {
+  const { data } = await api.get('/metodos-pago');
+  return data;
+};
+
+export const createMetodoPago = async (metodoData) => {
+  const { data } = await api.post('/metodos-pago', metodoData);
+  return data;
+};
+
+export const updateMetodoPago = async (id, metodoData) => {
+  const { data } = await api.put(`/metodos-pago/${id}`, metodoData);
+  return data;
+};
+
+export const deleteMetodoPago = async (id) => {
+  const { data } = await api.delete(`/metodos-pago/${id}`);
   return data;
 };
 

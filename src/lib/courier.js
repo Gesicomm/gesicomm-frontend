@@ -2,6 +2,7 @@
 
 export const STATUS_ORDER = [
   "Pendiente",
+  "Confirmado",
   "En camino",
   "Entregado",
   "Reagendado",
@@ -17,6 +18,12 @@ export const STATUS = {
     columnBar: "bg-amber-400",
     chipBg: "rgba(251, 191, 36, 0.15)",
     chipText: "#fbbf24",
+  },
+  "Confirmado": {
+    label: "Confirmado",
+    columnBar: "bg-cyan-400",
+    chipBg: "rgba(34, 211, 238, 0.15)",
+    chipText: "#22d3ee",
   },
   "En camino": {
     label: "En camino",

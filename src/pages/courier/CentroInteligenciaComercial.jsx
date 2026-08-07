@@ -20,7 +20,9 @@ import {
   Trophy,
   UserCheck,
   Percent,
-  X
+  X,
+  CreditCard,
+  Receipt
 } from 'lucide-react';
 import { getMetricasDashboardPedidos, getCouriers } from '../../services/courierApi';
 import { formatGs } from '../../lib/courier';
@@ -207,6 +209,9 @@ export function CentroInteligenciaComercial() {
     ticket_promedio: 0,
     costo_logistico_total: 0,
     costo_logistico_por_entrega: 0,
+    costo_comision_total: 0,
+    costo_comision_por_entrega: 0,
+    iva_facturado_total: 0,
     margen_bruto_estimado: 0,
     pct_margen_bruto: 0
   };
@@ -521,6 +526,24 @@ export function CentroInteligenciaComercial() {
               </div>
               <div className="cic-kpi-val">{formatGs(kpis.costo_logistico_total)}</div>
               <div className="cic-kpi-sub">Costo por entrega: {formatGs(kpis.costo_logistico_por_entrega)}</div>
+            </div>
+
+            <div className="cic-kpi-card" style={{ borderTop: '3px solid #06b6d4' }}>
+              <div className="cic-kpi-header">
+                <span>Comisiones de Cobro</span>
+                <CreditCard size={16} style={{ color: '#22d3ee' }} />
+              </div>
+              <div className="cic-kpi-val">{formatGs(kpis.costo_comision_total)}</div>
+              <div className="cic-kpi-sub">Por entrega: {formatGs(kpis.costo_comision_por_entrega)}</div>
+            </div>
+
+            <div className="cic-kpi-card" style={{ borderTop: '3px solid #eab308' }}>
+              <div className="cic-kpi-header">
+                <span>IVA a Pagar (Facturas)</span>
+                <Receipt size={16} style={{ color: '#facc15' }} />
+              </div>
+              <div className="cic-kpi-val">{formatGs(kpis.iva_facturado_total)}</div>
+              <div className="cic-kpi-sub">10% sobre pedidos con factura</div>
             </div>
 
             <div className="cic-kpi-card" style={{ borderTop: '3px solid #8b5cf6' }}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle } from "lucide-react";
 import { productService } from "../../services/productService";
-import { getCouriers } from "../../services/courierApi";
+import { getCouriers, getMetodosPago } from "../../services/courierApi";
 import CurrencyInput from "../../components/CurrencyInput";
 import CreatableSelect from "react-select/creatable";
 
@@ -70,6 +70,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     referencia: "",
     link_maps: "",
     metodo_pago: "Efectivo",
+    metodo_pago_id: "",
+    quiere_factura: false,
+    razon_social: "",
+    ruc: "",
+    nro_comprobante: "",
     observaciones: "",
     courier_id: "",
     costo_envio: 0
@@ -78,6 +83,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
   const [items, setItems] = useState([]);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [couriers, setCouriers] = useState([]);
+  const [metodosPago, setMetodosPago] = useState([]);
   const [selectedProdId, setSelectedProdId] = useState("");
   const [cant, setCant] = useState(1);
   const [errors, setErrors] = useState({});
@@ -91,13 +97,25 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
   const cargarDatosIniciales = async () => {
     try {
-      const [resProds, dataCouriers] = await Promise.all([
+      const [resProds, dataCouriers, dataMetodos] = await Promise.all([
         productService.buscar({}),
-        getCouriers()
+        getCouriers(),
+        getMetodosPago()
       ]);
       const prods = Array.isArray(resProds) ? resProds : (resProds.productos || resProds.rows || []);
       setProductosDisponibles(prods);
       setCouriers(dataCouriers || []);
+
+      const metodosActivos = (dataMetodos || []).filter(m => m.activo);
+      setMetodosPago(metodosActivos);
+      if (metodosActivos.length > 0) {
+        setForm(prev => {
+          if (prev.metodo_pago_id) return prev;
+          const porNombre = metodosActivos.find(m => m.nombre.toLowerCase().includes('efectivo'));
+          const elegido = porNombre || metodosActivos[0];
+          return { ...prev, metodo_pago: elegido.nombre, metodo_pago_id: elegido.id };
+        });
+      }
     } catch (err) {
       console.error("Error al cargar datos iniciales:", err);
     }
@@ -118,13 +136,20 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     return Array.from(setCiudades).sort().map(c => ({ value: c, label: c }));
   }, [couriers]);
 
+  // El tipo de pago que espera la tarifa de courier ("Anticipado"/"Al Recibir")
+  // ahora se deriva del flag es_anticipado configurado en el ABM de Métodos de Pago.
+  const esMetodoAnticipado = (metodoPagoId) => {
+    const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
+    return !!(metodo && metodo.es_anticipado);
+  };
+
   // Helper para buscar tarifa de un courier específico considerando método de pago y cantidad total de unidades
-  const obtenerTarifaPara = (ciudad, courierId, metodoPago, listaItems = items) => {
+  const obtenerTarifaPara = (ciudad, courierId, metodoPagoId, listaItems = items) => {
     if (!ciudad || !courierId || couriers.length === 0) return null;
     const c = couriers.find(curr => curr.id === Number(courierId));
     if (!c || !c.tarifas || !Array.isArray(c.tarifas)) return null;
 
-    const targetTipoPago = (metodoPago === "Pagado" || metodoPago === "Transferencia") ? "Anticipado" : "Al Recibir";
+    const targetTipoPago = esMetodoAnticipado(metodoPagoId) ? "Anticipado" : "Al Recibir";
     const totalCantidad = (listaItems || []).reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
     const cantEval = totalCantidad > 0 ? totalCantidad : 1;
 
@@ -147,13 +172,20 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       });
     }
 
+    // 3. Último fallback: cualquier tarifa de la ciudad sin importar el tipo de pago
+    // (evita dejar el pedido sin courier cuando la tarifa quedó configurada con el
+    // tipo de pago por defecto y no coincide con el método elegido en el pedido)
+    if (!tarifa) {
+      tarifa = c.tarifas.find(t => t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim());
+    }
+
     return tarifa ? tarifa.costo : null;
   };
 
   // Helper para encontrar el primer courier que cubra la ciudad con el método de pago y cantidad especificados
-  const buscarCourierYTarifa = (ciudad, metodoPago, listaItems = items) => {
+  const buscarCourierYTarifa = (ciudad, metodoPagoId, listaItems = items) => {
     if (!ciudad || couriers.length === 0) return null;
-    const targetTipoPago = (metodoPago === "Pagado" || metodoPago === "Transferencia") ? "Anticipado" : "Al Recibir";
+    const targetTipoPago = esMetodoAnticipado(metodoPagoId) ? "Anticipado" : "Al Recibir";
     const totalCantidad = (listaItems || []).reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
     const cantEval = totalCantidad > 0 ? totalCantidad : 1;
 
@@ -178,6 +210,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
           });
         }
 
+        // 3. Último fallback: cualquier tarifa de la ciudad sin importar el tipo de pago
+        if (!tarifa) {
+          tarifa = c.tarifas.find(t => t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim());
+        }
+
         if (tarifa) {
           return { courierId: c.id, costo: tarifa.costo };
         }
@@ -194,7 +231,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       if (valCiudad) {
         // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
         if (prev.courier_id) {
-          const costo = obtenerTarifaPara(valCiudad, prev.courier_id, prev.metodo_pago, items);
+          const costo = obtenerTarifaPara(valCiudad, prev.courier_id, prev.metodo_pago_id, items);
           if (costo !== null) {
             nextForm.costo_envio = costo;
             return nextForm;
@@ -202,7 +239,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
         }
 
         // Si no hay courier o el seleccionado no cubre la nueva ciudad, buscar el primero que la cubra
-        const resultado = buscarCourierYTarifa(valCiudad, prev.metodo_pago, items);
+        const resultado = buscarCourierYTarifa(valCiudad, prev.metodo_pago_id, items);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -223,7 +260,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     setForm(prev => {
       const nextForm = { ...prev, courier_id: courierId };
       if (courierId && prev.ciudad) {
-        const costo = obtenerTarifaPara(prev.ciudad, courierId, prev.metodo_pago, items);
+        const costo = obtenerTarifaPara(prev.ciudad, courierId, prev.metodo_pago_id, items);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
@@ -232,16 +269,17 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     });
   };
 
-  const handleMetodoPagoChange = (metodoPago) => {
+  const handleMetodoPagoChange = (metodoPagoId) => {
+    const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
     setForm(prev => {
-      const nextForm = { ...prev, metodo_pago: metodoPago };
+      const nextForm = { ...prev, metodo_pago_id: metodoPagoId, metodo_pago: metodo ? metodo.nombre : prev.metodo_pago };
       if (prev.ciudad && prev.courier_id) {
-        const costo = obtenerTarifaPara(prev.ciudad, prev.courier_id, metodoPago, items);
+        const costo = obtenerTarifaPara(prev.ciudad, prev.courier_id, metodoPagoId, items);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
       } else if (prev.ciudad) {
-        const resultado = buscarCourierYTarifa(prev.ciudad, metodoPago, items);
+        const resultado = buscarCourierYTarifa(prev.ciudad, metodoPagoId, items);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -277,12 +315,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     // Recalcular tarifa de delivery según el nuevo rango de unidades
     if (form.ciudad) {
       if (form.courier_id) {
-        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago, nuevosItems);
+        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago_id, nuevosItems);
         if (nuevoCosto !== null) {
           setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
         }
       } else {
-        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago, nuevosItems);
+        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago_id, nuevosItems);
         if (resultado) {
           setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
         }
@@ -297,12 +335,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     // Recalcular tarifa de delivery según el nuevo rango de unidades
     if (form.ciudad) {
       if (form.courier_id) {
-        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago, nuevosItems);
+        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago_id, nuevosItems);
         if (nuevoCosto !== null) {
           setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
         }
       } else {
-        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago, nuevosItems);
+        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago_id, nuevosItems);
         if (resultado) {
           setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
         }
@@ -329,6 +367,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     if (items.length === 0) {
       newErrors.items = "Debes agregar al menos un producto al pedido.";
     }
+    if (form.quiere_factura && !form.ruc.trim()) {
+      newErrors.ruc = "El RUC es obligatorio cuando se solicita factura.";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -341,9 +382,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       return;
     }
 
+    const metodoSeleccionado = metodosPago.find(m => m.id === Number(form.metodo_pago_id));
+
     const payload = {
       ...form,
       courier_id: form.courier_id ? Number(form.courier_id) : null,
+      metodo_pago_id: form.metodo_pago_id ? Number(form.metodo_pago_id) : null,
+      comision_pct_aplicada: metodoSeleccionado ? Number(metodoSeleccionado.comision_porcentaje) : 0,
       costo_envio: Number(form.costo_envio) || 0,
       monto: precioTotalVendido,
       items
@@ -425,17 +470,21 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
               <div className="np-row">
                 <label>Canal / Origen</label>
-                <select
+                <input
+                  type="text"
                   className="form-input"
+                  list="canal-origen-sugerencias"
+                  placeholder="Ej. Web, WhatsApp, Instagram..."
                   value={form.origen}
                   onChange={e => setForm({ ...form, origen: e.target.value })}
-                >
-                  <option value="WEB">Web / Tienda Online</option>
-                  <option value="WHATSAPP">WhatsApp</option>
-                  <option value="LANDING">Landing Page</option>
-                  <option value="META_ADS">Meta Ads / Facebook</option>
-                  <option value="MANUAL">Manual / Directo</option>
-                </select>
+                />
+                <datalist id="canal-origen-sugerencias">
+                  <option value="Web / Tienda Online" />
+                  <option value="WhatsApp" />
+                  <option value="Landing Page" />
+                  <option value="Meta Ads / Facebook" />
+                  <option value="Manual / Directo" />
+                </datalist>
               </div>
 
               <div className="np-row">
@@ -592,14 +641,67 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
                 <label>Método de pago</label>
                 <select
                   className="form-input"
-                  value={form.metodo_pago}
+                  value={form.metodo_pago_id}
                   onChange={e => handleMetodoPagoChange(e.target.value)}
                 >
-                  <option value="Efectivo">Efectivo contra entrega</option>
-                  <option value="Transferencia">Transferencia bancaria</option>
-                  <option value="POS">POS / Tarjeta</option>
-                  <option value="Pagado">Ya pagado (Anticipado)</option>
+                  <option value="">-- Seleccionar método --</option>
+                  {metodosPago.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                  ))}
                 </select>
+              </div>
+
+              <div className="np-row">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    checked={form.quiere_factura}
+                    onChange={e => setForm({ ...form, quiere_factura: e.target.checked })}
+                  />
+                  ¿Desea factura?
+                </label>
+              </div>
+
+              {form.quiere_factura && (
+                <>
+                  <div className="np-row">
+                    <label>Razón social (Opcional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Ej. Comercial Paraguaya S.A."
+                      value={form.razon_social}
+                      onChange={e => setForm({ ...form, razon_social: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="np-row">
+                    <label>RUC <span className="req">*</span></label>
+                    <input
+                      type="text"
+                      className={`form-input ${errors.ruc ? 'input-error' : ''}`}
+                      placeholder="Ej. 80012345-6"
+                      value={form.ruc}
+                      onChange={e => {
+                        setForm({ ...form, ruc: e.target.value });
+                        if (errors.ruc) setErrors({ ...errors, ruc: null });
+                      }}
+                    />
+                    {errors.ruc && <span className="field-error">{errors.ruc}</span>}
+                  </div>
+                </>
+              )}
+
+              <div className="np-row">
+                <label>Nro de comprobante (Opcional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ej. 001-001-0000123"
+                  value={form.nro_comprobante}
+                  onChange={e => setForm({ ...form, nro_comprobante: e.target.value })}
+                />
               </div>
             </div>
 

@@ -1,0 +1,321 @@
+import { useState, useEffect } from "react"
+import { CreditCard, Pencil, Plus, Trash2, X, Percent } from "lucide-react"
+import ConfirmDialog from "../../components/ConfirmDialog"
+import { getMetodosPago, createMetodoPago, updateMetodoPago, deleteMetodoPago } from "../../services/courierApi"
+
+const emptyForm = {
+  nombre: "",
+  comision_porcentaje: 0,
+  es_anticipado: false,
+  activo: true,
+}
+
+export function MetodosPagoCrud() {
+  const [metodos, setMetodos] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(emptyForm)
+  const [metodoABorrar, setMetodoABorrar] = useState(null)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    cargarMetodos()
+  }, [])
+
+  async function cargarMetodos() {
+    try {
+      setLoading(true)
+      const data = await getMetodosPago()
+      setMetodos(data || [])
+    } catch (err) {
+      console.error("Error al cargar métodos de pago:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function openCreate() {
+    setEditing(null)
+    setForm(emptyForm)
+    setError("")
+    setOpen(true)
+  }
+
+  function openEdit(m) {
+    setEditing(m)
+    setForm({
+      nombre: m.nombre,
+      comision_porcentaje: m.comision_porcentaje,
+      es_anticipado: m.es_anticipado,
+      activo: m.activo,
+    })
+    setError("")
+    setOpen(true)
+  }
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!form.nombre.trim()) return
+    try {
+      if (editing) {
+        const res = await updateMetodoPago(editing.id, form)
+        setMetodos(prev => prev.map(x => x.id === editing.id ? res : x))
+      } else {
+        const res = await createMetodoPago(form)
+        setMetodos(prev => [...prev, res])
+      }
+      setOpen(false)
+    } catch (err) {
+      setError(err.response?.data?.error || "Ocurrió un error al guardar el método de pago")
+    }
+  }
+
+  async function confirmarBorrado() {
+    try {
+      await deleteMetodoPago(metodoABorrar.id)
+      setMetodos(prev => prev.filter(x => x.id !== metodoABorrar.id))
+      setMetodoABorrar(null)
+    } catch (err) {
+      alert(err.response?.data?.error || "No se pudo eliminar el método de pago")
+      setMetodoABorrar(null)
+    }
+  }
+
+  return (
+    <div style={{ background: '#0a0a0b', borderRadius: '0.85rem', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', color: '#fff' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>Métodos de Pago</h2>
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#888888' }}>
+            Configurá la comisión que cobra cada medio de pago — se usa en los reportes para calcular cuánto pagás de comisión vs. producto.
+          </p>
+        </div>
+        <button type="button" onClick={openCreate} className="btn-nuevo-pedido">
+          <Plus size={16} />
+          Nuevo método
+        </button>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table className="prod-table" style={{ margin: 0, width: '100%' }}>
+          <thead>
+            <tr>
+              <th>Método</th>
+              <th style={{ textAlign: 'center' }}>Comisión</th>
+              <th style={{ textAlign: 'center' }}>Tipo</th>
+              <th style={{ textAlign: 'center' }}>Estado</th>
+              <th style={{ textAlign: 'right' }}>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {!loading && metodos.map((m) => (
+              <tr key={m.id}>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                      <CreditCard size={15} />
+                    </span>
+                    <span style={{ fontWeight: 600, color: '#ffffff' }}>{m.nombre}</span>
+                  </div>
+                </td>
+                <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: '#60a5fa' }}>
+                  {Number(m.comision_porcentaje).toLocaleString('es-PY', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#aaaaaa' }}>
+                    {m.es_anticipado ? "Anticipado" : "Al recibir"}
+                  </span>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
+                    background: m.activo ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                    color: m.activo ? '#34d399' : '#888888',
+                    border: m.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'
+                  }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.activo ? '#10b981' : '#64748b' }} />
+                    {m.activo ? "Activo" : "Inactivo"}
+                  </span>
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <div className="action-btns" style={{ justifyContent: 'flex-end' }}>
+                    <button type="button" className="btn-icon" onClick={() => openEdit(m)}>
+                      <Pencil size={15} />
+                    </button>
+                    <button type="button" className="btn-icon danger" onClick={() => setMetodoABorrar(m)}>
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!loading && metodos.length === 0 && (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                  No hay métodos de pago cargados todavía.
+                </td>
+              </tr>
+            )}
+            {loading && (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                  Cargando métodos de pago...
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {open && (
+        <div className="modal-overlay" onClick={() => setOpen(false)}>
+          <form
+            onSubmit={submit}
+            className="modal-content"
+            style={{
+              background: '#0e0e11',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '1rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+              color: '#fff',
+              maxWidth: '480px',
+              padding: '1.75rem'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+                {editing ? "Editar método de pago" : "Nuevo método de pago"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: '#888888', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: '0.375rem' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {error && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.6rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                {error}
+              </div>
+            )}
+
+            <div className="form-grid" style={{ gap: '1.25rem' }}>
+              <div className="form-group full">
+                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                  Nombre del Método de Pago
+                </label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <CreditCard size={16} style={{ position: 'absolute', left: '0.8rem', color: '#666' }} />
+                  <input
+                    className="form-input"
+                    style={{ paddingLeft: '2.5rem', width: '100%' }}
+                    value={form.nombre}
+                    onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                    placeholder="Ej. Tarjeta de Crédito"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group full">
+                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                  Comisión (%)
+                </label>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <Percent size={16} style={{ position: 'absolute', left: '0.8rem', color: '#666' }} />
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    className="form-input"
+                    style={{ paddingLeft: '2.5rem', width: '100%' }}
+                    value={form.comision_porcentaje}
+                    onChange={(e) => setForm((f) => ({ ...f, comision_porcentaje: e.target.value }))}
+                    placeholder="Ej. 2.2"
+                  />
+                </div>
+                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: '#666' }}>
+                  Porcentaje que se descuenta por cobrar con este método. Se usa en los reportes de rentabilidad.
+                </p>
+              </div>
+
+              <div className="form-group full">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid rgba(255,255,255,0.06)', color: '#999999', fontSize: '0.85rem' }}>
+                  <input
+                    type="checkbox"
+                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    checked={form.es_anticipado}
+                    onChange={(e) => setForm((f) => ({ ...f, es_anticipado: e.target.checked }))}
+                  />
+                  <span>Es pago anticipado (afecta qué tarifa de courier se busca)</span>
+                </label>
+              </div>
+
+              <div className="form-group full">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid rgba(255,255,255,0.06)', color: '#999999', fontSize: '0.85rem' }}>
+                  <input
+                    type="checkbox"
+                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    checked={form.activo}
+                    onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
+                  />
+                  <span>Método activo (visible al crear pedidos)</span>
+                </label>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem', marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#cccccc',
+                  padding: '0.65rem 1.4rem',
+                  borderRadius: '0.6rem',
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: 'linear-gradient(135deg, #6d5ef8, #5b4bd6)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '0.65rem 1.6rem',
+                  borderRadius: '0.6rem',
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(109, 94, 248, 0.4)'
+                }}
+              >
+                {editing ? "Guardar cambios" : "Crear método"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!metodoABorrar}
+        title={`¿Eliminar "${metodoABorrar?.nombre}"?`}
+        description="Esta acción no se puede deshacer. Si hay pedidos que usan este método, primero deberás desactivarlo."
+        confirmLabel="Eliminar"
+        danger
+        onConfirm={confirmarBorrado}
+        onCancel={() => setMetodoABorrar(null)}
+      />
+    </div>
+  )
+}

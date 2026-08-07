@@ -1,11 +1,13 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp } from "lucide-react";
+import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard } from "lucide-react";
 import { KanbanBoard } from "./kanban-board";
 import { SummaryBar } from "./summary-bar";
 import { DayFilter } from "./day-filter";
 import { CouriersCrud } from "./couriers-crud";
+import { MetodosPagoCrud } from "./MetodosPagoCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
+import { CompletarPedidoModal } from "./CompletarPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import {
@@ -19,7 +21,7 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "couriers", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "analitica"]);
 
 export function ControlCourier() {
   // Permite llegar directo a una pestaña con un link (ej: "Mi Dashboard"
@@ -34,6 +36,7 @@ export function ControlCourier() {
   const [draggingId, setDraggingId] = useState(null);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
   const [openImprimir, setOpenImprimir] = useState(false);
+  const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -73,11 +76,19 @@ export function ControlCourier() {
     const envioId = draggingId;
     setDraggingId(null);
 
+    // "Confirmado" no se aplica directo: abre el modal para completar
+    // courier/costo de envío primero — recién ese submit dispara el PUT.
+    if (nuevoEstado === "Confirmado") {
+      const envio = envios.find(e => e.id === envioId);
+      if (envio) setEnvioParaCompletar(envio);
+      return;
+    }
+
     // Optimistic update
     setEnvios(prev => prev.map(e => e.id === envioId ? { ...e, estado: nuevoEstado } : e));
 
     try {
-      await updateEstadoEnvio(envioId, nuevoEstado);
+      await updateEstadoEnvio(envioId, { estado: nuevoEstado });
     } catch (err) {
       console.error("Error actualizando estado:", err);
       cargarDatos(); // Revert back on error
@@ -85,13 +96,25 @@ export function ControlCourier() {
   };
 
   const handleChangeEstado = async (id, nuevoEstado) => {
+    if (nuevoEstado === "Confirmado") {
+      const envio = envios.find(e => e.id === id);
+      if (envio) setEnvioParaCompletar(envio);
+      return;
+    }
+
     setEnvios(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
     try {
-      await updateEstadoEnvio(id, nuevoEstado);
+      await updateEstadoEnvio(id, { estado: nuevoEstado });
     } catch (err) {
       console.error("Error actualizando estado:", err);
       cargarDatos();
     }
+  };
+
+  const handleConfirmarPedido = async (id, payload) => {
+    const actualizado = await updateEstadoEnvio(id, payload);
+    setEnvios(prev => prev.map(e => e.id === id ? actualizado : e));
+    setEnvioParaCompletar(null);
   };
 
   const handleCreateNuevoPedido = async (payload) => {
@@ -144,6 +167,9 @@ export function ControlCourier() {
             </TabButton>
             <TabButton active={tab === "couriers"} onClick={() => setTab("couriers")} icon={<Users size={16} />}>
               Couriers
+            </TabButton>
+            <TabButton active={tab === "metodos-pago"} onClick={() => setTab("metodos-pago")} icon={<CreditCard size={16} />}>
+              Métodos de Pago
             </TabButton>
             <TabButton active={tab === "analitica"} onClick={() => setTab("analitica")} icon={<TrendingUp size={16} />}>
               Analítica
@@ -198,6 +224,8 @@ export function ControlCourier() {
               setCouriers(prev => prev.filter(x => x.id !== id));
             }}
           />
+        ) : tab === "metodos-pago" ? (
+          <MetodosPagoCrud />
         ) : (
           <CentroInteligenciaComercial />
         )}
@@ -215,6 +243,15 @@ export function ControlCourier() {
         open={openImprimir}
         onClose={() => setOpenImprimir(false)}
         envios={enviosDelDia}
+      />
+
+      {/* Modal de Completar Pedido (paso a "Confirmado") */}
+      <CompletarPedidoModal
+        open={!!envioParaCompletar}
+        envio={envioParaCompletar}
+        couriers={couriers}
+        onClose={() => setEnvioParaCompletar(null)}
+        onConfirmar={handleConfirmarPedido}
       />
     </div>
   );

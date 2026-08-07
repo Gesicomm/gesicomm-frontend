@@ -84,6 +84,7 @@ const FORM_INICIAL = {
   whatsapp_incluir_url: false,
   mostrar_testimonios: false,
   mostrar_faq: false,
+  checkout_redirigir_whatsapp: true,
   seo_titulo: '',
   seo_descripcion: '',
   seo_keywords: '',
@@ -234,6 +235,7 @@ export default function LandingEditor() {
           whatsapp_incluir_url: !!guardada.whatsapp_incluir_url,
           mostrar_testimonios: !!guardada.mostrar_testimonios,
           mostrar_faq: !!guardada.mostrar_faq,
+          checkout_redirigir_whatsapp: guardada.checkout_redirigir_whatsapp !== false,
           seo_titulo: guardada.seo_titulo || '',
           seo_descripcion: guardada.seo_descripcion || '',
           seo_keywords: guardada.seo_keywords || '',
@@ -1238,6 +1240,20 @@ export default function LandingEditor() {
                     </span>
                   </label>
                 </div>
+              )}
+
+              {form.mostrar_whatsapp && (
+                <label className="lb-switch">
+                  <input
+                    type="checkbox"
+                    checked={form.checkout_redirigir_whatsapp}
+                    onChange={e => handleChange('checkout_redirigir_whatsapp', e.target.checked)}
+                  />
+                  <span className="lb-switch-track" />
+                  <span className="lb-switch-label">
+                    Después de crear el pedido, abrir WhatsApp para coordinar
+                  </span>
+                </label>
               )}
 
               <div className="lb-tema">

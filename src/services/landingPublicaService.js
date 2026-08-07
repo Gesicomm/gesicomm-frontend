@@ -45,6 +45,28 @@ export async function obtenerLandingPublica(slug) {
  * y las estadísticas de la landing quedaron con visitas pero sin ninguna
  * conversión, sin una sola señal en consola.
  */
+/**
+ * Crea el pedido (Envío) real a partir del formulario de checkout — a
+ * diferencia de registrarEventoLanding, esto SÍ propaga el error: el
+ * visitante necesita saber si su pedido se creó o no (ej. stock
+ * insuficiente), no es un pixel de tracking best-effort.
+ * @returns {{pedido_id: number, monto: number, redirigir_whatsapp: boolean}}
+ * @throws {Error} con el mensaje que mandó el backend.
+ */
+export async function crearCheckoutLanding(slug, payload) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}/checkout` : '/api/l/checkout';
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || 'No se pudo crear el pedido.');
+  }
+  return data;
+}
+
 export async function registrarEventoLanding(slug, payload) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}/eventos` : '/api/l/eventos';
   try {
