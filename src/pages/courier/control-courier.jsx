@@ -7,7 +7,6 @@ import { DayFilter } from "./day-filter";
 import { CouriersCrud } from "./couriers-crud";
 import { MetodosPagoCrud } from "./MetodosPagoCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
-import { CompletarPedidoModal } from "./CompletarPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import {
@@ -111,22 +110,25 @@ export function ControlCourier() {
     }
   };
 
-  const handleConfirmarPedido = async (id, payload) => {
-    const actualizado = await updateEstadoEnvio(id, payload);
-    setEnvios(prev => prev.map(e => e.id === id ? actualizado : e));
+  const handleConfirmarPedido = async (payload) => {
+    const actualizado = await updateEstadoEnvio(payload.id, payload);
+    setEnvios(prev => prev.map(e => e.id === payload.id ? actualizado : e));
     setEnvioParaCompletar(null);
   };
 
   const handleCreateNuevoPedido = async (payload) => {
-    try {
-      const res = await createEnvio(payload);
-      setEnvios(prev => [res, ...prev]);
-      setOpenNuevoPedido(false);
-    } catch (err) {
-      console.error("Error creando pedido:", err);
-      alert("Ocurrió un error al crear el pedido");
-    }
+    const res = await createEnvio(payload);
+    setEnvios(prev => [res, ...prev]);
+    setOpenNuevoPedido(false);
   };
+
+  // El modal único de Pedido llama a esto tanto al crear como al completar
+  // (mismo formulario — ver NuevoPedidoModal.jsx). Los errores del backend
+  // (RUC obligatorio, comprobante duplicado, etc.) se propagan al modal,
+  // que los muestra inline en vez de un alert() bloqueante.
+  const handleModalSubmit = (payload, modoCompletar) => (
+    modoCompletar ? handleConfirmarPedido(payload) : handleCreateNuevoPedido(payload)
+  );
 
   return (
     <div className="prod-page" style={{ background: '#050505', minHeight: '100vh', color: '#fff', maxWidth: '100%' }}>
@@ -231,11 +233,12 @@ export function ControlCourier() {
         )}
       </main>
 
-      {/* Modal de Nuevo Pedido */}
+      {/* Modal único de Pedido: alta (envio=null) o completar al confirmar (envio=<registro>) */}
       <NuevoPedidoModal
-        open={openNuevoPedido}
-        onClose={() => setOpenNuevoPedido(false)}
-        onSubmit={handleCreateNuevoPedido}
+        open={openNuevoPedido || !!envioParaCompletar}
+        envio={envioParaCompletar}
+        onClose={() => { setOpenNuevoPedido(false); setEnvioParaCompletar(null); }}
+        onSubmit={handleModalSubmit}
       />
 
       {/* Modal de Impresión de Pedidos */}
@@ -243,15 +246,6 @@ export function ControlCourier() {
         open={openImprimir}
         onClose={() => setOpenImprimir(false)}
         envios={enviosDelDia}
-      />
-
-      {/* Modal de Completar Pedido (paso a "Confirmado") */}
-      <CompletarPedidoModal
-        open={!!envioParaCompletar}
-        envio={envioParaCompletar}
-        couriers={couriers}
-        onClose={() => setEnvioParaCompletar(null)}
-        onConfirmar={handleConfirmarPedido}
       />
     </div>
   );

@@ -32,9 +32,10 @@ export const createEnvio = async (envioData) => {
 
 /**
  * `datos` acepta estado/courier_id (uso normal, drag-and-drop o el select
- * de la card) y, cuando se confirma un pedido desde CompletarPedidoModal,
- * también ruc/direccion/referencia/link_maps/costo_envio/metodo_pago — el
- * backend solo toca los campos que vienen definidos.
+ * de la card) y, cuando se confirma un pedido desde el modal único de
+ * Pedido (NuevoPedidoModal.jsx en modo "completar"), también el resto de
+ * los campos del formulario (ciudad, dirección, courier, método de pago,
+ * facturación, etc.) — el backend solo toca los campos que vienen definidos.
  */
 export const updateEstadoEnvio = async (id, datos) => {
   const { data } = await api.put(`/envios/${id}/estado`, datos);

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle } from "lucide-react";
 import { productService } from "../../services/productService";
 import { getCouriers, getMetodosPago } from "../../services/courierApi";
+import { obtenerTarifaPara, buscarCourierYTarifa } from "../../lib/tarifaCourier";
 import CurrencyInput from "../../components/CurrencyInput";
 import CreatableSelect from "react-select/creatable";
 
@@ -51,35 +52,74 @@ const selectStyles = {
   })
 };
 
-export function NuevoPedidoModal({ open, onClose, onSubmit }) {
+function buildFormFromEnvio(envio) {
   const hoy = new Date().toISOString().slice(0, 10);
   const horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  const [form, setForm] = useState({
-    fecha: hoy,
-    hora: horaActual,
-    confirmador: "",
-    origen: "WEB",
-    campaign_name: "",
-    nombre_cliente: "",
-    apellido_cliente: "",
-    telefono: "",
-    departamento: "",
-    ciudad: "",
-    direccion: "",
-    referencia: "",
-    link_maps: "",
-    metodo_pago: "Efectivo",
-    metodo_pago_id: "",
-    quiere_factura: false,
-    razon_social: "",
-    ruc: "",
-    nro_comprobante: "",
-    observaciones: "",
-    courier_id: "",
-    costo_envio: 0
-  });
+  if (!envio) {
+    return {
+      fecha: hoy,
+      hora: horaActual,
+      confirmador: "",
+      origen: "WEB",
+      campaign_name: "",
+      nombre_cliente: "",
+      apellido_cliente: "",
+      telefono: "",
+      departamento: "",
+      ciudad: "",
+      direccion: "",
+      referencia: "",
+      link_maps: "",
+      metodo_pago: "Efectivo",
+      metodo_pago_id: "",
+      quiere_factura: false,
+      razon_social: "",
+      ruc: "",
+      nro_comprobante: "",
+      observaciones: "",
+      courier_id: "",
+      costo_envio: 0
+    };
+  }
 
+  return {
+    fecha: envio.fecha || hoy,
+    hora: envio.hora || horaActual,
+    confirmador: envio.confirmador || "",
+    origen: envio.origen || "WEB",
+    campaign_name: envio.campaign_name || "",
+    nombre_cliente: envio.nombre_cliente || "",
+    apellido_cliente: envio.apellido_cliente || "",
+    telefono: envio.telefono || "",
+    departamento: envio.departamento || "",
+    ciudad: envio.ciudad || "",
+    direccion: envio.direccion || "",
+    referencia: envio.referencia || "",
+    link_maps: envio.link_maps || "",
+    metodo_pago: envio.metodo_pago || "Efectivo",
+    metodo_pago_id: envio.metodo_pago_id || "",
+    quiere_factura: !!envio.quiere_factura,
+    razon_social: envio.razon_social || "",
+    ruc: envio.ruc || "",
+    nro_comprobante: envio.nro_comprobante || "",
+    observaciones: envio.observaciones || "",
+    courier_id: envio.courier_id || "",
+    costo_envio: envio.costo_envio || 0
+  };
+}
+
+/**
+ * Modal único para Pedidos: alta (envio=null) y "completar" un pedido
+ * existente al confirmarlo (envio=<registro>) — mismo formulario, mismos
+ * campos, para no tener dos versiones divergentes del mismo flujo. En modo
+ * "completar" los ítems y la fecha/hora original no son editables (ya
+ * comprometieron stock/registro), todo lo demás sí.
+ */
+export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
+  const modoCompletar = !!envio;
+
+  const [form, setForm] = useState(() => buildFormFromEnvio(null));
   const [items, setItems] = useState([]);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [couriers, setCouriers] = useState([]);
@@ -87,13 +127,19 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
   const [selectedProdId, setSelectedProdId] = useState("");
   const [cant, setCant] = useState(1);
   const [errors, setErrors] = useState({});
+  const [guardando, setGuardando] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     if (open) {
-      cargarDatosIniciales();
+      setForm(buildFormFromEnvio(envio));
+      setItems([]);
       setErrors({});
+      setSubmitError(null);
+      cargarDatosIniciales();
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, envio]);
 
   const cargarDatosIniciales = async () => {
     try {
@@ -110,9 +156,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       setMetodosPago(metodosActivos);
       if (metodosActivos.length > 0) {
         setForm(prev => {
-          if (prev.metodo_pago_id) return prev;
-          const porNombre = metodosActivos.find(m => m.nombre.toLowerCase().includes('efectivo'));
-          const elegido = porNombre || metodosActivos[0];
+          if (prev.metodo_pago_id && metodosActivos.some(m => m.id === Number(prev.metodo_pago_id))) {
+            return prev;
+          }
+          const porNombre = prev.metodo_pago && metodosActivos.find(m => m.nombre.toLowerCase() === prev.metodo_pago.toLowerCase());
+          const porDefecto = metodosActivos.find(m => m.nombre.toLowerCase().includes('efectivo'));
+          const elegido = porNombre || porDefecto || metodosActivos[0];
           return { ...prev, metodo_pago: elegido.nombre, metodo_pago_id: elegido.id };
         });
       }
@@ -120,6 +169,25 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
       console.error("Error al cargar datos iniciales:", err);
     }
   };
+
+  // Ítems a considerar para calcular tarifa de courier: en modo "completar"
+  // ya están comprometidos (no editables acá), en modo alta son los que se
+  // van agregando en el formulario.
+  const itemsParaTarifa = modoCompletar ? (envio?.items || []) : items;
+
+  // Si se está completando un pedido sin courier asignado, intenta
+  // autocompletarlo apenas ciudad + couriers + métodos de pago están listos.
+  useEffect(() => {
+    if (!open || !modoCompletar) return;
+    if (form.courier_id) return;
+    if (!form.ciudad || couriers.length === 0 || metodosPago.length === 0) return;
+    const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
+    const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa);
+    if (resultado) {
+      setForm(prev => (prev.courier_id ? prev : { ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, modoCompletar, couriers, metodosPago, form.ciudad]);
 
   // Opciones de ciudades (únicamente configuradas en los couriers del usuario)
   const optionsCiudades = useMemo(() => {
@@ -137,101 +205,23 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
   }, [couriers]);
 
   // El tipo de pago que espera la tarifa de courier ("Anticipado"/"Al Recibir")
-  // ahora se deriva del flag es_anticipado configurado en el ABM de Métodos de Pago.
+  // se deriva del flag es_anticipado configurado en el ABM de Métodos de Pago.
   const esMetodoAnticipado = (metodoPagoId) => {
     const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
     return !!(metodo && metodo.es_anticipado);
-  };
-
-  // Helper para buscar tarifa de un courier específico considerando método de pago y cantidad total de unidades
-  const obtenerTarifaPara = (ciudad, courierId, metodoPagoId, listaItems = items) => {
-    if (!ciudad || !courierId || couriers.length === 0) return null;
-    const c = couriers.find(curr => curr.id === Number(courierId));
-    if (!c || !c.tarifas || !Array.isArray(c.tarifas)) return null;
-
-    const targetTipoPago = esMetodoAnticipado(metodoPagoId) ? "Anticipado" : "Al Recibir";
-    const totalCantidad = (listaItems || []).reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
-    const cantEval = totalCantidad > 0 ? totalCantidad : 1;
-
-    // 1. Buscar coincidencia exacta por ciudad, tipo de pago y rango de cantidad
-    let tarifa = c.tarifas.find(t => {
-      const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
-      const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
-      const rMin = Number(t.rango_min) || 0;
-      const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === "") ? Infinity : Number(t.rango_max);
-      const rangoCoincide = cantEval >= rMin && cantEval <= rMax;
-      return ciudadCoincide && pagoCoincide && rangoCoincide;
-    });
-
-    // 2. Si no hay coincidencia exacta por rango, fallback a cualquier tarifa de la ciudad y tipo de pago
-    if (!tarifa) {
-      tarifa = c.tarifas.find(t => {
-        const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
-        const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
-        return ciudadCoincide && pagoCoincide;
-      });
-    }
-
-    // 3. Último fallback: cualquier tarifa de la ciudad sin importar el tipo de pago
-    // (evita dejar el pedido sin courier cuando la tarifa quedó configurada con el
-    // tipo de pago por defecto y no coincide con el método elegido en el pedido)
-    if (!tarifa) {
-      tarifa = c.tarifas.find(t => t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim());
-    }
-
-    return tarifa ? tarifa.costo : null;
-  };
-
-  // Helper para encontrar el primer courier que cubra la ciudad con el método de pago y cantidad especificados
-  const buscarCourierYTarifa = (ciudad, metodoPagoId, listaItems = items) => {
-    if (!ciudad || couriers.length === 0) return null;
-    const targetTipoPago = esMetodoAnticipado(metodoPagoId) ? "Anticipado" : "Al Recibir";
-    const totalCantidad = (listaItems || []).reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
-    const cantEval = totalCantidad > 0 ? totalCantidad : 1;
-
-    for (const c of couriers) {
-      if (c.tarifas && Array.isArray(c.tarifas)) {
-        // 1. Coincidencia con rango
-        let tarifa = c.tarifas.find(t => {
-          const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
-          const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
-          const rMin = Number(t.rango_min) || 0;
-          const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === "") ? Infinity : Number(t.rango_max);
-          const rangoCoincide = cantEval >= rMin && cantEval <= rMax;
-          return ciudadCoincide && pagoCoincide && rangoCoincide;
-        });
-
-        // 2. Fallback sin rango si no hubo match
-        if (!tarifa) {
-          tarifa = c.tarifas.find(t => {
-            const ciudadCoincide = t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim();
-            const pagoCoincide = t.tipo_pago === "Ambos" || t.tipo_pago === targetTipoPago;
-            return ciudadCoincide && pagoCoincide;
-          });
-        }
-
-        // 3. Último fallback: cualquier tarifa de la ciudad sin importar el tipo de pago
-        if (!tarifa) {
-          tarifa = c.tarifas.find(t => t.ciudad_zona.toLowerCase().trim() === ciudad.toLowerCase().trim());
-        }
-
-        if (tarifa) {
-          return { courierId: c.id, costo: tarifa.costo };
-        }
-      }
-    }
-    return null;
   };
 
   // Al cambiar la ciudad, buscar tarifa configurada de delivery
   const handleCiudadChange = (valCiudad) => {
     setForm(prev => {
       const nextForm = { ...prev, ciudad: valCiudad };
-      
+
       if (valCiudad) {
+        const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+
         // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
         if (prev.courier_id) {
-          const costo = obtenerTarifaPara(valCiudad, prev.courier_id, prev.metodo_pago_id, items);
+          const costo = obtenerTarifaPara(couriers, valCiudad, prev.courier_id, esAnticipado, itemsParaTarifa);
           if (costo !== null) {
             nextForm.costo_envio = costo;
             return nextForm;
@@ -239,7 +229,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
         }
 
         // Si no hay courier o el seleccionado no cubre la nueva ciudad, buscar el primero que la cubra
-        const resultado = buscarCourierYTarifa(valCiudad, prev.metodo_pago_id, items);
+        const resultado = buscarCourierYTarifa(couriers, valCiudad, esAnticipado, itemsParaTarifa);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -260,7 +250,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     setForm(prev => {
       const nextForm = { ...prev, courier_id: courierId };
       if (courierId && prev.ciudad) {
-        const costo = obtenerTarifaPara(prev.ciudad, courierId, prev.metodo_pago_id, items);
+        const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+        const costo = obtenerTarifaPara(couriers, prev.ciudad, courierId, esAnticipado, itemsParaTarifa);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
@@ -271,15 +262,16 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
   const handleMetodoPagoChange = (metodoPagoId) => {
     const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
+    const esAnticipado = !!(metodo && metodo.es_anticipado);
     setForm(prev => {
       const nextForm = { ...prev, metodo_pago_id: metodoPagoId, metodo_pago: metodo ? metodo.nombre : prev.metodo_pago };
       if (prev.ciudad && prev.courier_id) {
-        const costo = obtenerTarifaPara(prev.ciudad, prev.courier_id, metodoPagoId, items);
+        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
       } else if (prev.ciudad) {
-        const resultado = buscarCourierYTarifa(prev.ciudad, metodoPagoId, items);
+        const resultado = buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -314,13 +306,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
     // Recalcular tarifa de delivery según el nuevo rango de unidades
     if (form.ciudad) {
+      const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
       if (form.courier_id) {
-        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago_id, nuevosItems);
+        const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems);
         if (nuevoCosto !== null) {
           setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
         }
       } else {
-        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago_id, nuevosItems);
+        const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems);
         if (resultado) {
           setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
         }
@@ -334,13 +327,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
     // Recalcular tarifa de delivery según el nuevo rango de unidades
     if (form.ciudad) {
+      const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
       if (form.courier_id) {
-        const nuevoCosto = obtenerTarifaPara(form.ciudad, form.courier_id, form.metodo_pago_id, nuevosItems);
+        const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems);
         if (nuevoCosto !== null) {
           setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
         }
       } else {
-        const resultado = buscarCourierYTarifa(form.ciudad, form.metodo_pago_id, nuevosItems);
+        const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems);
         if (resultado) {
           setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
         }
@@ -348,7 +342,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     }
   };
 
-  const subtotalProductos = items.reduce((acc, curr) => acc + curr.subtotal, 0);
+  const subtotalProductos = itemsParaTarifa.reduce((acc, curr) => acc + Number(curr.subtotal || 0), 0);
   const precioTotalVendido = subtotalProductos + (Number(form.costo_envio) || 0);
 
   // Validaciones personalizadas en español (sin HTML native form tooltips)
@@ -364,7 +358,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     if (!form.direccion.trim()) {
       newErrors.direccion = "Por favor, ingresa la dirección de entrega.";
     }
-    if (items.length === 0) {
+    if (!modoCompletar && items.length === 0) {
       newErrors.items = "Debes agregar al menos un producto al pedido.";
     }
     if (form.quiere_factura && !form.ruc.trim()) {
@@ -375,7 +369,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validarFormulario()) {
@@ -383,37 +377,55 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
     }
 
     const metodoSeleccionado = metodosPago.find(m => m.id === Number(form.metodo_pago_id));
-
-    const payload = {
+    const comunes = {
       ...form,
       courier_id: form.courier_id ? Number(form.courier_id) : null,
       metodo_pago_id: form.metodo_pago_id ? Number(form.metodo_pago_id) : null,
       comision_pct_aplicada: metodoSeleccionado ? Number(metodoSeleccionado.comision_porcentaje) : 0,
       costo_envio: Number(form.costo_envio) || 0,
-      monto: precioTotalVendido,
-      items
+      monto: precioTotalVendido
     };
 
-    onSubmit(payload);
+    const payload = modoCompletar
+      ? { ...comunes, id: envio.id, estado: "Confirmado" }
+      : { ...comunes, items };
+
+    setGuardando(true);
+    setSubmitError(null);
+    try {
+      await onSubmit(payload, modoCompletar);
+    } catch (err) {
+      setSubmitError(err.response?.data?.error || "Ocurrió un error al guardar el pedido.");
+    } finally {
+      setGuardando(false);
+    }
   };
 
   if (!open) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div 
+      <div
         className="modal-content np-modal-container"
         onClick={e => e.stopPropagation()}
       >
         {/* Banner Superior */}
         <div className="np-header-banner">
-          <h2>NUEVO PEDIDO</h2>
+          <h2>{modoCompletar ? `COMPLETAR PEDIDO #${envio.id}` : "NUEVO PEDIDO"}</h2>
           <button type="button" onClick={onClose} className="close-btn dark">
             <X size={20} />
           </button>
         </div>
 
-        {/* Banner Global de Errores */}
+        {/* Error de guardado (servidor) */}
+        {submitError && (
+          <div className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
+            <AlertCircle size={18} />
+            <span>{submitError}</span>
+          </div>
+        )}
+
+        {/* Banner Global de Errores de validación */}
         {Object.values(errors).some(Boolean) && (
           <div className="form-error-banner" style={{ margin: '1rem 1.5rem 0' }}>
             <AlertCircle size={18} />
@@ -439,22 +451,30 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
               <div className="np-row">
                 <label>Fecha</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={form.fecha}
-                  onChange={e => setForm({ ...form, fecha: e.target.value })}
-                />
+                {modoCompletar ? (
+                  <div className="form-input" style={{ opacity: 0.7 }}>{form.fecha}</div>
+                ) : (
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={form.fecha}
+                    onChange={e => setForm({ ...form, fecha: e.target.value })}
+                  />
+                )}
               </div>
 
               <div className="np-row">
                 <label>Hora</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={form.hora}
-                  onChange={e => setForm({ ...form, hora: e.target.value })}
-                />
+                {modoCompletar ? (
+                  <div className="form-input" style={{ opacity: 0.7 }}>{form.hora}</div>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={form.hora}
+                    onChange={e => setForm({ ...form, hora: e.target.value })}
+                  />
+                )}
               </div>
 
               <div className="np-row">
@@ -713,48 +733,50 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
               <ShoppingBag size={16} /> Productos Vendidos en el Pedido
             </h3>
 
-            <div className="np-add-item-bar">
-              <select
-                className="form-input"
-                style={{ flex: 2 }}
-                value={selectedProdId}
-                onChange={e => setSelectedProdId(e.target.value)}
-              >
-                <option value="">-- Seleccionar Producto del sistema --</option>
-                {productosDisponibles.map(p => {
-                  const pPrecio = Number(p.precio_base ?? p.precio_venta ?? p.precio ?? 0);
-                  return (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre} (Gs. {pPrecio.toLocaleString('es-PY')})
-                    </option>
-                  );
-                })}
-              </select>
+            {!modoCompletar && (
+              <div className="np-add-item-bar">
+                <select
+                  className="form-input"
+                  style={{ flex: 2 }}
+                  value={selectedProdId}
+                  onChange={e => setSelectedProdId(e.target.value)}
+                >
+                  <option value="">-- Seleccionar Producto del sistema --</option>
+                  {productosDisponibles.map(p => {
+                    const pPrecio = Number(p.precio_base ?? p.precio_venta ?? p.precio ?? 0);
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre} (Gs. {pPrecio.toLocaleString('es-PY')})
+                      </option>
+                    );
+                  })}
+                </select>
 
-              <input
-                type="number"
-                min="1"
-                className="form-input"
-                style={{ width: '80px' }}
-                value={cant}
-                onChange={e => setCant(e.target.value)}
-              />
+                <input
+                  type="number"
+                  min="1"
+                  className="form-input"
+                  style={{ width: '80px' }}
+                  value={cant}
+                  onChange={e => setCant(e.target.value)}
+                />
 
-              <button
-                type="button"
-                className="btn-outline"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                onClick={handleAddItem}
-              >
-                <Plus size={16} /> Añadir al pedido
-              </button>
-            </div>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  onClick={handleAddItem}
+                >
+                  <Plus size={16} /> Añadir al pedido
+                </button>
+              </div>
+            )}
 
-            {errors.producto && <span className="field-error">{errors.producto}</span>}
-            {errors.items && <span className="field-error" style={{ display: 'block', marginTop: '0.5rem' }}>{errors.items}</span>}
+            {!modoCompletar && errors.producto && <span className="field-error">{errors.producto}</span>}
+            {!modoCompletar && errors.items && <span className="field-error" style={{ display: 'block', marginTop: '0.5rem' }}>{errors.items}</span>}
 
             {/* Tabla de items agregados */}
-            {items.length > 0 ? (
+            {itemsParaTarifa.length > 0 ? (
               <table className="prod-table np-items-table">
                 <thead>
                   <tr>
@@ -762,25 +784,27 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
                     <th style={{ textAlign: 'center' }}>Cant.</th>
                     <th style={{ textAlign: 'right' }}>Precio Unit.</th>
                     <th style={{ textAlign: 'right' }}>Subtotal</th>
-                    <th></th>
+                    {!modoCompletar && <th></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((it, idx) => (
+                  {itemsParaTarifa.map((it, idx) => (
                     <tr key={idx}>
                       <td style={{ color: '#fff', fontWeight: 600 }}>{it.nombre_producto}</td>
                       <td style={{ textAlign: 'center' }}>{it.cantidad}</td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
-                        Gs. {it.precio_unitario.toLocaleString('es-PY')}
+                        Gs. {Number(it.precio_unitario).toLocaleString('es-PY')}
                       </td>
                       <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10b981', fontWeight: 'bold' }}>
-                        Gs. {it.subtotal.toLocaleString('es-PY')}
+                        Gs. {Number(it.subtotal).toLocaleString('es-PY')}
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger">
-                          <Trash2 size={14} />
-                        </button>
-                      </td>
+                      {!modoCompletar && (
+                        <td style={{ textAlign: 'right' }}>
+                          <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger">
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -817,8 +841,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit }) {
 
           {/* Botón de Confirmación verde al pie */}
           <div className="np-footer">
-            <button type="submit" className="btn-confirmar-pedido">
-              CONFIRMAR PEDIDO
+            <button type="submit" className="btn-confirmar-pedido" disabled={guardando}>
+              {guardando ? "Guardando..." : "CONFIRMAR PEDIDO"}
             </button>
           </div>
         </form>
