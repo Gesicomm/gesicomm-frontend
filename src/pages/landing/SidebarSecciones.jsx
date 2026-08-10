@@ -52,11 +52,13 @@ export default function SidebarSecciones({
         className={`group relative flex items-center justify-between py-2 px-1 transition-colors cursor-pointer ${sec.id === selectedId ? 'bg-[var(--vit-surface)] border-l-2 border-[var(--vit-accent)]' : 'border-l-2 border-transparent'} ${!sec.activo ? 'opacity-50' : ''} ${draggedId === sec.id ? 'opacity-40' : ''} ${overId === sec.id ? 'lb-sidebar-drop-target' : ''}`}
       >
         <div className="flex flex-1 items-center gap-2 overflow-hidden">
-          <span
-            className={`p-1 text-[var(--vit-muted-2)] opacity-0 group-hover:opacity-100 transition-opacity ${arrastrable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
-          >
-            <GripVertical size={14} />
-          </span>
+          {arrastrable ? (
+            <span className="p-1 text-[var(--vit-muted-2)] cursor-grab active:cursor-grabbing">
+              <GripVertical size={14} />
+            </span>
+          ) : (
+            <span className="p-1 w-[22px]" />
+          )}
           <button
             type="button"
             className="flex flex-1 items-center gap-2 overflow-hidden text-left"
