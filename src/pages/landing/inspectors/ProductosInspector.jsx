@@ -142,8 +142,9 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
       
       {/* Modal para ProductPicker */}
       {modalAbierto && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-[var(--vit-bg)] overflow-hidden">
-             <div className="flex items-center justify-between p-4 border-b border-[var(--vit-border)] bg-[var(--vit-card-bg)] shadow-sm z-10">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-[var(--vit-bg)] rounded-xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-[var(--vit-border)]">
+             <div className="flex items-center justify-between p-4 border-b border-[var(--vit-border)] bg-[var(--vit-card-bg)] shrink-0">
                <div>
                  <h3 className="font-semibold text-lg text-[var(--vit-text)]">Seleccionar Productos</h3>
                  <p className="text-sm text-[var(--vit-muted)]">Los productos seleccionados ({tempSeleccion.size}) se mostrarán en esta sección.</p>
@@ -154,7 +155,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                </div>
              </div>
              
-             <div className="flex-1 overflow-y-auto bg-[var(--vit-bg)]">
+             <div className="flex-1 overflow-y-auto p-4">
                 <ProductPicker 
                   catalogo={catalogo}
                   seleccion={tempSeleccion}
@@ -165,6 +166,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                   onReordenar={handleReordenar}
                 />
              </div>
+          </div>
         </div>
       )}
     </div>
