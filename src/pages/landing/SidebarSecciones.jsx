@@ -118,7 +118,7 @@ export default function SidebarSecciones({
              <span className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider">Header</span>
           </div>
           <div className="flex flex-col">
-            {headerSections.map(sec => renderSectionItem(sec, false))}
+            {headerSections.map(sec => renderSectionItem(sec, true))}
           </div>
         </div>
 
@@ -153,7 +153,7 @@ export default function SidebarSecciones({
              <span className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider">Footer</span>
           </div>
           <div className="flex flex-col">
-            {footerSections.map(sec => renderSectionItem(sec, false))}
+            {footerSections.map(sec => renderSectionItem(sec, true))}
           </div>
         </div>
       </div>
