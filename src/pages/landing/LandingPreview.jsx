@@ -32,7 +32,7 @@ function normalizarItem(item, idx) {
 
 export default function LandingPreview({
   titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica,
-  mostrarTestimonios, testimonios, mostrarFaq, faqs,
+  secciones, mostrarTestimonios, testimonios, mostrarFaq, faqs,
 }) {
   const [dispositivo, setDispositivo] = useState('mobile');
 
@@ -65,6 +65,32 @@ export default function LandingPreview({
     ? testimoniosVisibles.reduce((s, t) => s + (Number(t.calificacion) || 5), 0) / testimoniosVisibles.length
     : 0;
   const bannerLinkEsExterno = banner?.boton_link && /^https?:\/\//i.test(banner.boton_link);
+  const seccionesOrdenadas = useMemo(() => (
+    Array.isArray(secciones) && secciones.length
+      ? secciones.map((s, idx) => ({ ...s, orden: s.orden ?? idx }))
+      : [
+        'header', 'hero', 'beneficios', 'categorias', 'destacados',
+        'banner', 'productos', 'testimonios', 'faq', 'footer',
+      ].map((tipo, idx) => ({ tipo, activo: true, orden: idx }))
+  ), [secciones]);
+  const ordenSeccion = useMemo(() => {
+    const mapa = new Map();
+    seccionesOrdenadas.forEach((s, idx) => mapa.set(s.tipo, idx));
+    return mapa;
+  }, [seccionesOrdenadas]);
+  const visibleSeccion = useMemo(() => {
+    const mapa = new Map();
+    seccionesOrdenadas.forEach(s => mapa.set(s.tipo, s.activo !== false));
+    return (tipo) => mapa.get(tipo) !== false;
+  }, [seccionesOrdenadas]);
+
+  function orden(tipo) {
+    return ordenSeccion.has(tipo) ? ordenSeccion.get(tipo) : 99;
+  }
+
+  function contenido(tipo) {
+    return seccionesOrdenadas.find(s => s.tipo === tipo)?.contenido || {};
+  }
 
   const noop = () => {};
 
@@ -109,55 +135,76 @@ export default function LandingPreview({
       <div className={`lb-preview-viewport ${dispositivo}`}>
         <div
           className={`lp-page lb-live-preview-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
-          style={calcularEstiloLanding({ tema, diseno })}
+          style={{ ...calcularEstiloLanding({ tema, diseno }), display: 'flex', flexDirection: 'column' }}
         >
-          <LandingHeader
-            nombre={titulo || 'Tu tienda'}
-            mostrarBuscador={!!filtros.buscador}
-            mostrarCategorias={categorias.length > 0}
-            mostrarTestimonios={testimoniosVisibles.length > 0}
-            mostrarFaq={faqsVisibles.length > 0}
-            cantidadCarrito={0}
-            onAbrirCarrito={noop}
-          />
-
-          <LandingHero
-            titulo={titulo || 'Titulo de tu tienda'}
-            descripcion={descripcion}
-            totalItems={itemsPreview.length}
-            totalCategorias={categorias.length}
-            ratingPromedio={ratingPromedio}
-            cantidadOpiniones={testimoniosVisibles.length}
-            whatsapp={contacto?.whatsapp}
-          />
-
-          <LandingBenefits />
-
-          {categorias.length > 0 && (
-            <LandingCategoryStrip
-              categorias={categorias}
-              categoriaImagen={categoriaImagen}
-              onSeleccionar={noop}
-            />
+          {visibleSeccion('header') && (
+            <div style={{ order: orden('header') }}>
+              <LandingHeader
+                nombre={contenido('header').logo_texto || titulo || 'Tu tienda'}
+                mostrarBuscador={!!filtros.buscador}
+                mostrarCategorias={categorias.length > 0}
+                mostrarTestimonios={testimoniosVisibles.length > 0}
+                mostrarFaq={faqsVisibles.length > 0}
+                cantidadCarrito={0}
+                onAbrirCarrito={noop}
+              />
+            </div>
           )}
 
-          {itemsDestacados.length > 0 && (
-            <LandingFeatured
-              items={itemsDestacados}
-              contacto={contacto}
-              wishlist={new Set()}
-              onToggleWishlist={noop}
-              agregadoRapido={null}
-              onAgregarRapido={noop}
-              onAbrir={noop}
-              onContactar={noop}
-            />
+          {visibleSeccion('announcement_bar') && contenido('announcement_bar').texto && (
+            <section className="lp-custom-announcement" style={{ order: orden('announcement_bar') }}>
+              {contenido('announcement_bar').texto}
+            </section>
           )}
 
-          {banner && (
+          {visibleSeccion('hero') && (
+            <div style={{ order: orden('hero') }}>
+              <LandingHero
+                titulo={titulo || 'Titulo de tu tienda'}
+                descripcion={descripcion}
+                totalItems={itemsPreview.length}
+                totalCategorias={categorias.length}
+                ratingPromedio={ratingPromedio}
+                cantidadOpiniones={testimoniosVisibles.length}
+                whatsapp={contacto?.whatsapp}
+              />
+            </div>
+          )}
+
+          {visibleSeccion('beneficios') && <div style={{ order: orden('beneficios') }}><LandingBenefits /></div>}
+
+          {visibleSeccion('categorias') && categorias.length > 0 && (
+            <div style={{ order: orden('categorias') }}>
+              <LandingCategoryStrip
+                categorias={categorias}
+                categoriaImagen={categoriaImagen}
+                onSeleccionar={noop}
+              />
+            </div>
+          )}
+
+          {visibleSeccion('destacados') && itemsDestacados.length > 0 && (
+            <div style={{ order: orden('destacados') }}>
+              <LandingFeatured
+                items={itemsDestacados}
+                contacto={contacto}
+                wishlist={new Set()}
+                onToggleWishlist={noop}
+                agregadoRapido={null}
+                onAgregarRapido={noop}
+                onAbrir={noop}
+                onContactar={noop}
+              />
+            </div>
+          )}
+
+          {visibleSeccion('banner') && banner && (
             <div
               className={`lp-banner ${banner.imagen ? 'con-imagen' : ''}`}
-              style={banner.imagen ? { backgroundImage: `url(${getMediaUrl(banner.imagen)})` } : undefined}
+              style={{
+                order: orden('banner'),
+                ...(banner.imagen ? { backgroundImage: `url(${getMediaUrl(banner.imagen)})` } : {}),
+              }}
             >
               <div className="lp-banner-overlay">
                 {banner.titulo && <h2>{banner.titulo}</h2>}
@@ -177,7 +224,7 @@ export default function LandingPreview({
             </div>
           )}
 
-          <main className="lp-shell">
+          {visibleSeccion('productos') && <main className="lp-shell" style={{ order: orden('productos') }}>
             <header className="lp-header">
               <span className="lp-header-eyebrow">
                 {itemsPreview.length} producto{itemsPreview.length === 1 ? '' : 's'}
@@ -254,16 +301,56 @@ export default function LandingPreview({
                 ))}
               </div>
             )}
-          </main>
+          </main>}
 
-          {testimoniosVisibles.length > 0 && <LandingTestimonials testimonios={testimoniosVisibles} />}
-          {faqsVisibles.length > 0 && <LandingFaq items={faqsVisibles} />}
+          {visibleSeccion('texto') && (
+            <section className="lp-custom-section" style={{ order: orden('texto') }}>
+              {contenido('texto').titulo && <h2>{contenido('texto').titulo}</h2>}
+              {contenido('texto').texto && <p>{contenido('texto').texto}</p>}
+            </section>
+          )}
 
-          <footer id="lp-contacto" className="lp-footer">
+          {visibleSeccion('como_funciona') && (
+            <section className="lp-custom-section" style={{ order: orden('como_funciona') }}>
+              <h2>{contenido('como_funciona').titulo || 'Como funciona'}</h2>
+              <div className="lp-steps-grid">
+                {(contenido('como_funciona').pasos || []).map((paso, idx) => (
+                  <article key={`${paso}-${idx}`} className="lp-step-card">
+                    <span>{idx + 1}</span>
+                    <p>{paso}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {visibleSeccion('redes_sociales') && (
+            <section className="lp-social-section" style={{ order: orden('redes_sociales') }}>
+              <h2>{contenido('redes_sociales').titulo || 'Seguinos'}</h2>
+              <div>
+                {contenido('redes_sociales').instagram && <a href={contenido('redes_sociales').instagram} onClick={(e) => e.preventDefault()}>Instagram</a>}
+                {contenido('redes_sociales').facebook && <a href={contenido('redes_sociales').facebook} onClick={(e) => e.preventDefault()}>Facebook</a>}
+                {contenido('redes_sociales').tiktok && <a href={contenido('redes_sociales').tiktok} onClick={(e) => e.preventDefault()}>TikTok</a>}
+              </div>
+            </section>
+          )}
+
+          {visibleSeccion('testimonios') && testimoniosVisibles.length > 0 && (
+            <div style={{ order: orden('testimonios') }}>
+              <LandingTestimonials testimonios={testimoniosVisibles} />
+            </div>
+          )}
+          {visibleSeccion('faq') && faqsVisibles.length > 0 && (
+            <div style={{ order: orden('faq') }}>
+              <LandingFaq items={faqsVisibles} />
+            </div>
+          )}
+
+          {visibleSeccion('footer') && <footer id="lp-contacto" className="lp-footer" style={{ order: orden('footer') }}>
             <div className="lp-footer-inner">
               <div>
-                <p className="lp-footer-nombre">{titulo || 'Tu tienda'}</p>
-                {descripcion && <p className="lp-footer-desc">{descripcion}</p>}
+                <p className="lp-footer-nombre">{contenido('footer').titulo || titulo || 'Tu tienda'}</p>
+                {(contenido('footer').descripcion || descripcion) && <p className="lp-footer-desc">{contenido('footer').descripcion || descripcion}</p>}
               </div>
               <nav className="lp-footer-links">
                 {categorias.length > 0 && <a href="#lp-categorias" onClick={(e) => e.preventDefault()}>Categorias</a>}
@@ -277,7 +364,7 @@ export default function LandingPreview({
                 </a>
               )}
             </div>
-          </footer>
+          </footer>}
 
           <div className="lb-preview-inert-cover" aria-hidden="true" />
         </div>

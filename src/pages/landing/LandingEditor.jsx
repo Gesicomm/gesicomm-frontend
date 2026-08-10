@@ -4,7 +4,7 @@ import {
   Save, Loader, AlertCircle, Check, Copy, ExternalLink, Eye, EyeOff,
   FileText, LayoutGrid, SlidersHorizontal, Rocket, Palette, MessageCircle,
   Power, PowerOff, CircleAlert, ImagePlus, Trash2, Sun, Moon, Search, BarChart3, Globe, Sparkles,
-  MessageSquareQuote,
+  MessageSquareQuote, LayoutTemplate, ArrowUp, ArrowDown,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -23,6 +23,7 @@ const MAX_ITEMS = 40;
 const MAX_IMAGEN_BYTES = 1024 * 1024;
 
 const PASOS = [
+  { id: 'estructura', label: 'Estructura', icono: LayoutTemplate, descripcion: 'Orden de secciones' },
   { id: 'info', label: 'Información', icono: FileText, descripcion: 'Nombre, título y URL' },
   { id: 'productos', label: 'Productos', icono: LayoutGrid, descripcion: 'Qué vas a mostrar' },
   { id: 'diseno', label: 'Diseño', icono: Palette, descripcion: 'Banner, colores y tipografía' },
@@ -57,6 +58,25 @@ const FUENTES = [
   { valor: 'poppins', label: 'Poppins', familia: "'Poppins', sans-serif" },
   { valor: 'roboto', label: 'Roboto', familia: "'Roboto', sans-serif" },
 ];
+
+const SECCIONES_BASE = [
+  { tipo: 'header', nombre_interno: 'Header', activo: true, fijo: true },
+  { tipo: 'announcement_bar', nombre_interno: 'Barra superior', activo: false, contenido: { texto: 'Recibelo en 24hs!' } },
+  { tipo: 'hero', nombre_interno: 'Inicio', activo: true, fijo: true },
+  { tipo: 'beneficios', nombre_interno: 'Beneficios', activo: true },
+  { tipo: 'categorias', nombre_interno: 'Categorias', activo: true },
+  { tipo: 'destacados', nombre_interno: 'Destacados', activo: true },
+  { tipo: 'banner', nombre_interno: 'Banner', activo: true },
+  { tipo: 'productos', nombre_interno: 'Productos', activo: true, fijo: true },
+  { tipo: 'texto', nombre_interno: 'Texto libre', activo: false, contenido: { titulo: 'Nueva seccion', texto: 'Contale algo importante a tus clientes.' } },
+  { tipo: 'como_funciona', nombre_interno: 'Como funciona', activo: false, contenido: { titulo: 'Como funciona', pasos: ['Elegis tus productos', 'Completas tus datos', 'Coordinamos la entrega'] } },
+  { tipo: 'testimonios', nombre_interno: 'Opiniones', activo: true },
+  { tipo: 'faq', nombre_interno: 'Preguntas frecuentes', activo: true },
+  { tipo: 'redes_sociales', nombre_interno: 'Redes sociales', activo: false, contenido: { titulo: 'Seguinos', instagram: '', facebook: '', tiktok: '' } },
+  { tipo: 'footer', nombre_interno: 'Footer', activo: true, fijo: true },
+];
+
+const SECCIONES_AGREGABLES = ['announcement_bar', 'texto', 'como_funciona', 'redes_sociales'];
 
 const FORM_INICIAL = {
   nombre: '',
@@ -174,6 +194,7 @@ export default function LandingEditor() {
   // fila por fila hasta el próximo Guardar.
   const [testimonios, setTestimonios] = useState([]); // [{ nombre, foto, calificacion, comentario }]
   const [faqs, setFaqs] = useState([]); // [{ pregunta, respuesta }]
+  const [secciones, setSecciones] = useState(() => SECCIONES_BASE.map((s, idx) => ({ ...s, orden: idx })));
   const [subiendoFotoTestimonio, setSubiendoFotoTestimonio] = useState(null); // índice de la fila, o null
   const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [tienda, setTienda] = useState(null);
@@ -248,6 +269,25 @@ export default function LandingEditor() {
           nombre: t.nombre, foto: t.foto || null, calificacion: t.calificacion, comentario: t.comentario,
         })));
         setFaqs((guardada.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
+        if (Array.isArray(guardada.secciones) && guardada.secciones.length > 0) {
+          const basePorTipo = new Map(SECCIONES_BASE.map(s => [s.tipo, s]));
+          setSecciones(
+            guardada.secciones
+              .slice()
+              .sort((a, b) => a.orden - b.orden)
+              .map((s, idx) => ({
+                ...(basePorTipo.get(s.tipo) || {}),
+                tipo: s.tipo,
+                nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
+                activo: s.activo !== false,
+                orden: idx,
+                config: s.config || s.config_json || {},
+                contenido: s.contenido || s.contenido_json || {},
+              }))
+          );
+        } else {
+          setSecciones(SECCIONES_BASE.map((s, idx) => ({ ...s, orden: idx })));
+        }
         // Un producto/combo puede haberse dado de baja (o quedado sin
         // stock/"en_venta") desde que se agregó a esta landing. Antes esos
         // items huérfanos entraban igual a `seleccion` y se mostraban en
@@ -379,6 +419,7 @@ export default function LandingEditor() {
   const completado = {
     info: !!form.nombre.trim(),
     productos: seleccion.size > 0,
+    estructura: secciones.some(s => s.tipo === 'productos' && s.activo !== false),
     diseno: true,
     filtros: true,
     contenido: true,
@@ -466,6 +507,49 @@ export default function LandingEditor() {
       const [movida] = entradas.splice(desde, 1);
       entradas.splice(hasta, 0, movida);
       return new Map(entradas);
+    });
+    setSucio(true);
+  }
+
+  function actualizarSeccion(idx, cambios) {
+    limpiarErrorPrevio();
+    setSecciones(prev => prev.map((s, i) => (i === idx ? { ...s, ...cambios } : s)));
+    setSucio(true);
+  }
+
+  function actualizarContenidoSeccion(idx, campo, valor) {
+    limpiarErrorPrevio();
+    setSecciones(prev => prev.map((s, i) => (
+      i === idx ? { ...s, contenido: { ...(s.contenido || {}), [campo]: valor } } : s
+    )));
+    setSucio(true);
+  }
+
+  function agregarSeccion(tipo) {
+    const base = SECCIONES_BASE.find(s => s.tipo === tipo);
+    if (!base) return;
+    limpiarErrorPrevio();
+    setSecciones(prev => {
+      const existente = prev.findIndex(s => s.tipo === tipo);
+      if (existente >= 0) {
+        return prev.map((s, idx) => (idx === existente ? { ...s, activo: true } : s));
+      }
+      return [
+        ...prev,
+        { ...base, activo: true, orden: prev.length, contenido: { ...(base.contenido || {}) } },
+      ];
+    });
+    setSucio(true);
+  }
+
+  function moverSeccion(idx, delta) {
+    const destino = idx + delta;
+    if (destino < 0 || destino >= secciones.length) return;
+    limpiarErrorPrevio();
+    setSecciones(prev => {
+      const copia = [...prev];
+      [copia[idx], copia[destino]] = [copia[destino], copia[idx]];
+      return copia.map((s, i) => ({ ...s, orden: i }));
     });
     setSucio(true);
   }
@@ -681,6 +765,14 @@ export default function LandingEditor() {
         orden: idx,
       })),
       faq: faqs.map((f, idx) => ({ pregunta: f.pregunta.trim(), respuesta: f.respuesta.trim(), orden: idx })),
+      secciones: secciones.map((s, idx) => ({
+        tipo: s.tipo,
+        nombre_interno: s.nombre_interno,
+        activo: s.activo !== false,
+        orden: idx,
+        config: s.config || {},
+        contenido: s.contenido || {},
+      })),
     };
   }
 
@@ -992,6 +1084,135 @@ export default function LandingEditor() {
                 onReordenar={reordenar}
                 max={MAX_ITEMS}
               />
+            </div>
+          )}
+
+          {paso === 'estructura' && (
+            <div className="lb-section">
+              <header className="lb-section-head">
+                <h2>Estructura de la pagina</h2>
+                <p>Elegi que bloques se ven y en que orden aparecen. La vista previa de la derecha respeta este orden.</p>
+              </header>
+
+              <div className="lb-secciones-builder">
+                {secciones.map((seccion, idx) => (
+                  <div key={`${seccion.tipo}-${idx}`} className={`lb-seccion-row ${seccion.activo === false ? 'apagada' : ''}`}>
+                    <div className="lb-seccion-order">
+                      <button type="button" onClick={() => moverSeccion(idx, -1)} disabled={idx === 0} title="Subir">
+                        <ArrowUp size={14} />
+                      </button>
+                      <button type="button" onClick={() => moverSeccion(idx, 1)} disabled={idx === secciones.length - 1} title="Bajar">
+                        <ArrowDown size={14} />
+                      </button>
+                    </div>
+                    <label className="lb-seccion-visible">
+                      <input
+                        type="checkbox"
+                        checked={seccion.activo !== false}
+                        disabled={seccion.fijo}
+                        onChange={e => actualizarSeccion(idx, { activo: e.target.checked })}
+                      />
+                      <span>{seccion.fijo ? 'Fija' : 'Visible'}</span>
+                    </label>
+                    <label className="lb-field lb-seccion-name">
+                      <span>{seccion.tipo}</span>
+                      <input
+                        value={seccion.nombre_interno || ''}
+                        onChange={e => actualizarSeccion(idx, { nombre_interno: e.target.value })}
+                      />
+                    </label>
+                    <div className="lb-seccion-config">
+                      {seccion.tipo === 'header' && (
+                        <label className="lb-field">
+                          <span>Texto del logo</span>
+                          <input
+                            value={seccion.contenido?.logo_texto || form.titulo || form.nombre}
+                            onChange={e => actualizarContenidoSeccion(idx, 'logo_texto', e.target.value)}
+                          />
+                        </label>
+                      )}
+                      {seccion.tipo === 'announcement_bar' && (
+                        <label className="lb-field">
+                          <span>Mensaje</span>
+                          <input
+                            value={seccion.contenido?.texto || ''}
+                            onChange={e => actualizarContenidoSeccion(idx, 'texto', e.target.value)}
+                            placeholder="Recibelo en 24hs!"
+                          />
+                        </label>
+                      )}
+                      {(seccion.tipo === 'texto' || seccion.tipo === 'como_funciona') && (
+                        <>
+                          <label className="lb-field">
+                            <span>Titulo visible</span>
+                            <input
+                              value={seccion.contenido?.titulo || ''}
+                              onChange={e => actualizarContenidoSeccion(idx, 'titulo', e.target.value)}
+                              placeholder={seccion.tipo === 'como_funciona' ? 'Como funciona' : 'Titulo de la seccion'}
+                            />
+                          </label>
+                          <label className="lb-field ancho-total">
+                            <span>{seccion.tipo === 'como_funciona' ? 'Pasos (uno por linea)' : 'Texto'}</span>
+                            <textarea
+                              rows={3}
+                              value={seccion.tipo === 'como_funciona' ? (seccion.contenido?.pasos || []).join('\n') : (seccion.contenido?.texto || '')}
+                              onChange={e => actualizarContenidoSeccion(
+                                idx,
+                                seccion.tipo === 'como_funciona' ? 'pasos' : 'texto',
+                                seccion.tipo === 'como_funciona' ? e.target.value.split('\n').map(v => v.trim()).filter(Boolean) : e.target.value
+                              )}
+                            />
+                          </label>
+                        </>
+                      )}
+                      {seccion.tipo === 'redes_sociales' && (
+                        <>
+                          <label className="lb-field">
+                            <span>Titulo</span>
+                            <input
+                              value={seccion.contenido?.titulo || ''}
+                              onChange={e => actualizarContenidoSeccion(idx, 'titulo', e.target.value)}
+                              placeholder="Seguinos"
+                            />
+                          </label>
+                          <label className="lb-field">
+                            <span>Instagram</span>
+                            <input value={seccion.contenido?.instagram || ''} onChange={e => actualizarContenidoSeccion(idx, 'instagram', e.target.value)} placeholder="https://instagram.com/..." />
+                          </label>
+                          <label className="lb-field">
+                            <span>Facebook</span>
+                            <input value={seccion.contenido?.facebook || ''} onChange={e => actualizarContenidoSeccion(idx, 'facebook', e.target.value)} placeholder="https://facebook.com/..." />
+                          </label>
+                          <label className="lb-field">
+                            <span>TikTok</span>
+                            <input value={seccion.contenido?.tiktok || ''} onChange={e => actualizarContenidoSeccion(idx, 'tiktok', e.target.value)} placeholder="https://tiktok.com/..." />
+                          </label>
+                        </>
+                      )}
+                      {seccion.tipo === 'footer' && (
+                        <>
+                          <label className="lb-field">
+                            <span>Titulo footer</span>
+                            <input value={seccion.contenido?.titulo || form.titulo || form.nombre} onChange={e => actualizarContenidoSeccion(idx, 'titulo', e.target.value)} />
+                          </label>
+                          <label className="lb-field ancho-total">
+                            <span>Descripcion footer</span>
+                            <textarea rows={2} value={seccion.contenido?.descripcion || form.descripcion || ''} onChange={e => actualizarContenidoSeccion(idx, 'descripcion', e.target.value)} />
+                          </label>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="lb-add-section">
+                {SECCIONES_AGREGABLES.map(tipo => (
+                  <button key={tipo} type="button" onClick={() => agregarSeccion(tipo)}>
+                    <Plus size={13} /> Agregar {tipo.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1503,6 +1724,7 @@ export default function LandingEditor() {
                 boton_link: form.banner_boton_link,
               } : null}
               urlPublica={urlPublica}
+              secciones={secciones}
               mostrarTestimonios={form.mostrar_testimonios}
               testimonios={testimonios}
               mostrarFaq={form.mostrar_faq}

@@ -1253,6 +1253,85 @@
 
 .lb-preview-hint { margin: 0 0.25rem; font-size: 0.72rem; color: var(--vit-muted-2); line-height: 1.45; }
 
+.lb-secciones-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.lb-seccion-row {
+  display: grid;
+  grid-template-columns: auto 92px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  background: var(--vit-surface);
+}
+.lb-seccion-row.apagada { opacity: 0.55; }
+.lb-seccion-order {
+  display: flex;
+  gap: 0.25rem;
+}
+.lb-seccion-order button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  background: var(--vit-card-bg);
+  color: var(--vit-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.lb-seccion-order button:not(:disabled):hover {
+  color: var(--vit-accent);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.lb-seccion-order button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.lb-seccion-visible {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--vit-muted);
+}
+.lb-seccion-name { margin: 0; }
+.lb-seccion-config {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  padding-top: 0.35rem;
+}
+.lb-add-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.lb-add-section button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: 9px;
+  background: rgba(16, 185, 129, 0.09);
+  color: var(--vit-accent);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.lb-add-section button:hover {
+  background: rgba(16, 185, 129, 0.14);
+}
+
 /* Espejo de la landing pública (ver LandingPreview.jsx) */
 .lpv-page {
   --l-primary: #10b981;
