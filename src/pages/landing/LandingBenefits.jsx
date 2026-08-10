@@ -53,7 +53,7 @@ export default function LandingBenefits({ contenido }) {
       className="border-y py-14"
       style={{ borderColor: 'var(--l-card-border)', background: 'var(--l-surface)' }}
     >
-      <div className="mx-auto grid max-w-[var(--l-max)] grid-cols-2 gap-x-6 gap-y-10 px-[var(--l-gutter)] lg:grid-cols-4">
+      <div className="mx-auto grid max-w-[var(--l-max)] grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10 px-[var(--l-gutter)] lg:grid-cols-4">
         {beneficios.map((b, i) => {
           const Icon = BENEFICIOS_ICONS[b.icono] || CheckCircle;
           return (
