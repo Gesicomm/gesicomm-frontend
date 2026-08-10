@@ -940,9 +940,15 @@ export default function LandingEditor() {
       {/* ── Top Toolbar ── */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem', height: '64px', borderBottom: '1px solid var(--vit-border)', background: 'var(--vit-card-bg)', flexShrink: 0, width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1 }}>
-          <Link to="/mi-landing" className="lb-btn-ghost" style={{ padding: '0.4rem', color: 'var(--vit-text)' }}>
-            &larr; Volver
-          </Link>
+          {!esEdicion ? (
+            <button type="button" onClick={() => window.location.reload()} className="lb-btn-ghost" style={{ padding: '0.4rem', color: 'var(--vit-text)' }}>
+              &larr; Volver a plantillas
+            </button>
+          ) : (
+            <Link to="/mi-landing" className="lb-btn-ghost" style={{ padding: '0.4rem', color: 'var(--vit-text)' }}>
+              &larr; Volver
+            </Link>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--vit-text)' }}>{form.nombre || 'Mi landing'}</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--vit-muted)' }}>
