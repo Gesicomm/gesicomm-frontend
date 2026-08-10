@@ -4,7 +4,7 @@ import {
   Save, Loader, AlertCircle, Check, Copy, ExternalLink, Eye, EyeOff,
   FileText, LayoutGrid, SlidersHorizontal, Rocket, Palette, MessageCircle,
   Power, PowerOff, CircleAlert, ImagePlus, Trash2, Sun, Moon, Search, BarChart3, Globe, Sparkles,
-  MessageSquareQuote, LayoutTemplate, ArrowUp, ArrowDown,
+  MessageSquareQuote, LayoutTemplate, ArrowUp, ArrowDown, Plus,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';

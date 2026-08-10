@@ -98,14 +98,14 @@ export default function DominioPropio({ tienda, onActualizado }) {
   }
 
   return (
-    <form onSubmit={guardar} className="dp-form">
+    <div className="dp-form">
       <label>Tu dominio
         <input value={dominio} onChange={e => setDominio(e.target.value)} placeholder="mitienda.com" />
       </label>
-      <button type="submit" className="land-btn-primary" disabled={guardando || !dominio.trim()}>
+      <button type="button" onClick={guardar} className="land-btn-primary" disabled={guardando || !dominio.trim()}>
         {guardando ? <><Loader size={14} className="spin-icon" /> Conectando...</> : 'Conectar dominio'}
       </button>
       {error && <div className="land-alert-error"><AlertCircle size={14} /> {error}</div>}
-    </form>
+    </div>
   );
 }
