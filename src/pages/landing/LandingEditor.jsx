@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
-  Save, Loader, AlertCircle, Check, Copy, ExternalLink, Eye, EyeOff,
-  FileText, LayoutGrid, SlidersHorizontal, Rocket, Palette, MessageCircle,
-  Power, PowerOff, CircleAlert, ImagePlus, Trash2, Sun, Moon, Search, BarChart3, Globe, Sparkles,
-  MessageSquareQuote, LayoutTemplate, ArrowUp, ArrowDown, Plus,
+  Save, Loader, AlertCircle, Check, ExternalLink,
+  Power, PowerOff, CircleAlert, Monitor, Tablet, Smartphone, Trash2
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -14,50 +12,20 @@ import ProductPicker from './ProductPicker';
 import LandingPreview from './LandingPreview';
 import EstadisticasPanel from './EstadisticasPanel';
 import PasoContenido from './PasoContenido';
+
+import InspectorGlobal from './InspectorGlobal';
+import InspectorSeccion from './InspectorSeccion';
+import SidebarSecciones from './SidebarSecciones';
+import SelectorSecciones from './SelectorSecciones';
+import LandingTemplatePicker from './LandingTemplatePicker';
+import { VALORES_DEFECTO_POR_TIPO } from './BloquesSchema';
+
 import ConfirmDialog from '../../components/ConfirmDialog';
-import { MODOS } from '../../lib/landingDiseno';
 import '../vitrina/vitrina.css';
 import './landing.css';
 
 const MAX_ITEMS = 40;
 const MAX_IMAGEN_BYTES = 1024 * 1024;
-
-const PASOS = [
-  { id: 'estructura', label: 'Estructura', icono: LayoutTemplate, descripcion: 'Orden de secciones' },
-  { id: 'info', label: 'Información', icono: FileText, descripcion: 'Nombre, título y URL' },
-  { id: 'productos', label: 'Productos', icono: LayoutGrid, descripcion: 'Qué vas a mostrar' },
-  { id: 'diseno', label: 'Diseño', icono: Palette, descripcion: 'Banner, colores y tipografía' },
-  { id: 'filtros', label: 'Filtros', icono: SlidersHorizontal, descripcion: 'Navegación y WhatsApp' },
-  { id: 'contenido', label: 'Opiniones y FAQ', icono: MessageSquareQuote, descripcion: 'Testimonios y preguntas frecuentes' },
-  { id: 'seo', label: 'SEO', icono: Search, descripcion: 'Cómo se comparte y se busca' },
-  { id: 'estadisticas', label: 'Estadísticas', icono: BarChart3, descripcion: 'Visitas y conversaciones' },
-  { id: 'publicar', label: 'Publicar', icono: Rocket, descripcion: 'Link público y estado' },
-];
-
-const FILTROS_DISPONIBLES = [
-  ['mostrar_buscador', 'Buscador', 'Deja que el visitante busque por nombre.'],
-  ['mostrar_filtro_categoria', 'Categoría', 'Usa la categoría del catálogo.'],
-  ['mostrar_filtro_marca', 'Marca', 'Usa la marca del catálogo.'],
-  ['mostrar_filtro_etiqueta', 'Etiquetas propias', 'Las que definís vos en el paso Productos.'],
-  ['mostrar_orden_precio', 'Orden por precio', 'De menor a mayor y viceversa.'],
-];
-
-const RADIOS_BORDE = [
-  { valor: 'chico', label: 'Chico' },
-  { valor: 'mediano', label: 'Mediano' },
-  { valor: 'grande', label: 'Grande' },
-];
-
-// Equivalente hex aproximado del cardBg semitransparente de MODOS (ver
-// landingDiseno.js) — el <input type="color"> nativo no acepta rgba.
-const CARD_HEX_DEFAULT = { oscuro: '#181818', claro: '#ffffff' };
-
-const FUENTES = [
-  { valor: 'outfit', label: 'Outfit', familia: "'Outfit', sans-serif" },
-  { valor: 'inter', label: 'Inter', familia: "'Inter', sans-serif" },
-  { valor: 'poppins', label: 'Poppins', familia: "'Poppins', sans-serif" },
-  { valor: 'roboto', label: 'Roboto', familia: "'Roboto', sans-serif" },
-];
 
 const SECCIONES_BASE = [
   { tipo: 'header', nombre_interno: 'Header', activo: true, fijo: true },
@@ -75,8 +43,6 @@ const SECCIONES_BASE = [
   { tipo: 'redes_sociales', nombre_interno: 'Redes sociales', activo: false, contenido: { titulo: 'Seguinos', instagram: '', facebook: '', tiktok: '' } },
   { tipo: 'footer', nombre_interno: 'Footer', activo: true, fijo: true },
 ];
-
-const SECCIONES_AGREGABLES = ['announcement_bar', 'texto', 'como_funciona', 'redes_sociales'];
 
 const FORM_INICIAL = {
   nombre: '',
@@ -130,58 +96,6 @@ function tiempoRelativo(fecha) {
   return dias === 1 ? 'ayer' : `hace ${dias} días`;
 }
 
-/** Filtra a solo dígitos hexadecimales y antepone "#" — acepta pegar "#AABBCC" o "AABBCC" por igual. */
-function limpiarHex(valor) {
-  const limpio = valor.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
-  return limpio ? `#${limpio}` : '';
-}
-
-/**
- * Selector de color con swatch nativo + campo de texto para el hexadecimal.
- * `colorHeredado` es lo que se muestra en el swatch "Heredado" (puede ser
- * cualquier color CSS, incluso rgba). `colorPicker` es el valor de arranque
- * del <input type="color"> nativo al activar "Personalizado" — ese input
- * solo acepta hex de 6 dígitos, así que si `colorHeredado` no es hex (ej.
- * el fondo semitransparente de las tarjetas en modo oscuro) hace falta un
- * equivalente aproximado.
- */
-function CampoColor({ label, valor, colorHeredado, colorPicker, onChange }) {
-  return (
-    <div className="lb-field">
-      <span>{label}</span>
-      <div className="lb-color-opciones">
-        <button
-          type="button"
-          className={`lb-color-opcion ${!valor ? 'active' : ''}`}
-          onClick={() => onChange('')}
-        >
-          <span className="lb-swatch" style={{ background: colorHeredado }} />
-          Heredado
-        </button>
-        <label className={`lb-color-opcion ${valor ? 'active' : ''}`}>
-          <input
-            type="color"
-            value={valor || colorPicker || colorHeredado}
-            onChange={e => onChange(e.target.value)}
-          />
-          Personalizado
-        </label>
-      </div>
-      {valor && (
-        <input
-          type="text"
-          className="lb-color-hex"
-          value={valor}
-          onChange={e => onChange(limpiarHex(e.target.value))}
-          placeholder={colorHeredado}
-          maxLength={7}
-          spellCheck={false}
-        />
-      )}
-    </div>
-  );
-}
-
 export default function LandingEditor() {
   const { id } = useParams();
   const esEdicion = !!id;
@@ -194,13 +108,88 @@ export default function LandingEditor() {
   // fila por fila hasta el próximo Guardar.
   const [testimonios, setTestimonios] = useState([]); // [{ nombre, foto, calificacion, comentario }]
   const [faqs, setFaqs] = useState([]); // [{ pregunta, respuesta }]
-  const [secciones, setSecciones] = useState(() => SECCIONES_BASE.map((s, idx) => ({ ...s, orden: idx })));
+  const [secciones, setSecciones] = useState(() => SECCIONES_BASE.map((s, idx) => ({ ...s, id: s.id || `base-${s.tipo}-${idx}`, orden: idx })));
   const [subiendoFotoTestimonio, setSubiendoFotoTestimonio] = useState(null); // índice de la fila, o null
   const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [tienda, setTienda] = useState(null);
   const [landing, setLanding] = useState(null); // metadatos del registro guardado
+  const [plantillaElegida, setPlantillaElegida] = useState(null); // id de la plantilla elegida al crear, null hasta elegir
 
-  const [paso, setPaso] = useState('info');
+  const [seccionSeleccionadaId, setSeccionSeleccionadaId] = useState(null);
+  const [selectorAbierto, setSelectorAbierto] = useState(false);
+  const [viewportMode, setViewportMode] = useState('desktop');
+  const [sidebarTab, setSidebarTab] = useState('sections'); // 'sections' | 'theme'
+
+  const handleActualizarSeccion = useCallback((id, updates) => {
+    setSecciones(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    setSucio(true);
+  }, []);
+
+  const handleToggleVisible = useCallback((id) => {
+    setSecciones(prev => prev.map(s => s.id === id ? { ...s, activo: !s.activo } : s));
+    setSucio(true);
+  }, []);
+
+  const handleDuplicarSeccion = useCallback((id) => {
+    setSecciones(prev => {
+      const idx = prev.findIndex(s => s.id === id);
+      if (idx === -1) return prev;
+      const original = prev[idx];
+      const copia = { ...original, id: `temp-${Date.now()}` };
+      const nuevas = [...prev];
+      nuevas.splice(idx + 1, 0, copia);
+      return nuevas;
+    });
+    setSucio(true);
+  }, []);
+
+  const handleEliminarSeccion = useCallback((id) => {
+    setSecciones(prev => prev.filter(s => s.id !== id));
+    if (seccionSeleccionadaId === id) setSeccionSeleccionadaId(null);
+    setSucio(true);
+  }, []);
+
+  const handleReordenarSeccion = useCallback((fromIndex, toIndex) => {
+    setSecciones(prev => {
+      const nuevas = [...prev];
+      const [movida] = nuevas.splice(fromIndex, 1);
+      nuevas.splice(toIndex, 0, movida);
+      return nuevas;
+    });
+    setSucio(true);
+  }, []);
+
+  const handleMoverSeccion = useCallback((id, offset) => {
+    setSecciones(prev => {
+      const fromIndex = prev.findIndex(s => s.id === id);
+      if (fromIndex === -1) return prev;
+      const toIndex = fromIndex + offset;
+      if (toIndex < 0 || toIndex >= prev.length) return prev;
+      
+      const nuevas = [...prev];
+      const [movida] = nuevas.splice(fromIndex, 1);
+      nuevas.splice(toIndex, 0, movida);
+      return nuevas;
+    });
+    setSucio(true);
+  }, []);
+
+  const handleAgregarSeccion = useCallback((tipo) => {
+    const defaults = VALORES_DEFECTO_POR_TIPO[tipo] || {};
+    const nuevaSeccion = {
+      id: `temp-${Date.now()}`,
+      tipo,
+      nombre_interno: tipo,
+      activo: true,
+      config: defaults.config || {},
+      contenido: defaults.contenido || {},
+    };
+    setSecciones(prev => [...prev, nuevaSeccion]);
+    setSelectorAbierto(false);
+    setSeccionSeleccionadaId(nuevaSeccion.id);
+    setSucio(true);
+  }, []);
+
   const [previewVisible, setPreviewVisible] = useState(true);
   const [sucio, setSucio] = useState(false);
 
@@ -265,29 +254,46 @@ export default function LandingEditor() {
         // obtener()) — se copian los campos editables nada más, sin
         // arrastrar id/landing_id/timestamps que no hace falta mandar de
         // vuelta (armarPayload reconstruye el orden por índice).
-        setTestimonios((guardada.testimonios || []).map(t => ({
-          nombre: t.nombre, foto: t.foto || null, calificacion: t.calificacion, comentario: t.comentario,
-        })));
-        setFaqs((guardada.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
+        
+        // MAPEO DE SECCIONES (CON MIGRACION DE LEGACY)
+        let hasOldData = false;
+        let loadedSecciones = [];
+        
         if (Array.isArray(guardada.secciones) && guardada.secciones.length > 0) {
           const basePorTipo = new Map(SECCIONES_BASE.map(s => [s.tipo, s]));
-          setSecciones(
-            guardada.secciones
-              .slice()
-              .sort((a, b) => a.orden - b.orden)
-              .map((s, idx) => ({
-                ...(basePorTipo.get(s.tipo) || {}),
-                tipo: s.tipo,
-                nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
-                activo: s.activo !== false,
-                orden: idx,
-                config: s.config || s.config_json || {},
-                contenido: s.contenido || s.contenido_json || {},
-              }))
-          );
+          loadedSecciones = guardada.secciones
+            .slice()
+            .sort((a, b) => a.orden - b.orden)
+            .map((s, idx) => ({
+              ...(basePorTipo.get(s.tipo) || {}),
+              id: s.id || `loaded-${s.tipo}-${idx}`,
+              tipo: s.tipo,
+              nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
+              activo: s.activo !== false,
+              orden: idx,
+              config: s.config || s.config_json || {},
+              contenido: s.contenido || s.contenido_json || {},
+            }));
         } else {
-          setSecciones(SECCIONES_BASE.map((s, idx) => ({ ...s, orden: idx })));
+          loadedSecciones = SECCIONES_BASE.map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
         }
+
+        // MIGRACION: Si existen testimonios sueltos, inyectarlos en la sección testimonios
+        if (guardada.testimonios && guardada.testimonios.length > 0) {
+           const sec = loadedSecciones.find(s => s.tipo === 'testimonios');
+           if (sec) { sec.contenido = { ...sec.contenido, items: guardada.testimonios.map(t => ({
+              nombre: t.nombre, foto: t.foto || null, calificacion: t.calificacion, comentario: t.comentario
+           })) }; }
+        }
+        
+        // MIGRACION: Si existen faqs sueltas, inyectarlas en la sección faq
+        if (guardada.faq && guardada.faq.length > 0) {
+           const sec = loadedSecciones.find(s => s.tipo === 'faq');
+           if (sec) { sec.contenido = { ...sec.contenido, items: guardada.faq.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })) }; }
+        }
+        
+        // Guardamos las secciones parcialmente procesadas, falta productos
+        setSecciones(loadedSecciones);
         // Un producto/combo puede haberse dado de baja (o quedado sin
         // stock/"en_venta") desde que se agregó a esta landing. Antes esos
         // items huérfanos entraban igual a `seleccion` y se mostraban en
@@ -314,11 +320,29 @@ export default function LandingEditor() {
             if (!clavesCatalogo.has(clave)) { descartados++; return; }
             mapa.set(clave, {
               tipo: item.tipo,
+              id: item.referencia_id,
               referencia_id: item.referencia_id,
               etiqueta: item.etiqueta || '',
             });
           });
         setSeleccion(mapa);
+
+        // MIGRACION: Inyectar productos en la seccion productos
+        if (mapa.size > 0) {
+           setSecciones(prev => prev.map(sec => {
+              if (sec.tipo === 'productos' && (!sec.contenido?.productos || sec.contenido.productos.length === 0)) {
+                 return { 
+                   ...sec, 
+                   contenido: { 
+                     ...sec.contenido, 
+                     productos: Array.from(mapa.values()).map(m => ({ tipo: m.tipo, id: m.id, etiqueta: m.etiqueta, nombre: m.nombre })) 
+                   } 
+                 };
+              }
+              return sec;
+           }));
+        }
+
 
         // sucio=true a propósito cuando hubo descarte: lo que quedó en
         // memoria ya no coincide con lo guardado en la base (que todavía
@@ -347,6 +371,28 @@ export default function LandingEditor() {
   }, [id, esEdicion]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  /**
+   * Aplica la plantilla elegida en la galería inicial (solo al crear, ver
+   * el gate de render más abajo): reemplaza `secciones` por las del
+   * preset, aplica su `tema` sobre el form, y precarga testimonios/faq
+   * planos — LandingPreview.jsx todavía los lee de ahí, no de
+   * seccion.contenido.items (ver landingTemplates.js).
+   */
+  function handleElegirPlantilla(template) {
+    setSecciones(template.secciones.map((s, idx) => ({ ...s, id: `tpl-${s.tipo}-${idx}`, orden: idx })));
+    if (template.tema && Object.keys(template.tema).length > 0) {
+      setForm(prev => ({
+        ...prev,
+        ...template.tema,
+        mostrar_testimonios: (template.testimonios?.length > 0) || prev.mostrar_testimonios,
+        mostrar_faq: (template.faqs?.length > 0) || prev.mostrar_faq,
+      }));
+    }
+    if (template.testimonios?.length > 0) setTestimonios(template.testimonios);
+    if (template.faqs?.length > 0) setFaqs(template.faqs);
+    setPlantillaElegida(template.id);
+  }
 
   /**
    * El aviso de guardado se borra solo: es una confirmación, no un estado.
@@ -415,17 +461,6 @@ export default function LandingEditor() {
   // "claro" nunca hereda el fondo oscuro pensado para modo oscuro — mismo
   // fallback que aplica el backend en obtenerPublica().
   const fondoHeredado = form.tema_modo === 'claro' ? '#f8fafc' : (tienda?.color_fondo || '#0a0a0a');
-
-  const completado = {
-    info: !!form.nombre.trim(),
-    productos: seleccion.size > 0,
-    estructura: secciones.some(s => s.tipo === 'productos' && s.activo !== false),
-    diseno: true,
-    filtros: true,
-    contenido: true,
-    seo: true,
-    publicar: publicada,
-  };
 
   /* ─── Mutadores ──────────────────────────────────────────────────────── */
 
@@ -511,49 +546,6 @@ export default function LandingEditor() {
     setSucio(true);
   }
 
-  function actualizarSeccion(idx, cambios) {
-    limpiarErrorPrevio();
-    setSecciones(prev => prev.map((s, i) => (i === idx ? { ...s, ...cambios } : s)));
-    setSucio(true);
-  }
-
-  function actualizarContenidoSeccion(idx, campo, valor) {
-    limpiarErrorPrevio();
-    setSecciones(prev => prev.map((s, i) => (
-      i === idx ? { ...s, contenido: { ...(s.contenido || {}), [campo]: valor } } : s
-    )));
-    setSucio(true);
-  }
-
-  function agregarSeccion(tipo) {
-    const base = SECCIONES_BASE.find(s => s.tipo === tipo);
-    if (!base) return;
-    limpiarErrorPrevio();
-    setSecciones(prev => {
-      const existente = prev.findIndex(s => s.tipo === tipo);
-      if (existente >= 0) {
-        return prev.map((s, idx) => (idx === existente ? { ...s, activo: true } : s));
-      }
-      return [
-        ...prev,
-        { ...base, activo: true, orden: prev.length, contenido: { ...(base.contenido || {}) } },
-      ];
-    });
-    setSucio(true);
-  }
-
-  function moverSeccion(idx, delta) {
-    const destino = idx + delta;
-    if (destino < 0 || destino >= secciones.length) return;
-    limpiarErrorPrevio();
-    setSecciones(prev => {
-      const copia = [...prev];
-      [copia[idx], copia[destino]] = [copia[destino], copia[idx]];
-      return copia.map((s, i) => ({ ...s, orden: i }));
-    });
-    setSucio(true);
-  }
-
   /* ─── Testimonios y FAQ ──────────────────────────────────────────────────
      Listas planas en useState (este archivo no usa react-hook-form en
      ningún lado, así que no se introduce acá solo para esto) con flechas
@@ -621,6 +613,34 @@ export default function LandingEditor() {
     } finally {
       setSubiendoFotoTestimonio(null);
     }
+  }
+
+  /**
+   * Sube la imagen de un campo `type: 'image'` de cualquier sección (ej.
+   * el fondo del bloque "banner" del constructor) y devuelve la URL —
+   * mismo criterio que handleTestimonioFoto, pero sin pegarla en ningún
+   * campo puntual: es SchemaInspector quien decide en qué campo va,
+   * porque este handler no sabe qué sección ni qué key está editando.
+   * Lanza en vez de usar el `error` global: es un control inline dentro
+   * del inspector, no una acción de toda la pantalla.
+   * @returns {Promise<string>} la URL de la imagen subida
+   */
+  async function handleUploadSeccionImagen(file) {
+    if (!file) throw new Error('No se seleccionó ningún archivo.');
+    if (file.size > MAX_IMAGEN_BYTES) throw new Error('La imagen supera el máximo permitido de 1MB.');
+
+    let idActual = id || landing?.id;
+    if (!idActual) {
+      const guardada = await guardar();
+      if (!guardada) throw new Error('Guardá la landing antes de subir imágenes.');
+      idActual = guardada.id;
+      if (!esEdicion) navigate(`/mi-landing/${guardada.id}`, { replace: true });
+    }
+
+    const fd = new FormData();
+    fd.append('imagen', file);
+    const { url } = await landingService.subirImagenSeccion(idActual, fd);
+    return url;
   }
 
   function agregarFaq() {
@@ -756,15 +776,24 @@ export default function LandingEditor() {
       // encabezado. Se resuelve acá para que ambos caminos coincidan con
       // lo que muestra la vista previa.
       titulo: form.titulo.trim() || form.nombre.trim(),
-      items: Array.from(seleccion.values()).map((item, idx) => ({ ...item, orden: idx })),
-      testimonios: testimonios.map((t, idx) => ({
+      items: (secciones.find(s => s.tipo === 'productos')?.contenido?.productos || []).map((item, idx) => ({ 
+        tipo: item.tipo, 
+        referencia_id: item.id || item.referencia_id, 
+        etiqueta: item.etiqueta || '', 
+        orden: idx 
+      })),
+      testimonios: (secciones.find(s => s.tipo === 'testimonios')?.contenido?.items || []).map((t, idx) => ({
         nombre: t.nombre.trim(),
         foto: t.foto || null,
         calificacion: Number(t.calificacion),
         comentario: t.comentario.trim(),
         orden: idx,
       })),
-      faq: faqs.map((f, idx) => ({ pregunta: f.pregunta.trim(), respuesta: f.respuesta.trim(), orden: idx })),
+      faq: (secciones.find(s => s.tipo === 'faq')?.contenido?.items || []).map((f, idx) => ({ 
+        pregunta: f.pregunta.trim(), 
+        respuesta: f.respuesta.trim(), 
+        orden: idx 
+      })),
       secciones: secciones.map((s, idx) => ({
         tipo: s.tipo,
         nombre_interno: s.nombre_interno,
@@ -783,17 +812,14 @@ export default function LandingEditor() {
     setErroresValidacion([]);
 
     if (!form.nombre.trim()) {
-      setPaso('info');
       setError('Poné un nombre interno para poder guardar.');
       return null;
     }
     if (seleccion.size === 0) {
-      setPaso('productos');
       setError('Elegí al menos un producto o combo para la landing.');
       return null;
     }
     if (!bannerLinkOk) {
-      setPaso('diseno');
       setError('El link del botón del banner no es válido.');
       return null;
     }
@@ -892,6 +918,13 @@ export default function LandingEditor() {
 
   /* ─── Render ─────────────────────────────────────────────────────────── */
 
+  // Solo al crear una landing nueva: la galería no depende del catálogo,
+  // así que se muestra aunque `cargar()` siga trayendo catalogo/tienda en
+  // paralelo — no bloquea nada, la próxima pantalla ya los va a tener.
+  if (!esEdicion && !plantillaElegida) {
+    return <LandingTemplatePicker onSelect={handleElegirPlantilla} />;
+  }
+
   if (cargando) {
     return (
       <div className="vit-page">
@@ -903,858 +936,227 @@ export default function LandingEditor() {
   const ocupado = guardando || publicando;
 
   return (
-    <div className="lb-page">
-      {/* ── Hero ── */}
-      <header className="lb-hero">
-        <div className="lb-hero-top">
-          <span className="lb-hero-label">Mi landing</span>
-          <div className="lb-hero-actions">
-            <button
-              type="button"
-              className="lb-btn-ghost"
-              onClick={() => setPreviewVisible(v => !v)}
-            >
-              {previewVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-              {previewVisible ? 'Ocultar vista previa' : 'Vista previa'}
-            </button>
-            <button type="button" className="lb-btn-secondary" onClick={handleGuardar} disabled={ocupado}>
-              {guardando ? <Loader size={14} className="spin-icon" /> : <Save size={14} />}
-              Guardar
-            </button>
-            <button
-              type="button"
-              className={publicada ? 'lb-btn-warn' : 'lb-btn-primary'}
-              onClick={togglePublicar}
-              disabled={ocupado || seleccion.size === 0}
-              title={seleccion.size === 0 ? 'Agregá productos antes de publicar' : undefined}
-            >
-              {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
-              {publicada ? 'Despublicar' : 'Publicar'}
-            </button>
+    <div className="lb-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      {/* ── Top Toolbar ── */}
+      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem', height: '64px', borderBottom: '1px solid var(--vit-border)', background: 'var(--vit-card-bg)', flexShrink: 0, width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1 }}>
+          <Link to="/mi-landing" className="lb-btn-ghost" style={{ padding: '0.4rem', color: 'var(--vit-text)' }}>
+            &larr; Volver
+          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--vit-text)' }}>{form.nombre || 'Mi landing'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--vit-muted)' }}>
+              <span className={`lb-estado ${publicada ? 'on' : 'off'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span className="lb-estado-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: publicada ? '#10b981' : '#f59e0b' }} />
+                {publicada ? 'Publicada' : 'Borrador'}
+              </span>
+              {sucio && <span style={{ color: '#f59e0b' }}>• Cambios sin guardar</span>}
+            </div>
           </div>
         </div>
 
-        <input
-          className="lb-hero-nombre"
-          value={form.nombre}
-          onChange={e => handleChange('nombre', e.target.value)}
-          placeholder="Nombre de tu landing"
-          aria-label="Nombre interno de la landing"
-        />
 
-        <div className="lb-hero-meta">
-          <span className={`lb-estado ${publicada ? 'on' : 'off'}`}>
-            <span className="lb-estado-dot" />
-            {publicada ? 'Publicada' : 'Borrador'}
-          </span>
-          <span className="lb-meta-sep" />
-          <span>{seleccion.size} {seleccion.size === 1 ? 'producto' : 'productos'}</span>
-          {landing?.updated_at && (
-            <>
-              <span className="lb-meta-sep" />
-              <span>Editada {tiempoRelativo(landing.updated_at)}</span>
-            </>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {urlPublica && (
+            <a href={urlPublica} target="_blank" rel="noreferrer" className="lb-btn-ghost text-sm flex items-center gap-1 font-medium" style={{ color: 'var(--vit-muted)' }}>
+              Ver web <ExternalLink size={14} />
+            </a>
           )}
-          {sucio && (
-            <>
-              <span className="lb-meta-sep" />
-              <span className="lb-sin-guardar">Cambios sin guardar</span>
-            </>
-          )}
+          <button type="button" className="lb-btn-secondary text-sm px-4 py-2" onClick={handleGuardar} disabled={ocupado}>
+            {guardando ? <Loader size={14} className="spin-icon" /> : <Save size={14} />} Guardar
+          </button>
+          <button
+            type="button"
+            className={publicada ? 'lb-btn-warn text-sm px-4 py-2' : 'lb-btn-primary text-sm px-4 py-2'}
+            onClick={togglePublicar}
+            disabled={ocupado || seleccion.size === 0}
+          >
+            {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
+            {publicada ? 'Despublicar' : 'Publicar'}
+          </button>
+          <button
+            type="button"
+            className="lb-btn-ghost text-red-500 px-3 py-2 ml-2"
+            onClick={eliminarLanding}
+            disabled={ocupado}
+            title="Eliminar Landing"
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       </header>
 
       {error && (
-        <div className="land-alert-error" role="alert">
+        <div className="land-alert-error" role="alert" style={{ flexShrink: 0, margin: 0, borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
           <span><AlertCircle size={14} /> {error}</span>
-          {erroresValidacion.length > 0 && (
-            <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>
-          )}
+          {erroresValidacion.length > 0 && <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         </div>
       )}
-
-      {/* role=status y no role=alert: es una confirmación, se anuncia sin
-          interrumpir lo que esté leyendo un lector de pantalla. */}
       {exito && (
-        <div className="land-alert-success" role="status">
+        <div className="land-alert-success" role="status" style={{ flexShrink: 0, margin: 0, borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
           <Check size={14} /> {exito}
         </div>
       )}
-
       {hayNoDisponibles && (
-        <div className="lb-alert-warn">
+        <div className="lb-alert-warn" style={{ flexShrink: 0, margin: 0, borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
           <CircleAlert size={14} />
-          <span>
-            Hay {itemsOrdenados.filter(i => i.no_disponible).length === 1 ? 'un producto' : 'productos'} que
-            {' '}ya no {itemsOrdenados.filter(i => i.no_disponible).length === 1 ? 'está' : 'están'} en tu catálogo
-            (dado de baja o sin stock). No se muestra en la landing pública, y <strong>el próximo guardado va a fallar</strong> mientras
-            siga en la lista.
-          </span>
-          <button type="button" className="lb-alert-warn-btn" onClick={quitarNoDisponibles}>
-            Quitar {itemsOrdenados.filter(i => i.no_disponible).length === 1 ? '' : `(${itemsOrdenados.filter(i => i.no_disponible).length})`}
-          </button>
+          <span>Hay productos no disponibles en tu catálogo.</span>
+          <button type="button" className="lb-alert-warn-btn" onClick={quitarNoDisponibles}>Quitar no disponibles</button>
         </div>
       )}
 
-      {/* ── Cuerpo: pasos · panel · vista previa ── */}
-      <div className={`lb-body ${previewVisible ? 'con-preview' : ''}`}>
-        <nav className="lb-rail">
-          {PASOS.map((p, idx) => {
-            const Icono = p.icono;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                className={`lb-rail-item ${paso === p.id ? 'active' : ''} ${completado[p.id] ? 'done' : ''}`}
-                onClick={() => setPaso(p.id)}
-              >
-                <span className="lb-rail-num">
-                  {completado[p.id] ? <Check size={12} strokeWidth={3} /> : idx + 1}
-                </span>
-                <span className="lb-rail-text">
-                  <strong><Icono size={13} /> {p.label}</strong>
-                  <small>{p.descripcion}</small>
-                </span>
-              </button>
-            );
-          })}
-        </nav>
+      {/* ── Cuerpo: 3 Columnas ── */}
+      <div style={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden' }}>
+        
+        {/* COLUMNA IZQUIERDA: Estructura */}
+        <div className="bg-[var(--vit-card-bg)] border-r border-[var(--vit-border)] flex flex-col w-[260px] flex-shrink-0 z-10 overflow-hidden">
+          <SidebarSecciones 
+            secciones={secciones}
+            onSelect={setSeccionSeleccionadaId}
+            onAddClick={() => setSelectorAbierto(true)}
+            onToggleVisible={handleToggleVisible}
+            onDuplicate={handleDuplicarSeccion}
+            onDelete={handleEliminarSeccion}
+            onReorder={handleReordenarSeccion}
+            selectedId={seccionSeleccionadaId}
+          />
+        </div>
 
-        <section className="lb-panel">
-          {paso === 'info' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Información general</h2>
-                <p>El nombre interno solo lo ves vos. El título es lo que lee el visitante.</p>
-              </header>
-
-              <div className="lb-form-grid">
-                <label className="lb-field">
-                  <span>Nombre interno</span>
-                  <input
-                    value={form.nombre}
-                    onChange={e => handleChange('nombre', e.target.value)}
-                    placeholder="Ej: Ofertas de verano"
-                  />
-                </label>
-
-                <label className="lb-field">
-                  <span>Título público</span>
-                  <input
-                    value={form.titulo}
-                    onChange={e => handleChange('titulo', e.target.value)}
-                    placeholder="Se usa el nombre interno si lo dejás vacío"
-                  />
-                </label>
-
-                <div className="lb-field">
-                  <span>Tu URL</span>
-                  <div className="lb-url">
-                    <code>{urlPublica || 'Se define en cuanto cargue tu tienda...'}</code>
-                  </div>
-                  <small>Es la única landing de tu tienda, así que siempre vive acá.</small>
-                </div>
-
-                <label className="lb-field ancho-total">
-                  <span>Descripción</span>
-                  <textarea
-                    rows={3}
-                    value={form.descripcion}
-                    onChange={e => handleChange('descripcion', e.target.value)}
-                    placeholder="Una línea que explique qué van a encontrar acá."
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-
-          {paso === 'productos' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Productos de tu tienda</h2>
-                <p>Tocá una tarjeta para agregarla. Podés incluir hasta {MAX_ITEMS} entre productos y combos.</p>
-              </header>
-
-              <ProductPicker
-                catalogo={catalogo}
-                seleccion={seleccion}
-                itemsOrdenados={itemsOrdenados}
-                onToggle={toggleItem}
-                onEtiqueta={actualizarEtiqueta}
-                onReordenar={reordenar}
-                max={MAX_ITEMS}
-              />
-            </div>
-          )}
-
-          {paso === 'estructura' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Estructura de la pagina</h2>
-                <p>Elegi que bloques se ven y en que orden aparecen. La vista previa de la derecha respeta este orden.</p>
-              </header>
-
-              <div className="lb-secciones-builder">
-                {secciones.map((seccion, idx) => (
-                  <div key={`${seccion.tipo}-${idx}`} className={`lb-seccion-row ${seccion.activo === false ? 'apagada' : ''}`}>
-                    <div className="lb-seccion-order">
-                      <button type="button" onClick={() => moverSeccion(idx, -1)} disabled={idx === 0} title="Subir">
-                        <ArrowUp size={14} />
-                      </button>
-                      <button type="button" onClick={() => moverSeccion(idx, 1)} disabled={idx === secciones.length - 1} title="Bajar">
-                        <ArrowDown size={14} />
-                      </button>
-                    </div>
-                    <label className="lb-seccion-visible">
-                      <input
-                        type="checkbox"
-                        checked={seccion.activo !== false}
-                        disabled={seccion.fijo}
-                        onChange={e => actualizarSeccion(idx, { activo: e.target.checked })}
-                      />
-                      <span>{seccion.fijo ? 'Fija' : 'Visible'}</span>
-                    </label>
-                    <label className="lb-field lb-seccion-name">
-                      <span>{seccion.tipo}</span>
-                      <input
-                        value={seccion.nombre_interno || ''}
-                        onChange={e => actualizarSeccion(idx, { nombre_interno: e.target.value })}
-                      />
-                    </label>
-                    <div className="lb-seccion-config">
-                      {seccion.tipo === 'header' && (
-                        <label className="lb-field">
-                          <span>Texto del logo</span>
-                          <input
-                            value={seccion.contenido?.logo_texto || form.titulo || form.nombre}
-                            onChange={e => actualizarContenidoSeccion(idx, 'logo_texto', e.target.value)}
-                          />
-                        </label>
-                      )}
-                      {seccion.tipo === 'announcement_bar' && (
-                        <label className="lb-field">
-                          <span>Mensaje</span>
-                          <input
-                            value={seccion.contenido?.texto || ''}
-                            onChange={e => actualizarContenidoSeccion(idx, 'texto', e.target.value)}
-                            placeholder="Recibelo en 24hs!"
-                          />
-                        </label>
-                      )}
-                      {(seccion.tipo === 'texto' || seccion.tipo === 'como_funciona') && (
-                        <>
-                          <label className="lb-field">
-                            <span>Titulo visible</span>
-                            <input
-                              value={seccion.contenido?.titulo || ''}
-                              onChange={e => actualizarContenidoSeccion(idx, 'titulo', e.target.value)}
-                              placeholder={seccion.tipo === 'como_funciona' ? 'Como funciona' : 'Titulo de la seccion'}
-                            />
-                          </label>
-                          <label className="lb-field ancho-total">
-                            <span>{seccion.tipo === 'como_funciona' ? 'Pasos (uno por linea)' : 'Texto'}</span>
-                            <textarea
-                              rows={3}
-                              value={seccion.tipo === 'como_funciona' ? (seccion.contenido?.pasos || []).join('\n') : (seccion.contenido?.texto || '')}
-                              onChange={e => actualizarContenidoSeccion(
-                                idx,
-                                seccion.tipo === 'como_funciona' ? 'pasos' : 'texto',
-                                seccion.tipo === 'como_funciona' ? e.target.value.split('\n').map(v => v.trim()).filter(Boolean) : e.target.value
-                              )}
-                            />
-                          </label>
-                        </>
-                      )}
-                      {seccion.tipo === 'redes_sociales' && (
-                        <>
-                          <label className="lb-field">
-                            <span>Titulo</span>
-                            <input
-                              value={seccion.contenido?.titulo || ''}
-                              onChange={e => actualizarContenidoSeccion(idx, 'titulo', e.target.value)}
-                              placeholder="Seguinos"
-                            />
-                          </label>
-                          <label className="lb-field">
-                            <span>Instagram</span>
-                            <input value={seccion.contenido?.instagram || ''} onChange={e => actualizarContenidoSeccion(idx, 'instagram', e.target.value)} placeholder="https://instagram.com/..." />
-                          </label>
-                          <label className="lb-field">
-                            <span>Facebook</span>
-                            <input value={seccion.contenido?.facebook || ''} onChange={e => actualizarContenidoSeccion(idx, 'facebook', e.target.value)} placeholder="https://facebook.com/..." />
-                          </label>
-                          <label className="lb-field">
-                            <span>TikTok</span>
-                            <input value={seccion.contenido?.tiktok || ''} onChange={e => actualizarContenidoSeccion(idx, 'tiktok', e.target.value)} placeholder="https://tiktok.com/..." />
-                          </label>
-                        </>
-                      )}
-                      {seccion.tipo === 'footer' && (
-                        <>
-                          <label className="lb-field">
-                            <span>Titulo footer</span>
-                            <input value={seccion.contenido?.titulo || form.titulo || form.nombre} onChange={e => actualizarContenidoSeccion(idx, 'titulo', e.target.value)} />
-                          </label>
-                          <label className="lb-field ancho-total">
-                            <span>Descripcion footer</span>
-                            <textarea rows={2} value={seccion.contenido?.descripcion || form.descripcion || ''} onChange={e => actualizarContenidoSeccion(idx, 'descripcion', e.target.value)} />
-                          </label>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="lb-add-section">
-                {SECCIONES_AGREGABLES.map(tipo => (
-                  <button key={tipo} type="button" onClick={() => agregarSeccion(tipo)}>
-                    <Plus size={13} /> Agregar {tipo.replace('_', ' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {paso === 'diseno' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Banner principal</h2>
-                <p>Lo primero que ve el visitante al entrar. Opcional — sin imagen ni título, no se muestra.</p>
-              </header>
-
-              <label className="lb-switch">
-                <input
-                  type="checkbox"
-                  checked={form.mostrar_banner}
-                  onChange={e => handleChange('mostrar_banner', e.target.checked)}
-                />
-                <span className="lb-switch-track" />
-                <span className="lb-switch-label">Mostrar banner en la landing</span>
-              </label>
-
-              {form.mostrar_banner && !bannerTieneContenido && (
-                <p className="lb-hint aviso">
-                  <CircleAlert size={13} /> Activaste el banner pero todavía no cargaste imagen ni título — no se va a mostrar hasta que completes alguno.
-                </p>
-              )}
-
-              <div className="lb-banner-guide-box">
-                <div className="lb-banner-guide-title">
-                  <Sparkles size={14} color="#10b981" />
-                  <strong>Recomendaciones para tu Banner</strong>
-                </div>
-                <div className="lb-banner-guide-specs">
-                  <span className="lb-guide-tag">📐 Tamaño ideal: <strong>1200 x 400 px</strong> (Proporción 3:1)</span>
-                  <span className="lb-guide-tag">🖼️ Formato: <strong>Horizontal / Panorámico</strong></span>
-                  <span className="lb-guide-tag">📁 Formatos: <strong>JPG, PNG o WebP (hasta 1MB)</strong></span>
-                </div>
-                <p className="lb-banner-guide-tip">
-                  💡 <em>Consejo:</em> Utilizá fotos apaisadas y ubicá a las personas o productos en el centro para que no se recorten en celulares ni en pantallas grandes.
-                </p>
-              </div>
-
-              <div className="lb-banner-editor">
-                <div className="lb-banner-imagen">
-                  {landing?.banner_imagen ? (
-                    <div className="lb-banner-preview">
-                      <img src={getMediaUrl(landing.banner_imagen)} alt="Banner de la landing" />
-                      <button type="button" className="lb-banner-quitar" onClick={quitarBannerImagen} disabled={subiendoBanner}>
-                        {subiendoBanner ? <Loader size={13} className="spin-icon" /> : <Trash2 size={13} />} Quitar
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="lb-banner-upload">
-                      {subiendoBanner ? <Loader size={20} className="spin-icon" /> : <ImagePlus size={20} />}
-                      <span>{subiendoBanner ? 'Subiendo...' : 'Subir imagen'}</span>
-                      <small>1200 x 400 px · hasta 1MB</small>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={handleBannerFile}
-                        disabled={subiendoBanner}
-                        hidden
-                      />
-                    </label>
-                  )}
-                </div>
-
-                <div className="lb-banner-campos">
-                  <label className="lb-field">
-                    <span>Título</span>
-                    <input
-                      value={form.banner_titulo}
-                      onChange={e => handleChange('banner_titulo', e.target.value)}
-                      placeholder="Ej: Ofertas de temporada"
-                      maxLength={200}
-                    />
-                  </label>
-                  <label className="lb-field">
-                    <span>Subtítulo</span>
-                    <input
-                      value={form.banner_subtitulo}
-                      onChange={e => handleChange('banner_subtitulo', e.target.value)}
-                      placeholder="Una línea corta debajo del título"
-                      maxLength={300}
-                    />
-                  </label>
-                  <label className="lb-field">
-                    <span>Texto del botón</span>
-                    <input
-                      value={form.banner_boton_texto}
-                      onChange={e => handleChange('banner_boton_texto', e.target.value)}
-                      placeholder="Ej: Ver productos"
-                      maxLength={50}
-                    />
-                  </label>
-                  <label className="lb-field">
-                    <span>Link del botón</span>
-                    <input
-                      value={form.banner_boton_link}
-                      onChange={e => handleChange('banner_boton_link', e.target.value)}
-                      placeholder="https://... (vacío = no muestra botón)"
-                      maxLength={500}
-                    />
-                    {!bannerLinkOk && <small className="lb-campo-error">Tiene que empezar con http://, https:// o /.</small>}
-                  </label>
-                </div>
-              </div>
-
-              <header className="lb-section-head separada">
-                <h2>Tema de esta landing</h2>
-                <p>Por defecto usa los colores de tu tienda. Podés personalizarlos solo para esta landing.</p>
-              </header>
-
-              <div className="lb-segmented lb-modo-toggle">
-                <button type="button" className={form.tema_modo === 'oscuro' ? 'active' : ''} onClick={() => handleChange('tema_modo', 'oscuro')}>
-                  <Moon size={13} /> Oscuro
+        {/* COLUMNA CENTRAL: Canvas */}
+        <main className="flex-1 overflow-hidden bg-[#e5e7eb] relative flex flex-col items-center">
+           <div className="w-full flex justify-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--vit-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--vit-border)' }}>
+                <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
+                  <Monitor size={16} /> Desktop
                 </button>
-                <button type="button" className={form.tema_modo === 'claro' ? 'active' : ''} onClick={() => handleChange('tema_modo', 'claro')}>
-                  <Sun size={13} /> Claro
+                <button type="button" onClick={() => setViewportMode('tablet')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
+                  <Tablet size={16} /> Tablet
+                </button>
+                <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
+                  <Smartphone size={16} /> Mobile
                 </button>
               </div>
-
-              <div className="lb-diseno-grid">
-                <CampoColor
-                  label="Color principal"
-                  valor={form.color_primario}
-                  colorHeredado={tienda?.color_primario || '#10b981'}
-                  onChange={v => handleChange('color_primario', v)}
+           </div>
+           <div className="w-full h-full overflow-y-auto flex justify-center bg-[#e5e7eb] relative">
+             <div style={{
+                width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
+                height: '100%',
+                backgroundColor: 'white',
+                boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 20px rgba(0,0,0,0.1)',
+                transition: 'width 0.3s ease',
+                overflow: 'hidden',
+                margin: viewportMode === 'desktop' ? '0' : '2rem auto',
+                borderRadius: viewportMode === 'desktop' ? '0' : '16px',
+                border: viewportMode === 'desktop' ? 'none' : '8px solid #1c2230',
+             }}>
+                <LandingPreview
+                  titulo={form.titulo || form.nombre}
+                  descripcion={form.descripcion}
+                  filtros={{
+                    categoria: form.mostrar_filtro_categoria,
+                    marca: form.mostrar_filtro_marca,
+                    etiqueta: form.mostrar_filtro_etiqueta,
+                    buscador: form.mostrar_buscador,
+                    orden_precio: form.mostrar_orden_precio,
+                  }}
+                  items={itemsPreview}
+                  tema={{
+                    modo: form.tema_modo,
+                    primario: form.color_primario || tienda?.color_primario,
+                    secundario: tienda?.color_secundario,
+                    fondo: form.color_fondo || fondoHeredado,
+                    texto: form.color_texto || undefined,
+                    tarjeta: form.color_tarjeta || undefined,
+                  }}
+                  diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
+                  contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}
+                  banner={form.mostrar_banner && bannerTieneContenido ? {
+                    imagen: landing?.banner_imagen || null,
+                    titulo: form.banner_titulo,
+                    subtitulo: form.banner_subtitulo,
+                    boton_texto: form.banner_boton_texto,
+                    boton_link: form.banner_boton_link,
+                  } : null}
+                  urlPublica={urlPublica}
+                  secciones={secciones}
+                  seccionSeleccionadaId={seccionSeleccionadaId}
+                  onSelectSeccion={setSeccionSeleccionadaId}
+                  mostrarTestimonios={form.mostrar_testimonios}
+                  testimonios={testimonios}
+                  mostrarFaq={form.mostrar_faq}
+                  faqs={faqs}
+                  viewportMode={viewportMode}
+                  onReorderSeccion={handleMoverSeccion}
+                  onDeleteSeccion={handleEliminarSeccion}
                 />
+             </div>
+           </div>
+        </main>
 
-                <CampoColor
-                  label="Color de fondo"
-                  valor={form.color_fondo}
-                  colorHeredado={fondoHeredado}
-                  onChange={v => handleChange('color_fondo', v)}
-                />
-
-                <CampoColor
-                  label="Color de las letras"
-                  valor={form.color_texto}
-                  colorHeredado={(MODOS[form.tema_modo] || MODOS.oscuro).text}
-                  onChange={v => handleChange('color_texto', v)}
-                />
-
-                <CampoColor
-                  label="Color de las tarjetas"
-                  valor={form.color_tarjeta}
-                  colorHeredado={(MODOS[form.tema_modo] || MODOS.oscuro).cardBg}
-                  colorPicker={CARD_HEX_DEFAULT[form.tema_modo] || CARD_HEX_DEFAULT.oscuro}
-                  onChange={v => handleChange('color_tarjeta', v)}
-                />
-              </div>
-
-              <div className="lb-field">
-                <span>Radio de bordes</span>
-                <div className="lb-segmented">
-                  {RADIOS_BORDE.map(r => (
-                    <button key={r.valor} type="button" className={form.radio_bordes === r.valor ? 'active' : ''} onClick={() => handleChange('radio_bordes', r.valor)}>
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="lb-field">
-                <span>Fuente</span>
-                <div className="lb-segmented lb-segmented-fuentes">
-                  {FUENTES.map(f => (
-                    <button
-                      key={f.valor}
-                      type="button"
-                      style={{ fontFamily: f.familia }}
-                      className={form.fuente === f.valor ? 'active' : ''}
-                      onClick={() => handleChange('fuente', f.valor)}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {paso === 'filtros' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Cómo navega el visitante</h2>
-                <p>Cada opción que actives aparece arriba de los productos en tu tienda.</p>
-              </header>
-
-              <div className="lb-opciones">
-                {FILTROS_DISPONIBLES.map(([campo, label, ayuda]) => (
-                  <label key={campo} className={`lb-opcion ${form[campo] ? 'on' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={form[campo]}
-                      onChange={e => handleChange(campo, e.target.checked)}
-                    />
-                    <span className="lb-opcion-check"><Check size={12} strokeWidth={3} /></span>
-                    <span className="lb-opcion-text">
-                      <strong>{label}</strong>
-                      <small>{ayuda}</small>
-                    </span>
-                  </label>
-                ))}
-              </div>
-
-              <header className="lb-section-head separada">
-                <h2>Mensaje de WhatsApp</h2>
-                <p>Qué se agrega automáticamente cuando el visitante toca "Consultar".</p>
-              </header>
-
-              <label className="lb-switch">
-                <input
-                  type="checkbox"
-                  checked={form.mostrar_whatsapp}
-                  onChange={e => handleChange('mostrar_whatsapp', e.target.checked)}
-                />
-                <span className="lb-switch-track" />
-                <span className="lb-switch-label">Mostrar botón de WhatsApp en esta landing</span>
-              </label>
-
-              {form.mostrar_whatsapp && (
-                <div className="lb-opciones">
-                  <label className={`lb-opcion ${form.whatsapp_incluir_precio ? 'on' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={form.whatsapp_incluir_precio}
-                      onChange={e => handleChange('whatsapp_incluir_precio', e.target.checked)}
-                    />
-                    <span className="lb-opcion-check"><Check size={12} strokeWidth={3} /></span>
-                    <span className="lb-opcion-text">
-                      <strong>Agregar precio</strong>
-                      <small>Se suma al mensaje junto al nombre del producto.</small>
-                    </span>
-                  </label>
-                  <label className={`lb-opcion ${form.whatsapp_incluir_url ? 'on' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={form.whatsapp_incluir_url}
-                      onChange={e => handleChange('whatsapp_incluir_url', e.target.checked)}
-                    />
-                    <span className="lb-opcion-check"><Check size={12} strokeWidth={3} /></span>
-                    <span className="lb-opcion-text">
-                      <strong>Agregar el link de esta landing</strong>
-                      <small>Para que sepas desde dónde te escriben.</small>
-                    </span>
-                  </label>
-                </div>
-              )}
-
-              {form.mostrar_whatsapp && (
-                <label className="lb-switch">
-                  <input
-                    type="checkbox"
-                    checked={form.checkout_redirigir_whatsapp}
-                    onChange={e => handleChange('checkout_redirigir_whatsapp', e.target.checked)}
-                  />
-                  <span className="lb-switch-track" />
-                  <span className="lb-switch-label">
-                    Después de crear el pedido, abrir WhatsApp para coordinar
-                  </span>
-                </label>
-              )}
-
-              <div className="lb-tema">
-                <div className="lb-tema-contacto">
-                  <MessageCircle size={14} />
-                  {tienda?.whatsapp
-                    ? <span>Número configurado: <strong>{tienda.whatsapp}</strong></span>
-                    : <span className="lb-sin-guardar">Sin WhatsApp configurado en tu tienda: el botón no se va a mostrar.</span>}
-                </div>
-                <Link to="/mi-tienda" className="lb-btn-ghost">
-                  <Palette size={14} /> Configurar en Mi tienda
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {paso === 'contenido' && (
-            <PasoContenido
-              mostrarTestimonios={form.mostrar_testimonios}
-              mostrarFaq={form.mostrar_faq}
+        {/* COLUMNA DERECHA: Inspector */}
+        <aside className="bg-[var(--vit-card-bg)] border-l border-[var(--vit-border)] flex flex-col w-[320px] flex-shrink-0 z-10 overflow-hidden">
+          {seccionSeleccionadaId ? (
+            <InspectorSeccion
+              seccion={secciones.find(s => s.id === seccionSeleccionadaId)}
+              onUpdate={handleActualizarSeccion}
+              onBack={() => setSeccionSeleccionadaId(null)}
+              catalogo={catalogo}
+              onDuplicate={handleDuplicarSeccion}
+              onDelete={handleEliminarSeccion}
+              onUploadImagen={handleUploadSeccionImagen}
+            />
+          ) : (
+            <InspectorGlobal 
+              form={form}
               onChange={handleChange}
-              testimonios={testimonios}
-              onAgregarTestimonio={agregarTestimonio}
-              onActualizarTestimonio={actualizarTestimonio}
-              onQuitarTestimonio={quitarTestimonio}
-              onMoverTestimonio={moverTestimonio}
-              onSubirFotoTestimonio={handleTestimonioFoto}
-              subiendoFotoTestimonio={subiendoFotoTestimonio}
-              faqs={faqs}
-              onAgregarFaq={agregarFaq}
-              onActualizarFaq={actualizarFaq}
-              onQuitarFaq={quitarFaq}
-              onMoverFaq={moverFaq}
             />
           )}
+        </aside>
 
-          {paso === 'seo' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>SEO</h2>
-                <p>Cómo se ve tu landing cuando la comparten o la buscan en Google.</p>
-              </header>
 
-              <div className="lb-form-grid">
-                <label className="lb-field ancho-total">
-                  <span>Título SEO</span>
-                  <input
-                    value={form.seo_titulo}
-                    onChange={e => handleChange('seo_titulo', e.target.value)}
-                    placeholder={form.titulo || form.nombre || 'Se usa el título público si lo dejás vacío'}
-                    maxLength={160}
-                  />
-                  <small className={form.seo_titulo.length > 60 ? 'lb-campo-error' : ''}>{form.seo_titulo.length}/60 recomendado</small>
-                </label>
+        <SelectorSecciones
+            isOpen={selectorAbierto}
+            onClose={() => setSelectorAbierto(false)}
+            onAdd={handleAgregarSeccion}
+            seccionesActuales={secciones}
+        />
 
-                <label className="lb-field ancho-total">
-                  <span>Descripción SEO</span>
-                  <textarea
-                    rows={2}
-                    value={form.seo_descripcion}
-                    onChange={e => handleChange('seo_descripcion', e.target.value)}
-                    placeholder={form.descripcion || 'Se usa la descripción de la landing si la dejás vacía'}
-                    maxLength={320}
-                  />
-                  <small className={form.seo_descripcion.length > 160 ? 'lb-campo-error' : ''}>{form.seo_descripcion.length}/160 recomendado</small>
-                </label>
-
-                <label className="lb-field ancho-total">
-                  <span>Palabras clave</span>
-                  <input
-                    value={form.seo_keywords}
-                    onChange={e => handleChange('seo_keywords', e.target.value)}
-                    placeholder="Separadas por coma: ropa, verano, ofertas"
-                    maxLength={300}
-                  />
-                </label>
-              </div>
-
-              <header className="lb-section-head separada">
-                <h2>Imagen para compartir</h2>
-                <p>La que se ve al pegar el link en WhatsApp, Facebook o Twitter. Sin una propia, se usa la del banner.</p>
-              </header>
-
-              <div className="lb-banner-imagen">
-                {landing?.seo_og_imagen ? (
-                  <div className="lb-banner-preview">
-                    <img src={getMediaUrl(landing.seo_og_imagen)} alt="Imagen para compartir" />
-                    <button type="button" className="lb-banner-quitar" onClick={quitarSeoImagen} disabled={subiendoSeoImagen}>
-                      {subiendoSeoImagen ? <Loader size={13} className="spin-icon" /> : <Trash2 size={13} />} Quitar
-                    </button>
-                  </div>
-                ) : landing?.banner_imagen ? (
-                  <div className="lb-banner-preview heredada">
-                    <img src={getMediaUrl(landing.banner_imagen)} alt="Usando la del banner" />
-                    <span className="lb-banner-heredada-tag">Usando la del banner</span>
-                    <label className="lb-banner-quitar como-boton">
-                      {subiendoSeoImagen ? <Loader size={13} className="spin-icon" /> : <ImagePlus size={13} />} Subir una distinta
-                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleSeoImagenFile} disabled={subiendoSeoImagen} hidden />
-                    </label>
-                  </div>
-                ) : (
-                  <label className="lb-banner-upload">
-                    {subiendoSeoImagen ? <Loader size={20} className="spin-icon" /> : <ImagePlus size={20} />}
-                    <span>{subiendoSeoImagen ? 'Subiendo...' : 'Subir imagen'}</span>
-                    <small>JPG, PNG o WebP · hasta 1MB</small>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleSeoImagenFile} disabled={subiendoSeoImagen} hidden />
-                  </label>
-                )}
-              </div>
-
-              <header className="lb-section-head separada">
-                <h2>Así se ve en Google</h2>
-              </header>
-              <div className="lb-seo-snippet">
-                <span className="lb-seo-snippet-url">{urlPublica || 'https://tutienda.gesicomm.com'}</span>
-                <span className="lb-seo-snippet-titulo">{(form.seo_titulo || form.titulo || form.nombre || 'Título de tu landing').slice(0, 70)}</span>
-                <span className="lb-seo-snippet-desc">{(form.seo_descripcion || form.descripcion || 'Agregá una descripción para que se vea acá.').slice(0, 170)}</span>
+        {confirmDespublicar && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-[var(--vit-text)] mb-2">¿Despublicar Landing?</h3>
+                <p className="text-[var(--vit-muted)] mb-6">
+                  Al despublicar, tu página dejará de estar visible para tus clientes y el enlace dejará de funcionar inmediatamente. Podés volver a publicarla cuando quieras.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="lb-btn-ghost px-4 py-2" onClick={() => setConfirmDespublicar(null)}>Cancelar</button>
+                  <button type="button" className="lb-btn-warn px-4 py-2" onClick={confirmarDespublicar}>Sí, despublicar</button>
+                </div>
               </div>
             </div>
-          )}
-
-          {paso === 'estadisticas' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Estadísticas</h2>
-                <p>Visitas y conversaciones de WhatsApp generadas desde esta landing.</p>
-              </header>
-
-              {!landing?.id ? (
-                <div className="lb-empty">
-                  <BarChart3 size={30} opacity={0.3} />
-                  <p>Guardá la landing para empezar a ver estadísticas.</p>
-                </div>
-              ) : (
-                <EstadisticasPanel landingId={landing.id} />
-              )}
-            </div>
-          )}
-
-          {paso === 'publicar' && (
-            <div className="lb-section">
-              <header className="lb-section-head">
-                <h2>Publicación</h2>
-                <p>Mientras esté en borrador, el link no muestra productos a nadie.</p>
-              </header>
-
-              <div className="lb-publicar">
-                <div className="lb-publicar-estado">
-                  <span className={`lb-estado grande ${publicada ? 'on' : 'off'}`}>
-                    <span className="lb-estado-dot" />
-                    {publicada ? 'Publicada' : 'Borrador'}
-                  </span>
-                  {landing?.updated_at && <small>Última edición {tiempoRelativo(landing.updated_at)}</small>}
-                </div>
-
-                <div className="lb-checklist">
-                  {[
-                    [completado.info, 'Tiene nombre'],
-                    [completado.productos, `Tiene productos (${seleccion.size})`],
-                    [!!landing, 'Está guardada'],
-                  ].map(([ok, texto]) => (
-                    <span key={texto} className={`lb-check-item ${ok ? 'ok' : ''}`}>
-                      {ok ? <Check size={12} strokeWidth={3} /> : <span className="lb-check-vacio" />}
-                      {texto}
-                    </span>
-                  ))}
-                </div>
-
-                {urlPublica ? (
-                  <div className="lb-url">
-                    <code>{urlPublica}</code>
-                    <button type="button" className="land-icon-btn" onClick={copiarLink} title="Copiar link">
-                      {copiado ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                    </button>
-                    <a href={urlPublica} target="_blank" rel="noreferrer" className="land-icon-btn" title="Abrir">
-                      <ExternalLink size={14} />
-                    </a>
-                  </div>
-                ) : (
-                  <p className="lb-hint">La URL pública se define cuando guardes la landing.</p>
-                )}
-
-                <Link to="/mi-tienda" className="lb-btn-ghost lb-dominio-link">
-                  <Globe size={13} /> ¿Querés usar tu propio dominio en vez de gesicomm.com? Configuralo en Mi tienda
-                </Link>
-
-                <div className="lb-publicar-acciones">
-                  <button type="button" className="lb-btn-secondary" onClick={handleGuardar} disabled={ocupado}>
-                    {guardando ? <Loader size={14} className="spin-icon" /> : <Save size={14} />}
-                    Guardar cambios
-                  </button>
-                  <button
-                    type="button"
-                    className={publicada ? 'lb-btn-warn' : 'lb-btn-primary'}
-                    onClick={togglePublicar}
-                    disabled={ocupado || seleccion.size === 0}
-                  >
-                    {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
-                    {publicada ? 'Despublicar' : 'Publicar ahora'}
-                  </button>
-                </div>
-
-                {landing?.id && (
-                  <div className="lb-zona-peligro">
-                    <div>
-                      <strong>Eliminar landing</strong>
-                      <small>Se borra todo — productos elegidos, banner, diseño. Tu tienda queda sin landing hasta que crees una nueva.</small>
-                    </div>
-                    <button type="button" className="lb-btn-danger" onClick={eliminarLanding} disabled={ocupado}>
-                      <Trash2 size={14} /> Eliminar
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {previewVisible && (
-          <aside className="lb-preview-col">
-            <LandingPreview
-              titulo={form.titulo || form.nombre}
-              descripcion={form.descripcion}
-              filtros={{
-                categoria: form.mostrar_filtro_categoria,
-                marca: form.mostrar_filtro_marca,
-                etiqueta: form.mostrar_filtro_etiqueta,
-                buscador: form.mostrar_buscador,
-                orden_precio: form.mostrar_orden_precio,
-              }}
-              items={itemsPreview}
-              tema={{
-                modo: form.tema_modo,
-                primario: form.color_primario || tienda?.color_primario,
-                secundario: tienda?.color_secundario,
-                fondo: form.color_fondo || fondoHeredado,
-                texto: form.color_texto || undefined,
-                tarjeta: form.color_tarjeta || undefined,
-              }}
-              diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
-              contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}
-              banner={form.mostrar_banner && bannerTieneContenido ? {
-                imagen: landing?.banner_imagen || null,
-                titulo: form.banner_titulo,
-                subtitulo: form.banner_subtitulo,
-                boton_texto: form.banner_boton_texto,
-                boton_link: form.banner_boton_link,
-              } : null}
-              urlPublica={urlPublica}
-              secciones={secciones}
-              mostrarTestimonios={form.mostrar_testimonios}
-              testimonios={testimonios}
-              mostrarFaq={form.mostrar_faq}
-              faqs={faqs}
-            />
-          </aside>
+          </div>
         )}
+
+        {confirmEliminar && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+            <div className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-xl w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-red-500 mb-2">Eliminar Landing</h3>
+                <p className="text-[var(--vit-muted)] mb-6">
+                  ¿Estás seguro de que querés eliminar esta landing definitivamente? Esta acción no se puede deshacer.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" className="lb-btn-ghost px-4 py-2" onClick={() => setConfirmEliminar(false)}>Cancelar</button>
+                  <button type="button" className="bg-red-500 hover:bg-red-600 text-white font-medium rounded-md px-4 py-2 transition-colors" onClick={confirmarEliminarLanding}>Sí, eliminar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
-
-      <ConfirmDialog
-        open={!!confirmDespublicar}
-        title="¿Despublicar esta landing?"
-        description="Si tenés anuncios o links compartidos apuntando acá, van a dejar de mostrar productos."
-        confirmLabel="Despublicar"
-        danger
-        loading={publicando}
-        onConfirm={confirmarDespublicar}
-        onCancel={() => setConfirmDespublicar(null)}
-      />
-
-      <ConfirmDialog
-        open={confirmEliminar}
-        title={`¿Eliminar "${landing?.nombre}"?`}
-        description="No se puede deshacer, y tu tienda va a quedar sin landing hasta que crees una nueva."
-        confirmLabel="Eliminar"
-        danger
-        loading={guardando}
-        onConfirm={confirmarEliminarLanding}
-        onCancel={() => setConfirmEliminar(false)}
-      />
     </div>
   );
 }

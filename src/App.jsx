@@ -87,6 +87,10 @@ function RaizSegunHostname() {
   return esHostnameDeTienda() ? <LandingPublica /> : <PublicLayout><Landing /></PublicLayout>;
 }
 
+function ProductoSegunHostname() {
+  return esHostnameDeTienda() ? <LandingPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
 function App() {
   return (
     <Router>
@@ -211,6 +215,10 @@ function App() {
             al backend igual que "/", así que un link viejo con /l no rompe. */}
         <Route path="/l" element={<LandingPublica />} />
         <Route path="/l/:slug" element={<LandingPublica />} />
+        
+        {/* Producto publico */}
+        <Route path="/p/:productId" element={<ProductoSegunHostname />} />
+        <Route path="/l/:slug/p/:productId" element={<LandingPublica />} />
 
         {/* Comodín: sin esto una URL mal escrita renderiza una página en
             blanco, porque React Router no encuentra ninguna coincidencia. */}

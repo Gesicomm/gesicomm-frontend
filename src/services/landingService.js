@@ -29,6 +29,14 @@ export const landingService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
 
+  // Mismo criterio que subirTestimonioFoto: devuelve solo { url }, sin
+  // atarla a una fila — las secciones también se reemplazan en bloque en
+  // cada Guardar (ver sincronizarSecciones en el backend).
+  subirImagenSeccion: (id, formData) =>
+    API.post(`/mis-landings/${id}/seccion-imagen`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+
   estadisticas: (id, dias = 30) => API.get(`/mis-landings/${id}/estadisticas`, { params: { dias } }).then(r => r.data),
   estadisticasRango: (id, filtros = {}) => API.post(`/mis-landings/${id}/estadisticas-rango`, filtros).then(r => r.data),
 };

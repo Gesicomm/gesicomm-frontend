@@ -9,7 +9,8 @@ import { inicializarTikTokPixel, trackearEventoTikTok } from '../../lib/tiktokPi
 import { calcularEstiloLanding, cargarFuenteGoogle } from '../../lib/landingDiseno';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
-import ProductDetailModal from './ProductDetailModal';
+import ProductPagePublica from './ProductPagePublica';
+import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
 import LandingDropdown from './LandingDropdown';
 import LandingHeader from './LandingHeader';
@@ -51,8 +52,59 @@ function esNuevo(item) {
   return Date.now() - new Date(item.creado).getTime() < VENTANA_NUEVO_DIAS * 86400000;
 }
 
+const TikTokIcon = ({ size = 24, color = "currentColor" }) => (
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="none" 
+    stroke={color} 
+    strokeWidth="2" 
+    strokeLinecap="round" 
+    strokeLinejoin="round"
+  >
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
+
+const InstagramIcon = ({ size = 24, color = "currentColor" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
+
+const FacebookIcon = ({ size = 24, color = "currentColor" }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+  </svg>
+);
+
 export default function LandingPublica() {
-  const { slug } = useParams();
+  const { slug, productId } = useParams();
+  const navigate = useNavigate();
   const [estado, setEstado] = useState('cargando'); // 'cargando' | 'no-encontrada' | 'no-disponible' | 'ok'
   const [data, setData] = useState(null);
 
@@ -62,8 +114,7 @@ export default function LandingPublica() {
   const [busqueda, setBusqueda] = useState('');
   const [orden, setOrden] = useState('');
 
-  const [itemAbierto, setItemAbierto] = useState(null); // item con el modal de detalle abierto
-  const [carrito, setCarrito] = useState(() => new Map());
+    const [carrito, setCarrito] = useState(() => new Map());
   const [carritoAbierto, setCarritoAbierto] = useState(false);
   const [agregadoRapido, setAgregadoRapido] = useState(null);
   const [wishlist, setWishlist] = useState(() => new Set());
@@ -412,7 +463,7 @@ export default function LandingPublica() {
     e.stopPropagation();
     const tieneOfertasNormales = (item.ofertas || []).some(o => o.estrategia === 'normal');
     if (item.variantes?.length > 0 || tieneOfertasNormales) {
-      setItemAbierto(item);
+      navigate(slug ? `/l/${slug}/p/${item.content_id}` : `/p/${item.content_id}`);
       return;
     }
     agregarAlCarrito({
@@ -505,7 +556,7 @@ export default function LandingPublica() {
         </div>
       )}
 
-      {visibleSeccion('beneficios') && <div style={{ order: ordenLayout('beneficios') }}><LandingBenefits /></div>}
+      {visibleSeccion('beneficios') && <div style={{ order: ordenLayout('beneficios') }}><LandingBenefits contenido={contenidoSeccion('beneficios')} /></div>}
 
       {visibleSeccion('categorias') && categorias.length > 0 && (
         <div style={{ order: ordenLayout('categorias') }}>
@@ -623,7 +674,7 @@ export default function LandingPublica() {
               const linkWhatsapp = armarLinkWhatsapp(contacto, item);
               return (
                 // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-                <div key={item.content_id} className="lp-card" onClick={() => setItemAbierto(item)} role="button" tabIndex={0}>
+                <div key={item.content_id} className="lp-card" onClick={() => navigate(slug ? `/l/${slug}/p/${item.content_id}` : `/p/${item.content_id}`)} role="button" tabIndex={0}>
                   <div className="lp-card-media">
                     {item.imagen ? (
                       <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
@@ -647,13 +698,7 @@ export default function LandingPublica() {
                     >
                       <Heart size={14} fill={wishlist.has(item.content_id) ? 'currentColor' : 'none'} />
                     </button>
-                    <button
-                      type="button"
-                      className="lp-card-quickview"
-                      onClick={(e) => { e.stopPropagation(); setItemAbierto(item); }}
-                    >
-                      <Eye size={13} /> Vista rápida
-                    </button>
+
                   </div>
                   <div className="lp-card-body">
                     {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
@@ -719,9 +764,21 @@ export default function LandingPublica() {
         <section className="lp-social-section" style={{ order: ordenLayout('redes_sociales') }}>
           <h2>{contenidoSeccion('redes_sociales').titulo || 'Seguinos'}</h2>
           <div>
-            {contenidoSeccion('redes_sociales').instagram && <a href={contenidoSeccion('redes_sociales').instagram} target="_blank" rel="noreferrer">Instagram</a>}
-            {contenidoSeccion('redes_sociales').facebook && <a href={contenidoSeccion('redes_sociales').facebook} target="_blank" rel="noreferrer">Facebook</a>}
-            {contenidoSeccion('redes_sociales').tiktok && <a href={contenidoSeccion('redes_sociales').tiktok} target="_blank" rel="noreferrer">TikTok</a>}
+            {contenidoSeccion('redes_sociales').instagram && (
+              <a href={contenidoSeccion('redes_sociales').instagram} target="_blank" rel="noreferrer" className="flex items-center gap-2">
+                <InstagramIcon size={18} /> Instagram
+              </a>
+            )}
+            {contenidoSeccion('redes_sociales').facebook && (
+              <a href={contenidoSeccion('redes_sociales').facebook} target="_blank" rel="noreferrer" className="flex items-center gap-2">
+                <FacebookIcon size={18} /> Facebook
+              </a>
+            )}
+            {contenidoSeccion('redes_sociales').tiktok && (
+              <a href={contenidoSeccion('redes_sociales').tiktok} target="_blank" rel="noreferrer" className="flex items-center gap-2">
+                <TikTokIcon size={18} /> TikTok
+              </a>
+            )}
           </div>
         </section>
       )}
@@ -762,15 +819,7 @@ export default function LandingPublica() {
         </div>
       </footer>}
 
-      {itemAbierto && (
-        <ProductDetailModal
-          item={itemAbierto}
-          onClose={() => setItemAbierto(null)}
-          onAgregar={agregarAlCarrito}
-          contacto={contacto}
-          onContactar={contactar}
-        />
-      )}
+      
 
       <CartDrawer
         items={Array.from(carrito.values())}

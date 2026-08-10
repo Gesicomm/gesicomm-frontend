@@ -22,11 +22,18 @@ export default function LandingHero({
   ratingPromedio,
   cantidadOpiniones,
   whatsapp,
+  tamano,
 }) {
   const reducirMovimiento = useReducedMotion();
   const variantes = {
     oculto: { opacity: 0, y: reducirMovimiento ? 0 : 18 },
     visible: (delay = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.55, delay, ease: [0.16, 1, 0.3, 1] } }),
+  };
+
+  const getFontSize = () => {
+    if (tamano === 'sm') return 'clamp(1.5rem, 4vw, 2.2rem)';
+    if (tamano === 'lg') return 'clamp(3rem, 6vw, 4.5rem)';
+    return 'clamp(2.2rem, 5vw, 3.5rem)';
   };
 
   return (
@@ -57,7 +64,7 @@ export default function LandingHero({
           custom={0.08}
           variants={variantes}
           className="text-balance font-extrabold leading-[1.05] text-[var(--l-text)]"
-          style={{ fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', letterSpacing: '-0.03em' }}
+          style={{ fontSize: getFontSize(), letterSpacing: '-0.03em' }}
         >
           {titulo}
         </motion.h1>

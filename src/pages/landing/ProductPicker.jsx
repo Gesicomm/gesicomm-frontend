@@ -178,8 +178,8 @@ export default function ProductPicker({
   const [soloSeleccionados, setSoloSeleccionados] = useState(false);
 
   const todos = useMemo(() => [
-    ...(catalogo.productos || []).map(p => ({ ...p, tipo: 'producto' })),
-    ...(catalogo.combos || []).map(c => ({ ...c, tipo: 'combo' })),
+    ...(catalogo?.productos || []).map(p => ({ ...p, tipo: 'producto' })),
+    ...(catalogo?.combos || []).map(c => ({ ...c, tipo: 'combo' })),
   ], [catalogo]);
 
   const categorias = useMemo(() => [...new Set(todos.map(i => i.categoria).filter(Boolean))].sort(), [todos]);
