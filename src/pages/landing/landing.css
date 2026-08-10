@@ -1213,17 +1213,42 @@
 .lb-preview-viewport {
   border: 1px solid var(--vit-border);
   border-radius: 12px;
-  overflow: hidden;
   background: #0a0a0a;
   max-height: calc(100vh - 13rem);
-  overflow-y: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.lb-preview-viewport.desktop .lb-live-preview-page {
+  width: 1120px;
+  min-height: 760px;
+}
+.lb-preview-viewport.mobile .lb-live-preview-page {
+  width: 100%;
+  min-height: 680px;
 }
 .lb-preview-viewport.mobile {
-  max-width: 340px;
+  max-width: 390px;
   margin: 0 auto;
   border-radius: 22px;
   border-width: 6px;
   border-color: #1c2230;
+}
+.lb-live-preview-page {
+  position: relative;
+  min-height: auto;
+}
+.lb-live-preview-page .lp-banner {
+  margin-top: 0;
+}
+.lb-live-preview-page .lp-card,
+.lb-live-preview-page .lp-card button,
+.lb-live-preview-page .lp-card a,
+.lb-live-preview-page .lp-banner a,
+.lb-live-preview-page .lp-footer a {
+  cursor: default;
+}
+.lb-preview-inert-cover {
+  display: none;
 }
 
 .lb-preview-hint { margin: 0 0.25rem; font-size: 0.72rem; color: var(--vit-muted-2); line-height: 1.45; }
