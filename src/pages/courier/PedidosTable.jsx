@@ -1,23 +1,30 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User,
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard,
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
-import { getEnviosPaginados } from "../../services/courierApi";
+import { getEnviosPaginados, getConteoPorEstado, getMetodosPago } from "../../services/courierApi";
+import { productService } from "../../services/productService";
 
 const ORIGENES = ["TODOS", "MANUAL", "WHATSAPP", "LANDING", "WEB", "META_ADS"];
 const LIMITE = 10;
+
+// Transiciones que necesitan datos adicionales (fecha, método de pago,
+// detalle por producto) — se resuelven en un modal dedicado, nunca con un
+// PATCH directo del dropdown. Ver plan Gestión de Pedidos, sección 42.
+const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", Devuelto: "devolver", Perdido: "perder" };
 
 const FILTROS_VACIOS = {
   cliente: "",
   ciudad: "",
   fecha_desde: "",
   fecha_hasta: "",
-  estados: [],
   courier_id: "TODOS",
   confirmador: "",
   origen: "TODOS",
+  producto: "TODOS",
+  metodo_pago_id: "TODOS",
 };
 
 function EstadoBadgeDropdown({ estado, onChange }) {
@@ -147,76 +154,6 @@ function EstadoBadgeDropdown({ estado, onChange }) {
   );
 }
 
-function MultiEstadoSelect({ value, onChange }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const toggle = (estado) => {
-    onChange(value.includes(estado) ? value.filter((e) => e !== estado) : [...value, estado]);
-  };
-
-  const label =
-    value.length === 0
-      ? "Todos los estados"
-      : value.length === 1
-      ? value[0]
-      : `${value.length} estados`;
-
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="pt-filter-select"
-        style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: "155px" }}
-      >
-        <span style={{ flex: 1, textAlign: "left" }}>{label}</span>
-        <ChevronDown size={13} />
-      </button>
-      {open && (
-        <div className="pt-estado-dropdown">
-          {STATUS_ORDER.map((estado) => {
-            const st = STATUS[estado] || {};
-            const checked = value.includes(estado);
-            return (
-              <label key={estado} className="pt-estado-option" onClick={() => toggle(estado)}>
-                <span className="pt-estado-dot" style={{ background: st.chipText || "#aaa" }} />
-                <span style={{ color: checked ? "#fff" : "#888", flex: 1 }}>{estado}</span>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  readOnly
-                  style={{ accentColor: st.chipText }}
-                />
-              </label>
-            );
-          })}
-          {value.length > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                onChange([]);
-                setOpen(false);
-              }}
-              className="pt-clear-estados"
-            >
-              Limpiar estados
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function formatFechaYHora(fecha, hora, createdAt) {
   let fechaStr = fecha || "—";
   let horaStr = hora || "";
@@ -238,25 +175,91 @@ function formatFechaYHora(fecha, hora, createdAt) {
   return { fecha: fechaStr, hora: horaStr };
 }
 
-export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, refrescarKey = 0 }) {
+const accionBtnStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: "5px",
+  padding: "4px 10px",
+  borderRadius: "6px",
+  border: "1px solid rgba(255,255,255,0.12)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#ddd",
+  fontSize: "0.74rem",
+  fontWeight: 600,
+  cursor: "pointer",
+  textDecoration: "none",
+  whiteSpace: "nowrap",
+};
+
+function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen }) {
+  if (envio.estado === "Pendiente") {
+    const tel = (envio.telefono || "").replace(/\D/g, "");
+    const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
+    if (!tel) return <span style={{ color: "#555", fontSize: "0.75rem" }}>Sin teléfono</span>;
+    const mensaje = `Hola ${nombre}, te escribimos por tu pedido #${envio.id}. ¿Confirmamos los datos de entrega?`;
+    const link = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
+    return (
+      <a href={link} target="_blank" rel="noopener noreferrer" style={accionBtnStyle} onClick={(e) => e.stopPropagation()}>
+        <MessageCircle size={13} /> Contactar
+      </a>
+    );
+  }
+  if (envio.estado === "Preparado") {
+    return (
+      <button type="button" style={accionBtnStyle} onClick={(e) => { e.stopPropagation(); onAbrirResumen(envio); }}>
+        <ClipboardList size={13} /> Resumen
+      </button>
+    );
+  }
+  return (
+    <button type="button" style={accionBtnStyle} onClick={(e) => { e.stopPropagation(); onAbrirDetalle(envio); }}>
+      <Eye size={13} /> Ver detalle
+    </button>
+  );
+}
+
+/**
+ * Bandeja operativa de pedidos — pestañas por estado con contador (ver plan
+ * Gestión de Pedidos, sección 38-42). Reemplaza el viejo MultiEstadoSelect:
+ * la pestaña activa ES el filtro de estado, no hace falta un selector aparte.
+ */
+export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, onAccionEspecial, onAbrirResumen, refrescarKey = 0 }) {
+  const [estadoActivo, setEstadoActivo] = useState("Pendiente");
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
+  const [conteos, setConteos] = useState({});
   const [loading, setLoading] = useState(true);
   const [masFilters, setMasFilters] = useState(false);
+  const [productos, setProductos] = useState([]);
+  const [metodosPago, setMetodosPago] = useState([]);
 
-  const cargar = useCallback(async (f, p) => {
+  useEffect(() => {
+    productService.buscar({}).then((res) => {
+      const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
+      setProductos(prods);
+    }).catch(() => setProductos([]));
+    getMetodosPago().then((data) => setMetodosPago(data || [])).catch(() => setMetodosPago([]));
+  }, []);
+
+  const construirPayloadBase = useCallback((f) => {
+    const payload = {};
+    if (f.cliente.trim()) payload.cliente = f.cliente.trim();
+    if (f.ciudad.trim()) payload.ciudad = f.ciudad.trim();
+    if (f.fecha_desde) payload.fecha_desde = f.fecha_desde;
+    if (f.fecha_hasta) payload.fecha_hasta = f.fecha_hasta;
+    if (f.courier_id !== "TODOS") payload.courier_id = f.courier_id;
+    if (f.confirmador.trim()) payload.confirmador = f.confirmador.trim();
+    if (f.origen !== "TODOS") payload.origen = f.origen;
+    if (f.producto !== "TODOS") payload.producto = f.producto;
+    if (f.metodo_pago_id !== "TODOS") payload.metodo_pago_id = f.metodo_pago_id;
+    return payload;
+  }, []);
+
+  const cargar = useCallback(async (f, p, estado) => {
     setLoading(true);
     try {
-      const payload = { page: p, limit: LIMITE };
-      if (f.cliente.trim()) payload.cliente = f.cliente.trim();
-      if (f.ciudad.trim()) payload.ciudad = f.ciudad.trim();
-      if (f.fecha_desde) payload.fecha_desde = f.fecha_desde;
-      if (f.fecha_hasta) payload.fecha_hasta = f.fecha_hasta;
-      if (f.estados.length > 0) payload.estados = f.estados;
-      if (f.courier_id !== "TODOS") payload.courier_id = f.courier_id;
-      if (f.confirmador.trim()) payload.confirmador = f.confirmador.trim();
-      if (f.origen !== "TODOS") payload.origen = f.origen;
+      const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE, estados: [estado] };
       const res = await getEnviosPaginados(payload);
       setData(res);
     } catch (err) {
@@ -264,16 +267,26 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [construirPayloadBase]);
+
+  const cargarConteos = useCallback(async (f) => {
+    try {
+      const res = await getConteoPorEstado(construirPayloadBase(f));
+      setConteos(res || {});
+    } catch (err) {
+      console.error("Error cargando conteo por estado:", err);
+    }
+  }, [construirPayloadBase]);
 
   const timerRef = useRef(null);
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      cargar(filtros, page);
+      cargar(filtros, page, estadoActivo);
+      cargarConteos(filtros);
     }, 300);
     return () => clearTimeout(timerRef.current);
-  }, [filtros, page, refrescarKey, cargar]);
+  }, [filtros, page, estadoActivo, refrescarKey, cargar, cargarConteos]);
 
   const setFiltro = (key, val) => {
     setFiltros((prev) => ({ ...prev, [key]: val }));
@@ -289,14 +302,18 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
     if (item.estado === nuevoEstado) return;
 
     if (nuevoEstado === "Confirmado") {
-      if (onAbrirDetalle) {
-        onAbrirDetalle(item);
-      } else if (onChangeEstado) {
-        onChangeEstado(item.id, "Confirmado", item);
-      }
+      onAbrirDetalle && onAbrirDetalle(item);
       return;
     }
 
+    const tipoModal = ESTADOS_CON_MODAL[nuevoEstado];
+    if (tipoModal) {
+      onAccionEspecial && onAccionEspecial(tipoModal, item);
+      return;
+    }
+
+    // Transición simple (Preparado, Despachado, Cancelado): PATCH directo,
+    // el backend valida si realmente es una transición permitida.
     setData((prev) => ({
       ...prev,
       data: (prev.data || []).map((row) =>
@@ -309,35 +326,47 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
     }
   };
 
-  const hayFiltros = Object.entries(filtros).some(([, v]) =>
-    Array.isArray(v) ? v.length > 0 : v !== "" && v !== "TODOS"
-  );
+  const hayFiltros = Object.entries(filtros).some(([, v]) => v !== "" && v !== "TODOS");
 
   const envios = data.data || [];
 
   return (
     <div className="pt-root">
-      {/* ── Sección título tabla ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginTop: "0.5rem",
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: "1rem", fontWeight: 700, margin: 0, color: "#fff" }}>
-            Todos los Pedidos
-          </h2>
-          <p style={{ fontSize: "0.78rem", color: "#666", margin: "2px 0 0 0" }}>
-            Filtrá por estado, fecha, cliente, ciudad o courier. 10 registros por página.
-          </p>
-        </div>
+      {/* ── Pestañas por estado con contador ── */}
+      <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.3rem" }}>
+        {STATUS_ORDER.map((st) => {
+          const cfg = STATUS[st] || {};
+          const active = estadoActivo === st;
+          return (
+            <button
+              key={st}
+              type="button"
+              onClick={() => { setEstadoActivo(st); setPage(1); }}
+              style={{
+                padding: "0.45rem 0.9rem",
+                borderRadius: "999px",
+                border: active ? `1px solid ${cfg.chipText}` : "1px solid rgba(255,255,255,0.1)",
+                background: active ? cfg.chipBg : "rgba(255,255,255,0.03)",
+                color: active ? cfg.chipText : "#999",
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                flexShrink: 0,
+              }}
+            >
+              {st}
+              <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos[st] ?? 0})</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Toolbar de filtros principales ── */}
-      <div className="pt-toolbar">
+      <div className="pt-toolbar" style={{ marginTop: "0.75rem" }}>
         {/* Búsqueda cliente */}
         <div className="pt-search-wrap">
           <Search size={14} className="pt-search-icon" />
@@ -372,9 +401,6 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
           )}
         </div>
 
-        {/* Multi-estado */}
-        <MultiEstadoSelect value={filtros.estados} onChange={(v) => setFiltro("estados", v)} />
-
         {/* Fecha desde */}
         <label className="pt-date-label" title="Fecha desde">
           <span style={{ fontSize: "0.72rem", color: "#666", whiteSpace: "nowrap" }}>Desde</span>
@@ -405,7 +431,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
         >
           <Filter size={14} />
           Más
-          {(filtros.courier_id !== "TODOS" || filtros.origen !== "TODOS" || filtros.confirmador) && (
+          {(filtros.courier_id !== "TODOS" || filtros.origen !== "TODOS" || filtros.confirmador || filtros.producto !== "TODOS" || filtros.metodo_pago_id !== "TODOS") && (
             <span className="pt-filter-dot" />
           )}
         </button>
@@ -423,7 +449,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
         </span>
       </div>
 
-      {/* ── Filtros extra (courier, confirmador, origen) ── */}
+      {/* ── Filtros extra ── */}
       {masFilters && (
         <div className="pt-extra-filters">
           <label className="pt-extra-label">
@@ -466,6 +492,36 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
               </option>
             ))}
           </select>
+
+          <label className="pt-extra-label">
+            <Package size={13} />
+            <select
+              className="pt-filter-select"
+              style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }}
+              value={filtros.producto}
+              onChange={(e) => setFiltro("producto", e.target.value)}
+            >
+              <option value="TODOS">Todos los productos</option>
+              {productos.map((p) => (
+                <option key={p.id} value={p.id}>{p.nombre}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="pt-extra-label">
+            <CreditCard size={13} />
+            <select
+              className="pt-filter-select"
+              style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }}
+              value={filtros.metodo_pago_id}
+              onChange={(e) => setFiltro("metodo_pago_id", e.target.value)}
+            >
+              <option value="TODOS">Todos los métodos de pago</option>
+              {metodosPago.map((m) => (
+                <option key={m.id} value={m.id}>{m.nombre}</option>
+              ))}
+            </select>
+          </label>
         </div>
       )}
 
@@ -477,25 +533,26 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
               <th className="pt-th pt-th-id">#</th>
               <th className="pt-th">Fecha</th>
               <th className="pt-th">Cliente</th>
+              <th className="pt-th">Teléfono</th>
               <th className="pt-th">Ciudad</th>
-              <th className="pt-th">Productos</th>
-              <th className="pt-th pt-th-num">Monto</th>
-              <th className="pt-th">Pago</th>
+              <th className="pt-th">Producto / Oferta</th>
+              <th className="pt-th pt-th-num">Total</th>
               <th className="pt-th">Courier</th>
               <th className="pt-th">Estado</th>
+              <th className="pt-th">Acción</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="pt-empty">
+                <td colSpan={10} className="pt-empty">
                   <span className="pt-spinner" /> Cargando pedidos...
                 </td>
               </tr>
             ) : envios.length === 0 ? (
               <tr>
-                <td colSpan={9} className="pt-empty">
-                  No hay pedidos que coincidan con los filtros.
+                <td colSpan={10} className="pt-empty">
+                  No hay pedidos en "{estadoActivo}" que coincidan con los filtros.
                 </td>
               </tr>
             ) : (
@@ -505,7 +562,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
                   items.length === 0
                     ? "—"
                     : items.length === 1
-                    ? `${items[0].nombre_producto}${
+                    ? `${items[0].nombre_producto}${items[0].oferta_nombre ? ` — ${items[0].oferta_nombre}` : ""}${
                         items[0].cantidad > 1 ? ` x${items[0].cantidad}` : ""
                       }`
                     : `${items[0].nombre_producto} +${items.length - 1} más`;
@@ -534,14 +591,14 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
                       </div>
                     </td>
                     <td className="pt-td">
-                      <div className="pt-cliente">
-                        <span className="pt-cliente-nombre">
-                          {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
-                            e.cliente ||
-                            "—"}
-                        </span>
-                        {e.telefono && <span className="pt-cliente-tel">{e.telefono}</span>}
-                      </div>
+                      <span className="pt-cliente-nombre">
+                        {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
+                          e.cliente ||
+                          "—"}
+                      </span>
+                    </td>
+                    <td className="pt-td">
+                      <span style={{ color: "#aaa", fontSize: "0.82rem" }}>{e.telefono || "—"}</span>
                     </td>
                     <td className="pt-td pt-td-ciudad">
                       <span>{e.ciudad || "—"}</span>
@@ -560,9 +617,6 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
                       )}
                     </td>
                     <td className="pt-td">
-                      <span className="pt-pago">{e.metodo_pago || "—"}</span>
-                    </td>
-                    <td className="pt-td">
                       {e.Courier ? (
                         <span className="pt-courier">{e.Courier.nombre}</span>
                       ) : (
@@ -574,6 +628,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, re
                         estado={e.estado}
                         onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
                       />
+                    </td>
+                    <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
+                      <AccionPrincipal envio={e} onAbrirDetalle={onAbrirDetalle} onAbrirResumen={onAbrirResumen} />
                     </td>
                   </tr>
                 );

@@ -56,6 +56,40 @@ export const getMetricasDashboardPedidos = async (filtros = {}) => {
   return data;
 };
 
+/** Contador de pedidos agrupados por estado, respetando los filtros activos (pestañas de la bandeja). */
+export const getConteoPorEstado = async (filtros = {}) => {
+  const { data } = await api.post('/envios/conteo-por-estado', filtros);
+  return data;
+};
+
+/** Devolución por producto/cantidad. `payload`: { items: [{envio_item_componente_id, cantidad, condicion}], marcar_estado } */
+export const registrarDevolucion = async (envioId, payload) => {
+  const { data } = await api.post(`/envios/${envioId}/devolucion`, payload);
+  return data;
+};
+
+/** Pérdida por producto/cantidad. `payload`: { items: [{envio_item_componente_id, cantidad}], marcar_estado } */
+export const registrarPerdida = async (envioId, payload) => {
+  const { data } = await api.post(`/envios/${envioId}/perdida`, payload);
+  return data;
+};
+
+/** Motor de rendición — previsualización, confirmación y consulta de historial. */
+export const previsualizarLiquidacion = async (payload) => {
+  const { data } = await api.post('/liquidaciones/previsualizar', payload);
+  return data;
+};
+
+export const confirmarLiquidacion = async (payload) => {
+  const { data } = await api.post('/liquidaciones/confirmar', payload);
+  return data;
+};
+
+export const getLiquidacionesPorCourier = async (courierId) => {
+  const { data } = await api.get(`/liquidaciones/courier/${courierId}`);
+  return data;
+};
+
 export const getMetodosPago = async () => {
   const { data } = await api.get('/metodos-pago');
   return data;

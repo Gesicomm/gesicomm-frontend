@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle } from "lucide-react";
 import { productService } from "../../services/productService";
+import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago } from "../../services/courierApi";
 import { obtenerTarifaPara, buscarCourierYTarifa } from "../../lib/tarifaCourier";
 import CurrencyInput from "../../components/CurrencyInput";
@@ -145,6 +146,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   const [couriers, setCouriers] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
   const [selectedProdId, setSelectedProdId] = useState("");
+  const [ofertasDelProducto, setOfertasDelProducto] = useState([]);
+  const [selectedOfertaId, setSelectedOfertaId] = useState("");
   const [cant, setCant] = useState(1);
   const [errors, setErrors] = useState({});
   const [guardando, setGuardando] = useState(false);
@@ -215,6 +218,19 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, modoCompletar, couriers, metodosPago, form.ciudad]);
+
+  // Al elegir un producto, cargar sus ofertas activas (individual siempre es
+  // la opción base, sin oferta) para el selector de "Presentación".
+  useEffect(() => {
+    setSelectedOfertaId("");
+    if (!selectedProdId) {
+      setOfertasDelProducto([]);
+      return;
+    }
+    ofertaService.listarPorProducto(selectedProdId)
+      .then(data => setOfertasDelProducto((Array.isArray(data) ? data : []).filter(o => o.activo)))
+      .catch(() => setOfertasDelProducto([]));
+  }, [selectedProdId]);
 
   // Opciones de ciudades (únicamente configuradas en los couriers del usuario)
   const optionsCiudades = useMemo(() => {
@@ -316,10 +332,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     const prod = productosDisponibles.find(p => p.id === Number(selectedProdId));
     if (!prod) return;
 
-    const precioUnit = Number(prod.precio_base ?? prod.precio_venta ?? prod.precio ?? 0);
+    const oferta = selectedOfertaId ? ofertasDelProducto.find(o => o.id === Number(selectedOfertaId)) : null;
+    const precioUnit = oferta ? Number(oferta.precio) : Number(prod.precio_base ?? prod.precio_venta ?? prod.precio ?? 0);
     const nuevoItem = {
       producto_id: prod.id,
-      nombre_producto: prod.nombre,
+      oferta_id: oferta ? oferta.id : null,
+      oferta_codigo: oferta ? oferta.codigo : null,
+      oferta_nombre: oferta ? oferta.nombre : null,
+      nombre_producto: oferta ? `${prod.nombre} — ${oferta.nombre}` : prod.nombre,
       cantidad: Number(cant),
       precio_unitario: precioUnit,
       subtotal: Number(cant) * precioUnit
@@ -328,6 +348,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     const nuevosItems = [...items, nuevoItem];
     setItems(nuevosItems);
     setSelectedProdId("");
+    setSelectedOfertaId("");
     setCant(1);
     setErrors(prev => ({ ...prev, items: null, producto: null }));
 
@@ -772,6 +793,20 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                     );
                   })}
                 </select>
+
+                {ofertasDelProducto.length > 0 && (
+                  <select
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    value={selectedOfertaId}
+                    onChange={e => setSelectedOfertaId(e.target.value)}
+                  >
+                    <option value="">Individual (Gs. {Number(productosDisponibles.find(p => p.id === Number(selectedProdId))?.precio_base || 0).toLocaleString('es-PY')})</option>
+                    {ofertasDelProducto.map(o => (
+                      <option key={o.id} value={o.id}>{o.nombre} (Gs. {Number(o.precio).toLocaleString('es-PY')})</option>
+                    ))}
+                  </select>
+                )}
 
                 <input
                   type="number"

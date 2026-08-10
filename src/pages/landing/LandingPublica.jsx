@@ -23,8 +23,8 @@ import './landingPublica.css';
 
 const VENTANA_NUEVO_DIAS = 14;
 
-function claveCarrito(item, varianteId) {
-  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}`;
+function claveCarrito(item, varianteId, ofertaId) {
+  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}`;
 }
 
 function cargarCarritoGuardado(slug) {
@@ -116,9 +116,35 @@ export default function LandingPublica() {
     });
   }
 
-  function agregarAlCarrito({ item, variante, cantidad, precio }) {
-    const clave = claveCarrito(item, variante?.id);
-    const stockMax = variante ? variante.stock : item.stock;
+  // Ofertas para mostrar como sugerencia en el carrito: order_bump siempre
+  // que no esté ya agregada, upsell solo si su producto ancla ya está en el
+  // carrito (mismo criterio que Oferta.estrategia documenta en el backend).
+  const sugerenciasCarrito = useMemo(() => {
+    if (!data?.items) return [];
+    const contentIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.contentId));
+    const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean));
+    const sugerencias = [];
+    for (const item of data.items) {
+      if (item.tipo !== 'producto' || !item.ofertas?.length) continue;
+      for (const oferta of item.ofertas) {
+        if (ofertaIdsEnCarrito.has(oferta.id)) continue;
+        if (oferta.estrategia === 'order_bump') {
+          sugerencias.push({ item, oferta });
+        } else if (oferta.estrategia === 'upsell' && contentIdsEnCarrito.has(item.content_id)) {
+          sugerencias.push({ item, oferta });
+        }
+      }
+    }
+    return sugerencias;
+  }, [data, carrito]);
+
+  function agregarSugerencia(item, oferta) {
+    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio: oferta.precio });
+  }
+
+  function agregarAlCarrito({ item, variante, oferta, cantidad, precio }) {
+    const clave = claveCarrito(item, variante?.id, oferta?.id);
+    const stockMax = variante ? variante.stock : (oferta ? null : item.stock);
     setCarrito(prev => {
       const copia = new Map(prev);
       const existente = copia.get(clave);
@@ -132,6 +158,8 @@ export default function LandingPublica() {
         nombre: item.nombre,
         varianteId: variante?.id || null,
         varianteNombre: variante?.nombre || null,
+        ofertaId: oferta?.id || null,
+        ofertaNombre: oferta?.nombre || null,
         precio,
         cantidad: nuevaCantidad,
         imagen: item.imagenes?.[0] || item.imagen || null,
@@ -144,7 +172,7 @@ export default function LandingPublica() {
     try {
       const eventId = generarEventId();
       const { fbc, fbp } = leerCookiesFacebook();
-      const nombreCompleto = variante?.nombre ? `${item.nombre} (${variante.nombre})` : item.nombre;
+      const nombreCompleto = oferta?.nombre ? `${item.nombre} — ${oferta.nombre}` : (variante?.nombre ? `${item.nombre} (${variante.nombre})` : item.nombre);
       const valorTotal = (precio || 0) * cantidad;
       const customData = {
         content_ids: [item.content_id],
@@ -233,6 +261,7 @@ export default function LandingPublica() {
       items: items.map(it => ({
         content_id: it.contentId,
         variante_id: it.varianteId || undefined,
+        oferta_id: it.ofertaId || undefined,
         cantidad: it.cantidad,
       })),
     });
@@ -262,7 +291,7 @@ export default function LandingPublica() {
       custom_data: customData,
       items: items.map(it => ({
         content_id: it.contentId,
-        nombre: it.varianteNombre ? `${it.nombre} (${it.varianteNombre})` : it.nombre,
+        nombre: it.ofertaNombre ? `${it.nombre} — ${it.ofertaNombre}` : (it.varianteNombre ? `${it.nombre} (${it.varianteNombre})` : it.nombre),
         cantidad: it.cantidad,
         precio: it.precio,
       })),
@@ -381,13 +410,15 @@ export default function LandingPublica() {
 
   function handleAgregarRapido(e, item) {
     e.stopPropagation();
-    if (item.variantes?.length > 0) {
+    const tieneOfertasNormales = (item.ofertas || []).some(o => o.estrategia === 'normal');
+    if (item.variantes?.length > 0 || tieneOfertasNormales) {
       setItemAbierto(item);
       return;
     }
     agregarAlCarrito({
       item,
       variante: null,
+      oferta: null,
       cantidad: 1,
       precio: item.precio,
     });
@@ -671,6 +702,8 @@ export default function LandingPublica() {
 
       <CartDrawer
         items={Array.from(carrito.values())}
+        sugerencias={sugerenciasCarrito}
+        onAgregarSugerencia={agregarSugerencia}
         abierto={carritoAbierto}
         onAbrir={() => setCarritoAbierto(true)}
         onCerrar={() => setCarritoAbierto(false)}

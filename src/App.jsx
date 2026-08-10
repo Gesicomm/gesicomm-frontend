@@ -14,6 +14,7 @@ import AdminRoute from './components/AdminRoute';
 import RequireTienda from './components/RequireTienda';
 import DashboardLayout from './components/DashboardLayout';
 import UserLayout from './components/UserLayout';
+import DynamicLayout from './components/DynamicLayout';
 import VitrinaGrid from './pages/vitrina/VitrinaGrid';
 import MiDashboard from './pages/dashboard/MiDashboard';
 import MiLandingEntry from './pages/landing/MiLandingEntry';
@@ -122,13 +123,13 @@ function App() {
 
         {/* Productos */}
         <Route path="/products" element={
-          <AdminRoute><DashboardLayout><ProductList /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ProductList /></DynamicLayout></RequireTienda>
         } />
         <Route path="/products/nuevo" element={
-          <AdminRoute><DashboardLayout><ProductForm /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ProductForm /></DynamicLayout></RequireTienda>
         } />
         <Route path="/products/:id/editar" element={
-          <AdminRoute><DashboardLayout><ProductForm /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ProductForm /></DynamicLayout></RequireTienda>
         } />
 
         {/* Catálogo */}
@@ -155,16 +156,16 @@ function App() {
 
         {/* Combos */}
         <Route path="/combos" element={
-          <AdminRoute><DashboardLayout><ComboList /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ComboList /></DynamicLayout></RequireTienda>
         } />
         <Route path="/combos/nuevo" element={
-          <AdminRoute><DashboardLayout><ComboEditor /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ComboEditor /></DynamicLayout></RequireTienda>
         } />
         <Route path="/combos/:id/editar" element={
-          <AdminRoute><DashboardLayout><ComboEditor /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ComboEditor /></DynamicLayout></RequireTienda>
         } />
         <Route path="/configuracion-economica" element={
-          <AdminRoute><DashboardLayout><ComboConfiguracion /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ComboConfiguracion /></DynamicLayout></RequireTienda>
         } />
 
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}

@@ -9,8 +9,9 @@ import {
   Star, AlertTriangle, ChevronLeft, ChevronRight,
   ToggleLeft, ToggleRight, Loader, Tag
 } from 'lucide-react';
-import ProductCombosDrawer from './ProductCombosDrawer';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import ProductCombosDrawer from './ProductCombosDrawer';
+import { verificarSesion } from '../../utils/auth';
 import './productos.css';
 
 const ITEMS_POR_PAGINA = 10;
@@ -28,6 +29,7 @@ export default function ProductList() {
   const [comboProductoSeleccionado, setComboProductoSeleccionado] = useState(null);
   const [productoABajar, setProductoABajar] = useState(null);
   const [dandoBaja, setDandoBaja] = useState(false);
+  const [usuarioActual, setUsuarioActual] = useState(null);
 
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
@@ -40,6 +42,7 @@ export default function ProductList() {
 
   // ── Cargar catálogos una sola vez ─────────────────────────
   useEffect(() => {
+    verificarSesion().then(u => setUsuarioActual(u));
     Promise.all([
       categoriaService.buscar({ solo_activas: true, limit: 1000 }),
     ]).then(([catData]) => {
@@ -59,6 +62,7 @@ export default function ProductList() {
         ...(categoriaId          && { categoria_id: parseInt(categoriaId) }),
         ...(soloActivos !== ''   && { activo: soloActivos === 'true' }),
         ...(stockBajo            && { stock_bajo: true }),
+        mios_solamente: true,
       };
 
       const data = await productService.buscar(body);
@@ -238,6 +242,11 @@ export default function ProductList() {
                               <span className="prod-name">{p.nombre}</span>
                               {p.destacado && (
                                 <span className="badge-star"><Star size={10} /> Destacado</span>
+                              )}
+                              {usuarioActual && p.creado_por === usuarioActual.id ? (
+                                <span style={{ marginLeft: 6, fontSize: '0.65rem', padding: '2px 6px', background: 'var(--primary)', color: '#fff', borderRadius: '4px' }}>Propio</span>
+                              ) : (
+                                <span style={{ marginLeft: 6, fontSize: '0.65rem', padding: '2px 6px', background: 'var(--surface-3)', color: 'var(--fg-muted)', borderRadius: '4px' }}>Global</span>
                               )}
                             </div>
                           </div>

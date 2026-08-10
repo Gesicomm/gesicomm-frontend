@@ -39,6 +39,9 @@ export default function ComboList() {
   const [filtroEstado, setFiltroEstado] = useState('TODOS');
   const [cambiandoEstado, setCambiandoEstado] = useState(null);
   const [comboAConfirmar, setComboAConfirmar] = useState(null); // { combo, nuevoEstado }
+  const [expandedComboId, setExpandedComboId] = useState(null);
+  const [expandedComboData, setExpandedComboData] = useState(null);
+  const [loadingExpanded, setLoadingExpanded] = useState(false);
 
   // Umbral configurado (Configuración económica > Margen mínimo), como fracción.
   const margenMinimoDecimal = config?.margen_minimo !== undefined ? Number(config.margen_minimo) / 100 : 0.10;
@@ -73,6 +76,23 @@ export default function ComboList() {
       alert(err.response?.data?.message || 'Error al cambiar el estado.');
     } finally {
       setCambiandoEstado(null);
+    }
+  }
+
+  async function toggleCombo(id) {
+    if (expandedComboId === id) {
+      setExpandedComboId(null);
+      return;
+    }
+    setExpandedComboId(id);
+    setLoadingExpanded(true);
+    try {
+      const data = await comboAdminService.obtener(id);
+      setExpandedComboData(data);
+    } catch (err) {
+      console.error('Error fetching expanded combo', err);
+    } finally {
+      setLoadingExpanded(false);
     }
   }
 
@@ -147,7 +167,7 @@ export default function ComboList() {
             const upsells = combo.items || [];
 
             return (
-              <div key={combo.id} className={`combo-list-card ${combo.estado === 'INACTIVO' ? 'inactivo' : ''}`}>
+              <div key={combo.id} className={`combo-list-card ${combo.estado === 'INACTIVO' ? 'inactivo' : ''}`} style={{ cursor: 'pointer' }} onClick={() => toggleCombo(combo.id)}>
                 <div className="combo-list-card-header">
                   <div>
                     <div className="combo-list-card-name">{combo.nombre}</div>
@@ -196,7 +216,7 @@ export default function ComboList() {
                 </div>
 
                 {/* Acciones */}
-                <div className="combo-list-card-actions">
+                <div className="combo-list-card-actions" onClick={e => e.stopPropagation()}>
                   <button
                     className="btn-secondary"
                     style={{ flex: 1, justifyContent: 'center', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }}

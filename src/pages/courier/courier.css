@@ -811,7 +811,7 @@
 
 /* ── Tabla ── */
 .pt-table-wrap {
-  overflow-x: auto;
+  overflow: visible;
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 12px;
   background: rgba(255,255,255,0.015);

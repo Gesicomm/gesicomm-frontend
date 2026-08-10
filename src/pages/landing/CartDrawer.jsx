@@ -15,7 +15,7 @@ const FORM_VACIO = {
  * opcional que decide la propia landing (ver checkout.redirigir_whatsapp
  * en LandingPublica.jsx).
  */
-export default function CartDrawer({ items, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido }) {
+export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido }) {
   const [paso, setPaso] = useState('carrito'); // 'carrito' | 'formulario' | 'confirmado'
   const [form, setForm] = useState(FORM_VACIO);
   const [acepta, setAcepta] = useState(false);
@@ -102,6 +102,7 @@ export default function CartDrawer({ items, abierto, onAbrir, onCerrar, onCantid
                           </div>
                           <div className="lp-cart-item-info">
                             <span className="lp-cart-item-nombre">{it.nombre}</span>
+                            {it.ofertaNombre && <span className="lp-cart-item-variante">{it.ofertaNombre}</span>}
                             {it.varianteNombre && <span className="lp-cart-item-variante">{it.varianteNombre}</span>}
                             <span className="lp-cart-item-precio">{formatPrecio(it.precio)}</span>
                           </div>
@@ -118,6 +119,29 @@ export default function CartDrawer({ items, abierto, onAbrir, onCerrar, onCantid
                         </div>
                       ))}
                     </div>
+
+                    {sugerencias.length > 0 && (
+                      <div className="lp-cart-sugerencias">
+                        {sugerencias.map(({ item, oferta }) => (
+                          <div key={oferta.id} className="lp-cart-sugerencia">
+                            <div className="lp-cart-item-media">
+                              {item.imagen ? <img src={getMediaUrl(item.imagen)} alt="" /> : <ImageOff size={16} />}
+                            </div>
+                            <div className="lp-cart-item-info">
+                              <span className="lp-cart-item-nombre">
+                                {oferta.estrategia === 'order_bump' ? '¿Agregás esto? ' : 'También te puede interesar: '}
+                                {item.nombre} — {oferta.nombre}
+                              </span>
+                              {oferta.descripcion && <span className="lp-cart-item-variante">{oferta.descripcion}</span>}
+                              <span className="lp-cart-item-precio">{formatPrecio(oferta.precio)}</span>
+                            </div>
+                            <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta)} title="Agregar">
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     <footer className="lp-cart-footer">
                       <div className="lp-cart-subtotal">

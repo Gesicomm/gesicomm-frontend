@@ -1,13 +1,18 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard } from "lucide-react";
-import { SummaryBar } from "./summary-bar";
+import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard, HandCoins } from "lucide-react";
 import { PedidosTable } from "./PedidosTable";
 import { CouriersCrud } from "./couriers-crud";
 import { MetodosPagoCrud } from "./MetodosPagoCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
+import { ReprogramarModal } from "./ReprogramarModal";
+import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
+import { DevolucionModal } from "./DevolucionModal";
+import { PerdidaModal } from "./PerdidaModal";
+import { ResumenPedidoPanel } from "./ResumenPedidoPanel";
+import { RendicionTab } from "./RendicionTab";
 import {
   getCouriers,
   getEnvios,
@@ -15,11 +20,13 @@ import {
   createCourier,
   updateCourier,
   deleteCourier,
-  createEnvio
+  createEnvio,
+  registrarDevolucion,
+  registrarPerdida,
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "rendicion", "analitica"]);
 
 export function ControlCourier() {
   const [searchParams] = useSearchParams();
@@ -33,6 +40,11 @@ export function ControlCourier() {
   const [envioParaCompletar, setEnvioParaCompletar] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refrescarKey, setRefrescarKey] = useState(0);
+  // Acción especial en curso desde el dropdown de estado de la bandeja —
+  // { tipo: 'reprogramar'|'entregar'|'devolver'|'perder', envio } — ver
+  // plan Gestión de Pedidos sección 42.
+  const [accionEspecial, setAccionEspecial] = useState(null);
+  const [resumenEnvio, setResumenEnvio] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -103,6 +115,41 @@ export function ControlCourier() {
     modoCompletar ? handleConfirmarPedido(payload) : handleCreateNuevoPedido(payload)
   );
 
+  // Las 4 transiciones que necesitan datos adicionales (fecha, método de
+  // pago, detalle por producto) se resuelven acá, en un modal dedicado por
+  // tipo — nunca con un PATCH directo del dropdown de la bandeja.
+  const handleReprogramarSubmit = async (id, datos) => {
+    const actualizado = await updateEstadoEnvio(id, { estado: "Reprogramado", ...datos });
+    setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
+    setAccionEspecial(null);
+    cargarDatos();
+    setRefrescarKey((k) => k + 1);
+  };
+
+  const handleEntregadoSubmit = async (id, datos) => {
+    const actualizado = await updateEstadoEnvio(id, { estado: "Entregado", ...datos });
+    setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
+    setAccionEspecial(null);
+    cargarDatos();
+    setRefrescarKey((k) => k + 1);
+  };
+
+  const handleDevolucionSubmit = async (id, datos) => {
+    const actualizado = await registrarDevolucion(id, datos);
+    setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
+    setAccionEspecial(null);
+    cargarDatos();
+    setRefrescarKey((k) => k + 1);
+  };
+
+  const handlePerdidaSubmit = async (id, datos) => {
+    const actualizado = await registrarPerdida(id, datos);
+    setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
+    setAccionEspecial(null);
+    cargarDatos();
+    setRefrescarKey((k) => k + 1);
+  };
+
   return (
     <div className="prod-page" style={{ background: '#050505', minHeight: '100vh', color: '#fff', maxWidth: '100%' }}>
       <div className="courier-header">
@@ -146,6 +193,9 @@ export function ControlCourier() {
             <TabButton active={tab === "metodos-pago"} onClick={() => setTab("metodos-pago")} icon={<CreditCard size={16} />}>
               Métodos de Pago
             </TabButton>
+            <TabButton active={tab === "rendicion"} onClick={() => setTab("rendicion")} icon={<HandCoins size={16} />}>
+              Rendición
+            </TabButton>
             <TabButton active={tab === "analitica"} onClick={() => setTab("analitica")} icon={<TrendingUp size={16} />}>
               Analítica
             </TabButton>
@@ -155,17 +205,16 @@ export function ControlCourier() {
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
         {tab === "tablero" ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <SummaryBar envios={enviosDelDia} couriers={couriers} />
-
-            {/* ── Tabla de pedidos con paginación y filtros ── */}
-            <PedidosTable
-              couriers={couriers}
-              onChangeEstado={handleChangeEstado}
-              onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
-              refrescarKey={refrescarKey}
-            />
-          </div>
+          // Bandeja operativa: sin dashboard arriba, ocupa casi toda la
+          // pantalla — los indicadores generales viven en "Analítica" aparte.
+          <PedidosTable
+            couriers={couriers}
+            onChangeEstado={handleChangeEstado}
+            onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
+            onAccionEspecial={(tipo, envio) => setAccionEspecial({ tipo, envio })}
+            onAbrirResumen={(envio) => setResumenEnvio(envio)}
+            refrescarKey={refrescarKey}
+          />
         ) : tab === "couriers" ? (
           <CouriersCrud
             couriers={couriers}
@@ -185,6 +234,8 @@ export function ControlCourier() {
           />
         ) : tab === "metodos-pago" ? (
           <MetodosPagoCrud />
+        ) : tab === "rendicion" ? (
+          <RendicionTab couriers={couriers} />
         ) : (
           <CentroInteligenciaComercial />
         )}
@@ -203,6 +254,37 @@ export function ControlCourier() {
         open={openImprimir}
         onClose={() => setOpenImprimir(false)}
         envios={enviosDelDia}
+      />
+
+      {/* Modales de transición con datos adicionales — ver plan sección 42-47 */}
+      <ReprogramarModal
+        open={accionEspecial?.tipo === "reprogramar"}
+        envio={accionEspecial?.envio}
+        onClose={() => setAccionEspecial(null)}
+        onSubmit={handleReprogramarSubmit}
+      />
+      <MarcarEntregadoModal
+        open={accionEspecial?.tipo === "entregar"}
+        envio={accionEspecial?.envio}
+        onClose={() => setAccionEspecial(null)}
+        onSubmit={handleEntregadoSubmit}
+      />
+      <DevolucionModal
+        open={accionEspecial?.tipo === "devolver"}
+        envio={accionEspecial?.envio}
+        onClose={() => setAccionEspecial(null)}
+        onSubmit={handleDevolucionSubmit}
+      />
+      <PerdidaModal
+        open={accionEspecial?.tipo === "perder"}
+        envio={accionEspecial?.envio}
+        onClose={() => setAccionEspecial(null)}
+        onSubmit={handlePerdidaSubmit}
+      />
+      <ResumenPedidoPanel
+        open={!!resumenEnvio}
+        envio={resumenEnvio}
+        onClose={() => setResumenEnvio(null)}
       />
     </div>
   );

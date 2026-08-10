@@ -7,6 +7,7 @@ const emptyForm = {
   nombre: "",
   comision_porcentaje: 0,
   es_anticipado: false,
+  custodia_cobro: "negocio",
   activo: true,
 }
 
@@ -48,6 +49,7 @@ export function MetodosPagoCrud() {
       nombre: m.nombre,
       comision_porcentaje: m.comision_porcentaje,
       es_anticipado: m.es_anticipado,
+      custodia_cobro: m.custodia_cobro || "negocio",
       activo: m.activo,
     })
     setError("")
@@ -104,6 +106,7 @@ export function MetodosPagoCrud() {
               <th>Método</th>
               <th style={{ textAlign: 'center' }}>Comisión</th>
               <th style={{ textAlign: 'center' }}>Tipo</th>
+              <th style={{ textAlign: 'center' }}>Dinero queda en</th>
               <th style={{ textAlign: 'center' }}>Estado</th>
               <th style={{ textAlign: 'right' }}>Acciones</th>
             </tr>
@@ -125,6 +128,11 @@ export function MetodosPagoCrud() {
                 <td style={{ textAlign: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: '#aaaaaa' }}>
                     {m.es_anticipado ? "Anticipado" : "Al recibir"}
+                  </span>
+                </td>
+                <td style={{ textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: m.custodia_cobro === 'courier' ? '#fb923c' : '#60a5fa' }}>
+                    {m.custodia_cobro === 'courier' ? "Manos del courier" : "Cuenta del negocio"}
                   </span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
@@ -152,14 +160,14 @@ export function MetodosPagoCrud() {
             ))}
             {!loading && metodos.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
                   No hay métodos de pago cargados todavía.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
                   Cargando métodos de pago...
                 </td>
               </tr>
@@ -254,6 +262,24 @@ export function MetodosPagoCrud() {
                   />
                   <span>Es pago anticipado (afecta qué tarifa de courier se busca)</span>
                 </label>
+              </div>
+
+              <div className="form-group full">
+                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                  ¿Dónde queda el dinero cobrado con este método?
+                </label>
+                <select
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  value={form.custodia_cobro}
+                  onChange={(e) => setForm((f) => ({ ...f, custodia_cobro: e.target.value }))}
+                >
+                  <option value="negocio">El dinero ya está en la cuenta del negocio</option>
+                  <option value="courier">El courier recibe el dinero</option>
+                </select>
+                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: '#666' }}>
+                  Define el motor de rendición: si el courier recibe el dinero, tiene que rendirlo; si ya está en la cuenta del negocio, el negocio le debe el costo de entrega.
+                </p>
               </div>
 
               <div className="form-group full">

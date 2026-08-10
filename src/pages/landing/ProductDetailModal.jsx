@@ -9,17 +9,23 @@ import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
  */
 export default function ProductDetailModal({ item, onClose, onAgregar, contacto, onContactar }) {
   const tieneVariantes = item.variantes && item.variantes.length > 0;
+  // Solo las ofertas "normal" se eligen acá — order_bump/upsell se ofrecen
+  // en el carrito (ver CartDrawer.jsx), no en la ficha del producto.
+  const ofertasNormales = (item.ofertas || []).filter(o => o.estrategia === 'normal');
+  const tieneOfertas = ofertasNormales.length > 0;
 
   const [varianteId, setVarianteId] = useState(() => {
     if (!tieneVariantes) return null;
     const conStock = item.variantes.find(v => v.stock > 0);
     return (conStock || item.variantes[0]).id;
   });
+  const [ofertaId, setOfertaId] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [agregado, setAgregado] = useState(false);
 
   const variante = tieneVariantes ? item.variantes.find(v => v.id === varianteId) : null;
+  const oferta = ofertaId ? ofertasNormales.find(o => o.id === ofertaId) : null;
 
   const galeria = useMemo(() => {
     const propia = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
@@ -28,7 +34,7 @@ export default function ProductDetailModal({ item, onClose, onAgregar, contacto,
 
   useEffect(() => { setIndiceImagen(0); }, [varianteId]);
 
-  const precio = variante ? variante.precio_efectivo : item.precio;
+  const precio = oferta ? oferta.precio : (variante ? variante.precio_efectivo : item.precio);
   const stock = variante ? variante.stock : item.stock;
   const stockConocido = stock !== null && stock !== undefined;
   const sinStock = stockConocido && stock <= 0;
@@ -38,14 +44,20 @@ export default function ProductDetailModal({ item, onClose, onAgregar, contacto,
     if (!contacto?.whatsapp) return null;
     const itemParaWhatsapp = {
       ...item,
-      nombre: variante ? `${item.nombre} (${variante.nombre})` : item.nombre,
+      nombre: oferta ? `${item.nombre} — ${oferta.nombre}` : (variante ? `${item.nombre} (${variante.nombre})` : item.nombre),
       precio,
     };
     return armarLinkWhatsapp(contacto, itemParaWhatsapp);
-  }, [contacto, item, variante, precio]);
+  }, [contacto, item, variante, oferta, precio]);
 
   function cambiarVariante(id) {
     setVarianteId(id);
+    setCantidad(1);
+    setAgregado(false);
+  }
+
+  function cambiarOferta(id) {
+    setOfertaId(id);
     setCantidad(1);
     setAgregado(false);
   }
@@ -59,6 +71,7 @@ export default function ProductDetailModal({ item, onClose, onAgregar, contacto,
     onAgregar({
       item,
       variante,
+      oferta,
       cantidad,
       precio,
     });
@@ -163,6 +176,33 @@ export default function ProductDetailModal({ item, onClose, onAgregar, contacto,
                     {v.precio_efectivo && v.precio_efectivo !== item.precio && (
                       <small className="lp-pill-precio">{formatPrecio(v.precio_efectivo)}</small>
                     )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tieneOfertas && (
+            <div className="lp-modal-variantes">
+              <span className="lp-modal-label">Elegí cómo comprarlo:</span>
+              <div className="lp-modal-variante-pills">
+                <button
+                  type="button"
+                  className={`lp-modal-pill ${!ofertaId ? 'active' : ''}`}
+                  onClick={() => cambiarOferta(null)}
+                >
+                  <span>Individual</span>
+                  <small className="lp-pill-precio">{formatPrecio(item.precio)}</small>
+                </button>
+                {ofertasNormales.map(o => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    className={`lp-modal-pill ${o.id === ofertaId ? 'active' : ''}`}
+                    onClick={() => cambiarOferta(o.id)}
+                  >
+                    <span>{o.nombre}</span>
+                    <small className="lp-pill-precio">{formatPrecio(o.precio)}</small>
                   </button>
                 ))}
               </div>

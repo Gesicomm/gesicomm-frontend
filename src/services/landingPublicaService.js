@@ -30,6 +30,16 @@ export async function obtenerLandingPublica(slug) {
   return res.json();
 }
 
+export async function obtenerProductoLanding(slug, productoSlug) {
+  const path = slug
+    ? `/api/l/${encodeURIComponent(slug)}/producto/${encodeURIComponent(productoSlug)}`
+    : `/api/l/producto/${encodeURIComponent(productoSlug)}`;
+  const res = await fetch(path);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('No se pudo cargar el producto.');
+  return res.json();
+}
+
 /**
  * Evento de conversión (Meta CAPI) — best-effort, nunca lanza: un fallo acá
  * no puede interrumpir el flujo real del visitante (abrir WhatsApp). Ver

@@ -358,9 +358,10 @@
 
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+.form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1.25rem; }
 .form-group.full { grid-column: 1 / -1; }
 
-.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; min-width: 0; }
 .form-group label {
   font-size: 0.82rem;
   font-weight: 600;
@@ -370,6 +371,8 @@
 .form-group input,
 .form-group select,
 .form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 8px;

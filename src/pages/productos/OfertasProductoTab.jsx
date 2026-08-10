@@ -1,0 +1,773 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity } from 'lucide-react';
+import { ofertaService } from '../../services/ofertaService';
+import { productService } from '../../services/productService';
+import { comboAdminService } from '../../services/comboAdminService';
+import { verificarSesion } from '../../utils/auth';
+import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
+import CurrencyInput from '../../components/CurrencyInput';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import '../combos/combos.css';
+
+const TIPOS_CONTENIDO = [
+  { value: 'pack', label: 'Pack (cantidad del mismo producto)' },
+  { value: 'combo', label: 'Combo (productos distintos)' },
+];
+
+const ESTRATEGIAS = [
+  { value: 'normal', label: 'Normal — selector en la ficha del producto' },
+  { value: 'order_bump', label: 'Order bump — ofrecida en el carrito' },
+  { value: 'upsell', label: 'Upsell — ofrecida cuando este producto ya está en el carrito' },
+];
+
+function formatMoney(n) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('es-PY') + ' Gs';
+}
+function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
+
+function emptyForm(productoId) {
+  return {
+    codigo: '',
+    nombre: '',
+    tipo_contenido: 'pack',
+    estrategia: 'normal',
+    precio: 0,
+    descripcion: '',
+    activo: true,
+    componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }],
+  };
+}
+
+function MetricCard({ label, value, valueClass = '' }) {
+  return (
+    <div className="combo-metric-card">
+      <span className="combo-metric-label">{label}</span>
+      <span className={`combo-metric-value ${valueClass}`}>{value}</span>
+    </div>
+  );
+}
+
+export default function OfertasProductoTab({ productoId, productoNombre, productoAnclaPrecioBase = 0, productoAnclaPrecioCosto = 0 }) {
+  const [ofertas, setOfertas] = useState([]);
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [comboConfig, setComboConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  const [editando, setEditando] = useState(null);
+  const [descuentoSimulado, setDescuentoSimulado] = useState(0);
+  const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
+  const [form, setForm] = useState(() => emptyForm(productoId));
+  const [guardando, setGuardando] = useState(false);
+  const [ofertaABorrar, setOfertaABorrar] = useState(null);
+
+  useEffect(() => {
+    cargar();
+    productService.buscar({}).then(res => {
+      const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
+      setProductosDisponibles(prods.filter(p => p.activo !== false));
+    }).catch(() => {});
+    // Misma configuración económica (CPA%, envío, confirmación, empaque,
+    // márgenes objetivo) que usa el motor de Combos — el análisis de
+    // sensibilidad de una oferta "combo" reutiliza esos números en vez de
+    // duplicar una config aparte, según lo pedido: unificar todo en un
+    // mismo lugar.
+    comboAdminService.obtenerConfiguracion().then(setComboConfig).catch(() => {});
+    verificarSesion().then(u => setUsuarioActual(u));
+  }, [productoId]);
+
+  async function cargar() {
+    try {
+      setLoading(true);
+      const data = await ofertaService.listarPorProducto(productoId);
+      setOfertas(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError('Error al cargar las ofertas.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openCrear() {
+    setEditando(null);
+    setForm(emptyForm(productoId));
+    setError(null);
+    setOpen(true);
+  }
+
+  function openEditar(oferta) {
+    setEditando(oferta);
+    setForm({
+      codigo: oferta.codigo,
+      nombre: oferta.nombre,
+      tipo_contenido: oferta.tipo_contenido,
+      estrategia: oferta.estrategia,
+      precio: oferta.precio,
+      descripcion: oferta.descripcion || '',
+      activo: oferta.activo,
+      componentes: (oferta.componentes || []).map(c => ({ producto_id: c.producto_id, cantidad: c.cantidad, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
+    });
+    setError(null);
+    setOpen(true);
+  }
+
+  function componentesCombo(f) {
+    const nuevos = [...f.componentes];
+    const idx = nuevos.findIndex(c => Number(c.producto_id) === Number(productoId));
+    if (idx >= 0) nuevos[idx] = { ...nuevos[idx], cantidad: 1 };
+    else nuevos.unshift({ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0 });
+    return nuevos;
+  }
+
+  // "Pack" es una presentación alternativa del propio producto ancla (ej.
+  // "Earplugs x3"), nunca un bundle con otros productos — eso es lo que
+  // distingue un pack de un combo. Al cambiar a "pack" se colapsa la
+  // receta a una sola fila fija sobre el producto ancla (marcada en 2); al volver a
+  // "combo" se pone la cantidad en 1.
+  function handleTipoContenidoChange(nuevoTipo) {
+    setForm(f => {
+      if (nuevoTipo === 'pack') {
+        return { ...f, tipo_contenido: nuevoTipo, componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }] };
+      }
+      if (nuevoTipo === 'combo') {
+        return { ...f, tipo_contenido: nuevoTipo, componentes: componentesCombo(f) };
+      }
+      return { ...f, tipo_contenido: nuevoTipo };
+    });
+  }
+
+  // La estrategia y el tipo de contenido tienen un valor por defecto
+  // acoplado en los dos sentidos — no es una restricción dura (el admin
+  // puede volver a tocar "Tipo de contenido" después), es solo el default
+  // más común en cada caso: order_bump/upsell casi siempre combinan
+  // productos ("Agregá el Antifaz"), normal casi siempre es la
+  // presentación simple del propio producto.
+  //   - normal → no-normal: si estaba en "pack", pasa a "combo" y cantidad a 1.
+  //   - no-normal → normal: si estaba en "combo", vuelve a "pack" y cantidad a 2.
+  function handleEstrategiaChange(nuevaEstrategia) {
+    setForm(f => {
+      if (nuevaEstrategia !== 'normal' && f.tipo_contenido === 'pack') {
+        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'combo', componentes: componentesCombo(f) };
+      }
+      if (nuevaEstrategia === 'normal' && f.tipo_contenido === 'combo') {
+        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'pack', componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }] };
+      }
+      return { ...f, estrategia: nuevaEstrategia };
+    });
+  }
+
+  function addComponente() {
+    setForm(f => ({ ...f, componentes: [...f.componentes, { producto_id: '', cantidad: 1, descuento_porcentaje: 0 }] }));
+  }
+  function updateComponente(idx, campo, valor) {
+    setForm(f => {
+      const nuevos = [...f.componentes];
+      nuevos[idx] = { ...nuevos[idx], [campo]: valor };
+      return { ...f, componentes: nuevos };
+    });
+  }
+  function removeComponente(idx) {
+    setForm(f => ({ ...f, componentes: f.componentes.filter((_, i) => i !== idx) }));
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setError(null);
+    setGuardando(true);
+    try {
+      const payload = {
+        codigo: form.codigo.trim(),
+        nombre: form.nombre.trim(),
+        tipo_contenido: form.tipo_contenido,
+        estrategia: form.estrategia,
+        precio: Number(form.precio) || 0,
+        precio_minimo: form.precio_minimo ? Number(form.precio_minimo) : null,
+        descripcion: form.descripcion.trim() || null,
+        activo: form.activo,
+        componentes: form.componentes
+          .filter(c => c.producto_id)
+          .map(c => ({ producto_id: Number(c.producto_id), cantidad: Number(c.cantidad) || 1, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
+      };
+      if (editando) {
+        await ofertaService.actualizar(editando.id, payload);
+      } else {
+        await ofertaService.crear(productoId, payload);
+      }
+      setOpen(false);
+      await cargar();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al guardar la oferta.');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function confirmarBorrado() {
+    try {
+      await ofertaService.eliminar(ofertaABorrar.id);
+      setOfertaABorrar(null);
+      await cargar();
+    } catch (err) {
+      alert(err.response?.data?.message || 'No se pudo eliminar la oferta.');
+      setOfertaABorrar(null);
+    }
+  }
+
+  function nombreProducto(id) {
+    if (Number(id) === Number(productoId)) return productoNombre || 'este producto';
+    return productosDisponibles.find(p => p.id === Number(id))?.nombre || `#${id}`;
+  }
+
+  function infoProducto(id) {
+    if (Number(id) === Number(productoId)) {
+      return { precio_base: productoAnclaPrecioBase, precio_costo: productoAnclaPrecioCosto };
+    }
+    const p = productosDisponibles.find(x => x.id === Number(id));
+    return { precio_base: Number(p?.precio_base) || 0, precio_costo: Number(p?.precio_costo) || 0 };
+  }
+
+  // Análisis de sensibilidad — mismo motor que Combos (comboPricingLocal),
+  // solo tiene sentido para tipo_contenido="combo": el producto ancla hace
+  // de "principal" y el resto de los componentes son sus "upsells", cada
+  // uno con su propio % de descuento. Es puramente informativo — nunca
+  // recalcula ni sobrescribe form.precio salvo que el admin toque
+  // "Aplicar precio sugerido".
+  const resultadoSensibilidad = useMemo(() => {
+    if (form.tipo_contenido !== 'combo' || !comboConfig) return null;
+    const otros = form.componentes.filter(c => c.producto_id && Number(c.producto_id) !== Number(productoId));
+    if (otros.length === 0) return null;
+
+    const principalInfo = infoProducto(productoId);
+    const input = {
+      principal: {
+        id: productoId,
+        name: productoNombre,
+        cost: principalInfo.precio_costo,
+        salePrice: principalInfo.precio_base,
+      },
+      upsells: otros.map(c => {
+        const info = infoProducto(c.producto_id);
+        const cantidad = Number(c.cantidad) || 1;
+        return {
+          id: c.producto_id,
+          name: nombreProducto(c.producto_id),
+          cost: info.precio_costo * cantidad,
+          salePrice: info.precio_base * cantidad,
+          discountPercentage: Number(c.descuento_porcentaje) || 0,
+        };
+      }),
+      costs: {
+        cpaPercentage: Number(comboConfig.cpa_porcentaje),
+        shipping: Number(comboConfig.costo_envio),
+        confirmation: Number(comboConfig.costo_confirmacion),
+        packaging: Number(comboConfig.costo_empaque),
+      },
+      targetMargins: comboConfig.margenes_objetivo || [15, 30, 45],
+      minimumMargin: Number(comboConfig.margen_minimo),
+      excellentThreshold: Number(comboConfig.umbral_excelente),
+      discountScenarios: comboConfig.escenarios_descuento || [0, 5, 10, 15, 20, 25, 30, 35],
+    };
+    return calcularLocal(input);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.tipo_contenido, form.componentes, comboConfig, productoId, productoNombre, productoAnclaPrecioBase, productoAnclaPrecioCosto, productosDisponibles]);
+
+  const margenMinimoDecimal = comboConfig?.margen_minimo !== undefined ? Number(comboConfig.margen_minimo) / 100 : 0.10;
+
+  return (
+    <div>
+      <div className="form-section-title">
+        <Tag size={14} /> Ofertas comerciales
+        <button type="button" className="btn-primary" style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={openCrear}>
+          <Plus size={14} /> Nueva oferta
+        </button>
+      </div>
+      <p className="field-hint">
+        El precio individual ya está en la pestaña Precios. Acá se administran presentaciones adicionales:
+        packs por cantidad, combos con otros productos, order bumps y upsells.
+      </p>
+
+      {loading ? (
+        <div className="combo-empty"><Layers size={24} /><p>Cargando ofertas...</p></div>
+      ) : ofertas.length === 0 ? (
+        <div className="combo-empty">
+          <Layers size={24} opacity={0.3} />
+          <p>Todavía no hay ofertas adicionales para este producto.</p>
+        </div>
+      ) : (
+        <div className="combo-list-grid" style={{ marginTop: '1rem' }}>
+          {ofertas.map(oferta => (
+            <div key={oferta.id} className={`combo-list-card ${!oferta.activo ? 'inactivo' : ''}`}>
+              <div className="combo-list-card-header">
+                <div>
+                  <div className="combo-list-card-name">{oferta.nombre}</div>
+                  <div className="combo-list-card-principal" style={{ fontFamily: 'monospace' }}>{oferta.codigo}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.35rem' }}>
+                  <span className="combo-badge activo" style={{ textTransform: 'capitalize' }}>{oferta.tipo_contenido}</span>
+                  {oferta.estrategia !== 'normal' && (
+                    <span className="combo-badge borrador" style={{ textTransform: 'capitalize' }}>{oferta.estrategia.replace('_', ' ')}</span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                {(oferta.componentes || []).map(c => `${c.cantidad}× ${nombreProducto(c.producto_id)}`).join(' + ')}
+              </div>
+
+              <div className="combo-list-card-metrics">
+                <div className="combo-list-card-metric">
+                  <span className="combo-list-card-metric-label">Precio</span>
+                  <span className="combo-list-card-metric-value">{formatMoney(oferta.precio)}</span>
+                </div>
+                <div className="combo-list-card-metric">
+                  <span className="combo-list-card-metric-label">Costo</span>
+                  <span className="combo-list-card-metric-value">{formatMoney(oferta.costo)}</span>
+                </div>
+                <div className="combo-list-card-metric">
+                  <span className="combo-list-card-metric-label">Margen</span>
+                  <span className="combo-list-card-metric-value" style={{ color: oferta.margen_pct >= 30 ? '#10b981' : oferta.margen_pct > 0 ? '#f59e0b' : '#ef4444' }}>
+                    {oferta.margen_pct}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="combo-list-card-actions">
+                <button type="button" className="btn-secondary" style={{ flex: 1, justifyContent: 'center', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={() => openEditar(oferta)}>
+                  <Edit size={13} /> Editar
+                </button>
+                <button type="button" className="btn-deactivate" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={() => setOfertaABorrar(oferta)}>
+                  <Trash2 size={13} /> {oferta.activo ? 'Desactivar' : 'Eliminada'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open && createPortal(
+        <div className="modal-overlay" onClick={() => setOpen(false)}>
+          <form
+            onSubmit={submit}
+            className="modal-content"
+            style={{ background: '#0e0e11', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '1rem', maxWidth: '640px', color: '#fff', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ padding: '1.75rem 1.75rem 1rem', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div className="modal-header" style={{ margin: 0 }}>
+                <h3 style={{ margin: 0 }}>{editando ? 'Editar oferta' : 'Nueva oferta'}</h3>
+                <button type="button" className="btn-icon" onClick={() => setOpen(false)}><X size={18} /></button>
+              </div>
+            </div>
+            
+            <div style={{ padding: '1rem 1.75rem 1.75rem', overflowY: 'auto' }}>
+
+            <h3 style={{ marginTop: 0 }}>{editando ? 'Editar oferta' : 'Nueva oferta'}</h3>
+
+            {error && (
+              <div className="form-error-banner" style={{ marginBottom: '1rem' }}>
+                <AlertTriangle size={15} /><span>{error}</span>
+              </div>
+            )}
+
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label>Nombre</label>
+                <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Pack x3" required />
+              </div>
+              <div className="form-group">
+                <label>Código interno <span className="hint">(estable, no depende del nombre)</span></label>
+                <input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value.toUpperCase() }))} placeholder="Ej. EAR-X3" required />
+              </div>
+              <div className="form-group">
+                <label>Tipo de contenido</label>
+                <select value={form.tipo_contenido} onChange={e => handleTipoContenidoChange(e.target.value)}>
+                  {TIPOS_CONTENIDO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Estrategia de venta</label>
+                <select value={form.estrategia} onChange={e => handleEstrategiaChange(e.target.value)}>
+                  {ESTRATEGIAS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Precio</label>
+                <CurrencyInput value={form.precio} onChange={val => setForm(f => ({ ...f, precio: val }))} />
+              </div>
+              {usuarioActual?.rol === 'administrador' && (
+                <div className="form-group">
+                  <label>Precio mínimo <span className="hint">(Límite de rentabilidad)</span></label>
+                  <CurrencyInput value={form.precio_minimo} onChange={val => setForm(f => ({ ...f, precio_minimo: val }))} />
+                </div>
+              )}
+              <div className="form-group full">
+                <label>Descripción (opcional)</label>
+                <input value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Copy para mostrar en el checkout" />
+              </div>
+            </div>
+
+            <div className="form-section-title" style={{ marginTop: '1.25rem' }}>
+              Componentes (receta de stock)
+              {form.tipo_contenido === 'combo' && (
+                <button type="button" className="btn-ghost" style={{ marginLeft: 'auto' }} onClick={addComponente}>
+                  <Plus size={14} /> Agregar producto
+                </button>
+              )}
+            </div>
+            {form.tipo_contenido === 'pack' ? (
+              <div className="form-group" style={{ flexDirection: 'row', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '0.75rem' }}>
+                <div style={{ flex: 1, color: '#ccc', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+                  <Layers size={15} style={{ marginRight: '8px', opacity: 0.7 }} />
+                  {productoNombre} 
+                  <span style={{ opacity: 0.5, fontWeight: 'normal', fontSize: '0.8rem', marginLeft: '6px' }}>(producto ancla, fijo)</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Unidades</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.componentes[0]?.cantidad ?? 1}
+                    onChange={e => setForm(f => ({ ...f, componentes: [{ producto_id: productoId, cantidad: e.target.value }] }))}
+                    style={{ width: '70px', padding: '0.45rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
+                    required
+                  />
+                </div>
+              </div>
+            ) : (
+              form.componentes.map((c, i) => {
+                const esAncla = c.producto_id && Number(c.producto_id) === Number(productoId);
+                return (
+                <div key={i} className="form-group" style={{ flexDirection: 'row', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                  <select
+                    value={c.producto_id}
+                    onChange={e => updateComponente(i, 'producto_id', e.target.value)}
+                    style={{ flex: 2 }}
+                    required
+                  >
+                    <option value="">-- Producto --</option>
+                    <option value={productoId}>{productoNombre} (este producto)</option>
+                    {productosDisponibles.filter(p => p.id !== Number(productoId)).map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min="1"
+                    value={c.cantidad}
+                    onChange={e => updateComponente(i, 'cantidad', e.target.value)}
+                    style={{ width: '70px' }}
+                    required
+                  />
+                  {esAncla ? (
+                    <span style={{ width: '90px', textAlign: 'center', color: '#475569', fontSize: '0.75rem' }}>Sin descuento</span>
+                  ) : (
+                    <div className="combo-discount-input" style={{ width: '90px' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={c.descuento_porcentaje ?? 0}
+                        onChange={e => updateComponente(i, 'descuento_porcentaje', Math.max(0, Math.min(100, parseFloat(e.target.value) || 0)))}
+                        title="Descuento sobre el precio de este producto — solo para el análisis de sensibilidad, no cambia el precio de la oferta"
+                      />
+                      <span>%</span>
+                    </div>
+                  )}
+                  <button type="button" className="btn-icon danger" onClick={() => removeComponente(i)}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                );
+              })
+            )}
+            <p className="field-hint">
+              {form.tipo_contenido === 'pack'
+                ? 'Un "pack" es una presentación alternativa de este mismo producto (ej. "x3") — no puede incluir otros productos. Para combinar varios productos, elegí "Combo".'
+                : 'Un "combo" agrupa varios productos — una fila por cada producto incluido. El % de descuento de cada uno alimenta el análisis de abajo, no cambia el Precio de la oferta.'}
+            </p>
+
+            {form.tipo_contenido === 'combo' && (
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                <div className="form-section-title">
+                  <Activity size={14} /> Rentabilidad y descuentos
+                </div>
+                {!comboConfig ? (
+                  <p className="field-hint">Cargando configuración económica...</p>
+                ) : !resultadoSensibilidad ? (
+                  <p className="field-hint">Agregá al menos un producto además de "{productoNombre}" para calcular el margen del combo.</p>
+                ) : (() => {
+                  const sBase = resultadoSensibilidad.combo;
+                  const targetMargin = margenMinimoDecimal;
+                  const marginBase = form.precio > 0 ? (Number(form.precio) - sBase.totalCost) / Number(form.precio) : 0;
+                  const utilityBase = form.precio > 0 ? Number(form.precio) - sBase.totalCost : 0;
+                  
+                  // Helper function to get margin health
+                  const getHealth = (m) => {
+                    if (m <= 0) return { label: '✕ Pérdida', class: 'negative', color: '#ef4444' };
+                    if (m < 0.15) return { label: '⚠ Margen crítico', class: 'negative', color: '#ef4444' };
+                    if (m < targetMargin) return { label: '⚠ Margen reducido', class: 'warning', color: '#f59e0b' };
+                    if (m >= 0.5) return { label: '✓ Excelente margen', class: 'positive', color: '#10b981' };
+                    return { label: '✓ Margen saludable', class: 'positive', color: '#10b981' };
+                  };
+
+                  const healthBase = getHealth(marginBase);
+
+                  // Calculate simulated
+                  const simulatedPrice = Math.round(sBase.originalPrice * (1 - (descuentoSimulado / 100)));
+                  const simulatedUtility = simulatedPrice - sBase.totalCost;
+                  const simulatedMargin = simulatedPrice > 0 ? simulatedUtility / simulatedPrice : 0;
+                  const healthSimulated = getHealth(simulatedMargin);
+
+                  // Calculate break-even discount (where margin hits target)
+                  const minPriceTarget = sBase.totalCost / (1 - targetMargin);
+                  const maxDiscountTarget = sBase.originalPrice > 0 ? Math.max(0, 1 - (minPriceTarget / sBase.originalPrice)) * 100 : 0;
+
+                  return (
+                    <div style={{ marginTop: '0.5rem' }}>
+                      <p className="field-hint" style={{ marginBottom: '1rem' }}>
+                        Base de simulación: Los descuentos comerciales se calculan sobre el precio base del catálogo que es de <strong>{formatMoney(sBase.originalPrice)}</strong>. El precio actual de tu oferta es de {formatMoney(form.precio)}.
+                      </p>
+
+                      {/* 1. Resumen ejecutivo (3 tarjetas) */}
+                      <div className="combo-metrics-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                        <MetricCard label="Precio de Oferta" value={formatMoney(form.precio || 0)} />
+                        <MetricCard label="Utilidad" value={formatMoney(utilityBase)} valueClass={healthBase.class} />
+                        <MetricCard label="Margen" value={fmtPct(marginBase)} valueClass={healthBase.class} />
+                      </div>
+
+                      <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: healthBase.color, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {healthBase.label}.
+                        {maxDiscountTarget > 0 && ` Podés aplicar hasta ${Math.floor(maxDiscountTarget)}% de descuento manteniendo un margen superior al ${(targetMargin*100).toFixed(0)}%.`}
+                      </div>
+
+                      {/* 2. Simulador (Slider) */}
+                      <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>SIMULAR DESCUENTO SOBRE EL PRECIO BASE</div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                          <input 
+                            type="number"
+                            min="0" max="100"
+                            value={descuentoSimulado}
+                            onChange={(e) => setDescuentoSimulado(Number(e.target.value))}
+                            style={{ width: '80px', padding: '0.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)' }}
+                          />
+                          <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--primary)' }}>%</span>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Precio final</div>
+                            <div style={{ fontWeight: 'bold' }}>{formatMoney(simulatedPrice)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Utilidad</div>
+                            <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{formatMoney(simulatedUtility)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Margen</div>
+                            <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{fmtPct(simulatedMargin)}</div>
+                          </div>
+                        </div>
+
+                        {descuentoSimulado > 0 && (
+                          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                            <button type="button" className="btn-primary" onClick={() => {
+                              setForm(f => ({ ...f, precio: simulatedPrice }));
+                              setDescuentoSimulado(0);
+                            }}>
+                              Aplicar este precio
+                            </button>
+                          </div>
+                        )}
+
+                        {/* 4. Mini Gráfico CSS */}
+                        <div style={{ marginTop: '2rem', position: 'relative', height: '100px', borderBottom: '1px solid rgba(255,255,255,0.1)', borderLeft: '1px solid rgba(255,255,255,0.1)', margin: '1rem 1rem 2rem 2rem' }}>
+                           <div style={{ position: 'absolute', top: '-20px', left: '-20px', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>Utilidad</div>
+                           <div style={{ position: 'absolute', bottom: '-20px', right: '-10px', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>Desc.</div>
+                           {[0, 5, 10, 15, 20, 25, 30, 35].map(d => {
+                             const p = Number(form.precio) * (1 - (d / 100));
+                             const u = p - sBase.totalCost;
+                             const m = p > 0 ? u / p : 0;
+                             
+                             // Calculate Y position relative to max utility
+                             const maxU = Number(form.precio) - sBase.totalCost;
+                             const heightPct = maxU > 0 ? Math.max(0, (u / maxU) * 100) : 0;
+                             const leftPct = (d / 35) * 100;
+
+                             // Color logic based on margin health
+                             const dotColor = m <= 0 ? '#ef4444' : m < targetMargin ? '#f59e0b' : '#10b981';
+
+                             return (
+                               <div key={d}>
+                                 {/* Dots */}
+                                 <div 
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: `${heightPct}%`,
+                                      left: `${leftPct}%`,
+                                      width: d === descuentoSimulado ? '12px' : '8px',
+                                      height: d === descuentoSimulado ? '12px' : '8px',
+                                      borderRadius: '50%',
+                                      backgroundColor: dotColor,
+                                      transform: 'translate(-50%, 50%)',
+                                      border: d === descuentoSimulado ? '2px solid #fff' : 'none',
+                                      transition: 'all 0.2s',
+                                      zIndex: d === descuentoSimulado ? 10 : 1
+                                    }}
+                                    title={`${d}%: ${formatMoney(u)}`}
+                                 />
+                                 {/* X-axis labels */}
+                                 <div style={{ position: 'absolute', bottom: '-20px', left: `${leftPct}%`, transform: 'translateX(-50%)', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>
+                                   {d}
+                                 </div>
+                               </div>
+                             );
+                           })}
+                           {/* Max Discount Line */}
+                           {maxDiscountTarget > 0 && maxDiscountTarget <= 35 && (
+                             <div style={{
+                               position: 'absolute',
+                               bottom: 0,
+                               left: `${(maxDiscountTarget / 35) * 100}%`,
+                               height: '100%',
+                               width: '1px',
+                               borderLeft: '1px dashed #ef4444',
+                               zIndex: 0
+                             }}>
+                               <div style={{ position: 'absolute', top: '-15px', transform: 'translateX(-50%)', fontSize: '0.6rem', color: '#ef4444', whiteSpace: 'nowrap' }}>
+                                 Máx rec.
+                               </div>
+                             </div>
+                           )}
+                        </div>
+                      </div>
+
+                      {/* 5. Tabla Detalles Toggleable */}
+                      <div style={{ marginTop: '1.5rem' }}>
+                        <button 
+                          type="button" 
+                          onClick={() => setMostrarDetalleEscenarios(!mostrarDetalleEscenarios)}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                        >
+                          {mostrarDetalleEscenarios ? '▴ Ocultar' : '▾ Ver escenarios detallados'}
+                        </button>
+                        
+                        {mostrarDetalleEscenarios && (
+                          <div style={{ overflowX: 'auto', marginTop: '1rem', background: 'rgba(0,0,0,0.1)', padding: '0.5rem', borderRadius: '4px' }}>
+                            <table className="combo-sensitivity-table">
+                              <thead>
+                                <tr>
+                                  <th style={{ textAlign: 'left' }}>Descuento</th>
+                                  <th>Precio</th>
+                                  <th>Utilidad</th>
+                                  <th>Margen</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[0, 5, 10, 15, 20, 25, 30, 35].map(d => {
+                                  const p = Math.round(Number(form.precio) * (1 - (d / 100)));
+                                  const u = p - sBase.totalCost;
+                                  const m = p > 0 ? u / p : 0;
+                                  const h = getHealth(m);
+                                  return (
+                                    <tr key={d}>
+                                      <td>{d}%</td>
+                                      <td className="text-right">{formatMoney(p)}</td>
+                                      <td className="text-right" style={{ color: h.color }}>{formatMoney(u)}</td>
+                                      <td className="text-right" style={{ color: h.color }}>{fmtPct(m)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 7. Precios mínimos por margen */}
+                      <div className="form-section-title" style={{ marginTop: '2rem', fontSize: '0.82rem' }}>PRECIO MÍNIMO SEGÚN MARGEN</div>
+                      
+                      {/* 9. Alerta Precio Mínimo */}
+                      {resultadoSensibilidad.recommendations.filter(r => r.targetMargin === (targetMargin * 100)).map(rec => (
+                        <div key="min-alert" style={{ marginBottom: '1rem', padding: '0.75rem', borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '0 4px 4px 0' }}>
+                           <strong style={{ color: '#ef4444', display: 'block', fontSize: '0.75rem' }}>⚠ PRECIO MÍNIMO: {formatMoney(rec.suggestedPrice)}</strong>
+                           <span style={{ fontSize: '0.8rem', color: 'var(--fg)' }}>Por debajo de este precio la oferta genera menos del {(targetMargin*100).toFixed(0)}% de margen.</span>
+                        </div>
+                      ))}
+
+                      <table className="combo-sensitivity-table" style={{ width: '100%', marginTop: '0.5rem' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left' }}>Margen objetivo</th>
+                            <th className="text-right">Precio mínimo</th>
+                            <th className="text-right">Diferencia actual</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {resultadoSensibilidad.recommendations.map(rec => {
+                            if (!rec.suggestedPrice) return null;
+                            const currentPrice = Number(form.precio) || 0;
+                            const diff = currentPrice > 0 ? (currentPrice - rec.suggestedPrice) / currentPrice : 0;
+                            const diffStr = diff > 0 ? `+${fmtPct(diff)}` : fmtPct(diff);
+                            const diffColor = diff >= 0 ? '#10b981' : '#ef4444';
+                            return (
+                              <tr key={rec.targetMargin}>
+                                <td>{rec.targetMargin}%</td>
+                                <td className="text-right">{formatMoney(rec.suggestedPrice)}</td>
+                                <td className="text-right" style={{ color: diffColor }}>{diffStr}</td>
+                                <td className="text-right">
+                                  <button 
+                                    type="button" 
+                                    className="btn-ghost" 
+                                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
+                                    onClick={() => setForm(f => ({ ...f, precio: Math.round(rec.suggestedPrice) }))}
+                                  >
+                                    Aplicar
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            <label className="check-label" style={{ marginTop: '0.75rem' }}>
+              <input type="checkbox" checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} />
+              Oferta activa
+            </label>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
+              <button type="submit" className="btn-primary" disabled={guardando}>
+                {guardando ? 'Guardando...' : (editando ? 'Guardar cambios' : 'Crear oferta')}
+              </button>
+            </div>
+            </div>
+          </form>
+
+        </div>,
+        document.body
+      )}
+
+      <ConfirmDialog
+        open={!!ofertaABorrar}
+        title={`¿Desactivar "${ofertaABorrar?.nombre}"?`}
+        description="La oferta deja de ofrecerse, pero los pedidos ya vendidos con ella no se modifican."
+        confirmLabel="Desactivar"
+        danger
+        onConfirm={confirmarBorrado}
+        onCancel={() => setOfertaABorrar(null)}
+      />
+    </div>
+  );
+}

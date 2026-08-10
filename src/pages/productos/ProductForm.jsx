@@ -50,6 +50,8 @@ export default function ProductForm() {
   const [imagenesNuevas, setImagenesNuevas] = useState([]); // Para imágenes en cola (nuevo prod)
   const [subiendoImg, setSubiendoImg] = useState(false);
   const [tieneVariantes, setTieneVariantes] = useState(false);
+  const [descuentoSimulado, setDescuentoSimulado] = useState(0);
+  const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
   const [config, setConfig] = useState(null);
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm({
@@ -669,84 +671,147 @@ export default function ProductForm() {
             </div>
           </div>
 
-          {config && rentabilidad && (
-            <div className="combo-section" style={{ marginTop: '2rem', background: 'transparent', padding: 0, border: 'none' }}>
-              <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad Individual Estimada</h2>
-              <p className="combo-section-desc">
-                Cálculo basado en la configuración económica global de combos y el descuento actual aplicado.
-                {' '}<Link to="/configuracion-economica">Editar CPA, envío, confirmación y empaque</Link>.
-              </p>
+          {config && rentabilidad && (() => {
+            const sBase = rentabilidad;
+            const targetMargin = Number(config.margen_minimo) / 100;
+            const marginBase = sBase.margin;
+            const utilityBase = sBase.profit;
+            
+            // Helper function to get margin health
+            const getHealth = (m) => {
+              if (m <= 0) return { label: '✕ Pérdida', class: 'negative', color: '#ef4444' };
+              if (m < 0.15) return { label: '⚠ Margen crítico', class: 'negative', color: '#ef4444' };
+              if (m < targetMargin) return { label: '⚠ Margen reducido', class: 'warning', color: '#f59e0b' };
+              if (m >= 0.5) return { label: '✓ Excelente margen', class: 'positive', color: '#10b981' };
+              return { label: '✓ Margen saludable', class: 'positive', color: '#10b981' };
+            };
 
-              <div className="combo-metrics-grid">
-                <div className="combo-metric-card">
-                  <span className="combo-metric-label">Venta (con desc)</span>
-                  <span className="combo-metric-value">{fmtGs(rentabilidad.finalPrice)}</span>
+            const healthBase = getHealth(marginBase);
+
+            // Calculate simulated
+            const simulatedPrice = Math.round(precioBaseVal * (1 - (descuentoSimulado / 100)));
+            const simulatedUtility = simulatedPrice - sBase.totalCosts;
+            const simulatedMargin = simulatedPrice > 0 ? simulatedUtility / simulatedPrice : 0;
+            const healthSimulated = getHealth(simulatedMargin);
+
+            // Calculate break-even discount (where margin hits target)
+            const minPriceTarget = sBase.totalCosts / (1 - targetMargin);
+            const maxDiscountTarget = precioBaseVal > 0 ? Math.max(0, 1 - (minPriceTarget / precioBaseVal)) * 100 : 0;
+
+            return (
+              <div className="combo-section" style={{ marginTop: '2rem', background: 'transparent', padding: 0, border: 'none' }}>
+                <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad y descuentos</h2>
+                <p className="combo-section-desc">
+                  Base de simulación: Los descuentos comerciales se calculan sobre el precio base de <strong>{formatMoney(precioBaseVal)}</strong>. El precio actual del producto con tu descuento ({descuentoPctVal}%) es {formatMoney(sBase.finalPrice)}.
+                  {' '}<Link to="/configuracion-economica">Editar costos operativos</Link>.
+                </p>
+
+                {/* 1. Resumen ejecutivo (3 tarjetas) */}
+                <div className="combo-metrics-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                  <div className="combo-metric-card">
+                    <span className="combo-metric-label">Precio Actual</span>
+                    <span className="combo-metric-value">{fmtGs(sBase.finalPrice)}</span>
+                  </div>
+                  <div className={`combo-metric-card profit-${healthBase.class}`}>
+                    <span className="combo-metric-label">Utilidad</span>
+                    <span className="combo-metric-value">{fmtGs(utilityBase)}</span>
+                  </div>
+                  <div className={`combo-metric-card profit-${healthBase.class}`}>
+                    <span className="combo-metric-label">Margen</span>
+                    <span className="combo-metric-value">{fmtPct(marginBase)}</span>
+                  </div>
                 </div>
-                <div className="combo-metric-card">
-                  <span className="combo-metric-label">Costo Prod.</span>
-                  <span className="combo-metric-value">{fmtGs(precioCostoVal)}</span>
+
+                <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: healthBase.color, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {healthBase.label}.
+                  {maxDiscountTarget > 0 && ` Podés aplicar hasta ${Math.floor(maxDiscountTarget)}% de descuento manteniendo un margen superior al ${(targetMargin*100).toFixed(0)}%.`}
                 </div>
-                <div className="combo-metric-card">
-                  <span className="combo-metric-label">CPA ({config.cpa_porcentaje}%)</span>
-                  <span className="combo-metric-value">{fmtGs(rentabilidad.cpaMax)}</span>
+
+                {/* 2. Simulador (Number Input) */}
+                <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>SIMULAR DESCUENTO SOBRE PRECIO BASE</div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <input 
+                      type="number"
+                      min="0" max="100"
+                      value={descuentoSimulado}
+                      onChange={(e) => setDescuentoSimulado(Number(e.target.value))}
+                      style={{ width: '80px', padding: '0.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    />
+                    <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--primary)' }}>%</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Precio final</div>
+                      <div style={{ fontWeight: 'bold' }}>{formatMoney(simulatedPrice)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Utilidad</div>
+                      <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{formatMoney(simulatedUtility)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Margen</div>
+                      <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{fmtPct(simulatedMargin)}</div>
+                    </div>
+                  </div>
+
+                  {descuentoSimulado > 0 && descuentoSimulado !== descuentoPctVal && (
+                    <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                      <button type="button" className="btn-primary" onClick={() => {
+                        setValue('descuento_porcentaje', descuentoSimulado);
+                      }}>
+                        Aplicar este descuento
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="combo-metric-card">
-                  <span className="combo-metric-label">Operativos</span>
-                  <span className="combo-metric-value">
-                    {fmtGs((Number(config.costo_envio)||0) + (Number(config.costo_confirmacion)||0) + (Number(config.costo_empaque)||0))}
-                  </span>
-                </div>
-                <div className="combo-metric-card" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  <span className="combo-metric-label">Costo Total Estimado</span>
-                  <span className="combo-metric-value">
-                    {fmtGs(rentabilidad.totalCosts)}
-                  </span>
-                </div>
-                <div className={`combo-metric-card ${rentabilidad.profit > 0 ? 'profit-positive' : 'profit-negative'}`}>
-                  <span className="combo-metric-label">Utilidad</span>
-                  <span className="combo-metric-value">
-                    {fmtGs(rentabilidad.profit)}
-                  </span>
-                </div>
-                <div className={`combo-metric-card ${rentabilidad.margin >= Number(config.margen_minimo) / 100 ? 'profit-positive' : (rentabilidad.margin > 0 ? 'profit-warning' : 'profit-negative')}`}>
-                  <span className="combo-metric-label">Margen</span>
-                  <span className="combo-metric-value">
-                    {(rentabilidad.margin * 100).toFixed(2)}%
-                  </span>
+
+                {/* 3. Tabla Detalles Toggleable */}
+                <div style={{ marginTop: '1.5rem' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setMostrarDetalleEscenarios(!mostrarDetalleEscenarios)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
+                  >
+                    {mostrarDetalleEscenarios ? '▴ Ocultar' : '▾ Ver escenarios detallados'}
+                  </button>
+                  
+                  {mostrarDetalleEscenarios && (
+                    <div style={{ overflowX: 'auto', marginTop: '1rem', background: 'rgba(0,0,0,0.1)', padding: '0.5rem', borderRadius: '4px' }}>
+                      <table className="combo-sensitivity-table">
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left' }}>Descuento</th>
+                            <th className="text-right">Precio Final</th>
+                            <th className="text-right">Utilidad Unitaria</th>
+                            <th className="text-right">Margen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rentabilidad.simulador.map(sim => {
+                            const h = getHealth(sim.margin);
+                            return (
+                              <tr key={sim.discountPercentage}>
+                                <td>
+                                  {sim.discountPercentage}% 
+                                  {sim.discountPercentage === descuentoPctVal ? <span className="badge-primary" style={{marginLeft: '8px', fontSize: '10px'}}>ACTUAL</span> : null}
+                                </td>
+                                <td className="text-right">{fmtGs(sim.finalPrice)}</td>
+                                <td className="text-right" style={{ color: h.color }}>{fmtGs(sim.profit)}</td>
+                                <td className="text-right" style={{ color: h.color }}>{fmtPct(sim.margin)}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="combo-table-container" style={{ marginTop: '1.5rem' }}>
-                <table className="combo-table">
-                  <thead>
-                    <tr>
-                      <th>Escenario Descuento</th>
-                      <th className="text-right">Precio Final</th>
-                      <th className="text-right">Utilidad Unitaria</th>
-                      <th className="text-right">Margen</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rentabilidad.simulador.map(sim => (
-                      <tr key={sim.discountPercentage}>
-                        <td>
-                          {sim.discountPercentage}% 
-                          {sim.discountPercentage === descuentoPctVal ? <span className="badge-primary" style={{marginLeft: '8px', fontSize: '10px'}}>ACTUAL</span> : null}
-                        </td>
-                        <td className="text-right">{fmtGs(sim.finalPrice)}</td>
-                        <td className={`text-right ${sim.profit > 0 ? 'text-success' : 'text-danger'}`}>
-                          {fmtGs(sim.profit)}
-                        </td>
-                        <td className={`text-right ${sim.margin >= Number(config.margen_minimo) / 100 ? 'text-success' : (sim.margin > 0 ? 'text-warning' : 'text-danger')}`}>
-                          {(sim.margin * 100).toFixed(2)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+            );
+          })}
         </div>
 
         {/* ══════════════════════════════════════════════════════
