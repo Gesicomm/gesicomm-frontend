@@ -1214,7 +1214,7 @@
   border: 1px solid var(--vit-border);
   border-radius: 12px;
   background: #0a0a0a;
-  max-height: calc(100vh - 13rem);
+  height: calc(100vh - 13rem);
   overflow: auto;
   overscroll-behavior: contain;
 }

@@ -11,6 +11,7 @@ import LandingFeatured from './LandingFeatured';
 import LandingTestimonials from './LandingTestimonials';
 import LandingFaq from './LandingFaq';
 import LandingDropdown from './LandingDropdown';
+import PreviewFrame from './PreviewFrame';
 import './landingPublica.css';
 
 function precioItem(item) {
@@ -133,12 +134,13 @@ export default function LandingPreview({
       </div>
 
       <div className={`lb-preview-viewport ${dispositivo}`}>
-        <div
-          className={`lp-page lb-live-preview-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
-          style={{ ...calcularEstiloLanding({ tema, diseno }), display: 'flex', flexDirection: 'column' }}
-        >
-          {visibleSeccion('header') && (
-            <div style={{ order: orden('header') }}>
+        <PreviewFrame>
+          <div
+            className={`lp-page lb-live-preview-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
+            style={{ ...calcularEstiloLanding({ tema, diseno }), display: 'flex', flexDirection: 'column' }}
+          >
+            {visibleSeccion('header') && (
+              <div style={{ order: orden('header') }}>
               <LandingHeader
                 nombre={contenido('header').logo_texto || titulo || 'Tu tienda'}
                 mostrarBuscador={!!filtros.buscador}
@@ -366,8 +368,9 @@ export default function LandingPreview({
             </div>
           </footer>}
 
-          <div className="lb-preview-inert-cover" aria-hidden="true" />
-        </div>
+            <div className="lb-preview-inert-cover" aria-hidden="true" />
+          </div>
+        </PreviewFrame>
       </div>
 
       {!contacto?.whatsapp && (
