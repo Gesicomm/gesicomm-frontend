@@ -11,7 +11,9 @@ import { getMediaUrl } from '../../services/api';
  * en LandingPublica.jsx con un useMemo, no es un campo propio. Sin foto
  * disponible cae a un ícono, igual que las tarjetas de producto sin imagen.
  */
-export default function LandingCategoryStrip({ categorias, categoriaImagen, onSeleccionar }) {
+export default function LandingCategoryStrip({ seccion, categorias, categoriaImagen, onSeleccionar }) {
+  const { template = 'horizontal_scroll', contenido = {} } = seccion || {};
+  const titulo = contenido.titulo || '{titulo}';
   const reducirMovimiento = useReducedMotion();
 
   return (
@@ -20,9 +22,9 @@ export default function LandingCategoryStrip({ categorias, categoriaImagen, onSe
         className="mb-6 text-2xl font-extrabold text-[var(--l-text)]"
         style={{ letterSpacing: '-0.02em' }}
       >
-        Categorías
+        {titulo}
       </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className={template === 'grid' ? "lp-grid" : "flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"}>
         {categorias.map((cat, i) => {
           const imagen = categoriaImagen.get(cat);
           return (

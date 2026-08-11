@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard,
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History,
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
-import { getEnviosPaginados, getConteoPorEstado, getMetodosPago } from "../../services/courierApi";
+import { getEnviosPaginados, getConteoPorEstado, getResumenEntregados, getMetodosPago } from "../../services/courierApi";
 import { productService } from "../../services/productService";
 
 const ORIGENES = ["TODOS", "MANUAL", "WHATSAPP", "LANDING", "WEB", "META_ADS"];
@@ -175,6 +175,15 @@ function formatFechaYHora(fecha, hora, createdAt) {
   return { fecha: fechaStr, hora: horaStr };
 }
 
+function ResumenItem({ label, value, color }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+      <span style={{ color: "#888" }}>{label}:</span>
+      <strong style={{ color: color || "#fff" }}>{value}</strong>
+    </span>
+  );
+}
+
 const accionBtnStyle = {
   display: "inline-flex",
   alignItems: "center",
@@ -223,12 +232,13 @@ function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen }) {
  * Gestión de Pedidos, sección 38-42). Reemplaza el viejo MultiEstadoSelect:
  * la pestaña activa ES el filtro de estado, no hace falta un selector aparte.
  */
-export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, onAccionEspecial, onAbrirResumen, refrescarKey = 0 }) {
+export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, onAccionEspecial, onAbrirResumen, onAbrirHistorial, refrescarKey = 0 }) {
   const [estadoActivo, setEstadoActivo] = useState("Pendiente");
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
   const [conteos, setConteos] = useState({});
+  const [resumenEntregados, setResumenEntregados] = useState(null);
   const [loading, setLoading] = useState(true);
   const [masFilters, setMasFilters] = useState(false);
   const [productos, setProductos] = useState([]);
@@ -278,15 +288,32 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
     }
   }, [construirPayloadBase]);
 
+  // Resumen financiero minimalista, solo dentro de la pestaña Entregados —
+  // ver plan sección 22. No es un dashboard general, no se calcula en las
+  // demás pestañas.
+  const cargarResumenEntregados = useCallback(async (f) => {
+    try {
+      const res = await getResumenEntregados(construirPayloadBase(f));
+      setResumenEntregados(res);
+    } catch (err) {
+      console.error("Error cargando resumen de entregados:", err);
+    }
+  }, [construirPayloadBase]);
+
   const timerRef = useRef(null);
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       cargar(filtros, page, estadoActivo);
       cargarConteos(filtros);
+      if (estadoActivo === "Entregado") {
+        cargarResumenEntregados(filtros);
+      } else {
+        setResumenEntregados(null);
+      }
     }, 300);
     return () => clearTimeout(timerRef.current);
-  }, [filtros, page, estadoActivo, refrescarKey, cargar, cargarConteos]);
+  }, [filtros, page, estadoActivo, refrescarKey, cargar, cargarConteos, cargarResumenEntregados]);
 
   const setFiltro = (key, val) => {
     setFiltros((prev) => ({ ...prev, [key]: val }));
@@ -364,6 +391,49 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
           );
         })}
       </div>
+
+      {/* ── Resumen financiero minimalista — solo en Entregados (plan sección 22) ── */}
+      {estadoActivo === "Entregado" && resumenEntregados && (
+        <div
+          style={{
+            marginTop: "0.75rem",
+            padding: "0.7rem 1rem",
+            borderRadius: "0.6rem",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "0.4rem 1.5rem",
+            fontSize: "0.8rem",
+          }}
+        >
+          <ResumenItem label="Entregado" value={`${resumenEntregados.entregado.cantidad} · ${formatGs(resumenEntregados.entregado.monto_total)}`} />
+          <ResumenItem label="En poder del courier" value={formatGs(resumenEntregados.dinero_courier)} />
+          <ResumenItem label="Cobrado por la tienda" value={formatGs(resumenEntregados.cobrado_directo)} />
+          <ResumenItem label="Costo de courier" value={formatGs(resumenEntregados.costo_total_courier)} />
+          <ResumenItem
+            label="Saldo de liquidación"
+            value={
+              resumenEntregados.saldo_liquidacion > 0
+                ? `Courier debe tienda: ${formatGs(resumenEntregados.saldo_liquidacion)}`
+                : resumenEntregados.saldo_liquidacion < 0
+                ? `Tienda debe courier: ${formatGs(Math.abs(resumenEntregados.saldo_liquidacion))}`
+                : "Equilibrado"
+            }
+            color={resumenEntregados.saldo_liquidacion > 0 ? "#34d399" : resumenEntregados.saldo_liquidacion < 0 ? "#f87171" : "#9ca3af"}
+          />
+          <ResumenItem label="Pendientes de rendición" value={String(resumenEntregados.pendientes_rendicion)} />
+
+          {resumenEntregados.desglose_metodo_pago.length > 0 && (
+            <div style={{ width: "100%", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "0.3rem", paddingTop: "0.4rem", display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem", color: "#888" }}>
+              {resumenEntregados.desglose_metodo_pago.map((d) => (
+                <span key={d.metodo_pago}>{d.metodo_pago}: <strong style={{ color: "#ccc" }}>{formatGs(d.monto)}</strong></span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Toolbar de filtros principales ── */}
       <div className="pt-toolbar" style={{ marginTop: "0.75rem" }}>
@@ -630,7 +700,19 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                       />
                     </td>
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
-                      <AccionPrincipal envio={e} onAbrirDetalle={onAbrirDetalle} onAbrirResumen={onAbrirResumen} />
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                        <AccionPrincipal envio={e} onAbrirDetalle={onAbrirDetalle} onAbrirResumen={onAbrirResumen} />
+                        {onAbrirHistorial && (
+                          <button
+                            type="button"
+                            title="Ver historial del pedido"
+                            style={{ ...accionBtnStyle, padding: "4px 6px" }}
+                            onClick={() => onAbrirHistorial(e)}
+                          >
+                            <History size={13} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

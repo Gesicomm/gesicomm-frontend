@@ -129,26 +129,19 @@ export function renderInput(campo, valor, onChange, onUpload) {
 
 export default function SchemaInspector({ seccion, schema, onUpdate, onUploadImagen }) {
   const handleChange = (key, value) => {
-    // Si la key es un color, guardarla en config, si es texto/imagen en contenido
-    const isConfig = ['color_fondo', 'color_texto'].includes(key);
-    
-    if (isConfig) {
-      onUpdate(seccion.id, { config: { ...seccion.config, [key]: value } });
-    } else {
-      onUpdate(seccion.id, { contenido: { ...seccion.contenido, [key]: value } });
-    }
+    // SchemaInspector ahora maneja exclusivamente `contenido`.
+    // Las opciones de `config` (como colorScheme) se manejan en la pestaa Diseo en InspectorSeccion.jsx
+    onUpdate(seccion.id, { contenido: { ...seccion.contenido, [key]: value } });
   };
 
-  if (schema.settingsSchema.length === 0) {
-    return <p className="text-sm text-[var(--vit-muted-2)]">Este bloque no tiene opciones configurables.</p>;
+  if (!schema.contentSchema || schema.contentSchema.length === 0) {
+    return <p className="text-sm text-[var(--vit-muted-2)]">Este bloque no tiene opciones de contenido configurables.</p>;
   }
 
   return (
     <div className="flex flex-col gap-5">
-      {schema.settingsSchema.map(campo => {
-        const valorActual = ['color_fondo', 'color_texto'].includes(campo.key)
-          ? seccion.config?.[campo.key]
-          : seccion.contenido?.[campo.key];
+      {schema.contentSchema.map(campo => {
+        const valorActual = seccion.contenido?.[campo.key];
         
         return (
           <label key={campo.key} className="flex flex-col gap-1.5">

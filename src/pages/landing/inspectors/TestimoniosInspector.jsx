@@ -4,7 +4,7 @@ import { renderInput } from './SchemaInspector';
 import StarRating from '../StarRating';
 import { getMediaUrl } from '../../../services/api';
 
-export default function TestimoniosInspector({ seccion, schema, onUpdate }) {
+export default function TestimoniosInspector({ seccion, schema, onUpdate, onUploadImagen }) {
   const items = seccion.contenido?.items || [];
   const [subiendo, setSubiendo] = useState(null);
   
@@ -43,33 +43,19 @@ export default function TestimoniosInspector({ seccion, schema, onUpdate }) {
     handleUpdateContenido('items', nuevos);
   };
 
-  // Simulación de subida de foto, en el editor real esto debería llamar a un helper
-  // que use fetch/axios y luego devuelva la URL.
   const handleSubirFoto = async (idx, file) => {
     if (!file) return;
     setSubiendo(idx);
     
     try {
-      const formData = new FormData();
-      formData.append('imagen', file);
-      
-      const token = localStorage.getItem('token');
-      // Subir archivo a endpoint genérico de media
-      const res = await fetch('/api/public/v1/media/upload', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-      
-      const data = await res.json();
-      if (res.ok && data.url) {
-        actualizarItem(idx, 'foto', data.url);
-      } else {
-        alert('Error al subir la imagen');
+      if (!onUploadImagen) throw new Error("No hay método de subida");
+      const url = await onUploadImagen(file);
+      if (url) {
+        actualizarItem(idx, 'foto', url);
       }
     } catch (e) {
       console.error(e);
-      alert('Error de conexión');
+      alert(e.message || 'Error al subir la imagen');
     } finally {
       setSubiendo(null);
     }
@@ -160,11 +146,11 @@ export default function TestimoniosInspector({ seccion, schema, onUpdate }) {
       </div>
 
       {/* Diseño General */}
-      {schema.settingsSchema.length > 0 && (
+      {schema.contentSchema?.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">Diseño</h4>
           <div className="flex flex-col gap-4">
-             {schema.settingsSchema.map(campo => (
+             {schema.contentSchema.map(campo => (
                 <label key={campo.key} className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
                   {renderInput(

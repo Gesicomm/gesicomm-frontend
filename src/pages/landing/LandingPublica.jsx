@@ -18,6 +18,8 @@ import LandingHero from './LandingHero';
 import LandingBenefits from './LandingBenefits';
 import LandingCategoryStrip from './LandingCategoryStrip';
 import LandingFeatured from './LandingFeatured';
+import LandingProductos from './LandingProductos';
+import LandingComoFunciona from './LandingComoFunciona';
 import LandingTestimonials from './LandingTestimonials';
 import LandingFaq from './LandingFaq';
 import './landingPublica.css';
@@ -556,11 +558,12 @@ export default function LandingPublica() {
         </div>
       )}
 
-      {visibleSeccion('beneficios') && <div style={{ order: ordenLayout('beneficios') }}><LandingBenefits contenido={contenidoSeccion('beneficios')} /></div>}
+      {visibleSeccion('beneficios') && <div style={{ order: ordenLayout('beneficios') }}><LandingBenefits seccion={getSeccion('beneficios')} /></div>}
 
       {visibleSeccion('categorias') && categorias.length > 0 && (
         <div style={{ order: ordenLayout('categorias') }}>
           <LandingCategoryStrip
+            seccion={getSeccion('categorias')}
             categorias={categorias}
             categoriaImagen={categoriaImagen}
             onSeleccionar={seleccionarCategoria}
@@ -571,6 +574,7 @@ export default function LandingPublica() {
       {visibleSeccion('destacados') && itemsDestacados.length > 0 && (
         <div style={{ order: ordenLayout('destacados') }}>
           <LandingFeatured
+            seccion={getSeccion('destacados')}
             items={itemsDestacados}
             contacto={contacto}
             wishlist={wishlist}
@@ -608,137 +612,88 @@ export default function LandingPublica() {
         </div>
       )}
 
-      {visibleSeccion('productos') && <main className="lp-shell" style={{ order: ordenLayout('productos') }}>
-        <header className="lp-header">
-          <span className="lp-header-eyebrow">{conteo}</span>
-          <h2 className="lp-header-titulo">Todos los productos</h2>
-        </header>
+      {visibleSeccion('productos') && (() => {
+        const seccionProd = getSeccion('productos');
+        const cont = seccionProd?.contenido || {};
+        const template = seccionProd?.template || 'grid_4';
+        const seleccionados = cont.productos || [];
 
-        {hayFiltrosVisibles && (
-          <div className="lp-filterbar">
-            <div className="lp-filters">
-              {filtros.buscador && (
-                <div className="lp-search">
-                  <Search size={14} />
-                  <input id="lp-buscador-input" placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+        // Match by numeric id OR by content_id string (handles both contexts)
+        const matchItem = (p, i) => `${p.tipo}-${p.id}` === i.content_id || String(p.id) === String(i.id);
+        
+        let itemsParaMostrar = itemsFiltrados;
+        if (seleccionados.length > 0) {
+          itemsParaMostrar = (data?.items || []).filter(i => seleccionados.find(p => matchItem(p, i)));
+          itemsParaMostrar.sort((a, b) => {
+            const idxA = seleccionados.findIndex(p => matchItem(p, a));
+            const idxB = seleccionados.findIndex(p => matchItem(p, b));
+            return idxA - idxB;
+          });
+        }
+
+        const mostrarFiltros = seleccionados.length === 0 && (!template || template === 'grid_4' || template === 'grid_3');
+
+        return (
+          <main className="lp-shell" style={{ order: ordenLayout('productos') }}>
+            <header className="lp-header">
+              <span className="lp-header-eyebrow">{seleccionados.length > 0 ? itemsParaMostrar.length : conteo} producto{itemsParaMostrar.length !== 1 ? 's' : ''}</span>
+              <h2 className="lp-header-titulo">{cont.titulo || 'Todos los productos'}</h2>
+            </header>
+
+            {mostrarFiltros && hayFiltrosVisibles && (
+              <div className="lp-filterbar">
+                <div className="lp-filters">
+                  {filtros.buscador && (
+                    <div className="lp-search">
+                      <Search size={14} />
+                      <input id="lp-buscador-input" placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+                    </div>
+                  )}
+                  {filtros.categoria && categorias.length > 0 && (
+                    <LandingDropdown value={filtroCategoria} onChange={setFiltroCategoria} options={[{ value: '', label: 'Todas las categorías' }, ...categorias.map(c => ({ value: c, label: c }))]} />
+                  )}
+                  {filtros.marca && marcas.length > 0 && (
+                    <LandingDropdown value={filtroMarca} onChange={setFiltroMarca} options={[{ value: '', label: 'Todas las marcas' }, ...marcas.map(m => ({ value: m, label: m }))]} />
+                  )}
+                  {filtros.etiqueta && etiquetas.length > 0 && (
+                    <LandingDropdown value={filtroEtiqueta} onChange={setFiltroEtiqueta} options={[{ value: '', label: 'Todas las etiquetas' }, ...etiquetas.map(e => ({ value: e, label: e }))]} />
+                  )}
+                  {filtros.orden_precio && (
+                    <LandingDropdown value={orden} onChange={setOrden} options={[
+                      { value: '', label: 'Orden por defecto' },
+                      { value: 'asc', label: 'Precio: menor a mayor' },
+                      { value: 'desc', label: 'Precio: mayor a menor' },
+                    ]} />
+                  )}
                 </div>
-              )}
-              {filtros.categoria && categorias.length > 0 && (
-                <LandingDropdown
-                  value={filtroCategoria}
-                  onChange={setFiltroCategoria}
-                  options={[{ value: '', label: 'Todas las categorías' }, ...categorias.map(c => ({ value: c, label: c }))]}
-                />
-              )}
-              {filtros.marca && marcas.length > 0 && (
-                <LandingDropdown
-                  value={filtroMarca}
-                  onChange={setFiltroMarca}
-                  options={[{ value: '', label: 'Todas las marcas' }, ...marcas.map(m => ({ value: m, label: m }))]}
-                />
-              )}
-              {filtros.etiqueta && etiquetas.length > 0 && (
-                <LandingDropdown
-                  value={filtroEtiqueta}
-                  onChange={setFiltroEtiqueta}
-                  options={[{ value: '', label: 'Todas las etiquetas' }, ...etiquetas.map(e => ({ value: e, label: e }))]}
-                />
-              )}
-              {filtros.orden_precio && (
-                <LandingDropdown
-                  value={orden}
-                  onChange={setOrden}
-                  options={[
-                    { value: '', label: 'Orden por defecto' },
-                    { value: 'asc', label: 'Precio: menor a mayor' },
-                    { value: 'desc', label: 'Precio: mayor a menor' },
-                  ]}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
-        {itemsFiltrados.length === 0 ? (
-          <div className="lp-empty">
-            <p>Ningún producto coincide con lo que buscaste.</p>
-            {hayFiltroActivo && (
-              <button type="button" className="lp-empty-reset" onClick={limpiarFiltros}>
-                Ver todo el catálogo
-              </button>
+              </div>
             )}
-          </div>
-        ) : (
-          <div className="lp-grid" id="lp-productos">
-            {itemsFiltrados.map(item => {
-              const linkWhatsapp = armarLinkWhatsapp(contacto, item);
-              return (
-                // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-                <div key={item.content_id} className="lp-card" onClick={() => navigate(slug ? `/l/${slug}/p/${item.content_id}` : `/p/${item.content_id}`)} role="button" tabIndex={0}>
-                  <div className="lp-card-media">
-                    {item.imagen ? (
-                      <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
-                    ) : (
-                      <div className="lp-card-media-placeholder">
-                        {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
-                        <span>Sin imagen</span>
-                      </div>
-                    )}
-                    <div className="lp-card-badges">
-                      {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
-                      {esNuevo(item) && <span className="lp-card-badge nuevo">Nuevo</span>}
-                    </div>
-                    {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
-                    <button
-                      type="button"
-                      className={`lp-card-wishlist ${wishlist.has(item.content_id) ? 'activo' : ''}`}
-                      onClick={(e) => toggleWishlist(e, item.content_id)}
-                      title={wishlist.has(item.content_id) ? 'Quitar de favoritos' : 'Agregar a favoritos'}
-                      aria-pressed={wishlist.has(item.content_id)}
-                    >
-                      <Heart size={14} fill={wishlist.has(item.content_id) ? 'currentColor' : 'none'} />
-                    </button>
 
-                  </div>
-                  <div className="lp-card-body">
-                    {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
-                    <h3>{item.nombre}</h3>
-                    <span className="lp-card-price">{formatPrecio(item.precio)}</span>
-
-                    <div className="lp-card-actions">
-                      <button
-                        type="button"
-                        className={`lp-card-btn-add ${agregadoRapido === item.content_id ? 'agregado' : ''}`}
-                        onClick={(e) => handleAgregarRapido(e, item)}
-                        title="Agregar al carrito"
-                      >
-                        {agregadoRapido === item.content_id ? (
-                          <><Check size={14} /> Agregado</>
-                        ) : (
-                          <><Plus size={14} /> Agregar</>
-                        )}
-                      </button>
-                      {linkWhatsapp && (
-                        <a
-                          className="lp-card-contact-btn"
-                          href={linkWhatsapp}
-                          target="_blank"
-                          rel="noreferrer"
-                          title="Consultar por WhatsApp"
-                          onClick={(e) => { e.stopPropagation(); contactar(item); }}
-                        >
-                          <MessageCircle size={15} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>}
-
+            {itemsParaMostrar.length === 0 ? (
+              <div className="lp-empty">
+                <p>Ningún producto coincide con lo que buscaste.</p>
+                {hayFiltroActivo && (
+                  <button type="button" className="lp-empty-reset" onClick={limpiarFiltros}>
+                    Ver todo el catálogo
+                  </button>
+                )}
+              </div>
+            ) : (
+              <LandingProductos
+                seccion={seccionProd}
+                items={itemsParaMostrar}
+                contacto={contacto}
+                wishlist={wishlist}
+                toggleWishlist={toggleWishlist}
+                agregadoRapido={agregadoRapido}
+                handleAgregarRapido={handleAgregarRapido}
+                slug={slug}
+                navigate={navigate}
+              />
+            )}
+          </main>
+        );
+      })()}
       {visibleSeccion('texto') && (
         <section className="lp-custom-section" style={{ order: ordenLayout('texto') }}>
           {contenidoSeccion('texto').titulo && <h2>{contenidoSeccion('texto').titulo}</h2>}
@@ -747,17 +702,9 @@ export default function LandingPublica() {
       )}
 
       {visibleSeccion('como_funciona') && (
-        <section className="lp-custom-section" style={{ order: ordenLayout('como_funciona') }}>
-          <h2>{contenidoSeccion('como_funciona').titulo || 'Como funciona'}</h2>
-          <div className="lp-steps-grid">
-            {(contenidoSeccion('como_funciona').pasos || []).map((paso, idx) => (
-              <article key={`${paso}-${idx}`} className="lp-step-card">
-                <span>{idx + 1}</span>
-                <p>{paso}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        <div style={{ order: ordenLayout('como_funciona') }}>
+          <LandingComoFunciona seccion={getSeccion('como_funciona')} />
+        </div>
       )}
 
       {visibleSeccion('redes_sociales') && (

@@ -62,6 +62,24 @@ export const getConteoPorEstado = async (filtros = {}) => {
   return data;
 };
 
+/** Resumen financiero minimalista de la pestaña Entregados (ver plan sección 22). */
+export const getResumenEntregados = async (filtros = {}) => {
+  const { data } = await api.post('/envios/resumen-entregados', filtros);
+  return data;
+};
+
+/** Dashboard general del módulo Pedidos: trabajo pendiente, resultado operativo, desempeño courier. */
+export const getDashboardGeneralPedidos = async (filtros = {}) => {
+  const { data } = await api.post('/envios/dashboard-general', filtros);
+  return data;
+};
+
+/** Historial simple de movimientos de un pedido (ver plan sección 24). */
+export const getHistorialPedido = async (envioId) => {
+  const { data } = await api.get(`/envios/${envioId}/historial`);
+  return data;
+};
+
 /** Devolución por producto/cantidad. `payload`: { items: [{envio_item_componente_id, cantidad, condicion}], marcar_estado } */
 export const registrarDevolucion = async (envioId, payload) => {
   const { data } = await api.post(`/envios/${envioId}/devolucion`, payload);

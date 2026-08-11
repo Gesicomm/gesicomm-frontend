@@ -44,7 +44,8 @@ export const DEFAULT_BENEFITS = [
   { icono: 'UserCheck', titulo: 'Atención personalizada', texto: 'Hablás directo con quien vende — no con un bot ni un call center.' },
 ];
 
-export default function LandingBenefits({ contenido }) {
+export default function LandingBenefits({ seccion }) {
+  const { contenido = {}, template = '4_cols' } = seccion || {};
   const reducirMovimiento = useReducedMotion();
   const beneficios = contenido?.beneficios?.length > 0 ? contenido.beneficios : DEFAULT_BENEFITS;
 
@@ -53,7 +54,7 @@ export default function LandingBenefits({ contenido }) {
       className="border-y py-14"
       style={{ borderColor: 'var(--l-card-border)', background: 'var(--l-surface)' }}
     >
-      <div className="mx-auto grid max-w-[var(--l-max)] grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-10 px-[var(--l-gutter)] lg:grid-cols-4">
+      <div className={`mx-auto grid max-w-[var(--l-max)] px-[var(--l-gutter)] gap-x-6 gap-y-10 ${template === '3_cols' ? 'grid-cols-1 sm:grid-cols-3' : (template === '2_cols' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4')}`}>
         {beneficios.map((b, i) => {
           const Icon = BENEFICIOS_ICONS[b.icono] || CheckCircle;
           return (

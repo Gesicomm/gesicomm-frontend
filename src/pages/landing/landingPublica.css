@@ -1862,3 +1862,37 @@
     font-size: 1.75rem;
   }
 }
+
+
+/* Color Schemes para secciones individuales */
+[data-color-scheme="light"] {
+  background-color: var(--l-surface, #ffffff);
+  color: var(--l-text, #111827);
+  --l-card-border: rgba(0, 0, 0, 0.1);
+  --l-card-bg: rgba(0, 0, 0, 0.03);
+}
+
+[data-color-scheme="dark"] {
+  background-color: #111827;
+  color: #f9fafb;
+  --l-text: #f9fafb;
+  --l-text-muted: #9ca3af;
+  --l-surface: #1f2937;
+  --l-card-border: rgba(255, 255, 255, 0.1);
+  --l-card-bg: rgba(255, 255, 255, 0.05);
+}
+
+[data-color-scheme="primary"] {
+  background-color: var(--l-primary);
+  color: var(--l-on-primary);
+  --l-text: var(--l-on-primary);
+  --l-text-muted: color-mix(in srgb, var(--l-on-primary) 70%, transparent);
+  --l-surface: color-mix(in srgb, var(--l-on-primary) 10%, transparent);
+  --l-card-border: color-mix(in srgb, var(--l-on-primary) 20%, transparent);
+  --l-card-bg: color-mix(in srgb, var(--l-on-primary) 5%, transparent);
+}
+
+.lp-page.claro [data-color-scheme="dark"] {
+  background-color: #1f2937;
+}
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } } .animate-marquee { animation: marquee 25s linear infinite; display: flex; width: max-content; }

@@ -1,37 +1,37 @@
 import React, { useState } from 'react';
 import { Search, ShoppingCart, Menu, X } from 'lucide-react';
 
-/**
- * Header sticky con blur — se agrega ARRIBA de todo lo que ya existía
- * (banner/filtros/grilla), no lo reemplaza. Los links de navegación son
- * anclas a secciones de esta misma página (no hay rutas separadas para
- * "Productos"/"Categorías": es una sola landing scrolleable), y solo se
- * listan las secciones que de verdad están presentes — no tiene sentido
- * un link a "Opiniones" en una tienda que todavía no cargó ninguna.
- *
- * Colores en sintaxis arbitraria de Tailwind apuntando a los --l-* que ya
- * calcula landingDiseno.js — nunca las clases semánticas institucionales
- * (bg-primary, text-fg, etc.), que son la marca propia de Gesicomm y
- * romperían el tema elegido por cada comercio.
- */
 export default function LandingHeader({
   nombre,
   mostrarBuscador,
-  mostrarCategorias,
-  mostrarTestimonios,
-  mostrarFaq,
+  seccionesActivas = [],
   cantidadCarrito,
   onAbrirCarrito,
 }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
 
-  const enlaces = [
-    mostrarCategorias && { href: '#lp-categorias', label: 'Categorías' },
-    { href: '#lp-productos', label: 'Productos' },
-    mostrarTestimonios && { href: '#lp-opiniones', label: 'Opiniones' },
-    mostrarFaq && { href: '#lp-faq', label: 'Preguntas' },
-    { href: '#lp-contacto', label: 'Contacto' },
-  ].filter(Boolean);
+  // Mapeo dinmico de secciones a enlaces
+  const enlacesMap = {
+    'categorias': { href: '#lp-categorias', label: 'Categoras' },
+    'productos': { href: '#lp-productos', label: 'Productos' },
+    'testimonios': { href: '#lp-opiniones', label: 'Opiniones' },
+    'faq': { href: '#lp-faq', label: 'Preguntas' },
+  };
+
+  // Generar enlaces en base a las secciones activas (evita duplicados y mantiene un orden lgico base)
+  const enlaces = [];
+  const added = new Set();
+  
+  // Forzar orden estndar si estn presentes
+  ['categorias', 'productos', 'testimonios', 'faq'].forEach(tipo => {
+    if (seccionesActivas.includes(tipo) && enlacesMap[tipo]) {
+      enlaces.push(enlacesMap[tipo]);
+      added.add(tipo);
+    }
+  });
+
+  // Contacto siempre al final si existe un footer o redes sociales, o simplemente forzarlo
+  enlaces.push({ href: '#lp-contacto', label: 'Contacto' });
 
   function irA(href) {
     setMenuAbierto(false);

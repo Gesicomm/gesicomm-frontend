@@ -1,21 +1,21 @@
 import React, { useId, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, CheckSquare, ChevronRight, Circle } from 'lucide-react';
 
-/**
- * Acordeón de preguntas frecuentes — reimplementa el mismo patrón accesible
- * de components/public/Accordion.jsx (botón dentro de <h3>, aria-expanded/
- * aria-controls/aria-labelledby, animación grid-template-rows 0fr→1fr,
- * `inert` en el panel cerrado) pero SIN reusar ese componente: usa las
- * clases institucionales (bg-primary, text-fg, border-border) que son la
- * marca fija de Gesicomm, no el tema por comercio (--l-*) de esta landing.
- * Tocar el componente compartido para parametrizar el color no vale el
- * riesgo sobre una pieza que ya está en producción en el sitio institucional.
- */
-function FaqItem({ pregunta, respuesta, abiertoInicial }) {
+
+function FaqItem({ pregunta, respuesta, abiertoInicial, icono }) {
   const [abierto, setAbierto] = useState(abiertoInicial);
   const id = useId();
-  const idBoton = `${id}-boton`;
-  const idPanel = `${id}-panel`;
+  const idBoton = `\${id}-boton`;
+  const idPanel = `\${id}-panel`;
+
+  const renderIcon = () => {
+    if (icono === 'none' || !icono) return null;
+    const props = { size: 18, className: "shrink-0 mr-3 mt-0.5", style: { color: 'var(--l-primary)' } };
+    if (icono === 'check') return <CheckSquare {...props} />;
+    if (icono === 'chevron') return <ChevronRight {...props} />;
+    if (icono === 'dot') return <Circle fill="currentColor" {...props} size={10} className="shrink-0 mr-4 mt-1.5" />;
+    return null;
+  };
 
   return (
     <div className="border-b last:border-b-0" style={{ borderColor: 'var(--l-card-border)' }}>
@@ -26,14 +26,17 @@ function FaqItem({ pregunta, respuesta, abiertoInicial }) {
           aria-expanded={abierto}
           aria-controls={idPanel}
           onClick={() => setAbierto((v) => !v)}
-          className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors"
+          className="flex w-full items-start justify-between gap-4 py-5 text-left transition-colors group"
           style={{ color: 'var(--l-text)' }}
         >
-          <span className="text-base font-semibold" style={{ letterSpacing: '-0.01em' }}>{pregunta}</span>
+          <div className="flex items-start">
+            {renderIcon()}
+            <span className="text-base font-semibold group-hover:text-[var(--l-primary)] transition-colors" style={{ letterSpacing: '-0.01em' }}>{pregunta}</span>
+          </div>
           <ChevronDown
             size={18}
             aria-hidden="true"
-            className={`flex-shrink-0 transition-transform duration-300 ${abierto ? 'rotate-180' : ''}`}
+            className={`flex-shrink-0 transition-transform duration-300 mt-1 \${abierto ? 'rotate-180' : ''}`}
             style={{ color: 'var(--l-text-muted)' }}
           />
         </button>
@@ -54,16 +57,25 @@ function FaqItem({ pregunta, respuesta, abiertoInicial }) {
   );
 }
 
-export default function LandingFaq({ items }) {
+export default function LandingFaq({ seccion }) {
+  const { config = {}, contenido = {} } = seccion || {};
+  const items = contenido.items || [];
+  const icono = contenido.icono || 'none';
+  const titulo = contenido.titulo || 'Preguntas frecuentes';
+
+  if (items.length === 0) return null;
+
   return (
     <section id="lp-faq" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-16">
-      <h2 className="mb-6 text-2xl font-extrabold text-[var(--l-text)]" style={{ letterSpacing: '-0.02em' }}>
-        Preguntas frecuentes
-      </h2>
-      <div className="mx-auto max-w-2xl">
-        {items.map((item, i) => (
-          <FaqItem key={`${i}-${item.pregunta}`} pregunta={item.pregunta} respuesta={item.respuesta} abiertoInicial={i === 0} />
-        ))}
+      <div className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)]">
+        <h2 className="mb-8 text-2xl font-extrabold text-[var(--l-text)] text-center md:text-left" style={{ letterSpacing: '-0.02em' }}>
+          {titulo}
+        </h2>
+        <div className={`mx-auto ${seccion.template === 'grid' ? 'grid md:grid-cols-2 gap-x-12 gap-y-4' : 'max-w-2xl'}`}>
+          {items.map((item, i) => (
+            <FaqItem key={`\${i}-\${item.pregunta}`} pregunta={item.pregunta} respuesta={item.respuesta} abiertoInicial={seccion.template === 'grid' ? true : i === 0} icono={icono} />
+          ))}
+        </div>
       </div>
     </section>
   );

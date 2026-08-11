@@ -28,6 +28,21 @@ export default function LandingTestimonials({ testimonios }) {
 
   const t = testimonios[indice];
 
+  if (!t) {
+    return (
+      <section id="lp-opiniones" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-16">
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <h2 className="text-2xl font-extrabold text-[var(--l-text)]" style={{ letterSpacing: '-0.02em' }}>
+            Opiniones
+          </h2>
+        </div>
+        <div className="mx-auto max-w-2xl rounded-[var(--l-radius)] border p-8 text-center sm:p-10" style={{ background: 'var(--l-card-bg)', borderColor: 'var(--l-card-border)' }}>
+          <p className="text-sm text-[var(--l-text)] opacity-60">Agregá opiniones para que aparezcan acá.</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="lp-opiniones" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-16">
       <div className="mb-8 flex items-end justify-between gap-4">

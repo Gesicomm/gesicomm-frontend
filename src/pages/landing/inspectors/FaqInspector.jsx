@@ -93,11 +93,11 @@ export default function FaqInspector({ seccion, schema, onUpdate }) {
       </div>
 
       {/* Diseño General */}
-      {schema.settingsSchema.length > 0 && (
+      {schema.contentSchema?.length > 0 && (
         <div>
           <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">Diseño</h4>
           <div className="flex flex-col gap-4">
-             {schema.settingsSchema.map(campo => (
+             {schema.contentSchema.map(campo => (
                 <label key={campo.key} className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
                   {renderInput(

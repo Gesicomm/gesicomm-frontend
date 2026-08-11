@@ -7,7 +7,15 @@ import LandingHeader from './LandingHeader';
 import LandingHero from './LandingHero';
 import LandingBenefits from './LandingBenefits';
 import LandingCategoryStrip from './LandingCategoryStrip';
+import LandingScrollingText from './LandingScrollingText';
+import LandingBeforeAfter from './LandingBeforeAfter';
+import LandingCta from './LandingCta';
+import LandingLogoList from './LandingLogoList';
+import LandingSocial from './LandingSocial';
 import LandingFeatured from './LandingFeatured';
+import LandingProductos from './LandingProductos';
+import LandingComoFunciona from './LandingComoFunciona';
+import LandingImageText from './LandingImageText';
 import LandingTestimonials from './LandingTestimonials';
 import LandingFaq from './LandingFaq';
 import LandingDropdown from './LandingDropdown';
@@ -151,7 +159,11 @@ export default function LandingPreview({
       case 'announcement_bar':
         return (
           <section className="lp-custom-announcement" style={{ backgroundColor: config.color_fondo, color: config.color_texto }}>
-            {cont.texto || 'Mensaje de anuncio'}
+            {cont.mensajes && cont.mensajes.length > 0 ? (
+               <LandingScrollingText seccion={seccion} />
+            ) : (
+               cont.texto || 'Mensaje de anuncio'
+            )}
           </section>
         );
       case 'hero':
@@ -168,14 +180,15 @@ export default function LandingPreview({
           />
         );
       case 'beneficios':
-        return <LandingBenefits contenido={seccion.contenido || {}} />;
+        return <LandingBenefits seccion={seccion} />;
       case 'categorias':
-        return categorias.length > 0 ? (
-          <LandingCategoryStrip categorias={categorias} categoriaImagen={categoriaImagen} onSeleccionar={noop} />
-        ) : null;
+        return (
+          <LandingCategoryStrip seccion={seccion} categorias={categorias} categoriaImagen={categoriaImagen} onSeleccionar={noop} />
+        );
       case 'destacados':
-        return itemsDestacados.length > 0 ? (
+        return (
           <LandingFeatured
+            seccion={seccion}
             items={itemsDestacados}
             contacto={contacto}
             wishlist={new Set()}
@@ -185,7 +198,7 @@ export default function LandingPreview({
             onAbrir={noop}
             onContactar={noop}
           />
-        ) : null;
+        );
       case 'banner':
         return (
           <div
@@ -203,14 +216,28 @@ export default function LandingPreview({
             </div>
           </div>
         );
-      case 'productos':
+      case 'productos': {
+        let itemsParaMostrar = itemsPreview;
+        if (cont.productos && cont.productos.length > 0) {
+            // Compare against both numeric id AND content_id (string) to handle
+            // both the editor context (catalog items with .id) and the public view
+            const matchItem = (p, i) => String(p.id) === String(i.id) || `${p.tipo}-${p.id}` === i.content_id;
+            itemsParaMostrar = itemsPreview.filter(i => cont.productos.find(p => matchItem(p, i)));
+            itemsParaMostrar.sort((a, b) => {
+                const idxA = cont.productos.findIndex(p => matchItem(p, a));
+                const idxB = cont.productos.findIndex(p => matchItem(p, b));
+                return idxA - idxB;
+            });
+        }
+        
         return (
           <main className="lp-shell">
             <header className="lp-header">
-              <span className="lp-header-eyebrow">{itemsPreview.length} producto{itemsPreview.length === 1 ? '' : 's'}</span>
+              <span className="lp-header-eyebrow">{itemsParaMostrar.length} producto{itemsParaMostrar.length === 1 ? '' : 's'}</span>
               <h2 className="lp-header-titulo">{cont.titulo || 'Todos los productos'}</h2>
             </header>
-            {hayFiltros && (
+            
+            {(!cont.productos || cont.productos.length === 0) && (!seccion.template || seccion.template === 'grid_4' || seccion.template === 'grid_3') && hayFiltros && (
               <div className="lp-filterbar">
                 <div className="lp-filters">
                   {filtros.buscador && <div className="lp-search"><Search size={14} /><input placeholder="Buscar..." value="" readOnly /></div>}
@@ -219,31 +246,16 @@ export default function LandingPreview({
                 </div>
               </div>
             )}
-            {itemsPreview.length === 0 ? (
+            
+            {itemsParaMostrar.length === 0 ? (
               <div className="lp-empty"><p>Elegi productos y van a aparecer aca.</p></div>
             ) : (
-              <div className="lp-grid" id="lp-productos">
-                {itemsPreview.map(item => (
-                  <div key={item.content_id} className="lp-card">
-                    <div className="lp-card-media">
-                      {item.imagen ? (
-                        <img src={getMediaUrl(item.imagen)} alt={item.nombre} />
-                      ) : (
-                        <div className="lp-card-media-placeholder">
-                          {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
-                        </div>
-                      )}
-                    </div>
-                    <div className="lp-card-body">
-                      <h3>{item.nombre}</h3>
-                      <span className="lp-card-price">{formatPrecio(precioItem(item))}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <LandingProductos seccion={seccion} items={itemsParaMostrar.slice(0, 8)} />
             )}
           </main>
         );
+      }
+      case 'rich_text':
       case 'texto':
         return (
           <section className={`lp-custom-section ${cont.tamano ? 'lp-texto-' + cont.tamano : ''}`}>
@@ -252,33 +264,23 @@ export default function LandingPreview({
           </section>
         );
       case 'como_funciona':
-        return (
-          <section className={`lp-custom-section ${cont.tamano ? 'lp-texto-' + cont.tamano : ''}`}>
-            <h2>{cont.titulo || 'Como funciona'}</h2>
-            <div className="lp-steps-grid">
-              {(cont.pasos || []).map((paso, idx) => (
-                <article key={`${paso}-${idx}`} className="lp-step-card">
-                  <span>{idx + 1}</span><p>{paso}</p>
-                </article>
-              ))}
-            </div>
-          </section>
-        );
+        return <LandingComoFunciona seccion={seccion} />;
       case 'redes_sociales':
-        return (
-          <section className="lp-social-section">
-            <h2>{cont.titulo || 'Seguinos'}</h2>
-            <div>
-              {cont.instagram && <a href="#" onClick={(e) => e.preventDefault()}>Instagram</a>}
-              {cont.facebook && <a href="#" onClick={(e) => e.preventDefault()}>Facebook</a>}
-              {cont.tiktok && <a href="#" onClick={(e) => e.preventDefault()}>TikTok</a>}
-            </div>
-          </section>
-        );
+        return <LandingSocial seccion={seccion} />;
       case 'testimonios':
-        return testimoniosVisibles.length > 0 ? <LandingTestimonials testimonios={testimoniosVisibles} /> : null;
+        return <LandingTestimonials seccion={seccion} testimonios={testimoniosVisibles} />;
       case 'faq':
-        return faqsVisibles.length > 0 ? <LandingFaq items={faqsVisibles} /> : null;
+        return <LandingFaq seccion={seccion} />;
+      case 'scrolling_text':
+        return <LandingScrollingText seccion={seccion} />;
+      case 'before_after':
+        return <LandingBeforeAfter seccion={seccion} />;
+      case 'cta':
+        return <LandingCta seccion={seccion} />;
+      case 'image_text':
+        return <LandingImageText seccion={seccion} />;
+      case 'logo_list':
+        return <LandingLogoList seccion={seccion} />;
       case 'footer':
         return (
           <footer className="lp-footer">

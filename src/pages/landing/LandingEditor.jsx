@@ -18,7 +18,7 @@ import InspectorSeccion from './InspectorSeccion';
 import SidebarSecciones from './SidebarSecciones';
 import SelectorSecciones from './SelectorSecciones';
 import LandingTemplatePicker from './LandingTemplatePicker';
-import { VALORES_DEFECTO_POR_TIPO } from './BloquesSchema';
+import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase } from './BloquesSchema';
 
 import ConfirmDialog from '../../components/ConfirmDialog';
 import '../vitrina/vitrina.css';
@@ -108,7 +108,7 @@ export default function LandingEditor() {
   // fila por fila hasta el próximo Guardar.
   const [testimonios, setTestimonios] = useState([]); // [{ nombre, foto, calificacion, comentario }]
   const [faqs, setFaqs] = useState([]); // [{ pregunta, respuesta }]
-  const [secciones, setSecciones] = useState(() => SECCIONES_BASE.map((s, idx) => ({ ...s, id: s.id || `base-${s.tipo}-${idx}`, orden: idx })));
+  const [secciones, setSecciones] = useState(() => getSeccionesBase().map((s, idx) => ({ ...s, id: s.id || `base-${s.tipo}-${idx}`, orden: idx })));
   const [subiendoFotoTestimonio, setSubiendoFotoTestimonio] = useState(null); // índice de la fila, o null
   const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [tienda, setTienda] = useState(null);
@@ -125,21 +125,27 @@ export default function LandingEditor() {
     setSucio(true);
   }, []);
 
-  const handleToggleVisible = useCallback((id) => {
-    setSecciones(prev => prev.map(s => s.id === id ? { ...s, activo: !s.activo } : s));
-    setSucio(true);
-  }, []);
-
   const handleDuplicarSeccion = useCallback((id) => {
     setSecciones(prev => {
       const idx = prev.findIndex(s => s.id === id);
       if (idx === -1) return prev;
       const original = prev[idx];
-      const copia = { ...original, id: `temp-${Date.now()}` };
+      const copia = {
+        ...original,
+        id: `temp-${Date.now()}`,
+        // If it was a fixed section, the copy cannot be fixed
+        fijo: false,
+      };
       const nuevas = [...prev];
       nuevas.splice(idx + 1, 0, copia);
-      return nuevas;
+      // Re-indexar orden
+      return nuevas.map((s, i) => ({ ...s, orden: i }));
     });
+    setSucio(true);
+  }, []);
+
+  const handleToggleVisible = useCallback((id) => {
+    setSecciones(prev => prev.map(s => s.id === id ? { ...s, activo: !s.activo } : s));
     setSucio(true);
   }, []);
 
@@ -174,15 +180,18 @@ export default function LandingEditor() {
     setSucio(true);
   }, []);
 
-  const handleAgregarSeccion = useCallback((tipo) => {
-    const defaults = VALORES_DEFECTO_POR_TIPO[tipo] || {};
+  const handleAgregarSeccion = useCallback((tipo, templateStr) => {
+    const defaults = VALORES_DEFECTO_POR_TIPO[tipo] || { template: 'standard', config: {}, contenido: {} };
+    const finalTemplate = templateStr || defaults.template;
+    
     const nuevaSeccion = {
       id: `temp-${Date.now()}`,
       tipo,
+      template: finalTemplate,
       nombre_interno: tipo,
       activo: true,
-      config: defaults.config || {},
-      contenido: defaults.contenido || {},
+      config: { ...defaults.config },
+      contenido: { ...defaults.contenido },
     };
     setSecciones(prev => [...prev, nuevaSeccion]);
     setSelectorAbierto(false);
@@ -260,7 +269,7 @@ export default function LandingEditor() {
         let loadedSecciones = [];
         
         if (Array.isArray(guardada.secciones) && guardada.secciones.length > 0) {
-          const basePorTipo = new Map(SECCIONES_BASE.map(s => [s.tipo, s]));
+          const basePorTipo = new Map(getSeccionesBase().map(s => [s.tipo, s]));
           loadedSecciones = guardada.secciones
             .slice()
             .sort((a, b) => a.orden - b.orden)
@@ -275,7 +284,7 @@ export default function LandingEditor() {
               contenido: s.contenido || s.contenido_json || {},
             }));
         } else {
-          loadedSecciones = SECCIONES_BASE.map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
+          loadedSecciones = getSeccionesBase().map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
         }
 
         // MIGRACION: Si existen testimonios sueltos, inyectarlos en la sección testimonios
@@ -424,22 +433,24 @@ export default function LandingEditor() {
    * para que la usuaria decida, igual que hace la landing pública, que
    * simplemente lo omite al renderizar.
    */
-  const itemsOrdenados = useMemo(() => (
-    Array.from(seleccion.entries()).map(([clave, sel]) => {
+  const itemsOrdenados = useMemo(() => {
+    const productosSeleccionados = secciones.find(s => s.tipo === 'productos')?.contenido?.productos || [];
+    return productosSeleccionados.map(sel => {
+      const clave = claveItem(sel.tipo, sel.id || sel.referencia_id);
       const base = catalogoPorClave.get(clave);
       if (!base) {
         return {
-          id: sel.referencia_id,
+          id: sel.id || sel.referencia_id,
           tipo: sel.tipo,
-          nombre: `${sel.tipo === 'combo' ? 'Combo' : 'Producto'} #${sel.referencia_id} — ya no está disponible`,
+          nombre: `${sel.tipo === 'combo' ? 'Combo' : 'Producto'} #${sel.id || sel.referencia_id} — ya no está disponible`,
           etiqueta: sel.etiqueta,
           precio_efectivo: null,
           no_disponible: true,
         };
       }
       return { ...base, etiqueta: sel.etiqueta };
-    })
-  ), [seleccion, catalogoPorClave]);
+    });
+  }, [secciones, catalogoPorClave]);
 
   const itemsPreview = useMemo(() => itemsOrdenados.filter(i => !i.no_disponible), [itemsOrdenados]);
   const hayNoDisponibles = itemsOrdenados.length !== itemsPreview.length;
@@ -799,6 +810,7 @@ export default function LandingEditor() {
         nombre_interno: s.nombre_interno,
         activo: s.activo !== false,
         orden: idx,
+        template: s.template,
         config: s.config || {},
         contenido: s.contenido || {},
       })),
@@ -1013,7 +1025,7 @@ export default function LandingEditor() {
       )}
 
       {/* ── Cuerpo: 3 Columnas ── */}
-      <div style={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden', position: 'relative' }}>
         
         {/* COLUMNA IZQUIERDA: Estructura */}
         <div className="bg-[var(--vit-card-bg)] border-r border-[var(--vit-border)] flex flex-col w-[260px] flex-shrink-0 z-10 overflow-hidden">
@@ -1067,6 +1079,7 @@ export default function LandingEditor() {
                     orden_precio: form.mostrar_orden_precio,
                   }}
                   items={itemsPreview}
+                  catalogo={catalogo}
                   tema={{
                     modo: form.tema_modo,
                     primario: form.color_primario || tienda?.color_primario,
@@ -1095,6 +1108,7 @@ export default function LandingEditor() {
                   viewportMode={viewportMode}
                   onReorderSeccion={handleMoverSeccion}
                   onDeleteSeccion={handleEliminarSeccion}
+                  onDuplicateSeccion={handleDuplicarSeccion}
                 />
              </div>
            </div>

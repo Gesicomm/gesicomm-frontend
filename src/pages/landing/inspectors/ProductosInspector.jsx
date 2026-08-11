@@ -3,7 +3,7 @@ import { Package, Plus } from 'lucide-react';
 import ProductPicker from '../ProductPicker';
 import { renderInput } from './SchemaInspector';
 
-export default function ProductosInspector({ seccion, schema, onUpdate, catalogo }) {
+export default function ProductosInspector({ seccion, schema, onUpdate, catalogo, onUploadImagen }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   
   // seccion.contenido.productos = [ { id, tipo, etiqueta } ] 
@@ -129,16 +129,25 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
         </button>
       </div>
       
-      {/* Diseño */}
-      <div>
-        <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">Diseño</h4>
-        <div className="flex flex-col gap-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-[var(--vit-text)]">Título de la grilla</span>
-            {renderInput({ key: 'titulo', type: 'text' }, seccion.contenido?.titulo, handleUpdate)}
-          </label>
+      {/* Diseño General */}
+      {schema.contentSchema?.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">Configuracin</h4>
+          <div className="flex flex-col gap-4">
+             {schema.contentSchema.map(campo => (
+                <label key={campo.key} className="flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
+                  {renderInput(
+                    campo, 
+                    seccion.contenido?.[campo.key], 
+                    handleUpdate,
+                    onUploadImagen
+                  )}
+                </label>
+             ))}
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Modal para ProductPicker */}
       {modalAbierto && (

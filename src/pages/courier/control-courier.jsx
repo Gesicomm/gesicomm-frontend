@@ -1,7 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard, HandCoins } from "lucide-react";
+import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard, HandCoins, LayoutDashboard } from "lucide-react";
 import { PedidosTable } from "./PedidosTable";
+import { DashboardGeneralTab } from "./DashboardGeneralTab";
 import { CouriersCrud } from "./couriers-crud";
 import { MetodosPagoCrud } from "./MetodosPagoCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
@@ -12,6 +13,7 @@ import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
 import { DevolucionModal } from "./DevolucionModal";
 import { PerdidaModal } from "./PerdidaModal";
 import { ResumenPedidoPanel } from "./ResumenPedidoPanel";
+import { HistorialPedidoPanel } from "./HistorialPedidoPanel";
 import { RendicionTab } from "./RendicionTab";
 import {
   getCouriers,
@@ -26,7 +28,7 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "rendicion", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "dashboard", "couriers", "metodos-pago", "rendicion", "analitica"]);
 
 export function ControlCourier() {
   const [searchParams] = useSearchParams();
@@ -45,6 +47,7 @@ export function ControlCourier() {
   // plan Gestión de Pedidos sección 42.
   const [accionEspecial, setAccionEspecial] = useState(null);
   const [resumenEnvio, setResumenEnvio] = useState(null);
+  const [historialEnvio, setHistorialEnvio] = useState(null);
 
   useEffect(() => {
     cargarDatos();
@@ -187,6 +190,9 @@ export function ControlCourier() {
             <TabButton active={tab === "tablero"} onClick={() => setTab("tablero")} icon={<LayoutGrid size={16} />}>
               Tablero
             </TabButton>
+            <TabButton active={tab === "dashboard"} onClick={() => setTab("dashboard")} icon={<LayoutDashboard size={16} />}>
+              Dashboard
+            </TabButton>
             <TabButton active={tab === "couriers"} onClick={() => setTab("couriers")} icon={<Users size={16} />}>
               Couriers
             </TabButton>
@@ -213,8 +219,11 @@ export function ControlCourier() {
             onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
             onAccionEspecial={(tipo, envio) => setAccionEspecial({ tipo, envio })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
+            onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             refrescarKey={refrescarKey}
           />
+        ) : tab === "dashboard" ? (
+          <DashboardGeneralTab couriers={couriers} />
         ) : tab === "couriers" ? (
           <CouriersCrud
             couriers={couriers}
@@ -285,6 +294,11 @@ export function ControlCourier() {
         open={!!resumenEnvio}
         envio={resumenEnvio}
         onClose={() => setResumenEnvio(null)}
+      />
+      <HistorialPedidoPanel
+        open={!!historialEnvio}
+        envio={historialEnvio}
+        onClose={() => setHistorialEnvio(null)}
       />
     </div>
   );
