@@ -536,13 +536,13 @@ export default function LandingEditor() {
    */
   function quitarNoDisponibles() {
     limpiarErrorPrevio();
-    const claves = itemsOrdenados.filter(i => i.no_disponible).map(i => claveItem(i.tipo, i.id));
-    if (!claves.length) return;
-    setSeleccion(prev => {
-      const copia = new Map(prev);
-      claves.forEach(clave => copia.delete(clave));
-      return copia;
-    });
+    const claves = new Set(itemsOrdenados.filter(i => i.no_disponible).map(i => claveItem(i.tipo, i.id)));
+    if (!claves.size) return;
+    setSecciones(prev => prev.map(sec => {
+      if (sec.tipo !== 'productos') return sec;
+      const productos = (sec.contenido?.productos || []).filter(p => !claves.has(claveItem(p.tipo, p.id || p.referencia_id)));
+      return { ...sec, contenido: { ...sec.contenido, productos } };
+    }));
     setSucio(true);
   }
 
@@ -827,7 +827,7 @@ export default function LandingEditor() {
       setError('Poné un nombre interno para poder guardar.');
       return null;
     }
-    if (seleccion.size === 0) {
+    if (itemsOrdenados.length === 0) {
       setError('Elegí al menos un producto o combo para la landing.');
       return null;
     }
@@ -988,7 +988,7 @@ export default function LandingEditor() {
             type="button"
             className={publicada ? 'lb-btn-warn text-sm px-4 py-2' : 'lb-btn-primary text-sm px-4 py-2'}
             onClick={togglePublicar}
-            disabled={ocupado || seleccion.size === 0}
+            disabled={ocupado || itemsOrdenados.length === 0}
           >
             {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
             {publicada ? 'Despublicar' : 'Publicar'}
