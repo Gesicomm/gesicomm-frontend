@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   Save, Loader, AlertCircle, Check, ExternalLink,
@@ -232,6 +232,25 @@ export default function LandingEditor() {
 
   const [previewVisible, setPreviewVisible] = useState(true);
   const [sucio, setSucio] = useState(false);
+
+  // ResizeObserver for desktop scaling
+  const containerRef = useRef(null);
+  const [desktopScale, setDesktopScale] = useState(1);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const { width } = entry.contentRect;
+        // Si el contenedor mide menos de 1440px, achicamos la vista de desktop
+        // con un tope máximo de escala 1 para monitores muy anchos.
+        const newScale = Math.min(width / 1440, 1);
+        setDesktopScale(newScale);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -1143,17 +1162,23 @@ export default function LandingEditor() {
                 {/* Reserved for future right-aligned actions */}
               </div>
            </div>
-           <div className="w-full h-full overflow-y-auto flex justify-center bg-[#e5e7eb] relative">
+           <div 
+             ref={containerRef}
+             className="w-full h-full overflow-y-auto flex justify-center bg-[#e5e7eb] relative overflow-x-hidden"
+           >
              <div style={{
-                width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
+                width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '1440px',
                 height: '100%',
                 backgroundColor: 'white',
                 boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 20px rgba(0,0,0,0.1)',
-                transition: 'width 0.3s ease',
+                transition: 'width 0.3s ease, transform 0.2s ease',
                 overflow: 'hidden',
                 margin: viewportMode === 'desktop' ? '0' : '2rem auto',
                 borderRadius: viewportMode === 'desktop' ? '0' : '16px',
                 border: viewportMode === 'desktop' ? 'none' : '8px solid #1c2230',
+                transform: viewportMode === 'desktop' ? `scale(${desktopScale})` : 'none',
+                transformOrigin: 'top center',
+                minHeight: viewportMode === 'desktop' ? `${100 / desktopScale}%` : '100%',
              }}>
                 <LandingPreview
                   titulo={form.titulo || form.nombre}

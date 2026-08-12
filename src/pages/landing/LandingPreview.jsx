@@ -4,24 +4,7 @@ import { getMediaUrl } from '../../services/api';
 import { calcularEstiloLanding } from '../../lib/landingDiseno';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { RenderProvider } from '../../page-builder/core/RenderContext';
-import { HeaderBlock } from '../../page-builder/blocks/header/HeaderBlock';
-import { ProductDetailBlock } from '../../page-builder/blocks/product-detail/ProductDetailBlock';
-import LandingHeader from './LandingHeader';
-import LandingHero from './LandingHero';
-import LandingBenefits from './LandingBenefits';
-import LandingCategoryStrip from './LandingCategoryStrip';
-import LandingScrollingText from './LandingScrollingText';
-import LandingBeforeAfter from './LandingBeforeAfter';
-import LandingCta from './LandingCta';
-import LandingLogoList from './LandingLogoList';
-import LandingSocial from './LandingSocial';
-import LandingFeatured from './LandingFeatured';
-import LandingProductos from './LandingProductos';
-import LandingComoFunciona from './LandingComoFunciona';
-import LandingImageText from './LandingImageText';
-import LandingTestimonials from './LandingTestimonials';
-import LandingFaq from './LandingFaq';
-import LandingDropdown from './LandingDropdown';
+import { PageRenderer } from '../../page-builder/core/PageRenderer';
 import PreviewFrame from './PreviewFrame';
 import './landingPublica.css';
 
@@ -375,31 +358,22 @@ export default function LandingPreview({
             style={{ ...calcularEstiloLanding({ tema, diseno }), display: 'flex', flexDirection: 'column', minHeight: '100vh' }}
             onClick={() => onSelectSeccion(null)}
           >
-            
-            {(secciones || []).filter(s => s.activo !== false).map(seccion => {
-              const contenidoRender = renderSection(seccion);
-              if (!contenidoRender) return null;
-              
-              const sectionStyle = {};
-              if (seccion.config?.color_fondo) sectionStyle['--l-bg'] = seccion.config.color_fondo;
-              if (seccion.config?.color_texto) sectionStyle['--l-text'] = seccion.config.color_texto;
-              if (seccion.config?.color_boton) sectionStyle['--l-primary'] = seccion.config.color_boton;
-              
-              return (
+            <PageRenderer 
+              context={renderContextValue} 
+              sectionWrapper={({ section, children, style }) => (
                 <SectionWrapper 
-                  key={seccion.id || seccion.tipo}
-                  id={seccion.id || seccion.tipo}
-                  name={seccion.nombre_interno || seccion.tipo}
-                  style={sectionStyle}
-                  selected={seccionSeleccionadaId === seccion.id}
+                  id={section.id || section.tipo}
+                  name={section.nombre_interno || section.tipo}
+                  style={style}
+                  selected={seccionSeleccionadaId === section.id}
                   onSelect={onSelectSeccion}
                   onReorder={onReorderSeccion}
                   onDelete={onDeleteSeccion}
                 >
-                  {contenidoRender}
+                  {children}
                 </SectionWrapper>
-              );
-            })}
+              )}
+            />
           </div>
         </PreviewFrame>
         </RenderProvider>

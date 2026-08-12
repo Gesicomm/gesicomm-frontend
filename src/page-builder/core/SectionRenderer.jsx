@@ -29,9 +29,15 @@ export const SectionRenderer = ({ section }) => {
   if (props.config.color_boton) wrapperStyle['--l-primary'] = props.config.color_boton;
 
   const Component = definition.component;
-  return (
+  const content = (
     <div className="w-full relative" style={wrapperStyle}>
       <Component {...props} />
     </div>
   );
+
+  if (Wrapper) {
+    return <Wrapper section={section} style={wrapperStyle}>{content}</Wrapper>;
+  }
+
+  return content;
 };
