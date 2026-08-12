@@ -114,6 +114,7 @@ export default function LandingPublica() {
   const [carritoAbierto, setCarritoAbierto] = useState(false);
   const [agregadoRapido, setAgregadoRapido] = useState(null);
   const [wishlist, setWishlist] = useState(() => new Set());
+  const [itemAbierto, setItemAbierto] = useState(null);
 
   useEffect(() => {
     let activo = true;
