@@ -22,7 +22,7 @@ export default function LandingFeatured({
   const { template = 'grid_4', contenido = {} } = seccion || {};
   const titulo = contenido.titulo || 'Productos destacados';
   return (
-    <section id="lp-destacados" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-14">
+    <section id="lp-destacados" className="lp-shell py-14">
       <h2 className="mb-6 text-2xl font-extrabold text-[var(--l-text)]" style={{ letterSpacing: '-0.02em' }}> {titulo} </h2>
       <div className={template === 'carousel' ? "lp-carousel-container overflow-x-auto pb-4 flex gap-4" : (template === 'grid_3' ? "lp-grid lp-grid-3" : "lp-grid")}>
         {items.map(item => {

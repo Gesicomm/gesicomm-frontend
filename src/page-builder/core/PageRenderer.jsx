@@ -5,11 +5,11 @@ import { SectionRenderer } from './SectionRenderer';
 export const PageRenderer = ({ context }) => {
   return (
     <RenderProvider context={context}>
-      <div className="page-renderer">
-        {context.page.secciones.map((sec, i) => (
+      <main className="page-renderer w-full flex-grow flex flex-col">
+        {context.page.secciones.filter(s => s.activo !== false).map((sec, i) => (
           <SectionRenderer key={sec.stable_id || sec.id || i} section={sec} />
         ))}
-      </div>
+      </main>
     </RenderProvider>
   );
 };

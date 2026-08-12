@@ -30,7 +30,7 @@ export const SectionRenderer = ({ section }) => {
 
   const Component = definition.component;
   return (
-    <div style={wrapperStyle}>
+    <div className="w-full relative" style={wrapperStyle}>
       <Component {...props} />
     </div>
   );
