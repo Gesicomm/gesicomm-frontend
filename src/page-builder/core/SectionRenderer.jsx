@@ -17,11 +17,21 @@ export const SectionRenderer = ({ section }) => {
     id: section.stable_id || section.id,
     content: section.content_json || section.contenido || {},
     settings: section.settings_json || section.config || {},
-    // Temporary legacy pass-through until all blocks are updated
+    // Pass the raw section for legacy components
+    section: section,
     contenido: section.content_json || section.contenido || {},
     config: section.settings_json || section.config || {},
   };
 
+  const wrapperStyle = {};
+  if (props.config.color_fondo) wrapperStyle['--l-bg'] = props.config.color_fondo;
+  if (props.config.color_texto) wrapperStyle['--l-text'] = props.config.color_texto;
+  if (props.config.color_boton) wrapperStyle['--l-primary'] = props.config.color_boton;
+
   const Component = definition.component;
-  return <Component {...props} />;
+  return (
+    <div style={wrapperStyle}>
+      <Component {...props} />
+    </div>
+  );
 };

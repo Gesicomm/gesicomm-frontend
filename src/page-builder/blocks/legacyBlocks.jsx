@@ -12,10 +12,11 @@ import { useRenderContext } from '../core/RenderContext';
 // Legacy adapters that pull the global state from context and pass it as props
 // exactly as the old hardcoded LandingPublica.jsx did.
 
-const HeroAdapter = ({ content, settings }) => {
+const HeroAdapter = ({ content, settings, section }) => {
   const { page, data } = useRenderContext();
   return (
     <LandingHero
+      seccion={section || { contenido: content, config: settings }}
       template={settings.template}
       config={settings}
       contenido={content}
@@ -32,15 +33,15 @@ const HeroAdapter = ({ content, settings }) => {
   );
 };
 
-const BenefitsAdapter = ({ content, settings }) => {
-  return <LandingBenefits seccion={{ contenido: content, config: settings }} />;
+const BenefitsAdapter = ({ content, settings, section }) => {
+  return <LandingBenefits seccion={section || { contenido: content, config: settings }} />;
 };
 
-const CategoriesAdapter = ({ content, settings }) => {
+const CategoriesAdapter = ({ content, settings, section }) => {
   const { data, actions } = useRenderContext();
   return (
     <LandingCategoryStrip
-      seccion={{ contenido: content, config: settings }}
+      seccion={section || { contenido: content, config: settings }}
       categorias={data.categorias}
       categoriaImagen={data.categoriaImagen}
       onSeleccionar={actions.seleccionarCategoria}
@@ -48,11 +49,11 @@ const CategoriesAdapter = ({ content, settings }) => {
   );
 };
 
-const FeaturedAdapter = ({ content, settings }) => {
+const FeaturedAdapter = ({ content, settings, section }) => {
   const { page, data, actions, state } = useRenderContext();
   return (
     <LandingFeatured
-      seccion={{ contenido: content, config: settings }}
+      seccion={section || { contenido: content, config: settings }}
       items={data.itemsDestacados}
       contacto={page.contacto}
       wishlist={state.wishlist}
@@ -63,17 +64,19 @@ const FeaturedAdapter = ({ content, settings }) => {
   );
 };
 
-const ProductsAdapter = ({ content, settings }) => {
+const ProductsAdapter = ({ content, settings, section }) => {
   const { page, data, actions, state } = useRenderContext();
   return (
     <LandingProductos
-      seccion={{ contenido: content, config: settings }}
+      seccion={section || { contenido: content, config: settings }}
       items={data.itemsFiltrados}
       contacto={page.contacto}
       wishlist={state.wishlist}
-      onToggleWishlist={actions.toggleWishlist}
+      toggleWishlist={actions.toggleWishlist}
       agregadoRapido={state.agregadoRapido}
-      onAgregarRapido={actions.agregarRapido}
+      handleAgregarRapido={actions.agregarRapido}
+      slug={page.slug}
+      navigate={actions.navigate}
       mostrarBusqueda={page.filtros?.buscador}
       busqueda={state.busqueda}
       onBuscar={actions.setBusqueda}
@@ -99,14 +102,14 @@ const ProductsAdapter = ({ content, settings }) => {
   );
 };
 
-const TestimonialsAdapter = ({ content, settings }) => {
+const TestimonialsAdapter = ({ content, settings, section }) => {
   const { page } = useRenderContext();
-  return <LandingTestimonials seccion={{ contenido: content, config: settings }} testimonios={page.testimonios || []} />;
+  return <LandingTestimonials seccion={section || { contenido: content, config: settings }} testimonios={page.testimonios || []} />;
 };
 
-const FaqAdapter = ({ content, settings }) => {
+const FaqAdapter = ({ content, settings, section }) => {
   const { page } = useRenderContext();
-  return <LandingFaq seccion={{ contenido: content, config: settings }} faqs={page.faq || []} />;
+  return <LandingFaq seccion={section || { contenido: content, config: settings }} faqs={page.faq || []} />;
 };
 
 const FooterAdapter = ({ content, settings }) => {
