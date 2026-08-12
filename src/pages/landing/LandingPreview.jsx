@@ -338,13 +338,39 @@ export default function LandingPreview({
         slug: '',
         redes: seccionesOrdenadas.find(s => s.tipo === 'header')?.config?.redes_sociales || {},
         secciones: seccionesOrdenadas,
+        filtros: filtros,
       },
       data: {
         item: mockItem,
+        itemsDestacados: itemsPreview,
+        itemsFiltrados: itemsPreview, // En preview mostramos todos o los configurados en la seccion
+        categorias: categorias,
+        categoriaImagen: categoriaImagen,
+        marcas: marcas,
+        etiquetas: etiquetas,
+        hayFiltroActivo: false,
+        conteo: itemsPreview.length
+      },
+      state: {
+        wishlist: new Set(),
+        agregadoRapido: null,
+        busqueda: '',
+        filtroCategoria: '',
+        filtroMarca: '',
+        filtroEtiqueta: '',
+        orden: ''
       },
       actions: {
         navigate: () => {},
         agregarRapido: () => {},
+        toggleWishlist: () => {},
+        setBusqueda: () => {},
+        setFiltroCategoria: () => {},
+        setFiltroMarca: () => {},
+        setFiltroEtiqueta: () => {},
+        setOrden: () => {},
+        limpiarFiltros: () => {},
+        seleccionarCategoria: () => {},
       }
     };
   }, [itemsPreview, contacto, seccionesOrdenadas, tema]);
