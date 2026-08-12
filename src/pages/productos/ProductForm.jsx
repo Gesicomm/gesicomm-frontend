@@ -7,6 +7,7 @@ import { categoriaService } from '../../services/catalogoService';
 import { comboAdminService } from '../../services/comboAdminService';
 import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/comboPricingLocal';
 import CurrencyInput from '../../components/CurrencyInput';
+import OfertasProductoTab from './OfertasProductoTab';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity
@@ -19,12 +20,14 @@ function fmt(n, decimals = 0) {
   return Number(n).toLocaleString('es-PY', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '—'; }
+function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
 // 3 tabs simplificadas: sin Logística, sin SKU, sin Marcas
 const TABS = [
   { id: 'basicos',  label: 'Datos básicos', icon: <Package size={15} /> },
   { id: 'precios',  label: 'Precios',        icon: <DollarSign size={15} /> },
   { id: 'stock',    label: 'Stock',           icon: <BarChart2 size={15} /> },
+  { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
 ];
 
 const ESTADOS_VENTA = [
@@ -576,7 +579,7 @@ export default function ProductForm() {
           <div className="form-grid-3">
             <div className="form-group">
               <label htmlFor="prod-precio-base">
-                Precio base <span className="req">*</span>
+                Precio de Venta <span className="req">*</span>
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -600,7 +603,7 @@ export default function ProductForm() {
 
             <div className="form-group">
               <label htmlFor="prod-precio-costo">
-                Precio de costo <span className="hint">(solo admins)</span>
+                Precio de compra <span className="hint">(solo admins)</span>
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -640,6 +643,33 @@ export default function ProductForm() {
               </div>
               <p className="field-hint">El precio con descuento no puede caer por debajo de este valor.</p>
             </div>
+          </div>
+
+          {/* Ganancia simple = Precio base (venta) − Precio de costo (compra),
+              sin CPA ni costos operativos — el panel de "Rentabilidad y
+              descuentos" de más abajo ya cubre esa versión más completa. Esto
+              es el número rápido que se quiere ver de un vistazo. */}
+          <div
+            style={{
+              marginTop: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              padding: '0.7rem 1rem',
+              borderRadius: '0.5rem',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <span style={{ fontSize: '0.8rem', color: '#888' }}>Ganancia (venta − compra):</span>
+            <strong style={{ fontSize: '1rem', color: (precioBaseVal - precioCostoVal) >= 0 ? '#10b981' : '#ef4444' }}>
+              {fmtGs(precioBaseVal - precioCostoVal)}
+            </strong>
+            {precioBaseVal > 0 && (
+              <span style={{ fontSize: '0.78rem', color: '#666' }}>
+                ({(((precioBaseVal - precioCostoVal) / precioBaseVal) * 100).toFixed(1)}%)
+              </span>
+            )}
           </div>
 
           <label className="check-label" style={{ marginTop: '0.5rem' }}>
@@ -702,7 +732,7 @@ export default function ProductForm() {
               <div className="combo-section" style={{ marginTop: '2rem', background: 'transparent', padding: 0, border: 'none' }}>
                 <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad y descuentos</h2>
                 <p className="combo-section-desc">
-                  Base de simulación: Los descuentos comerciales se calculan sobre el precio base de <strong>{formatMoney(precioBaseVal)}</strong>. El precio actual del producto con tu descuento ({descuentoPctVal}%) es {formatMoney(sBase.finalPrice)}.
+                  Base de simulación: Los descuentos comerciales se calculan sobre el precio base de <strong>{fmtGs(precioBaseVal)}</strong>. El precio actual del producto con tu descuento ({descuentoPctVal}%) es {fmtGs(sBase.finalPrice)}.
                   {' '}<Link to="/configuracion-economica">Editar costos operativos</Link>.
                 </p>
 
@@ -745,11 +775,11 @@ export default function ProductForm() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Precio final</div>
-                      <div style={{ fontWeight: 'bold' }}>{formatMoney(simulatedPrice)}</div>
+                      <div style={{ fontWeight: 'bold' }}>{fmtGs(simulatedPrice)}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Utilidad</div>
-                      <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{formatMoney(simulatedUtility)}</div>
+                      <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{fmtGs(simulatedUtility)}</div>
                     </div>
                     <div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Margen</div>
@@ -811,7 +841,7 @@ export default function ProductForm() {
                 </div>
               </div>
             );
-          })}
+          })()}
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -926,6 +956,25 @@ export default function ProductForm() {
             <div className="variantes-empty">
               <BarChart2 size={32} opacity={0.2} />
               <p>Sin variantes. Activá la opción de arriba para agregar talle, color, etc.</p>
+            </div>
+          )}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════
+            TAB 4: OFERTAS COMERCIALES
+        ══════════════════════════════════════════════════════ */}
+        <div className={`tab-content ${tabActiva === 'ofertas' ? 'active' : ''}`}>
+          {esEdicion ? (
+            <OfertasProductoTab
+              productoId={id}
+              productoNombre={nombre}
+              productoAnclaPrecioBase={precioBaseVal}
+              productoAnclaPrecioCosto={precioCostoVal}
+            />
+          ) : (
+            <div className="variantes-empty">
+              <Tag size={32} opacity={0.2} />
+              <p>Guardá el producto primero para poder agregarle ofertas comerciales.</p>
             </div>
           )}
         </div>

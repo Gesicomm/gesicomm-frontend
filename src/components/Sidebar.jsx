@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
-  Settings, LogOut, Tag, ChevronDown, ChevronRight, Layers, X,
+  Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
   GraduationCap
 } from 'lucide-react';
 
@@ -18,7 +18,6 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias')
   );
-  const [combosOpen, setCombosOpen] = useState(location.pathname.startsWith('/combos'));
 
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
@@ -119,44 +118,9 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/customers', label: 'Clientes', icon: <Users /> })}
             {renderLink({ path: '/admin/educacion', label: 'Academia LMS', icon: <GraduationCap /> })}
 
-            <li>
-              <button
-                type="button"
-                onClick={() => setCombosOpen((o) => !o)}
-                aria-expanded={combosOpen}
-                className={`${NAV_LINK} w-full cursor-pointer border-none bg-transparent text-left ${
-                  isActivePrefix('/combos') ? NAV_LINK_ACTIVE : ''
-                }`}
-              >
-                <span className={ICON_WRAP}><Layers /></span>
-                Combos
-                <span className="ml-auto flex items-center text-fg-subtle">
-                  {combosOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                </span>
-              </button>
-              {combosOpen && (
-                <ul className="m-0 mt-0.5 flex list-none flex-col gap-0.5 py-1 pl-10 pr-0">
-                  <li>
-                    <Link
-                      to="/combos"
-                      onClick={onClose}
-                      className={`${SUB_LINK} ${isActive('/combos') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
-                    >
-                      <Layers size={13} /> Listado
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/combos/nuevo"
-                      onClick={onClose}
-                      className={`${SUB_LINK} ${isActive('/combos/nuevo') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
-                    >
-                      <Layers size={13} /> Nuevo combo
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
+            {/* Combos (ProductoCombo) reemplazado por Ofertas comerciales,
+                dentro de la ficha de cada producto — los combos viejos
+                siguen en la base, solo se sacó el link del menú. */}
 
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
           </ul>

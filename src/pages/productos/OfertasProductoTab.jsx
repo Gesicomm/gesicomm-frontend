@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity, X } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
@@ -47,6 +47,20 @@ function MetricCard({ label, value, valueClass = '' }) {
       <span className={`combo-metric-value ${valueClass}`}>{value}</span>
     </div>
   );
+}
+
+function BadgeOferta({ status }) {
+  if (!status) return null;
+  const map = { EXCELENTE: 'excelente', BUENA: 'buena', REVISAR: 'revisar' };
+  const labels = { EXCELENTE: '★ Excelente oferta', BUENA: '✓ Buena oferta', REVISAR: '⚠ Revisar' };
+  return <span className={`combo-badge ${map[status]}`}>{labels[status]}</span>;
+}
+
+function BadgeRentabilidad({ status }) {
+  if (!status) return null;
+  const map = { SALUDABLE: 'saludable', MARGEN_BAJO: 'margen-bajo', NO_RENTABLE: 'no-rentable' };
+  const labels = { SALUDABLE: '✓ Saludable', MARGEN_BAJO: '⚠ Margen bajo', NO_RENTABLE: '✗ No rentable' };
+  return <span className={`combo-badge ${map[status]}`}>{labels[status]}</span>;
 }
 
 export default function OfertasProductoTab({ productoId, productoNombre, productoAnclaPrecioBase = 0, productoAnclaPrecioCosto = 0 }) {
@@ -276,6 +290,22 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
   const margenMinimoDecimal = comboConfig?.margen_minimo !== undefined ? Number(comboConfig.margen_minimo) / 100 : 0.10;
 
+  // Precio recomendado = precio del producto ancla + el de cada componente
+  // YA con su propio % de descuento aplicado (resultadoSensibilidad.combo.finalPrice,
+  // motor de comboPricingLocal) — es el número que de verdad refleja los
+  // descuentos configurados, a diferencia del precio de catálogo sin descontar.
+  const precioRecomendado = resultadoSensibilidad ? Math.round(resultadoSensibilidad.combo.finalPrice) : null;
+
+  // Apenas hay una recomendación calculable, se precarga el campo Precio —
+  // pero solo si todavía está en blanco/0, para no pisar un precio que el
+  // admin ya haya escrito a mano.
+  useEffect(() => {
+    if (precioRecomendado !== null && !form.precio) {
+      setForm(f => (f.precio ? f : { ...f, precio: precioRecomendado }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [precioRecomendado]);
+
   return (
     <div>
       <div className="form-section-title">
@@ -352,7 +382,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
           <form
             onSubmit={submit}
             className="modal-content"
-            style={{ background: '#0e0e11', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '1rem', maxWidth: '640px', color: '#fff', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+            style={{ background: '#0e0e11', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '1rem', width: '100%', maxWidth: '840px', color: '#fff', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}
           >
             <div style={{ padding: '1.75rem 1.75rem 1rem', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -363,8 +393,6 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
             </div>
             
             <div style={{ padding: '1rem 1.75rem 1.75rem', overflowY: 'auto' }}>
-
-            <h3 style={{ marginTop: 0 }}>{editando ? 'Editar oferta' : 'Nueva oferta'}</h3>
 
             {error && (
               <div className="form-error-banner" style={{ marginBottom: '1rem' }}>
@@ -396,6 +424,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               <div className="form-group">
                 <label>Precio</label>
                 <CurrencyInput value={form.precio} onChange={val => setForm(f => ({ ...f, precio: val }))} />
+                {precioRecomendado !== null && Number(form.precio) !== precioRecomendado && (
+                  <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    Recomendado según catálogo y descuentos: <strong>{formatMoney(precioRecomendado)}</strong>
+                    <button type="button" className="btn-ghost" style={{ padding: '0.1rem 0.5rem', fontSize: '0.72rem' }} onClick={() => setForm(f => ({ ...f, precio: precioRecomendado }))}>
+                      Usar
+                    </button>
+                  </p>
+                )}
               </div>
               {usuarioActual?.rol === 'administrador' && (
                 <div className="form-group">
@@ -439,6 +475,12 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
             ) : (
               form.componentes.map((c, i) => {
                 const esAncla = c.producto_id && Number(c.producto_id) === Number(productoId);
+                const selectedIdsElsewhere = form.componentes
+                  .filter((comp, idx) => idx !== i && comp.producto_id)
+                  .map(comp => Number(comp.producto_id));
+                
+                const isAnclaSelectedElsewhere = selectedIdsElsewhere.includes(Number(productoId));
+
                 return (
                 <div key={i} className="form-group" style={{ flexDirection: 'row', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
                   <select
@@ -448,9 +490,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                     required
                   >
                     <option value="">-- Producto --</option>
-                    <option value={productoId}>{productoNombre} (este producto)</option>
-                    {productosDisponibles.filter(p => p.id !== Number(productoId)).map(p => (
-                      <option key={p.id} value={p.id}>{p.nombre}</option>
+                    {(!isAnclaSelectedElsewhere || esAncla) && (
+                      <option value={productoId}>{productoNombre} (este producto)</option>
+                    )}
+                    {productosDisponibles
+                      .filter(p => p.id !== Number(productoId))
+                      .filter(p => !selectedIdsElsewhere.includes(p.id))
+                      .map(p => (
+                        <option key={p.id} value={p.id}>{p.nombre}</option>
                     ))}
                   </select>
                   <input
@@ -462,9 +509,9 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                     required
                   />
                   {esAncla ? (
-                    <span style={{ width: '90px', textAlign: 'center', color: '#475569', fontSize: '0.75rem' }}>Sin descuento</span>
+                    <span style={{ width: '100px', textAlign: 'center', color: '#475569', fontSize: '0.75rem' }}>Sin descuento</span>
                   ) : (
-                    <div className="combo-discount-input" style={{ width: '90px' }}>
+                    <div className="combo-discount-input" style={{ width: '100px' }}>
                       <input
                         type="number"
                         min="0"
@@ -515,21 +562,86 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
                   const healthBase = getHealth(marginBase);
 
-                  // Calculate simulated
-                  const simulatedPrice = Math.round(sBase.originalPrice * (1 - (descuentoSimulado / 100)));
+                  // Calculate simulated — el descuento simulado se aplica sobre el
+                  // precio YA recomendado (ancla + componentes con su propio %
+                  // descontado), no sobre el total de catálogo sin descontar.
+                  const simulatedPrice = Math.round(precioRecomendado * (1 - (descuentoSimulado / 100)));
                   const simulatedUtility = simulatedPrice - sBase.totalCost;
                   const simulatedMargin = simulatedPrice > 0 ? simulatedUtility / simulatedPrice : 0;
                   const healthSimulated = getHealth(simulatedMargin);
 
                   // Calculate break-even discount (where margin hits target)
                   const minPriceTarget = sBase.totalCost / (1 - targetMargin);
-                  const maxDiscountTarget = sBase.originalPrice > 0 ? Math.max(0, 1 - (minPriceTarget / sBase.originalPrice)) * 100 : 0;
+                  const maxDiscountTarget = precioRecomendado > 0 ? Math.max(0, 1 - (minPriceTarget / precioRecomendado)) * 100 : 0;
 
                   return (
                     <div style={{ marginTop: '0.5rem' }}>
                       <p className="field-hint" style={{ marginBottom: '1rem' }}>
-                        Base de simulación: Los descuentos comerciales se calculan sobre el precio base del catálogo que es de <strong>{formatMoney(sBase.originalPrice)}</strong>. El precio actual de tu oferta es de {formatMoney(form.precio)}.
+                        Precio recomendado (ancla + cada componente con su propio % de descuento ya aplicado): <strong>{formatMoney(precioRecomendado)}</strong>. Precio de catálogo sin descontar: {formatMoney(sBase.originalPrice)}. El precio actual de tu oferta es de {formatMoney(form.precio)}.
                       </p>
+
+                      {/* Sección 2 — Productos complementarios (detalle por upsell, igual que Combos) */}
+                      <div className="form-section-title" style={{ fontSize: '0.82rem' }}>PRODUCTOS COMPLEMENTARIOS</div>
+                      <div style={{ overflowX: 'auto', marginTop: '0.5rem', marginBottom: '1.5rem' }}>
+                        <table className="combo-sensitivity-table" style={{ width: '100%' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ textAlign: 'left' }}>Producto</th>
+                              <th className="text-right">Costo</th>
+                              <th className="text-right">Precio de venta</th>
+                              <th className="text-right">Descuento %</th>
+                              <th className="text-right">Monto descuento</th>
+                              <th className="text-right">Utilidad individual</th>
+                              <th className="text-right">Margen individual</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {form.componentes
+                              .filter(c => c.producto_id && Number(c.producto_id) !== Number(productoId))
+                              .map((c, idx) => {
+                                const u = resultadoSensibilidad.upsells[idx];
+                                if (!u) return null;
+                                const h = getHealth(u.margin);
+                                return (
+                                  <tr key={idx}>
+                                    <td>{nombreProducto(c.producto_id)}</td>
+                                    <td className="text-right">{formatMoney(u.cost)}</td>
+                                    <td className="text-right">{formatMoney(u.originalPrice)}</td>
+                                    <td className="text-right">{Number(c.descuento_porcentaje) || 0}%</td>
+                                    <td className="text-right">{formatMoney(u.discountAmount)}</td>
+                                    <td className="text-right" style={{ color: h.color }}>{formatMoney(u.profit)}</td>
+                                    <td className="text-right" style={{ color: h.color }}>{fmtPct(u.margin)}</td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Sección 3 — Resultados automáticos (detalle completo, igual que la planilla de Combos) */}
+                      <div className="form-section-title" style={{ fontSize: '0.82rem' }}>RESULTADOS AUTOMÁTICOS</div>
+                      <div style={{ overflowX: 'auto', marginTop: '0.5rem', marginBottom: '1.5rem' }}>
+                        <table className="combo-sensitivity-table" style={{ width: '100%' }}>
+                          <tbody>
+                            <tr><td>Precio de venta real de los productos</td><td className="text-right" style={{ fontWeight: 600 }}>{formatMoney(sBase.originalPrice)}</td></tr>
+                            <tr><td>Precio final con el combo</td><td className="text-right" style={{ fontWeight: 600 }}>{formatMoney(sBase.finalPrice)}</td></tr>
+                            <tr><td>Descuento aplicado en dinero</td><td className="text-right">{formatMoney(sBase.discountAmount)}</td></tr>
+                            <tr><td>Descuento aplicado en porcentaje</td><td className="text-right">{fmtPct(sBase.discountPercentage)}</td></tr>
+                            <tr><td>Costo de productos complementarios</td><td className="text-right">{formatMoney(sBase.upsellCosts)}</td></tr>
+                            <tr><td>Costos totales (producto de entrada)</td><td className="text-right">{formatMoney(resultadoSensibilidad.principal.totalCosts)}</td></tr>
+                            <tr><td>Costo total del combo</td><td className="text-right">{formatMoney(sBase.totalCost)}</td></tr>
+                            <tr><td>Utilidad bruta</td><td className="text-right" style={{ color: sBase.profit >= 0 ? '#10b981' : '#ef4444', fontWeight: 600 }}>{formatMoney(sBase.profit)}</td></tr>
+                            <tr><td>Margen porcentual</td><td className="text-right" style={{ color: sBase.margin >= margenMinimoDecimal ? '#10b981' : '#ef4444', fontWeight: 600 }}>{fmtPct(sBase.margin)}</td></tr>
+                            <tr><td>Ticket promedio generado</td><td className="text-right">{formatMoney(sBase.ticket)}</td></tr>
+                            <tr><td>Utilidad vendiendo solo el producto principal</td><td className="text-right">{formatMoney(resultadoSensibilidad.comparison.standaloneProfit)}</td></tr>
+                            <tr><td>Utilidad vendiendo el combo</td><td className="text-right">{formatMoney(resultadoSensibilidad.comparison.comboProfit)}</td></tr>
+                            <tr><td>Diferencia de utilidad ($)</td><td className="text-right" style={{ color: resultadoSensibilidad.comparison.profitDifference >= 0 ? '#10b981' : '#ef4444' }}>{formatMoney(resultadoSensibilidad.comparison.profitDifference)}</td></tr>
+                            <tr><td>Diferencia porcentual de utilidad</td><td className="text-right">{resultadoSensibilidad.comparison.profitDifferencePercentage !== null && resultadoSensibilidad.comparison.profitDifferencePercentage !== undefined ? `${resultadoSensibilidad.comparison.profitDifferencePercentage.toFixed(2)}%` : '—'}</td></tr>
+                            <tr><td>Indicador visual de oferta</td><td className="text-right"><BadgeOferta status={resultadoSensibilidad.comparison.offerStatus} /></td></tr>
+                            <tr><td>Rentabilidad</td><td className="text-right"><BadgeRentabilidad status={resultadoSensibilidad.comparison.profitabilityStatus} /></td></tr>
+                          </tbody>
+                        </table>
+                      </div>
 
                       {/* 1. Resumen ejecutivo (3 tarjetas) */}
                       <div className="combo-metrics-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
