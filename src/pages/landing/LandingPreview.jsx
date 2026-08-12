@@ -3,6 +3,9 @@ import { ExternalLink, Monitor, Smartphone, Search, MessageCircle, Layers, Image
 import { getMediaUrl } from '../../services/api';
 import { calcularEstiloLanding } from '../../lib/landingDiseno';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
+import { RenderProvider } from '../../page-builder/core/RenderContext';
+import { HeaderBlock } from '../../page-builder/blocks/header/HeaderBlock';
+import { ProductDetailBlock } from '../../page-builder/blocks/product-detail/ProductDetailBlock';
 import LandingHeader from './LandingHeader';
 import LandingHero from './LandingHero';
 import LandingBenefits from './LandingBenefits';
@@ -119,6 +122,7 @@ export default function LandingPreview({
   
 
   const itemsPreview = useMemo(() => (items || []).map(normalizarItem), [items]);
+  const noop = () => {};
   const categorias = useMemo(() => [...new Set(itemsPreview.map(i => i.categoria).filter(Boolean))], [itemsPreview]);
   const marcas = useMemo(() => [...new Set(itemsPreview.map(i => i.marca).filter(Boolean))], [itemsPreview]);
   const etiquetas = useMemo(() => {
@@ -147,15 +151,11 @@ export default function LandingPreview({
     switch (tipo) {
       case 'header':
         return (
-          <LandingHeader
-            nombre={cont.logo_texto || titulo || 'Tu tienda'}
-            mostrarBuscador={!!filtros.buscador}
-            mostrarCategorias={categorias.length > 0}
-            mostrarTestimonios={testimoniosVisibles.length > 0}
-            mostrarFaq={faqsVisibles.length > 0}
-            cantidadCarrito={0}
-            onAbrirCarrito={noop}
-          />
+          <HeaderBlock content={cont} settings={config} />
+        );
+      case 'product_detail':
+        return (
+          <ProductDetailBlock content={cont} settings={config} />
         );
       case 'announcement_bar':
         return (
@@ -337,11 +337,38 @@ export default function LandingPreview({
     return seccionesOrdenadas.find(s => s.tipo === tipo)?.contenido || {};
   }
 
-  const noop = () => {};
+  const renderContextValue = useMemo(() => {
+    // Provide a mock item if we are in product view but no item is selected
+    const mockItem = itemsPreview?.[0] || {
+      id: 'preview',
+      tipo: 'producto',
+      nombre: 'Producto de prueba',
+      precio: 9990,
+      imagenes: [],
+      descripcion: 'Descripción del producto de prueba',
+    };
+
+    return {
+      theme: tema,
+      page: {
+        contacto,
+        slug: '',
+        redes: seccionesOrdenadas.find(s => s.tipo === 'header')?.config?.redes_sociales || {},
+      },
+      data: {
+        item: mockItem,
+      },
+      actions: {
+        navigate: () => {},
+        agregarRapido: () => {},
+      }
+    };
+  }, [itemsPreview, contacto, seccionesOrdenadas, tema]);
 
   return (
     <>
       <div style={{ width: '100%', height: '100%' }}>
+        <RenderProvider context={renderContextValue}>
         <PreviewFrame className="lb-live-preview-iframe">
           <div
             className={`lp-page lb-live-preview-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
@@ -374,7 +401,8 @@ export default function LandingPreview({
               );
             })}
           </div>
-</PreviewFrame>
+        </PreviewFrame>
+        </RenderProvider>
       </div>
       {!contacto?.whatsapp && (
         <p className="lb-preview-hint">

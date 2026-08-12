@@ -28,6 +28,14 @@ export const BLOQUES_SCHEMA = {
     name: 'Imagen + Texto',
     icon: SplitSquareHorizontal,
     categoria: 'storytelling',
+    schemaVersion: 1,
+    migrations: {
+      1: (data) => {
+         // Example migration from v1 to v2: if we ever changed 'titulo' to 'heading'
+         // data.contenido.heading = data.contenido.titulo;
+         return data;
+      }
+    },
     templates: [
       { id: 'image_left', label: 'Imagen Izquierda' },
       { id: 'image_right', label: 'Imagen Derecha' },

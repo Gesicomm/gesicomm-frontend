@@ -13,17 +13,11 @@ import ProductPagePublica from './ProductPagePublica';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
 import LandingDropdown from './LandingDropdown';
-import LandingHeader from './LandingHeader';
-import LandingHero from './LandingHero';
-import LandingBenefits from './LandingBenefits';
-import LandingCategoryStrip from './LandingCategoryStrip';
-import LandingFeatured from './LandingFeatured';
-import LandingProductos from './LandingProductos';
-import LandingComoFunciona from './LandingComoFunciona';
-import LandingTestimonials from './LandingTestimonials';
-import LandingFaq from './LandingFaq';
+import { PageRenderer } from '../../page-builder/core/PageRenderer';
+import { registerLegacyBlocks } from '../../page-builder/blocks/legacyBlocks';
 import './landingPublica.css';
 
+registerLegacyBlocks();
 const VENTANA_NUEVO_DIAS = 14;
 
 function claveCarrito(item, varianteId, ofertaId) {
@@ -508,24 +502,60 @@ export default function LandingPublica() {
     document.getElementById('lp-productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  const seccionesOrdenadas = Array.isArray(data.secciones) && data.secciones.length
-    ? data.secciones.map((s, idx) => ({ ...s, orden: s.orden ?? idx }))
-    : [
-      'header', 'hero', 'beneficios', 'categorias', 'destacados',
-      'banner', 'productos', 'testimonios', 'faq', 'footer',
-    ].map((tipo, idx) => ({ tipo, activo: true, orden: idx }));
-  const ordenSeccion = new Map(seccionesOrdenadas.map((s, idx) => [s.tipo, idx]));
-  const visibleSeccion = (tipo) => seccionesOrdenadas.find(s => s.tipo === tipo)?.activo !== false;
-  const ordenLayout = (tipo) => ordenSeccion.has(tipo) ? ordenSeccion.get(tipo) : 99;
-  const contenidoSeccion = (tipo) => seccionesOrdenadas.find(s => s.tipo === tipo)?.contenido || {};
+  const isProductView = Boolean(productId);
+  const itemSeleccionado = isProductView ? data?.items?.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId)) : null;
 
-  const wrapperStyle = (tipo) => {
-    const s = getSeccion(tipo);
-    const style = { order: ordenLayout(tipo) };
-    if (s?.config?.color_fondo) style['--l-bg'] = s.config.color_fondo;
-    if (s?.config?.color_texto) style['--l-text'] = s.config.color_texto;
-    if (s?.config?.color_boton) style['--l-primary'] = s.config.color_boton;
-    return style;
+  const seccionesActivas = isProductView && data.secciones_producto?.length > 0
+    ? data.secciones_producto
+    : data.secciones;
+
+  const renderContext = {
+    theme: data.tema || {},
+    page: {
+      ...data,
+      secciones: seccionesActivas,
+    },
+    data: {
+      categorias,
+      marcas,
+      etiquetas,
+      itemsDestacados,
+      itemsFiltrados,
+      categoriaImagen,
+      totalItems,
+      cantidadOpiniones,
+      ratingPromedio,
+      cantidadCarrito: Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0),
+      hayFiltroActivo,
+      conteo,
+      itemAbierto,
+      item: itemSeleccionado,
+    },
+    actions: {
+      abrirCarrito: () => setCarritoAbierto(true),
+      seleccionarCategoria,
+      toggleWishlist,
+      agregarRapido: handleAgregarRapido,
+      setItemAbierto,
+      contactar,
+      setBusqueda,
+      setFiltroCategoria,
+      setFiltroMarca,
+      setFiltroEtiqueta,
+      setOrden,
+      limpiarFiltros,
+      navigate,
+    },
+    state: {
+      wishlist,
+      agregadoRapido,
+      busqueda,
+      filtroCategoria,
+      filtroMarca,
+      filtroEtiqueta,
+      orden,
+    },
+    env: { mode: 'public' },
   };
 
   return (
@@ -533,259 +563,8 @@ export default function LandingPublica() {
       className={`lp-page ${data.tema.modo === 'claro' ? 'claro' : ''}`}
       style={{ ...calcularEstiloLanding({ tema: data.tema, diseno: data.diseno }), display: 'flex', flexDirection: 'column' }}
     >
-      {visibleSeccion('header') && (
-        <div style={wrapperStyle('header')}>
-          <LandingHeader
-            nombre={contenidoSeccion('header').logo_texto || data.titulo}
-            mostrarBuscador={!!filtros.buscador}
-            mostrarCategorias={categorias.length > 0}
-            mostrarTestimonios={cantidadOpiniones > 0}
-            mostrarFaq={(data.faq?.length || 0) > 0}
-            cantidadCarrito={Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0)}
-            onAbrirCarrito={() => setCarritoAbierto(true)}
-          />
-        </div>
-      )}
-
-      {visibleSeccion('announcement_bar') && contenidoSeccion('announcement_bar').texto && (
-        <section className="lp-custom-announcement" style={wrapperStyle('announcement_bar')}>
-          {contenidoSeccion('announcement_bar').texto}
-        </section>
-      )}
-
-      {visibleSeccion('hero') && (() => {
-        const s = getSeccion('hero');
-        const cont = s?.contenido || {};
-        return (
-          <div style={wrapperStyle('hero')}>
-            <LandingHero
-              template={s?.template}
-              config={s?.config}
-              contenido={cont}
-              titulo={cont.titulo || data.titulo}
-              descripcion={cont.descripcion || data.descripcion}
-              imagenFondo={cont.imagen_fondo || data.banner}
-              totalItems={totalItems}
-              totalCategorias={categorias.length}
-              ratingPromedio={ratingPromedio}
-              cantidadOpiniones={cantidadOpiniones}
-              whatsapp={contacto?.whatsapp}
-              tamano={cont.tamano}
-            />
-          </div>
-        );
-      })()}
-
-      {visibleSeccion('beneficios') && <div style={wrapperStyle('beneficios')}><LandingBenefits seccion={getSeccion('beneficios')} /></div>}
-
-      {visibleSeccion('categorias') && categorias.length > 0 && (
-        <div style={wrapperStyle('categorias')}>
-          <LandingCategoryStrip
-            seccion={getSeccion('categorias')}
-            categorias={categorias}
-            categoriaImagen={categoriaImagen}
-            onSeleccionar={seleccionarCategoria}
-          />
-        </div>
-      )}
-
-      {visibleSeccion('destacados') && itemsDestacados.length > 0 && (
-        <div style={wrapperStyle('destacados')}>
-          <LandingFeatured
-            seccion={getSeccion('destacados')}
-            items={itemsDestacados}
-            contacto={contacto}
-            wishlist={wishlist}
-            onToggleWishlist={toggleWishlist}
-            agregadoRapido={agregadoRapido}
-            onAgregarRapido={handleAgregarRapido}
-            onAbrir={setItemAbierto}
-            onContactar={contactar}
-          />
-        </div>
-      )}
-
-      {visibleSeccion('banner') && banner && (
-        <div
-          className={`lp-banner ${banner.imagen ? 'con-imagen' : ''}`}
-          style={{
-            order: ordenLayout('banner'),
-            ...(banner.imagen ? { backgroundImage: `url(${getMediaUrl(banner.imagen)})` } : {}),
-          }}
-        >
-          <div className="lp-banner-overlay">
-            {banner.titulo && <h2>{banner.titulo}</h2>}
-            {banner.subtitulo && <p>{banner.subtitulo}</p>}
-            {banner.boton_texto && (
-              <a
-                className="lp-banner-btn"
-                href={banner.boton_link || '#lp-productos'}
-                target={bannerLinkEsExterno ? '_blank' : undefined}
-                rel={bannerLinkEsExterno ? 'noopener noreferrer' : undefined}
-              >
-                {banner.boton_texto}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
-      {visibleSeccion('productos') && (() => {
-        const seccionProd = getSeccion('productos');
-        const cont = seccionProd?.contenido || {};
-        const template = seccionProd?.template || 'grid_4';
-        const seleccionados = cont.productos || [];
-
-        // Match by numeric id OR by content_id string (handles both contexts)
-        const matchItem = (p, i) => `${p.tipo}-${p.id}` === i.content_id || String(p.id) === String(i.id);
-        
-        let itemsParaMostrar = itemsFiltrados;
-        if (seleccionados.length > 0) {
-          itemsParaMostrar = (data?.items || []).filter(i => seleccionados.find(p => matchItem(p, i)));
-          itemsParaMostrar.sort((a, b) => {
-            const idxA = seleccionados.findIndex(p => matchItem(p, a));
-            const idxB = seleccionados.findIndex(p => matchItem(p, b));
-            return idxA - idxB;
-          });
-        }
-
-        const mostrarFiltros = seleccionados.length === 0 && (!template || template === 'grid_4' || template === 'grid_3');
-
-        return (
-          <main className="lp-shell" style={wrapperStyle('productos')}>
-            <header className="lp-header">
-              <span className="lp-header-eyebrow">{seleccionados.length > 0 ? itemsParaMostrar.length : conteo} producto{itemsParaMostrar.length !== 1 ? 's' : ''}</span>
-              <h2 className="lp-header-titulo">{cont.titulo || 'Todos los productos'}</h2>
-            </header>
-
-            {mostrarFiltros && hayFiltrosVisibles && (
-              <div className="lp-filterbar">
-                <div className="lp-filters">
-                  {filtros.buscador && (
-                    <div className="lp-search">
-                      <Search size={14} />
-                      <input id="lp-buscador-input" placeholder="Buscar..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
-                    </div>
-                  )}
-                  {filtros.categoria && categorias.length > 0 && (
-                    <LandingDropdown value={filtroCategoria} onChange={setFiltroCategoria} options={[{ value: '', label: 'Todas las categorías' }, ...categorias.map(c => ({ value: c, label: c }))]} />
-                  )}
-                  {filtros.marca && marcas.length > 0 && (
-                    <LandingDropdown value={filtroMarca} onChange={setFiltroMarca} options={[{ value: '', label: 'Todas las marcas' }, ...marcas.map(m => ({ value: m, label: m }))]} />
-                  )}
-                  {filtros.etiqueta && etiquetas.length > 0 && (
-                    <LandingDropdown value={filtroEtiqueta} onChange={setFiltroEtiqueta} options={[{ value: '', label: 'Todas las etiquetas' }, ...etiquetas.map(e => ({ value: e, label: e }))]} />
-                  )}
-                  {filtros.orden_precio && (
-                    <LandingDropdown value={orden} onChange={setOrden} options={[
-                      { value: '', label: 'Orden por defecto' },
-                      { value: 'asc', label: 'Precio: menor a mayor' },
-                      { value: 'desc', label: 'Precio: mayor a menor' },
-                    ]} />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {itemsParaMostrar.length === 0 ? (
-              <div className="lp-empty">
-                <p>Ningún producto coincide con lo que buscaste.</p>
-                {hayFiltroActivo && (
-                  <button type="button" className="lp-empty-reset" onClick={limpiarFiltros}>
-                    Ver todo el catálogo
-                  </button>
-                )}
-              </div>
-            ) : (
-              <LandingProductos
-                seccion={seccionProd}
-                items={itemsParaMostrar}
-                contacto={contacto}
-                wishlist={wishlist}
-                toggleWishlist={toggleWishlist}
-                agregadoRapido={agregadoRapido}
-                handleAgregarRapido={handleAgregarRapido}
-                slug={slug}
-                navigate={navigate}
-              />
-            )}
-          </main>
-        );
-      })()}
-      {visibleSeccion('texto') && (
-        <section className="lp-custom-section" style={wrapperStyle('texto')}>
-          {contenidoSeccion('texto').titulo && <h2>{contenidoSeccion('texto').titulo}</h2>}
-          {contenidoSeccion('texto').texto && <p>{contenidoSeccion('texto').texto}</p>}
-        </section>
-      )}
-
-      {visibleSeccion('como_funciona') && (
-        <div style={wrapperStyle('como_funciona')}>
-          <LandingComoFunciona seccion={getSeccion('como_funciona')} />
-        </div>
-      )}
-
-      {visibleSeccion('redes_sociales') && (
-        <section className="lp-social-section" style={wrapperStyle('redes_sociales')}>
-          <h2>{contenidoSeccion('redes_sociales').titulo || 'Seguinos'}</h2>
-          <div>
-            {contenidoSeccion('redes_sociales').instagram && (
-              <a href={contenidoSeccion('redes_sociales').instagram} target="_blank" rel="noreferrer" className="flex items-center gap-2">
-                <InstagramIcon size={18} /> Instagram
-              </a>
-            )}
-            {contenidoSeccion('redes_sociales').facebook && (
-              <a href={contenidoSeccion('redes_sociales').facebook} target="_blank" rel="noreferrer" className="flex items-center gap-2">
-                <FacebookIcon size={18} /> Facebook
-              </a>
-            )}
-            {contenidoSeccion('redes_sociales').tiktok && (
-              <a href={contenidoSeccion('redes_sociales').tiktok} target="_blank" rel="noreferrer" className="flex items-center gap-2">
-                <TikTokIcon size={18} /> TikTok
-              </a>
-            )}
-          </div>
-        </section>
-      )}
-
-      {visibleSeccion('testimonios') && cantidadOpiniones > 0 && (
-        <div style={wrapperStyle('testimonios')}>
-          <LandingTestimonials testimonios={data.testimonios} />
-        </div>
-      )}
-      {visibleSeccion('faq') && (data.faq?.length || 0) > 0 && (
-        <div style={wrapperStyle('faq')}>
-          <LandingFaq items={data.faq} />
-        </div>
-      )}
-
-      {visibleSeccion('footer') && <footer id="lp-contacto" className="lp-footer" style={wrapperStyle('footer')}>
-        <div className="lp-footer-inner">
-          <div>
-            <p className="lp-footer-nombre">{contenidoSeccion('footer').titulo || data.titulo}</p>
-            {(contenidoSeccion('footer').descripcion || data.descripcion) && <p className="lp-footer-desc">{contenidoSeccion('footer').descripcion || data.descripcion}</p>}
-          </div>
-          <nav className="lp-footer-links">
-            {categorias.length > 0 && <a href="#lp-categorias">Categorías</a>}
-            <a href="#lp-productos">Productos</a>
-            {cantidadOpiniones > 0 && <a href="#lp-opiniones">Opiniones</a>}
-            {(data.faq?.length || 0) > 0 && <a href="#lp-faq">Preguntas frecuentes</a>}
-          </nav>
-          {contacto?.whatsapp && (
-            <a
-              className="lp-footer-wsp"
-              href={`https://wa.me/${contacto.whatsapp}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <MessageCircle size={15} /> Escribinos por WhatsApp
-            </a>
-          )}
-        </div>
-      </footer>}
-
+      <PageRenderer context={renderContext} />
       
-
       <CartDrawer
         items={Array.from(carrito.values())}
         sugerencias={sugerenciasCarrito}

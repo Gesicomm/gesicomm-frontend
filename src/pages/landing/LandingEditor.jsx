@@ -19,6 +19,7 @@ import SidebarSecciones from './SidebarSecciones';
 import SelectorSecciones from './SelectorSecciones';
 import LandingTemplatePicker from './LandingTemplatePicker';
 import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase } from './BloquesSchema';
+import { BlockRegistry } from '../../page-builder/core/BlockRegistry';
 
 import ConfirmDialog from '../../components/ConfirmDialog';
 import '../vitrina/vitrina.css';
@@ -108,7 +109,13 @@ export default function LandingEditor() {
   // fila por fila hasta el próximo Guardar.
   const [testimonios, setTestimonios] = useState([]); // [{ nombre, foto, calificacion, comentario }]
   const [faqs, setFaqs] = useState([]); // [{ pregunta, respuesta }]
-  const [secciones, setSecciones] = useState(() => getSeccionesBase().map((s, idx) => ({ ...s, id: s.id || `base-${s.tipo}-${idx}`, orden: idx })));
+  const [documentModel, setDocumentModel] = useState(() => ({
+    pages: {
+      landing: { sections: getSeccionesBase().map((s, idx) => ({ ...s, id: s.id || `base-${s.tipo}-${idx}`, orden: idx })) },
+      producto: { sections: [] }
+    }
+  }));
+  
   const [subiendoFotoTestimonio, setSubiendoFotoTestimonio] = useState(null); // índice de la fila, o null
   const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [tienda, setTienda] = useState(null);
@@ -119,11 +126,31 @@ export default function LandingEditor() {
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [viewportMode, setViewportMode] = useState('desktop');
   const [sidebarTab, setSidebarTab] = useState('sections'); // 'sections' | 'theme'
+  const [viewMode, setViewMode] = useState('landing'); // 'landing' | 'producto'
+
+  const secciones = documentModel.pages[viewMode]?.sections || [];
+  
+  const setSecciones = useCallback((updater) => {
+    setDocumentModel(prev => {
+      const currentSections = prev.pages[viewMode]?.sections || [];
+      const newSections = typeof updater === 'function' ? updater(currentSections) : updater;
+      return {
+        ...prev,
+        pages: {
+          ...prev.pages,
+          [viewMode]: {
+            ...prev.pages[viewMode],
+            sections: newSections
+          }
+        }
+      };
+    });
+  }, [viewMode]);
 
   const handleActualizarSeccion = useCallback((id, updates) => {
     setSecciones(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
     setSucio(true);
-  }, []);
+  }, [setSecciones]);
 
   const handleDuplicarSeccion = useCallback((id) => {
     setSecciones(prev => {
@@ -133,6 +160,7 @@ export default function LandingEditor() {
       const copia = {
         ...original,
         id: `temp-${Date.now()}`,
+        stable_id: Math.random().toString(36).substr(2, 9),
         // If it was a fixed section, the copy cannot be fixed
         fijo: false,
       };
@@ -142,18 +170,18 @@ export default function LandingEditor() {
       return nuevas.map((s, i) => ({ ...s, orden: i }));
     });
     setSucio(true);
-  }, []);
+  }, [setSecciones]);
 
   const handleToggleVisible = useCallback((id) => {
     setSecciones(prev => prev.map(s => s.id === id ? { ...s, activo: !s.activo } : s));
     setSucio(true);
-  }, []);
+  }, [setSecciones]);
 
   const handleEliminarSeccion = useCallback((id) => {
     setSecciones(prev => prev.filter(s => s.id !== id));
     if (seccionSeleccionadaId === id) setSeccionSeleccionadaId(null);
     setSucio(true);
-  }, []);
+  }, [seccionSeleccionadaId, setSecciones]);
 
   const handleReordenarSeccion = useCallback((fromIndex, toIndex) => {
     setSecciones(prev => {
@@ -163,7 +191,7 @@ export default function LandingEditor() {
       return nuevas;
     });
     setSucio(true);
-  }, []);
+  }, [setSecciones]);
 
   const handleMoverSeccion = useCallback((id, offset) => {
     setSecciones(prev => {
@@ -178,15 +206,18 @@ export default function LandingEditor() {
       return nuevas;
     });
     setSucio(true);
-  }, []);
+  }, [setSecciones]);
 
   const handleAgregarSeccion = useCallback((tipo, templateStr) => {
     const defaults = VALORES_DEFECTO_POR_TIPO[tipo] || { template: 'standard', config: {}, contenido: {} };
     const finalTemplate = templateStr || defaults.template;
     
+    const blockDef = BlockRegistry.resolve(tipo);
     const nuevaSeccion = {
       id: `temp-${Date.now()}`,
+      stable_id: Math.random().toString(36).substr(2, 9),
       tipo,
+      schema_version: blockDef?.schemaVersion || 1,
       template: finalTemplate,
       nombre_interno: tipo,
       activo: true,
@@ -197,7 +228,7 @@ export default function LandingEditor() {
     setSelectorAbierto(false);
     setSeccionSeleccionadaId(nuevaSeccion.id);
     setSucio(true);
-  }, []);
+  }, [setSecciones]);
 
   const [previewVisible, setPreviewVisible] = useState(true);
   const [sucio, setSucio] = useState(false);
@@ -273,10 +304,11 @@ export default function LandingEditor() {
           loadedSecciones = guardada.secciones
             .slice()
             .sort((a, b) => a.orden - b.orden)
-            .map((s, idx) => ({
+            .map((s, idx) => BlockRegistry.migrate({
               ...(basePorTipo.get(s.tipo) || {}),
-              id: s.id || `loaded-${s.tipo}-${idx}`,
+              id: String(s.id || `loaded-${s.tipo}-${idx}`),
               tipo: s.tipo,
+              schema_version: s.schema_version,
               nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
               activo: s.activo !== false,
               orden: idx,
@@ -301,20 +333,38 @@ export default function LandingEditor() {
            if (sec) { sec.contenido = { ...sec.contenido, items: guardada.faq.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })) }; }
         }
         
-        // Guardamos las secciones parcialmente procesadas, falta productos
-        setSecciones(loadedSecciones);
-        // Un producto/combo puede haberse dado de baja (o quedado sin
-        // stock/"en_venta") desde que se agregó a esta landing. Antes esos
-        // items huérfanos entraban igual a `seleccion` y se mostraban en
-        // "Orden y etiquetas" marcados "ya no disponible" — inofensivo en
-        // apariencia, pero armarPayload() los manda tal cual al guardar, y
-        // el backend rechaza la landing ENTERA por un solo item inválido
-        // (LandingService.resolverItemsCatalogo no hace guardado parcial).
-        // Resultado real: cualquier intento de guardar volvía a fallar con
-        // "El producto #N no existe..." hasta que alguien los sacara a mano
-        // uno por uno. Se filtran acá, ANTES de que entren a `seleccion`, así
-        // ya no aparecen en ningún lado del editor ni pueden volver a romper
-        // un guardado — no requieren que la usuaria haga nada.
+        // MAPEO DE SECCIONES DE PRODUCTO
+        let loadedSeccionesProducto = [];
+        if (Array.isArray(guardada.secciones_producto) && guardada.secciones_producto.length > 0) {
+          const basePorTipo = new Map(getSeccionesBase().map(s => [s.tipo, s]));
+          loadedSeccionesProducto = guardada.secciones_producto
+            .slice()
+            .sort((a, b) => a.orden - b.orden)
+            .map((s, idx) => BlockRegistry.migrate({
+              ...(basePorTipo.get(s.tipo) || {}),
+              id: String(s.id || `loaded-prod-${s.tipo}-${idx}`),
+              stable_id: s.stable_id,
+              tipo: s.tipo,
+              schema_version: s.schema_version,
+              nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
+              activo: s.activo !== false,
+              orden: idx,
+              config: s.config || s.config_json || {},
+              contenido: s.contenido || s.contenido_json || {},
+            }));
+        } else {
+          // Default para vista de producto
+          const pdDefaults = VALORES_DEFECTO_POR_TIPO['product_detail'] || { template: 'standard', config: {}, contenido: {} };
+          loadedSeccionesProducto = [
+            { id: 'base-header-p0', tipo: 'header', nombre_interno: 'Header', activo: true, orden: 0, config: {}, contenido: {} },
+            { id: 'base-product_detail-p1', tipo: 'product_detail', nombre_interno: 'Detalle de Producto', activo: true, orden: 1, config: pdDefaults.config, contenido: pdDefaults.contenido },
+            { id: 'base-footer-p2', tipo: 'footer', nombre_interno: 'Footer', activo: true, orden: 2, config: {}, contenido: {} },
+          ];
+        }
+
+        // Guardamos las secciones procesadas en el modelo de documento
+        
+        // MIGRACION: Inyectar productos en la seccion productos
         const clavesCatalogo = new Set([
           ...(datosCatalogo.productos || []).map(p => claveItem('producto', p.id)),
           ...(datosCatalogo.combos || []).map(c => claveItem('combo', c.id)),
@@ -336,9 +386,8 @@ export default function LandingEditor() {
           });
         setSeleccion(mapa);
 
-        // MIGRACION: Inyectar productos en la seccion productos
         if (mapa.size > 0) {
-           setSecciones(prev => prev.map(sec => {
+           loadedSecciones = loadedSecciones.map(sec => {
               if (sec.tipo === 'productos' && (!sec.contenido?.productos || sec.contenido.productos.length === 0)) {
                  return { 
                    ...sec, 
@@ -349,8 +398,15 @@ export default function LandingEditor() {
                  };
               }
               return sec;
-           }));
+           });
         }
+        
+        setDocumentModel({
+          pages: {
+            landing: { sections: loadedSecciones },
+            producto: { sections: loadedSeccionesProducto }
+          }
+        });
 
 
         // sucio=true a propósito cuando hubo descarte: lo que quedó en
@@ -805,8 +861,21 @@ export default function LandingEditor() {
         respuesta: f.respuesta.trim(), 
         orden: idx 
       })),
-      secciones: secciones.map((s, idx) => ({
+      secciones: documentModel.pages.landing.sections.map((s, idx) => ({
+        stable_id: s.stable_id,
         tipo: s.tipo,
+        schema_version: s.schema_version,
+        nombre_interno: s.nombre_interno,
+        activo: s.activo !== false,
+        orden: idx,
+        template: s.template,
+        config: s.config || {},
+        contenido: s.contenido || {},
+      })),
+      secciones_producto: documentModel.pages.producto.sections.map((s, idx) => ({
+        stable_id: s.stable_id,
+        tipo: s.tipo,
+        schema_version: s.schema_version,
         nombre_interno: s.nombre_interno,
         activo: s.activo !== false,
         orden: idx,
@@ -1043,17 +1112,35 @@ export default function LandingEditor() {
 
         {/* COLUMNA CENTRAL: Canvas */}
         <main className="flex-1 overflow-hidden bg-[#e5e7eb] relative flex flex-col items-center">
-           <div className="w-full flex justify-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--vit-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--vit-border)' }}>
-                <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
-                  <Monitor size={16} /> Desktop
-                </button>
-                <button type="button" onClick={() => setViewportMode('tablet')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
-                  <Tablet size={16} /> Tablet
-                </button>
-                <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
-                  <Smartphone size={16} /> Mobile
-                </button>
+           <div className="w-full grid grid-cols-3 items-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10 px-4">
+              
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1 bg-[var(--vit-bg)] p-1 rounded-lg border border-[var(--vit-border)]">
+                  <button type="button" onClick={() => { setViewMode('landing'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'landing' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
+                    Página Principal
+                  </button>
+                  <button type="button" onClick={() => { setViewMode('producto'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'producto' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
+                    Vista de Producto
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--vit-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--vit-border)' }}>
+                  <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
+                    <Monitor size={16} /> Desktop
+                  </button>
+                  <button type="button" onClick={() => setViewportMode('tablet')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
+                    <Tablet size={16} /> Tablet
+                  </button>
+                  <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
+                    <Smartphone size={16} /> Mobile
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                {/* Reserved for future right-aligned actions */}
               </div>
            </div>
            <div className="w-full h-full overflow-y-auto flex justify-center bg-[#e5e7eb] relative">

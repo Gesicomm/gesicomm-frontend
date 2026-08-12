@@ -21,9 +21,14 @@ export default function LandingProductos({
     const isAdded = agregadoRapido === item.content_id;
     return (
       <div key={item.content_id} className="lp-card" onClick={() => onCardClick(item)} role="button" tabIndex={0}>
-        <div className="lp-card-media">
+        <div className="lp-card-media group">
           {item.imagen ? (
-            <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
+            <>
+              <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" className="lp-card-img-main" />
+              {item.imagenes && item.imagenes.length > 1 && (
+                <img src={getMediaUrl(item.imagenes[1])} alt={item.nombre} loading="lazy" className="lp-card-img-hover" />
+              )}
+            </>
           ) : (
             <div className="lp-card-media-placeholder">
               {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}

@@ -29,7 +29,7 @@ export default function SidebarSecciones({
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
     
     // Encontramos de dónde vino globalmente
-    const fromIndex = secciones.findIndex(s => s.id === draggableId);
+    const fromIndex = secciones.findIndex(s => String(s.id) === String(draggableId));
     if (fromIndex === -1) return;
     
     // Determinamos la lista destino
@@ -50,14 +50,14 @@ export default function SidebarSecciones({
        } else {
            // Después del último del grupo
            const lastItemId = targetList[targetList.length - 1].id;
-           toIndex = secciones.findIndex(s => s.id === lastItemId);
+           toIndex = secciones.findIndex(s => String(s.id) === String(lastItemId));
            // Si arrastramos de arriba hacia abajo, el toIndex ya es correcto o +1
            // onReorder ya hace splice
        }
     } else {
        // Se soltó en una posición específica
        const targetId = targetList[destination.index].id;
-       toIndex = secciones.findIndex(s => s.id === targetId);
+       toIndex = secciones.findIndex(s => String(s.id) === String(targetId));
     }
     
     if (toIndex !== -1) {
@@ -84,7 +84,7 @@ export default function SidebarSecciones({
     }
 
     return (
-      <Draggable key={sec.id} draggableId={sec.id} index={index}>
+      <Draggable key={String(sec.id)} draggableId={String(sec.id)} index={index}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}

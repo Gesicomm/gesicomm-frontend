@@ -474,13 +474,30 @@
   overflow: hidden;
 }
 .lp-card-media img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.5s ease-out, opacity 0.4s ease-in-out;
 }
+.lp-card-media .lp-card-img-hover {
+  opacity: 0;
+  z-index: 2;
+}
+.lp-card-media .lp-card-img-main {
+  opacity: 1;
+  z-index: 1;
+}
+
 .lp-card:hover .lp-card-media img {
   transform: scale(1.05);
+}
+.lp-card:hover .lp-card-media .lp-card-img-hover {
+  opacity: 1;
+}
+.lp-card:hover .lp-card-media:has(.lp-card-img-hover) .lp-card-img-main {
+  opacity: 0;
 }
 
 /* Un catálogo recién armado tiene muchos productos sin foto todavía. En

@@ -11,10 +11,12 @@ import ComoFuncionaInspector from './inspectors/ComoFuncionaInspector';
 import BeneficiosInspector from './inspectors/BeneficiosInspector';
 import AnnouncementInspector from './inspectors/AnnouncementInspector';
 import BeforeAfterInspector from './inspectors/BeforeAfterInspector';
+import HeaderInspector from './inspectors/HeaderInspector';
 
 import TemplateThumbnails from './TemplateThumbnails';
 
 const sectionEditors = {
+  header: HeaderInspector,
   productos: ProductosInspector,
   testimonios: TestimoniosInspector,
   faq: FaqInspector,
