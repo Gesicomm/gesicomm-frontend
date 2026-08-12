@@ -519,13 +519,22 @@ export default function LandingPublica() {
   const ordenLayout = (tipo) => ordenSeccion.has(tipo) ? ordenSeccion.get(tipo) : 99;
   const contenidoSeccion = (tipo) => seccionesOrdenadas.find(s => s.tipo === tipo)?.contenido || {};
 
+  const wrapperStyle = (tipo) => {
+    const s = getSeccion(tipo);
+    const style = { order: ordenLayout(tipo) };
+    if (s?.config?.color_fondo) style['--l-bg'] = s.config.color_fondo;
+    if (s?.config?.color_texto) style['--l-text'] = s.config.color_texto;
+    if (s?.config?.color_boton) style['--l-primary'] = s.config.color_boton;
+    return style;
+  };
+
   return (
     <div
       className={`lp-page ${data.tema.modo === 'claro' ? 'claro' : ''}`}
       style={{ ...calcularEstiloLanding({ tema: data.tema, diseno: data.diseno }), display: 'flex', flexDirection: 'column' }}
     >
       {visibleSeccion('header') && (
-        <div style={{ order: ordenLayout('header') }}>
+        <div style={wrapperStyle('header')}>
           <LandingHeader
             nombre={contenidoSeccion('header').logo_texto || data.titulo}
             mostrarBuscador={!!filtros.buscador}
@@ -539,7 +548,7 @@ export default function LandingPublica() {
       )}
 
       {visibleSeccion('announcement_bar') && contenidoSeccion('announcement_bar').texto && (
-        <section className="lp-custom-announcement" style={{ order: ordenLayout('announcement_bar') }}>
+        <section className="lp-custom-announcement" style={wrapperStyle('announcement_bar')}>
           {contenidoSeccion('announcement_bar').texto}
         </section>
       )}
@@ -548,7 +557,7 @@ export default function LandingPublica() {
         const s = getSeccion('hero');
         const cont = s?.contenido || {};
         return (
-          <div style={{ order: ordenLayout('hero') }}>
+          <div style={wrapperStyle('hero')}>
             <LandingHero
               template={s?.template}
               config={s?.config}
@@ -567,10 +576,10 @@ export default function LandingPublica() {
         );
       })()}
 
-      {visibleSeccion('beneficios') && <div style={{ order: ordenLayout('beneficios') }}><LandingBenefits seccion={getSeccion('beneficios')} /></div>}
+      {visibleSeccion('beneficios') && <div style={wrapperStyle('beneficios')}><LandingBenefits seccion={getSeccion('beneficios')} /></div>}
 
       {visibleSeccion('categorias') && categorias.length > 0 && (
-        <div style={{ order: ordenLayout('categorias') }}>
+        <div style={wrapperStyle('categorias')}>
           <LandingCategoryStrip
             seccion={getSeccion('categorias')}
             categorias={categorias}
@@ -581,7 +590,7 @@ export default function LandingPublica() {
       )}
 
       {visibleSeccion('destacados') && itemsDestacados.length > 0 && (
-        <div style={{ order: ordenLayout('destacados') }}>
+        <div style={wrapperStyle('destacados')}>
           <LandingFeatured
             seccion={getSeccion('destacados')}
             items={itemsDestacados}
@@ -643,7 +652,7 @@ export default function LandingPublica() {
         const mostrarFiltros = seleccionados.length === 0 && (!template || template === 'grid_4' || template === 'grid_3');
 
         return (
-          <main className="lp-shell" style={{ order: ordenLayout('productos') }}>
+          <main className="lp-shell" style={wrapperStyle('productos')}>
             <header className="lp-header">
               <span className="lp-header-eyebrow">{seleccionados.length > 0 ? itemsParaMostrar.length : conteo} producto{itemsParaMostrar.length !== 1 ? 's' : ''}</span>
               <h2 className="lp-header-titulo">{cont.titulo || 'Todos los productos'}</h2>
@@ -704,20 +713,20 @@ export default function LandingPublica() {
         );
       })()}
       {visibleSeccion('texto') && (
-        <section className="lp-custom-section" style={{ order: ordenLayout('texto') }}>
+        <section className="lp-custom-section" style={wrapperStyle('texto')}>
           {contenidoSeccion('texto').titulo && <h2>{contenidoSeccion('texto').titulo}</h2>}
           {contenidoSeccion('texto').texto && <p>{contenidoSeccion('texto').texto}</p>}
         </section>
       )}
 
       {visibleSeccion('como_funciona') && (
-        <div style={{ order: ordenLayout('como_funciona') }}>
+        <div style={wrapperStyle('como_funciona')}>
           <LandingComoFunciona seccion={getSeccion('como_funciona')} />
         </div>
       )}
 
       {visibleSeccion('redes_sociales') && (
-        <section className="lp-social-section" style={{ order: ordenLayout('redes_sociales') }}>
+        <section className="lp-social-section" style={wrapperStyle('redes_sociales')}>
           <h2>{contenidoSeccion('redes_sociales').titulo || 'Seguinos'}</h2>
           <div>
             {contenidoSeccion('redes_sociales').instagram && (
@@ -740,17 +749,17 @@ export default function LandingPublica() {
       )}
 
       {visibleSeccion('testimonios') && cantidadOpiniones > 0 && (
-        <div style={{ order: ordenLayout('testimonios') }}>
+        <div style={wrapperStyle('testimonios')}>
           <LandingTestimonials testimonios={data.testimonios} />
         </div>
       )}
       {visibleSeccion('faq') && (data.faq?.length || 0) > 0 && (
-        <div style={{ order: ordenLayout('faq') }}>
+        <div style={wrapperStyle('faq')}>
           <LandingFaq items={data.faq} />
         </div>
       )}
 
-      {visibleSeccion('footer') && <footer id="lp-contacto" className="lp-footer" style={{ order: ordenLayout('footer') }}>
+      {visibleSeccion('footer') && <footer id="lp-contacto" className="lp-footer" style={wrapperStyle('footer')}>
         <div className="lp-footer-inner">
           <div>
             <p className="lp-footer-nombre">{contenidoSeccion('footer').titulo || data.titulo}</p>

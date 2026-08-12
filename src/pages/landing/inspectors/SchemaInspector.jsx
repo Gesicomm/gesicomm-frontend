@@ -115,6 +115,20 @@ export function renderInput(campo, valor, onChange, onUpload) {
       </select>
     );
   }
+
+  if (campo.type === 'boolean') {
+    return (
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          className="rounded border-[var(--vit-border)] text-[var(--vit-primary)] focus:ring-[var(--vit-primary)] h-4 w-4"
+          checked={!!valor}
+          onChange={e => onChange(campo.key, e.target.checked)}
+        />
+        <span className="text-sm text-[var(--vit-text)]">{campo.label}</span>
+      </label>
+    );
+  }
   
   // Default: text
   return (
