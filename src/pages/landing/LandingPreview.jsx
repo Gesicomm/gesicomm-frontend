@@ -169,8 +169,12 @@ export default function LandingPreview({
       case 'hero':
         return (
           <LandingHero
+            template={seccion.template}
+            config={seccion.config}
+            contenido={cont}
             titulo={cont.titulo || titulo || 'Titulo de tu tienda'}
             descripcion={cont.descripcion || descripcion}
+            imagenFondo={cont.imagen_fondo || banner}
             totalItems={itemsPreview.length}
             totalCategorias={categorias.length}
             ratingPromedio={ratingPromedio}

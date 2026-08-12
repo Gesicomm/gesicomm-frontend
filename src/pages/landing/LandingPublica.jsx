@@ -544,19 +544,28 @@ export default function LandingPublica() {
         </section>
       )}
 
-      {visibleSeccion('hero') && (
-        <div style={{ order: ordenLayout('hero') }}>
-          <LandingHero
-            titulo={data.titulo}
-            descripcion={data.descripcion}
-            totalItems={totalItems}
-            totalCategorias={categorias.length}
-            ratingPromedio={ratingPromedio}
-            cantidadOpiniones={cantidadOpiniones}
-            whatsapp={contacto?.whatsapp}
-          />
-        </div>
-      )}
+      {visibleSeccion('hero') && (() => {
+        const s = getSeccion('hero');
+        const cont = s?.contenido || {};
+        return (
+          <div style={{ order: ordenLayout('hero') }}>
+            <LandingHero
+              template={s?.template}
+              config={s?.config}
+              contenido={cont}
+              titulo={cont.titulo || data.titulo}
+              descripcion={cont.descripcion || data.descripcion}
+              imagenFondo={cont.imagen_fondo || data.banner}
+              totalItems={totalItems}
+              totalCategorias={categorias.length}
+              ratingPromedio={ratingPromedio}
+              cantidadOpiniones={cantidadOpiniones}
+              whatsapp={contacto?.whatsapp}
+              tamano={cont.tamano}
+            />
+          </div>
+        );
+      })()}
 
       {visibleSeccion('beneficios') && <div style={{ order: ordenLayout('beneficios') }}><LandingBenefits seccion={getSeccion('beneficios')} /></div>}
 
