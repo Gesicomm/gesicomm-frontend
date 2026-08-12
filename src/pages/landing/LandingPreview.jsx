@@ -42,10 +42,11 @@ function normalizarItem(item, idx) {
 
 import { ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 
-function SectionWrapper({ id, name, selected, children, onSelect, onReorder, onDelete }) {
+function SectionWrapper({ id, name, selected, style, children, onSelect, onReorder, onDelete }) {
   return (
     <div
       className={`relative group transition-all duration-200 cursor-pointer ${selected ? 'ring-2 ring-[var(--vit-accent)] z-20' : 'hover:ring-2 hover:ring-[var(--vit-accent-soft)] hover:z-10'}`}
+      style={style}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -352,11 +353,17 @@ export default function LandingPreview({
               const contenidoRender = renderSection(seccion);
               if (!contenidoRender) return null;
               
+              const sectionStyle = {};
+              if (seccion.config?.color_fondo) sectionStyle['--l-bg'] = seccion.config.color_fondo;
+              if (seccion.config?.color_texto) sectionStyle['--l-text'] = seccion.config.color_texto;
+              if (seccion.config?.color_boton) sectionStyle['--l-primary'] = seccion.config.color_boton;
+              
               return (
                 <SectionWrapper 
                   key={seccion.id || seccion.tipo}
                   id={seccion.id || seccion.tipo}
                   name={seccion.nombre_interno || seccion.tipo}
+                  style={sectionStyle}
                   selected={seccionSeleccionadaId === seccion.id}
                   onSelect={onSelectSeccion}
                   onReorder={onReorderSeccion}

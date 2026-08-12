@@ -3,7 +3,7 @@ import { Settings, Copy, EyeOff, Eye, Trash2 } from 'lucide-react';
 import { BLOQUES_SCHEMA } from './BloquesSchema';
 
 // Inspectores Contextuales
-import SchemaInspector from './inspectors/SchemaInspector';
+import SchemaInspector, { renderInput } from './inspectors/SchemaInspector';
 import ProductosInspector from './inspectors/ProductosInspector';
 import TestimoniosInspector from './inspectors/TestimoniosInspector';
 import FaqInspector from './inspectors/FaqInspector';
@@ -131,6 +131,23 @@ export default function InspectorSeccion({
                     <option value="primary">Acento Primario</option>
                   </select>
                 </div>
+
+                {schema.designSchema && schema.designSchema.length > 0 && (
+                  <div className="flex flex-col gap-4 mt-2">
+                    <h4 className="text-sm font-semibold text-[var(--vit-text)] border-b border-[var(--vit-border)] pb-2 mb-1">Configuración y Colores</h4>
+                    {schema.designSchema.map(campo => (
+                      <div key={campo.key} className="flex flex-col gap-1.5">
+                        <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
+                        {renderInput(
+                          campo, 
+                          seccion.config?.[campo.key], 
+                          (k, val) => onUpdate(seccion.id, { config: { ...seccion.config, [k]: val } }),
+                          onUploadImagen
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
              </div>
            )}
         </div>
