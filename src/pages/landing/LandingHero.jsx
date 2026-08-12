@@ -71,9 +71,9 @@ export default function LandingHero({
             )}
           </motion.div>
         </AnimatePresence>
-        <div className="absolute inset-0 -z-10 bg-black/50" />
+        <div className="absolute inset-0 -z-10 bg-[var(--l-bg)] opacity-60 mix-blend-multiply" />
         
-        <div className="mx-auto max-w-4xl px-[var(--l-gutter)] text-white">
+        <div className="mx-auto max-w-4xl px-[var(--l-gutter)] text-[var(--l-text)]">
           <motion.h1
             initial="oculto"
             animate="visible"
@@ -91,7 +91,7 @@ export default function LandingHero({
               animate="visible"
               custom={0.16}
               variants={variantes}
-              className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-gray-200"
+              className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-[var(--l-text-muted)]"
             >
               {descripcion}
             </motion.p>
@@ -106,7 +106,7 @@ export default function LandingHero({
           >
             <a
               href="#lp-productos"
-              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-[var(--l-text)] shadow-lg transition-transform hover:-translate-y-0.5"
               style={{ background: 'var(--l-primary)' }}
             >
               Ver catálogo <ArrowRight size={18} />
@@ -116,7 +116,7 @@ export default function LandingHero({
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] border border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] border border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-[var(--l-text)] backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 <MessageCircle size={18} /> Escribinos
               </a>
@@ -146,10 +146,10 @@ export default function LandingHero({
         {imagenFondo && (
           <>
             <img src={getMediaUrl(imagenFondo)} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
-            <div className="absolute inset-0 -z-10 bg-black/60" />
+            <div className="absolute inset-0 -z-10 bg-[var(--l-bg)] opacity-60 mix-blend-multiply" />
           </>
         )}
-        <div className="mx-auto max-w-4xl px-[var(--l-gutter)] text-white">
+        <div className="mx-auto max-w-4xl px-[var(--l-gutter)] text-[var(--l-text)]">
           <motion.h1
             initial="oculto"
             animate="visible"
@@ -167,7 +167,7 @@ export default function LandingHero({
               animate="visible"
               custom={0.16}
               variants={variantes}
-              className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-gray-200"
+              className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-[var(--l-text-muted)]"
             >
               {descripcion}
             </motion.p>
@@ -182,7 +182,7 @@ export default function LandingHero({
           >
             <a
               href="#lp-productos"
-              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-white shadow-lg transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-[var(--l-text)] shadow-lg transition-transform hover:-translate-y-0.5"
               style={{ background: 'var(--l-primary)' }}
             >
               Ver catálogo <ArrowRight size={18} />
@@ -192,7 +192,7 @@ export default function LandingHero({
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] border border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20"
+                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] border border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-[var(--l-text)] backdrop-blur-sm transition-colors hover:bg-white/20"
               >
                 <MessageCircle size={18} /> Escribinos
               </a>
@@ -209,12 +209,12 @@ export default function LandingHero({
             >
               <div>
                 <dt className="text-sm font-semibold uppercase tracking-wide text-gray-300">Productos</dt>
-                <dd className="mt-1 text-3xl font-extrabold text-white">{totalItems}</dd>
+                <dd className="mt-1 text-3xl font-extrabold text-[var(--l-text)]">{totalItems}</dd>
               </div>
               {totalCategorias > 0 && (
                 <div>
                   <dt className="text-sm font-semibold uppercase tracking-wide text-gray-300">Categorías</dt>
-                  <dd className="mt-1 text-3xl font-extrabold text-white">{totalCategorias}</dd>
+                  <dd className="mt-1 text-3xl font-extrabold text-[var(--l-text)]">{totalCategorias}</dd>
                 </div>
               )}
             </motion.dl>
