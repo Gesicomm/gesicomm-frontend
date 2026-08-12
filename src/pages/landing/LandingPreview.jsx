@@ -337,6 +337,7 @@ export default function LandingPreview({
         contacto,
         slug: '',
         redes: seccionesOrdenadas.find(s => s.tipo === 'header')?.config?.redes_sociales || {},
+        secciones: seccionesOrdenadas,
       },
       data: {
         item: mockItem,
