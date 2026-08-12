@@ -132,20 +132,42 @@ export default function InspectorSeccion({
                   </select>
                 </div>
 
+                <div className="flex flex-col gap-4 mt-4">
+                  <h4 className="text-sm font-semibold text-[var(--vit-text)] border-b border-[var(--vit-border)] pb-2 mb-1">Personalización de Colores</h4>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-[var(--vit-text)]">Color de fondo</span>
+                    {renderInput({ type: 'color', key: 'color_fondo' }, seccion.config?.color_fondo, (k, val) => onUpdate(seccion.id, { config: { ...seccion.config, [k]: val } }))}
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-[var(--vit-text)]">Color del texto</span>
+                    {renderInput({ type: 'color', key: 'color_texto' }, seccion.config?.color_texto, (k, val) => onUpdate(seccion.id, { config: { ...seccion.config, [k]: val } }))}
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-sm font-medium text-[var(--vit-text)]">Color del botón (Acento)</span>
+                    {renderInput({ type: 'color', key: 'color_boton' }, seccion.config?.color_boton, (k, val) => onUpdate(seccion.id, { config: { ...seccion.config, [k]: val } }))}
+                  </div>
+                </div>
+
                 {schema.designSchema && schema.designSchema.length > 0 && (
-                  <div className="flex flex-col gap-4 mt-2">
-                    <h4 className="text-sm font-semibold text-[var(--vit-text)] border-b border-[var(--vit-border)] pb-2 mb-1">Configuración y Colores</h4>
-                    {schema.designSchema.map(campo => (
-                      <div key={campo.key} className="flex flex-col gap-1.5">
-                        <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
-                        {renderInput(
-                          campo, 
-                          seccion.config?.[campo.key], 
-                          (k, val) => onUpdate(seccion.id, { config: { ...seccion.config, [k]: val } }),
-                          onUploadImagen
-                        )}
-                      </div>
-                    ))}
+                  <div className="flex flex-col gap-4 mt-4">
+                    <h4 className="text-sm font-semibold text-[var(--vit-text)] border-b border-[var(--vit-border)] pb-2 mb-1">Opciones Específicas</h4>
+                    {schema.designSchema.map(campo => {
+                      if (['color_fondo', 'color_texto', 'color_boton'].includes(campo.key)) return null;
+                      return (
+                        <div key={campo.key} className="flex flex-col gap-1.5">
+                          <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
+                          {renderInput(
+                            campo, 
+                            seccion.config?.[campo.key], 
+                            (k, val) => onUpdate(seccion.id, { config: { ...seccion.config, [k]: val } }),
+                            onUploadImagen
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
              </div>
