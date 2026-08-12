@@ -1180,14 +1180,15 @@ export default function LandingEditor() {
            >
              <div style={{
                 width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
-                height: viewportMode === 'desktop' ? '100%' : 'max-content',
-                minHeight: '100%',
+                height: viewportMode === 'mobile' ? '812px' : viewportMode === 'tablet' ? '1024px' : '100%',
+                minHeight: viewportMode === 'desktop' ? '100%' : 'auto',
                 backgroundColor: 'white',
-                boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 20px rgba(0,0,0,0.1)',
-                transition: 'width 0.3s ease',
+                boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 40px rgba(0,0,0,0.15)',
+                transition: 'width 0.3s ease, height 0.3s ease',
                 margin: viewportMode === 'desktop' ? '0' : '2rem auto',
-                borderRadius: viewportMode === 'desktop' ? '0' : '16px',
-                border: viewportMode === 'desktop' ? 'none' : '8px solid #1c2230',
+                borderRadius: viewportMode === 'mobile' ? '36px' : viewportMode === 'tablet' ? '24px' : '0',
+                border: viewportMode === 'desktop' ? 'none' : '12px solid #1c2230',
+                overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column'
              }}>
