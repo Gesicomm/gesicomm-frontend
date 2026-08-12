@@ -273,16 +273,17 @@ export default function Landing() {
       <section className="border-b border-border">
         <Container className="grid items-center gap-12 pb-14 pt-14 lg:grid-cols-[1fr_minmax(0,26rem)] lg:gap-16 lg:pb-16 lg:pt-18">
           <div className="animar-entrada">
-            <p className="etiqueta text-fg-subtle">Gestión de eCommerce</p>
+            <p className="etiqueta text-fg-subtle">ERP para eCommerce y Shopify</p>
 
             <h1 className="titular mt-5 text-[2.15rem] text-fg sm:text-5xl lg:text-6xl">
               Toda la operación de tu eCommerce, en un solo lugar.
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-fg-muted sm:text-lg">
-              Gesicomm reúne catálogo, pedidos, inventario, clientes, logística y campañas en un
-              único panel, con el rendimiento de tus anuncios de Facebook al lado del margen real
-              de cada producto.
+              Gesicomm es un ERP y software SaaS para gestión de eCommerce que reúne catálogo, pedidos,
+              inventario, clientes, logística y campañas en un único panel. Ve el rendimiento de tus
+              anuncios de Facebook Ads al lado del margen real de cada producto. Ideal para tiendas en línea,
+              Shopify y negocios de venta por internet que necesitan control operativo real.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">

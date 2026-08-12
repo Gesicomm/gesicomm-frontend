@@ -129,7 +129,7 @@ export const SCHEMA_ORGANIZACION = {
   url: SITIO,
   logo: `${SITIO}/icons/icon-512.png`,
   description:
-    'Plataforma SaaS de gestión de eCommerce: productos, pedidos, inventario, clientes, logística, CRM y campañas en un solo panel.',
+    'ERP y software SaaS para gestión de eCommerce y Shopify. Administra productos, pedidos, inventario, clientes, logística, CRM y campañas en un solo panel.',
   email: 'contacto@gesicomm.com',
   contactPoint: {
     '@type': 'ContactPoint',

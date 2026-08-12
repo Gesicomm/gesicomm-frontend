@@ -80,6 +80,7 @@ function buildFormFromEnvio(envio) {
       nro_comprobante: "",
       observaciones: "",
       courier_id: "",
+      incluye_delivery: true,
       costo_envio: 0
     };
   }
@@ -126,6 +127,7 @@ function buildFormFromEnvio(envio) {
     nro_comprobante: envio.nro_comprobante || "",
     observaciones: envio.observaciones || "",
     courier_id: envio.courier_id || "",
+    incluye_delivery: envio.incluye_delivery !== false,
     costo_envio: envio.costo_envio || 0
   };
 }
@@ -679,6 +681,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                     className="form-input"
                     value={form.courier_id}
                     onChange={e => handleCourierChange(e.target.value)}
+                    disabled={!form.incluye_delivery}
                   >
                     <option value="">-- Sin asignar --</option>
                     {couriers.map(c => (
@@ -691,12 +694,32 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                   <label style={{ color: '#10b981' }}>Costo Delivery (Gs)</label>
                   <CurrencyInput
                     className="form-input"
-                    style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
+                    style={{ fontFamily: 'monospace', fontWeight: 'bold', opacity: form.incluye_delivery ? 1 : 0.5 }}
                     value={form.costo_envio}
-                    onChange={val => setForm({ ...form, costo_envio: val })}
+                    onChange={val => form.incluye_delivery && setForm({ ...form, costo_envio: val })}
+                    disabled={!form.incluye_delivery}
                     prefix=""
                   />
                 </div>
+              </div>
+
+              <div className="np-row">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.incluye_delivery}
+                    onChange={e => {
+                      const nuevoIncluye = e.target.checked;
+                      setForm(prev => ({
+                        ...prev,
+                        incluye_delivery: nuevoIncluye,
+                        costo_envio: nuevoIncluye ? prev.costo_envio : 0,
+                        courier_id: nuevoIncluye ? prev.courier_id : ""
+                      }));
+                    }}
+                  />
+                  <span style={{ color: '#60a5fa', fontSize: '0.85rem' }}>Incluye Delivery</span>
+                </label>
               </div>
 
               <div className="np-row">
