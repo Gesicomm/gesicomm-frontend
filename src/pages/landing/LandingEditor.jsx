@@ -322,15 +322,19 @@ export default function LandingEditor() {
         // MAPEO DE SECCIONES (CON MIGRACION DE LEGACY)
         let hasOldData = false;
         let loadedSecciones = [];
+        let loadedSeccionesProducto = [];
         
         if (Array.isArray(guardada.secciones) && guardada.secciones.length > 0) {
           const basePorTipo = new Map(getSeccionesBase().map(s => [s.tipo, s]));
+          
+          // MAPEO DE SECCIONES LANDING
           loadedSecciones = guardada.secciones
-            .slice()
+            .filter(s => !s.page_type || s.page_type === 'landing')
             .sort((a, b) => a.orden - b.orden)
             .map((s, idx) => BlockRegistry.migrate({
               ...(basePorTipo.get(s.tipo) || {}),
               id: String(s.id || `loaded-${s.tipo}-${idx}`),
+              stable_id: s.stable_id,
               tipo: s.tipo,
               schema_version: s.schema_version,
               nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
@@ -339,8 +343,39 @@ export default function LandingEditor() {
               config: s.config || s.config_json || {},
               contenido: s.contenido || s.contenido_json || {},
             }));
-        } else {
+
+          // MAPEO DE SECCIONES PRODUCTO
+          const prodSecs = guardada.secciones.filter(s => s.page_type === 'product');
+          if (prodSecs.length > 0) {
+            loadedSeccionesProducto = prodSecs
+              .sort((a, b) => a.orden - b.orden)
+              .map((s, idx) => BlockRegistry.migrate({
+                ...(basePorTipo.get(s.tipo) || {}),
+                id: String(s.id || `loaded-prod-${s.tipo}-${idx}`),
+                stable_id: s.stable_id,
+                tipo: s.tipo,
+                schema_version: s.schema_version,
+                nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
+                activo: s.activo !== false,
+                orden: idx,
+                config: s.config || s.config_json || {},
+                contenido: s.contenido || s.contenido_json || {},
+              }));
+          }
+        } 
+        
+        if (loadedSecciones.length === 0) {
           loadedSecciones = getSeccionesBase().map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
+        }
+
+        if (loadedSeccionesProducto.length === 0) {
+          // Default para vista de producto
+          const pdDefaults = VALORES_DEFECTO_POR_TIPO['product_detail'] || { template: 'standard', config: {}, contenido: {} };
+          loadedSeccionesProducto = [
+            { id: 'base-header-p0', tipo: 'header', nombre_interno: 'Header', activo: true, orden: 0, config: {}, contenido: {} },
+            { id: 'base-product_detail-p1', tipo: 'product_detail', nombre_interno: 'Detalle de Producto', activo: true, orden: 1, config: pdDefaults.config, contenido: pdDefaults.contenido },
+            { id: 'base-footer-p2', tipo: 'footer', nombre_interno: 'Footer', activo: true, orden: 2, config: {}, contenido: {} },
+          ];
         }
 
         // MIGRACION: Si existen testimonios sueltos, inyectarlos en la sección testimonios
@@ -355,35 +390,6 @@ export default function LandingEditor() {
         if (guardada.faq && guardada.faq.length > 0) {
            const sec = loadedSecciones.find(s => s.tipo === 'faq');
            if (sec) { sec.contenido = { ...sec.contenido, items: guardada.faq.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })) }; }
-        }
-        
-        // MAPEO DE SECCIONES DE PRODUCTO
-        let loadedSeccionesProducto = [];
-        if (Array.isArray(guardada.secciones_producto) && guardada.secciones_producto.length > 0) {
-          const basePorTipo = new Map(getSeccionesBase().map(s => [s.tipo, s]));
-          loadedSeccionesProducto = guardada.secciones_producto
-            .slice()
-            .sort((a, b) => a.orden - b.orden)
-            .map((s, idx) => BlockRegistry.migrate({
-              ...(basePorTipo.get(s.tipo) || {}),
-              id: String(s.id || `loaded-prod-${s.tipo}-${idx}`),
-              stable_id: s.stable_id,
-              tipo: s.tipo,
-              schema_version: s.schema_version,
-              nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
-              activo: s.activo !== false,
-              orden: idx,
-              config: s.config || s.config_json || {},
-              contenido: s.contenido || s.contenido_json || {},
-            }));
-        } else {
-          // Default para vista de producto
-          const pdDefaults = VALORES_DEFECTO_POR_TIPO['product_detail'] || { template: 'standard', config: {}, contenido: {} };
-          loadedSeccionesProducto = [
-            { id: 'base-header-p0', tipo: 'header', nombre_interno: 'Header', activo: true, orden: 0, config: {}, contenido: {} },
-            { id: 'base-product_detail-p1', tipo: 'product_detail', nombre_interno: 'Detalle de Producto', activo: true, orden: 1, config: pdDefaults.config, contenido: pdDefaults.contenido },
-            { id: 'base-footer-p2', tipo: 'footer', nombre_interno: 'Footer', activo: true, orden: 2, config: {}, contenido: {} },
-          ];
         }
 
         // Guardamos las secciones procesadas en el modelo de documento
@@ -885,28 +891,33 @@ export default function LandingEditor() {
         respuesta: f.respuesta.trim(), 
         orden: idx 
       })),
-      secciones: documentModel.pages.landing.sections.map((s, idx) => ({
-        stable_id: s.stable_id,
-        tipo: s.tipo,
-        schema_version: s.schema_version,
-        nombre_interno: s.nombre_interno,
-        activo: s.activo !== false,
-        orden: idx,
-        template: s.template,
-        config: s.config || {},
-        contenido: s.contenido || {},
-      })),
-      secciones_producto: documentModel.pages.producto.sections.map((s, idx) => ({
-        stable_id: s.stable_id,
-        tipo: s.tipo,
-        schema_version: s.schema_version,
-        nombre_interno: s.nombre_interno,
-        activo: s.activo !== false,
-        orden: idx,
-        template: s.template,
-        config: s.config || {},
-        contenido: s.contenido || {},
-      })),
+      secciones: [
+        ...documentModel.pages.landing.sections.map((s, idx) => ({
+          stable_id: s.stable_id,
+          page_type: 'landing',
+          tipo: s.tipo,
+          schema_version: s.schema_version,
+          nombre_interno: s.nombre_interno,
+          activo: s.activo !== false,
+          orden: idx,
+          template: s.template,
+          config: s.config || {},
+          contenido: s.contenido || {},
+        })),
+        ...documentModel.pages.producto.sections.map((s, idx) => ({
+          stable_id: s.stable_id,
+          page_type: 'product',
+          tipo: s.tipo,
+          schema_version: s.schema_version,
+          nombre_interno: s.nombre_interno,
+          activo: s.activo !== false,
+          orden: idx,
+          template: s.template,
+          config: s.config || {},
+          contenido: s.contenido || {},
+        }))
+      ],
+      secciones_producto: [] // Enviamos vacío para evitar que si algo lo lee devuelva un error, pero va todo en 'secciones'
     };
   }
 
@@ -939,7 +950,61 @@ export default function LandingEditor() {
       const guardada = idActual
         ? await landingService.actualizar(idActual, armarPayload())
         : await landingService.crear(armarPayload());
+        
       setLanding(guardada);
+      
+      // SINCRONIZAR SECCIONES CON STABLE_IDs DEL BACKEND
+      if (Array.isArray(guardada.secciones) && guardada.secciones.length > 0) {
+        setDocumentModel(prev => {
+          const basePorTipo = new Map(getSeccionesBase().map(s => [s.tipo, s]));
+          
+          // Actualizamos landing
+          const landingSecs = guardada.secciones.filter(s => !s.page_type || s.page_type === 'landing').sort((a, b) => a.orden - b.orden);
+          const newLanding = landingSecs.length > 0 ? landingSecs.map((s, idx) => {
+             // Preservar la clave temporal 'id' si la teníamos, o generar una.
+             const existing = prev.pages.landing.sections.find(es => es.stable_id === s.stable_id || (es.id && !es.stable_id && es.tipo === s.tipo && es.orden === idx));
+             return BlockRegistry.migrate({
+               ...(basePorTipo.get(s.tipo) || {}),
+               id: existing ? existing.id : String(`loaded-${s.tipo}-${idx}`),
+               stable_id: s.stable_id,
+               tipo: s.tipo,
+               schema_version: s.schema_version,
+               nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
+               activo: s.activo !== false,
+               orden: idx,
+               config: s.config || s.config_json || {},
+               contenido: s.contenido || s.contenido_json || {},
+             });
+          }) : prev.pages.landing.sections;
+          
+          // Actualizamos product
+          const prodSecs = guardada.secciones.filter(s => s.page_type === 'product').sort((a, b) => a.orden - b.orden);
+          const newProduct = prodSecs.length > 0 ? prodSecs.map((s, idx) => {
+             const existing = prev.pages.producto.sections.find(es => es.stable_id === s.stable_id || (es.id && !es.stable_id && es.tipo === s.tipo && es.orden === idx));
+             return BlockRegistry.migrate({
+               ...(basePorTipo.get(s.tipo) || {}),
+               id: existing ? existing.id : String(`loaded-prod-${s.tipo}-${idx}`),
+               stable_id: s.stable_id,
+               tipo: s.tipo,
+               schema_version: s.schema_version,
+               nombre_interno: s.nombre_interno || basePorTipo.get(s.tipo)?.nombre_interno || s.tipo,
+               activo: s.activo !== false,
+               orden: idx,
+               config: s.config || s.config_json || {},
+               contenido: s.contenido || s.contenido_json || {},
+             });
+          }) : prev.pages.producto.sections;
+          
+          return {
+            ...prev,
+            pages: {
+              landing: { sections: newLanding },
+              producto: { sections: newProduct }
+            }
+          };
+        });
+      }
+
       setForm(prev => ({ ...prev, slug: guardada.slug || prev.slug }));
       setSucio(false);
       setExito('Cambios guardados.');
