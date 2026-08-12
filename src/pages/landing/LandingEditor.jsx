@@ -1137,7 +1137,7 @@ export default function LandingEditor() {
         )}
 
         {/* COLUMNA CENTRAL: Canvas */}
-        <main className="flex-1 overflow-hidden bg-[#e5e7eb] relative flex flex-col items-center">
+        <main className="flex-1 overflow-hidden relative flex flex-col items-center">
            <div className="w-full grid grid-cols-3 items-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10 px-4">
               
               <div className="flex justify-start">
@@ -1175,18 +1175,21 @@ export default function LandingEditor() {
               </div>
            </div>
            <div 
-             className="w-full h-full overflow-y-auto flex justify-center relative overflow-x-hidden"
-             style={{ backgroundColor: 'var(--vit-bg-secondary)' }}
+             className="w-full flex-1 overflow-y-auto flex justify-center relative overflow-x-hidden"
+             style={{ backgroundColor: viewportMode === 'desktop' ? 'transparent' : 'var(--vit-bg-secondary)' }}
            >
              <div style={{
                 width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
-                height: '100%',
+                height: viewportMode === 'desktop' ? '100%' : 'max-content',
+                minHeight: '100%',
                 backgroundColor: 'white',
                 boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 20px rgba(0,0,0,0.1)',
                 transition: 'width 0.3s ease',
                 margin: viewportMode === 'desktop' ? '0' : '2rem auto',
                 borderRadius: viewportMode === 'desktop' ? '0' : '16px',
                 border: viewportMode === 'desktop' ? 'none' : '8px solid #1c2230',
+                display: 'flex',
+                flexDirection: 'column'
              }}>
                 <LandingPreview
                   titulo={form.titulo || form.nombre}

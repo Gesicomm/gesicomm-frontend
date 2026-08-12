@@ -377,9 +377,9 @@ export default function LandingPreview({
 
   return (
     <>
-      <div style={{ width: '100%', height: '100%' }}>
+      <div style={{ width: '100%', height: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <RenderProvider context={renderContextValue}>
-        <PreviewFrame className="lb-live-preview-iframe">
+        <PreviewFrame className="lb-live-preview-iframe" style={{ flex: 1 }}>
           <div
             className={`lp-page lb-live-preview-page ${tema?.modo === 'claro' ? 'claro' : ''}`}
             style={{ ...calcularEstiloLanding({ tema, diseno }), display: 'flex', flexDirection: 'column', minHeight: '100vh' }}

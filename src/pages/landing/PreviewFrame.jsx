@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-export default function PreviewFrame({ children, className }) {
+export default function PreviewFrame({ children, className, style }) {
   const [frameBody, setFrameBody] = useState(null);
   const frameRef = useRef(null);
 
@@ -42,7 +42,7 @@ export default function PreviewFrame({ children, className }) {
     <iframe
       ref={frameRef}
       className={className}
-      style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+      style={{ width: '100%', height: '100%', border: 'none', display: 'block', ...style }}
       title="Live Preview"
       src="about:blank"
     >
