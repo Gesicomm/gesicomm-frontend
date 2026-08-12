@@ -1,7 +1,7 @@
 import React from 'react';
 import { BlockRegistry } from './BlockRegistry';
 
-export const SectionRenderer = ({ section }) => {
+export const SectionRenderer = ({ section, Wrapper }) => {
   const definition = BlockRegistry.resolve(section.tipo);
   
   if (!definition) {

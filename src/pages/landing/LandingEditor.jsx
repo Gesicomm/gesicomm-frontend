@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   Save, Loader, AlertCircle, Check, ExternalLink,
-  Power, PowerOff, CircleAlert, Monitor, Tablet, Smartphone, Trash2
+  Power, PowerOff, CircleAlert, Monitor, Tablet, Smartphone, Trash2,
+  PanelLeft, PanelRight
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';
@@ -261,8 +262,12 @@ export default function LandingEditor() {
   const [error, setError] = useState(null);
   const [exito, setExito] = useState(null);
   const [erroresValidacion, setErroresValidacion] = useState([]);
-  const [confirmDespublicar, setConfirmDespublicar] = useState(null); // landing actualizada, pendiente de confirmar
+  const [confirmDespublicar, setConfirmDespublicar] = useState(null);
   const [confirmEliminar, setConfirmEliminar] = useState(false);
+
+  // Estados para ocultar sidebars
+  const [showLeftSidebar, setShowLeftSidebar] = useState(true);
+  const [showRightSidebar, setShowRightSidebar] = useState(true);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -1116,6 +1121,7 @@ export default function LandingEditor() {
       <div style={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden', position: 'relative' }}>
         
         {/* COLUMNA IZQUIERDA: Estructura */}
+        {showLeftSidebar && (
         <div className="bg-[var(--vit-card-bg)] border-r border-[var(--vit-border)] flex flex-col w-[260px] flex-shrink-0 z-10 overflow-hidden">
           <SidebarSecciones 
             secciones={secciones}
@@ -1128,12 +1134,16 @@ export default function LandingEditor() {
             selectedId={seccionSeleccionadaId}
           />
         </div>
+        )}
 
         {/* COLUMNA CENTRAL: Canvas */}
         <main className="flex-1 overflow-hidden bg-[#e5e7eb] relative flex flex-col items-center">
            <div className="w-full grid grid-cols-3 items-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10 px-4">
               
               <div className="flex justify-start">
+                <button type="button" onClick={() => setShowLeftSidebar(!showLeftSidebar)} className="mr-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
+                  <PanelLeft size={18} />
+                </button>
                 <div className="flex items-center gap-1 bg-[var(--vit-bg)] p-1 rounded-lg border border-[var(--vit-border)]">
                   <button type="button" onClick={() => { setViewMode('landing'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'landing' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
                     Página Principal
@@ -1159,26 +1169,24 @@ export default function LandingEditor() {
               </div>
               
               <div className="flex justify-end">
-                {/* Reserved for future right-aligned actions */}
+                <button type="button" onClick={() => setShowRightSidebar(!showRightSidebar)} className="ml-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
+                  <PanelRight size={18} />
+                </button>
               </div>
            </div>
            <div 
-             ref={containerRef}
-             className="w-full h-full overflow-y-auto flex justify-center bg-[#e5e7eb] relative overflow-x-hidden"
+             className="w-full h-full overflow-y-auto flex justify-center relative overflow-x-hidden"
+             style={{ backgroundColor: 'var(--vit-bg-secondary)' }}
            >
              <div style={{
-                width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '1440px',
+                width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
                 height: '100%',
                 backgroundColor: 'white',
                 boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 20px rgba(0,0,0,0.1)',
-                transition: 'width 0.3s ease, transform 0.2s ease',
-                overflow: 'hidden',
+                transition: 'width 0.3s ease',
                 margin: viewportMode === 'desktop' ? '0' : '2rem auto',
                 borderRadius: viewportMode === 'desktop' ? '0' : '16px',
                 border: viewportMode === 'desktop' ? 'none' : '8px solid #1c2230',
-                transform: viewportMode === 'desktop' ? `scale(${desktopScale})` : 'none',
-                transformOrigin: 'top center',
-                minHeight: viewportMode === 'desktop' ? `${100 / desktopScale}%` : '100%',
              }}>
                 <LandingPreview
                   titulo={form.titulo || form.nombre}
@@ -1227,24 +1235,26 @@ export default function LandingEditor() {
         </main>
 
         {/* COLUMNA DERECHA: Inspector */}
-        <aside className="bg-[var(--vit-card-bg)] border-l border-[var(--vit-border)] flex flex-col w-[320px] flex-shrink-0 z-10 overflow-hidden">
-          {seccionSeleccionadaId ? (
-            <InspectorSeccion
-              seccion={secciones.find(s => s.id === seccionSeleccionadaId)}
-              onUpdate={handleActualizarSeccion}
-              onBack={() => setSeccionSeleccionadaId(null)}
-              catalogo={catalogo}
-              onDuplicate={handleDuplicarSeccion}
-              onDelete={handleEliminarSeccion}
-              onUploadImagen={handleUploadSeccionImagen}
-            />
-          ) : (
-            <InspectorGlobal 
-              form={form}
-              onChange={handleChange}
-            />
-          )}
-        </aside>
+        {showRightSidebar && (
+          <aside className="bg-[var(--vit-card-bg)] border-l border-[var(--vit-border)] flex flex-col w-[320px] flex-shrink-0 z-10 overflow-hidden">
+            {seccionSeleccionadaId ? (
+              <InspectorSeccion
+                seccion={secciones.find(s => s.id === seccionSeleccionadaId)}
+                onUpdate={handleActualizarSeccion}
+                onBack={() => setSeccionSeleccionadaId(null)}
+                catalogo={catalogo}
+                onDuplicate={handleDuplicarSeccion}
+                onDelete={handleEliminarSeccion}
+                onUploadImagen={handleUploadSeccionImagen}
+              />
+            ) : (
+              <InspectorGlobal 
+                form={form}
+                onChange={handleChange}
+              />
+            )}
+          </aside>
+        )}
 
 
         <SelectorSecciones
