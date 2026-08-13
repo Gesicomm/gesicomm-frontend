@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Settings, Save, AlertTriangle, Info } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import CurrencyInput from '../../components/CurrencyInput';
+import { verificarSesion } from '../../utils/auth';
 import './combos.css';
 
 function fmtNumber(n) {
@@ -17,6 +18,7 @@ export default function ComboConfiguracion() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Campos editables
   const [cpa, setCpa] = useState('');
@@ -35,6 +37,11 @@ export default function ComboConfiguracion() {
   async function cargar() {
     try {
       setLoading(true);
+      const user = await verificarSesion();
+      if (user && user.rol === 'admin') {
+        setIsAdmin(true);
+      }
+      
       const cfg = await comboAdminService.obtenerConfiguracion();
       setConfig(cfg);
       setCpa(fmtNumber(cfg.cpa_porcentaje));
@@ -171,6 +178,7 @@ export default function ComboConfiguracion() {
       </div>
 
       {/* ── Parámetros de análisis ── */}
+      {isAdmin && (
       <div className="combo-section">
         <div className="combo-section-header">
           <div className="combo-section-icon"><Info size={15} /></div>
@@ -208,12 +216,10 @@ export default function ComboConfiguracion() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Botón móvil */}
       <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-        <button type="button" className="btn-secondary" onClick={() => navigate('/combos')}>
-          Volver a combos
-        </button>
         <button type="submit" className="btn-primary" disabled={guardando}>
           <Save size={15} /> {guardando ? 'Guardando...' : 'Guardar configuración'}
         </button>

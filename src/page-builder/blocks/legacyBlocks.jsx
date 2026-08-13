@@ -134,6 +134,38 @@ import { ProductDetailBlock } from './product-detail/ProductDetailBlock';
 
 import { BLOQUES_SCHEMA } from '../../pages/landing/BloquesSchema';
 
+import LandingComoFunciona from '../../pages/landing/LandingComoFunciona';
+import LandingSocial from '../../pages/landing/LandingSocial';
+import LandingScrollingText from '../../pages/landing/LandingScrollingText';
+import LandingBeforeAfter from '../../pages/landing/LandingBeforeAfter';
+import LandingCta from '../../pages/landing/LandingCta';
+import LandingImageText from '../../pages/landing/LandingImageText';
+import LandingLogoList from '../../pages/landing/LandingLogoList';
+
+// Estos componentes ya existían (usados por LandingPreview.jsx en el editor)
+// pero nunca se habían registrado acá — por eso en el sitio público
+// SectionRenderer los saltaba en silencio (BlockRegistry.resolve devolvía
+// null). Todos toman una sola prop `seccion` con forma {contenido, config,
+// template}, así que el adaptador solo reempaqueta lo que ya llega en
+// `section` (ver props que arma SectionRenderer.jsx).
+const TextoAdapter = ({ section, content }) => {
+  const cont = content || {};
+  return (
+    <section className={`lp-custom-section ${cont.tamano ? 'lp-texto-' + cont.tamano : ''}`}>
+      {cont.titulo && <h2>{cont.titulo}</h2>}
+      {cont.texto && <p>{cont.texto}</p>}
+    </section>
+  );
+};
+
+const ComoFuncionaAdapter = ({ section }) => <LandingComoFunciona seccion={section} />;
+const RedesSocialesAdapter = ({ section }) => <LandingSocial seccion={section} />;
+const ScrollingTextAdapter = ({ section }) => <LandingScrollingText seccion={section} />;
+const BeforeAfterAdapter = ({ section }) => <LandingBeforeAfter seccion={section} />;
+const CtaAdapter = ({ section }) => <LandingCta seccion={section} />;
+const ImageTextAdapter = ({ section }) => <LandingImageText seccion={section} />;
+const LogoListAdapter = ({ section }) => <LandingLogoList seccion={section} />;
+
 export function registerLegacyBlocks() {
   const registerWithSchema = (type, component) => {
     const schema = BLOQUES_SCHEMA[type] || {};
@@ -156,7 +188,16 @@ export function registerLegacyBlocks() {
   registerWithSchema('faq', FaqAdapter);
   registerWithSchema('footer', FooterAdapter);
   registerWithSchema('product_detail', ProductDetailBlock);
-  
+  registerWithSchema('texto', TextoAdapter);
+  registerWithSchema('rich_text', TextoAdapter);
+  registerWithSchema('como_funciona', ComoFuncionaAdapter);
+  registerWithSchema('redes_sociales', RedesSocialesAdapter);
+  registerWithSchema('scrolling_text', ScrollingTextAdapter);
+  registerWithSchema('before_after', BeforeAfterAdapter);
+  registerWithSchema('cta', CtaAdapter);
+  registerWithSchema('image_text', ImageTextAdapter);
+  registerWithSchema('logo_list', LogoListAdapter);
+
   // Also register 'banner' just in case
   BlockRegistry.register({
     type: 'banner',

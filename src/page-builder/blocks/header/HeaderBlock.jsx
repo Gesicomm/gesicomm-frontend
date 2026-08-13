@@ -74,6 +74,9 @@ export const HeaderBlock = ({ content, settings }) => {
     } else if (link.type === 'categoria' && actions.setFiltroCategoria) {
       actions.setFiltroCategoria(link.target_id);
       document.querySelector('#lp-productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (link.type === 'pagina' && actions.navigate) {
+      const destino = page.paginas_hermanas?.find(p => p.tipo_pagina === link.target_id);
+      if (destino) actions.navigate(destino.slug ? `/l/${destino.slug}` : '/');
     }
   }
 

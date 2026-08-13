@@ -28,6 +28,7 @@ const TABS = [
   { id: 'precios',  label: 'Precios',        icon: <DollarSign size={15} /> },
   { id: 'stock',    label: 'Stock',           icon: <BarChart2 size={15} /> },
   { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
+  { id: 'diseno',   label: 'Diseño de página', icon: <ImageIcon size={15} /> },
 ];
 
 const ESTADOS_VENTA = [
@@ -975,6 +976,29 @@ export default function ProductForm() {
             <div className="variantes-empty">
               <Tag size={32} opacity={0.2} />
               <p>Guardá el producto primero para poder agregarle ofertas comerciales.</p>
+            </div>
+          )}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════
+            TAB 5: DISEÑO DE PÁGINA PROPIO
+        ══════════════════════════════════════════════════════ */}
+        <div className={`tab-content ${tabActiva === 'diseno' ? 'active' : ''}`}>
+          {esEdicion ? (
+            <div className="variantes-empty">
+              <ImageIcon size={32} opacity={0.2} />
+              <p>
+                Por defecto este producto usa la plantilla de "Vista de Producto" compartida por toda tu tienda.
+                Si querés un diseño distinto solo para este producto, abrí el armador — se edita igual que una landing normal.
+              </p>
+              <Link to={`/mi-landing/producto/${id}`} className="lb-btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex' }}>
+                Editar diseño propio
+              </Link>
+            </div>
+          ) : (
+            <div className="variantes-empty">
+              <ImageIcon size={32} opacity={0.2} />
+              <p>Guardá el producto primero para poder darle un diseño propio.</p>
             </div>
           )}
         </div>

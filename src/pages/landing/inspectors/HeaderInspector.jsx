@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, GripVertical, ImagePlus, Loader } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 
-export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, catalogo }) {
+export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, catalogo, paginas }) {
   const contenido = seccion.contenido || {};
   const config = seccion.config || {};
   const navLinks = config.nav_links || [];
@@ -32,12 +32,17 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
     const nuevos = [...navLinks];
     nuevos[index] = { ...nuevos[index], [key]: value };
     
-    // Auto-completar label si elige producto/categoria
+    // Auto-completar label si elige producto/categoria/pagina
     if (key === 'target_id' && nuevos[index].type !== 'url') {
       const item = catalogo.productos?.find(p => String(p.id) === String(value));
       const cat = catalogo.categorias?.find(c => String(c.id) === String(value));
+      // Por tipo_pagina (rol estable), no por id: el DTO público de
+      // paginas_hermanas no expone el id numérico de la landing, solo
+      // tipo_pagina/slug/titulo — ver landing.service.js#obtenerPublica.
+      const pagina = paginas?.find(p => p.tipo_pagina === value);
       if (item) nuevos[index].label = item.nombre;
       if (cat) nuevos[index].label = cat.nombre;
+      if (pagina) nuevos[index].label = pagina.titulo || pagina.nombre;
     }
     
     updateConfig({ nav_links: nuevos });
@@ -147,6 +152,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                     <option value="url">URL Libre / Ancla</option>
                     <option value="producto">Producto</option>
                     <option value="categoria">Categoría</option>
+                    <option value="pagina">Página</option>
                   </select>
                 </div>
 
@@ -182,6 +188,19 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                     <option value="">Selecciona una categoría...</option>
                     {catalogo.categorias?.map(c => (
                       <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                )}
+
+                {link.type === 'pagina' && (
+                  <select
+                    className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                    value={link.target_id || ''}
+                    onChange={e => updateLink(idx, 'target_id', e.target.value)}
+                  >
+                    <option value="">Selecciona una página...</option>
+                    {paginas?.map(p => (
+                      <option key={p.tipo_pagina} value={p.tipo_pagina}>{p.titulo || p.nombre}</option>
                     ))}
                   </select>
                 )}

@@ -376,10 +376,16 @@
 
 .lp-grid {
   display: grid;
-  /* 210px de mínimo contra 240px: a 1240px de medida entran 5 columnas en
-     vez de 4, así que en pantallas anchas la grilla llena el espacio en
-     lugar de dejar dos franjas muertas a los costados. */
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  /* auto-fit, no auto-fill: auto-fill reserva columnas vacías hasta llenar
+     el ancho del contenedor, así que con pocos items (o la última fila
+     incompleta) la grilla queda ocupando el 100% del ancho igual y
+     justify-content:center no tiene nada que centrar — el/los item(s)
+     terminan pegados a la izquierda. auto-fit colapsa esas columnas
+     vacías a 0, la grilla se angosta al contenido real, y ahí sí
+     justify-content:center la centra de verdad. 210px de mínimo y 280px
+     de máximo en vez de 1fr ilimitado, mismo motivo. */
+  grid-template-columns: repeat(auto-fit, minmax(210px, 280px));
+  justify-content: center;
   gap: var(--l-s3);
   padding-bottom: var(--l-s5);
   /* Varios lugares saltan acá (nav del header, botón del banner, categorías,
@@ -1036,6 +1042,112 @@
   opacity: 0.75;
 }
 
+/* Tarjetas de precio (packs) — reemplazan los pills viejos de "Elegí cómo
+   comprarlo" para poder mostrar el % de ahorro como en una pricing table. */
+.lp-product-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.lp-product-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.6rem;
+}
+.lp-tier-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  background: var(--l-surface, #0c0f17);
+  border: 1.5px solid var(--l-surface-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--l-radius-sm, 10px);
+  padding: 0.9rem 0.6rem 0.7rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.14s ease;
+}
+.lp-tier-card:hover {
+  border-color: var(--l-primary);
+}
+.lp-tier-card.active {
+  border-color: var(--l-primary);
+  background: color-mix(in srgb, var(--l-primary) 12%, transparent);
+  box-shadow: 0 0 0 1px var(--l-primary);
+}
+.lp-tier-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.lp-tier-badge {
+  position: absolute;
+  top: -0.6rem;
+  background: var(--l-primary);
+  color: var(--l-on-primary, #0b1211);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.lp-tier-nombre {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--l-text, #e2e8f0);
+  margin-top: 0.3rem;
+}
+.lp-tier-precio {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--l-text, #f8fafc);
+}
+.lp-tier-ahorro {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+/* Checkout inline de una sola pantalla — mismos estilos de campo que
+   CartDrawer.jsx (.lp-checkout-field/.lp-checkout-tel/.lp-checkout-error/
+   .lp-checkout-terminos ya definidos más abajo), solo el layout cambia. */
+.lp-checkout-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.lp-checkout-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--l-surface, #0c0f17);
+  border: 1px solid var(--l-surface-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--l-radius-sm, 10px);
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--l-text, #e2e8f0);
+}
+.lp-checkout-confirmado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+}
+.lp-checkout-confirmado h3 {
+  margin: 0;
+  color: var(--l-text, #f8fafc);
+}
+.lp-checkout-confirmado p {
+  margin: 0;
+  color: var(--l-text-muted, #94a3b8);
+  font-size: 0.88rem;
+}
+
 .lp-modal-acciones-wrapper {
   margin-top: auto;
   padding-top: 1rem;
@@ -1447,7 +1559,7 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
-.lp-cart-checkout .lp-spin {
+.lp-spin {
   animation: lp-spin 0.8s linear infinite;
 }
 
@@ -1628,7 +1740,7 @@
   .lp-filters { gap: 0.45rem; }
   .lp-search { flex: 1 1 100%; }
   .lp-search input { width: 100%; }
-  .lp-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+  .lp-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; }
   .lp-card-body { padding: 0.7rem 0.75rem 0.8rem; }
   .lp-card-price { font-size: 1.05rem; }
   .lp-footer-inner { justify-content: center; text-align: center; }

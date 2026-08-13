@@ -19,7 +19,13 @@ import InspectorSeccion from './InspectorSeccion';
 import SidebarSecciones from './SidebarSecciones';
 import SelectorSecciones from './SelectorSecciones';
 import LandingTemplatePicker from './LandingTemplatePicker';
-import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase } from './BloquesSchema';
+import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase, getSeccionesCatalogo, getSeccionesContacto } from './BloquesSchema';
+
+function seccionesDefaultPorRol(tipoPagina) {
+  if (tipoPagina === 'catalogo') return getSeccionesCatalogo();
+  if (tipoPagina === 'contacto') return getSeccionesContacto();
+  return getSeccionesBase();
+}
 import { BlockRegistry } from '../../page-builder/core/BlockRegistry';
 
 import ConfirmDialog from '../../components/ConfirmDialog';
@@ -99,8 +105,15 @@ function tiempoRelativo(fecha) {
 }
 
 export default function LandingEditor() {
-  const { id } = useParams();
+  const { id, productoId } = useParams();
   const esEdicion = !!id;
+  // Modo producto: no se edita ninguna Landing — se edita el diseño propio
+  // de UN producto (ver landing.service.js obtenerSeccionesProducto/
+  // guardarSeccionesProducto). Reutiliza toda esta pantalla (sidebar,
+  // inspector, preview) porque son genéricos sobre documentModel.pages.*,
+  // pero carga/guarda por un camino totalmente distinto — nunca toca
+  // /mis-landings/:id.
+  const esModoProducto = !!productoId;
   const navigate = useNavigate();
 
   const [form, setForm] = useState(FORM_INICIAL);
@@ -121,13 +134,20 @@ export default function LandingEditor() {
   const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [tienda, setTienda] = useState(null);
   const [landing, setLanding] = useState(null); // metadatos del registro guardado
+  // Solo en modo producto: id de la landing "Inicio" de la tienda, usado
+  // como host de subida de imágenes de sección (POST /mis-landings/:id/
+  // seccion-imagen exige un landing_id para el chequeo de pertenencia,
+  // pero la imagen en sí no queda atada a esa landing — ver
+  // handleUploadSeccionImagen). El producto en sí no tiene una landing
+  // propia a la que colgarle esto.
+  const [inicioLandingId, setInicioLandingId] = useState(null);
   const [plantillaElegida, setPlantillaElegida] = useState(null); // id de la plantilla elegida al crear, null hasta elegir
 
   const [seccionSeleccionadaId, setSeccionSeleccionadaId] = useState(null);
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [viewportMode, setViewportMode] = useState('desktop');
   const [sidebarTab, setSidebarTab] = useState('sections'); // 'sections' | 'theme'
-  const [viewMode, setViewMode] = useState('landing'); // 'landing' | 'producto'
+  const [viewMode, setViewMode] = useState(esModoProducto ? 'producto' : 'landing'); // 'landing' | 'producto'
 
   const secciones = documentModel.pages[viewMode]?.sections || [];
   
@@ -269,6 +289,25 @@ export default function LandingEditor() {
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
 
+  // Tabs Inicio/Catálogo/Contacto — independiente de `cargar()` (esa carga
+  // SOLO la página actual por :id) porque necesitamos la lista de las 3
+  // para poder saltar de una a otra sin ir y volver a MiLandingEntry.
+  const [paginas, setPaginas] = useState([]);
+  useEffect(() => {
+    if (esModoProducto) return; // no hay tabs de página en modo producto
+    let activo = true;
+    landingService.paginas()
+      .then(p => { if (activo) setPaginas(p); })
+      .catch(() => {}); // no crítico: si falla, simplemente no se ven los tabs
+    return () => { activo = false; };
+  }, [id, esModoProducto]);
+
+  function cambiarPagina(paginaId) {
+    if (String(paginaId) === String(id)) return;
+    if (sucio && !window.confirm('Tenés cambios sin guardar en esta página. ¿Salir igual?')) return;
+    navigate(`/mi-landing/${paginaId}`);
+  }
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -277,8 +316,69 @@ export default function LandingEditor() {
         vitrinaService.catalogo(),
         tiendaService.obtener(),
       ]);
-      setCatalogo(datosCatalogo);
       setTienda(datosTienda);
+
+      if (esModoProducto) {
+        // El producto editado va primero en itemsPreview: es lo que usa
+        // LandingPreview.jsx como mockItem del bloque product_detail
+        // cuando no hay uno seleccionado explícitamente (ver
+        // renderContextValue ahí) — así la vista previa muestra ESTE
+        // producto, no uno cualquiera del catálogo.
+        const productos = [...(datosCatalogo.productos || [])];
+        const idx = productos.findIndex(p => String(p.id) === String(productoId));
+        if (idx > 0) productos.unshift(productos.splice(idx, 1)[0]);
+        setCatalogo({ ...datosCatalogo, productos });
+
+        // Tema completo de Inicio (no solo color_primario/secundario de
+        // Tienda) — mismo criterio que Catálogo/Contacto (ver
+        // asegurarPaginasFijas en el backend): la vista previa de esta
+        // página tiene que verse igual que el resto del sitio, no con los
+        // defaults del formulario vacío.
+        try {
+          const paginasSitio = await landingService.paginas();
+          const inicio = paginasSitio.find(p => p.tipo_pagina === 'inicio');
+          if (inicio) {
+            setInicioLandingId(inicio.id);
+            const detalleInicio = await landingService.obtener(inicio.id);
+            setForm(prev => ({
+              ...prev,
+              tema_modo: detalleInicio.tema_modo || prev.tema_modo,
+              color_primario: detalleInicio.color_primario || '',
+              color_fondo: detalleInicio.color_fondo || '',
+              color_texto: detalleInicio.color_texto || '',
+              color_tarjeta: detalleInicio.color_tarjeta || '',
+              radio_bordes: detalleInicio.radio_bordes || prev.radio_bordes,
+              fuente: detalleInicio.fuente || prev.fuente,
+            }));
+          }
+        } catch { /* no crítico: la preview cae a los defaults del form */ }
+
+        const guardadas = await landingService.obtenerSeccionesProducto(productoId);
+        const pdDefaults = VALORES_DEFECTO_POR_TIPO['product_detail'] || { template: 'standard', config: {}, contenido: {} };
+        const secciones = guardadas.length > 0
+          ? guardadas.sort((a, b) => a.orden - b.orden).map((s, idx2) => BlockRegistry.migrate({
+              id: String(s.id || `loaded-prod-${s.tipo}-${idx2}`),
+              stable_id: s.stable_id,
+              tipo: s.tipo,
+              schema_version: s.schema_version,
+              nombre_interno: s.nombre_interno || s.tipo,
+              activo: s.activo !== false,
+              orden: idx2,
+              config: s.config || s.config_json || {},
+              contenido: s.contenido || s.contenido_json || {},
+            }))
+          : [
+              { id: 'base-header-p0', tipo: 'header', nombre_interno: 'Header', activo: true, orden: 0, config: {}, contenido: {} },
+              { id: 'base-product_detail-p1', tipo: 'product_detail', nombre_interno: 'Detalle de Producto', activo: true, orden: 1, config: pdDefaults.config, contenido: pdDefaults.contenido },
+              { id: 'base-footer-p2', tipo: 'footer', nombre_interno: 'Footer', activo: true, orden: 2, config: {}, contenido: {} },
+            ];
+        setDocumentModel({ pages: { landing: { sections: [] }, producto: { sections: secciones } } });
+        setSucio(false);
+        setCargando(false);
+        return;
+      }
+
+      setCatalogo(datosCatalogo);
 
       if (esEdicion) {
         const guardada = await landingService.obtener(id);
@@ -365,7 +465,7 @@ export default function LandingEditor() {
         } 
         
         if (loadedSecciones.length === 0) {
-          loadedSecciones = getSeccionesBase().map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
+          loadedSecciones = seccionesDefaultPorRol(guardada.tipo_pagina).map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
         }
 
         if (loadedSeccionesProducto.length === 0) {
@@ -463,7 +563,7 @@ export default function LandingEditor() {
     } finally {
       setCargando(false);
     }
-  }, [id, esEdicion]);
+  }, [id, esEdicion, esModoProducto, productoId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -726,6 +826,14 @@ export default function LandingEditor() {
     if (!file) throw new Error('No se seleccionó ningún archivo.');
     if (file.size > MAX_IMAGEN_BYTES) throw new Error('La imagen supera el máximo permitido de 1MB.');
 
+    if (esModoProducto) {
+      if (!inicioLandingId) throw new Error('Todavía se está cargando la tienda — probá de nuevo en un segundo.');
+      const fd = new FormData();
+      fd.append('imagen', file);
+      const { url } = await landingService.subirImagenSeccion(inicioLandingId, fd);
+      return url;
+    }
+
     let idActual = id || landing?.id;
     if (!idActual) {
       const guardada = await guardar();
@@ -927,11 +1035,60 @@ export default function LandingEditor() {
     setExito(null);
     setErroresValidacion([]);
 
+    if (esModoProducto) {
+      setGuardando(true);
+      try {
+        const payload = documentModel.pages.producto.sections.map((s, idx) => ({
+          stable_id: s.stable_id,
+          tipo: s.tipo,
+          schema_version: s.schema_version,
+          nombre_interno: s.nombre_interno,
+          activo: s.activo !== false,
+          orden: idx,
+          template: s.template,
+          config: s.config || {},
+          contenido: s.contenido || {},
+        }));
+        const guardadas = await landingService.guardarSeccionesProducto(productoId, payload);
+        setDocumentModel(prev => ({
+          ...prev,
+          pages: {
+            ...prev.pages,
+            producto: {
+              sections: guardadas.sort((a, b) => a.orden - b.orden).map((s, idx) => {
+                const existing = prev.pages.producto.sections.find(es => es.stable_id === s.stable_id || (es.id && !es.stable_id && es.tipo === s.tipo && es.orden === idx));
+                return BlockRegistry.migrate({
+                  id: existing ? existing.id : String(`loaded-prod-${s.tipo}-${idx}`),
+                  stable_id: s.stable_id,
+                  tipo: s.tipo,
+                  schema_version: s.schema_version,
+                  nombre_interno: s.nombre_interno || s.tipo,
+                  activo: s.activo !== false,
+                  orden: idx,
+                  config: s.config || s.config_json || {},
+                  contenido: s.contenido || s.contenido_json || {},
+                });
+              }),
+            },
+          },
+        }));
+        setSucio(false);
+        setExito('Cambios guardados.');
+      } catch (err) {
+        setError(err.response?.data?.message || 'Error al guardar el diseño del producto.');
+      } finally {
+        setGuardando(false);
+      }
+      return;
+    }
+
     if (!form.nombre.trim()) {
       setError('Poné un nombre interno para poder guardar.');
       return null;
     }
-    if (itemsOrdenados.length === 0) {
+    // La página de Contacto no tiene catálogo propio — es la única de las
+    // 3 páginas fijas que no necesita productos para tener sentido.
+    if (itemsOrdenados.length === 0 && landing?.tipo_pagina !== 'contacto') {
       setError('Elegí al menos un producto o combo para la landing.');
       return null;
     }
@@ -1091,7 +1248,7 @@ export default function LandingEditor() {
   // Solo al crear una landing nueva: la galería no depende del catálogo,
   // así que se muestra aunque `cargar()` siga trayendo catalogo/tienda en
   // paralelo — no bloquea nada, la próxima pantalla ya los va a tener.
-  if (!esEdicion && !plantillaElegida) {
+  if (!esEdicion && !esModoProducto && !plantillaElegida) {
     return <LandingTemplatePicker onSelect={handleElegirPlantilla} />;
   }
 
@@ -1110,7 +1267,11 @@ export default function LandingEditor() {
       {/* ── Top Toolbar ── */}
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem', height: '64px', borderBottom: '1px solid var(--vit-border)', background: 'var(--vit-card-bg)', flexShrink: 0, width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1 }}>
-          {!esEdicion ? (
+          {esModoProducto ? (
+            <Link to="/products" className="lb-btn-ghost" style={{ padding: '0.4rem', color: 'var(--vit-text)' }}>
+              &larr; Volver a productos
+            </Link>
+          ) : !esEdicion ? (
             <button type="button" onClick={() => window.location.reload()} className="lb-btn-ghost" style={{ padding: '0.4rem', color: 'var(--vit-text)' }}>
               &larr; Volver a plantillas
             </button>
@@ -1120,12 +1281,18 @@ export default function LandingEditor() {
             </Link>
           )}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--vit-text)' }}>{form.nombre || 'Mi landing'}</span>
+            <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--vit-text)' }}>
+              {esModoProducto
+                ? `Diseño propio — ${catalogo.productos.find(p => String(p.id) === String(productoId))?.nombre || 'Producto'}`
+                : (form.nombre || 'Mi landing')}
+            </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--vit-muted)' }}>
-              <span className={`lb-estado ${publicada ? 'on' : 'off'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span className="lb-estado-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: publicada ? '#10b981' : '#f59e0b' }} />
-                {publicada ? 'Publicada' : 'Borrador'}
-              </span>
+              {!esModoProducto && (
+                <span className={`lb-estado ${publicada ? 'on' : 'off'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span className="lb-estado-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: publicada ? '#10b981' : '#f59e0b' }} />
+                  {publicada ? 'Publicada' : 'Borrador'}
+                </span>
+              )}
               {sucio && <span style={{ color: '#f59e0b' }}>• Cambios sin guardar</span>}
             </div>
           </div>
@@ -1134,7 +1301,7 @@ export default function LandingEditor() {
 
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          {urlPublica && (
+          {!esModoProducto && urlPublica && (
             <a href={urlPublica} target="_blank" rel="noreferrer" className="lb-btn-ghost text-sm flex items-center gap-1 font-medium" style={{ color: 'var(--vit-muted)' }}>
               Ver web <ExternalLink size={14} />
             </a>
@@ -1142,26 +1309,56 @@ export default function LandingEditor() {
           <button type="button" className="lb-btn-secondary text-sm px-4 py-2" onClick={handleGuardar} disabled={ocupado}>
             {guardando ? <Loader size={14} className="spin-icon" /> : <Save size={14} />} Guardar
           </button>
-          <button
-            type="button"
-            className={publicada ? 'lb-btn-warn text-sm px-4 py-2' : 'lb-btn-primary text-sm px-4 py-2'}
-            onClick={togglePublicar}
-            disabled={ocupado || itemsOrdenados.length === 0}
-          >
-            {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
-            {publicada ? 'Despublicar' : 'Publicar'}
-          </button>
-          <button
-            type="button"
-            className="lb-btn-ghost text-red-500 px-3 py-2 ml-2"
-            onClick={eliminarLanding}
-            disabled={ocupado}
-            title="Eliminar Landing"
-          >
-            <Trash2 size={16} />
-          </button>
+          {!esModoProducto && (
+            <button
+              type="button"
+              className={publicada ? 'lb-btn-warn text-sm px-4 py-2' : 'lb-btn-primary text-sm px-4 py-2'}
+              onClick={togglePublicar}
+              disabled={ocupado || (itemsOrdenados.length === 0 && landing?.tipo_pagina !== 'contacto')}
+            >
+              {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
+              {publicada ? 'Despublicar' : 'Publicar'}
+            </button>
+          )}
+          {!esModoProducto && (
+            <button
+              type="button"
+              className="lb-btn-ghost text-red-500 px-3 py-2 ml-2"
+              onClick={eliminarLanding}
+              disabled={ocupado}
+              title="Eliminar Landing"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
         </div>
       </header>
+
+      {paginas.length > 1 && (
+        <div style={{ display: 'flex', gap: '0.25rem', padding: '0.5rem 1.5rem', borderBottom: '1px solid var(--vit-border)', background: 'var(--vit-card-bg)', flexShrink: 0 }}>
+          {[...paginas].sort((a, b) => {
+            const orden = { inicio: 0, catalogo: 1, contacto: 2 };
+            return (orden[a.tipo_pagina] ?? 99) - (orden[b.tipo_pagina] ?? 99);
+          }).map(p => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => cambiarPagina(p.id)}
+              className="lb-btn-ghost"
+              style={{
+                padding: '0.4rem 0.9rem',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: String(p.id) === String(id) ? 'var(--vit-accent)' : 'var(--vit-muted)',
+                background: String(p.id) === String(id) ? 'var(--vit-accent-soft)' : 'transparent',
+              }}
+            >
+              {p.titulo || p.nombre}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <div className="land-alert-error" role="alert" style={{ flexShrink: 0, margin: 0, borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
@@ -1209,14 +1406,16 @@ export default function LandingEditor() {
                 <button type="button" onClick={() => setShowLeftSidebar(!showLeftSidebar)} className="mr-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
                   <PanelLeft size={18} />
                 </button>
-                <div className="flex items-center gap-1 bg-[var(--vit-bg)] p-1 rounded-lg border border-[var(--vit-border)]">
-                  <button type="button" onClick={() => { setViewMode('landing'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'landing' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
-                    Página Principal
-                  </button>
-                  <button type="button" onClick={() => { setViewMode('producto'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'producto' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
-                    Vista de Producto
-                  </button>
-                </div>
+                {!esModoProducto && (
+                  <div className="flex items-center gap-1 bg-[var(--vit-bg)] p-1 rounded-lg border border-[var(--vit-border)]">
+                    <button type="button" onClick={() => { setViewMode('landing'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'landing' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
+                      Página Principal
+                    </button>
+                    <button type="button" onClick={() => { setViewMode('producto'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'producto' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
+                      Vista de Producto
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-center">
@@ -1312,12 +1511,17 @@ export default function LandingEditor() {
                 onUpdate={handleActualizarSeccion}
                 onBack={() => setSeccionSeleccionadaId(null)}
                 catalogo={catalogo}
+                paginas={paginas}
                 onDuplicate={handleDuplicarSeccion}
                 onDelete={handleEliminarSeccion}
                 onUploadImagen={handleUploadSeccionImagen}
               />
+            ) : esModoProducto ? (
+              <div className="p-4 text-sm text-[var(--vit-muted)]">
+                Elegí una sección para editarla. El color, la fuente y los bordes de esta página siempre son los de tu tienda — se editan desde Mi landing, no acá.
+              </div>
             ) : (
-              <InspectorGlobal 
+              <InspectorGlobal
                 form={form}
                 onChange={handleChange}
               />

@@ -193,13 +193,19 @@ function App() {
         <Route path="/mi-tienda" element={
           <RequireTienda><UserLayout><ConfigurarTienda /></UserLayout></RequireTienda>
         } />
-        {/* MVP: una sola landing por tienda (ver landing.service.js
-            MAX_LANDINGS_POR_TIENDA). /mi-landing decide sola si redirige a
-            editar la que ya existe o se queda en modo creación. */}
+        {/* Cada tienda tiene 3 páginas fijas (Inicio/Catálogo/Contacto, ver
+            landing.service.js asegurarPaginasFijas). /mi-landing garantiza
+            las 3 y aterriza en Inicio; LandingEditor tiene sus propios tabs
+            para saltar entre ellas. */}
         <Route path="/mi-landing" element={
           <RequireTienda><UserLayout><MiLandingEntry /></UserLayout></RequireTienda>
         } />
         <Route path="/mi-landing/:id" element={
+          <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
+        } />
+        {/* Diseño de página propio de un producto — mismo editor, en modo
+            producto (ver esModoProducto en LandingEditor.jsx). */}
+        <Route path="/mi-landing/producto/:productoId" element={
           <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-anuncios" element={

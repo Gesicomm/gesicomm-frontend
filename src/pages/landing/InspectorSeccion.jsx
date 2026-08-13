@@ -31,6 +31,7 @@ export default function InspectorSeccion({
   onUpdate,
   onBack,
   catalogo,
+  paginas,
   onDuplicate,
   onDelete,
   onUploadImagen,
@@ -92,6 +93,7 @@ export default function InspectorSeccion({
                schema={schema}
                onUpdate={onUpdate}
                catalogo={catalogo}
+               paginas={paginas}
                onUploadImagen={onUploadImagen}
              />
            )}

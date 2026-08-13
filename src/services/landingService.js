@@ -2,6 +2,7 @@ import API from './api';
 
 export const landingService = {
   listar: () => API.get('/mis-landings').then(r => r.data),
+  paginas: () => API.get('/mis-landings/paginas').then(r => r.data),
   crear: (payload) => API.post('/mis-landings', payload).then(r => r.data),
   obtener: (id) => API.get(`/mis-landings/${id}`).then(r => r.data),
   actualizar: (id, payload) => API.put(`/mis-landings/${id}`, payload).then(r => r.data),
@@ -39,4 +40,11 @@ export const landingService = {
 
   estadisticas: (id, dias = 30) => API.get(`/mis-landings/${id}/estadisticas`, { params: { dias } }).then(r => r.data),
   estadisticasRango: (id, filtros = {}) => API.post(`/mis-landings/${id}/estadisticas-rango`, filtros).then(r => r.data),
+
+  // Diseño de página propio de un producto — recurso separado de
+  // /mis-landings/:id, vive bajo /productos porque es una propiedad del
+  // producto, no de ninguna landing puntual (ver landing.service.js
+  // obtenerSeccionesProducto/guardarSeccionesProducto).
+  obtenerSeccionesProducto: (productoId) => API.get(`/productos/${productoId}/pagina-secciones`).then(r => r.data),
+  guardarSeccionesProducto: (productoId, secciones) => API.put(`/productos/${productoId}/pagina-secciones`, { secciones }).then(r => r.data),
 };

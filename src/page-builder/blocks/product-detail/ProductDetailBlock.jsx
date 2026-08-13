@@ -1,14 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useRenderContext } from '../../core/RenderContext';
-import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, Loader, Zap } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../../lib/mensajeWhatsapp';
+
+const FORM_VACIO = {
+  nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '',
+};
 
 export const ProductDetailBlock = ({ content, settings }) => {
   const { data, actions, page } = useRenderContext();
   const item = data.item;
   const contacto = page.contacto;
-  
+
   if (!item) {
     return (
       <div className="lp-product-page-container">
@@ -36,6 +40,18 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [agregado, setAgregado] = useState(false);
 
+  // Checkout de una sola pantalla — "Comprar ahora" abre este formulario
+  // inline en vez de mandar a un carrito multi-producto. "Agregar al
+  // carrito" sigue existiendo aparte para quien quiera seguir comprando
+  // (los order bumps/upsells del carrito necesitan más de un ítem, ver
+  // Oferta.estrategia — por eso el carrito no desaparece).
+  const [comprando, setComprando] = useState(false);
+  const [formCheckout, setFormCheckout] = useState(FORM_VACIO);
+  const [aceptaTerminos, setAceptaTerminos] = useState(false);
+  const [enviandoCompra, setEnviandoCompra] = useState(false);
+  const [errorCompra, setErrorCompra] = useState(null);
+  const [compraConfirmada, setCompraConfirmada] = useState(null);
+
   const variante = tieneVariantes ? item.variantes.find(v => v.id === varianteId) : null;
   const oferta = ofertaId ? ofertasNormales.find(o => o.id === ofertaId) : null;
 
@@ -51,6 +67,26 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const stockConocido = stock !== null && stock !== undefined;
   const sinStock = stockConocido && stock <= 0;
   const maxCantidad = stockConocido && stock > 0 ? Math.min(stock, 99) : 99;
+
+  // % de ahorro de cada pack, contra el precio individual × unidades — ver
+  // el campo "unidades" que agrega landing.service.js SOLO para packs
+  // (nunca combos, para no filtrar la receta de stock). Sin "unidades" no
+  // se puede calcular un ahorro real, así que esa oferta no muestra badge.
+  const tiersConAhorro = useMemo(() => {
+    return ofertasNormales.map(o => {
+      if (o.tipo_contenido !== 'pack' || !o.unidades) return { ...o, ahorroPct: null };
+      const precioListaTotal = item.precio * o.unidades;
+      if (precioListaTotal <= 0) return { ...o, ahorroPct: null };
+      const ahorroPct = Math.round((1 - o.precio / precioListaTotal) * 100);
+      return { ...o, ahorroPct: ahorroPct > 0 ? ahorroPct : null };
+    });
+  }, [ofertasNormales, item.precio]);
+
+  const mejorAhorroId = useMemo(() => {
+    const conAhorro = tiersConAhorro.filter(o => o.ahorroPct);
+    if (!conAhorro.length) return null;
+    return conAhorro.reduce((mejor, o) => (o.ahorroPct > mejor.ahorroPct ? o : mejor)).id;
+  }, [tiersConAhorro]);
 
   const linkWhatsapp = useMemo(() => {
     if (!contacto?.whatsapp) return null;
@@ -91,8 +127,30 @@ export const ProductDetailBlock = ({ content, settings }) => {
     setTimeout(() => setAgregado(false), 1600);
   }
 
+  function actualizarCampoCheckout(campo, valor) {
+    setFormCheckout(prev => ({ ...prev, [campo]: valor }));
+  }
+
+  const formCheckoutValido = formCheckout.nombre_cliente.trim() && formCheckout.telefono.trim()
+    && formCheckout.ciudad.trim() && formCheckout.direccion.trim() && aceptaTerminos;
+
+  async function enviarCompraDirecta(e) {
+    e.preventDefault();
+    if (!formCheckoutValido || sinStock || !actions.comprarAhora) return;
+    setErrorCompra(null);
+    setEnviandoCompra(true);
+    try {
+      const resultado = await actions.comprarAhora(item, variante, oferta, cantidad, precio, formCheckout);
+      setCompraConfirmada(resultado);
+    } catch (err) {
+      setErrorCompra(err.message || 'No se pudo enviar el pedido. Probá de nuevo.');
+    } finally {
+      setEnviandoCompra(false);
+    }
+  }
+
   const descripcion = item.descripcion_larga || item.descripcion;
-  
+
   const handleVolver = () => {
     if (actions.navigate) {
       actions.navigate(page.slug ? `/l/${page.slug}` : '/');
@@ -157,7 +215,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
             </div>
 
             <h1 className="lp-product-title">{item.nombre}</h1>
-            
+
             <div className="lp-product-price-row">
               <span className="lp-product-price">{formatPrecio(precio)}</span>
               {stockConocido && (
@@ -202,27 +260,22 @@ export const ProductDetailBlock = ({ content, settings }) => {
               )}
 
               {tieneOfertas && (
-                <div className="lp-product-variantes">
+                <div className="lp-product-tiers">
                   <span className="lp-modal-label">Elegí cómo comprarlo:</span>
-                  <div className="lp-modal-variante-pills">
-                    <button
-                      type="button"
-                      className={`lp-modal-pill ${!ofertaId ? 'active' : ''}`}
-                      onClick={() => cambiarOferta(null)}
-                    >
-                      <span>Individual</span>
-                      <small className="lp-pill-precio">{formatPrecio(item.precio)}</small>
-                    </button>
-                    {ofertasNormales.map(o => (
-                      <button
-                        key={o.id}
-                        type="button"
-                        className={`lp-modal-pill ${o.id === ofertaId ? 'active' : ''}`}
-                        onClick={() => cambiarOferta(o.id)}
-                      >
-                        <span>{o.nombre}</span>
-                        <small className="lp-pill-precio">{formatPrecio(o.precio)}</small>
-                      </button>
+                  <div className="lp-product-tiers-grid">
+                    <label className={`lp-tier-card ${!ofertaId ? 'active' : ''}`}>
+                      <input type="radio" name="tier" checked={!ofertaId} onChange={() => cambiarOferta(null)} />
+                      <span className="lp-tier-nombre">Individual</span>
+                      <span className="lp-tier-precio">{formatPrecio(item.precio)}</span>
+                    </label>
+                    {tiersConAhorro.map(o => (
+                      <label key={o.id} className={`lp-tier-card ${o.id === ofertaId ? 'active' : ''}`}>
+                        <input type="radio" name="tier" checked={o.id === ofertaId} onChange={() => cambiarOferta(o.id)} />
+                        {o.id === mejorAhorroId && <span className="lp-tier-badge">Mejor oferta</span>}
+                        <span className="lp-tier-nombre">{o.nombre}</span>
+                        <span className="lp-tier-precio">{formatPrecio(o.precio)}</span>
+                        {o.ahorroPct && <span className="lp-tier-ahorro">-{o.ahorroPct}% OFF</span>}
+                      </label>
                     ))}
                   </div>
                 </div>
@@ -239,28 +292,102 @@ export const ProductDetailBlock = ({ content, settings }) => {
                 </div>
               </div>
 
-              <div className="lp-product-botones-grid">
-                <button
-                  type="button"
-                  className={`lp-modal-agregar ${agregado ? 'agregado' : ''}`}
-                  onClick={agregar}
-                  disabled={sinStock}
-                >
-                  {agregado ? <><Check size={18} /> ¡Agregado al carrito!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
-                </button>
+              {compraConfirmada ? (
+                <div className="lp-checkout-confirmado">
+                  <div className="lp-cart-confirmado-icono"><Check size={26} /></div>
+                  <h3>¡Pedido recibido!</h3>
+                  <p>
+                    {compraConfirmada.redirigido
+                      ? 'Te vamos a escribir por WhatsApp para coordinar el pago y la entrega.'
+                      : 'La tienda se va a contactar para coordinar el pago y la entrega.'}
+                  </p>
+                </div>
+              ) : comprando ? (
+                <form className="lp-checkout-inline" onSubmit={enviarCompraDirecta}>
+                  {errorCompra && <p className="lp-checkout-error">{errorCompra}</p>}
 
-                {linkWhatsapp && (
-                  <a
-                    className="lp-modal-whatsapp"
-                    href={linkWhatsapp}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => actions.contactar && actions.contactar(item)}
+                  <div className="lp-checkout-resumen">
+                    <span>{cantidad} × {oferta ? oferta.nombre : (variante ? variante.nombre : item.nombre)}</span>
+                    <strong>{formatPrecio(precio * cantidad)}</strong>
+                  </div>
+
+                  <label className="lp-checkout-field">
+                    <span>Nombre y Apellido <em>*</em></span>
+                    <input required value={formCheckout.nombre_cliente} onChange={e => actualizarCampoCheckout('nombre_cliente', e.target.value)} placeholder="Nombre y Apellido" />
+                  </label>
+                  <label className="lp-checkout-field">
+                    <span>RUC (Factura Virtual)</span>
+                    <input value={formCheckout.ruc} onChange={e => actualizarCampoCheckout('ruc', e.target.value)} placeholder="Opcional" />
+                  </label>
+                  <label className="lp-checkout-field">
+                    <span>Celular <em>*</em></span>
+                    <div className="lp-checkout-tel">
+                      <span className="lp-checkout-tel-prefijo">+595</span>
+                      <input required value={formCheckout.telefono} onChange={e => actualizarCampoCheckout('telefono', e.target.value)} placeholder="9XX XXXXXX" />
+                    </div>
+                  </label>
+                  <label className="lp-checkout-field">
+                    <span>Ciudad <em>*</em></span>
+                    <input required value={formCheckout.ciudad} onChange={e => actualizarCampoCheckout('ciudad', e.target.value)} placeholder="Ciudad" />
+                  </label>
+                  <label className="lp-checkout-field">
+                    <span>Departamento</span>
+                    <input value={formCheckout.departamento} onChange={e => actualizarCampoCheckout('departamento', e.target.value)} placeholder="Departamento" />
+                  </label>
+                  <label className="lp-checkout-field">
+                    <span>Dirección <em>*</em></span>
+                    <input required value={formCheckout.direccion} onChange={e => actualizarCampoCheckout('direccion', e.target.value)} placeholder="Nombre de la calle y número de casa" />
+                  </label>
+                  <label className="lp-checkout-field">
+                    <span>Referencia</span>
+                    <input value={formCheckout.referencia} onChange={e => actualizarCampoCheckout('referencia', e.target.value)} placeholder="Opcional — un punto conocido cerca" />
+                  </label>
+                  <label className="lp-checkout-terminos">
+                    <input type="checkbox" checked={aceptaTerminos} onChange={e => setAceptaTerminos(e.target.checked)} />
+                    <span>Acepto que mis datos se usen para procesar este pedido.</span>
+                  </label>
+
+                  <div className="lp-product-botones-grid">
+                    <button type="button" className="lp-modal-whatsapp" onClick={() => setComprando(false)} disabled={enviandoCompra}>
+                      Volver
+                    </button>
+                    <button type="submit" className="lp-modal-agregar" disabled={!formCheckoutValido || enviandoCompra}>
+                      {enviandoCompra ? <><Loader size={16} className="lp-spin" /> Enviando...</> : `Completá tu compra — ${formatPrecio(precio * cantidad)}`}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="lp-product-botones-grid">
+                  <button
+                    type="button"
+                    className="lp-modal-agregar"
+                    onClick={() => setComprando(true)}
+                    disabled={sinStock || !actions.comprarAhora}
                   >
-                    <MessageCircle size={17} /> Consultar por WhatsApp
-                  </a>
-                )}
-              </div>
+                    <Zap size={18} /> Comprar ahora
+                  </button>
+                  <button
+                    type="button"
+                    className={`lp-modal-whatsapp ${agregado ? 'agregado' : ''}`}
+                    onClick={agregar}
+                    disabled={sinStock}
+                  >
+                    {agregado ? <><Check size={18} /> ¡Agregado!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
+                  </button>
+
+                  {linkWhatsapp && (
+                    <a
+                      className="lp-modal-whatsapp"
+                      href={linkWhatsapp}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => actions.contactar && actions.contactar(item)}
+                    >
+                      <MessageCircle size={17} /> Consultar por WhatsApp
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

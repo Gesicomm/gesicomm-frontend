@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
-import { obtenerLandingPublica, registrarEventoLanding, crearCheckoutLanding } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, crearCheckoutLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA, trackearEventoGA } from '../../lib/googleAnalytics';
@@ -119,7 +119,16 @@ export default function LandingPublica() {
   useEffect(() => {
     let activo = true;
     setEstado('cargando');
-    obtenerLandingPublica(slug)
+    // Con :productId se pide el endpoint por-producto (no solo el general
+    // de la landing): es el único que resuelve si ESE producto tiene
+    // diseño de página propio (ver LandingSeccion.producto_id /
+    // obtenerProductoPublico en el backend) — antes esto nunca se llamaba
+    // y secciones_producto quedaba siempre en la plantilla compartida,
+    // sin importar qué producto se estuviera mirando.
+    const promesa = productId
+      ? obtenerProductoLanding(slug, productId)
+      : obtenerLandingPublica(slug);
+    promesa
       .then((res) => {
         if (!activo) return;
         if (res === null) return setEstado('no-encontrada');
@@ -133,7 +142,7 @@ export default function LandingPublica() {
       })
       .catch(() => { if (activo) setEstado('no-encontrada'); });
     return () => { activo = false; };
-  }, [slug]);
+  }, [slug, productId]);
 
   useDocumentSeo(data?.seo, typeof window !== 'undefined' ? window.location.href : undefined);
 
@@ -300,8 +309,17 @@ export default function LandingPublica() {
    * @returns {{redirigido: boolean, pedido_id: number}}
    * @throws {Error} si el backend rechaza el pedido (ej. sin stock) — CartDrawer lo muestra.
    */
-  async function confirmarPedido(datosFormulario) {
-    const items = Array.from(carrito.values());
+  /**
+   * @param {object} datosFormulario - lo que completó el visitante.
+   * @param {Array|null} itemsOverride - si viene, se compra ESTO en vez del
+   *   carrito (ver actions.comprarAhora en renderContextValue, usado por
+   *   el checkout de una sola pantalla en ProductDetailBlock.jsx) — mismo
+   *   shape que un item del carrito (ver agregarAlCarrito). El carrito NO
+   *   se vacía en ese caso: es una compra directa, aparte de lo que el
+   *   visitante ya tenga juntando para otro pedido.
+   */
+  async function confirmarPedido(datosFormulario, itemsOverride = null) {
+    const items = itemsOverride || Array.from(carrito.values());
     if (!items.length) throw new Error('Tu carrito está vacío.');
 
     const resultado = await crearCheckoutLanding(slug, {
@@ -357,8 +375,27 @@ export default function LandingPublica() {
       }
     }
 
-    setCarrito(new Map());
+    if (!itemsOverride) setCarrito(new Map());
     return { redirigido, pedido_id: resultado.pedido_id };
+  }
+
+  /** Compra directa de un solo producto — ver confirmarPedido(). */
+  function comprarAhora(item, variante, oferta, cantidad, precio, datosFormulario) {
+    const itemCarrito = {
+      clave: claveCarrito(item, variante?.id, oferta?.id),
+      tipo: item.tipo,
+      contentId: item.content_id,
+      nombre: item.nombre,
+      varianteId: variante?.id || null,
+      varianteNombre: variante?.nombre || null,
+      ofertaId: oferta?.id || null,
+      ofertaNombre: oferta?.nombre || null,
+      precio,
+      cantidad,
+      imagen: item.imagenes?.[0] || item.imagen || null,
+      stockMax: variante ? variante.stock : (oferta ? null : item.stock),
+    };
+    return confirmarPedido(datosFormulario, [itemCarrito]);
   }
 
   function contactar(item) {
@@ -546,6 +583,7 @@ export default function LandingPublica() {
       setOrden,
       limpiarFiltros,
       navigate,
+      comprarAhora,
     },
     state: {
       wishlist,

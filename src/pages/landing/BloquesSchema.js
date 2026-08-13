@@ -368,3 +368,17 @@ export const VALORES_DEFECTO_POR_TIPO = {
   footer: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: {} }
 };
 export const getSeccionesBase = () => ['header', 'hero', 'beneficios', 'categorias', 'destacados', 'banner', 'productos', 'testimonios', 'faq', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+
+// Plantillas por defecto de las páginas fijas nuevas (ver Landing.tipo_pagina)
+// — mismo patrón que getSeccionesBase(), listas más cortas porque cada
+// página tiene un propósito distinto (no repiten hero/beneficios/etc.).
+export const getSeccionesCatalogo = () => ['header', 'productos', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+
+export const getSeccionesContacto = () => {
+  const base = ['header', 'hero', 'rich_text', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+  const hero = base.find(s => s.tipo === 'hero');
+  if (hero) hero.contenido = { ...hero.contenido, titulo: 'Hablemos', descripcion: 'Escribinos y te respondemos a la brevedad.' };
+  const texto = base.find(s => s.tipo === 'rich_text');
+  if (texto) texto.contenido = { ...texto.contenido, titulo: 'Contacto', texto: 'Contanos qué necesitás — completá el formulario o escribinos por WhatsApp.' };
+  return base;
+};

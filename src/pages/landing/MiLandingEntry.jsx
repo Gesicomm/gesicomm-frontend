@@ -6,11 +6,11 @@ import LandingEditor from './LandingEditor';
 import '../vitrina/vitrina.css';
 
 /**
- * Puerta de entrada de "/mi-landing" — con el MVP capado a una sola
- * landing por tienda (ver landing.service.js MAX_LANDINGS_POR_TIENDA), ya
- * no tiene sentido un listado: o la tienda ya tiene su landing (se va
- * directo a editarla) o todavía no (se queda acá y LandingEditor se monta
- * en modo creación, sin :id en la URL).
+ * Puerta de entrada de "/mi-landing" — la tienda siempre tiene 3 páginas
+ * fijas (Inicio/Catálogo/Contacto, ver landing.service.js
+ * asegurarPaginasFijas()), así que esto solo las garantiza y aterriza en
+ * Inicio; el resto de la navegación entre páginas la maneja LandingEditor
+ * con sus propios tabs.
  */
 export default function MiLandingEntry() {
   const navigate = useNavigate();
@@ -18,16 +18,17 @@ export default function MiLandingEntry() {
 
   useEffect(() => {
     let activo = true;
-    landingService.listar()
-      .then(landings => {
+    landingService.paginas()
+      .then(paginas => {
         if (!activo) return;
-        if (landings.length > 0) {
-          navigate(`/mi-landing/${landings[0].id}`, { replace: true });
+        const inicio = paginas.find(p => p.tipo_pagina === 'inicio') || paginas[0];
+        if (inicio) {
+          navigate(`/mi-landing/${inicio.id}`, { replace: true });
         } else {
           setCargando(false);
         }
       })
-      .catch(() => { if (activo) setCargando(false); }); // si falla el listado, se deja crear igual — crear() vuelve a fallar con un error más claro si hace falta
+      .catch(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
   }, [navigate]);
 
