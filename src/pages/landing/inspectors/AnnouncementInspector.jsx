@@ -36,7 +36,7 @@ export default function AnnouncementInspector({ seccion, onUpdate }) {
       <div>
         <label className="block text-sm font-medium text-[var(--vit-text)] mb-2">Mensajes Carrusel</label>
         <p className="text-xs text-[var(--vit-muted)] mb-4">
-          Agrega varios mensajes para que pasen automáticamente en la barra superior.
+          Agrega varios mensajes para que pasen automáticamente en esta sección.
         </p>
 
         <DragDropContext onDragEnd={onDragEnd}>

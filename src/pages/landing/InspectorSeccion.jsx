@@ -33,6 +33,12 @@ const sectionEditors = {
   como_funciona: ComoFuncionaInspector,
   beneficios: BeneficiosInspector,
   announcement_bar: AnnouncementInspector,
+  // scrolling_text usa el mismo shape de contenido (contenido.mensajes)
+  // que announcement_bar (ver LandingScrollingText.jsx) — antes no tenía
+  // ningún inspector registrado, así que SchemaInspector caía al mensaje
+  // genérico "Este bloque no tiene opciones de contenido configurables" y
+  // no había forma de agregar texto para que scrollee.
+  scrolling_text: AnnouncementInspector,
   before_after: BeforeAfterInspector,
   product_detail: ProductDetailInspector,
   producto_galeria: ProductoGaleriaInspector,
