@@ -19,6 +19,7 @@ export default function LandingProductos({
   const renderCard = (item) => {
     const isWishlisted = wishlist && wishlist.has(item.content_id);
     const isAdded = agregadoRapido === item.content_id;
+    const tieneOferta = item.precio_antes && item.precio_antes > item.precio && item.descuento_pct > 0;
     return (
       <div key={item.content_id} className="lp-card" onClick={() => onCardClick(item)} role="button" tabIndex={0}>
         <div className="lp-card-media group">
@@ -37,6 +38,9 @@ export default function LandingProductos({
           <div className="lp-card-badges">
             {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
             {item.nuevo && <span className="lp-card-badge nuevo">Nuevo</span>}
+            {tieneOferta && (
+              <span className="lp-card-badge oferta">Oferta -{item.descuento_pct}%</span>
+            )}
           </div>
           {item.variantes?.length > 0 && <span className="lp-card-badge variantes">{item.variantes.length} opciones</span>}
           
@@ -53,7 +57,12 @@ export default function LandingProductos({
         <div className="lp-card-body">
           {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
           <h3>{item.nombre}</h3>
-          <span className="lp-card-price">{formatPrecio(item.precio)}</span>
+          <div className="lp-card-price-block">
+            {tieneOferta && (
+              <span className="lp-card-price-antes">{formatPrecio(item.precio_antes)}</span>
+            )}
+            <span className={`lp-card-price${tieneOferta ? ' oferta' : ''}`}>{formatPrecio(item.precio)}</span>
+          </div>
           
           {handleAgregarRapido && (
             <div className="lp-card-actions">

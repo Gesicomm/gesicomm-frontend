@@ -23,6 +23,10 @@ export default defineConfig({
         target: process.env.VITE_API_URL || 'http://localhost:3000',
         changeOrigin: false,
       },
+      '/uploads': {
+        target: process.env.VITE_API_URL ? process.env.VITE_API_URL.replace(/\/api$/, '') : 'http://localhost:3000',
+        changeOrigin: false,
+      },
     },
   },
 })

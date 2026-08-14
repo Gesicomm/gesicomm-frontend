@@ -570,6 +570,13 @@
   color: var(--l-text, #f8fafc);
   border-color: var(--l-surface-border, rgba(255, 255, 255, 0.12));
 }
+.lp-card-badge.oferta {
+  color: #fff;
+  background: #ea580c;
+  border-color: #c2410c;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
 
 /* Corazón de wishlist: mismo tratamiento visual que los badges (píldora
    sobre la imagen), pero interactivo — por eso es <button>, no <span>. */
@@ -674,12 +681,28 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.lp-card-price {
+.lp-card-price-block {
   margin-top: auto;
+  padding-top: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.lp-card-price-antes {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--l-text-muted, #94a3b8);
+  text-decoration: line-through;
+  text-decoration-color: #ef4444;
+  opacity: 0.8;
+}
+.lp-card-price {
   font-size: 1.18rem;
   font-weight: 800;
   color: var(--l-text, #f8fafc);
-  padding-top: 0.35rem;
+}
+.lp-card-price.oferta {
+  color: #ea580c;
 }
 
 /* Acciones en la tarjeta (Agregar + WhatsApp) */
@@ -1922,6 +1945,31 @@
   font-weight: 700;
   color: var(--l-text, #f8fafc);
   letter-spacing: -0.5px;
+}
+.lp-product-price-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.lp-product-price-antes {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--l-text-muted, #94a3b8);
+  text-decoration: line-through;
+  text-decoration-color: #ef4444;
+  opacity: 0.8;
+}
+.lp-product-descuento-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: #ea580c;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 .lp-product-stock-badge {
   font-size: 0.75rem;

@@ -225,7 +225,15 @@ export const ProductDetailBlock = ({ content, settings }) => {
             <h1 className="lp-product-title">{item.nombre}</h1>
 
             <div className="lp-product-price-row">
-              <span className="lp-product-price">{formatPrecio(precio)}</span>
+              <div className="lp-product-price-group">
+                {item.precio_antes && item.precio_antes > precio && (
+                  <span className="lp-product-price-antes">{formatPrecio(item.precio_antes)}</span>
+                )}
+                <span className="lp-product-price">{formatPrecio(precio)}</span>
+                {item.precio_antes && item.precio_antes > precio && item.descuento_pct > 0 && (
+                  <span className="lp-product-descuento-badge">-{item.descuento_pct}%</span>
+                )}
+              </div>
               {stockConocido && (
                 <span className={`lp-product-stock-badge ${sinStock ? 'agotado' : 'disponible'}`}>
                   {sinStock ? 'Sin stock' : `✓ ${stock} disponibles`}

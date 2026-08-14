@@ -67,6 +67,7 @@ export default function ProductForm() {
       tags: '',
       precio_base: '',
       precio_costo: '',
+      precio_tachado: '',
       precio_minimo: '',
       descuento_porcentaje: '',
       descuento_inicio: '',
@@ -120,6 +121,7 @@ export default function ProductForm() {
             tags: Array.isArray(p.tags) ? p.tags.join(', ') : '',
             precio_base: p.precio_base || '',
             precio_costo: p.precio_costo || '',
+            precio_tachado: p.precio_tachado || '',
             precio_minimo: p.precio_minimo || '',
             descuento_porcentaje: p.descuento_porcentaje || '',
             descuento_inicio: p.descuento_inicio ? p.descuento_inicio.slice(0, 10) : '',
@@ -149,6 +151,7 @@ export default function ProductForm() {
   const precioBaseVal = parseFloat(watch('precio_base')) || 0;
   const precioCostoVal = parseFloat(watch('precio_costo')) || 0;
   const descuentoPctVal = parseFloat(watch('descuento_porcentaje')) || 0;
+  const precioTachadoVal = parseFloat(watch('precio_tachado')) || 0;
 
   const rentabilidad = React.useMemo(() => {
     if (!config) return null;
@@ -194,6 +197,7 @@ export default function ProductForm() {
         descripcion_larga: data.descripcion_larga || null,
         precio_base: parseFloat(data.precio_base),
         precio_costo: data.precio_costo ? parseFloat(data.precio_costo) : null,
+        precio_tachado: data.precio_tachado ? parseFloat(data.precio_tachado) : null,
         precio_minimo: data.precio_minimo ? parseFloat(data.precio_minimo) : null,
         descuento_porcentaje: data.descuento_porcentaje ? parseFloat(data.descuento_porcentaje) : 0,
         descuento_inicio: data.descuento_inicio || null,
@@ -643,6 +647,45 @@ export default function ProductForm() {
                 />
               </div>
               <p className="field-hint">El precio con descuento no puede caer por debajo de este valor.</p>
+            </div>
+          </div>
+
+          <div className="form-grid-2" style={{ marginTop: '1rem' }}>
+            <div className="form-group">
+              <label htmlFor="prod-precio-tachado">
+                Precio fantasía <span className="hint">(tachado en tienda)</span>
+              </label>
+              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                <Controller
+                  name="precio_tachado"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="prod-precio-tachado"
+                      className="w-full"
+                      style={{ padding: '0.6rem' }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </div>
+              <p className="field-hint">Aparece tachado en la tienda mostrando el precio original. Ej: <em>~~300.000 Gs~~ 220.000 Gs</em>.</p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              {precioTachadoVal > 0 && precioBaseVal > 0 && precioTachadoVal > precioBaseVal && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.7rem 1rem', borderRadius: '0.5rem',
+                  background: 'rgba(234,88,12,0.1)', border: '1px solid rgba(234,88,12,0.3)',
+                }}>
+                  <span style={{ fontSize: '0.8rem', color: '#f97316' }}>Descuento visible:</span>
+                  <strong style={{ fontSize: '1.1rem', color: '#f97316' }}>
+                    -{Math.round((1 - precioBaseVal / precioTachadoVal) * 100)}%
+                  </strong>
+                </div>
+              )}
             </div>
           </div>
 
