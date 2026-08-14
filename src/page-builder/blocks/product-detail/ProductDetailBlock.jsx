@@ -26,6 +26,14 @@ export const ProductDetailBlock = ({ content, settings }) => {
     );
   }
 
+  // Configurable desde el inspector (ver ProductDetailInspector.jsx) —
+  // valores por defecto iguales al comportamiento de siempre, así que una
+  // sección ya guardada sin estos campos no cambia en nada.
+  const imagenALaDerecha = settings?.imagen_posicion === 'derecha';
+  const mostrarBotonComprarAhora = settings?.mostrar_comprar_ahora !== false;
+  const mostrarBotonAgregarCarrito = settings?.mostrar_agregar_carrito !== false;
+  const mostrarBotonWhatsapp = settings?.mostrar_whatsapp !== false;
+
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   const ofertasNormales = (item.ofertas || []).filter(o => o.estrategia === 'normal');
   const tieneOfertas = ofertasNormales.length > 0;
@@ -164,7 +172,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
            <ArrowLeft size={16} /> Volver al catálogo
         </button>
 
-        <div className="lp-product-grid">
+        <div className={`lp-product-grid ${imagenALaDerecha ? 'lp-imagen-derecha' : ''}`}>
           {/* Columna Izquierda: Galería */}
           <div className="lp-product-gallery">
             {galeria.length > 0 ? (
@@ -233,6 +241,22 @@ export const ProductDetailBlock = ({ content, settings }) => {
             )}
 
             {descripcion && <p className="lp-product-desc">{descripcion}</p>}
+
+            {/* Bloques de info (Beneficios, Qué incluye...) — configurables
+                desde ProductDetailInspector.jsx, viven en la MISMA columna
+                de compra en vez de como secciones aparte más abajo. */}
+            {(content.bloques_info || []).map((bloque, idx) => {
+              const items = (bloque.items || []).filter(i => i.trim());
+              if (!items.length) return null;
+              return (
+                <div key={idx} className="lp-product-bloque-info">
+                  {bloque.titulo && <h3>{bloque.titulo}</h3>}
+                  <ul>
+                    {items.map((it, i) => <li key={i}>{it}</li>)}
+                  </ul>
+                </div>
+              );
+            })}
 
             {/* Opciones */}
             <div className="lp-product-options-container">
@@ -358,24 +382,28 @@ export const ProductDetailBlock = ({ content, settings }) => {
                 </form>
               ) : (
                 <div className="lp-product-botones-grid">
-                  <button
-                    type="button"
-                    className="lp-modal-agregar"
-                    onClick={() => setComprando(true)}
-                    disabled={sinStock || !actions.comprarAhora}
-                  >
-                    <Zap size={18} /> Comprar ahora
-                  </button>
-                  <button
-                    type="button"
-                    className={`lp-modal-whatsapp ${agregado ? 'agregado' : ''}`}
-                    onClick={agregar}
-                    disabled={sinStock}
-                  >
-                    {agregado ? <><Check size={18} /> ¡Agregado!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
-                  </button>
+                  {mostrarBotonComprarAhora && (
+                    <button
+                      type="button"
+                      className="lp-modal-agregar"
+                      onClick={() => setComprando(true)}
+                      disabled={sinStock || !actions.comprarAhora}
+                    >
+                      <Zap size={18} /> Comprar ahora
+                    </button>
+                  )}
+                  {mostrarBotonAgregarCarrito && (
+                    <button
+                      type="button"
+                      className={`lp-modal-whatsapp ${agregado ? 'agregado' : ''}`}
+                      onClick={agregar}
+                      disabled={sinStock}
+                    >
+                      {agregado ? <><Check size={18} /> ¡Agregado!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
+                    </button>
+                  )}
 
-                  {linkWhatsapp && (
+                  {mostrarBotonWhatsapp && linkWhatsapp && (
                     <a
                       className="lp-modal-whatsapp"
                       href={linkWhatsapp}

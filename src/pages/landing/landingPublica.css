@@ -1836,6 +1836,10 @@
   gap: 3rem;
   align-items: start;
 }
+/* "Fotos a la derecha" (ver ProductDetailInspector.jsx) — se invierte con
+   order en vez de tocar el DOM, para no reordenar el foco/tab-index. */
+.lp-product-grid.lp-imagen-derecha .lp-product-gallery { order: 2; }
+.lp-product-grid.lp-imagen-derecha .lp-product-info { order: 1; }
 
 .lp-product-gallery {
   display: flex;
@@ -1948,6 +1952,59 @@
   color: var(--l-text-muted, #94a3b8);
   line-height: 1.6;
   margin-bottom: 2rem;
+}
+
+/* Dos secciones independientes en "Ancho: Mitad" consecutivas (ver
+   PageRenderer.jsx agruparEnFilas) — cada columna es una sección completa
+   con su propio wrapper de selección en el editor. */
+.lp-fila-mitad {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+  max-width: var(--l-max);
+  margin-inline: auto;
+  padding-inline: var(--l-gutter);
+}
+.lp-fila-mitad-col > * {
+  height: 100%;
+}
+@media (max-width: 900px) {
+  .lp-fila-mitad {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+.lp-product-galeria-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Bloques "Beneficios"/"Qué incluye" dentro de la columna de compra — ver
+   ProductDetailInspector.jsx. Mismo espíritu visual que un product page
+   estilo Shopify: título corto + lista compacta, sin tarjeta ni fondo. */
+.lp-product-bloque-info {
+  margin-bottom: 1.5rem;
+}
+.lp-product-bloque-info h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--l-text, #f8fafc);
+  margin: 0 0 0.6rem;
+}
+.lp-product-bloque-info ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.lp-product-bloque-info li {
+  font-size: 0.9rem;
+  color: var(--l-text-muted, #94a3b8);
+  line-height: 1.4;
 }
 
 .lp-product-options-container {

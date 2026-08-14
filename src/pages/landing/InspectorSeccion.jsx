@@ -12,8 +12,18 @@ import BeneficiosInspector from './inspectors/BeneficiosInspector';
 import AnnouncementInspector from './inspectors/AnnouncementInspector';
 import BeforeAfterInspector from './inspectors/BeforeAfterInspector';
 import HeaderInspector from './inspectors/HeaderInspector';
+import ProductDetailInspector from './inspectors/ProductDetailInspector';
+import ProductoGaleriaInspector from './inspectors/ProductoGaleriaInspector';
 
 import TemplateThumbnails from './TemplateThumbnails';
+
+// Tipos que SIEMPRE van a ancho completo — no es lo mismo que "singleton"
+// (que solo dice "máximo una por página" y también aplica a hero/productos,
+// que si tiene sentido poner a mitad de ancho). announcement_bar es una
+// barra angosta, header/footer son estructurales de toda la página, y
+// product_detail ya arma su propio layout de 2 columnas adentro — ponerlo
+// a "mitad" al lado de otra sección daría un resultado roto.
+const TIPOS_SIEMPRE_ANCHO_COMPLETO = new Set(['header', 'footer', 'announcement_bar', 'product_detail']);
 
 const sectionEditors = {
   header: HeaderInspector,
@@ -24,6 +34,8 @@ const sectionEditors = {
   beneficios: BeneficiosInspector,
   announcement_bar: AnnouncementInspector,
   before_after: BeforeAfterInspector,
+  product_detail: ProductDetailInspector,
+  producto_galeria: ProductoGaleriaInspector,
 };
 
 export default function InspectorSeccion({
@@ -32,6 +44,7 @@ export default function InspectorSeccion({
   onBack,
   catalogo,
   paginas,
+  onSacarDeFila,
   onDuplicate,
   onDelete,
   onUploadImagen,
@@ -100,6 +113,22 @@ export default function InspectorSeccion({
 
            {activeTab === 'diseno' && (
              <div className="flex flex-col gap-6">
+                {seccion.config?.fila_id && !TIPOS_SIEMPRE_ANCHO_COMPLETO.has(seccion.tipo) && (
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-[var(--vit-text)]">Fila de 2 columnas</label>
+                    <p className="text-xs text-[var(--vit-muted-2)] mb-2">
+                      Esta sección comparte fila con la de al lado. Para cambiar cuál va a la izquierda, movelas de orden en la lista.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onSacarDeFila && onSacarDeFila(seccion.id)}
+                      className="w-full py-2 rounded-md text-sm font-medium border border-[var(--vit-border)] text-[var(--vit-muted)] hover:border-[var(--vit-accent)] hover:text-[var(--vit-accent)] transition-colors"
+                    >
+                      Sacar de la fila (ancho completo)
+                    </button>
+                  </div>
+                )}
+
                 {hasTemplates && (
                   <div>
                     <label className="mb-3 block text-sm font-semibold text-[var(--vit-text)]">Diseo (Template)</label>

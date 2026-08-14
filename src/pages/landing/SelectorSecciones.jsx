@@ -3,7 +3,7 @@ import { X, Search, ChevronLeft } from 'lucide-react';
 import { BLOQUES_SCHEMA, CATEGORIAS_SECCION } from './BloquesSchema';
 import TemplateThumbnails from './TemplateThumbnails'; // We will create this
 
-export default function SelectorSecciones({ isOpen, onClose, onAdd, seccionesActuales }) {
+export default function SelectorSecciones({ isOpen, onClose, onAdd, seccionesActuales, alLadoDe }) {
   const [busqueda, setBusqueda] = useState('');
   const [selectedType, setSelectedType] = useState(null);
 
@@ -59,9 +59,16 @@ export default function SelectorSecciones({ isOpen, onClose, onAdd, seccionesAct
               <ChevronLeft size={18} />
             </button>
           )}
-          <h3 className="font-semibold text-[var(--vit-text)]">
-            {selectedType ? `Elegí un diseo` : `Agregar seccin`}
-          </h3>
+          <div className="flex flex-col">
+            <h3 className="font-semibold text-[var(--vit-text)]">
+              {selectedType ? `Elegí un diseño` : (alLadoDe ? 'Agregar sección al lado' : 'Agregar sección')}
+            </h3>
+            {alLadoDe && (
+              <span className="text-xs text-[var(--vit-accent)]">
+                Va a quedar en fila, al lado de "{alLadoDe.nombre_interno || alLadoDe.tipo}"
+              </span>
+            )}
+          </div>
         </div>
         <button
           onClick={handleClose}

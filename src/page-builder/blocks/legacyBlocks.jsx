@@ -8,6 +8,7 @@ import LandingProductos from '../../pages/landing/LandingProductos';
 import LandingTestimonials from '../../pages/landing/LandingTestimonials';
 import LandingFaq from '../../pages/landing/LandingFaq';
 import { useRenderContext } from '../core/RenderContext';
+import { getMediaUrl } from '../../services/api';
 
 // Legacy adapters that pull the global state from context and pass it as props
 // exactly as the old hardcoded LandingPublica.jsx did.
@@ -122,15 +123,27 @@ const FooterAdapter = ({ content, settings }) => {
   );
 };
 
-// Announcement bar wasn't a separate component in legacy, just a div
-const AnnouncementBarAdapter = ({ content, settings }) => {
-  if (!content.texto) return null;
-  return <section className="lp-custom-announcement">{content.texto}</section>;
+// Announcement bar wasn't a separate component in legacy, just a div.
+// Soporta `mensajes` (varios, en marquee) además de `texto` (uno fijo) —
+// igual que la vista previa del editor, que ya delegaba en
+// LandingScrollingText para ese caso. Sin esto, una barra configurada con
+// varios mensajes se veía en el editor pero desaparecía en el sitio real.
+const AnnouncementBarAdapter = ({ content, settings, section }) => {
+  const tieneMensajes = content.mensajes && content.mensajes.length > 0;
+  if (!tieneMensajes && !content.texto) return null;
+  return (
+    <section className="lp-custom-announcement" style={{ backgroundColor: settings?.color_fondo, color: settings?.color_texto }}>
+      {tieneMensajes
+        ? <LandingScrollingText seccion={section || { contenido: content, config: settings }} />
+        : content.texto}
+    </section>
+  );
 };
 
 // Banner adapter (legacy code just skipped it or handled it inside LandingPublica... wait, in LandingPublica.jsx line 515 'banner' was in the list, but there was no <LandingBanner/> component explicitly imported? Let's assume there is one or just render a simple div for now, or check LandingPublica again).
 
 import { ProductDetailBlock } from './product-detail/ProductDetailBlock';
+import { ProductoGaleriaBlock } from './producto-galeria/ProductoGaleriaBlock';
 
 import { BLOQUES_SCHEMA } from '../../pages/landing/BloquesSchema';
 
@@ -188,6 +201,7 @@ export function registerLegacyBlocks() {
   registerWithSchema('faq', FaqAdapter);
   registerWithSchema('footer', FooterAdapter);
   registerWithSchema('product_detail', ProductDetailBlock);
+  registerWithSchema('producto_galeria', ProductoGaleriaBlock);
   registerWithSchema('texto', TextoAdapter);
   registerWithSchema('rich_text', TextoAdapter);
   registerWithSchema('como_funciona', ComoFuncionaAdapter);
@@ -198,20 +212,31 @@ export function registerLegacyBlocks() {
   registerWithSchema('image_text', ImageTextAdapter);
   registerWithSchema('logo_list', LogoListAdapter);
 
-  // Also register 'banner' just in case
-  BlockRegistry.register({
-    type: 'banner',
-    component: ({ content }) => {
-      const { page } = useRenderContext();
-      const bannerData = page.banner;
-      if (!bannerData || (!bannerData.titulo && !bannerData.imagen)) return null;
-      return (
-        <section className="lp-custom-banner">
-          {/* Implementación simplificada o delegar al real si existe */}
-          {bannerData.imagen && <img src={bannerData.imagen} alt="Banner" style={{ width: '100%', display: 'block' }} />}
-          {bannerData.titulo && <div className="lp-banner-content"><h2>{bannerData.titulo}</h2></div>}
-        </section>
-      );
-    }
+  // 'banner' es una sección de imagen independiente (ver BloquesSchema.js):
+  // cada instancia tiene su propio content.imagen/titulo/etc, no comparte
+  // nada con otras secciones banner de la misma página — agregar el bloque
+  // dos veces da dos imágenes totalmente separadas, cada una con su propio
+  // inspector. Antes esto leía `page.banner` (un campo global de toda la
+  // landing) en vez del contenido propio de la sección: por eso se veía
+  // bien en LandingPreview.jsx (que sí usa `cont` por sección, ver su caso
+  // 'banner') pero en el sitio público todas las instancias mostraban lo
+  // mismo (o nada). Mismo tipo de bug que el resto de legacyBlocks.jsx.
+  registerWithSchema('banner', ({ content }) => {
+    const cont = content || {};
+    if (!cont.imagen && !cont.titulo) return null;
+    return (
+      <div
+        className={`lp-banner ${cont.imagen ? 'con-imagen' : ''} ${cont.altura ? 'lp-banner-' + cont.altura : ''}`}
+        style={cont.imagen ? { backgroundImage: `url(${getMediaUrl(cont.imagen)})` } : {}}
+      >
+        <div className="lp-banner-overlay">
+          {cont.titulo && <h2>{cont.titulo}</h2>}
+          {cont.subtitulo && <p>{cont.subtitulo}</p>}
+          {cont.boton_texto && cont.boton_link && (
+            <a className="lp-banner-btn" href={cont.boton_link}>{cont.boton_texto}</a>
+          )}
+        </div>
+      </div>
+    );
   });
 }

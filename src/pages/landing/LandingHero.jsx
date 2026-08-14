@@ -104,14 +104,16 @@ export default function LandingHero({
             variants={variantes}
             className="mt-10 flex flex-wrap items-center justify-center gap-4"
           >
-            <a
-              href="#lp-productos"
-              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-[var(--l-text)] shadow-lg transition-transform hover:-translate-y-0.5"
-              style={{ background: 'var(--l-primary)' }}
-            >
-              Ver catálogo <ArrowRight size={18} />
-            </a>
-            {whatsapp && (
+            {config.mostrar_boton_catalogo !== false && (
+              <a
+                href="#lp-productos"
+                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-[var(--l-text)] shadow-lg transition-transform hover:-translate-y-0.5"
+                style={{ background: 'var(--l-primary)' }}
+              >
+                Ver catálogo <ArrowRight size={18} />
+              </a>
+            )}
+            {whatsapp && config.mostrar_boton_whatsapp !== false && (
               <a
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
@@ -180,14 +182,16 @@ export default function LandingHero({
             variants={variantes}
             className="mt-10 flex flex-wrap items-center justify-center gap-4"
           >
-            <a
-              href="#lp-productos"
-              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-[var(--l-text)] shadow-lg transition-transform hover:-translate-y-0.5"
-              style={{ background: 'var(--l-primary)' }}
-            >
-              Ver catálogo <ArrowRight size={18} />
-            </a>
-            {whatsapp && (
+            {config.mostrar_boton_catalogo !== false && (
+              <a
+                href="#lp-productos"
+                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-8 py-4 text-base font-bold text-[var(--l-text)] shadow-lg transition-transform hover:-translate-y-0.5"
+                style={{ background: 'var(--l-primary)' }}
+              >
+                Ver catálogo <ArrowRight size={18} />
+              </a>
+            )}
+            {whatsapp && config.mostrar_boton_whatsapp !== false && (
               <a
                 href={`https://wa.me/${whatsapp}`}
                 target="_blank"
@@ -270,14 +274,16 @@ export default function LandingHero({
               variants={variantes}
               className="mt-8 flex flex-wrap items-center gap-4"
             >
-              <a
-                href="#lp-productos"
-                className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-6 py-3.5 text-sm font-bold text-[var(--l-on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
-                style={{ background: 'var(--l-primary)', boxShadow: '0 12px 30px color-mix(in srgb, var(--l-primary) 32%, transparent)' }}
-              >
-                Catálogo <ArrowRight size={16} />
-              </a>
-              {whatsapp && (
+              {config.mostrar_boton_catalogo !== false && (
+                <a
+                  href="#lp-productos"
+                  className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-6 py-3.5 text-sm font-bold text-[var(--l-on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
+                  style={{ background: 'var(--l-primary)', boxShadow: '0 12px 30px color-mix(in srgb, var(--l-primary) 32%, transparent)' }}
+                >
+                  Catálogo <ArrowRight size={16} />
+                </a>
+              )}
+              {whatsapp && config.mostrar_boton_whatsapp !== false && (
                 <a
                   href={`https://wa.me/${whatsapp}`}
                   target="_blank"
@@ -310,16 +316,25 @@ export default function LandingHero({
     );
   }
 
-  // minimal_center por defecto
+  // minimal_center por defecto — antes ignoraba imagenFondo por completo:
+  // el usuario podía subir una imagen desde el inspector y no pasaba nada,
+  // porque este es el template que queda activo salvo que se elija otro.
   return (
     <section className="relative overflow-hidden">
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            'radial-gradient(80% 60% at 50% 0%, color-mix(in srgb, var(--l-primary) 14%, transparent) 0%, transparent 60%), var(--l-bg)',
-        }}
-      />
+      {imagenFondo ? (
+        <>
+          <img src={getMediaUrl(imagenFondo)} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
+          <div className="absolute inset-0 -z-10 bg-[var(--l-bg)] opacity-70 mix-blend-multiply" />
+        </>
+      ) : (
+        <div
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              'radial-gradient(80% 60% at 50% 0%, color-mix(in srgb, var(--l-primary) 14%, transparent) 0%, transparent 60%), var(--l-bg)',
+          }}
+        />
+      )}
 
       <div className="mx-auto max-w-[46rem] px-[var(--l-gutter)] py-16 text-center sm:py-20">
         <motion.span
@@ -363,14 +378,16 @@ export default function LandingHero({
           variants={variantes}
           className="mt-8 flex flex-wrap items-center justify-center gap-3"
         >
-          <a
-            href="#lp-productos"
-            className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-6 py-3.5 text-sm font-bold text-[var(--l-on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
-            style={{ background: 'var(--l-primary)', boxShadow: '0 12px 30px color-mix(in srgb, var(--l-primary) 32%, transparent)' }}
-          >
-            Ver catálogo <ArrowRight size={16} />
-          </a>
-          {whatsapp && (
+          {config.mostrar_boton_catalogo !== false && (
+            <a
+              href="#lp-productos"
+              className="inline-flex items-center gap-2 rounded-[var(--l-radius-sm)] px-6 py-3.5 text-sm font-bold text-[var(--l-on-primary)] shadow-lg transition-transform hover:-translate-y-0.5"
+              style={{ background: 'var(--l-primary)', boxShadow: '0 12px 30px color-mix(in srgb, var(--l-primary) 32%, transparent)' }}
+            >
+              Ver catálogo <ArrowRight size={16} />
+            </a>
+          )}
+          {whatsapp && config.mostrar_boton_whatsapp !== false && (
             <a
               href={`https://wa.me/${whatsapp}`}
               target="_blank"

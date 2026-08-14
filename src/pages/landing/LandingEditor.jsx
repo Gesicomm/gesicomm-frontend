@@ -229,10 +229,21 @@ export default function LandingEditor() {
     setSucio(true);
   }, [setSecciones]);
 
+  // Cuando el usuario toca el botón "al lado" de una sección, se guarda acá
+  // su id y se abre el MISMO selector de secciones. Al elegir el tipo,
+  // handleAgregarSeccion mira este valor para decidir si la nueva sección va
+  // al final (flujo normal) o emparejada en fila con esta.
+  const [agregarAlLadoDe, setAgregarAlLadoDe] = useState(null);
+
+  const handleAgregarAlLado = useCallback((seccionId) => {
+    setAgregarAlLadoDe(seccionId);
+    setSelectorAbierto(true);
+  }, []);
+
   const handleAgregarSeccion = useCallback((tipo, templateStr) => {
     const defaults = VALORES_DEFECTO_POR_TIPO[tipo] || { template: 'standard', config: {}, contenido: {} };
     const finalTemplate = templateStr || defaults.template;
-    
+
     const blockDef = BlockRegistry.resolve(tipo);
     const nuevaSeccion = {
       id: `temp-${Date.now()}`,
@@ -245,9 +256,49 @@ export default function LandingEditor() {
       config: { ...defaults.config },
       contenido: { ...defaults.contenido },
     };
-    setSecciones(prev => [...prev, nuevaSeccion]);
+
+    if (agregarAlLadoDe) {
+      // Fila de 2 columnas: la nueva sección se inserta JUSTO DESPUÉS de la
+      // sección destino y ambas comparten un fila_id. Siguen siendo dos
+      // secciones independientes en la lista, cada una con su inspector —
+      // fila_id solo le dice al renderer que van lado a lado (ver
+      // PageRenderer.jsx). Máximo 2 por fila.
+      const filaId = `fila-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setSecciones(prev => {
+        const idx = prev.findIndex(s => s.id === agregarAlLadoDe);
+        if (idx === -1) return [...prev, nuevaSeccion];
+        const objetivo = { ...prev[idx], config: { ...prev[idx].config, fila_id: filaId } };
+        const nueva = { ...nuevaSeccion, config: { ...nuevaSeccion.config, fila_id: filaId } };
+        const copia = [...prev];
+        copia.splice(idx, 1, objetivo, nueva);
+        return copia;
+      });
+      setAgregarAlLadoDe(null);
+    } else {
+      setSecciones(prev => [...prev, nuevaSeccion]);
+    }
+
     setSelectorAbierto(false);
     setSeccionSeleccionadaId(nuevaSeccion.id);
+    setSucio(true);
+  }, [setSecciones, agregarAlLadoDe]);
+
+  /** Saca una sección de su fila — la deja sola a ancho completo otra vez. */
+  const handleSacarDeFila = useCallback((seccionId) => {
+    setSecciones(prev => {
+      const objetivo = prev.find(s => s.id === seccionId);
+      const filaId = objetivo?.config?.fila_id;
+      if (!filaId) return prev;
+      // Si la fila queda con una sola sección, esa también pierde el fila_id
+      // (una fila de uno no es una fila).
+      const enLaFila = prev.filter(s => s.config?.fila_id === filaId);
+      const idsALimpiar = new Set(enLaFila.length <= 2 ? enLaFila.map(s => s.id) : [seccionId]);
+      return prev.map(s => {
+        if (!idsALimpiar.has(s.id)) return s;
+        const { fila_id, ...restoConfig } = s.config || {};
+        return { ...s, config: restoConfig };
+      });
+    });
     setSucio(true);
   }, [setSecciones]);
 
@@ -1388,7 +1439,8 @@ export default function LandingEditor() {
           <SidebarSecciones 
             secciones={secciones}
             onSelect={setSeccionSeleccionadaId}
-            onAddClick={() => setSelectorAbierto(true)}
+            onAddClick={() => { setAgregarAlLadoDe(null); setSelectorAbierto(true); }}
+            onAddBeside={handleAgregarAlLado}
             onToggleVisible={handleToggleVisible}
             onDuplicate={handleDuplicarSeccion}
             onDelete={handleEliminarSeccion}
@@ -1512,6 +1564,7 @@ export default function LandingEditor() {
                 onBack={() => setSeccionSeleccionadaId(null)}
                 catalogo={catalogo}
                 paginas={paginas}
+                onSacarDeFila={handleSacarDeFila}
                 onDuplicate={handleDuplicarSeccion}
                 onDelete={handleEliminarSeccion}
                 onUploadImagen={handleUploadSeccionImagen}
@@ -1532,9 +1585,10 @@ export default function LandingEditor() {
 
         <SelectorSecciones
             isOpen={selectorAbierto}
-            onClose={() => setSelectorAbierto(false)}
+            onClose={() => { setSelectorAbierto(false); setAgregarAlLadoDe(null); }}
             onAdd={handleAgregarSeccion}
             seccionesActuales={secciones}
+            alLadoDe={agregarAlLadoDe ? secciones.find(s => s.id === agregarAlLadoDe) : null}
         />
 
         {confirmDespublicar && (

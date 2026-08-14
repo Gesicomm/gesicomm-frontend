@@ -297,7 +297,9 @@ export const BLOQUES_SCHEMA = {
     ],
     designSchema: [
       { key: 'mostrar_estadisticas', type: 'boolean', label: 'Mostrar estadsticas (Productos, Categoras)' },
-      { key: 'autoplay', type: 'boolean', label: 'Autoplay Carrusel' }
+      { key: 'autoplay', type: 'boolean', label: 'Autoplay Carrusel' },
+      { key: 'mostrar_boton_catalogo', type: 'boolean', label: 'Mostrar botn "Ver catlogo"' },
+      { key: 'mostrar_boton_whatsapp', type: 'boolean', label: 'Mostrar botn "Escribinos" (WhatsApp)' }
     ]
   },
   header: {
@@ -312,6 +314,19 @@ export const BLOQUES_SCHEMA = {
     contentSchema: [
       { key: 'logo_texto', type: 'text', label: 'Texto del logo (opcional)' }
     ]
+  },
+  product_detail: {
+    type: 'product_detail',
+    name: 'Detalle de Producto',
+    icon: ImageIcon,
+    categoria: 'estructura',
+    singleton: true,
+  },
+  producto_galeria: {
+    type: 'producto_galeria',
+    name: 'Galería de producto',
+    icon: ImageIcon,
+    categoria: 'ecommerce',
   },
   announcement_bar: {
     type: 'announcement_bar',
@@ -347,6 +362,7 @@ export const BLOQUES_SCHEMA = {
 };
 
 export const VALORES_DEFECTO_POR_TIPO = {
+  producto_galeria: { activo: true, template: 'standard', config: {}, contenido: { imagenes: [] } },
   scrolling_text: { activo: true, template: 'marquee', config: { colorScheme: 'dark' }, contenido: {} },
   before_after: { activo: true, template: 'slider', config: { colorScheme: 'default' }, contenido: { titulo: 'Resultados reales' } },
   header: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: {} },

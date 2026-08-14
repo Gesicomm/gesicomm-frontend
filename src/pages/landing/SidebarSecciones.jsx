@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, GripVertical, Plus, Copy, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, GripVertical, Plus, Copy, Trash2, Columns2 } from 'lucide-react';
 import { BLOQUES_SCHEMA } from './BloquesSchema';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 const HEADER_TYPES = ['header', 'announcement_bar'];
 const FOOTER_TYPES = ['footer'];
+// Estructurales: nunca pueden compartir fila con otra sección.
+const TIPOS_SIN_FILA = new Set(['header', 'footer', 'announcement_bar', 'product_detail']);
 
 export default function SidebarSecciones({
   secciones,
   onSelect,
   onAddClick,
+  onAddBeside,
   onToggleVisible,
   onDuplicate,
   onDelete,
@@ -105,6 +108,9 @@ export default function SidebarSecciones({
                 <span className="truncate text-sm font-medium text-[var(--vit-text)]">
                   {sec.nombre_interno || schema.name}
                 </span>
+                {sec.config?.fila_id && (
+                  <Columns2 size={12} className="flex-shrink-0 text-[var(--vit-accent)]" title="En fila de 2 columnas" />
+                )}
               </button>
             </div>
 
@@ -117,6 +123,16 @@ export default function SidebarSecciones({
               >
                 {sec.activo ? <Eye size={14} /> : <EyeOff size={14} />}
               </button>
+              {!TIPOS_SIN_FILA.has(sec.tipo) && !sec.config?.fila_id && onAddBeside && (
+                <button
+                  type="button"
+                  className="rounded p-1.5 text-[var(--vit-muted-2)] hover:bg-[var(--vit-border)] hover:text-[var(--vit-text)]"
+                  onClick={() => onAddBeside(sec.id)}
+                  title="Agregar una sección al lado (2 columnas)"
+                >
+                  <Columns2 size={14} />
+                </button>
+              )}
               {!sec.fijo && (
                 <>
                   <button
