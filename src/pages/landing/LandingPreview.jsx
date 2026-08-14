@@ -361,7 +361,15 @@ export default function LandingPreview({
         orden: ''
       },
       actions: {
-        navigate: () => {},
+        navigate: (path, item) => {
+          if (item && item.id) {
+            if (item.tipo === 'producto') {
+              window.open(`/dashboard/productos/editar/${item.id}`, '_blank');
+            } else if (item.tipo === 'combo') {
+              window.open(`/dashboard/combos/editar/${item.id}`, '_blank');
+            }
+          }
+        },
         agregarRapido: () => {},
         toggleWishlist: () => {},
         setBusqueda: () => {},
