@@ -168,6 +168,10 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                 <ProductPicker 
                   catalogo={catalogo}
                   seleccion={tempSeleccion}
+                  itemsOrdenados={Array.from(tempSeleccion.values()).map(sel => {
+                    const itemCat = sel.tipo === 'combo' ? catalogo?.combos?.find(c => c.id === sel.id) : catalogo?.productos?.find(p => p.id === sel.id);
+                    return itemCat ? { ...itemCat, ...sel } : sel;
+                  })}
                   max={50}
                   onToggle={handleToggle}
                   onEtiqueta={handleEtiqueta}
