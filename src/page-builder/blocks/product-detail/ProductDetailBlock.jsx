@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useRenderContext } from '../../core/RenderContext';
-import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, Loader, Zap } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, Loader, Zap, X } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../../lib/mensajeWhatsapp';
 import { recalcularCarritoLanding } from '../../../services/landingPublicaService';
@@ -413,153 +413,8 @@ export const ProductDetailBlock = ({ content, settings }) => {
                   </div>
                 </div>
               )}
-            </div>
 
-            <div className="lp-product-actions-wrapper">
-              {/* Mostrar stepper de cantidad siempre, excepto si hay combos seleccionados (donde la cantidad es 1) */}
-              {(!ofertaComboId || combosNormales.length === 0) && (
-                <div className="lp-product-cantidad-row">
-                  <span className="lp-modal-label">Cantidad:</span>
-                  <div className="lp-modal-stepper">
-                    <button type="button" onClick={() => ajustarCantidad(-1)} disabled={cantidad <= 1}><Minus size={14} /></button>
-                    <span>{cantidad}</span>
-                    <button type="button" onClick={() => ajustarCantidad(1)} disabled={cantidad >= maxCantidad}><Plus size={14} /></button>
-                  </div>
-                </div>
-              )}
-
-              {compraConfirmada ? (
-                <div className="lp-checkout-confirmado">
-                  <div className="lp-cart-confirmado-icono"><Check size={26} /></div>
-                  <h3>¡Pedido recibido!</h3>
-                  <p>
-                    {compraConfirmada.redirigido
-                      ? 'Te vamos a escribir por WhatsApp para coordinar el pago y la entrega.'
-                      : 'La tienda se va a contactar para coordinar el pago y la entrega.'}
-                  </p>
-                </div>
-              ) : comprando ? (
-                <form className="lp-checkout-inline" onSubmit={enviarCompraDirecta}>
-                  {errorCompra && <p className="lp-checkout-error">{errorCompra}</p>}
-
-                  {packsNormales.length > 0 ? (
-                    <div className="lp-product-tiers-grid lp-product-tiers-grid--imagen mb-4">
-                      {[{ clave: 'individual', unidades: 1, nombre: 'Individual', precio: item.precio, ahorroPct: null },
-                        ...packsConAhorro.map(o => ({ clave: String(o.id), unidades: o.unidades || 1, nombre: o.nombre, precio: o.precio, ahorroPct: o.ahorroPct }))]
-                        .map(t => {
-                          const cfg = tarjetasPrecio[t.clave] || {};
-                          const imagenTarjeta = galeria[0];
-                          const activa = cantidad === t.unidades && !ofertaComboId;
-                          return (
-                            <button
-                              key={t.clave}
-                              type="button"
-                              className={`lp-tier-card lp-tier-card--imagen ${activa ? 'active' : ''}`}
-                              onClick={() => { setCantidad(t.unidades); setOfertaComboId(null); setAgregado(false); }}
-                            >
-                              <span className="lp-tier-imagen">
-                                {imagenTarjeta ? <img src={getMediaUrl(imagenTarjeta)} alt="" /> : <ImageOff size={20} color="var(--vit-muted-2)" />}
-                              </span>
-                              <div className="flex flex-col items-start w-full">
-                                <span className="lp-tier-nombre">{cfg.etiqueta || t.nombre}</span>
-                                <span className="lp-tier-precio">{formatPrecio(t.precio)}</span>
-                              </div>
-                              {t.ahorroPct > 0 && <span className="lp-tier-ahorro" style={{ position: 'absolute', top: 6, right: 6, fontSize: '0.65rem' }}>-{t.ahorroPct}% OFF</span>}
-                              
-                              {/* Checkbox circle to look like a radio selection */}
-                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ml-auto ${activa ? 'border-[var(--vit-accent)]' : 'border-[var(--vit-border)]'}`}>
-                                {activa && <div className="w-2.5 h-2.5 rounded-full bg-[var(--vit-accent)]" />}
-                              </div>
-                            </button>
-                          );
-                        })}
-                    </div>
-                  ) : (
-                    <div className="lp-checkout-resumen mb-4" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', border: '1px solid var(--vit-accent)', borderRadius: '8px', backgroundColor: 'var(--vit-accent-bg, rgba(0,0,0,0.02))' }}>
-                      <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: 'var(--vit-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--vit-border)' }}>
-                        {galeria[0] ? (
-                          <img src={getMediaUrl(galeria[0])} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                          <ImageOff size={20} color="var(--vit-muted-2)" />
-                        )}
-                      </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontWeight: 600 }}>{cantidad} × {oferta ? oferta.nombre : (variante ? variante.nombre : item.nombre)}</span>
-                      </div>
-                      <strong style={{ fontSize: '1.1rem' }}>{formatPrecio(precio * cantidad)}</strong>
-                    </div>
-                  )}
-
-                  {orderBumpOferta && (() => {
-                    const compProd = orderBumpOferta.producto_complementario;
-                    const bumpImg = compProd?.imagen || compProd?.imagen_principal || compProd?.imagenes?.[0]
-                      || orderBumpOferta.componentes?.[0]?.Producto?.imagen
-                      || orderBumpOferta.componentes?.[0]?.Producto?.imagen_principal
-                      || orderBumpOferta.componentes?.[0]?.Producto?.imagenes?.[0];
-                    const bumpNombre = compProd?.nombre || orderBumpOferta.componentes?.[0]?.Producto?.nombre || orderBumpOferta.nombre;
-                    return (
-                      <label className="lp-checkout-order-bump">
-                        <input
-                          type="checkbox"
-                          checked={ofertaComboId === orderBumpOferta.id}
-                          onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
-                        />
-                        {bumpImg && (
-                          <img className="lp-checkout-order-bump-imagen" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
-                        )}
-                        <span className="lp-checkout-order-bump-texto">
-                          {orderBumpOferta.descripcion || `Agregar ${bumpNombre} a este pedido`}
-                        </span>
-                      </label>
-                    );
-                  })()}
-
-                  <label className="lp-checkout-field">
-                    <span>Nombre y Apellido <em>*</em></span>
-                    <input required value={formCheckout.nombre_cliente} onChange={e => actualizarCampoCheckout('nombre_cliente', e.target.value)} placeholder="Nombre y Apellido" />
-                  </label>
-                  <label className="lp-checkout-field">
-                    <span>RUC (Factura Virtual)</span>
-                    <input value={formCheckout.ruc} onChange={e => actualizarCampoCheckout('ruc', e.target.value)} placeholder="Opcional" />
-                  </label>
-                  <label className="lp-checkout-field">
-                    <span>Celular <em>*</em></span>
-                    <div className="lp-checkout-tel">
-                      <span className="lp-checkout-tel-prefijo">+595</span>
-                      <input required value={formCheckout.telefono} onChange={e => actualizarCampoCheckout('telefono', e.target.value)} placeholder="9XX XXXXXX" />
-                    </div>
-                  </label>
-                  <label className="lp-checkout-field">
-                    <span>Ciudad <em>*</em></span>
-                    <input required value={formCheckout.ciudad} onChange={e => actualizarCampoCheckout('ciudad', e.target.value)} placeholder="Ciudad" />
-                  </label>
-                  <label className="lp-checkout-field">
-                    <span>Departamento</span>
-                    <input value={formCheckout.departamento} onChange={e => actualizarCampoCheckout('departamento', e.target.value)} placeholder="Departamento" />
-                  </label>
-                  <label className="lp-checkout-field">
-                    <span>Dirección <em>*</em></span>
-                    <input required value={formCheckout.direccion} onChange={e => actualizarCampoCheckout('direccion', e.target.value)} placeholder="Nombre de la calle y número de casa" />
-                  </label>
-                  <label className="lp-checkout-field">
-                    <span>Referencia</span>
-                    <input value={formCheckout.referencia} onChange={e => actualizarCampoCheckout('referencia', e.target.value)} placeholder="Opcional — un punto conocido cerca" />
-                  </label>
-                  <label className="lp-checkout-terminos">
-                    <input type="checkbox" checked={aceptaTerminos} onChange={e => setAceptaTerminos(e.target.checked)} />
-                    <span>Acepto que mis datos se usen para procesar este pedido.</span>
-                  </label>
-
-                  <div className="lp-product-botones-grid">
-                    <button type="button" className="lp-modal-whatsapp" onClick={() => setComprando(false)} disabled={enviandoCompra}>
-                      Volver
-                    </button>
-                    <button type="submit" className="lp-modal-agregar" disabled={!formCheckoutValido || enviandoCompra}>
-                      {enviandoCompra ? <><Loader size={16} className="lp-spin" /> Enviando...</> : `Completá tu compra — ${formatPrecio(precio * cantidad)}`}
-                    </button>
-                  </div>
-                </form>
-              ) : (
+              <div className="lp-product-actions-wrapper">
                 <div className="lp-product-botones-grid">
                   {mostrarBotonComprarAhora && (
                     <button
@@ -594,7 +449,154 @@ export const ProductDetailBlock = ({ content, settings }) => {
                     </a>
                   )}
                 </div>
-              )}
+
+                {(comprando || compraConfirmada) && (
+                  <div className="lp-checkout-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setComprando(false); }}>
+                    <div className="lp-checkout-modal-content slide-down">
+                      {!compraConfirmada && (
+                        <button type="button" className="lp-modal-close" onClick={() => setComprando(false)}>
+                          <X size={20} />
+                        </button>
+                      )}
+                      
+                      {compraConfirmada ? (
+                        <div className="lp-checkout-confirmado">
+                          <div className="lp-cart-confirmado-icono"><Check size={26} /></div>
+                          <h3>¡Pedido recibido!</h3>
+                          <p>
+                            {compraConfirmada.redirigido
+                              ? 'Te vamos a escribir por WhatsApp para coordinar el pago y la entrega.'
+                              : 'La tienda se va a contactar para coordinar el pago y la entrega.'}
+                          </p>
+                        </div>
+                      ) : (
+                        <form className="lp-checkout-inline" onSubmit={enviarCompraDirecta}>
+                          {errorCompra && <p className="lp-checkout-error">{errorCompra}</p>}
+
+                          {packsNormales.length > 0 ? (
+                            <div className="lp-product-tiers-grid lp-product-tiers-grid--imagen mb-4">
+                              {[{ clave: 'individual', unidades: 1, nombre: 'Individual', precio: item.precio, ahorroPct: null },
+                                ...packsConAhorro.map(o => ({ clave: String(o.id), unidades: o.unidades || 1, nombre: o.nombre, precio: o.precio, ahorroPct: o.ahorroPct }))]
+                                .map(t => {
+                                  const cfg = tarjetasPrecio[t.clave] || {};
+                                  const imagenTarjeta = galeria[0];
+                                  const activa = cantidad === t.unidades && !ofertaComboId;
+                                  return (
+                                    <button
+                                      key={t.clave}
+                                      type="button"
+                                      className={`lp-tier-card lp-tier-card--imagen ${activa ? 'active' : ''}`}
+                                      onClick={() => { setCantidad(t.unidades); setOfertaComboId(null); setAgregado(false); }}
+                                    >
+                                      <span className="lp-tier-imagen">
+                                        {imagenTarjeta ? <img src={getMediaUrl(imagenTarjeta)} alt="" /> : <ImageOff size={20} color="var(--vit-muted-2)" />}
+                                      </span>
+                                      <div className="flex flex-col items-start w-full">
+                                        <span className="lp-tier-nombre">{cfg.etiqueta || t.nombre}</span>
+                                        <span className="lp-tier-precio">{formatPrecio(t.precio)}</span>
+                                      </div>
+                                      {t.ahorroPct > 0 && <span className="lp-tier-ahorro" style={{ position: 'absolute', top: 6, right: 6, fontSize: '0.65rem' }}>-{t.ahorroPct}% OFF</span>}
+                                      
+                                      {/* Checkbox circle to look like a radio selection */}
+                                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ml-auto ${activa ? 'border-[var(--vit-accent)]' : 'border-[var(--vit-border)]'}`}>
+                                        {activa && <div className="w-2.5 h-2.5 rounded-full bg-[var(--vit-accent)]" />}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          ) : (
+                            <div className="lp-checkout-resumen mb-4" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', border: '1px solid var(--vit-accent)', borderRadius: '8px', backgroundColor: 'var(--vit-accent-bg, rgba(0,0,0,0.02))' }}>
+                              <div style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: 'var(--vit-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--vit-border)' }}>
+                                {galeria[0] ? (
+                                  <img src={getMediaUrl(galeria[0])} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <ImageOff size={20} color="var(--vit-muted-2)" />
+                                )}
+                              </div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontWeight: 600 }}>{cantidad} × {oferta ? oferta.nombre : (variante ? variante.nombre : item.nombre)}</span>
+                              </div>
+                              <strong style={{ fontSize: '1.1rem' }}>{formatPrecio(precio * cantidad)}</strong>
+                            </div>
+                          )}
+
+                          {orderBumpOferta && (() => {
+                            const compProd = orderBumpOferta.producto_complementario;
+                            const bumpImg = compProd?.imagen || compProd?.imagen_principal || compProd?.imagenes?.[0]
+                              || orderBumpOferta.componentes?.[0]?.Producto?.imagen
+                              || orderBumpOferta.componentes?.[0]?.Producto?.imagen_principal
+                              || orderBumpOferta.componentes?.[0]?.Producto?.imagenes?.[0];
+                            const bumpNombre = compProd?.nombre || orderBumpOferta.componentes?.[0]?.Producto?.nombre || orderBumpOferta.nombre;
+                            return (
+                              <label className={`lp-checkout-bump mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-bg)]'}`}>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded border-gray-300 text-[var(--vit-accent)] focus:ring-[var(--vit-accent)]"
+                                    checked={ofertaComboId === orderBumpOferta.id}
+                                    onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
+                                  />
+                                  <span className="text-sm font-medium text-[var(--vit-text)]">
+                                    {orderBumpOferta.descripcion || `Agregar ${bumpNombre} a este pedido`}
+                                  </span>
+                                </div>
+                                {bumpImg && (
+                                  <div className="mt-2 pl-6">
+                                    <img className="rounded-md border border-[var(--vit-border)] max-h-24 object-contain" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
+                                  </div>
+                                )}
+                              </label>
+                            );
+                          })()}
+
+                          <label className="lp-checkout-field">
+                            <span>Nombre y Apellido <em>*</em></span>
+                            <input required value={formCheckout.nombre_cliente} onChange={e => actualizarCampoCheckout('nombre_cliente', e.target.value)} placeholder="Nombre y Apellido" />
+                          </label>
+                          <label className="lp-checkout-field">
+                            <span>RUC (Factura Virtual)</span>
+                            <input value={formCheckout.ruc} onChange={e => actualizarCampoCheckout('ruc', e.target.value)} placeholder="Opcional" />
+                          </label>
+                          <label className="lp-checkout-field">
+                            <span>Celular <em>*</em></span>
+                            <div className="lp-checkout-tel">
+                              <span className="lp-checkout-tel-prefijo">+595</span>
+                              <input required value={formCheckout.telefono} onChange={e => actualizarCampoCheckout('telefono', e.target.value)} placeholder="9XX XXXXXX" />
+                            </div>
+                          </label>
+                          <label className="lp-checkout-field">
+                            <span>Ciudad <em>*</em></span>
+                            <input required value={formCheckout.ciudad} onChange={e => actualizarCampoCheckout('ciudad', e.target.value)} placeholder="Ciudad" />
+                          </label>
+                          <label className="lp-checkout-field">
+                            <span>Departamento</span>
+                            <input value={formCheckout.departamento} onChange={e => actualizarCampoCheckout('departamento', e.target.value)} placeholder="Departamento" />
+                          </label>
+                          <label className="lp-checkout-field">
+                            <span>Dirección <em>*</em></span>
+                            <input required value={formCheckout.direccion} onChange={e => actualizarCampoCheckout('direccion', e.target.value)} placeholder="Nombre de la calle y número de casa" />
+                          </label>
+                          <label className="lp-checkout-field">
+                            <span>Referencia</span>
+                            <input value={formCheckout.referencia} onChange={e => actualizarCampoCheckout('referencia', e.target.value)} placeholder="Opcional — un punto conocido cerca" />
+                          </label>
+                          <label className="lp-checkout-terminos">
+                            <input type="checkbox" checked={aceptaTerminos} onChange={e => setAceptaTerminos(e.target.checked)} />
+                            <span>Acepto que mis datos se usen para procesar este pedido.</span>
+                          </label>
+
+                          <div className="lp-product-botones-grid" style={{ marginTop: '1rem' }}>
+                            <button type="submit" className="lp-modal-agregar" disabled={!formCheckoutValido || enviandoCompra}>
+                              {enviandoCompra ? <><Loader size={16} className="lp-spin" /> Enviando...</> : `Completá tu compra — ${formatPrecio(precio * cantidad)}`}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
