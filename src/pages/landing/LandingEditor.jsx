@@ -8,6 +8,7 @@ import {
 import { landingService } from '../../services/landingService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { tiendaService } from '../../services/tiendaService';
+import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
 import ProductPicker from './ProductPicker';
 import LandingPreview from './LandingPreview';
@@ -392,7 +393,16 @@ export default function LandingEditor() {
         // producto, no uno cualquiera del catálogo.
         const productos = [...(datosCatalogo.productos || [])];
         const idx = productos.findIndex(p => String(p.id) === String(productoId));
-        if (idx > 0) productos.unshift(productos.splice(idx, 1)[0]);
+        if (idx >= 0) {
+          if (idx > 0) productos.unshift(productos.splice(idx, 1)[0]);
+        } else if (productoId) {
+          try {
+            const pActual = await productService.obtener(productoId);
+            productos.unshift(pActual);
+          } catch (err) {
+            console.error('Error al obtener el producto editado', err);
+          }
+        }
         setCatalogo({ ...datosCatalogo, productos });
 
         // Tema completo de Inicio (no solo color_primario/secundario de
@@ -704,7 +714,7 @@ export default function LandingEditor() {
     });
   }, [secciones, catalogoPorClave]);
 
-  const itemsPreview = useMemo(() => itemsOrdenados.filter(i => !i.no_disponible), [itemsOrdenados]);
+  const itemsPreview = useMemo(() => itemsOrdenados.filter(i => !i.no_disponible || (esModoProducto && String(i.id) === String(productoId))), [itemsOrdenados, esModoProducto, productoId]);
   const hayNoDisponibles = itemsOrdenados.length !== itemsPreview.length;
 
   // Una sola landing por tienda, siempre en la raíz — el link es
