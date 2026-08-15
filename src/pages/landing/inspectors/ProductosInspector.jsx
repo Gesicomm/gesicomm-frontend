@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Package, Plus } from 'lucide-react';
+import { Package, Plus, Edit } from 'lucide-react';
 import ProductPicker from '../ProductPicker';
 import { renderInput } from './SchemaInspector';
 
@@ -102,16 +102,29 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                name = catItem ? catItem.nombre : `${p.tipo} ${p.id}`;
             }
             return (
-              <div key={`${p.tipo}-${p.id}-${idx}`} className="flex items-center justify-between p-2 rounded border border-[var(--vit-border)] bg-[var(--vit-surface)] text-sm">
+              <div key={`${p.tipo}-${p.id}-${idx}`} className="flex items-center justify-between p-2 rounded border border-[var(--vit-border)] bg-[var(--vit-surface)] text-sm group">
                 <span className="truncate">{name}</span>
-                <button 
-                  type="button" 
-                  onClick={() => handleQuitarProducto(idx)}
-                  className="text-red-500 hover:bg-red-50 p-1 rounded"
-                  title="Quitar de la lista"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const url = p.tipo === 'combo' ? `/combos/${p.id}/editar` : `/products/${p.id}/editar`;
+                      window.open(url, '_blank');
+                    }}
+                    className="text-[var(--vit-muted)] hover:bg-[var(--vit-bg)] p-1.5 rounded"
+                    title="Editar detalles del producto en nueva pestaña"
+                  >
+                    <Edit size={14} />
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => handleQuitarProducto(idx)}
+                    className="text-red-500 hover:bg-red-50 p-1.5 rounded"
+                    title="Quitar de la lista"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             );
           })}

@@ -364,9 +364,9 @@ export default function LandingPreview({
         navigate: (path, item) => {
           if (item && item.id) {
             if (item.tipo === 'producto') {
-              window.open(`/dashboard/productos/editar/${item.id}`, '_blank');
+              window.open(`/products/${item.id}/editar`, '_blank');
             } else if (item.tipo === 'combo') {
-              window.open(`/dashboard/combos/editar/${item.id}`, '_blank');
+              window.open(`/combos/${item.id}/editar`, '_blank');
             }
           }
         },

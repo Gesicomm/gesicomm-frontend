@@ -51,6 +51,11 @@ export const updateEstadoEnvio = async (id, datos) => {
   return data;
 };
 
+export const deleteEnvio = async (id) => {
+  const { data } = await api.delete(`/envios/${id}`);
+  return data;
+};
+
 export const getMetricasDashboardPedidos = async (filtros = {}) => {
   const { data } = await api.post('/envios/metricas-dashboard', filtros);
   return data;

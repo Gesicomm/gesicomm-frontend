@@ -144,7 +144,7 @@ export default function LandingHero({
 
   if (template === 'image_background') {
     return (
-      <section className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden py-24 text-center sm:py-32">
+      <section className="relative flex min-h-[70vh] flex-col items-center justify-center overflow-hidden isolate py-24 text-center sm:py-32">
         {imagenFondo && (
           <>
             <img src={getMediaUrl(imagenFondo)} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />
@@ -320,7 +320,7 @@ export default function LandingHero({
   // el usuario podía subir una imagen desde el inspector y no pasaba nada,
   // porque este es el template que queda activo salvo que se elija otro.
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative overflow-hidden isolate">
       {imagenFondo ? (
         <>
           <img src={getMediaUrl(imagenFondo)} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" />

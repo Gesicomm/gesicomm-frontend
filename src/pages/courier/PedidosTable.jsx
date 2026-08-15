@@ -4,8 +4,9 @@ import {
   ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History,
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
-import { getEnviosPaginados, getConteoPorEstado, getResumenEntregados, getMetodosPago } from "../../services/courierApi";
+import { getEnviosPaginados, getConteoPorEstado, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
 import { productService } from "../../services/productService";
+import { verificarSesion } from "../../utils/auth";
 
 const ORIGENES = ["TODOS", "MANUAL", "WHATSAPP", "LANDING", "WEB", "META_ADS"];
 const LIMITE = 10;
@@ -242,14 +243,19 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
   const [loading, setLoading] = useState(true);
   const [masFilters, setMasFilters] = useState(false);
   const [productos, setProductos] = useState([]);
-  const [metodosPago, setMetodosPago] = useState([]);
+  const [metodosPagoList, setMetodosPagoList] = useState([]);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+
+  // Modals
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     productService.buscar({}).then((res) => {
       const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
       setProductos(prods);
     }).catch(() => setProductos([]));
-    getMetodosPago().then((data) => setMetodosPago(data || [])).catch(() => setMetodosPago([]));
+    getMetodosPago().then((data) => setMetodosPagoList(data || [])).catch(() => setMetodosPagoList([]));
+    verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
   }, []);
 
   const construirPayloadBase = useCallback((f) => {
@@ -278,6 +284,24 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
       setLoading(false);
     }
   }, [construirPayloadBase]);
+
+  const handleEliminarPedido = async (envio) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el pedido de ${envio.cliente || "Cliente"}? Esta acción no se puede deshacer y liberará cualquier stock reservado.`)) {
+      return;
+    }
+    
+    try {
+      await deleteEnvio(envio.id);
+      cargarPedidos();
+    } catch (err) {
+      alert("Error al eliminar pedido: " + err.message);
+    }
+  };
+
+  const cargarPedidos = useCallback(async () => {
+    cargar(filtros, page, estadoActivo);
+    cargarConteos(filtros);
+  }, [cargar, cargarConteos, filtros, page, estadoActivo]);
 
   const cargarConteos = useCallback(async (f) => {
     try {
@@ -710,6 +734,16 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                             onClick={() => onAbrirHistorial(e)}
                           >
                             <History size={13} />
+                          </button>
+                        )}
+                        {usuarioActual?.rol === 'ADMIN' && (
+                          <button
+                            type="button"
+                            title="Eliminar pedido permanentemente"
+                            style={{ ...accionBtnStyle, padding: "4px 6px", color: "#f87171", borderColor: "rgba(248, 113, 113, 0.3)" }}
+                            onClick={() => handleEliminarPedido(e)}
+                          >
+                            <X size={13} />
                           </button>
                         )}
                       </div>
