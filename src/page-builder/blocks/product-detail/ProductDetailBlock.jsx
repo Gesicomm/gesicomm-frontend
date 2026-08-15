@@ -51,10 +51,23 @@ export const ProductDetailBlock = ({ content, settings }) => {
   // (productos distintos agrupados) SÍ siguen necesitando un selector
   // manual — la cantidad no puede indicar por sí sola "cuál combo".
   const packsReales = ofertasNormales.filter(o => o.tipo_contenido === 'pack');
-  // Fallback para el editor (mockItem no tiene ofertas reales)
-  const packsNormales = packsReales.length > 0 ? packsReales : (
-    settings?._preview_packs ? JSON.parse(settings._preview_packs) : []
-  );
+  const enEditor = state?.previewCheckoutAbierto !== undefined || item.id === 'preview';
+  
+  let packsNormales = packsReales.length > 0 ? packsReales : [];
+  if (enEditor) {
+    // En el editor priorizamos _preview_packs para reflejar cambios y eliminaciones en vivo
+    try {
+      packsNormales = settings?._preview_packs 
+        ? (typeof settings._preview_packs === 'string' ? JSON.parse(settings._preview_packs) : settings._preview_packs)
+        : [];
+    } catch (e) {
+      packsNormales = [];
+    }
+  } else if (packsReales.length === 0 && settings?._preview_packs) {
+    try {
+      packsNormales = typeof settings._preview_packs === 'string' ? JSON.parse(settings._preview_packs) : settings._preview_packs;
+    } catch(e) {}
+  }
   
   const combosNormales = ofertasNormales.filter(o => o.tipo_contenido === 'combo');
   const tieneCombos = combosNormales.length > 0;
