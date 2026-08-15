@@ -55,10 +55,16 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
   function recargarOfertas() {
     return ofertaService.listarPorProducto(productoId).then((ofertas) => {
       setOfertasDisponibles(ofertas);
-      const previewPacks = ofertas.filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal');
+      const previewPacks = ofertas
+        .filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal')
+        .map(o => ({ ...o, unidades: o.componentes?.[0]?.cantidad || 1 }));
       if (previewPacks.length > 0) {
-        onUpdate({
+        onUpdate(seccion.id, {
           config: { ...config, _preview_packs: JSON.stringify(previewPacks) }
+        });
+      } else {
+        onUpdate(seccion.id, {
+          config: { ...config, _preview_packs: null }
         });
       }
     }).catch(() => setOfertasDisponibles([]));
@@ -97,6 +103,16 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
       setErrorOferta(err.response?.data?.message || 'No se pudo crear el pack.');
     } finally {
       setGuardandoOferta(false);
+    }
+  }
+
+  async function eliminarPack(id) {
+    if (!window.confirm('¿Seguro que querés eliminar este pack? Se va a borrar de las ofertas del producto.')) return;
+    try {
+      await ofertaService.eliminar(id);
+      await recargarOfertas();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error al eliminar pack');
     }
   }
 
@@ -320,6 +336,16 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                             className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
                           />
                         </div>
+                        {clave !== 'individual' && (
+                          <button
+                            type="button"
+                            onClick={() => eliminarPack(o.id)}
+                            className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded"
+                            title="Eliminar pack"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -386,7 +412,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                       const comp = ob.componentes?.[0];
                       const prod = comp?.Producto || productosDisponibles.find(p => p.id === comp?.producto_id);
                       const img = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
-                      onUpdate({
+                      onUpdate(seccion.id, {
                         config: { 
                           ...config, 
                           order_bump_oferta_id: id,
@@ -395,7 +421,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                         }
                       });
                     } else {
-                      onUpdate({ config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null } });
+                      onUpdate(seccion.id, { config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null } });
                     }
                   }}
                   className="w-full h-9 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
