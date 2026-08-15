@@ -298,11 +298,6 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
     }
   };
 
-  const cargarPedidos = useCallback(async () => {
-    cargar(filtros, page, estadoActivo);
-    cargarConteos(filtros);
-  }, [cargar, cargarConteos, filtros, page, estadoActivo]);
-
   const cargarConteos = useCallback(async (f) => {
     try {
       const res = await getConteoPorEstado(construirPayloadBase(f));
@@ -311,6 +306,14 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
       console.error("Error cargando conteo por estado:", err);
     }
   }, [construirPayloadBase]);
+
+  // Declarado después de cargarConteos: su dependency array la referencia,
+  // y con const/TDZ eso revienta con "Cannot access before initialization"
+  // si cargarPedidos se declara primero (bug real que llegó a producción).
+  const cargarPedidos = useCallback(async () => {
+    cargar(filtros, page, estadoActivo);
+    cargarConteos(filtros);
+  }, [cargar, cargarConteos, filtros, page, estadoActivo]);
 
   // Resumen financiero minimalista, solo dentro de la pestaña Entregados —
   // ver plan sección 22. No es un dashboard general, no se calcula en las
