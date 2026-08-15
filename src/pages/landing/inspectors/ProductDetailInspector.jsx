@@ -1,5 +1,14 @@
-import React from 'react';
-import { Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, X } from 'lucide-react';
+import { ofertaService } from '../../../services/ofertaService';
+import { productService } from '../../../services/productService';
+import { getMediaUrl } from '../../../services/api';
+
+/** Código interno estable — el admin no necesita pensarlo para un pack/order bump rápido. */
+function generarCodigo(nombre) {
+  const base = (nombre || 'OFERTA').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 16) || 'OFERTA';
+  return `${base}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
 
 const Toggle = ({ label, checked, onChange }) => (
   <label className="flex items-center justify-between gap-3 py-1.5 cursor-pointer">
@@ -22,14 +31,131 @@ const Toggle = ({ label, checked, onChange }) => (
  * botones visibles) — una sección ya guardada sin estos campos se
  * comporta exactamente igual que antes.
  */
-export default function ProductDetailInspector({ seccion, onUpdate }) {
+export default function ProductDetailInspector({ seccion, onUpdate, productoId, onUploadImagen, previewCheckoutAbierto, onTogglePreviewCheckout }) {
   const config = seccion.config || {};
   const contenido = seccion.contenido || {};
   const bloques = contenido.bloques_info || [];
+  const tarjetasPrecio = contenido.tarjetas_precio || {};
+
+  // Packs (para las tarjetas de precio con imagen) y order bumps (para el
+  // checkbox del checkout) de ESTE producto — mismas Ofertas que ya se
+  // administran en Productos → Ofertas comerciales, acá solo se elige
+  // cómo se ven en la página. Nunca se crea un concepto de oferta nuevo.
+  const [ofertasDisponibles, setOfertasDisponibles] = useState([]);
+  const [subiendoTarjeta, setSubiendoTarjeta] = useState(null);
+  const [productosDisponibles, setProductosDisponibles] = useState([]);
+  const [productoActual, setProductoActual] = useState(null);
+  const [creandoPack, setCreandoPack] = useState(false);
+  const [formPack, setFormPack] = useState({ nombre: '', cantidad: 2, precio: '' });
+  const [creandoBump, setCreandoBump] = useState(false);
+  const [formBump, setFormBump] = useState({ nombre: '', producto_id: '', precio: '' });
+  const [guardandoOferta, setGuardandoOferta] = useState(false);
+  const [errorOferta, setErrorOferta] = useState(null);
+
+  function recargarOfertas() {
+    return ofertaService.listarPorProducto(productoId).then((ofertas) => {
+      setOfertasDisponibles(ofertas);
+      const previewPacks = ofertas.filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal');
+      if (previewPacks.length > 0) {
+        onUpdate({
+          config: { ...config, _preview_packs: JSON.stringify(previewPacks) }
+        });
+      }
+    }).catch(() => setOfertasDisponibles([]));
+  }
+
+  useEffect(() => {
+    if (!productoId) return;
+    recargarOfertas();
+    productService.buscar({}).then(res => {
+      const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
+      setProductosDisponibles(prods.filter(p => p.activo !== false && String(p.id) !== String(productoId)));
+      const actual = prods.find(p => String(p.id) === String(productoId));
+      if (actual) setProductoActual(actual);
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productoId]);
+
+  async function crearPack(e) {
+    e.preventDefault();
+    setErrorOferta(null);
+    setGuardandoOferta(true);
+    try {
+      await ofertaService.crear(productoId, {
+        codigo: generarCodigo(formPack.nombre),
+        nombre: formPack.nombre.trim(),
+        tipo_contenido: 'pack',
+        estrategia: 'normal',
+        precio: Number(formPack.precio) || 0,
+        activo: true,
+        componentes: [{ producto_id: Number(productoId), cantidad: Number(formPack.cantidad) || 1, descuento_porcentaje: 0 }],
+      });
+      setFormPack({ nombre: '', cantidad: 2, precio: '' });
+      setCreandoPack(false);
+      await recargarOfertas();
+    } catch (err) {
+      setErrorOferta(err.response?.data?.message || 'No se pudo crear el pack.');
+    } finally {
+      setGuardandoOferta(false);
+    }
+  }
+
+  async function crearOrderBump(e) {
+    e.preventDefault();
+    if (!formBump.producto_id) return;
+    setErrorOferta(null);
+    setGuardandoOferta(true);
+    try {
+      await ofertaService.crear(productoId, {
+        codigo: generarCodigo(formBump.nombre),
+        nombre: formBump.nombre.trim(),
+        tipo_contenido: 'combo',
+        estrategia: 'order_bump',
+        precio: Number(formBump.precio) || 0,
+        activo: true,
+        componentes: [
+          { producto_id: Number(productoId), cantidad: 1, descuento_porcentaje: 0 },
+          { producto_id: Number(formBump.producto_id), cantidad: 1, descuento_porcentaje: 0 },
+        ],
+      });
+      setFormBump({ nombre: '', producto_id: '', precio: '' });
+      setCreandoBump(false);
+      await recargarOfertas();
+    } catch (err) {
+      setErrorOferta(err.response?.data?.message || 'No se pudo crear el order bump.');
+    } finally {
+      setGuardandoOferta(false);
+    }
+  }
+
+  const packs = ofertasDisponibles.filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal' && o.activo);
+  const orderBumps = ofertasDisponibles.filter(o => o.estrategia === 'order_bump' && o.activo);
 
   const actualizar = (campo, valor) => {
     onUpdate(seccion.id, { config: { ...config, [campo]: valor } });
   };
+
+  const actualizarTarjeta = (clave, cambios) => {
+    onUpdate(seccion.id, {
+      contenido: {
+        ...contenido,
+        tarjetas_precio: { ...tarjetasPrecio, [clave]: { ...tarjetasPrecio[clave], ...cambios } },
+      },
+    });
+  };
+
+  async function subirImagenTarjeta(clave, file) {
+    if (!onUploadImagen) return;
+    setSubiendoTarjeta(clave);
+    try {
+      const url = await onUploadImagen(file);
+      actualizarTarjeta(clave, { imagen: url });
+    } catch (err) {
+      // silencioso — el botón vuelve a su estado normal, el admin puede reintentar
+    } finally {
+      setSubiendoTarjeta(null);
+    }
+  }
 
   const actualizarBloques = (nuevos) => {
     onUpdate(seccion.id, { contenido: { ...contenido, bloques_info: nuevos } });
@@ -78,6 +204,19 @@ export default function ProductDetailInspector({ seccion, onUpdate }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {onTogglePreviewCheckout && (
+        <div className="p-3 rounded border border-[var(--vit-border)] bg-[var(--vit-surface)]">
+          <Toggle
+            label="Visualizar checkout en la preview"
+            checked={!!previewCheckoutAbierto}
+            onChange={onTogglePreviewCheckout}
+          />
+          <p className="text-xs text-[var(--vit-muted-2)] mt-1">
+            Muestra el formulario de "Comprar ahora" abierto en la vista previa, para revisar las tarjetas de precio y el order bump tal como se van a ver.
+          </p>
+        </div>
+      )}
+
       <div>
         <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">Galería</h4>
         <div className="flex gap-2">
@@ -108,6 +247,175 @@ export default function ProductDetailInspector({ seccion, onUpdate }) {
           <Toggle label="Agregar al carrito" checked={mostrarAgregarCarrito} onChange={v => actualizar('mostrar_agregar_carrito', v)} />
           <Toggle label="Consultar por WhatsApp" checked={mostrarWhatsapp} onChange={v => actualizar('mostrar_whatsapp', v)} />
         </div>
+      </div>
+
+      {/* Tarjetas de precio — usa los packs que ya existen en Ofertas
+          comerciales (Productos → editar → Ofertas). Acá solo se elige
+          cómo se muestran: imagen propia y etiqueta por cada cantidad. No
+          crea ni edita ninguna Oferta — para eso hay que ir a esa tab. */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider">Tarjetas de precio por cantidad</h4>
+          {productoId && !creandoPack && (
+            <button type="button" onClick={() => setCreandoPack(true)} className="text-xs text-[var(--vit-primary)] font-semibold flex items-center gap-1 hover:underline">
+              <Plus size={12} /> Nuevo pack
+            </button>
+          )}
+        </div>
+        {!productoId ? (
+          <p className="text-xs text-[var(--vit-muted-2)]">Solo disponible en el diseño propio de un producto.</p>
+        ) : (
+          <>
+            {creandoPack && (
+              <form onSubmit={crearPack} className="flex flex-col gap-2 p-3 mb-3 rounded border border-[var(--vit-accent)] bg-[var(--vit-surface)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[var(--vit-text)]">Nuevo pack</span>
+                  <button type="button" onClick={() => setCreandoPack(false)} className="p-0.5 text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
+                </div>
+                {errorOferta && <p className="text-xs text-red-500">{errorOferta}</p>}
+                <input type="text" required placeholder="Nombre (ej. Pack x2)" value={formPack.nombre} onChange={e => setFormPack(f => ({ ...f, nombre: e.target.value }))} className="h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Cantidad</label>
+                    <input type="number" min="2" required value={formPack.cantidad} onChange={e => setFormPack(f => ({ ...f, cantidad: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Precio total</label>
+                    <input type="number" min="0" required value={formPack.precio} onChange={e => setFormPack(f => ({ ...f, precio: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                  </div>
+                </div>
+                <button type="submit" disabled={guardandoOferta} className="mt-1 h-8 rounded-md bg-[var(--vit-accent)] text-white text-sm font-semibold disabled:opacity-50">
+                  {guardandoOferta ? 'Creando...' : 'Crear pack'}
+                </button>
+              </form>
+            )}
+
+            {packs.length === 0 ? (
+              <p className="text-xs text-[var(--vit-muted-2)]">Este producto todavía no tiene packs por cantidad.</p>
+            ) : (
+              <>
+                <p className="text-xs text-[var(--vit-muted-2)] mb-2">
+                  Editá la etiqueta con la que se muestra cada pack en la página.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {[{ id: 'individual', nombre: 'Individual (sin pack)' }, ...packs].map(o => {
+                    const clave = String(o.id);
+                    const t = tarjetasPrecio[clave] || {};
+                    const rawImg = productoActual?.imagen || productoActual?.imagenes?.[0];
+                    const img = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
+                    return (
+                      <div key={clave} className="flex items-center gap-2 p-2 rounded border border-[var(--vit-border)] bg-[var(--vit-surface)]">
+                        <div className="w-14 h-14 shrink-0 rounded border border-[var(--vit-border)] flex items-center justify-center overflow-hidden bg-[var(--vit-bg)] opacity-80" title="Hereda la imagen del producto seleccionado automáticamente">
+                          {img ? (
+                            <img src={getMediaUrl(img)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon size={16} className="text-[var(--vit-muted-2)]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <input
+                            type="text"
+                            value={t.etiqueta ?? o.nombre}
+                            onChange={e => actualizarTarjeta(clave, { etiqueta: e.target.value })}
+                            className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Order bump — checkbox dentro del formulario de "Comprar ahora".
+          Reusa el mismo mecanismo de Oferta que un pack (oferta_id), solo
+          que estrategia='order_bump' y se ofrece como check en vez de
+          tarjeta. No agrega una línea de carrito nueva: cambia el precio
+          del ítem que ya se está comprando (igual que elegir un combo). */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider">Order bump en el checkout</h4>
+          {productoId && !creandoBump && (
+            <button type="button" onClick={() => setCreandoBump(true)} className="text-xs text-[var(--vit-primary)] font-semibold flex items-center gap-1 hover:underline">
+              <Plus size={12} /> Nuevo order bump
+            </button>
+          )}
+        </div>
+        {!productoId ? (
+          <p className="text-xs text-[var(--vit-muted-2)]">Solo disponible en el diseño propio de un producto.</p>
+        ) : (
+          <>
+            {creandoBump && (
+              <form onSubmit={crearOrderBump} className="flex flex-col gap-2 p-3 mb-3 rounded border border-[var(--vit-accent)] bg-[var(--vit-surface)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[var(--vit-text)]">Nuevo order bump</span>
+                  <button type="button" onClick={() => setCreandoBump(false)} className="p-0.5 text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
+                </div>
+                {errorOferta && <p className="text-xs text-red-500">{errorOferta}</p>}
+                <div>
+                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Producto a agregar</label>
+                  <select required value={formBump.producto_id} onChange={e => setFormBump(f => ({ ...f, producto_id: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none">
+                    <option value="">-- Elegí un producto --</option>
+                    {productosDisponibles.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                </div>
+                <input type="text" required placeholder="Nombre (ej. Sumá el Mouse)" value={formBump.nombre} onChange={e => setFormBump(f => ({ ...f, nombre: e.target.value }))} className="h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                <div>
+                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Precio total (este producto + el agregado)</label>
+                  <input type="number" min="0" required value={formBump.precio} onChange={e => setFormBump(f => ({ ...f, precio: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                </div>
+                <button type="submit" disabled={guardandoOferta} className="mt-1 h-8 rounded-md bg-[var(--vit-accent)] text-white text-sm font-semibold disabled:opacity-50">
+                  {guardandoOferta ? 'Creando...' : 'Crear order bump'}
+                </button>
+              </form>
+            )}
+
+            {orderBumps.length === 0 ? (
+              <p className="text-xs text-[var(--vit-muted-2)]">No hay ofertas tipo "Order bump" para este producto todavía.</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <select
+                  value={config.order_bump_oferta_id || ''}
+                  onChange={e => {
+                    const id = e.target.value ? Number(e.target.value) : null;
+                    const ob = orderBumps.find(o => o.id === id);
+                    if (ob) {
+                      const comp = ob.componentes?.[0];
+                      const prod = comp?.Producto || productosDisponibles.find(p => p.id === comp?.producto_id);
+                      const img = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
+                      onUpdate({
+                        config: { 
+                          ...config, 
+                          order_bump_oferta_id: id,
+                          _preview_bump_nombre: prod?.nombre || ob.nombre,
+                          _preview_bump_imagen: img || null
+                        }
+                      });
+                    } else {
+                      onUpdate({ config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null } });
+                    }
+                  }}
+                  className="w-full h-9 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
+                >
+                  <option value="">Sin order bump</option>
+                  {orderBumps.map(o => (
+                    <option key={o.id} value={o.id}>{o.nombre} — {o.precio}</option>
+                  ))}
+                </select>
+                {config.order_bump_oferta_id && (
+                  <Toggle
+                    label="Mostrar el checkbox en el checkout"
+                    checked={config.mostrar_order_bump !== false}
+                    onChange={v => actualizar('mostrar_order_bump', v)}
+                  />
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <div>

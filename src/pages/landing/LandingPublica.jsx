@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
-import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, crearCheckoutLanding } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, crearCheckoutLanding, recalcularCarritoLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA, trackearEventoGA } from '../../lib/googleAnalytics';
@@ -272,7 +272,53 @@ export default function LandingPublica() {
     }
   }
 
+  // "La cantidad decide el precio" — al cambiar cantidad, el subtotal
+  // local (precio × cantidad) puede no reflejar packs/descuentos reales
+  // hasta que el backend recalcule. Debounce corto para no golpear el
+  // endpoint en cada click del stepper; si falla, el carrito se queda con
+  // el último precio conocido (resiliencia, nunca bloquea al visitante).
+  const timeoutRecalculoRef = useRef(null);
+
+  function recalcularPrecioCarrito(mapaCarrito) {
+    if (timeoutRecalculoRef.current) clearTimeout(timeoutRecalculoRef.current);
+    timeoutRecalculoRef.current = setTimeout(async () => {
+      const entradas = Array.from(mapaCarrito.values());
+      if (!entradas.length) return;
+      const items = entradas.map(it => ({
+        content_id: it.contentId,
+        variante_id: it.varianteId || undefined,
+        oferta_id: it.ofertaId || undefined,
+        cantidad: it.cantidad,
+      }));
+      try {
+        const resultado = await recalcularCarritoLanding(slug, items);
+        setCarrito(prev => {
+          const copia = new Map(prev);
+          for (const linea of resultado.items || []) {
+            // Correlación por content_id + variante/oferta SOLICITADA (no
+            // por posición: el backend descarta líneas inválidas en
+            // silencio, así que el índice no es confiable).
+            for (const [clave, item] of copia) {
+              if (
+                item.contentId === linea.content_id &&
+                (item.varianteId || null) === (linea.variante_id_solicitada || null) &&
+                (item.ofertaId || null) === (linea.oferta_id_solicitada || null)
+              ) {
+                copia.set(clave, { ...item, precio: linea.precio_unitario });
+                break;
+              }
+            }
+          }
+          return copia;
+        });
+      } catch (err) {
+        console.warn('[carrito] no se pudo recalcular el precio:', err?.message || err);
+      }
+    }, 300);
+  }
+
   function cambiarCantidadCarrito(clave, delta) {
+    let mapaResultante = null;
     setCarrito(prev => {
       const actual = prev.get(clave);
       if (!actual) return prev;
@@ -280,13 +326,16 @@ export default function LandingPublica() {
       if (nueva <= 0) {
         const copia = new Map(prev);
         copia.delete(clave);
+        mapaResultante = copia;
         return copia;
       }
       if (actual.stockMax != null && nueva > actual.stockMax) return prev;
       const copia = new Map(prev);
       copia.set(clave, { ...actual, cantidad: nueva });
+      mapaResultante = copia;
       return copia;
     });
+    if (mapaResultante) recalcularPrecioCarrito(mapaResultante);
   }
 
   function quitarDelCarrito(clave) {

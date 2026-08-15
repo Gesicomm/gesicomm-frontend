@@ -73,7 +73,7 @@ export default function LandingFaq({ seccion }) {
         </h2>
         <div className={`mx-auto ${seccion.template === 'grid' ? 'grid md:grid-cols-2 gap-x-12 gap-y-4' : 'max-w-2xl'}`}>
           {items.map((item, i) => (
-            <FaqItem key={`\${i}-\${item.pregunta}`} pregunta={item.pregunta} respuesta={item.respuesta} abiertoInicial={seccion.template === 'grid' ? true : i === 0} icono={icono} />
+            <FaqItem key={i} pregunta={item.pregunta} respuesta={item.respuesta} abiertoInicial={seccion.template === 'grid' ? true : i === 0} icono={icono} />
           ))}
         </div>
       </div>

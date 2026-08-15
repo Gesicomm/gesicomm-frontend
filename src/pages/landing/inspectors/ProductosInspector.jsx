@@ -108,7 +108,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                   <button 
                     type="button" 
                     onClick={() => {
-                      const url = p.tipo === 'combo' ? `/combos/${p.id}/editar` : `/products/${p.id}/editar`;
+                      const url = p.tipo === 'combo' ? `/combos/${p.id}/editar` : `/mi-landing/producto/${p.id}`;
                       window.open(url, '_blank');
                     }}
                     className="text-[var(--vit-muted)] hover:bg-[var(--vit-bg)] p-1.5 rounded"

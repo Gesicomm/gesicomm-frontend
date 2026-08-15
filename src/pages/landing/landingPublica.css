@@ -461,6 +461,13 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.2);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s, box-shadow 0.2s;
   cursor: pointer;
+  /* Sin esto, un clic acá no llega a onClick dentro del editor: el
+     SectionWrapper de LandingPreview.jsx envuelve toda la sección en
+     pointer-events:none para que el clic seleccione la sección entera en
+     vez de interactuar con el contenido — pointer-events:auto en la
+     tarjeta puntual la saca de esa regla. No afecta el sitio público
+     (ahí ya era "auto" por default, este valor es un no-op). */
+  pointer-events: auto;
 }
 .lp-card:hover {
   transform: translateY(-4px);
@@ -1132,6 +1139,57 @@
   font-size: 0.7rem;
   font-weight: 700;
   color: #22c55e;
+}
+
+/* Tarjetas de precio con imagen (tipo Shopify/Releasit) — botón en vez de
+   label+radio porque no hay <input> visible, el estado activo se marca
+   solo con la clase .active. */
+button.lp-tier-card--imagen {
+  font: inherit;
+  outline: none;
+}
+.lp-product-tiers-grid--imagen {
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+}
+.lp-tier-imagen {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--l-radius-sm, 8px);
+  overflow: hidden;
+  background: var(--l-bg, #0a0a0a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--l-text-muted, #64748b);
+}
+.lp-tier-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Order bump del checkout inline */
+.lp-checkout-order-bump {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px dashed var(--l-primary);
+  border-radius: var(--l-radius-sm, 8px);
+  background: color-mix(in srgb, var(--l-primary) 8%, transparent);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.lp-checkout-order-bump-imagen {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.lp-checkout-order-bump-texto {
+  color: var(--l-text, #f8fafc);
+  font-weight: 600;
 }
 
 /* Checkout inline de una sola pantalla — mismos estilos de campo que
@@ -2075,6 +2133,16 @@
   flex-direction: column;
   gap: 1.5rem;
 }
+
+.lp-product-pack-aplicado {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: -0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--l-primary);
+}
+.lp-product-pack-aplicado strong { font-weight: 700; }
 
 .lp-product-cantidad-row {
   display: flex;

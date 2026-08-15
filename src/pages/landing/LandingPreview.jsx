@@ -100,7 +100,16 @@ export default function LandingPreview({
   titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica,
   secciones, mostrarTestimonios, testimonios, mostrarFaq, faqs,
   seccionSeleccionadaId, onSelectSeccion, viewportMode,
-  onReorderSeccion, onDeleteSeccion
+  onReorderSeccion, onDeleteSeccion,
+  // Clic directo sobre un producto real en la preview (secciones
+  // "Productos"/"Destacados") → editar SU diseño propio. Sin esto, las
+  // tarjetas de producto quedan inertes acá (pointer-events-none del
+  // SectionWrapper, ver más abajo) — mismo motivo por el que antes no
+  // hacían nada al clickearlas en el editor.
+  onEditarProducto,
+  // "Visualizar checkout" del inspector de Detalle de Producto — ver
+  // ProductDetailBlock.jsx.
+  previewCheckoutAbierto,
 }) {
   
 
@@ -138,7 +147,7 @@ export default function LandingPreview({
         );
       case 'product_detail':
         return (
-          <ProductDetailBlock content={cont} settings={config} />
+          <ProductDetailBlock content={cont} settings={config} previewCheckoutAbierto={previewCheckoutAbierto} />
         );
       case 'announcement_bar':
         return (
@@ -183,7 +192,7 @@ export default function LandingPreview({
             onToggleWishlist={noop}
             agregadoRapido={null}
             onAgregarRapido={noop}
-            onAbrir={noop}
+            onAbrir={onEditarProducto ? (item) => onEditarProducto(item.id) : noop}
             onContactar={noop}
           />
         );
@@ -238,7 +247,11 @@ export default function LandingPreview({
             {itemsParaMostrar.length === 0 ? (
               <div className="lp-empty"><p>Elegi productos y van a aparecer aca.</p></div>
             ) : (
-              <LandingProductos seccion={seccion} items={itemsParaMostrar.slice(0, 8)} />
+              <LandingProductos
+                seccion={seccion}
+                items={itemsParaMostrar.slice(0, 8)}
+                navigate={onEditarProducto ? (_path, item) => onEditarProducto(item.id) : undefined}
+              />
             )}
           </main>
         );
@@ -352,6 +365,7 @@ export default function LandingPreview({
         conteo: itemsPreview.length
       },
       state: {
+        previewCheckoutAbierto,
         wishlist: new Set(),
         agregadoRapido: null,
         busqueda: '',
@@ -381,7 +395,7 @@ export default function LandingPreview({
         seleccionarCategoria: () => {},
       }
     };
-  }, [itemsPreview, contacto, seccionesOrdenadas, tema]);
+  }, [itemsPreview, contacto, seccionesOrdenadas, tema, previewCheckoutAbierto]);
 
   return (
     <>

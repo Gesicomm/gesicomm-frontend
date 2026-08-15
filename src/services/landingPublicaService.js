@@ -77,6 +77,29 @@ export async function crearCheckoutLanding(slug, payload) {
   return data;
 }
 
+/**
+ * Recálculo de carrito en vivo — SOLO LECTURA, no crea ningún pedido. Se
+ * llama cada vez que cambia cantidad/variante/oferta de un item, para
+ * mostrar el precio real (mismo motor que después cobra crearCheckoutLanding)
+ * antes de llegar al submit final del formulario.
+ * @param {Array} items - [{content_id, variante_id?, oferta_id?, cantidad}]
+ * @returns {{items: Array, subtotal: number, total: number}}
+ * @throws {Error} con el mensaje que mandó el backend.
+ */
+export async function recalcularCarritoLanding(slug, items) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}/carrito` : '/api/l/carrito';
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || 'No se pudo recalcular el carrito.');
+  }
+  return data;
+}
+
 export async function registrarEventoLanding(slug, payload) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}/eventos` : '/api/l/eventos';
   try {

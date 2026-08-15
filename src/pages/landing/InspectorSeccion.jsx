@@ -50,10 +50,13 @@ export default function InspectorSeccion({
   onBack,
   catalogo,
   paginas,
+  productoId,
   onSacarDeFila,
   onDuplicate,
   onDelete,
   onUploadImagen,
+  previewCheckoutAbierto,
+  onTogglePreviewCheckout,
 }) {
   const [activeTab, setActiveTab] = useState('contenido'); // 'contenido' | 'diseno'
 
@@ -113,7 +116,10 @@ export default function InspectorSeccion({
                onUpdate={onUpdate}
                catalogo={catalogo}
                paginas={paginas}
+               productoId={productoId}
                onUploadImagen={onUploadImagen}
+               previewCheckoutAbierto={previewCheckoutAbierto}
+               onTogglePreviewCheckout={onTogglePreviewCheckout}
              />
            )}
 

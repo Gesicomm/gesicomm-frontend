@@ -6,6 +6,7 @@ import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
 import { verificarSesion } from '../../utils/auth';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
+import { formatPrecio as formatMoney } from '../../lib/mensajeWhatsapp';
 import CurrencyInput from '../../components/CurrencyInput';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import '../combos/combos.css';
@@ -21,10 +22,6 @@ const ESTRATEGIAS = [
   { value: 'upsell', label: 'Upsell — ofrecida cuando este producto ya está en el carrito' },
 ];
 
-function formatMoney(n) {
-  if (n === null || n === undefined) return '—';
-  return Number(n).toLocaleString('es-PY') + ' Gs';
-}
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
 function emptyForm(productoId) {
@@ -328,7 +325,18 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
         </div>
       ) : (
         <div className="combo-list-grid" style={{ marginTop: '1rem' }}>
-          {ofertas.map(oferta => (
+          {ofertas.map(oferta => {
+            // "Precio normal" solo se puede calcular sin ambigüedad para
+            // packs (mismo producto × unidades) — un combo mezcla
+            // productos con precios propios, no hay un único "normal" al
+            // que compararlo sin repetir el motor de comboPricing acá.
+            const propio = oferta.tipo_contenido === 'pack'
+              ? (oferta.componentes || []).find(c => Number(c.producto_id) === Number(productoId))
+              : null;
+            const precioNormal = propio ? productoAnclaPrecioBase * (Number(propio.cantidad) || 1) : null;
+            const ahorroPct = precioNormal > 0 ? Math.round((1 - Number(oferta.precio) / precioNormal) * 100) : null;
+
+            return (
             <div key={oferta.id} className={`combo-list-card ${!oferta.activo ? 'inactivo' : ''}`}>
               <div className="combo-list-card-header">
                 <div>
@@ -336,6 +344,9 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                   <div className="combo-list-card-principal" style={{ fontFamily: 'monospace' }}>{oferta.codigo}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.35rem' }}>
+                  <span className={`combo-badge ${oferta.activo ? 'activo' : 'borrador'}`}>
+                    {oferta.activo ? '● Activo' : '○ Inactivo'}
+                  </span>
                   <span className="combo-badge activo" style={{ textTransform: 'capitalize' }}>{oferta.tipo_contenido}</span>
                   {oferta.estrategia !== 'normal' && (
                     <span className="combo-badge borrador" style={{ textTransform: 'capitalize' }}>{oferta.estrategia.replace('_', ' ')}</span>
@@ -348,14 +359,22 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               </div>
 
               <div className="combo-list-card-metrics">
+                {precioNormal !== null && (
+                  <div className="combo-list-card-metric">
+                    <span className="combo-list-card-metric-label">Precio normal</span>
+                    <span className="combo-list-card-metric-value" style={{ textDecoration: 'line-through', opacity: 0.6 }}>{formatMoney(precioNormal)}</span>
+                  </div>
+                )}
                 <div className="combo-list-card-metric">
-                  <span className="combo-list-card-metric-label">Precio</span>
+                  <span className="combo-list-card-metric-label">Precio aplicado</span>
                   <span className="combo-list-card-metric-value">{formatMoney(oferta.precio)}</span>
                 </div>
-                <div className="combo-list-card-metric">
-                  <span className="combo-list-card-metric-label">Costo</span>
-                  <span className="combo-list-card-metric-value">{formatMoney(oferta.costo)}</span>
-                </div>
+                {ahorroPct > 0 && (
+                  <div className="combo-list-card-metric">
+                    <span className="combo-list-card-metric-label">Descuento</span>
+                    <span className="combo-list-card-metric-value" style={{ color: '#10b981' }}>-{ahorroPct}%</span>
+                  </div>
+                )}
                 <div className="combo-list-card-metric">
                   <span className="combo-list-card-metric-label">Margen</span>
                   <span className="combo-list-card-metric-value" style={{ color: oferta.margen_pct >= 30 ? '#10b981' : oferta.margen_pct > 0 ? '#f59e0b' : '#ef4444' }}>
@@ -373,7 +392,8 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

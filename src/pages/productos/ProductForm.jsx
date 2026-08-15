@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { productService } from '../../services/productService';
@@ -58,7 +58,7 @@ export default function ProductForm() {
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
   const [config, setConfig] = useState(null);
 
-  const { register, handleSubmit, control, watch, setValue, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, watch, setValue, reset, formState: { errors, isDirty } } = useForm({
     defaultValues: {
       nombre: '',
       categoria_id: '',
@@ -744,6 +744,9 @@ export default function ProductForm() {
               <input id="prod-desc-fin" type="date" {...register('descuento_fin')} />
             </div>
           </div>
+          <p className="field-hint">
+            Este descuento se aplica de verdad en el checkout (mismo motor de precios que ve el cliente), no es solo informativo.
+          </p>
 
           {config && rentabilidad && (() => {
             const sBase = rentabilidad;
@@ -1047,6 +1050,18 @@ export default function ProductForm() {
         </div>
 
       </form>
+
+      {isDirty && !guardando && (
+        <div className="prod-save-bar">
+          <span>Cambios sin guardar</span>
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <button type="button" className="btn-secondary" onClick={() => reset()}>Descartar</button>
+            <button type="button" className="btn-primary" onClick={handleSubmit(onSubmit)}>
+              <Save size={14} /> Guardar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

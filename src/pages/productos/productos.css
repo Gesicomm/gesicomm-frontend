@@ -593,3 +593,33 @@
   .variantes-header, .variante-row { grid-template-columns: 1fr 1fr 60px 80px 36px; }
   .prod-page { padding: 1rem; }
 }
+
+/* ─── Precios: cards de "Pricing por cantidad" y "Simulador" ────── */
+.prod-precio-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+/* ─── Save bar flotante (Cambios sin guardar) ────────────────────
+   Mismo espíritu que la barra de LandingEditor.jsx — nunca perder una
+   edición de pricing por salir sin guardar sin darse cuenta. */
+.prod-save-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.85rem 1.25rem;
+  background: #16161c;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}

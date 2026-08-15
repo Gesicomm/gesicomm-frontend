@@ -105,12 +105,12 @@ const ProductsAdapter = ({ content, settings, section }) => {
 
 const TestimonialsAdapter = ({ content, settings, section }) => {
   const { page } = useRenderContext();
-  return <LandingTestimonials seccion={section || { contenido: content, config: settings }} testimonios={page.testimonios || []} />;
+  return <LandingTestimonials seccion={section || { contenido: content, config: settings }} testimonios={content.items || page.testimonios || []} />;
 };
 
 const FaqAdapter = ({ content, settings, section }) => {
   const { page } = useRenderContext();
-  return <LandingFaq seccion={section || { contenido: content, config: settings }} faqs={page.faq || []} />;
+  return <LandingFaq seccion={section || { contenido: content, config: settings }} faqs={content.items || page.faq || []} />;
 };
 
 const FooterAdapter = ({ content, settings }) => {

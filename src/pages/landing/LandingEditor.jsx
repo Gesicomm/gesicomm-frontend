@@ -144,6 +144,11 @@ export default function LandingEditor() {
   const [plantillaElegida, setPlantillaElegida] = useState(null); // id de la plantilla elegida al crear, null hasta elegir
 
   const [seccionSeleccionadaId, setSeccionSeleccionadaId] = useState(null);
+  // "Visualizar checkout" (ProductDetailInspector.jsx) — fuerza a la
+  // preview a mostrar el formulario de "Comprar ahora" abierto, para
+  // revisar tarjetas de precio/order bump sin depender de clickear un
+  // botón que en la preview no es interactivo.
+  const [previewCheckoutAbierto, setPreviewCheckoutAbierto] = useState(false);
   const [selectorAbierto, setSelectorAbierto] = useState(false);
   const [viewportMode, setViewportMode] = useState('desktop');
   const [sidebarTab, setSidebarTab] = useState('sections'); // 'sections' | 'theme'
@@ -357,6 +362,16 @@ export default function LandingEditor() {
     if (String(paginaId) === String(id)) return;
     if (sucio && !window.confirm('Tenés cambios sin guardar en esta página. ¿Salir igual?')) return;
     navigate(`/mi-landing/${paginaId}`);
+  }
+
+  // Clic directo sobre un producto en la preview (sección "Productos"/
+  // "Destacados") → va a SU diseño propio, donde viven las tarjetas de
+  // precio y el order bump (ver ProductDetailInspector.jsx). No hace
+  // falta pasar por Productos → editar → Diseño de página.
+  function irAEditarProducto(productoId) {
+    if (!productoId) return;
+    if (sucio && !window.confirm('Tenés cambios sin guardar en esta página. ¿Salir igual?')) return;
+    navigate(`/mi-landing/producto/${productoId}`);
   }
 
   const cargar = useCallback(async () => {
@@ -1549,6 +1564,8 @@ export default function LandingEditor() {
                   onReorderSeccion={handleMoverSeccion}
                   onDeleteSeccion={handleEliminarSeccion}
                   onDuplicateSeccion={handleDuplicarSeccion}
+                  onEditarProducto={!esModoProducto ? irAEditarProducto : undefined}
+                  previewCheckoutAbierto={previewCheckoutAbierto}
                 />
              </div>
            </div>
@@ -1564,10 +1581,13 @@ export default function LandingEditor() {
                 onBack={() => setSeccionSeleccionadaId(null)}
                 catalogo={catalogo}
                 paginas={paginas}
+                productoId={esModoProducto ? productoId : null}
                 onSacarDeFila={handleSacarDeFila}
                 onDuplicate={handleDuplicarSeccion}
                 onDelete={handleEliminarSeccion}
                 onUploadImagen={handleUploadSeccionImagen}
+                previewCheckoutAbierto={previewCheckoutAbierto}
+                onTogglePreviewCheckout={setPreviewCheckoutAbierto}
               />
             ) : esModoProducto ? (
               <div className="p-4 text-sm text-[var(--vit-muted)]">
