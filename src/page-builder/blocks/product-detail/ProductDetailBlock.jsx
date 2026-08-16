@@ -553,34 +553,6 @@ export const ProductDetailBlock = ({ content, settings }) => {
                             </div>
                           )}
 
-                          {orderBumpOferta && (() => {
-                            const compProd = orderBumpOferta.producto_complementario;
-                            const bumpImg = compProd?.imagen || compProd?.imagen_principal || compProd?.imagenes?.[0]
-                              || orderBumpOferta.componentes?.[0]?.Producto?.imagen
-                              || orderBumpOferta.componentes?.[0]?.Producto?.imagen_principal
-                              || orderBumpOferta.componentes?.[0]?.Producto?.imagenes?.[0];
-                            const bumpNombre = compProd?.nombre || orderBumpOferta.componentes?.[0]?.Producto?.nombre || orderBumpOferta.nombre;
-                            return (
-                              <label className={`lp-checkout-bump mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-bg)]'}`}>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    className="w-4 h-4 rounded border-gray-300 text-[var(--vit-accent)] focus:ring-[var(--vit-accent)]"
-                                    checked={ofertaComboId === orderBumpOferta.id}
-                                    onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
-                                  />
-                                  <span className="text-sm font-medium text-[var(--vit-text)]">
-                                    {orderBumpOferta.descripcion || `Agregar ${bumpNombre} a este pedido`}
-                                  </span>
-                                </div>
-                                {bumpImg && (
-                                  <div className="mt-2 pl-6">
-                                    <img className="rounded-md border border-[var(--vit-border)] max-h-24 object-contain" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
-                                  </div>
-                                )}
-                              </label>
-                            );
-                          })()}
 
                           <label className="lp-checkout-field">
                             <span>Nombre y Apellido <em>*</em></span>
@@ -617,6 +589,33 @@ export const ProductDetailBlock = ({ content, settings }) => {
                             <input type="checkbox" checked={aceptaTerminos} onChange={e => setAceptaTerminos(e.target.checked)} />
                             <span>Acepto que mis datos se usen para procesar este pedido.</span>
                           </label>
+
+                          {orderBumpOferta && (() => {
+                            const bumpComponent = orderBumpOferta.componentes?.find(c => String(c.producto_id) !== String(item.id)) || orderBumpOferta.componentes?.[1];
+                            const compProd = bumpComponent?.Producto || orderBumpOferta.producto_complementario;
+                            const bumpImg = compProd?.imagen || compProd?.imagen_principal || compProd?.imagenes?.[0];
+                            const bumpNombre = compProd?.nombre || orderBumpOferta.nombre;
+                            return (
+                              <label className={`lp-checkout-bump mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-bg)]'}`}>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded border-gray-300 text-[var(--vit-accent)] focus:ring-[var(--vit-accent)]"
+                                    checked={ofertaComboId === orderBumpOferta.id}
+                                    onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
+                                  />
+                                  <span className="text-sm font-medium text-[var(--vit-text)]">
+                                    {orderBumpOferta.descripcion || `Agregar ${bumpNombre} a este pedido`}
+                                  </span>
+                                </div>
+                                {bumpImg && (
+                                  <div className="mt-2 pl-6">
+                                    <img className="rounded-md border border-[var(--vit-border)] max-h-24 object-contain" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
+                                  </div>
+                                )}
+                              </label>
+                            );
+                          })()}
 
                           <div className="lp-product-botones-grid" style={{ marginTop: '1rem' }}>
                             <button type="submit" className="lp-modal-agregar" disabled={!formCheckoutValido || enviandoCompra}>

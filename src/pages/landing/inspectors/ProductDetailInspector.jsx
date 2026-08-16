@@ -403,34 +403,67 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
               <p className="text-xs text-[var(--vit-muted-2)]">No hay ofertas tipo "Order bump" para este producto todavía.</p>
             ) : (
               <div className="flex flex-col gap-2">
-                <select
-                  value={config.order_bump_oferta_id || ''}
-                  onChange={e => {
-                    const id = e.target.value ? Number(e.target.value) : null;
-                    const ob = orderBumps.find(o => o.id === id);
-                    if (ob) {
-                      const comp = ob.componentes?.[0];
-                      const prod = comp?.Producto || productosDisponibles.find(p => p.id === comp?.producto_id);
-                      const img = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
-                      onUpdate(seccion.id, {
-                        config: { 
-                          ...config, 
-                          order_bump_oferta_id: id,
-                          _preview_bump_nombre: prod?.nombre || ob.nombre,
-                          _preview_bump_imagen: img || null
-                        }
-                      });
-                    } else {
-                      onUpdate(seccion.id, { config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null } });
-                    }
-                  }}
-                  className="w-full h-9 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none"
-                >
-                  <option value="">Sin order bump</option>
-                  {orderBumps.map(o => (
-                    <option key={o.id} value={o.id}>{o.nombre} — {o.precio}</option>
-                  ))}
-                </select>
+                <p className="text-xs text-[var(--vit-muted-2)] mb-2">
+                  Seleccioná el order bump activo para esta página.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <div 
+                    className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${!config.order_bump_oferta_id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-[var(--vit-border)] bg-[var(--vit-surface)] hover:border-[var(--vit-accent)]/50'}`}
+                    onClick={() => onUpdate(seccion.id, { config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null } })}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium">Sin order bump</span>
+                    </div>
+                  </div>
+                  
+                  {orderBumps.map(ob => {
+                    const comp = ob.componentes?.find(c => String(c.producto_id) !== String(productoId)) || ob.componentes?.[1];
+                    const prod = comp?.Producto || productosDisponibles.find(p => p.id === comp?.producto_id);
+                    const rawImg = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
+                    const img = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
+                    const isActive = config.order_bump_oferta_id === ob.id;
+
+                    return (
+                      <div 
+                        key={ob.id} 
+                        className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${isActive ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-[var(--vit-border)] bg-[var(--vit-surface)] hover:border-[var(--vit-accent)]/50'}`}
+                        onClick={() => {
+                          onUpdate(seccion.id, {
+                            config: { 
+                              ...config, 
+                              order_bump_oferta_id: ob.id,
+                              _preview_bump_nombre: prod?.nombre || ob.nombre,
+                              _preview_bump_imagen: img || null
+                            }
+                          });
+                        }}
+                      >
+                        <div className="w-14 h-14 shrink-0 rounded border border-[var(--vit-border)] flex items-center justify-center overflow-hidden bg-[var(--vit-bg)]">
+                          {img ? (
+                            <img src={getMediaUrl(img)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon size={16} className="text-[var(--vit-muted-2)]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col">
+                          <span className="text-sm font-medium leading-tight mb-0.5">{ob.nombre}</span>
+                          <span className="text-[11px] text-[var(--vit-muted-2)]">Agrega: {prod?.nombre || 'Producto'}</span>
+                        </div>
+                        <div className="text-sm font-bold shrink-0">
+                          {formatPrecio(ob.precio)}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); eliminarPack(ob.id); }}
+                          className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded ml-1"
+                          title="Eliminar order bump"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
                 {config.order_bump_oferta_id && (
                   <Toggle
                     label="Mostrar el checkbox en el checkout"
