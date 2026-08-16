@@ -594,7 +594,8 @@ export const ProductDetailBlock = ({ content, settings }) => {
                             const bumpComponent = orderBumpOferta.componentes?.find(c => String(c.producto_id) !== String(item.id)) || orderBumpOferta.componentes?.[1];
                             const compProd = bumpComponent?.Producto || orderBumpOferta.producto_complementario;
                             const bumpImg = compProd?.imagen || compProd?.imagen_principal || compProd?.imagenes?.[0];
-                            const bumpNombre = compProd?.nombre || orderBumpOferta.nombre;
+                            const checkoutText = orderBumpOferta.descripcion || orderBumpOferta.nombre || `Agregar ${compProd?.nombre || 'oferta'} a este pedido`;
+                            
                             return (
                               <label className={`lp-checkout-bump mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-bg)]'}`}>
                                 <div className="flex items-center gap-2">
@@ -605,7 +606,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
                                     onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
                                   />
                                   <span className="text-sm font-medium text-[var(--vit-text)]">
-                                    {orderBumpOferta.descripcion || `Agregar ${bumpNombre} a este pedido`}
+                                    {checkoutText}
                                   </span>
                                 </div>
                                 {bumpImg && (

@@ -49,7 +49,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
   const [creandoPack, setCreandoPack] = useState(false);
   const [formPack, setFormPack] = useState({ nombre: '', cantidad: 2, precio: '' });
   const [creandoBump, setCreandoBump] = useState(false);
-  const [formBump, setFormBump] = useState({ nombre: '', producto_id: '', precio: '' });
+  const [formBump, setFormBump] = useState({ nombre: '', productos_ids: [''], precio: '' });
   const [guardandoOferta, setGuardandoOferta] = useState(false);
   const [errorOferta, setErrorOferta] = useState(null);
 
@@ -119,7 +119,8 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
 
   async function crearOrderBump(e) {
     e.preventDefault();
-    if (!formBump.producto_id) return;
+    const validIds = formBump.productos_ids.filter(Boolean);
+    if (validIds.length === 0) return;
     setErrorOferta(null);
     setGuardandoOferta(true);
     try {
@@ -132,10 +133,10 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
         activo: true,
         componentes: [
           { producto_id: Number(productoId), cantidad: 1, descuento_porcentaje: 0 },
-          { producto_id: Number(formBump.producto_id), cantidad: 1, descuento_porcentaje: 0 },
+          ...validIds.map(pid => ({ producto_id: Number(pid), cantidad: 1, descuento_porcentaje: 0 }))
         ],
       });
-      setFormBump({ nombre: '', producto_id: '', precio: '' });
+      setFormBump({ nombre: '', productos_ids: [''], precio: '' });
       setCreandoBump(false);
       await recargarOfertas();
     } catch (err) {
@@ -383,13 +384,32 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                 </div>
                 {errorOferta && <p className="text-xs text-red-500">{errorOferta}</p>}
                 <div>
-                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Producto complementario (de tu catálogo)</label>
-                  <select required value={formBump.producto_id} onChange={e => setFormBump(f => ({ ...f, producto_id: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none">
-                    <option value="">-- Seleccioná con qué producto combinarlo --</option>
-                    {productosDisponibles.filter(p => String(p.id) !== String(productoId)).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                  </select>
+                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase mb-1 block">Productos complementarios (de tu catálogo)</label>
+                  {formBump.productos_ids.map((pid, idx) => (
+                    <div key={idx} className="flex items-center gap-1 mb-1">
+                      <select required value={pid} onChange={e => {
+                        const newIds = [...formBump.productos_ids];
+                        newIds[idx] = e.target.value;
+                        setFormBump(f => ({ ...f, productos_ids: newIds }));
+                      }} className="flex-1 h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none">
+                        <option value="">-- Seleccioná con qué producto combinarlo --</option>
+                        {productosDisponibles.filter(p => String(p.id) !== String(productoId)).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                      </select>
+                      {formBump.productos_ids.length > 1 && (
+                        <button type="button" onClick={() => {
+                          const newIds = formBump.productos_ids.filter((_, i) => i !== idx);
+                          setFormBump(f => ({ ...f, productos_ids: newIds }));
+                        }} className="p-1.5 text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setFormBump(f => ({ ...f, productos_ids: [...f.productos_ids, ''] }))} className="text-[11px] text-[var(--vit-primary)] font-semibold mt-1">
+                    + Agregar otro producto al combo
+                  </button>
                 </div>
-                <div>
+                <div className="mt-2">
                   <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Texto para el checkout</label>
                   <input type="text" required placeholder="Ej. Sumá el Mouse por 50mil más" value={formBump.nombre} onChange={e => setFormBump(f => ({ ...f, nombre: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
                 </div>
@@ -421,11 +441,18 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                   </div>
                   
                   {orderBumps.map(ob => {
-                    const comp = ob.componentes?.find(c => String(c.producto_id) !== String(productoId)) || ob.componentes?.[1];
-                    const prod = comp?.Producto || productosDisponibles.find(p => p.id === comp?.producto_id);
+                    const bumpComps = ob.componentes?.filter(c => String(c.producto_id) !== String(productoId)) || [];
+                    if (bumpComps.length === 0 && ob.componentes?.[1]) bumpComps.push(ob.componentes[1]);
+                    
+                    const prod = bumpComps[0]?.Producto || productosDisponibles.find(p => p.id === bumpComps[0]?.producto_id);
                     const rawImg = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
                     const img = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
                     const isActive = config.order_bump_oferta_id === ob.id;
+
+                    const summaryAgrega = bumpComps.map(c => {
+                      const p = c.Producto || productosDisponibles.find(pd => pd.id === c.producto_id);
+                      return p?.nombre || 'Producto';
+                    }).join(' + ') || 'Producto';
 
                     return (
                       <div 
@@ -451,7 +478,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col">
                           <span className="text-sm font-medium leading-tight mb-0.5">{ob.nombre}</span>
-                          <span className="text-[11px] text-[var(--vit-muted-2)]">Agrega: {prod?.nombre || 'Producto'}</span>
+                          <span className="text-[11px] text-[var(--vit-muted-2)] line-clamp-2">Agrega: {summaryAgrega}</span>
                         </div>
                         <div className="text-sm font-bold shrink-0">
                           {formatPrecio(ob.precio)}
