@@ -283,6 +283,13 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const [portalTarget, setPortalTarget] = useState(null);
   const containerRef = useRef(null);
 
+  const handleCloseModal = () => {
+    setComprando(false);
+    if (actions.onTogglePreviewCheckout) {
+      actions.onTogglePreviewCheckout(false);
+    }
+  };
+
   useEffect(() => {
     if (containerRef.current) {
       // Find nearest .lp-page to keep the modal scoped to the landing page styles,
@@ -476,10 +483,10 @@ export const ProductDetailBlock = ({ content, settings }) => {
                 </div>
 
                 {(comprando || compraConfirmada) && portalTarget && createPortal(
-                  <div className="lp-checkout-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setComprando(false); }}>
+                  <div className="lp-checkout-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) handleCloseModal(); }}>
                     <div className="lp-checkout-modal-content slide-down">
                       {!compraConfirmada && (
-                        <button type="button" className="lp-modal-close" onClick={() => setComprando(false)}>
+                        <button type="button" className="lp-modal-close" onClick={handleCloseModal}>
                           <X size={20} />
                         </button>
                       )}

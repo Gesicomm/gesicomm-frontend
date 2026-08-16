@@ -110,8 +110,9 @@ export default function LandingPreview({
   // "Visualizar checkout" del inspector de Detalle de Producto — ver
   // ProductDetailBlock.jsx.
   previewCheckoutAbierto,
+  onTogglePreviewCheckout,
 }) {
-  
+
 
   const itemsPreview = useMemo(() => (items || []).map(normalizarItem), [items]);
   const noop = () => {};
@@ -393,9 +394,10 @@ export default function LandingPreview({
         setOrden: () => {},
         limpiarFiltros: () => {},
         seleccionarCategoria: () => {},
+        onTogglePreviewCheckout: onTogglePreviewCheckout || noop,
       }
     };
-  }, [itemsPreview, contacto, seccionesOrdenadas, tema, previewCheckoutAbierto]);
+  }, [itemsPreview, contacto, seccionesOrdenadas, tema, previewCheckoutAbierto, onTogglePreviewCheckout]);
 
   return (
     <>

@@ -1576,6 +1576,7 @@ export default function LandingEditor() {
                   onDuplicateSeccion={handleDuplicarSeccion}
                   onEditarProducto={!esModoProducto ? irAEditarProducto : undefined}
                   previewCheckoutAbierto={previewCheckoutAbierto}
+                  onTogglePreviewCheckout={setPreviewCheckoutAbierto}
                 />
              </div>
            </div>
