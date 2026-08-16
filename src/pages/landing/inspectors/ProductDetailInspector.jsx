@@ -149,8 +149,8 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
         
         let img = null;
         for (const comp of bumpComps) {
-          const prod = comp?.Producto || productosDisponibles.find(p => String(p.id) === String(comp?.producto_id));
-          const rawImg = prod?.imagen || prod?.imagenes?.[0] || ofertaCreada.producto_complementario?.imagen;
+          const pImg = productosDisponibles.find(p => String(p.id) === String(comp?.producto_id));
+          const rawImg = pImg?.imagen || pImg?.imagenes?.[0] || comp?.Producto?.imagen || ofertaCreada.producto_complementario?.imagen;
           const parsedImg = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
           if (parsedImg) {
             img = parsedImg;
@@ -474,8 +474,8 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                     
                     let img = null;
                     for (const comp of bumpComps) {
-                      const prod = comp?.Producto || productosDisponibles.find(p => String(p.id) === String(comp?.producto_id));
-                      const rawImg = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
+                      const pImg = productosDisponibles.find(p => String(p.id) === String(comp?.producto_id));
+                      const rawImg = pImg?.imagen || pImg?.imagenes?.[0] || comp?.Producto?.imagen || ob.producto_complementario?.imagen;
                       const parsedImg = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
                       if (parsedImg) {
                         img = parsedImg;

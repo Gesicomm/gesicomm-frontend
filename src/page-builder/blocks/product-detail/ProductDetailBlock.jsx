@@ -592,8 +592,19 @@ export const ProductDetailBlock = ({ content, settings }) => {
 
                           {orderBumpOferta && (() => {
                             const bumpComponents = orderBumpOferta.componentes?.filter(c => String(c.producto_id) !== String(item.id)) || [orderBumpOferta.componentes?.[1]].filter(Boolean);
-                            const mainBumpProd = bumpComponents[0]?.Producto || orderBumpOferta.producto_complementario;
-                            const bumpImg = mainBumpProd?.imagen || mainBumpProd?.imagen_principal || mainBumpProd?.imagenes?.[0] || settings?._preview_bump_imagen;
+                            let bumpImg = null;
+                            let mainBumpProd = null;
+                            for (const c of bumpComponents) {
+                              const p = c?.Producto || orderBumpOferta.producto_complementario;
+                              if (!mainBumpProd) mainBumpProd = p;
+                              const rawImg = p?.imagen || p?.imagen_principal || p?.imagenes?.[0];
+                              const parsedImg = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
+                              if (parsedImg) {
+                                bumpImg = parsedImg;
+                                break;
+                              }
+                            }
+                            bumpImg = bumpImg || settings?._preview_bump_imagen;
                             const checkoutText = orderBumpOferta.descripcion || orderBumpOferta.nombre || `Agregar ${mainBumpProd?.nombre || 'oferta'} a este pedido`;
                             
                             return (
