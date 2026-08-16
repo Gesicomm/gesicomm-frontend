@@ -547,7 +547,12 @@ export const ProductDetailBlock = ({ content, settings }) => {
                                 )}
                               </div>
                               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontWeight: 600 }}>{cantidad} × {oferta ? oferta.nombre : (variante ? variante.nombre : item.nombre)}</span>
+                                <span style={{ fontWeight: 600 }}>{cantidad} × {variante ? variante.nombre : item.nombre}</span>
+                                {ofertaComboId && orderBumpOferta && (
+                                  <span style={{ fontSize: '0.85rem', color: 'var(--l-primary)', fontWeight: 600, marginTop: '2px' }}>
+                                    + {orderBumpOferta.producto_complementario?.nombre || orderBumpOferta.componentes?.[1]?.Producto?.nombre || orderBumpOferta.nombre}
+                                  </span>
+                                )}
                               </div>
                               <strong style={{ fontSize: '1.1rem' }}>{formatPrecio(precio * cantidad)}</strong>
                             </div>
