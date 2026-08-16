@@ -383,13 +383,16 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                 </div>
                 {errorOferta && <p className="text-xs text-red-500">{errorOferta}</p>}
                 <div>
-                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Producto a agregar</label>
+                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Producto complementario (de tu catálogo)</label>
                   <select required value={formBump.producto_id} onChange={e => setFormBump(f => ({ ...f, producto_id: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none">
-                    <option value="">-- Elegí un producto --</option>
-                    {productosDisponibles.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                    <option value="">-- Seleccioná con qué producto combinarlo --</option>
+                    {productosDisponibles.filter(p => String(p.id) !== String(productoId)).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
                 </div>
-                <input type="text" required placeholder="Nombre (ej. Sumá el Mouse)" value={formBump.nombre} onChange={e => setFormBump(f => ({ ...f, nombre: e.target.value }))} className="h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                <div>
+                  <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Texto para el checkout</label>
+                  <input type="text" required placeholder="Ej. Sumá el Mouse por 50mil más" value={formBump.nombre} onChange={e => setFormBump(f => ({ ...f, nombre: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
+                </div>
                 <div>
                   <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Precio total (este producto + el agregado)</label>
                   <input type="number" min="0" required value={formBump.precio} onChange={e => setFormBump(f => ({ ...f, precio: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
