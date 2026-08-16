@@ -444,13 +444,13 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                     const bumpComps = ob.componentes?.filter(c => String(c.producto_id) !== String(productoId)) || [];
                     if (bumpComps.length === 0 && ob.componentes?.[1]) bumpComps.push(ob.componentes[1]);
                     
-                    const prod = bumpComps[0]?.Producto || productosDisponibles.find(p => p.id === bumpComps[0]?.producto_id);
+                    const prod = bumpComps[0]?.Producto || productosDisponibles.find(p => String(p.id) === String(bumpComps[0]?.producto_id));
                     const rawImg = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
                     const img = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
                     const isActive = config.order_bump_oferta_id === ob.id;
 
                     const summaryAgrega = bumpComps.map(c => {
-                      const p = c.Producto || productosDisponibles.find(pd => pd.id === c.producto_id);
+                      const p = c.Producto || productosDisponibles.find(pd => String(pd.id) === String(c.producto_id));
                       return p?.nombre || 'Producto';
                     }).join(' + ') || 'Producto';
 
@@ -463,7 +463,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                             config: { 
                               ...config, 
                               order_bump_oferta_id: ob.id,
-                              _preview_bump_nombre: prod?.nombre || ob.nombre,
+                              _preview_bump_nombre: ob.nombre || prod?.nombre,
                               _preview_bump_imagen: img || null
                             }
                           });

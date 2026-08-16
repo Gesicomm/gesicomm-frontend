@@ -597,23 +597,24 @@ export const ProductDetailBlock = ({ content, settings }) => {
                             const checkoutText = orderBumpOferta.descripcion || orderBumpOferta.nombre || `Agregar ${mainBumpProd?.nombre || 'oferta'} a este pedido`;
                             
                             return (
-                              <label className={`mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-surface)]'}`}>
+                              <label className={`mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'bg-[var(--l-surface)] shadow-md' : 'border-dashed bg-[var(--l-surface)]'}`} style={{ borderColor: ofertaComboId === orderBumpOferta.id ? 'var(--l-primary)' : 'var(--l-surface-border)' }}>
                                 <div className="flex items-center gap-3">
                                   <input
                                     type="checkbox"
-                                    className="w-5 h-5 flex-shrink-0 rounded border-gray-300 text-[var(--vit-accent)] focus:ring-[var(--vit-accent)]"
+                                    className="w-5 h-5 flex-shrink-0 rounded border-gray-300 focus:ring-0 focus:outline-none"
+                                    style={{ color: 'var(--l-primary)' }}
                                     checked={ofertaComboId === orderBumpOferta.id}
                                     onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
                                   />
-                                  <div className="w-14 h-14 rounded border border-[var(--vit-border)] bg-[var(--vit-bg)] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                  <div className="w-14 h-14 rounded border flex-shrink-0 flex items-center justify-center overflow-hidden bg-[var(--l-bg)]" style={{ borderColor: 'var(--l-surface-border)' }}>
                                     {bumpImg ? (
                                       <img className="w-full h-full object-cover" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
                                     ) : (
-                                      <Gift size={20} className="text-[var(--vit-accent)]" />
+                                      <Gift size={20} style={{ color: 'var(--l-primary)' }} />
                                     )}
                                   </div>
                                   <div className="flex-1 flex flex-col justify-center">
-                                    <span className="text-sm font-bold text-[var(--vit-text)] leading-tight">
+                                    <span className="text-sm font-bold leading-tight" style={{ color: 'var(--l-text)' }}>
                                       {checkoutText}
                                     </span>
                                   </div>
