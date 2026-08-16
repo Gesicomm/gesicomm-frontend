@@ -378,10 +378,14 @@ export default function LandingPreview({
       actions: {
         navigate: (path, item) => {
           if (item && item.id) {
-            if (item.tipo === 'producto') {
-              window.open(`/products/${item.id}/editar`, '_blank');
-            } else if (item.tipo === 'combo') {
-              window.open(`/combos/${item.id}/editar`, '_blank');
+            if (onEditarProducto) {
+              onEditarProducto(item.id);
+            } else {
+              if (item.tipo === 'producto') {
+                window.open(`/products/${item.id}/editar`, '_blank');
+              } else if (item.tipo === 'combo') {
+                window.open(`/combos/${item.id}/editar`, '_blank');
+              }
             }
           }
         },
