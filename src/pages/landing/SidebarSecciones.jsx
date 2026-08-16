@@ -10,6 +10,7 @@ const TIPOS_SIN_FILA = new Set(['header', 'footer', 'announcement_bar', 'product
 
 export default function SidebarSecciones({
   secciones,
+  viewMode,
   onSelect,
   onAddClick,
   onAddBeside,
@@ -163,7 +164,9 @@ export default function SidebarSecciones({
   return (
     <div className="flex h-full flex-col bg-[var(--vit-card-bg)]">
       <div className="flex items-center justify-between border-b border-[var(--vit-border)] p-4">
-        <h3 className="font-semibold text-[var(--vit-text)]">Página principal</h3>
+        <h3 className="font-semibold text-[var(--vit-text)]">
+          {viewMode === 'producto' ? 'Vista de Producto' : 'Página principal'}
+        </h3>
       </div>
       
       <DragDropContext onDragEnd={handleDragEnd}>

@@ -155,6 +155,13 @@ export default function LandingEditor() {
   const [sidebarTab, setSidebarTab] = useState('sections'); // 'sections' | 'theme'
   const [viewMode, setViewMode] = useState(esModoProducto ? 'producto' : 'landing'); // 'landing' | 'producto'
 
+  // Si el usuario navega desde /mi-landing a /mi-landing/producto/:id, React reutiliza el
+  // componente LandingEditor y el useState original de viewMode no se re-evalúa, dejándolo
+  // trabado en 'landing'. Este efecto fuerza el sincronismo.
+  useEffect(() => {
+    setViewMode(esModoProducto ? 'producto' : 'landing');
+  }, [esModoProducto]);
+
   const secciones = documentModel.pages[viewMode]?.sections || [];
   
   const setSecciones = useCallback((updater) => {
@@ -1463,6 +1470,7 @@ export default function LandingEditor() {
         <div className="bg-[var(--vit-card-bg)] border-r border-[var(--vit-border)] flex flex-col w-[260px] flex-shrink-0 z-10 overflow-hidden">
           <SidebarSecciones 
             secciones={secciones}
+            viewMode={viewMode}
             onSelect={setSeccionSeleccionadaId}
             onAddClick={() => { setAgregarAlLadoDe(null); setSelectorAbierto(true); }}
             onAddBeside={handleAgregarAlLado}
