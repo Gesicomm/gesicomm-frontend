@@ -3,6 +3,7 @@ import { Plus, Trash2, ChevronUp, ChevronDown, Image as ImageIcon, X } from 'luc
 import { ofertaService } from '../../../services/ofertaService';
 import { productService } from '../../../services/productService';
 import { getMediaUrl } from '../../../services/api';
+import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 
 /** Código interno estable — el admin no necesita pensarlo para un pack/order bump rápido. */
 function generarCodigo(nombre) {
