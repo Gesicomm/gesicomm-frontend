@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRenderContext } from '../../core/RenderContext';
 import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, Loader, Zap, X } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
@@ -463,7 +464,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
                   )}
                 </div>
 
-                {(comprando || compraConfirmada) && (
+                {(comprando || compraConfirmada) && portalTarget && createPortal(
                   <div className="lp-checkout-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setComprando(false); }}>
                     <div className="lp-checkout-modal-content slide-down">
                       {!compraConfirmada && (
@@ -607,7 +608,8 @@ export const ProductDetailBlock = ({ content, settings }) => {
                         </form>
                       )}
                     </div>
-                  </div>
+                  </div>,
+                  portalTarget
                 )}
               </div>
             </div>
