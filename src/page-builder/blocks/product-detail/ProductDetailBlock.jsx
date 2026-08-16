@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRenderContext } from '../../core/RenderContext';
-import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, Loader, Zap, X } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, Loader, Zap, X, Gift } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../../lib/mensajeWhatsapp';
 import { recalcularCarritoLanding } from '../../../services/landingPublicaService';
@@ -591,29 +591,33 @@ export const ProductDetailBlock = ({ content, settings }) => {
                           </label>
 
                           {orderBumpOferta && (() => {
-                            const bumpComponent = orderBumpOferta.componentes?.find(c => String(c.producto_id) !== String(item.id)) || orderBumpOferta.componentes?.[1];
-                            const compProd = bumpComponent?.Producto || orderBumpOferta.producto_complementario;
-                            const bumpImg = compProd?.imagen || compProd?.imagen_principal || compProd?.imagenes?.[0];
-                            const checkoutText = orderBumpOferta.descripcion || orderBumpOferta.nombre || `Agregar ${compProd?.nombre || 'oferta'} a este pedido`;
+                            const bumpComponents = orderBumpOferta.componentes?.filter(c => String(c.producto_id) !== String(item.id)) || [orderBumpOferta.componentes?.[1]].filter(Boolean);
+                            const mainBumpProd = bumpComponents[0]?.Producto || orderBumpOferta.producto_complementario;
+                            const bumpImg = mainBumpProd?.imagen || mainBumpProd?.imagen_principal || mainBumpProd?.imagenes?.[0] || settings?._preview_bump_imagen;
+                            const checkoutText = orderBumpOferta.descripcion || orderBumpOferta.nombre || `Agregar ${mainBumpProd?.nombre || 'oferta'} a este pedido`;
                             
                             return (
-                              <label className={`lp-checkout-bump mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-bg)]'}`}>
-                                <div className="flex items-center gap-2">
+                              <label className={`mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-dashed border-[var(--vit-accent)] bg-[var(--vit-surface)]'}`}>
+                                <div className="flex items-center gap-3">
                                   <input
                                     type="checkbox"
-                                    className="w-4 h-4 rounded border-gray-300 text-[var(--vit-accent)] focus:ring-[var(--vit-accent)]"
+                                    className="w-5 h-5 flex-shrink-0 rounded border-gray-300 text-[var(--vit-accent)] focus:ring-[var(--vit-accent)]"
                                     checked={ofertaComboId === orderBumpOferta.id}
                                     onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
                                   />
-                                  <span className="text-sm font-medium text-[var(--vit-text)]">
-                                    {checkoutText}
-                                  </span>
-                                </div>
-                                {bumpImg && (
-                                  <div className="mt-2 pl-6">
-                                    <img className="rounded-md border border-[var(--vit-border)] max-h-24 object-contain" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
+                                  <div className="w-14 h-14 rounded border border-[var(--vit-border)] bg-[var(--vit-bg)] flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                    {bumpImg ? (
+                                      <img className="w-full h-full object-cover" src={getMediaUrl(typeof bumpImg === 'string' ? bumpImg : (bumpImg?.url || bumpImg?.ruta || ''))} alt="" />
+                                    ) : (
+                                      <Gift size={20} className="text-[var(--vit-accent)]" />
+                                    )}
                                   </div>
-                                )}
+                                  <div className="flex-1 flex flex-col justify-center">
+                                    <span className="text-sm font-bold text-[var(--vit-text)] leading-tight">
+                                      {checkoutText}
+                                    </span>
+                                  </div>
+                                </div>
                               </label>
                             );
                           })()}
