@@ -163,7 +163,9 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
             ...config, 
             order_bump_oferta_id: ofertaCreada.id,
             _preview_bump_nombre: ofertaCreada.nombre,
-            _preview_bump_imagen: img || null
+            _preview_bump_imagen: img || null,
+            _preview_bump_precio: ofertaCreada.precio || 0,
+            _preview_bump_descripcion: ofertaCreada.descripcion || null
           }
         });
       }
@@ -461,7 +463,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                 <div className="flex flex-col gap-2">
                   <div 
                     className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${!config.order_bump_oferta_id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-[var(--vit-border)] bg-[var(--vit-surface)] hover:border-[var(--vit-accent)]/50'}`}
-                    onClick={() => onUpdate(seccion.id, { config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null } })}
+                    onClick={() => onUpdate(seccion.id, { config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null, _preview_bump_precio: null, _preview_bump_descripcion: null } })}
                   >
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium">Sin order bump</span>
@@ -499,7 +501,9 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                               ...config, 
                               order_bump_oferta_id: ob.id,
                               _preview_bump_nombre: ob.nombre || (bumpComps[0]?.Producto?.nombre || productosDisponibles.find(p => String(p.id) === String(bumpComps[0]?.producto_id))?.nombre),
-                              _preview_bump_imagen: img || null
+                              _preview_bump_imagen: img || null,
+                              _preview_bump_precio: ob.precio || 0,
+                              _preview_bump_descripcion: ob.descripcion || null
                             }
                           });
                         }}

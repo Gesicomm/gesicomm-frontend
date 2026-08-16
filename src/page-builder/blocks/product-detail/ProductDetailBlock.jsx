@@ -161,7 +161,8 @@ export const ProductDetailBlock = ({ content, settings }) => {
       return { 
         id: settings.order_bump_oferta_id, 
         nombre: settings._preview_bump_nombre || 'Producto complementario', 
-        descripcion: null, 
+        descripcion: settings._preview_bump_descripcion || null, 
+        precio: settings._preview_bump_precio || 0,
         producto_complementario: {
           nombre: settings._preview_bump_nombre || 'Producto complementario',
           imagen: settings._preview_bump_imagen || null
@@ -187,7 +188,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
   // respuesta del recálculo, o si falla) vs. el resuelto por el backend
   // (fuente de verdad real — el mismo Pricing Engine que cobra el
   // checkout, incluye packs por cantidad y descuento por fecha).
-  const precioLocal = oferta ? oferta.precio : (variante ? variante.precio_efectivo : item.precio);
+  const precioLocal = oferta ? oferta.precio : (variante ? variante.precio_efectivo : (item.precio ?? item.precio_base ?? item.precio_efectivo ?? 0));
   const precio = precioResuelto ? precioResuelto.precio_unitario : precioLocal;
   const stock = variante ? variante.stock : item.stock;
   const stockConocido = stock !== null && stock !== undefined;
@@ -633,7 +634,19 @@ export const ProductDetailBlock = ({ content, settings }) => {
                                     <span className="text-sm font-bold leading-tight" style={{ color: 'var(--l-text)' }}>
                                       {checkoutText}
                                     </span>
+                                    {orderBumpOferta.descripcion && (
+                                      <span className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--l-text)', opacity: 0.8 }}>
+                                        {orderBumpOferta.descripcion}
+                                      </span>
+                                    )}
                                   </div>
+                                  {(orderBumpOferta.precio > 0 || settings?._preview_bump_precio > 0) && (
+                                    <div className="flex-shrink-0 text-right ml-2">
+                                      <span className="text-sm font-bold" style={{ color: 'var(--l-text)' }}>
+                                        {formatPrecio(orderBumpOferta.precio || settings?._preview_bump_precio)}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </label>
                             );
