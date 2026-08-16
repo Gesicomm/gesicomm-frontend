@@ -280,8 +280,19 @@ export const ProductDetailBlock = ({ content, settings }) => {
     }
   };
 
+  const [portalTarget, setPortalTarget] = useState(null);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (containerRef.current) {
+      // Find nearest .lp-page to keep the modal scoped to the landing page styles,
+      // avoiding overflowing into the editor UI.
+      setPortalTarget(containerRef.current.closest('.lp-page') || document.body);
+    }
+  }, []);
+
   return (
-    <div className="lp-product-page-container">
+    <div ref={containerRef} className="lp-product-page-container">
       <div className="lp-product-page-wrapper">
         <button type="button" className="lp-product-back-btn" onClick={handleVolver}>
            <ArrowLeft size={16} /> Volver al catálogo
