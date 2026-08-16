@@ -124,7 +124,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
     setErrorOferta(null);
     setGuardandoOferta(true);
     try {
-      await ofertaService.crear(productoId, {
+      const nuevaOferta = await ofertaService.crear(productoId, {
         codigo: generarCodigo(formBump.nombre),
         nombre: formBump.nombre.trim(),
         tipo_contenido: 'combo',
@@ -138,7 +138,35 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
       });
       setFormBump({ nombre: '', productos_ids: [''], precio: '' });
       setCreandoBump(false);
-      await recargarOfertas();
+      
+      const ofertasActualizadas = await ofertaService.listarPorProducto(productoId);
+      setOfertasDisponibles(ofertasActualizadas);
+      
+      const ofertaCreada = ofertasActualizadas.find(o => o.id === nuevaOferta.id);
+      if (ofertaCreada) {
+        const bumpComps = ofertaCreada.componentes?.filter(c => String(c.producto_id) !== String(productoId)) || [];
+        if (bumpComps.length === 0 && ofertaCreada.componentes?.[1]) bumpComps.push(ofertaCreada.componentes[1]);
+        
+        let img = null;
+        for (const comp of bumpComps) {
+          const prod = comp?.Producto || productosDisponibles.find(p => String(p.id) === String(comp?.producto_id));
+          const rawImg = prod?.imagen || prod?.imagenes?.[0] || ofertaCreada.producto_complementario?.imagen;
+          const parsedImg = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
+          if (parsedImg) {
+            img = parsedImg;
+            break;
+          }
+        }
+        
+        onUpdate(seccion.id, { 
+          config: { 
+            ...config, 
+            order_bump_oferta_id: ofertaCreada.id,
+            _preview_bump_nombre: ofertaCreada.nombre,
+            _preview_bump_imagen: img || null
+          }
+        });
+      }
     } catch (err) {
       setErrorOferta(err.response?.data?.message || 'No se pudo crear el order bump.');
     } finally {
@@ -444,9 +472,16 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                     const bumpComps = ob.componentes?.filter(c => String(c.producto_id) !== String(productoId)) || [];
                     if (bumpComps.length === 0 && ob.componentes?.[1]) bumpComps.push(ob.componentes[1]);
                     
-                    const prod = bumpComps[0]?.Producto || productosDisponibles.find(p => String(p.id) === String(bumpComps[0]?.producto_id));
-                    const rawImg = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
-                    const img = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
+                    let img = null;
+                    for (const comp of bumpComps) {
+                      const prod = comp?.Producto || productosDisponibles.find(p => String(p.id) === String(comp?.producto_id));
+                      const rawImg = prod?.imagen || prod?.imagenes?.[0] || ob.producto_complementario?.imagen;
+                      const parsedImg = typeof rawImg === 'string' ? rawImg : (rawImg?.url || rawImg?.ruta || null);
+                      if (parsedImg) {
+                        img = parsedImg;
+                        break;
+                      }
+                    }
                     const isActive = config.order_bump_oferta_id === ob.id;
 
                     const summaryAgrega = bumpComps.map(c => {
@@ -463,7 +498,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                             config: { 
                               ...config, 
                               order_bump_oferta_id: ob.id,
-                              _preview_bump_nombre: ob.nombre || prod?.nombre,
+                              _preview_bump_nombre: ob.nombre || (bumpComps[0]?.Producto?.nombre || productosDisponibles.find(p => String(p.id) === String(bumpComps[0]?.producto_id))?.nombre),
                               _preview_bump_imagen: img || null
                             }
                           });
