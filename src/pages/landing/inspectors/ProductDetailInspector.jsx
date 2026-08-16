@@ -417,14 +417,17 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                   <label className="text-[10px] text-[var(--vit-muted-2)] uppercase mb-1 block">Productos complementarios (de tu catálogo)</label>
                   {formBump.productos_ids.map((pid, idx) => (
                     <div key={idx} className="flex items-center gap-1 mb-1">
-                      <select required value={pid} onChange={e => {
-                        const newIds = [...formBump.productos_ids];
-                        newIds[idx] = e.target.value;
-                        setFormBump(f => ({ ...f, productos_ids: newIds }));
-                      }} className="flex-1 h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none">
-                        <option value="">-- Seleccioná con qué producto combinarlo --</option>
-                        {productosDisponibles.filter(p => String(p.id) !== String(productoId)).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                      </select>
+                      <div className="relative flex-1">
+                        <select required value={pid} onChange={e => {
+                          const newIds = [...formBump.productos_ids];
+                          newIds[idx] = e.target.value;
+                          setFormBump(f => ({ ...f, productos_ids: newIds }));
+                        }} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] pl-2 pr-8 text-sm focus:border-[var(--vit-accent)] focus:outline-none appearance-none text-ellipsis overflow-hidden whitespace-nowrap">
+                          <option value="">-- Elegir producto --</option>
+                          {productosDisponibles.filter(p => String(p.id) !== String(productoId)).map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                        </select>
+                        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--vit-muted)] pointer-events-none" />
+                      </div>
                       {formBump.productos_ids.length > 1 && (
                         <button type="button" onClick={() => {
                           const newIds = formBump.productos_ids.filter((_, i) => i !== idx);
