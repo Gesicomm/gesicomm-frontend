@@ -56,7 +56,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
     return ofertaService.listarPorProducto(productoId).then((ofertas) => {
       setOfertasDisponibles(ofertas);
       const previewPacks = ofertas
-        .filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal')
+        .filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal' && o.activo)
         .map(o => ({ ...o, unidades: o.componentes?.[0]?.cantidad || 1 }));
       if (previewPacks.length > 0) {
         onUpdate(seccion.id, {
