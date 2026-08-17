@@ -113,14 +113,40 @@ const FaqAdapter = ({ content, settings, section }) => {
   return <LandingFaq seccion={section || { contenido: content, config: settings }} faqs={content.items || page.faq || []} />;
 };
 
-const FooterAdapter = ({ content, settings }) => {
+import PublicFooterRenderer from './footer-builder/PublicFooterRenderer';
+import FooterCanvas from './footer-builder/FooterCanvas';
+import { useFooterBuilderOptional, normalizeFooterData } from './footer-builder/FooterContext';
+
+export const FooterAdapter = ({ content, settings, section }) => {
   const { page } = useRenderContext();
-  return (
-    <div className="lp-footer" style={{ padding: '40px 20px', textAlign: 'center', opacity: 0.8 }}>
-      <h3>{content.titulo || page.titulo}</h3>
-      <p>{content.descripcion || page.descripcion}</p>
-    </div>
-  );
+  // Solo existe un FooterProvider ancestro cuando LandingEditor.jsx envuelve
+  // el canvas para editar ESTA sección (ver el wrap condicional en
+  // LandingEditor.jsx) — en el sitio público, o si el footer no es la
+  // sección seleccionada, esto da null y se muestra el render estático.
+  // El provider está montado siempre en el editor (ver FooterProvider), así
+  // que lo que decide mostrar el canvas editable es `active`, no su mera
+  // presencia: en el sitio público no hay provider, y en el editor con otra
+  // sección seleccionada hay provider pero inactivo.
+  const footerBuilder = useFooterBuilderOptional();
+  if (footerBuilder?.active) {
+    return <FooterCanvas />;
+  }
+
+  // Footer viejo: nunca pasó por el builder pero tiene su propio texto, así
+  // que se respeta tal cual estaba.
+  const esLegacy = !(section?.config?.schemaVersion >= 1);
+  if (esLegacy && (content?.titulo || content?.descripcion)) {
+    return (
+      <div className="lp-footer" style={{ padding: '40px 20px', textAlign: 'center', opacity: 0.8 }}>
+        <h3>{content.titulo || page?.titulo}</h3>
+        <p>{content.descripcion || page?.descripcion}</p>
+      </div>
+    );
+  }
+
+  // normalizeFooterData rellena los defaults: sin esto un footer todavía sin
+  // configurar no dibujaba nada hasta que se lo seleccionaba una vez.
+  return <PublicFooterRenderer data={normalizeFooterData(section?.config)} />;
 };
 
 // Announcement bar wasn't a separate component in legacy, just a div.

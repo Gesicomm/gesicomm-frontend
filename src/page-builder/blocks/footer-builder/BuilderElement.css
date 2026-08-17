@@ -1,0 +1,41 @@
+.builder-element-normal {
+  position: relative;
+  padding: 8px;
+  border: 1px dashed transparent;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.builder-element-normal:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.builder-element-normal.selected {
+  border-color: var(--vit-accent, #007acc);
+  background: rgba(0, 122, 204, 0.05);
+}
+
+.builder-element-rnd {
+  border: 1px dashed transparent;
+  cursor: grab;
+}
+
+.builder-element-rnd:active {
+  cursor: grabbing;
+}
+
+.builder-element-rnd:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.builder-element-rnd.selected {
+  border-style: solid;
+  border-color: var(--vit-accent, #007acc);
+  z-index: 100 !important;
+}
+
+.builder-element-content {
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Let Rnd handle pointer events for dragging */
+}

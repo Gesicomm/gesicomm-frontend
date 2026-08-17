@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, ChevronRight, Menu, LayoutDashboard,
-  Package
+  Package, BarChart3
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -174,6 +174,7 @@ const UserLayout = ({ children }) => {
               {renderLink({ path: '/products', label: 'Mis Productos', icon: <Package size={14} />, prefix: '/products', menuKey: 'products' })}
               {renderLink({ path: '/configuracion-economica', label: 'Config. económica', icon: <Settings size={14} />, menuKey: 'configuracion-economica' })}
               {renderLink({ path: '/mis-pedidos', label: 'Mis pedidos & Couriers', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
+              {renderLink({ path: '/reportes', label: 'Reportes de Ventas', icon: <BarChart3 size={14} style={{ color: '#a855f7' }} />, menuKey: 'reportes' })}
               {renderLink({ path: '/mi-landing', label: 'Mi landing', icon: <Layers size={14} />, prefix: '/mi-landing', menuKey: 'mi-landing' })}
               {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
             </ul>

@@ -5,6 +5,8 @@ import { calcularEstiloLanding } from '../../lib/landingDiseno';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { RenderProvider } from '../../page-builder/core/RenderContext';
 import { PageRenderer } from '../../page-builder/core/PageRenderer';
+import { FooterAdapter } from '../../page-builder/blocks/legacyBlocks';
+import FooterCanvas from '../../page-builder/blocks/footer-builder/FooterCanvas';
 import PreviewFrame from './PreviewFrame';
 import './landingPublica.css';
 
@@ -28,7 +30,7 @@ function normalizarItem(item, idx) {
 
 import { ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 
-function SectionWrapper({ id, name, selected, style, children, onSelect, onReorder, onDelete }) {
+function SectionWrapper({ id, name, selected, style, children, onSelect, onReorder, onDelete, interactive }) {
   return (
     <div
       className={`relative group transition-all duration-200 cursor-pointer ${selected ? 'ring-2 ring-[var(--vit-accent)] z-20' : 'hover:ring-2 hover:ring-[var(--vit-accent-soft)] hover:z-10'}`}
@@ -89,7 +91,13 @@ function SectionWrapper({ id, name, selected, style, children, onSelect, onReord
         </div>
       )}
 
-      <div className="pointer-events-none">
+      {/* El resto de las secciones son de solo lectura acá (se editan desde
+          el panel derecho) así que bloquean el mouse para que un click
+          adentro solo seleccione la sección. El footer, cuando está
+          seleccionado, muestra el canvas libre (FooterCanvas/BuilderElement
+          con react-rnd) y necesita recibir clicks/drag reales — si no,
+          nunca se puede arrastrar ni tocar sus elementos. */}
+      <div className={interactive ? '' : 'pointer-events-none'}>
         {children}
       </div>
     </div>
@@ -284,15 +292,19 @@ export default function LandingPreview({
       case 'logo_list':
         return <LandingLogoList seccion={seccion} />;
       case 'footer':
+        if (seccionSeleccionadaId === seccion.id) {
+          return <FooterCanvas />;
+        }
         return (
-          <footer className="lp-footer">
-            <div className="lp-footer-inner">
-              <div>
-                <p className="lp-footer-nombre">{cont.titulo || titulo || 'Tu tienda'}</p>
-                {(cont.descripcion || descripcion) && <p className="lp-footer-desc">{cont.descripcion || descripcion}</p>}
-              </div>
-            </div>
-          </footer>
+          <FooterAdapter 
+            section={seccion} 
+            content={{
+              ...seccion.contenido,
+              titulo: seccion.contenido?.titulo || titulo,
+              descripcion: seccion.contenido?.descripcion || descripcion
+            }} 
+            settings={seccion.config || {}} 
+          />
         );
       default:
         return null;
@@ -415,19 +427,23 @@ export default function LandingPreview({
           >
             <PageRenderer 
               context={renderContextValue} 
-              sectionWrapper={({ section, children, style }) => (
-                <SectionWrapper 
-                  id={section.id || section.tipo}
-                  name={section.nombre_interno || section.tipo}
-                  style={style}
-                  selected={seccionSeleccionadaId === section.id}
-                  onSelect={onSelectSeccion}
-                  onReorder={onReorderSeccion}
-                  onDelete={onDeleteSeccion}
-                >
-                  {children}
-                </SectionWrapper>
-              )}
+              sectionWrapper={({ section, children, style }) => {
+                const selected = seccionSeleccionadaId === section.id;
+                return (
+                  <SectionWrapper
+                    id={section.id || section.tipo}
+                    name={section.nombre_interno || section.tipo}
+                    style={style}
+                    selected={selected}
+                    interactive={selected && section.tipo === 'footer'}
+                    onSelect={onSelectSeccion}
+                    onReorder={onReorderSeccion}
+                    onDelete={onDeleteSeccion}
+                  >
+                    {children}
+                  </SectionWrapper>
+                );
+              }}
             />
           </div>
         </PreviewFrame>

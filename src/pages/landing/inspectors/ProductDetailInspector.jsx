@@ -60,11 +60,11 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
         .filter(o => o.tipo_contenido === 'pack' && o.estrategia === 'normal' && o.activo)
         .map(o => ({ ...o, unidades: o.componentes?.[0]?.cantidad || 1 }));
       if (previewPacks.length > 0) {
-        onUpdate(seccion.id, {
+        onUpdate({
           config: { ...config, _preview_packs: JSON.stringify(previewPacks) }
         });
       } else {
-        onUpdate(seccion.id, {
+        onUpdate({
           config: { ...config, _preview_packs: null }
         });
       }
@@ -158,7 +158,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
           }
         }
         
-        onUpdate(seccion.id, { 
+        onUpdate({ 
           config: { 
             ...config, 
             order_bump_oferta_id: ofertaCreada.id,
@@ -180,11 +180,11 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
   const orderBumps = ofertasDisponibles.filter(o => o.estrategia === 'order_bump' && o.activo);
 
   const actualizar = (campo, valor) => {
-    onUpdate(seccion.id, { config: { ...config, [campo]: valor } });
+    onUpdate({ config: { ...config, [campo]: valor } });
   };
 
   const actualizarTarjeta = (clave, cambios) => {
-    onUpdate(seccion.id, {
+    onUpdate({
       contenido: {
         ...contenido,
         tarjetas_precio: { ...tarjetasPrecio, [clave]: { ...tarjetasPrecio[clave], ...cambios } },
@@ -206,7 +206,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
   }
 
   const actualizarBloques = (nuevos) => {
-    onUpdate(seccion.id, { contenido: { ...contenido, bloques_info: nuevos } });
+    onUpdate({ contenido: { ...contenido, bloques_info: nuevos } });
   };
 
   const agregarBloque = () => {
@@ -466,7 +466,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                 <div className="flex flex-col gap-2">
                   <div 
                     className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${!config.order_bump_oferta_id ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-[var(--vit-border)] bg-[var(--vit-surface)] hover:border-[var(--vit-accent)]/50'}`}
-                    onClick={() => onUpdate(seccion.id, { config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null, _preview_bump_precio: null, _preview_bump_descripcion: null } })}
+                    onClick={() => onUpdate({ config: { ...config, order_bump_oferta_id: null, _preview_bump_nombre: null, _preview_bump_imagen: null, _preview_bump_precio: null, _preview_bump_descripcion: null } })}
                   >
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium">Sin order bump</span>
@@ -499,7 +499,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                         key={ob.id} 
                         className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${isActive ? 'border-[var(--vit-accent)] bg-[var(--vit-accent)]/10' : 'border-[var(--vit-border)] bg-[var(--vit-surface)] hover:border-[var(--vit-accent)]/50'}`}
                         onClick={() => {
-                          onUpdate(seccion.id, {
+                          onUpdate({
                             config: { 
                               ...config, 
                               order_bump_oferta_id: ob.id,

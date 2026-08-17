@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, Printer, Filter, Settings, Type } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { X, Printer, Filter, Settings, Type, Calendar } from "lucide-react";
 import { STATUS_ORDER, formatGs } from "../../lib/courier";
 import "./impresion-pedidos.css";
 
-export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
+export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, onChangeFechaDesde, fechaHasta, onChangeFechaHasta }) {
   // Título principal del encabezado personalizable
   const [tituloEncabezado, setTituloEncabezado] = useState("GESICOMM LOGÍSTICA");
 
@@ -13,6 +14,14 @@ export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
   const [presetTamano, setPresetTamano] = useState("4x6"); // 4x6, 4x4, 80mm, custom
   const [customAncho, setCustomAncho] = useState(100);
   const [customAlto, setCustomAlto] = useState(150);
+
+  // Configuración de Mensaje Personalizado
+  const [mensajePersonalizado, setMensajePersonalizado] = useState("");
+  const [mensajePosicion, setMensajePosicion] = useState("centro");
+
+  // Configuración de Código QR
+  const [qrLink, setQrLink] = useState("");
+  const [qrPosicion, setQrPosicion] = useState("arriba");
 
   // IDs de pedidos individualmente seleccionados
   const [selectedIds, setSelectedIds] = useState([]);
@@ -107,6 +116,86 @@ export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
                 onChange={e => setTituloEncabezado(e.target.value)}
                 placeholder="Ej: GESICOMM LOGÍSTICA"
               />
+            </div>
+
+            {/* Fecha de Pedidos */}
+            <div className="imprimir-sidebar-section">
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ flex: 1 }}>
+                  <h4 className="imprimir-sidebar-title" style={{ fontSize: '0.75rem' }}>
+                    <Calendar size={13} /> Desde
+                  </h4>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', padding: '0.4rem' }}
+                    value={fechaDesde || ""}
+                    onChange={e => onChangeFechaDesde && onChangeFechaDesde(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 className="imprimir-sidebar-title" style={{ fontSize: '0.75rem' }}>
+                    <Calendar size={13} /> Hasta
+                  </h4>
+                  <input
+                    type="date"
+                    className="form-input"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', padding: '0.4rem' }}
+                    value={fechaHasta || ""}
+                    onChange={e => onChangeFechaHasta && onChangeFechaHasta(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Mensaje Personalizado */}
+            <div className="imprimir-sidebar-section">
+              <h4 className="imprimir-sidebar-title">
+                <Type size={15} /> Mensaje Libre
+              </h4>
+              <input
+                type="text"
+                className="form-input"
+                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '0.4rem' }}
+                value={mensajePersonalizado}
+                onChange={e => setMensajePersonalizado(e.target.value)}
+                placeholder="Ej: ¡Gracias por su compra!"
+              />
+              <select
+                className="form-input"
+                style={{ background: '#1c1c1f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem' }}
+                value={mensajePosicion}
+                onChange={e => setMensajePosicion(e.target.value)}
+              >
+                <option value="arriba">Arriba (Debajo del encabezado)</option>
+                <option value="centro">Centro (Debajo del detalle)</option>
+                <option value="abajo">Abajo (Antes de las firmas)</option>
+              </select>
+            </div>
+
+            {/* Código QR */}
+            <div className="imprimir-sidebar-section">
+              <h4 className="imprimir-sidebar-title">
+                <Settings size={15} /> Código QR
+              </h4>
+              <input
+                type="text"
+                className="form-input"
+                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '0.4rem' }}
+                value={qrLink}
+                onChange={e => setQrLink(e.target.value)}
+                placeholder="https://tutienda.com/encuesta"
+              />
+              <select
+                className="form-input"
+                style={{ background: '#1c1c1f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem' }}
+                value={qrPosicion}
+                onChange={e => setQrPosicion(e.target.value)}
+              >
+                <option value="arriba">Arriba (Debajo del encabezado)</option>
+                <option value="centro">Centro (Debajo del detalle)</option>
+                <option value="abajo">Abajo (Antes de las firmas)</option>
+              </select>
             </div>
 
             {/* Filtros por Estado */}
@@ -236,6 +325,8 @@ export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
                 tituloHeader={tituloEncabezado}
                 presetClass={`preset-${presetTamano}`}
                 customStyle={getEtiquetaStyle()}
+                mensaje={{ texto: mensajePersonalizado, posicion: mensajePosicion }}
+                qr={{ link: qrLink, posicion: qrPosicion }}
               />
             ))}
 
@@ -258,6 +349,8 @@ export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
                 tituloHeader={tituloEncabezado}
                 presetClass={`preset-${presetTamano}`}
                 customStyle={getEtiquetaStyle()}
+                mensaje={{ texto: mensajePersonalizado, posicion: mensajePosicion }}
+                qr={{ link: qrLink, posicion: qrPosicion }}
               />
             ))}
           </div>,
@@ -269,21 +362,37 @@ export function ImprimirPedidosModal({ open, onClose, envios = [] }) {
 }
 
 /* Componente de la Etiqueta Individual */
-function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle }) {
+function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, mensaje, qr }) {
   const nombreCliente = envio.nombre_cliente
     ? `${envio.nombre_cliente} ${envio.apellido_cliente || ''}`.trim()
     : envio.cliente || "Cliente";
 
   const ubicacion = [envio.direccion, envio.referencia].filter(Boolean).join(" - ");
 
+  const blockMensaje = mensaje?.texto ? (
+    <div style={{ textAlign: 'center', fontSize: '9pt', fontWeight: 'bold', margin: '4px 0', padding: '3px', border: '1px dashed #000' }}>
+      {mensaje.texto}
+    </div>
+  ) : null;
+
+  const blockQR = qr?.link ? (
+    <div style={{ textAlign: 'center', margin: '4px 0', display: 'flex', justifyContent: 'center' }}>
+      <QRCodeSVG value={qr.link} size={64} level="M" />
+    </div>
+  ) : null;
+
   return (
     <div className={`etiqueta-pedido ${presetClass}`} style={customStyle}>
       {/* Encabezado de la Etiqueta */}
       <div>
+        {/* Encabezado de la Etiqueta */}
         <div className="etiqueta-header">
           <h3 className="etiqueta-header-title">{tituloHeader || "LOGÍSTICA"}</h3>
           <span className="etiqueta-header-date">{envio.fecha || envio.dispatchedAt}</span>
         </div>
+
+        {mensaje?.posicion === 'arriba' && blockMensaje}
+        {qr?.posicion === 'arriba' && blockQR}
 
         {/* Datos del Cliente */}
         <div className="etiqueta-row">
@@ -335,6 +444,9 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle }) {
         </div>
       </div>
 
+      {mensaje?.posicion === 'centro' && blockMensaje}
+      {qr?.posicion === 'centro' && blockQR}
+
       {/* Sección Inferior: Monto, Método de Pago, Obs y Firmas */}
       <div>
         <div className="etiqueta-row" style={{ marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -352,6 +464,9 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle }) {
             <strong>Obs:</strong> {envio.observaciones}
           </div>
         )}
+
+        {mensaje?.posicion === 'abajo' && blockMensaje}
+        {qr?.posicion === 'abajo' && blockQR}
 
         {/* Sección de Firmas (Courier y Cliente) */}
         <div className="etiqueta-firmas">

@@ -1,0 +1,80 @@
+/* Sin --l-bg/--l-text propios: hereda el fondo/texto de la landing
+   (.lp-page los define siempre) salvo que la sección tenga color_fondo/
+   color_texto propio, en cuyo caso SectionRenderer.jsx los pisa localmente
+   con esas mismas variables. Así el footer nunca queda negro por defecto y
+   comparte el mismo mecanismo de color que el resto de las secciones. */
+.public-footer-v2 {
+  width: 100%;
+  background: var(--l-bg);
+  color: var(--l-text, inherit);
+  overflow: hidden;
+}
+
+.public-footer-container {
+  position: relative;
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--footer-max-width, 1200px);
+  min-height: var(--footer-min-height-mobile, auto);
+}
+
+@media (min-width: 768px) {
+  .public-footer-container {
+    min-height: var(--footer-min-height-desktop, auto);
+  }
+}
+
+.public-footer-element {
+  position: var(--m-mode, relative);
+  width: var(--m-w, auto);
+  left: var(--m-x, auto);
+  top: var(--m-y, auto);
+}
+
+@media (min-width: 768px) {
+  .public-footer-element {
+    position: var(--d-mode, relative);
+    width: var(--d-w, auto);
+    left: var(--d-x, auto);
+    top: var(--d-y, auto);
+  }
+}
+
+.footer-text {
+  margin: 0;
+}
+
+/* inherit, no --l-primary: un link sin color propio debe verse como texto
+   normal subrayado, no como el mismo acento que usa el botón por default —
+   ver el comentario en BuilderElement.jsx sobre por qué compartían color. */
+.footer-link {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.footer-social-link {
+  display: inline-flex;
+  color: inherit;
+  opacity: 0.85;
+  transition: opacity 0.15s;
+}
+
+.footer-social-link:hover {
+  opacity: 1;
+}
+
+/* Mismo hover que .lp-banner-btn en landingPublica.css */
+.footer-button {
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.footer-button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}

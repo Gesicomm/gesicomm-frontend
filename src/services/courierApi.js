@@ -20,8 +20,8 @@ export const deleteCourier = async (id) => {
   return data;
 };
 
-export const getEnvios = async (fecha = null, estado = null) => {
-  const { data } = await api.post('/envios/list', { fecha, estado });
+export const getEnvios = async (filtros = {}) => {
+  const { data } = await api.post('/envios/list', filtros);
   return data;
 };
 

@@ -17,6 +17,7 @@ import UserLayout from './components/UserLayout';
 import DynamicLayout from './components/DynamicLayout';
 import VitrinaGrid from './pages/vitrina/VitrinaGrid';
 import MiDashboard from './pages/dashboard/MiDashboard';
+import ReportesView from './pages/reportes/ReportesView';
 import MiLandingEntry from './pages/landing/MiLandingEntry';
 import LandingEditor from './pages/landing/LandingEditor';
 import LandingPublica from './pages/landing/LandingPublica';
@@ -189,6 +190,9 @@ function App() {
         } />
         <Route path="/mis-pedidos" element={
           <RequireTienda><UserLayout><ControlCourier /></UserLayout></RequireTienda>
+        } />
+        <Route path="/reportes" element={
+          <RequireTienda><UserLayout><ReportesView /></UserLayout></RequireTienda>
         } />
         <Route path="/mi-tienda" element={
           <RequireTienda><UserLayout><ConfigurarTienda /></UserLayout></RequireTienda>

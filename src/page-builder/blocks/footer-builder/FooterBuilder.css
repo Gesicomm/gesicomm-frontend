@@ -1,0 +1,156 @@
+.footer-builder-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--vit-surface, #1e1e1e);
+  color: var(--vit-text, #e0e0e0);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+}
+
+.footer-builder-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 16px;
+  background: var(--vit-surface-2, #252526);
+  border-bottom: 1px solid var(--vit-border, #333);
+}
+
+.footer-builder-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vit-muted, #999);
+}
+
+.footer-builder-responsive {
+  display: flex;
+  background: var(--vit-bg, #1a1a1a);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.footer-builder-responsive button {
+  background: transparent;
+  border: none;
+  color: var(--vit-muted, #999);
+  padding: 4px 12px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.footer-builder-responsive button:hover {
+  color: var(--vit-text, #fff);
+}
+
+.footer-builder-responsive button.active {
+  background: var(--vit-accent, #007acc);
+  color: white;
+}
+
+.footer-builder-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.footer-builder-actions button {
+  background: transparent;
+  border: none;
+  color: var(--vit-muted, #999);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.footer-builder-actions button:hover:not(:disabled) {
+  background: var(--vit-surface-hover, #333);
+  color: var(--vit-text, #fff);
+}
+
+.footer-builder-actions button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.footer-builder-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.footer-builder-workspace {
+  flex: 1;
+  background: #0f0f0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  position: relative;
+}
+
+.footer-builder-sidebar {
+  width: 300px;
+  background: var(--vit-surface-2, #252526);
+  border-left: 1px solid var(--vit-border, #333);
+  display: flex;
+  flex-direction: column;
+}
+
+.footer-builder-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--vit-border, #333);
+}
+
+.footer-builder-tabs button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--vit-muted, #999);
+  padding: 10px 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.footer-builder-tabs button.active {
+  color: var(--vit-text, #fff);
+  border-bottom-color: var(--vit-accent, #007acc);
+}
+
+.footer-builder-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* Canvas Area - embedded in landing preview */
+.footer-canvas-container {
+  background: transparent;
+  position: relative;
+  width: 100%;
+  /* Dashed outline to show editable zone */
+  outline: 2px dashed var(--vit-accent, #007acc);
+  outline-offset: -2px;
+}
+
+.footer-canvas-inner {
+  position: relative;
+  width: 100%;
+  /* No forced background - inherits from landing */
+}
+
+.footer-container-bounds {
+  margin: 0 auto;
+  position: relative;
+}

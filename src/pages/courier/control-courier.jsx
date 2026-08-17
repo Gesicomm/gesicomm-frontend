@@ -34,7 +34,8 @@ export function ControlCourier() {
   const [searchParams] = useSearchParams();
   const tabInicial = searchParams.get("tab");
   const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fechaDesde, setFechaDesde] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fechaHasta, setFechaHasta] = useState(() => new Date().toISOString().slice(0, 10));
   const [couriers, setCouriers] = useState([]);
   const [envios, setEnvios] = useState([]);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
@@ -51,14 +52,14 @@ export function ControlCourier() {
 
   useEffect(() => {
     cargarDatos();
-  }, [date]);
+  }, [fechaDesde, fechaHasta]);
 
   const cargarDatos = async () => {
     try {
       setLoading(true);
       const [couriersData, enviosData] = await Promise.all([
         getCouriers(),
-        getEnvios(date)
+        getEnvios({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta })
       ]);
       setCouriers(couriersData);
       setEnvios(enviosData);
@@ -69,7 +70,7 @@ export function ControlCourier() {
     }
   };
 
-  const enviosDelDia = useMemo(() => envios.filter((e) => e.dispatchedAt === date), [envios, date]);
+  // enviosDelDia eliminado: el backend ya filtra por rango de fechas en envios Data
 
   const enviosCountByCourier = useMemo(() => {
     const acc = {};
@@ -262,7 +263,11 @@ export function ControlCourier() {
       <ImprimirPedidosModal
         open={openImprimir}
         onClose={() => setOpenImprimir(false)}
-        envios={enviosDelDia}
+        envios={envios}
+        fechaDesde={fechaDesde}
+        onChangeFechaDesde={(d) => setFechaDesde(d)}
+        fechaHasta={fechaHasta}
+        onChangeFechaHasta={(d) => setFechaHasta(d)}
       />
 
       {/* Modales de transición con datos adicionales — ver plan sección 42-47 */}

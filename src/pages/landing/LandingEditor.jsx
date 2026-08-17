@@ -21,6 +21,8 @@ import SidebarSecciones from './SidebarSecciones';
 import SelectorSecciones from './SelectorSecciones';
 import LandingTemplatePicker from './LandingTemplatePicker';
 import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase, getSeccionesCatalogo, getSeccionesContacto } from './BloquesSchema';
+import { FooterProvider } from '../../page-builder/blocks/footer-builder/FooterContext';
+import FooterInspectorPanel from '../../page-builder/blocks/footer-builder/FooterInspectorPanel';
 
 function seccionesDefaultPorRol(tipoPagina) {
   if (tipoPagina === 'catalogo') return getSeccionesCatalogo();
@@ -724,16 +726,25 @@ export default function LandingEditor() {
   const itemsPreview = useMemo(() => itemsOrdenados.filter(i => !i.no_disponible || (esModoProducto && String(i.id) === String(productoId))), [itemsOrdenados, esModoProducto, productoId]);
   const hayNoDisponibles = itemsOrdenados.length !== itemsPreview.length;
 
-  // Una sola landing por tienda, siempre en la raíz — el link es
-  // conocido en cuanto se conoce la tienda, ni siquiera hace falta haber
-  // guardado todavía. Raíz del hostname, SIN "/l": eso quedó como
-  // compatibilidad hacia atrás nada más — Nginx ya decide bot-vs-humano
-  // sobre "/" en el vhost de tiendas (ver deploy/nginx/tiendas.gesicomm.com
-  // y routes/landingHtml.js), así que la URL que se muestra acá tiene que
-  // ser la misma que la real.
-  const urlPublica = useMemo(() => (
-    tienda ? `https://${tienda.subdominio}.gesicomm.com` : null
-  ), [tienda]);
+  // La raíz del hostname sirve SIEMPRE la página con es_home=true (ver
+  // LandingService.obtenerPublica: `if (slug) where.slug = slug; else
+  // where.es_home = true`). Como la tienda ya no tiene una sola landing sino
+  // tres páginas fijas (inicio/catalogo/contacto, ver asegurarPaginasFijas),
+  // apuntar siempre a la raíz hacía que al editar Catálogo o Contacto el
+  // link llevara a Inicio — parecía que lo guardado "era cualquier otra
+  // cosa". Solo la home va sin slug; el resto por /l/<slug>.
+  //
+  // Para la home se mantiene la raíz pelada a propósito, SIN "/l": Nginx
+  // decide bot-vs-humano sobre "/" en el vhost de tiendas (ver
+  // deploy/nginx/tiendas.gesicomm.com y routes/landingHtml.js), así que la
+  // URL que se muestra acá tiene que ser la misma que la real.
+  const urlPublica = useMemo(() => {
+    if (!tienda) return null;
+    const base = `https://${tienda.subdominio}.gesicomm.com`;
+    const esHome = landing ? (landing.es_home ?? landing.tipo_pagina === 'inicio') : true;
+    const slug = landing?.slug || form.slug;
+    return esHome || !slug ? base : `${base}/l/${slug}`;
+  }, [tienda, landing?.es_home, landing?.tipo_pagina, landing?.slug, form.slug]);
 
   const publicada = !!landing?.activo;
   const bannerTieneContenido = !!(form.banner_titulo.trim() || landing?.banner_imagen);
@@ -1344,6 +1355,7 @@ export default function LandingEditor() {
   }
 
   const ocupado = guardando || publicando;
+  const seccionEditando = seccionSeleccionadaId ? secciones.find(s => s.id === seccionSeleccionadaId) : null;
 
   return (
     <div className="lb-page" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -1449,22 +1461,8 @@ export default function LandingEditor() {
           {erroresValidacion.length > 0 && <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>}
         </div>
       )}
-      {exito && (
-        <div className="land-alert-success" role="status" style={{ flexShrink: 0, margin: 0, borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
-          <Check size={14} /> {exito}
-        </div>
-      )}
-      {hayNoDisponibles && (
-        <div className="lb-alert-warn" style={{ flexShrink: 0, margin: 0, borderRadius: 0, borderLeft: 0, borderRight: 0 }}>
-          <CircleAlert size={14} />
-          <span>Hay productos no disponibles en tu catálogo.</span>
-          <button type="button" className="lb-alert-warn-btn" onClick={quitarNoDisponibles}>Quitar no disponibles</button>
-        </div>
-      )}
-
       {/* ── Cuerpo: 3 Columnas ── */}
       <div style={{ display: 'flex', flexDirection: 'row', flex: 1, overflow: 'hidden', position: 'relative' }}>
-        
         {/* COLUMNA IZQUIERDA: Estructura */}
         {showLeftSidebar && (
         <div className="bg-[var(--vit-card-bg)] border-r border-[var(--vit-border)] flex flex-col w-[260px] flex-shrink-0 z-10 overflow-hidden">
@@ -1483,143 +1481,167 @@ export default function LandingEditor() {
         </div>
         )}
 
-        {/* COLUMNA CENTRAL: Canvas */}
-        <main className="flex-1 overflow-hidden relative flex flex-col items-center">
-           <div className="w-full grid grid-cols-3 items-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10 px-4">
-              
-              <div className="flex justify-start">
-                <button type="button" onClick={() => setShowLeftSidebar(!showLeftSidebar)} className="mr-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
-                  <PanelLeft size={18} />
-                </button>
-                {!esModoProducto && (
-                  <div className="flex items-center gap-1 bg-[var(--vit-bg)] p-1 rounded-lg border border-[var(--vit-border)]">
-                    <button type="button" onClick={() => { setViewMode('landing'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'landing' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
-                      Página Principal
-                    </button>
-                    <button type="button" onClick={() => { setViewMode('producto'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'producto' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
-                      Vista de Producto
-                    </button>
-                  </div>
-                )}
-              </div>
+        {(() => {
+          const EditorContent = (
+            <>
+              {/* COLUMNA CENTRAL: Canvas */}
+              <main className="flex-1 overflow-hidden relative flex flex-col items-center">
+                 <div className="w-full grid grid-cols-3 items-center p-2 bg-[var(--vit-surface)] border-b border-[var(--vit-border)] shadow-sm z-10 px-4">
+                    
+                    <div className="flex justify-start">
+                      <button type="button" onClick={() => setShowLeftSidebar(!showLeftSidebar)} className="mr-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
+                        <PanelLeft size={18} />
+                      </button>
+                      {!esModoProducto && (
+                        <div className="flex items-center gap-1 bg-[var(--vit-bg)] p-1 rounded-lg border border-[var(--vit-border)]">
+                          <button type="button" onClick={() => { setViewMode('landing'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'landing' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
+                            Página Principal
+                          </button>
+                          <button type="button" onClick={() => { setViewMode('producto'); setSeccionSeleccionadaId(null); }} className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'producto' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}>
+                            Vista de Producto
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-              <div className="flex justify-center">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--vit-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--vit-border)' }}>
-                  <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
-                    <Monitor size={16} /> Desktop
-                  </button>
-                  <button type="button" onClick={() => setViewportMode('tablet')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
-                    <Tablet size={16} /> Tablet
-                  </button>
-                  <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
-                    <Smartphone size={16} /> Mobile
-                  </button>
-                </div>
-              </div>
-              
-              <div className="flex justify-end">
-                <button type="button" onClick={() => setShowRightSidebar(!showRightSidebar)} className="ml-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
-                  <PanelRight size={18} />
-                </button>
-              </div>
-           </div>
-           <div 
-             className="w-full flex-1 overflow-y-auto flex justify-center relative overflow-x-hidden"
-             style={{ backgroundColor: viewportMode === 'desktop' ? 'transparent' : 'var(--vit-bg-secondary)' }}
-           >
-             <div style={{
-                width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
-                height: viewportMode === 'mobile' ? '812px' : viewportMode === 'tablet' ? '1024px' : '100%',
-                minHeight: viewportMode === 'desktop' ? '100%' : 'auto',
-                backgroundColor: 'white',
-                boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 40px rgba(0,0,0,0.15)',
-                transition: 'width 0.3s ease, height 0.3s ease',
-                margin: viewportMode === 'desktop' ? '0' : '2rem auto',
-                borderRadius: viewportMode === 'mobile' ? '36px' : viewportMode === 'tablet' ? '24px' : '0',
-                border: viewportMode === 'desktop' ? 'none' : '12px solid #1c2230',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column'
-             }}>
-                <LandingPreview
-                  titulo={form.titulo || form.nombre}
-                  descripcion={form.descripcion}
-                  filtros={{
-                    categoria: form.mostrar_filtro_categoria,
-                    marca: form.mostrar_filtro_marca,
-                    etiqueta: form.mostrar_filtro_etiqueta,
-                    buscador: form.mostrar_buscador,
-                    orden_precio: form.mostrar_orden_precio,
-                  }}
-                  items={itemsPreview}
-                  catalogo={catalogo}
-                  tema={{
-                    modo: form.tema_modo,
-                    primario: form.color_primario || tienda?.color_primario,
-                    secundario: tienda?.color_secundario,
-                    fondo: form.color_fondo || fondoHeredado,
-                    texto: form.color_texto || undefined,
-                    tarjeta: form.color_tarjeta || undefined,
-                  }}
-                  diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
-                  contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}
-                  banner={form.mostrar_banner && bannerTieneContenido ? {
-                    imagen: landing?.banner_imagen || null,
-                    titulo: form.banner_titulo,
-                    subtitulo: form.banner_subtitulo,
-                    boton_texto: form.banner_boton_texto,
-                    boton_link: form.banner_boton_link,
-                  } : null}
-                  urlPublica={urlPublica}
-                  secciones={secciones}
-                  seccionSeleccionadaId={seccionSeleccionadaId}
-                  onSelectSeccion={setSeccionSeleccionadaId}
-                  mostrarTestimonios={form.mostrar_testimonios}
-                  testimonios={testimonios}
-                  mostrarFaq={form.mostrar_faq}
-                  faqs={faqs}
-                  viewportMode={viewportMode}
-                  onReorderSeccion={handleMoverSeccion}
-                  onDeleteSeccion={handleEliminarSeccion}
-                  onDuplicateSeccion={handleDuplicarSeccion}
-                  onEditarProducto={!esModoProducto ? irAEditarProducto : undefined}
-                  previewCheckoutAbierto={previewCheckoutAbierto}
-                  onTogglePreviewCheckout={setPreviewCheckoutAbierto}
-                />
-             </div>
-           </div>
-        </main>
+                    <div className="flex justify-center">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--vit-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--vit-border)' }}>
+                        <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
+                          <Monitor size={16} /> Desktop
+                        </button>
+                        <button type="button" onClick={() => setViewportMode('tablet')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
+                          <Tablet size={16} /> Tablet
+                        </button>
+                        <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
+                          <Smartphone size={16} /> Mobile
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => setShowRightSidebar(!showRightSidebar)} className="ml-2 p-1.5 rounded-md text-[var(--vit-muted)] hover:text-[var(--vit-text)] hover:bg-[var(--vit-card-bg)] transition-colors">
+                        <PanelRight size={18} />
+                      </button>
+                    </div>
+                 </div>
+                 <div 
+                   className="w-full flex-1 overflow-y-auto flex justify-center relative overflow-x-hidden"
+                   style={{ backgroundColor: viewportMode === 'desktop' ? 'transparent' : 'var(--vit-bg-secondary)' }}
+                 >
+                   <div style={{
+                      width: viewportMode === 'mobile' ? '375px' : viewportMode === 'tablet' ? '768px' : '100%',
+                      height: viewportMode === 'mobile' ? '812px' : viewportMode === 'tablet' ? '1024px' : '100%',
+                      minHeight: viewportMode === 'desktop' ? '100%' : 'auto',
+                      backgroundColor: 'white',
+                      boxShadow: viewportMode === 'desktop' ? 'none' : '0 0 40px rgba(0,0,0,0.15)',
+                      transition: 'width 0.3s ease, height 0.3s ease',
+                      margin: viewportMode === 'desktop' ? '0' : '2rem auto',
+                      borderRadius: viewportMode === 'mobile' ? '36px' : viewportMode === 'tablet' ? '24px' : '0',
+                      border: viewportMode === 'desktop' ? 'none' : '12px solid #1c2230',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column'
+                   }}>
+                      <LandingPreview
+                        titulo={form.titulo || form.nombre}
+                        descripcion={form.descripcion}
+                        filtros={{
+                          categoria: form.mostrar_filtro_categoria,
+                          marca: form.mostrar_filtro_marca,
+                          etiqueta: form.mostrar_filtro_etiqueta,
+                          buscador: form.mostrar_buscador,
+                          orden_precio: form.mostrar_orden_precio,
+                        }}
+                        items={itemsPreview}
+                        catalogo={catalogo}
+                        tema={{
+                          modo: form.tema_modo,
+                          primario: form.color_primario || tienda?.color_primario,
+                          secundario: tienda?.color_secundario,
+                          fondo: form.color_fondo || fondoHeredado,
+                          texto: form.color_texto || undefined,
+                          tarjeta: form.color_tarjeta || undefined,
+                        }}
+                        diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
+                        contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}
+                        banner={form.mostrar_banner && bannerTieneContenido ? {
+                          imagen: landing?.banner_imagen || null,
+                          titulo: form.banner_titulo,
+                          subtitulo: form.banner_subtitulo,
+                          boton_texto: form.banner_boton_texto,
+                          boton_link: form.banner_boton_link,
+                        } : null}
+                        urlPublica={urlPublica}
+                        secciones={secciones}
+                        seccionSeleccionadaId={seccionSeleccionadaId}
+                        onSelectSeccion={setSeccionSeleccionadaId}
+                        mostrarTestimonios={form.mostrar_testimonios}
+                        testimonios={testimonios}
+                        mostrarFaq={form.mostrar_faq}
+                        faqs={faqs}
+                        viewportMode={viewportMode}
+                        onReorderSeccion={handleMoverSeccion}
+                        onDeleteSeccion={handleEliminarSeccion}
+                        onDuplicateSeccion={handleDuplicarSeccion}
+                        onEditarProducto={!esModoProducto ? irAEditarProducto : undefined}
+                        previewCheckoutAbierto={previewCheckoutAbierto}
+                        onTogglePreviewCheckout={setPreviewCheckoutAbierto}
+                      />
+                   </div>
+                 </div>
+              </main>
 
-        {/* COLUMNA DERECHA: Inspector */}
-        {showRightSidebar && (
-          <aside className="bg-[var(--vit-card-bg)] border-l border-[var(--vit-border)] flex flex-col w-[320px] flex-shrink-0 z-10 overflow-hidden">
-            {seccionSeleccionadaId ? (
-              <InspectorSeccion
-                seccion={secciones.find(s => s.id === seccionSeleccionadaId)}
-                onUpdate={handleActualizarSeccion}
-                onBack={() => setSeccionSeleccionadaId(null)}
-                catalogo={catalogo}
-                paginas={paginas}
-                productoId={esModoProducto ? productoId : null}
-                onSacarDeFila={handleSacarDeFila}
-                onDuplicate={handleDuplicarSeccion}
-                onDelete={handleEliminarSeccion}
-                onUploadImagen={handleUploadSeccionImagen}
-                previewCheckoutAbierto={previewCheckoutAbierto}
-                onTogglePreviewCheckout={setPreviewCheckoutAbierto}
-              />
-            ) : esModoProducto ? (
-              <div className="p-4 text-sm text-[var(--vit-muted)]">
-                Elegí una sección para editarla. El color, la fuente y los bordes de esta página siempre son los de tu tienda — se editan desde Mi landing, no acá.
-              </div>
-            ) : (
-              <InspectorGlobal
-                form={form}
-                onChange={handleChange}
-              />
-            )}
-          </aside>
-        )}
+              {/* COLUMNA DERECHA: Inspector */}
+              {showRightSidebar && (
+                <aside className="bg-[var(--vit-card-bg)] border-l border-[var(--vit-border)] flex flex-col w-[320px] flex-shrink-0 z-10 overflow-hidden">
+                  {seccionEditando?.tipo === 'footer' ? (
+                    <FooterInspectorPanel onUploadImagen={handleUploadSeccionImagen} />
+                  ) : seccionSeleccionadaId ? (
+                    <InspectorSeccion
+                      seccion={secciones.find(s => s.id === seccionSeleccionadaId)}
+                      onUpdate={(updates) => handleActualizarSeccion(seccionSeleccionadaId, updates)}
+                      onBack={() => setSeccionSeleccionadaId(null)}
+                      catalogo={catalogo}
+                      paginas={paginas}
+                      productoId={esModoProducto ? productoId : null}
+                      onSacarDeFila={handleSacarDeFila}
+                      onDuplicate={handleDuplicarSeccion}
+                      onDelete={handleEliminarSeccion}
+                      onUploadImagen={handleUploadSeccionImagen}
+                      previewCheckoutAbierto={previewCheckoutAbierto}
+                      onTogglePreviewCheckout={setPreviewCheckoutAbierto}
+                    />
+                  ) : esModoProducto ? (
+                    <div className="p-4 text-sm text-[var(--vit-muted)]">
+                      Elegí una sección para editarla. El color, la fuente y los bordes de esta página siempre son los de tu tienda — se editan desde Mi landing, no acá.
+                    </div>
+                  ) : (
+                    <InspectorGlobal
+                      form={form}
+                      onChange={handleChange}
+                    />
+                  )}
+                </aside>
+              )}
+            </>
+          );
+
+          // El provider va SIEMPRE montado, activo o no. Antes se montaba
+          // solo al editar el footer, y ese cambio de forma del árbol hacía
+          // que React desmontara y volviera a montar todo EditorContent —
+          // con el <iframe> de la preview adentro — así que al clickear el
+          // footer la vista previa se recargaba entera y saltaba al inicio.
+          return (
+            <FooterProvider
+              active={seccionEditando?.tipo === 'footer'}
+              sectionId={seccionEditando?.tipo === 'footer' ? seccionSeleccionadaId : null}
+              initialData={seccionEditando?.tipo === 'footer' ? seccionEditando.config : undefined}
+              onChange={(newData) => handleActualizarSeccion(seccionSeleccionadaId, { config: newData })}
+            >
+              {EditorContent}
+            </FooterProvider>
+          );
+        })()}
 
 
         <SelectorSecciones
