@@ -17,14 +17,14 @@ export default function LandingCategoryStrip({ seccion, categorias, categoriaIma
   const reducirMovimiento = useReducedMotion();
 
   return (
-    <section id="lp-categorias" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-14">
+    <section id="lp-categorias" className="lp-shell" style={{ paddingBlock: '3rem' }}>
       <h2
         className="mb-6 text-2xl font-extrabold text-[var(--l-text)]"
         style={{ letterSpacing: '-0.02em' }}
       >
         {titulo}
       </h2>
-      <div className={template === 'grid' ? "lp-grid" : "flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"}>
+      <div className={template === 'grid' ? "lp-grid" : "lp-carousel-container"}>
         {categorias.map((cat, i) => {
           const imagen = categoriaImagen.get(cat);
           return (

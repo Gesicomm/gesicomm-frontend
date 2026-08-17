@@ -24,7 +24,7 @@ export default function LandingFeatured({
   return (
     <section id="lp-destacados" className="lp-shell py-14">
       <h2 className="mb-6 text-2xl font-extrabold text-[var(--l-text)]" style={{ letterSpacing: '-0.02em' }}> {titulo} </h2>
-      <div className={template === 'carousel' ? "lp-carousel-container overflow-x-auto pb-4 flex gap-4" : (template === 'grid_3' ? "lp-grid lp-grid-3" : "lp-grid")}>
+      <div className={template === 'carousel' ? "lp-carousel-container" : (template === 'grid_3' ? "lp-grid-3" : "lp-grid")}>
         {items.map(item => {
           const linkWhatsapp = armarLinkWhatsapp(contacto, item);
           return (

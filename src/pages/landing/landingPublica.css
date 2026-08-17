@@ -376,22 +376,50 @@
 
 .lp-grid {
   display: grid;
-  /* auto-fit, no auto-fill: auto-fill reserva columnas vacías hasta llenar
-     el ancho del contenedor, así que con pocos items (o la última fila
-     incompleta) la grilla queda ocupando el 100% del ancho igual y
-     justify-content:center no tiene nada que centrar — el/los item(s)
-     terminan pegados a la izquierda. auto-fit colapsa esas columnas
-     vacías a 0, la grilla se angosta al contenido real, y ahí sí
-     justify-content:center la centra de verdad. 210px de mínimo y 280px
-     de máximo en vez de 1fr ilimitado, mismo motivo. */
-  grid-template-columns: repeat(auto-fit, minmax(210px, 280px));
+  /* 4 columnas en desktop (aprox 210px min) */
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   justify-content: center;
   gap: var(--l-s3);
   padding-bottom: var(--l-s5);
-  /* Varios lugares saltan acá (nav del header, botón del banner, categorías,
-     buscador). Sin esto la primera fila queda tapada por LandingHeader
-     (4rem) + la barra de filtros pegajosa que se ancla justo debajo. */
   scroll-margin-top: 7.5rem;
+}
+@media (min-width: 1024px) {
+  .lp-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.lp-grid-3 {
+  display: grid;
+  /* 3 columnas en desktop (más ancho por tarjeta) */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  justify-content: center;
+  gap: var(--l-s4);
+  padding-bottom: var(--l-s5);
+  scroll-margin-top: 7.5rem;
+}
+@media (min-width: 1024px) {
+  .lp-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Carrusel Premium sin Javascript */
+.lp-carousel-container {
+  display: flex;
+  gap: var(--l-s3);
+  overflow-x: auto;
+  padding-bottom: var(--l-s5);
+  padding-inline: 0.5rem; /* Pequeño margen para la sombra */
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.lp-carousel-container::-webkit-scrollbar {
+  display: none;
+}
+.lp-carousel-container .lp-card {
+  min-width: 260px;
+  max-width: 300px;
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 
 .lp-footer {

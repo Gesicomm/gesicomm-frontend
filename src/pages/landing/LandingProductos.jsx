@@ -98,7 +98,7 @@ export default function LandingProductos({
   const gridClass = template === 'grid_3' ? 'lp-grid lp-grid-3' : 'lp-grid';
 
   return (
-    <div className={isCarousel ? 'lp-carousel-container overflow-x-auto pb-4 flex gap-4' : gridClass} id="lp-productos">
+    <div className={isCarousel ? 'lp-carousel-container' : gridClass} id="lp-productos">
       {items.map(renderCard)}
     </div>
   );
