@@ -28,7 +28,7 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "dashboard", "couriers", "metodos-pago", "rendicion", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "analitica"]);
 
 export function ControlCourier() {
   const [searchParams] = useSearchParams();
@@ -191,17 +191,11 @@ export function ControlCourier() {
             <TabButton active={tab === "tablero"} onClick={() => setTab("tablero")} icon={<LayoutGrid size={16} />}>
               Tablero
             </TabButton>
-            <TabButton active={tab === "dashboard"} onClick={() => setTab("dashboard")} icon={<LayoutDashboard size={16} />}>
-              Dashboard
-            </TabButton>
             <TabButton active={tab === "couriers"} onClick={() => setTab("couriers")} icon={<Users size={16} />}>
               Couriers
             </TabButton>
             <TabButton active={tab === "metodos-pago"} onClick={() => setTab("metodos-pago")} icon={<CreditCard size={16} />}>
               Métodos de Pago
-            </TabButton>
-            <TabButton active={tab === "rendicion"} onClick={() => setTab("rendicion")} icon={<HandCoins size={16} />}>
-              Rendición
             </TabButton>
             <TabButton active={tab === "analitica"} onClick={() => setTab("analitica")} icon={<TrendingUp size={16} />}>
               Analítica
@@ -223,8 +217,6 @@ export function ControlCourier() {
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             refrescarKey={refrescarKey}
           />
-        ) : tab === "dashboard" ? (
-          <DashboardGeneralTab couriers={couriers} />
         ) : tab === "couriers" ? (
           <CouriersCrud
             couriers={couriers}
@@ -244,10 +236,8 @@ export function ControlCourier() {
           />
         ) : tab === "metodos-pago" ? (
           <MetodosPagoCrud />
-        ) : tab === "rendicion" ? (
-          <RendicionTab couriers={couriers} />
         ) : (
-          <CentroInteligenciaComercial />
+          <CentroInteligenciaComercial couriers={couriers} />
         )}
       </main>
 

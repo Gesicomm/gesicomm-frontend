@@ -109,26 +109,40 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
               <div className="cic-step-rate-badge rate-green">{funnel.tasa_confirmacion}% de creados</div>
               <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_confirmacion)}%`, background: '#10b981' }} /></div>
             </div>
+            {/* Cancelados */}
+            <div className="cic-funnel-step step-returned" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+              <div className="cic-step-head"><span style={{ color: '#94a3b8' }}>Cancelados/Rechaz.</span></div>
+              <div className="cic-step-val" style={{ color: '#94a3b8' }}>{funnel.cancelados}</div>
+              <div className="cic-step-rate-badge" style={{ background: 'rgba(148,163,184,0.1)', color: '#94a3b8' }}>{funnel.tasa_cancelacion}% de creados</div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_cancelacion)}%`, background: '#64748b' }} /></div>
+            </div>
             {/* Despachados */}
             <div className="cic-funnel-step step-dispatched">
               <div className="cic-step-head"><span>3. Despachados</span></div>
               <div className="cic-step-val">{funnel.despachados}</div>
-              <div className="cic-step-rate-badge rate-purple">{funnel.tasa_despacho}% de confirmados</div>
+              <div className="cic-step-rate-badge rate-purple">{funnel.tasa_despacho}% de creados</div>
               <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_despacho)}%`, background: '#8b5cf6' }} /></div>
             </div>
             {/* Entregados */}
             <div className="cic-funnel-step step-delivered">
               <div className="cic-step-head"><span>4. Entregados</span></div>
               <div className="cic-step-val">{funnel.entregados}</div>
-              <div className="cic-step-rate-badge rate-green">{funnel.tasa_entrega}% de despachados</div>
+              <div className="cic-step-rate-badge rate-green">{funnel.tasa_entrega}% de creados</div>
               <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_entrega)}%`, background: '#06b6d4' }} /></div>
             </div>
             {/* Devueltos */}
             <div className="cic-funnel-step step-returned">
               <div className="cic-step-head"><span>5. Devueltos</span></div>
               <div className="cic-step-val">{funnel.devueltos}</div>
-              <div className="cic-step-rate-badge rate-red">{funnel.tasa_devolucion}% de despachados</div>
+              <div className="cic-step-rate-badge rate-red">{funnel.tasa_devolucion}% de creados</div>
               <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_devolucion)}%`, background: '#f43f5e' }} /></div>
+            </div>
+            {/* Perdidos */}
+            <div className="cic-funnel-step step-returned" style={{ borderColor: 'rgba(245,158,11,0.2)' }}>
+              <div className="cic-step-head"><span style={{ color: '#f59e0b' }}>Perdidos</span></div>
+              <div className="cic-step-val" style={{ color: '#f59e0b' }}>{funnel.perdidos}</div>
+              <div className="cic-step-rate-badge" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{funnel.tasa_perdida}% de creados</div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_perdida)}%`, background: '#f59e0b' }} /></div>
             </div>
           </div>
         </div>

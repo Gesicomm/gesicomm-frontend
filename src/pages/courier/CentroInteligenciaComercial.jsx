@@ -11,10 +11,12 @@ import ReporteProductos from './analytics/reports/ReporteProductos';
 import ReporteConfirmadores from './analytics/reports/ReporteConfirmadores';
 import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
 import { PlaceholderReport } from './analytics/reports/PlaceholderReport';
+import { DashboardGeneralTab } from './DashboardGeneralTab';
+import { RendicionTab } from './RendicionTab';
 
-const REPORTES_VALIDOS = ['resumen', 'ventas', 'productos', 'confirmadores', 'finanzas'];
+const REPORTES_VALIDOS = ['resumen', 'ventas', 'productos', 'confirmadores', 'finanzas', 'resumen_pedidos', 'rendicion'];
 
-export function CentroInteligenciaComercial() {
+export function CentroInteligenciaComercial({ couriers = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Limpiar la URL si tiene ?report= para no confundir al usuario (ahora usamos estado local)
@@ -54,6 +56,10 @@ export function CentroInteligenciaComercial() {
         return <ReporteConfirmadores filters={analyticsFilters} />;
       case 'finanzas':
         return <ReporteFinanzas filters={analyticsFilters} />;
+      case 'resumen_pedidos':
+        return <DashboardGeneralTab couriers={couriers} />;
+      case 'rendicion':
+        return <RendicionTab couriers={couriers} />;
       default:
         return <ReporteResumen filters={analyticsFilters} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
     }
@@ -98,13 +104,19 @@ export function CentroInteligenciaComercial() {
           <ShoppingCart size={16} /> Ventas y Pedidos
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'productos' ? 'active' : ''}`} onClick={() => setTab('productos')}>
-          <Package size={16} /> Productos
+          <Package size={16} /> Rendimiento por Productos
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'confirmadores' ? 'active' : ''}`} onClick={() => setTab('confirmadores')}>
-          <UserCheck size={16} /> Confirmadores
+          <UserCheck size={16} /> Rendimiento Confirmadores
+        </button>
+        <button className={`cic-subnav-btn ${activeReport === 'resumen_pedidos' ? 'active' : ''}`} onClick={() => setTab('resumen_pedidos')}>
+          <Truck size={16} /> Resumen de Pedidos
+        </button>
+        <button className={`cic-subnav-btn ${activeReport === 'rendicion' ? 'active' : ''}`} onClick={() => setTab('rendicion')}>
+          <DollarSign size={16} /> Rendición Couriers
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setTab('finanzas')}>
-          <DollarSign size={16} /> Finanzas y Comisiones
+          <DollarSign size={16} /> Control Financiero
         </button>
       </div>
 
