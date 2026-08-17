@@ -4,6 +4,7 @@ import { useFooterBuilder } from './FooterContext';
 import { getMediaUrl } from '../../../services/api';
 import { SOCIAL_PLATFORMS } from './SocialIcons';
 import { estiloTexto, estiloBoton } from './footerTextStyle';
+import { resolveLayout, LOGO_MAX_APILADO, FOOTER_GAP } from './footerLayout';
 import './BuilderElement.css';
 
 // Element registry with real visual components. Mismo shape de `settings`
@@ -74,23 +75,6 @@ const ElementRegistry = {
   }
 };
 
-// Helper to resolve cascading layout rules
-function resolveLayout(layout, breakpoint) {
-  if (!layout) return { mode: 'normal' };
-  
-  const bpRules = layout[breakpoint];
-  if (bpRules && bpRules.inherit) {
-    return resolveLayout(layout, bpRules.inherit);
-  }
-  
-  if (bpRules) return bpRules;
-  
-  // Fallbacks if not strictly defined
-  if (breakpoint === 'mobile') return layout.tablet || layout.desktop || { mode: 'normal' };
-  if (breakpoint === 'tablet') return layout.desktop || { mode: 'normal' };
-  return layout.desktop || { mode: 'normal' };
-}
-
 // `containerSize` lo mide FooterCanvas.jsx sobre .footer-container-bounds y
 // lo baja por prop — este componente NO debe envolverse en ningún div para
 // medirse solo: react-rnd resuelve `bounds="parent"` con el parentNode crudo
@@ -100,7 +84,7 @@ function resolveLayout(layout, breakpoint) {
 export default function BuilderElement({ element, isSelected, containerSize }) {
   const { actions, activeBreakpoint } = useFooterBuilder();
 
-  const activeLayout = useMemo(() => resolveLayout(element.layout, activeBreakpoint), [element.layout, activeBreakpoint]);
+  const activeLayout = useMemo(() => resolveLayout(element.layout, activeBreakpoint, element.type), [element.layout, activeBreakpoint, element.type]);
   const isFreeMode = activeLayout.mode === 'free';
 
   const handleClick = (e) => {
@@ -111,12 +95,26 @@ export default function BuilderElement({ element, isSelected, containerSize }) {
   const ElementComponent = ElementRegistry[element.type] || (() => <div>Unknown Block</div>);
 
   if (!isFreeMode) {
-    // Normal Flow Mode (No Rnd)
+    // Normal Flow Mode (No Rnd). width !== '100%' (logo/social, ver
+    // footerLayout.js) usa inline-block para que se achique a su contenido
+    // — un <div> en flujo normal con width:auto sigue ocupando todo el
+    // ancho disponible igual, así que sin esto un logo "achicado" quedaba
+    // igual de ancho que el contenedor del footer. El tope de LOGO_MAX_APILADO
+    // es SOLO acá (modo normal/apilado) — en modo libre el ancho lo define
+    // a propósito el usuario arrastrando el handle de resize, y ahí sí
+    // puede querer un logo más grande.
+    // block + width:fit-content (NO inline-block): fit-content achica al
+    // contenido igual, pero como bloque cada elemento arranca en su propia
+    // línea. Con inline-block, logo y redes se acomodaban uno al lado del
+    // otro en vez de apilarse.
+    const normalStyle = activeLayout.width === '100%'
+      ? { width: '100%', marginBottom: FOOTER_GAP }
+      : { display: 'block', width: 'fit-content', maxWidth: element.type === 'logo' ? `min(${LOGO_MAX_APILADO}, 100%)` : '100%', marginBottom: FOOTER_GAP };
     return (
-      <div 
+      <div
         className={`builder-element-normal ${isSelected ? 'selected' : ''}`}
         onClick={handleClick}
-        style={{ width: activeLayout.width === '100%' ? '100%' : 'auto' }}
+        style={normalStyle}
       >
         <ElementComponent settings={element.settings} />
       </div>

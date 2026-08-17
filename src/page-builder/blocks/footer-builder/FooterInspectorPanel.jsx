@@ -8,7 +8,7 @@ const TABS = [
   { id: 'diseno', label: 'Diseño' },
 ];
 
-export default function FooterInspectorPanel({ onUploadImagen }) {
+export default function FooterInspectorPanel({ onUploadImagen, paginas }) {
   const [activeTab, setActiveTab] = useState('contenido');
   const { data, actions } = useFooterBuilder();
 
@@ -38,7 +38,7 @@ export default function FooterInspectorPanel({ onUploadImagen }) {
 
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'contenido' ? (
-          <FooterInspector onUploadImagen={onUploadImagen} />
+          <FooterInspector onUploadImagen={onUploadImagen} paginas={paginas} />
         ) : (
           <div className="p-4 flex flex-col gap-4">
             {/* Mismas claves (color_fondo/color_texto/color_boton) que usa

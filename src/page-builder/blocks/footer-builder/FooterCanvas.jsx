@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useFooterBuilder } from './FooterContext';
 import BuilderElement from './BuilderElement';
+import { esApilado, FOOTER_PAD_X, FOOTER_PAD_Y } from './footerLayout';
 import './FooterBuilder.css';
 
 export default function FooterCanvas() {
@@ -16,6 +17,7 @@ export default function FooterCanvas() {
   const { settings, elements } = data;
   const minHeight = settings?.minHeight?.[activeBreakpoint] || 400;
   const maxWidth = settings?.maxWidth || 1200;
+  const hayApilados = (elements || []).some(el => esApilado(el, activeBreakpoint));
 
   // Click on empty canvas clears selection
   const handleCanvasClick = (e) => {
@@ -67,7 +69,12 @@ export default function FooterCanvas() {
             minHeight: minHeight !== 'auto' ? `${minHeight}px` : '100%',
             position: 'relative',
             width: '100%',
-            margin: '0 auto'
+            margin: '0 auto',
+            // Igual que en el sitio público: el padding solo aplica cuando
+            // los elementos se apilan. En modo libre iría corriendo las
+            // posiciones absolutas que el usuario acomodó a mano.
+            padding: hayApilados ? `${FOOTER_PAD_Y} ${FOOTER_PAD_X}` : 0,
+            boxSizing: 'border-box',
           }}
         >
           {/* Los elementos son hijos DIRECTOS de este div: react-rnd resuelve

@@ -75,7 +75,7 @@ export default function BeforeAfterInspector({ seccion, onUpdate, onUploadImagen
   return (
     <div className="p-4 space-y-4">
       <div>
-        <label className="block text-sm font-medium text-[var(--vit-text)] mb-1">Ttulo de seccin</label>
+        <label className="block text-sm font-medium text-[var(--vit-text)] mb-1">Título de sección</label>
         <input
           type="text"
           value={titulo}
@@ -85,7 +85,7 @@ export default function BeforeAfterInspector({ seccion, onUpdate, onUploadImagen
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-[var(--vit-text)] mb-1">Descripcin (opcional)</label>
+        <label className="block text-sm font-medium text-[var(--vit-text)] mb-1">Descripción (opcional)</label>
         <textarea
           value={descripcion}
           onChange={(e) => handleUpdate('descripcion', e.target.value)}

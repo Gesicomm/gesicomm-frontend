@@ -66,14 +66,14 @@ export default function InspectorSeccion({
   if (!schema) {
     return (
       <div className="p-4 text-center text-sm text-[var(--vit-muted)]">
-        Este bloque no tiene configuracin.
+        Este bloque no tiene configuración.
       </div>
     );
   }
 
   const Icono = schema.icon || Settings;
   
-  // Seleccionar el editor adecuado segn el tipo de seccin
+  // Seleccionar el editor adecuado segn el tipo de sección
   const EditorComponent = sectionEditors[seccion.tipo] || SchemaInspector;
 
   const hasTemplates = schema.templates && schema.templates.length > 0;
@@ -103,7 +103,7 @@ export default function InspectorSeccion({
           className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wide border-b-2 transition-colors ${activeTab === 'diseno' ? 'border-[var(--vit-primary)] text-[var(--vit-primary)]' : 'border-transparent text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`}
           onClick={() => setActiveTab('diseno')}
         >
-          Diseo
+          Diseño
         </button>
       </div>
 
@@ -143,7 +143,7 @@ export default function InspectorSeccion({
 
                 {hasTemplates && (
                   <div>
-                    <label className="mb-3 block text-sm font-semibold text-[var(--vit-text)]">Diseo (Template)</label>
+                    <label className="mb-3 block text-sm font-semibold text-[var(--vit-text)]">Diseño (Template)</label>
                     <div className="grid grid-cols-2 gap-2">
                       {schema.templates.map(tpl => (
                         <button

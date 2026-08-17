@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, GripVertical, ImagePlus, Loader } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
+import { ANCLAS_SECCION, atajosDePaginas } from '../linkShortcuts';
 
 export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, catalogo, paginas }) {
   const contenido = seccion.contenido || {};
@@ -157,13 +158,38 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                 </div>
 
                 {link.type === 'url' && (
-                  <input
-                    type="text"
-                    className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
-                    placeholder="https://... o #lp-seccion"
-                    value={link.href}
-                    onChange={e => updateLink(idx, 'href', e.target.value)}
-                  />
+                  <>
+                    {(() => {
+                      const grupos = [
+                        { grupo: 'Secciones de esta página', opciones: ANCLAS_SECCION },
+                        { grupo: 'Otras páginas de la tienda', opciones: atajosDePaginas(paginas) },
+                      ].filter(g => g.opciones.length > 0);
+                      if (grupos.length === 0) return null;
+                      return (
+                        <select
+                          className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                          value=""
+                          onChange={e => { if (e.target.value) updateLink(idx, 'href', e.target.value); }}
+                        >
+                          <option value="">Ir a... (o escribí una URL abajo)</option>
+                          {grupos.map(g => (
+                            <optgroup key={g.grupo} label={g.grupo}>
+                              {g.opciones.map(o => (
+                                <option key={o.value} value={o.value}>{o.label}</option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      );
+                    })()}
+                    <input
+                      type="text"
+                      className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                      placeholder="https://... o #lp-seccion"
+                      value={link.href}
+                      onChange={e => updateLink(idx, 'href', e.target.value)}
+                    />
+                  </>
                 )}
                 
                 {link.type === 'producto' && (

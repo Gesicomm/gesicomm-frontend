@@ -1505,14 +1505,14 @@ export default function LandingEditor() {
                     </div>
 
                     <div className="flex justify-center">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--vit-bg)', padding: '4px', borderRadius: '8px', border: '1px solid var(--vit-border)' }}>
-                        <button type="button" onClick={() => setViewportMode('desktop')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--vit-bg)', padding: '6px', borderRadius: '10px', border: '1px solid var(--vit-border)' }}>
+                        <button type="button" onClick={() => setViewportMode('desktop')} className={`px-4 py-2 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'desktop' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Desktop">
                           <Monitor size={16} /> Desktop
                         </button>
-                        <button type="button" onClick={() => setViewportMode('tablet')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
+                        <button type="button" onClick={() => setViewportMode('tablet')} className={`px-4 py-2 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'tablet' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Tablet">
                           <Tablet size={16} /> Tablet
                         </button>
-                        <button type="button" onClick={() => setViewportMode('mobile')} className={`px-3 py-1.5 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
+                        <button type="button" onClick={() => setViewportMode('mobile')} className={`px-4 py-2 flex items-center gap-2 rounded-md text-sm font-medium transition-colors ${viewportMode === 'mobile' ? 'bg-[var(--vit-card-bg)] shadow-sm text-[var(--vit-text)]' : 'text-[var(--vit-muted)] hover:text-[var(--vit-text)]'}`} title="Mobile">
                           <Smartphone size={16} /> Mobile
                         </button>
                       </div>
@@ -1595,11 +1595,11 @@ export default function LandingEditor() {
               {showRightSidebar && (
                 <aside className="bg-[var(--vit-card-bg)] border-l border-[var(--vit-border)] flex flex-col w-[320px] flex-shrink-0 z-10 overflow-hidden">
                   {seccionEditando?.tipo === 'footer' ? (
-                    <FooterInspectorPanel onUploadImagen={handleUploadSeccionImagen} />
+                    <FooterInspectorPanel onUploadImagen={handleUploadSeccionImagen} paginas={paginas} />
                   ) : seccionSeleccionadaId ? (
                     <InspectorSeccion
                       seccion={secciones.find(s => s.id === seccionSeleccionadaId)}
-                      onUpdate={(updates) => handleActualizarSeccion(seccionSeleccionadaId, updates)}
+                      onUpdate={(id, updates) => handleActualizarSeccion(id, updates)}
                       onBack={() => setSeccionSeleccionadaId(null)}
                       catalogo={catalogo}
                       paginas={paginas}
@@ -1637,6 +1637,7 @@ export default function LandingEditor() {
               sectionId={seccionEditando?.tipo === 'footer' ? seccionSeleccionadaId : null}
               initialData={seccionEditando?.tipo === 'footer' ? seccionEditando.config : undefined}
               onChange={(newData) => handleActualizarSeccion(seccionSeleccionadaId, { config: newData })}
+              viewportMode={viewportMode}
             >
               {EditorContent}
             </FooterProvider>

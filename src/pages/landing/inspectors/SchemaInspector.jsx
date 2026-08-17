@@ -1,6 +1,50 @@
 import React, { useState } from 'react';
 import { Loader, ImagePlus, Trash2 } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
+import { ANCLAS_SECCION, atajosDePaginas } from '../linkShortcuts';
+
+/**
+ * Campo de URL con atajos: un <select> "Ir a..." que carga anclas a
+ * secciones de esta página (#lp-productos, #lp-opiniones, etc) o la URL de
+ * otra página de la tienda (Catálogo/Contacto) en el campo de texto de
+ * abajo, que sigue siendo editable a mano para links externos. El select
+ * vuelve siempre al placeholder — no representa "la URL actual" (que puede
+ * ser cualquier texto libre), solo dispara la carga.
+ */
+function CampoUrl({ valor, onChange, paginas, placeholder }) {
+  const grupos = [
+    { grupo: 'Secciones de esta página', opciones: ANCLAS_SECCION },
+    { grupo: 'Otras páginas de la tienda', opciones: atajosDePaginas(paginas) },
+  ].filter(g => g.opciones.length > 0);
+
+  return (
+    <div className="flex flex-col gap-2">
+      {grupos.length > 0 && (
+        <select
+          className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-surface)] p-2 text-sm text-[var(--vit-text)] focus:border-[var(--vit-accent)] focus:outline-none"
+          value=""
+          onChange={e => { if (e.target.value) onChange(e.target.value); }}
+        >
+          <option value="">Ir a... (o escribí una URL abajo)</option>
+          {grupos.map(g => (
+            <optgroup key={g.grupo} label={g.grupo}>
+              {g.opciones.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      )}
+      <input
+        type="text"
+        className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-surface)] p-2 text-sm text-[var(--vit-text)] focus:border-[var(--vit-accent)] focus:outline-none"
+        value={valor || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || 'https://... o #lp-seccion'}
+      />
+    </div>
+  );
+}
 
 /**
  * Campo de imagen con subida real de archivo (mismo backend que banner/
@@ -62,7 +106,17 @@ function CampoImagen({ valor, onChange, onUpload }) {
   );
 }
 
-export function renderInput(campo, valor, onChange, onUpload) {
+export function renderInput(campo, valor, onChange, onUpload, paginas) {
+  if (campo.type === 'url') {
+    return (
+      <CampoUrl
+        valor={valor}
+        onChange={val => onChange(campo.key, val)}
+        paginas={paginas}
+        placeholder={campo.placeholder}
+      />
+    );
+  }
   if (campo.type === 'textarea') {
     return (
       <textarea
@@ -141,10 +195,10 @@ export function renderInput(campo, valor, onChange, onUpload) {
   );
 }
 
-export default function SchemaInspector({ seccion, schema, onUpdate, onUploadImagen }) {
+export default function SchemaInspector({ seccion, schema, onUpdate, onUploadImagen, paginas }) {
   const handleChange = (key, value) => {
     // SchemaInspector ahora maneja exclusivamente `contenido`.
-    // Las opciones de `config` (como colorScheme) se manejan en la pestaa Diseo en InspectorSeccion.jsx
+    // Las opciones de `config` (como colorScheme) se manejan en la pestaa Diseño en InspectorSeccion.jsx
     onUpdate(seccion.id, { contenido: { ...seccion.contenido, [key]: value } });
   };
 
@@ -160,7 +214,7 @@ export default function SchemaInspector({ seccion, schema, onUpdate, onUploadIma
         return (
           <label key={campo.key} className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-[var(--vit-text)]">{campo.label}</span>
-            {renderInput(campo, valorActual, handleChange, onUploadImagen)}
+            {renderInput(campo, valorActual, handleChange, onUploadImagen, paginas)}
           </label>
         );
       })}

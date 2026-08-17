@@ -10,7 +10,7 @@ const label = 'mb-2 block text-sm font-semibold text-[var(--vit-text)]';
 const input = 'w-full rounded border border-[var(--vit-border)] bg-[var(--vit-bg)] px-3 py-2 text-sm text-[var(--vit-text)] outline-none focus:border-[var(--vit-primary)]';
 const ELEMENT_LABELS = { text: 'Texto', logo: 'Logo', social: 'Redes sociales', link: 'Link', button: 'Botón' };
 
-export default function FooterInspector({ onUploadImagen }) {
+export default function FooterInspector({ onUploadImagen, paginas }) {
   const { data, selectedId, actions, activeBreakpoint } = useFooterBuilder();
   const { settings, elements } = data;
 
@@ -205,13 +205,7 @@ export default function FooterInspector({ onUploadImagen }) {
             </div>
             <div>
               <label className={label}>URL</label>
-              <input
-                type="url"
-                className={input}
-                placeholder="https://..."
-                value={element.settings?.url || ''}
-                onChange={e => handleUpdateSettings({ url: e.target.value })}
-              />
+              {renderInput({ type: 'url', key: 'url' }, element.settings?.url, (k, val) => handleUpdateSettings({ [k]: val }), undefined, paginas)}
             </div>
             <label className="flex items-center gap-2 text-sm text-[var(--vit-text)]">
               <input
@@ -236,13 +230,7 @@ export default function FooterInspector({ onUploadImagen }) {
             </div>
             <div>
               <label className={label}>URL a la que manda</label>
-              <input
-                type="url"
-                className={input}
-                placeholder="https://..."
-                value={element.settings?.url || ''}
-                onChange={e => handleUpdateSettings({ url: e.target.value })}
-              />
+              {renderInput({ type: 'url', key: 'url' }, element.settings?.url, (k, val) => handleUpdateSettings({ [k]: val }), undefined, paginas)}
             </div>
             <label className="flex items-center gap-2 text-sm text-[var(--vit-text)]">
               <input

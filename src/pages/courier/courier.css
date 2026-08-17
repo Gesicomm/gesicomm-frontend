@@ -653,8 +653,15 @@
   cursor: pointer;
   transition: border-color 0.2s;
   white-space: nowrap;
+  color-scheme: dark;
 }
 .pt-filter-select:hover, .pt-filter-select:focus { border-color: rgba(255,255,255,0.25); color: #fff; }
+
+/* FIX: Ensure options are visible in Windows native select */
+.pt-filter-select option {
+  background-color: #0f111a;
+  color: #f1f5f9;
+}
 
 .pt-date-label {
   display: flex;

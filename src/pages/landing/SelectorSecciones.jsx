@@ -86,7 +86,7 @@ export default function SelectorSecciones({ isOpen, onClose, onAdd, seccionesAct
               type="text"
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder="Buscar seccin..."
+              placeholder="Buscar sección..."
               className="w-full bg-transparent text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none"
               autoFocus
             />
@@ -119,7 +119,7 @@ export default function SelectorSecciones({ isOpen, onClose, onAdd, seccionesAct
           </div>
         ) : grupos.length === 0 ? (
           <p className="p-4 text-center text-sm text-[var(--vit-muted)]">
-            No encontramos ninguna seccin para "{busqueda}".
+            No encontramos ninguna sección para "{busqueda}".
           </p>
         ) : (
           grupos.map(grupo => (

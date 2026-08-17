@@ -1,0 +1,51 @@
+/* SUBNAV TABS */
+.cic-subnav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.8rem;
+  overflow-x: auto;
+  align-items: center;
+  justify-content: center; /* Center the tabs to make it look better */
+}
+
+.cic-subnav::-webkit-scrollbar {
+  height: 4px;
+}
+.cic-subnav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.cic-subnav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(255, 255, 255, 0.02);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+.cic-subnav-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+  transform: translateY(-1px);
+}
+.cic-subnav-btn.active {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+}
+
+/* Make sure the main wrapper is centered if needed */
+.cic-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+}

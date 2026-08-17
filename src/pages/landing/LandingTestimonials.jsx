@@ -11,7 +11,7 @@ import StarRating from './StarRating';
  * con springback si no llega al umbral). Solo se monta si hay al menos un
  * testimonio real cargado — ver LandingPublica.jsx.
  */
-export default function LandingTestimonials({ testimonios }) {
+export default function LandingTestimonials({ testimonios, seccion }) {
   const [indice, setIndice] = useState(0);
   const reducirMovimiento = useReducedMotion();
   const total = testimonios.length;
@@ -33,7 +33,7 @@ export default function LandingTestimonials({ testimonios }) {
       <section id="lp-opiniones" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-16">
         <div className="mb-8 flex items-end justify-between gap-4">
           <h2 className="text-2xl font-extrabold text-[var(--l-text)]" style={{ letterSpacing: '-0.02em' }}>
-            Opiniones
+            {seccion?.contenido?.titulo || 'Opiniones'}
           </h2>
         </div>
         <div className="mx-auto max-w-2xl rounded-[var(--l-radius)] border p-8 text-center sm:p-10" style={{ background: 'var(--l-card-bg)', borderColor: 'var(--l-card-border)' }}>
@@ -47,7 +47,7 @@ export default function LandingTestimonials({ testimonios }) {
     <section id="lp-opiniones" className="mx-auto max-w-[var(--l-max)] px-[var(--l-gutter)] py-16">
       <div className="mb-8 flex items-end justify-between gap-4">
         <h2 className="text-2xl font-extrabold text-[var(--l-text)]" style={{ letterSpacing: '-0.02em' }}>
-          Opiniones
+          {seccion?.contenido?.titulo || 'Opiniones'}
         </h2>
         {total > 1 && (
           <div className="flex gap-2">

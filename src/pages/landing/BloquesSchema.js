@@ -47,10 +47,10 @@ export const BLOQUES_SCHEMA = {
     ],
     contentSchema: [
       { key: 'imagen', type: 'image', label: 'Imagen principal' },
-      { key: 'titulo', type: 'text', label: 'Ttulo' },
-      { key: 'texto', type: 'textarea', label: 'Descripcin' },
+      { key: 'titulo', type: 'text', label: 'Título' },
+      { key: 'texto', type: 'textarea', label: 'Descripción' },
       { key: 'boton_texto', type: 'text', label: 'Texto del botn' },
-      { key: 'boton_link', type: 'text', label: 'Enlace del botn' }
+      { key: 'boton_link', type: 'url', label: 'Enlace del botn' }
     ],
     designSchema: []
   },
@@ -72,7 +72,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'banner_oferta', label: 'Banner de oferta (Fondo + Botn)' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo de la seccin' },
+      { key: 'titulo', type: 'text', label: 'Título de la sección' },
       { key: 'descuento', type: 'text', label: 'Descuento Aplicable (%)' },
       { key: 'boton_texto', type: 'text', label: 'Texto del botn (Banner)' },
       { key: 'imagen_fondo', type: 'image', label: 'Imagen de fondo (Banner)' }
@@ -88,7 +88,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'carousel', label: 'Carrusel' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' }
+      { key: 'titulo', type: 'text', label: 'Título' }
     ]
   },
   destacados: {
@@ -100,7 +100,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'standard', label: 'Estndar' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' }
+      { key: 'titulo', type: 'text', label: 'Título' }
     ]
   },
 
@@ -116,8 +116,8 @@ export const BLOQUES_SCHEMA = {
       { id: 'slider', label: 'Slider Interactivo' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' },
-      { key: 'descripcion', type: 'textarea', label: 'Descripcin' }
+      { key: 'titulo', type: 'text', label: 'Título' },
+      { key: 'descripcion', type: 'textarea', label: 'Descripción' }
     ]
   },
   testimonios: {
@@ -131,7 +131,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'featured', label: 'Testimonio destacado' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo de seccin' }
+      { key: 'titulo', type: 'text', label: 'Título de sección' }
     ]
   },
   logo_list: {
@@ -144,7 +144,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'horizontal_scroll', label: 'Desplazamiento contnuo' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo (ej: Visto en)' }
+      { key: 'titulo', type: 'text', label: 'Título (ej: Visto en)' }
     ]
   },
   beneficios: {
@@ -173,7 +173,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'left_aligned', label: 'Alineado a la izquierda' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' },
+      { key: 'titulo', type: 'text', label: 'Título' },
       { key: 'texto', type: 'textarea', label: 'Contenido' },
       { key: 'tamano', type: 'select', label: 'Tamao del texto', options: SIZE_OPTIONS }
     ]
@@ -188,7 +188,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'grid', label: 'Grilla de preguntas' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' },
+      { key: 'titulo', type: 'text', label: 'Título' },
       { key: 'icono', type: 'select', label: 'cono de preguntas', options: [
         { value: 'none', label: 'Ninguno' },
         { value: 'check', label: 'Checkbox' },
@@ -207,7 +207,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'steps_vertical', label: 'Pasos verticales' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' }
+      { key: 'titulo', type: 'text', label: 'Título' }
     ]
   },
 
@@ -224,10 +224,10 @@ export const BLOQUES_SCHEMA = {
       { id: 'split', label: 'Dividido con botn a un lado' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' },
-      { key: 'subtitulo', type: 'textarea', label: 'Subttulo' },
+      { key: 'titulo', type: 'text', label: 'Título' },
+      { key: 'subtitulo', type: 'textarea', label: 'Subtítulo' },
       { key: 'boton_texto', type: 'text', label: 'Texto del botn' },
-      { key: 'boton_link', type: 'text', label: 'Link del botn' }
+      { key: 'boton_link', type: 'url', label: 'Link del botn' }
     ]
   },
   banner: {
@@ -239,10 +239,10 @@ export const BLOQUES_SCHEMA = {
       { id: 'standard', label: 'Estndar' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo del banner' },
-      { key: 'subtitulo', type: 'textarea', label: 'Subttulo' },
+      { key: 'titulo', type: 'text', label: 'Título del banner' },
+      { key: 'subtitulo', type: 'textarea', label: 'Subtítulo' },
       { key: 'boton_texto', type: 'text', label: 'Texto del botn' },
-      { key: 'boton_link', type: 'text', label: 'Link del botn' },
+      { key: 'boton_link', type: 'url', label: 'Link del botn' },
       { key: 'imagen', type: 'image', label: 'Imagen de fondo' },
       { key: 'altura', type: 'select', label: 'Altura del banner', options: SIZE_OPTIONS }
     ]
@@ -256,7 +256,7 @@ export const BLOQUES_SCHEMA = {
       { id: 'standard', label: 'Estndar' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo' },
+      { key: 'titulo', type: 'text', label: 'Título' },
       { key: 'instagram', type: 'text', label: 'Usuario Instagram' },
       { key: 'facebook', type: 'text', label: 'Usuario Facebook' },
       { key: 'tiktok', type: 'text', label: 'Usuario TikTok' }
@@ -289,8 +289,8 @@ export const BLOQUES_SCHEMA = {
       { id: 'carousel', label: 'Carrusel de imgenes' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo principal' },
-      { key: 'descripcion', type: 'textarea', label: 'Descripcin' },
+      { key: 'titulo', type: 'text', label: 'Título principal' },
+      { key: 'descripcion', type: 'textarea', label: 'Descripción' },
       { key: 'imagen_fondo', type: 'image', label: 'Imagen principal (1)' },
       { key: 'imagen_fondo_2', type: 'image', label: 'Imagen (2)' },
       { key: 'imagen_fondo_3', type: 'image', label: 'Imagen (3)' }
@@ -355,8 +355,8 @@ export const BLOQUES_SCHEMA = {
       { id: 'standard', label: 'Estndar' }
     ],
     contentSchema: [
-      { key: 'titulo', type: 'text', label: 'Ttulo del pie' },
-      { key: 'descripcion', type: 'textarea', label: 'Descripcin breve' }
+      { key: 'titulo', type: 'text', label: 'Título del pie' },
+      { key: 'descripcion', type: 'textarea', label: 'Descripción breve' }
     ]
   }
 };
@@ -367,14 +367,14 @@ export const VALORES_DEFECTO_POR_TIPO = {
   before_after: { activo: true, template: 'slider', config: { colorScheme: 'default' }, contenido: { titulo: 'Resultados reales' } },
   header: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: {} },
   announcement_bar: { activo: true, template: 'standard', config: {}, contenido: { texto: 'Bienvenidos a nuestra tienda!' } },
-  hero: { activo: true, template: 'image_background', config: { colorScheme: 'dark', mostrar_estadisticas: false }, contenido: { titulo: 'Nueva Landing', descripcion: 'Descripcin de tu negocio' } },
+  hero: { activo: true, template: 'image_background', config: { colorScheme: 'dark', mostrar_estadisticas: false }, contenido: { titulo: 'Nueva Landing', descripcion: 'Descripción de tu negocio' } },
   beneficios: { activo: true, template: '4_columns', config: { colorScheme: 'default' }, contenido: {} },
   categorias: { activo: true, template: 'grid', config: { colorScheme: 'default' }, contenido: {} },
   destacados: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: {} },
   productos: { activo: true, template: 'grid_4', config: { colorScheme: 'default' }, contenido: {} },
   banner: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: { titulo: 'Promocin especial', boton_texto: 'Ver mǭs', altura: 'md' } },
   rich_text: { activo: true, template: 'centered', config: { colorScheme: 'default' }, contenido: { titulo: 'Nosotros', texto: 'Contanos algo de tu negocio.', tamano: 'md' } },
-  image_text: { activo: true, template: 'image_left', config: { colorScheme: 'default' }, contenido: { titulo: 'Ttulo', texto: 'Escrib ac...', boton_texto: '' } },
+  image_text: { activo: true, template: 'image_left', config: { colorScheme: 'default' }, contenido: { titulo: 'Título', texto: 'Escribí acá...', boton_texto: '' } },
   como_funciona: { activo: true, template: 'steps_horizontal', config: { colorScheme: 'default' }, contenido: { titulo: 'Cmo comprar' } },
   faq: { activo: true, template: 'accordion', config: { colorScheme: 'default' }, contenido: { icono: 'none' } },
   testimonios: { activo: true, template: '3_cards', config: { colorScheme: 'default' }, contenido: {} },

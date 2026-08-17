@@ -16,11 +16,15 @@
   width: 100%;
   max-width: var(--footer-max-width, 1200px);
   min-height: var(--footer-min-height-mobile, auto);
+  /* El padding vale 0 en modo libre — ver PublicFooterRenderer.jsx. */
+  padding: var(--footer-pad-y-m, 0) var(--footer-pad-x-m, 0);
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
   .public-footer-container {
     min-height: var(--footer-min-height-desktop, auto);
+    padding: var(--footer-pad-y-d, 0) var(--footer-pad-x-d, 0);
   }
 }
 
@@ -29,6 +33,12 @@
   width: var(--m-w, auto);
   left: var(--m-x, auto);
   top: var(--m-y, auto);
+  /* display+max-width: ver el porqué en PublicFooterRenderer.jsx — sin
+     inline-block un elemento "encogido" (logo/social sin layout propio)
+     ocupa igual todo el ancho aunque su width sea auto. */
+  max-width: var(--m-maxw, none);
+  margin-bottom: var(--m-mb, 0);
+  box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
@@ -37,7 +47,14 @@
     width: var(--d-w, auto);
     left: var(--d-x, auto);
     top: var(--d-y, auto);
+    max-width: var(--d-maxw, none);
+    margin-bottom: var(--d-mb, 0);
   }
+}
+
+/* El último no necesita separación: la da el padding del contenedor. */
+.public-footer-element:last-child {
+  margin-bottom: 0;
 }
 
 .footer-text {

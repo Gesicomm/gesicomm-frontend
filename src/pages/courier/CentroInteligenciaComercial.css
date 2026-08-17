@@ -175,10 +175,17 @@
   outline: none;
   cursor: pointer;
   transition: border-color 0.2s;
+  color-scheme: dark;
 }
 
 .cic-select:focus {
   border-color: #6366f1;
+}
+
+/* FIX: Ensure options are visible in Windows native select */
+.cic-select option {
+  background-color: #12131a;
+  color: #f1f5f9;
 }
 
 /* ==========================================================================

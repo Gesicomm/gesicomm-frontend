@@ -205,16 +205,31 @@ export function normalizeFooterData(initialData) {
  *  - no propagar cambios con onChange mientras está inactivo, para no
  *    pisar la sección equivocada con el estado por defecto.
  */
-export function FooterProvider({ initialData, children, onChange, active = true, sectionId = null }) {
+export function FooterProvider({ initialData, children, onChange, active = true, sectionId = null, viewportMode = 'desktop' }) {
   const [state, dispatch] = useReducer(historyReducer, undefined, () => ({
     past: [],
     present: normalizeFooterData(initialData),
     future: [],
     ephemeral: {
       selectedId: null,
-      activeBreakpoint: 'desktop' // desktop, tablet, mobile
+      activeBreakpoint: viewportMode // desktop, tablet, mobile
     }
   }));
+
+  // Sincroniza el breakpoint del CANVAS del footer con el toggle
+  // Desktop/Tablet/Mobile del editor (ver LandingEditor.jsx). Sin esto, el
+  // canvas seguía resolviendo siempre el layout 'desktop' sin importar qué
+  // vista previa eligiera el usuario — el contenedor se achicaba (el
+  // <iframe> sí cambia de ancho) pero los elementos seguían usando su
+  // posición absoluta pensada para un canvas de 1200px, comprimida en un
+  // ancho angosto: texto de botón que a los 96px de ancho se envuelve en 3
+  // líneas y termina superpuesto con el botón de al lado. El sitio público
+  // (PublicFooterRenderer.jsx) no tenía este problema porque ahí sí se
+  // resuelve 'mobile'/'tablet' de verdad vía @media — acá faltaba conectar
+  // el mismo breakpoint al canvas editable.
+  React.useEffect(() => {
+    dispatch({ type: 'SET_BREAKPOINT', payload: viewportMode });
+  }, [viewportMode]);
 
   // Se recarga el estado desde el config guardado cada vez que se empieza a
   // editar un footer (una sola vez por sección: el ref evita repetirlo en
