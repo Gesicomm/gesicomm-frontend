@@ -93,6 +93,8 @@ export default function ReporteProductos({ filters }) {
                 <th style={{ textAlign: 'center', color: '#10b981' }}>Vendidos (Entregado)</th>
                 <th style={{ textAlign: 'center', color: '#f43f5e' }}>Devueltos/Rechazados</th>
                 <th style={{ textAlign: 'center', color: '#64748b' }}>Cancelados</th>
+                <th style={{ textAlign: 'right' }}>P. Costo Unid.</th>
+                <th style={{ textAlign: 'right' }}>P. Venta Base</th>
                 <th style={{ textAlign: 'right' }}>Costo Total</th>
                 <th style={{ textAlign: 'right', color: '#10b981' }}>Ingresos Generados</th>
                 <th style={{ textAlign: 'right', color: '#3b82f6' }}>Tasa Devolución</th>
@@ -101,11 +103,11 @@ export default function ReporteProductos({ filters }) {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Cargando reporte de productos...</td>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Cargando reporte de productos...</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No se encontraron productos vendidos en este período.</td>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No se encontraron productos vendidos en este período.</td>
                 </tr>
               ) : (
                 data.map((row, idx) => {
@@ -120,6 +122,8 @@ export default function ReporteProductos({ filters }) {
                       <td style={{ textAlign: 'center', color: '#10b981', fontWeight: 'bold' }}>{row.vendidos}</td>
                       <td style={{ textAlign: 'center', color: '#f43f5e' }}>{row.devoluciones}</td>
                       <td style={{ textAlign: 'center', color: '#64748b' }}>{row.cancelados}</td>
+                      <td style={{ textAlign: 'right', color: '#94a3b8' }}>{formatMoney(row.precio_costo_unitario)}</td>
+                      <td style={{ textAlign: 'right', color: '#cbd5e1' }}>{formatMoney(row.precio_venta_unitario)}</td>
                       <td style={{ textAlign: 'right' }}>{formatMoney(row.costo_total)}</td>
                       <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>{formatMoney(row.ingresos)}</td>
                       <td style={{ textAlign: 'right', color: returnRate > 15 ? '#f43f5e' : '#3b82f6' }}>{returnRate}%</td>
