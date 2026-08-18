@@ -47,4 +47,11 @@ export const landingService = {
   // obtenerSeccionesProducto/guardarSeccionesProducto).
   obtenerSeccionesProducto: (productoId) => API.get(`/productos/${productoId}/pagina-secciones`).then(r => r.data),
   guardarSeccionesProducto: (productoId, secciones) => API.put(`/productos/${productoId}/pagina-secciones`, { secciones }).then(r => r.data),
+
+  // Phase 2: Landing Templates & Funnels
+  listarTemplates: () => API.get('/landing-templates').then(r => r.data),
+  instanciarLanding: (productoId, templateId) => API.post(`/productos/${productoId}/instanciar-landing`, { templateId }).then(r => r.data),
+
+  obtenerLandingProducto: (productoId) => API.get(`/productos/${productoId}/landing`).then(r => r.data),
+  guardarLandingProducto: (productoId, content) => API.put(`/productos/${productoId}/landing`, { content }).then(r => r.data),
 };

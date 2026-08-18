@@ -16,6 +16,18 @@ const LIMITE = 10;
 // PATCH directo del dropdown. Ver plan Gestión de Pedidos, sección 42.
 const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", Devuelto: "devolver", Perdido: "perder" };
 
+const TRANSICIONES_VALIDAS_FRONTEND = {
+  Pendiente: ['Confirmado', 'Cancelado'],
+  Confirmado: ['Preparado', 'Cancelado'],
+  Preparado: ['Despachado', 'Cancelado'],
+  Despachado: ['Entregado', 'Reprogramado', 'Devuelto', 'Perdido'],
+  Reprogramado: ['Despachado', 'Entregado', 'Cancelado', 'Reprogramado', 'Devuelto', 'Perdido'],
+  Entregado: [],
+  Cancelado: [],
+  Devuelto: [],
+  Perdido: [],
+};
+
 const FILTROS_VACIOS = {
   cliente: "",
   ciudad: "",
@@ -32,6 +44,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const s = STATUS[estado] || { chipBg: "rgba(255,255,255,0.08)", chipText: "#aaa" };
+  const validas = TRANSICIONES_VALIDAS_FRONTEND[estado] || [];
 
   useEffect(() => {
     const handler = (e) => {
@@ -100,12 +113,22 @@ function EstadoBadgeDropdown({ estado, onChange }) {
           {STATUS_ORDER.map((st) => {
             const config = STATUS[st] || { chipBg: "rgba(255,255,255,0.05)", chipText: "#aaa" };
             const isSelected = st === estado;
+            const isValid = isSelected || validas.includes(st);
+            
             return (
               <button
                 key={st}
                 type="button"
                 onClick={() => {
                   setOpen(false);
+                  if (!isValid) {
+                    if (validas.length === 0) {
+                      alert(`El pedido está en un estado final (${estado}).\n\nNo se puede cambiar a ningún otro estado.`);
+                    } else {
+                      alert(`Transición no permitida.\n\nNo se puede pasar de "${estado}" a "${st}".\n\nLos estados permitidos son: ${validas.join(", ")}.`);
+                    }
+                    return;
+                  }
                   onChange(st);
                 }}
                 style={{
@@ -119,16 +142,17 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                   border: "none",
                   fontSize: "0.78rem",
                   fontWeight: isSelected ? 700 : 500,
-                  cursor: "pointer",
+                  cursor: isValid ? "pointer" : "not-allowed",
                   textAlign: "left",
                   transition: "background 0.12s",
                   width: "100%",
+                  opacity: isValid ? 1 : 0.4,
                 }}
                 onMouseEnter={(e) => {
-                  if (!isSelected) e.currentTarget.style.background = "rgba(255, 255, 255, 0.07)";
+                  if (isValid && !isSelected) e.currentTarget.style.background = "rgba(255, 255, 255, 0.07)";
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSelected) e.currentTarget.style.background = "transparent";
+                  if (isValid && !isSelected) e.currentTarget.style.background = "transparent";
                 }}
               >
                 <span

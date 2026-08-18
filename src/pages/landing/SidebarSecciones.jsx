@@ -73,91 +73,26 @@ export default function SidebarSecciones({
     const schema = BLOQUES_SCHEMA[sec.tipo] || { name: sec.tipo, icon: Plus };
     const Icono = schema.icon;
 
-    if (!arrastrable) {
-       return (
-          <div key={sec.id || sec.tipo} className={`group relative flex items-center justify-between py-2 px-1 transition-colors ${sec.id === selectedId ? 'bg-[var(--vit-surface)] border-l-2 border-[var(--vit-accent)]' : 'border-l-2 border-transparent'} ${!sec.activo ? 'opacity-50' : ''}`}>
-             <div className="flex flex-1 items-center gap-2 overflow-hidden">
-                <span className="p-1 w-[22px]" />
-                <button type="button" className="flex flex-1 items-center gap-2 overflow-hidden text-left" onClick={() => onSelect(sec.id)}>
-                   <Icono size={15} className="flex-shrink-0 text-[var(--vit-muted)]" />
-                   <span className="truncate text-sm font-medium text-[var(--vit-text)]">{sec.nombre_interno || schema.name}</span>
-                </button>
-             </div>
-          </div>
-       );
-    }
-
+    // Todas las secciones son rígidas, solo se puede ocultar/mostrar (si lo permitimos) o editar.
     return (
-      <Draggable key={String(sec.id)} draggableId={String(sec.id)} index={index}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            className={`group relative flex items-center justify-between py-2 px-1 transition-colors cursor-pointer ${sec.id === selectedId ? 'bg-[var(--vit-surface)] border-l-2 border-[var(--vit-accent)]' : 'border-l-2 border-transparent'} ${!sec.activo ? 'opacity-50' : ''} ${snapshot.isDragging ? 'opacity-90 shadow-md bg-[var(--vit-surface)]' : ''}`}
-            style={provided.draggableProps.style}
-          >
-            <div className="flex flex-1 items-center gap-2 overflow-hidden">
-              <span {...provided.dragHandleProps} className="p-1 text-[var(--vit-muted-2)] focus:outline-none">
-                <GripVertical size={14} />
-              </span>
-              <button
-                type="button"
-                className="flex flex-1 items-center gap-2 overflow-hidden text-left"
-                onClick={() => onSelect(sec.id)}
-              >
+       <div key={sec.id || sec.tipo} className={`group relative flex items-center justify-between py-2 px-1 transition-colors ${sec.id === selectedId ? 'bg-[var(--vit-surface)] border-l-2 border-[var(--vit-accent)]' : 'border-l-2 border-transparent'} ${!sec.activo ? 'opacity-50' : ''}`}>
+          <div className="flex flex-1 items-center gap-2 overflow-hidden">
+             <span className="p-1 w-[22px]" />
+             <button type="button" className="flex flex-1 items-center gap-2 overflow-hidden text-left" onClick={() => onSelect(sec.id)}>
                 <Icono size={15} className="flex-shrink-0 text-[var(--vit-muted)]" />
-                <span className="truncate text-sm font-medium text-[var(--vit-text)]">
-                  {sec.nombre_interno || schema.name}
-                </span>
-                {sec.config?.fila_id && (
-                  <Columns2 size={12} className="flex-shrink-0 text-[var(--vit-accent)]" title="En fila de 2 columnas" />
-                )}
-              </button>
-            </div>
-
-            <div className={`flex items-center gap-1 transition-opacity ${snapshot.isDragging ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
-              <button
-                type="button"
-                className="rounded p-1.5 text-[var(--vit-muted-2)] hover:bg-[var(--vit-border)] hover:text-[var(--vit-text)]"
+                <span className="truncate text-sm font-medium text-[var(--vit-text)]">{sec.nombre_interno || schema.name}</span>
+             </button>
+          </div>
+          <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1">
+             <button
+                className="flex h-6 w-6 items-center justify-center rounded text-[var(--vit-muted)] hover:bg-[var(--vit-bg)] hover:text-[var(--vit-text)] transition-colors"
                 onClick={() => onToggleVisible(sec.id)}
                 title={sec.activo ? 'Ocultar' : 'Mostrar'}
-              >
+             >
                 {sec.activo ? <Eye size={14} /> : <EyeOff size={14} />}
-              </button>
-              {!TIPOS_SIN_FILA.has(sec.tipo) && !sec.config?.fila_id && onAddBeside && (
-                <button
-                  type="button"
-                  className="rounded p-1.5 text-[var(--vit-muted-2)] hover:bg-[var(--vit-border)] hover:text-[var(--vit-text)]"
-                  onClick={() => onAddBeside(sec.id)}
-                  title="Agregar una sección al lado (2 columnas)"
-                >
-                  <Columns2 size={14} />
-                </button>
-              )}
-              {!sec.fijo && (
-                <>
-                  <button
-                    type="button"
-                    className="rounded p-1.5 text-[var(--vit-muted-2)] hover:bg-[var(--vit-border)] hover:text-[var(--vit-text)]"
-                    onClick={() => onDuplicate(sec.id)}
-                    title="Duplicar"
-                  >
-                    <Copy size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded p-1.5 text-[var(--vit-muted-2)] hover:bg-[rgba(239,68,68,0.1)] hover:text-[#ef4444]"
-                    onClick={() => onDelete(sec.id)}
-                    title="Eliminar"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </>
-              )}
-            </div>
+             </button>
           </div>
-        )}
-      </Draggable>
+       </div>
     );
   };
 
@@ -204,14 +139,6 @@ export default function SidebarSecciones({
                     templateSections.map((sec, index) => renderSectionItem(sec, true, index))
                   )}
                   {provided.placeholder}
-                </div>
-                <div className="mt-2 px-1">
-                   <button
-                     onClick={onAddClick}
-                     className="flex w-full items-center gap-2 rounded-md border border-dashed border-[var(--vit-border)] bg-[var(--vit-surface)] p-2 text-sm font-medium text-[var(--vit-accent)] transition-colors hover:border-[var(--vit-accent-soft)] hover:bg-[var(--vit-accent-soft)]"
-                   >
-                     <Plus size={14} /> Agregar sección
-                   </button>
                 </div>
               </div>
             )}

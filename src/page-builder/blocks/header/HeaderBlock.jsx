@@ -118,7 +118,7 @@ export const HeaderBlock = ({ content, settings }) => {
               key={idx}
               href={link.href || '#'}
               onClick={(e) => irA(e, link)}
-              className="text-sm font-semibold text-[var(--l-text-muted)] transition-colors hover:text-[var(--l-primary)]"
+              className="text-sm font-semibold text-[var(--l-text)] opacity-80 transition-all hover:opacity-100 hover:text-[var(--l-primary)]"
             >
               {link.label}
             </a>
@@ -129,17 +129,17 @@ export const HeaderBlock = ({ content, settings }) => {
           {/* Redes Sociales en Header */}
           <div className="hidden items-center gap-2 md:flex border-r pr-4 border-[var(--l-card-border)]">
              {redes.instagram && (
-               <a href={redes.instagram} target="_blank" rel="noreferrer" className="text-[var(--l-text-muted)] hover:text-[var(--l-primary)] transition-colors">
+               <a href={redes.instagram} target="_blank" rel="noreferrer" className="text-[var(--l-text)] opacity-70 hover:opacity-100 hover:text-[var(--l-primary)] transition-all">
                  <Instagram size={18} />
                </a>
              )}
              {redes.facebook && (
-               <a href={redes.facebook} target="_blank" rel="noreferrer" className="text-[var(--l-text-muted)] hover:text-[var(--l-primary)] transition-colors">
+               <a href={redes.facebook} target="_blank" rel="noreferrer" className="text-[var(--l-text)] opacity-70 hover:opacity-100 hover:text-[var(--l-primary)] transition-all">
                  <Facebook size={18} />
                </a>
              )}
              {redes.tiktok && (
-               <a href={redes.tiktok} target="_blank" rel="noreferrer" className="text-[var(--l-text-muted)] hover:text-[var(--l-primary)] transition-colors">
+               <a href={redes.tiktok} target="_blank" rel="noreferrer" className="text-[var(--l-text)] opacity-70 hover:opacity-100 hover:text-[var(--l-primary)] transition-all">
                  <TikTokIcon size={18} />
                </a>
              )}
@@ -151,7 +151,7 @@ export const HeaderBlock = ({ content, settings }) => {
                 type="button"
                 onClick={irABuscar}
                 aria-label="Buscar productos"
-                className="hidden h-10 w-10 items-center justify-center rounded-full text-[var(--l-text-muted)] transition-colors hover:bg-[var(--l-surface)] hover:text-[var(--l-text)] sm:flex"
+                className="hidden h-10 w-10 items-center justify-center rounded-full text-[var(--l-text)] opacity-80 transition-all hover:bg-[var(--l-bg-muted)] hover:opacity-100 hover:text-[var(--l-primary)] sm:flex"
               >
                 <Search size={18} />
               </button>
@@ -160,7 +160,7 @@ export const HeaderBlock = ({ content, settings }) => {
               type="button"
               onClick={actions.abrirCarrito}
               aria-label={`Ver carrito`}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-[var(--l-text-muted)] transition-colors hover:bg-[var(--l-surface)] hover:text-[var(--l-text)]"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-[var(--l-text)] opacity-80 transition-all hover:bg-[var(--l-bg-muted)] hover:opacity-100 hover:text-[var(--l-primary)]"
             >
               <ShoppingCart size={18} />
               {cantidadCarrito > 0 && (

@@ -676,12 +676,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
               {/* Asignación de Courier y Precio de Delivery Automático */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="np-row">
-                  <label style={{ color: '#60a5fa' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier Asignado</label>
+                  <label style={{ color: '#60a5fa' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier Asignado para el Envio</label>
                   <select
                     className="form-input"
                     value={form.courier_id}
                     onChange={e => handleCourierChange(e.target.value)}
-                    disabled={!form.incluye_delivery}
                   >
                     <option value="">-- Sin asignar --</option>
                     {couriers.map(c => (
@@ -691,7 +690,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 </div>
 
                 <div className="np-row">
-                  <label style={{ color: '#10b981' }}>Costo Delivery (Gs)</label>
+                  <label style={{ color: '#10b981' }}>Costo del Envio (Gs)</label>
                   <CurrencyInput
                     className="form-input"
                     style={{ fontFamily: 'monospace', fontWeight: 'bold', opacity: form.incluye_delivery ? 1 : 0.5 }}
@@ -713,8 +712,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                       setForm(prev => ({
                         ...prev,
                         incluye_delivery: nuevoIncluye,
-                        costo_envio: nuevoIncluye ? prev.costo_envio : 0,
-                        courier_id: nuevoIncluye ? prev.courier_id : ""
+                        costo_envio: nuevoIncluye ? prev.costo_envio : 0
                       }));
                     }}
                   />
@@ -722,7 +720,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 </label>
               </div>
 
-              <div className="np-row">
+              {/* <div className="np-row">
                 <label>Método de pago</label>
                 <select
                   className="form-input"
@@ -734,7 +732,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                     <option key={m.id} value={m.id}>{m.nombre}</option>
                   ))}
                 </select>
-              </div>
+              </div> */}
 
               <div className="np-row">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>

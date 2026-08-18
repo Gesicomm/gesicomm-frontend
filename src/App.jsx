@@ -19,6 +19,8 @@ import VitrinaGrid from './pages/vitrina/VitrinaGrid';
 import MiDashboard from './pages/dashboard/MiDashboard';
 import MiLandingEntry from './pages/landing/MiLandingEntry';
 import LandingEditor from './pages/landing/LandingEditor';
+import MerchantEditor from './pages/landing/MerchantEditor';
+import FunnelSelector from './pages/landing/FunnelSelector';
 import LandingPublica from './pages/landing/LandingPublica';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Onboarding from './pages/onboarding/Onboarding';
@@ -205,8 +207,12 @@ function App() {
         } />
         {/* Diseño de página propio de un producto — mismo editor, en modo
             producto (ver esModoProducto en LandingEditor.jsx). */}
+        <Route path="/mi-landing/producto/:productoId/funnel-selector" element={
+          <RequireTienda><UserLayout><FunnelSelector /></UserLayout></RequireTienda>
+        } />
+        {/* Fase 4: Nuevo editor guiado por schema para productos */}
         <Route path="/mi-landing/producto/:productoId" element={
-          <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
+          <RequireTienda><UserLayout><MerchantEditor /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-anuncios" element={
           <RequireTienda><UserLayout><Ads /></UserLayout></RequireTienda>

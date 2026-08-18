@@ -10,7 +10,7 @@ import CurrencyInput from '../../components/CurrencyInput';
 import OfertasProductoTab from './OfertasProductoTab';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
-  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity
+  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -584,7 +584,7 @@ export default function ProductForm() {
           <div className="form-grid-3">
             <div className="form-group">
               <label htmlFor="prod-precio-base">
-                Precio de Venta <span className="req">*</span>
+                Precio de Venta Para las Tiendas <span className="req">*</span>
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -608,7 +608,7 @@ export default function ProductForm() {
 
             <div className="form-group">
               <label htmlFor="prod-precio-costo">
-                Precio de compra <span className="hint">(solo admins)</span>
+                Precio de compra del producto <span className="hint">(solo admins)</span>
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -629,7 +629,7 @@ export default function ProductForm() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="prod-precio-minimo">Precio mínimo</label>
+              <label htmlFor="prod-precio-minimo">Precio mínimo de Venta Para las Tiendas</label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
                   name="precio_minimo"
@@ -1034,11 +1034,11 @@ export default function ProductForm() {
             <div className="variantes-empty">
               <ImageIcon size={32} opacity={0.2} />
               <p>
-                Por defecto este producto usa la plantilla de "Vista de Producto" compartida por toda tu tienda.
-                Si querés un diseño distinto solo para este producto, abrí el armador — se edita igual que una landing normal.
+                Este producto se mostrará con el diseño estándar de tu tienda.
+                Si querés crear un <b>Embudo de Venta (Funnel)</b> de alta conversión exclusivo para este producto, ingresá al selector de plantillas.
               </p>
-              <Link to={`/mi-landing/producto/${id}`} className="lb-btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex' }}>
-                Editar diseño propio
+              <Link to={`/mi-landing/producto/${id}/funnel-selector`} className="lb-btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex' }}>
+                <Monitor size={16} style={{ marginRight: '6px' }} /> Configurar Funnel
               </Link>
             </div>
           ) : (

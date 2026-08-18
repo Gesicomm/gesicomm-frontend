@@ -216,6 +216,7 @@ export default function VitrinaGrid() {
   const [cargando, setCargando]   = useState(true);
   const [error, setError]         = useState(null);
   const [filtro, setFiltro]       = useState('todos');
+  const [filtroCategoria, setFiltroCategoria] = useState('');
   const [busqueda, setBusqueda]   = useState('');
   const [orden, setOrden]         = useState('nombre');
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
@@ -256,8 +257,17 @@ export default function VitrinaGrid() {
     ...combos.map(c => ({ ...c, tipo: 'combo' })),
   ], [productos, combos]);
 
+  const categoriasUnicas = useMemo(() => {
+    const cats = new Set(items.map(i => i.categoria).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [items]);
+
   const itemsFiltrados = useMemo(() => {
     let lista = filtro === 'todos' ? items : items.filter(i => i.tipo === filtro);
+
+    if (filtroCategoria) {
+      lista = lista.filter(i => i.categoria === filtroCategoria);
+    }
 
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase();
@@ -331,6 +341,21 @@ export default function VitrinaGrid() {
             </button>
           ))}
         </div>
+
+        {/* Filtro de categoría */}
+        {categoriasUnicas.length > 0 && (
+          <select
+            className="vit-sort-select"
+            value={filtroCategoria}
+            onChange={(e) => setFiltroCategoria(e.target.value)}
+            title="Filtrar por categoría"
+          >
+            <option value="">Todas las categorías</option>
+            {categoriasUnicas.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        )}
 
         {/* Selector de orden */}
         <select

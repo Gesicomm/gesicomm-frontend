@@ -93,9 +93,11 @@ export function ControlCourier() {
     try {
       await updateEstadoEnvio(id, { estado: nuevoEstado });
       cargarDatos();
+      setRefrescarKey(k => k + 1);
     } catch (err) {
       console.error("Error actualizando estado:", err);
       cargarDatos();
+      setRefrescarKey(k => k + 1);
     }
   };
 

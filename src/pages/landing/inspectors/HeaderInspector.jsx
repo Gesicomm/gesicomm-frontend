@@ -20,7 +20,18 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
   };
 
   const addLink = () => {
-    const nuevos = [...navLinks, { label: 'Nuevo link', type: 'url', href: '', target_id: '' }];
+    let baseLinks = [...navLinks];
+    if (navLinks.length === 0) {
+      // Si estaba vacío, poblamos los defaults explícitamente para que no desaparezcan
+      baseLinks = [
+        { label: 'Categorías', type: 'url', href: '#lp-categorias', target_id: '' },
+        { label: 'Productos', type: 'url', href: '#lp-productos', target_id: '' },
+        { label: 'Opiniones', type: 'url', href: '#lp-opiniones', target_id: '' },
+        { label: 'Preguntas', type: 'url', href: '#lp-faq', target_id: '' },
+        { label: 'Contacto', type: 'url', href: '#lp-contacto', target_id: '' },
+      ];
+    }
+    const nuevos = [...baseLinks, { label: 'Nuevo link', type: 'url', href: '', target_id: '' }];
     updateConfig({ nav_links: nuevos });
   };
 
@@ -110,6 +121,9 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
               <input type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" hidden disabled={subiendoLogo} onChange={handleLogoUpload} />
             </label>
           )}
+          <p className="text-[10px] text-[var(--vit-muted-2)] mt-2">
+            Tamaño recomendado: 300x80px. Se ajustará automáticamente.
+          </p>
         </div>
       </div>
 
@@ -123,9 +137,26 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
         </div>
 
         {navLinks.length === 0 && (
-          <p className="text-xs text-[var(--vit-muted-2)] italic">
-            El menú está vacío. Se generará uno automático basado en las secciones activas.
-          </p>
+          <div className="bg-[var(--vit-surface)] p-3 rounded-md border border-[var(--vit-border)] flex flex-col gap-3">
+            <p className="text-xs text-[var(--vit-muted)] leading-relaxed">
+              El menú está usando los enlaces automáticos del Funnel. Si querés cambiarles el orden, renombrarlos o borrar alguno, tenés que personalizarlos.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                updateConfig({ nav_links: [
+                  { label: 'Categorías', type: 'url', href: '#lp-categorias', target_id: '' },
+                  { label: 'Productos', type: 'url', href: '#lp-productos', target_id: '' },
+                  { label: 'Opiniones', type: 'url', href: '#lp-opiniones', target_id: '' },
+                  { label: 'Preguntas', type: 'url', href: '#lp-faq', target_id: '' },
+                  { label: 'Contacto', type: 'url', href: '#lp-contacto', target_id: '' },
+                ]});
+              }}
+              className="lb-btn-secondary text-xs py-1.5 font-medium"
+            >
+              Personalizar enlaces automáticos
+            </button>
+          </div>
         )}
 
         <div className="flex flex-col gap-3">
@@ -136,17 +167,17 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                 <button type="button" onClick={() => moveLink(idx, 1)} disabled={idx === navLinks.length - 1} className="hover:text-[var(--vit-primary)] disabled:opacity-30">▼</button>
               </div>
               
-              <div className="flex-1 flex flex-col gap-2">
-                <div className="flex gap-2">
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <div className="flex flex-col gap-2">
                   <input
                     type="text"
-                    className="flex-1 rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                    className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)]"
                     placeholder="Etiqueta"
                     value={link.label}
                     onChange={e => updateLink(idx, 'label', e.target.value)}
                   />
                   <select
-                    className="w-28 rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                    className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)]"
                     value={link.type}
                     onChange={e => updateLink(idx, 'type', e.target.value)}
                   >
@@ -167,7 +198,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                       if (grupos.length === 0) return null;
                       return (
                         <select
-                          className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                          className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)] truncate"
                           value=""
                           onChange={e => { if (e.target.value) updateLink(idx, 'href', e.target.value); }}
                         >
@@ -184,7 +215,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                     })()}
                     <input
                       type="text"
-                      className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                      className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)]"
                       placeholder="https://... o #lp-seccion"
                       value={link.href}
                       onChange={e => updateLink(idx, 'href', e.target.value)}
@@ -194,7 +225,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
                 
                 {link.type === 'producto' && (
                   <select
-                    className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                    className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)] truncate"
                     value={link.target_id || ''}
                     onChange={e => updateLink(idx, 'target_id', e.target.value)}
                   >
@@ -207,7 +238,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
 
                 {link.type === 'categoria' && (
                   <select
-                    className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                    className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)] truncate"
                     value={link.target_id || ''}
                     onChange={e => updateLink(idx, 'target_id', e.target.value)}
                   >
@@ -220,7 +251,7 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
 
                 {link.type === 'pagina' && (
                   <select
-                    className="w-full rounded-md border border-[var(--vit-border)] bg-transparent p-1.5 text-xs text-[var(--vit-text)]"
+                    className="w-full rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-1.5 text-xs text-[var(--vit-text)] truncate"
                     value={link.target_id || ''}
                     onChange={e => updateLink(idx, 'target_id', e.target.value)}
                   >
@@ -235,7 +266,8 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
               <button
                 type="button"
                 onClick={() => removeLink(idx)}
-                className="text-red-500 hover:text-red-600 p-1 self-start opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-red-500 hover:text-red-600 p-1 self-start transition-colors bg-red-50 hover:bg-red-100 rounded ml-1"
+                title="Eliminar link"
               >
                 <Trash2 size={14} />
               </button>
