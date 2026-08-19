@@ -22,6 +22,27 @@ const ESTRATEGIAS = [
   { value: 'upsell', label: 'Upsell — ofrecida cuando este producto ya está en el carrito' },
 ];
 
+const RESUMEN_OFERTAS = [
+  {
+    id: 'normal',
+    titulo: 'Packs / Combos',
+    descripcion: 'Presentaciones del producto o combinaciones visibles en la ficha.',
+    icon: Layers,
+  },
+  {
+    id: 'order_bump',
+    titulo: 'Order Bumps',
+    descripcion: 'Productos adicionales ofrecidos durante el checkout.',
+    icon: Tag,
+  },
+  {
+    id: 'upsell',
+    titulo: 'Upsells',
+    descripcion: 'Ofertas posteriores cuando este producto ya está en el carrito.',
+    icon: Activity,
+  },
+];
+
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
 function emptyForm(productoId) {
@@ -71,6 +92,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   const [editando, setEditando] = useState(null);
   const [descuentoSimulado, setDescuentoSimulado] = useState(0);
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
+  const [estrategiaVista, setEstrategiaVista] = useState('normal');
   const [form, setForm] = useState(() => emptyForm(productoId));
   const [guardando, setGuardando] = useState(false);
   const [ofertaABorrar, setOfertaABorrar] = useState(null);
@@ -102,9 +124,17 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     }
   }
 
-  function openCrear() {
+  function formPorEstrategia(estrategia) {
+    const base = emptyForm(productoId);
+    if (estrategia === 'order_bump' || estrategia === 'upsell') {
+      return { ...base, estrategia, tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0 }] };
+    }
+    return { ...base, estrategia: 'normal', tipo_contenido: 'pack' };
+  }
+
+  function openCrear(estrategia = estrategiaVista) {
     setEditando(null);
-    setForm(emptyForm(productoId));
+    setForm(formPorEstrategia(estrategia));
     setError(null);
     setOpen(true);
   }
@@ -293,6 +323,18 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   // descuentos configurados, a diferencia del precio de catálogo sin descontar.
   const precioRecomendado = resultadoSensibilidad ? Math.round(resultadoSensibilidad.combo.finalPrice) : null;
 
+  const conteosPorEstrategia = useMemo(() => (
+    RESUMEN_OFERTAS.reduce((acc, item) => {
+      acc[item.id] = ofertas.filter(oferta => (oferta.estrategia || 'normal') === item.id).length;
+      return acc;
+    }, {})
+  ), [ofertas]);
+
+  const ofertasVisibles = useMemo(
+    () => ofertas.filter(oferta => (oferta.estrategia || 'normal') === estrategiaVista),
+    [ofertas, estrategiaVista]
+  );
+
   // Apenas hay una recomendación calculable, se precarga el campo Precio —
   // pero solo si todavía está en blanco/0, para no pisar un precio que el
   // admin ya haya escrito a mano.
@@ -307,7 +349,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     <div>
       <div className="form-section-title">
         <Tag size={14} /> Ofertas comerciales
-        <button type="button" className="btn-primary" style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={openCrear}>
+        <button type="button" className="btn-primary" style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={() => openCrear()}>
           <Plus size={14} /> Nueva oferta
         </button>
       </div>
@@ -316,6 +358,28 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
         packs por cantidad, combos con otros productos, order bumps y upsells.
       </p>
 
+      <div className="offer-strategy-grid">
+        {RESUMEN_OFERTAS.map(item => {
+          const Icono = item.icon;
+          const activo = estrategiaVista === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`offer-strategy-card ${activo ? 'active' : ''}`}
+              onClick={() => setEstrategiaVista(item.id)}
+            >
+              <span className="offer-strategy-icon"><Icono size={16} /></span>
+              <span>
+                <strong>{item.titulo}</strong>
+                <small>{item.descripcion}</small>
+              </span>
+              <b>{conteosPorEstrategia[item.id] || 0}</b>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="combo-empty"><Layers size={24} /><p>Cargando ofertas...</p></div>
       ) : ofertas.length === 0 ? (
@@ -323,9 +387,17 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
           <Layers size={24} opacity={0.3} />
           <p>Todavía no hay ofertas adicionales para este producto.</p>
         </div>
+      ) : ofertasVisibles.length === 0 ? (
+        <div className="combo-empty">
+          <Layers size={24} opacity={0.3} />
+          <p>No hay ofertas en esta estrategia.</p>
+          <button type="button" className="btn-primary" onClick={() => openCrear(estrategiaVista)}>
+            <Plus size={14} /> Crear oferta
+          </button>
+        </div>
       ) : (
         <div className="combo-list-grid" style={{ marginTop: '1rem' }}>
-          {ofertas.map(oferta => {
+          {ofertasVisibles.map(oferta => {
             // "Precio normal" solo se puede calcular sin ambigüedad para
             // packs (mismo producto × unidades) — un combo mezcla
             // productos con precios propios, no hay un único "normal" al

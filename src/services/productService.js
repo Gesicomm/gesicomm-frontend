@@ -6,6 +6,7 @@ export const productService = {
   detalle: (id) => API.get(`/productos/${id}`).then(r => r.data),
   variantes: (id) => API.get(`/productos/${id}/variantes`).then(r => r.data),
   imagenes: (id) => API.get(`/productos/${id}/imagenes`).then(r => r.data),
+  faq: (id) => API.get(`/productos/${id}/faq`).then(r => r.data),
   historialPrecios: (id) => API.get(`/productos/${id}/historial-precios`).then(r => r.data),
   // Simulador de precio — llama al mismo Pricing Engine que el checkout
   // público (ver ProductoService.simularPrecio en el backend).

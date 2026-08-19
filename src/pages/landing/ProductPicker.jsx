@@ -87,7 +87,7 @@ function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle }) {
 }
 
 /* ─── Lista ordenable de seleccionados ────────────────────────────────── */
-function ListaOrden({ items, onEtiqueta, onQuitar, onReordenar }) {
+function ListaOrden({ items, onEtiqueta, onPrecioAncla, onQuitar, onReordenar }) {
   const [arrastrando, setArrastrando] = useState(null);
   const [encima, setEncima] = useState(null);
   // Una fila con inputs no puede ser draggable siempre: el navegador
@@ -147,13 +147,23 @@ function ListaOrden({ items, onEtiqueta, onQuitar, onReordenar }) {
             <span className="lb-orden-precio">Gs {formatGs(item.precio_efectivo)}</span>
           </div>
 
-          <input
-            className="lb-orden-etiqueta"
-            placeholder="Etiqueta (ej: Ofertas)"
-            maxLength={50}
-            value={item.etiqueta || ''}
-            onChange={(e) => onEtiqueta(item, e.target.value)}
-          />
+          <div className="lb-orden-inputs" style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+            <input
+              className="lb-orden-etiqueta"
+              placeholder="Etiqueta (ej: Ofertas)"
+              maxLength={50}
+              value={item.etiqueta || ''}
+              onChange={(e) => onEtiqueta(item, e.target.value)}
+            />
+            <input
+              className="lb-orden-etiqueta"
+              type="number"
+              placeholder="Precio ancla (tachado)"
+              value={item.precio_ancla || ''}
+              onChange={(e) => onPrecioAncla(item, e.target.value)}
+              style={{ width: '120px' }}
+            />
+          </div>
 
           <button type="button" className="lb-orden-quitar" onClick={() => onQuitar(item)} title="Quitar">
             <X size={14} />
@@ -166,7 +176,7 @@ function ListaOrden({ items, onEtiqueta, onQuitar, onReordenar }) {
 
 /* ─── Componente principal ────────────────────────────────────────────── */
 export default function ProductPicker({
-  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onReordenar, max,
+  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onReordenar, max,
 }) {
   const [vista, setVista] = useState('catalogo');
   const [busqueda, setBusqueda] = useState('');
@@ -341,6 +351,7 @@ export default function ProductPicker({
           <ListaOrden
             items={itemsOrdenados}
             onEtiqueta={onEtiqueta}
+            onPrecioAncla={onPrecioAncla}
             onQuitar={onToggle}
             onReordenar={onReordenar}
           />

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, ChevronRight, Menu, LayoutDashboard,
-  Package, BarChart3
+  Package, BarChart3, Receipt
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -174,8 +174,20 @@ const UserLayout = ({ children }) => {
               {renderLink({ path: '/products', label: 'Mis Productos', icon: <Package size={14} />, prefix: '/products', menuKey: 'products' })}
               {renderLink({ path: '/configuracion-economica', label: 'Config. económica', icon: <Settings size={14} />, menuKey: 'configuracion-economica' })}
               {renderLink({ path: '/mis-pedidos', label: 'Mis pedidos & Couriers', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
-              {renderLink({ path: '/mi-landing', label: 'Mi landing', icon: <Layers size={14} />, prefix: '/mi-landing', menuKey: 'mi-landing' })}
+              {/* Sistema de landing flexible (page-builder) — oculto de la nav
+                  a pedido: se deja de exponer en el producto actual, pero el
+                  código y la ruta siguen existiendo para retomarlo más
+                  adelante. No borrar. */}
+              {/* {renderLink({ path: '/mi-landing', label: 'Mi landing', icon: <Layers size={14} />, prefix: '/mi-landing', menuKey: 'mi-landing' })} */}
+              {renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles size={14} />, prefix: '/landing', menuKey: 'landing' })}
               {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
+            </ul>
+          </div>
+
+          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>FINANZAS</div>
+          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+            <ul className="sidebar-list">
+              {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y Gastos', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
             </ul>
           </div>
 

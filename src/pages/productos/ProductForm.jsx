@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
 import { categoriaService } from '../../services/catalogoService';
 import { comboAdminService } from '../../services/comboAdminService';
+import { verificarSesion } from '../../utils/auth';
 import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/comboPricingLocal';
 import CurrencyInput from '../../components/CurrencyInput';
 import OfertasProductoTab from './OfertasProductoTab';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
-  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor
+  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor,
+  Settings, Layers
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -22,13 +24,18 @@ function fmt(n, decimals = 0) {
 function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '—'; }
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
-// 3 tabs simplificadas: sin Logística, sin SKU, sin Marcas
 const TABS = [
-  { id: 'basicos',  label: 'Datos básicos', icon: <Package size={15} /> },
-  { id: 'precios',  label: 'Precios',        icon: <DollarSign size={15} /> },
-  { id: 'stock',    label: 'Stock',           icon: <BarChart2 size={15} /> },
+  { id: 'general',  label: 'General', icon: <Package size={15} /> },
+  { id: 'precio',  label: 'Precio', icon: <DollarSign size={15} /> },
+  { id: 'inventario', label: 'Inventario', icon: <BarChart2 size={15} /> },
+  { id: 'variantes', label: 'Variantes', icon: <Layers size={15} /> },
+  { id: 'multimedia', label: 'Multimedia', icon: <ImageIcon size={15} /> },
   { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
-  { id: 'diseno',   label: 'Diseño de página', icon: <ImageIcon size={15} /> },
+  { id: 'configuracion', label: 'Configuración', icon: <Settings size={15} /> },
+  // Tab del sistema de landing flexible (Funnel por producto) — oculta a
+  // pedido, sin borrar el código/ruta (ver UserLayout.jsx). No re-agregar
+  // sin coordinar con el nuevo flujo de Landing simple (pages/landing-simple/).
+  // { id: 'diseno',   label: 'Diseño de página', icon: <ImageIcon size={15} /> },
 ];
 
 const ESTADOS_VENTA = [
@@ -37,12 +44,18 @@ const ESTADOS_VENTA = [
   { value: 'no_disponible',  label: '🔴 No disponible',    desc: 'No aparece en la tienda' },
 ];
 
+const ESTADO_VENTA_LABELS = {
+  en_venta: 'En venta',
+  fuera_de_stock: 'Fuera de stock',
+  no_disponible: 'No disponible',
+};
+
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const esEdicion = Boolean(id);
 
-  const [tabActiva, setTabActiva] = useState('basicos');
+  const [tabActiva, setTabActiva] = useState('general');
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);
@@ -57,17 +70,20 @@ export default function ProductForm() {
   const [descuentoSimulado, setDescuentoSimulado] = useState(0);
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
   const [config, setConfig] = useState(null);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  const esAdmin = usuarioActual?.rol === 'administrador';
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors, isDirty } } = useForm({
     defaultValues: {
       nombre: '',
       categoria_id: '',
+      sku: '',
       descripcion_corta: '',
       descripcion_larga: '',
       tags: '',
       precio_base: '',
       precio_costo: '',
-      precio_tachado: '',
+      precio_ancla: '',
       precio_minimo: '',
       descuento_porcentaje: '',
       descuento_inicio: '',
@@ -116,12 +132,13 @@ export default function ProductForm() {
           reset({
             nombre: p.nombre || '',
             categoria_id: p.categoria_id || '',
+            sku: p.sku || '',
             descripcion_corta: p.descripcion_corta || '',
             descripcion_larga: p.descripcion_larga || '',
             tags: Array.isArray(p.tags) ? p.tags.join(', ') : '',
             precio_base: p.precio_base || '',
             precio_costo: p.precio_costo || '',
-            precio_tachado: p.precio_tachado || '',
+            precio_ancla: p.precio_ancla ?? p.precio_tachado ?? '',
             precio_minimo: p.precio_minimo || '',
             descuento_porcentaje: p.descuento_porcentaje || '',
             descuento_inicio: p.descuento_inicio ? p.descuento_inicio.slice(0, 10) : '',
@@ -147,11 +164,15 @@ export default function ProductForm() {
     init();
   }, [id]);
 
+  useEffect(() => {
+    verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
+  }, []);
+
   // ── Rentabilidad Reactiva ─────────────────────────────────
   const precioBaseVal = parseFloat(watch('precio_base')) || 0;
   const precioCostoVal = parseFloat(watch('precio_costo')) || 0;
   const descuentoPctVal = parseFloat(watch('descuento_porcentaje')) || 0;
-  const precioTachadoVal = parseFloat(watch('precio_tachado')) || 0;
+  const precioAnclaVal = parseFloat(watch('precio_ancla')) || 0;
 
   const rentabilidad = React.useMemo(() => {
     if (!config) return null;
@@ -192,12 +213,13 @@ export default function ProductForm() {
       const payload = {
         nombre: data.nombre.trim(),
         categoria_id: data.categoria_id || null,
+        sku: data.sku || null,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         descripcion_corta: data.descripcion_corta || null,
         descripcion_larga: data.descripcion_larga || null,
         precio_base: parseFloat(data.precio_base),
         precio_costo: data.precio_costo ? parseFloat(data.precio_costo) : null,
-        precio_tachado: data.precio_tachado ? parseFloat(data.precio_tachado) : null,
+        precio_ancla: data.precio_ancla ? parseFloat(data.precio_ancla) : null,
         precio_minimo: data.precio_minimo ? parseFloat(data.precio_minimo) : null,
         descuento_porcentaje: data.descuento_porcentaje ? parseFloat(data.descuento_porcentaje) : 0,
         descuento_inicio: data.descuento_inicio || null,
@@ -345,6 +367,30 @@ export default function ProductForm() {
     }
   };
 
+  const stockActualVal = parseInt(watch('cantidad_disponible'), 10) || 0;
+  const stockMinimoVal = parseInt(watch('stock_minimo'), 10) || 0;
+  const unidadVal = watch('unidad_medida') || 'unidad';
+  const estadoVentaVal = watch('estado_venta') || 'en_venta';
+  const activoVal = watch('activo');
+  const destacadoVal = watch('destacado');
+  const tagsVal = watch('tags') || '';
+  const precioFinalVal = precioBaseVal * (1 - (descuentoPctVal / 100));
+  const gananciaSimpleVal = precioFinalVal - precioCostoVal;
+  const margenSimpleVal = precioFinalVal > 0 ? gananciaSimpleVal / precioFinalVal : 0;
+  const stockRatio = stockMinimoVal > 0
+    ? Math.min(100, (stockActualVal / Math.max(stockMinimoVal * 2, 1)) * 100)
+    : (stockActualVal > 0 ? 100 : 0);
+  const stockEstadoTexto = stockActualVal <= 0
+    ? 'Agotado'
+    : (stockMinimoVal > 0 && stockActualVal <= stockMinimoVal ? 'Stock bajo' : 'Stock saludable');
+  const categoriaActual = categorias.find(c => String(c.id) === String(watch('categoria_id')));
+  const estadoVentaActual = ESTADOS_VENTA.find(e => e.value === estadoVentaVal) || ESTADOS_VENTA[0];
+  const imagenPrincipal = [...imagenes].sort((a, b) => a.orden - b.orden).find(img => img.es_principal)
+    || imagenes[0]
+    || imagenesNuevas.find(img => img.es_principal)
+    || imagenesNuevas[0];
+  const imagenPrincipalUrl = imagenPrincipal?.url ? getMediaUrl(imagenPrincipal.url) : null;
+
   if (cargando) return (
     <div className="prod-page"><div className="prod-loading"><div className="spinner" /></div></div>
   );
@@ -399,9 +445,10 @@ export default function ProductForm() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="prod-form" noValidate>
+      <form onSubmit={handleSubmit(onSubmit)} className="prod-form prod-workspace" noValidate>
+        <div className="prod-workspace-main">
 
-        <div className={`tab-content ${tabActiva === 'basicos' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'general' ? 'active' : ''}`}>
           <div className="form-grid-2">
             <div className="form-group full">
               <label htmlFor="prod-nombre">Nombre <span className="req">*</span></label>
@@ -452,18 +499,6 @@ export default function ProductForm() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="prod-estado-venta">Estado de venta</label>
-              <select id="prod-estado-venta" {...register('estado_venta')}>
-                {ESTADOS_VENTA.map(e => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
-              <p className="field-hint">
-                {ESTADOS_VENTA.find(e => e.value === watch('estado_venta'))?.desc}
-              </p>
-            </div>
-
-            <div className="form-group">
               <label htmlFor="prod-tags">
                 Tags <span className="hint">(separados por coma)</span>
               </label>
@@ -472,13 +507,6 @@ export default function ProductForm() {
                 {...register('tags')}
                 placeholder="verano, oferta, nuevo"
               />
-            </div>
-
-            <div className="form-group full" style={{ flexDirection: 'row', gap: '2rem', alignItems: 'center' }}>
-              <label className="check-label">
-                <input type="checkbox" {...register('destacado')} />
-                <Star size={13} /> Destacado
-              </label>
             </div>
 
             <div className="form-group full">
@@ -506,85 +534,13 @@ export default function ProductForm() {
             </div>
           </div>
 
-          <div className="form-section-title">
-            <ImageIcon size={14} /> Imágenes del producto
-          </div>
-
-          <div className="imagenes-grid">
-            {[...imagenes].sort((a, b) => a.orden - b.orden).map(img => (
-              <div
-                key={img.id}
-                className={`imagen-card ${img.es_principal ? 'principal' : ''}`}
-              >
-                <img src={getMediaUrl(img.url)} alt={img.alt_text || 'Imagen del producto'} />
-                <div className="imagen-actions">
-                  <button
-                    type="button"
-                    className="btn-icon"
-                    title="Marcar como principal"
-                    onClick={() => marcarPrincipal(img.id)}
-                  >
-                    <Star size={13} fill={img.es_principal ? 'currentColor' : 'none'} />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-icon danger"
-                    title="Eliminar imagen"
-                    onClick={() => eliminarImagen(img.id, false)}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                {img.es_principal && <span className="img-principal-badge">Principal</span>}
-              </div>
-            ))}
-
-            {imagenesNuevas.map(img => (
-              <div
-                key={img.id}
-                className={`imagen-card nueva-img ${img.es_principal ? 'principal' : ''}`}
-              >
-                <img src={getMediaUrl(img.url)} alt="Nueva" />
-                <div className="imagen-actions">
-                  <button
-                    type="button"
-                    className="btn-icon danger"
-                    title="Eliminar"
-                    onClick={() => eliminarImagen(img.id, true)}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                <span className="img-principal-badge" style={{background: 'rgba(255,255,255,0.2)'}}>Pendiente</span>
-              </div>
-            ))}
-
-            <label className="imagen-upload-btn">
-              {subiendoImg
-                ? <div className="spinner-sm" />
-                : <><Upload size={20} /><span>Subir foto</span></>
-              }
-              <input
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleImageUpload}
-                hidden
-                disabled={subiendoImg}
-              />
-            </label>
-          </div>
-          <p className="field-hint">
-            Formatos admitidos: JPG, PNG, WEBP. Máx. 1&nbsp;MB.
-            Las imágenes se comprimen automáticamente a 1200px de ancho.
-          </p>
         </div>
 
-        <div className={`tab-content ${tabActiva === 'precios' ? 'active' : ''}`}>
-          <div className="form-grid-3">
+        <div className={`tab-content ${tabActiva === 'precio' ? 'active' : ''}`}>
+          <div className={esAdmin ? 'form-grid-3' : 'form-grid-2'}>
             <div className="form-group">
               <label htmlFor="prod-precio-base">
-                Precio de Venta Para las Tiendas <span className="req">*</span>
+                {esAdmin ? 'Precio de Venta Para las Tiendas' : 'Precio de venta a las personas'} <span className="req">*</span>
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -608,7 +564,7 @@ export default function ProductForm() {
 
             <div className="form-group">
               <label htmlFor="prod-precio-costo">
-                Precio de compra del producto <span className="hint">(solo admins)</span>
+                Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -628,6 +584,7 @@ export default function ProductForm() {
               </div>
             </div>
 
+            {esAdmin && (
             <div className="form-group">
               <label htmlFor="prod-precio-minimo">Precio mínimo de Venta Para las Tiendas</label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
@@ -648,20 +605,40 @@ export default function ProductForm() {
               </div>
               <p className="field-hint">El precio con descuento no puede caer por debajo de este valor.</p>
             </div>
+            )}
+          </div>
+
+          <div className="commercial-summary">
+            <div>
+              <span>Precio final</span>
+              <strong>{fmtGs(precioFinalVal)}</strong>
+            </div>
+            <div>
+              <span>Costo</span>
+              <strong>{fmtGs(precioCostoVal)}</strong>
+            </div>
+            <div>
+              <span>Ganancia</span>
+              <strong className={gananciaSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtGs(gananciaSimpleVal)}</strong>
+            </div>
+            <div>
+              <span>Margen</span>
+              <strong className={margenSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtPct(margenSimpleVal)}</strong>
+            </div>
           </div>
 
           <div className="form-grid-2" style={{ marginTop: '1rem' }}>
             <div className="form-group">
-              <label htmlFor="prod-precio-tachado">
-                Precio fantasía <span className="hint">(tachado en tienda)</span>
+              <label htmlFor="prod-precio-ancla">
+                Precio ancla <span className="hint">(referencia visible)</span>
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
-                  name="precio_tachado"
+                  name="precio_ancla"
                   control={control}
                   render={({ field }) => (
                     <CurrencyInput
-                      id="prod-precio-tachado"
+                      id="prod-precio-ancla"
                       className="w-full"
                       style={{ padding: '0.6rem' }}
                       value={field.value}
@@ -671,10 +648,10 @@ export default function ProductForm() {
                   )}
                 />
               </div>
-              <p className="field-hint">Aparece tachado en la tienda mostrando el precio original. Ej: <em>~~300.000 Gs~~ 220.000 Gs</em>.</p>
+              <p className="field-hint">Se usa como referencia de valor cuando el precio de venta queda por debajo.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              {precioTachadoVal > 0 && precioBaseVal > 0 && precioTachadoVal > precioBaseVal && (
+              {precioAnclaVal > 0 && precioBaseVal > 0 && precioAnclaVal > precioBaseVal && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
                   padding: '0.7rem 1rem', borderRadius: '0.5rem',
@@ -682,38 +659,11 @@ export default function ProductForm() {
                 }}>
                   <span style={{ fontSize: '0.8rem', color: '#f97316' }}>Descuento visible:</span>
                   <strong style={{ fontSize: '1.1rem', color: '#f97316' }}>
-                    -{Math.round((1 - precioBaseVal / precioTachadoVal) * 100)}%
+                    -{Math.round((1 - precioBaseVal / precioAnclaVal) * 100)}%
                   </strong>
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Ganancia simple = Precio base (venta) − Precio de costo (compra),
-              sin CPA ni costos operativos — el panel de "Rentabilidad y
-              descuentos" de más abajo ya cubre esa versión más completa. Esto
-              es el número rápido que se quiere ver de un vistazo. */}
-          <div
-            style={{
-              marginTop: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-              padding: '0.7rem 1rem',
-              borderRadius: '0.5rem',
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <span style={{ fontSize: '0.8rem', color: '#888' }}>Ganancia (venta − compra):</span>
-            <strong style={{ fontSize: '1rem', color: (precioBaseVal - precioCostoVal) >= 0 ? '#10b981' : '#ef4444' }}>
-              {fmtGs(precioBaseVal - precioCostoVal)}
-            </strong>
-            {precioBaseVal > 0 && (
-              <span style={{ fontSize: '0.78rem', color: '#666' }}>
-                ({(((precioBaseVal - precioCostoVal) / precioBaseVal) * 100).toFixed(1)}%)
-              </span>
-            )}
           </div>
 
           <label className="check-label" style={{ marginTop: '0.5rem' }}>
@@ -891,10 +841,7 @@ export default function ProductForm() {
           })()}
         </div>
 
-        {/* ══════════════════════════════════════════════════════
-            TAB 3: STOCK Y VARIANTES
-        ══════════════════════════════════════════════════════ */}
-        <div className={`tab-content ${tabActiva === 'stock' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'inventario' ? 'active' : ''}`}>
           <div className="form-grid-3">
             <div className="form-group">
               <label htmlFor="prod-stock">
@@ -914,6 +861,15 @@ export default function ProductForm() {
               <input id="prod-stock-min" type="number" min="0" {...register('stock_minimo')} />
             </div>
             <div className="form-group">
+              <label htmlFor="prod-sku">SKU</label>
+              <input
+                id="prod-sku"
+                {...register('sku')}
+                placeholder="CRE-300"
+                autoComplete="off"
+              />
+            </div>
+            <div className="form-group">
               <label htmlFor="prod-unidad">Unidad de medida</label>
               <select id="prod-unidad" {...register('unidad_medida')}>
                 <option value="unidad">Unidad</option>
@@ -925,8 +881,20 @@ export default function ProductForm() {
             </div>
           </div>
 
+          <div className={`inventory-panel ${stockActualVal <= 0 ? 'empty' : stockActualVal <= stockMinimoVal ? 'low' : 'ok'}`}>
+            <div>
+              <span className="inventory-total">{stockActualVal} {unidadVal}{stockActualVal === 1 ? '' : 's'}</span>
+              <span className="inventory-status">{stockEstadoTexto}</span>
+            </div>
+            <div className="inventory-meter" aria-hidden="true">
+              <span style={{ width: `${stockRatio}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className={`tab-content ${tabActiva === 'variantes' ? 'active' : ''}`}>
           <div className="form-section-title">
-            <BarChart2 size={14} /> Variantes
+            <Layers size={14} /> Variantes
             <label className="check-label" style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>
               <input
                 type="checkbox"
@@ -947,6 +915,7 @@ export default function ProductForm() {
             <>
               <div className="variantes-header">
                 <span>Nombre de variante</span>
+                <span>SKU</span>
                 <span>Stock</span>
                 <span>Precio diferencial</span>
                 <span></span>
@@ -956,6 +925,10 @@ export default function ProductForm() {
                   <input
                     placeholder="Ej: Talle M - Rojo"
                     {...register(`variantes.${i}.nombre`)}
+                  />
+                  <input
+                    placeholder="CRE-M-ROJO"
+                    {...register(`variantes.${i}.sku_variante`)}
                   />
                   <input
                     type="number"
@@ -991,7 +964,7 @@ export default function ProductForm() {
               <button
                 type="button"
                 className="btn-ghost"
-                onClick={() => appendVariante({ nombre: '', stock: 0, precio_diferencial: 0 })}
+                onClick={() => appendVariante({ nombre: '', sku_variante: '', stock: 0, precio_diferencial: 0 })}
               >
                 <Plus size={14} /> Agregar variante
               </button>
@@ -1007,9 +980,80 @@ export default function ProductForm() {
           )}
         </div>
 
-        {/* ══════════════════════════════════════════════════════
-            TAB 4: OFERTAS COMERCIALES
-        ══════════════════════════════════════════════════════ */}
+        <div className={`tab-content ${tabActiva === 'multimedia' ? 'active' : ''}`}>
+          <div className="form-section-title">
+            <ImageIcon size={14} /> Fotos del producto
+          </div>
+
+          <div className="imagenes-grid">
+            {[...imagenes].sort((a, b) => a.orden - b.orden).map(img => (
+              <div
+                key={img.id}
+                className={`imagen-card ${img.es_principal ? 'principal' : ''}`}
+              >
+                <img src={getMediaUrl(img.url)} alt={img.alt_text || 'Imagen del producto'} />
+                <div className="imagen-actions">
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    title="Marcar como principal"
+                    onClick={() => marcarPrincipal(img.id)}
+                  >
+                    <Star size={13} fill={img.es_principal ? 'currentColor' : 'none'} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-icon danger"
+                    title="Eliminar imagen"
+                    onClick={() => eliminarImagen(img.id, false)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                {img.es_principal && <span className="img-principal-badge">Principal</span>}
+              </div>
+            ))}
+
+            {imagenesNuevas.map(img => (
+              <div
+                key={img.id}
+                className={`imagen-card nueva-img ${img.es_principal ? 'principal' : ''}`}
+              >
+                <img src={getMediaUrl(img.url)} alt="Nueva" />
+                <div className="imagen-actions">
+                  <button
+                    type="button"
+                    className="btn-icon danger"
+                    title="Eliminar"
+                    onClick={() => eliminarImagen(img.id, true)}
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+                <span className="img-principal-badge pending">Pendiente</span>
+              </div>
+            ))}
+
+            <label className="imagen-upload-btn">
+              {subiendoImg
+                ? <div className="spinner-sm" />
+                : <><Upload size={20} /><span>Agregar fotos</span></>
+              }
+              <input
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageUpload}
+                hidden
+                disabled={subiendoImg}
+              />
+            </label>
+          </div>
+          <p className="field-hint">
+            JPG, PNG o WEBP. Máx. 1&nbsp;MB.
+          </p>
+        </div>
+
         <div className={`tab-content ${tabActiva === 'ofertas' ? 'active' : ''}`}>
           {esEdicion ? (
             <OfertasProductoTab
@@ -1024,6 +1068,31 @@ export default function ProductForm() {
               <p>Guardá el producto primero para poder agregarle ofertas comerciales.</p>
             </div>
           )}
+        </div>
+
+        <div className={`tab-content ${tabActiva === 'configuracion' ? 'active' : ''}`}>
+          <div className="form-grid-2">
+            <div className="form-group">
+              <label htmlFor="prod-estado-venta">Estado de venta</label>
+              <select id="prod-estado-venta" {...register('estado_venta')}>
+                {ESTADOS_VENTA.map(e => (
+                  <option key={e.value} value={e.value}>{e.label}</option>
+                ))}
+              </select>
+              <p className="field-hint">{estadoVentaActual.desc}</p>
+            </div>
+
+            <div className="config-flags">
+              <label className="check-label">
+                <input type="checkbox" {...register('activo')} />
+                Producto activo
+              </label>
+              <label className="check-label">
+                <input type="checkbox" {...register('destacado')} />
+                <Star size={13} /> Destacado
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════
@@ -1048,6 +1117,59 @@ export default function ProductForm() {
             </div>
           )}
         </div>
+
+        </div>
+
+        <aside className="prod-summary-panel" aria-label="Resumen del producto">
+          <div className="summary-media">
+            {imagenPrincipalUrl
+              ? <img src={imagenPrincipalUrl} alt={nombre || 'Producto'} />
+              : <Package size={34} opacity={0.35} />
+            }
+          </div>
+
+          <div>
+            <h2>{nombre || 'Producto sin nombre'}</h2>
+            <p>{categoriaActual?.nombre || 'Sin categoría'}</p>
+          </div>
+
+          <div className="summary-price">
+            {precioAnclaVal > precioFinalVal && <span>{fmtGs(precioAnclaVal)}</span>}
+            <strong>{fmtGs(precioFinalVal)}</strong>
+          </div>
+
+          <div className="summary-kpis">
+            <div>
+              <span>Stock</span>
+              <strong>{stockActualVal}</strong>
+            </div>
+            <div>
+              <span>Margen</span>
+              <strong className={margenSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtPct(margenSimpleVal)}</strong>
+            </div>
+          </div>
+
+          <div className="summary-list">
+            <div>
+              <span>Estado</span>
+              <strong>{ESTADO_VENTA_LABELS[estadoVentaVal] || 'En venta'}</strong>
+            </div>
+            <div>
+              <span>Activo</span>
+              <strong>{activoVal ? 'Sí' : 'No'}</strong>
+            </div>
+            <div>
+              <span>Variantes</span>
+              <strong>{tieneVariantes ? variantesFields.length : 0}</strong>
+            </div>
+            <div>
+              <span>Tags</span>
+              <strong>{tagsVal.split(',').map(t => t.trim()).filter(Boolean).length}</strong>
+            </div>
+          </div>
+
+          {destacadoVal && <span className="summary-featured"><Star size={12} /> Destacado</span>}
+        </aside>
 
       </form>
 

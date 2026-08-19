@@ -70,7 +70,7 @@ export const HeaderBlock = ({ content, settings }) => {
         else window.location.href = link.href;
       }
     } else if (link.type === 'producto' && actions.navigate) {
-      actions.navigate(page.slug ? `/l/${page.slug}/p/${link.target_id}` : `/p/${link.target_id}`);
+      actions.navigate(page.slug ? `/l/${page.slug}/${link.target_id}` : `/${link.target_id}`);
     } else if (link.type === 'categoria' && actions.setFiltroCategoria) {
       actions.setFiltroCategoria(link.target_id);
       document.querySelector('#lp-productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });

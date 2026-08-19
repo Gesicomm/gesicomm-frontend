@@ -491,7 +491,10 @@ export default function MiDashboard() {
           <div className="md-empty">
             <Store size={22} opacity={0.35} />
             <p>Todavía no tenés una landing publicada.</p>
-            <Link to="/mi-landing" className="md-btn-primary">
+            {/* Apunta al nuevo flujo de Landing simple (3 templates rígidos)
+                — el editor flexible (/mi-landing) sigue existiendo pero ya
+                no es un punto de entrada visible, ver UserLayout.jsx. */}
+            <Link to="/landing" className="md-btn-primary">
               Crear mi landing <ArrowRight size={14} />
             </Link>
           </div>

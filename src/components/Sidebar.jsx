@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap
+  GraduationCap, Receipt
 } from 'lucide-react';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
@@ -123,6 +123,13 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                 siguen en la base, solo se sacó el link del menú. */}
 
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
+          </ul>
+
+          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+            Finanzas
+          </div>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+            {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y Gastos', icon: <Receipt /> })}
           </ul>
 
           <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">

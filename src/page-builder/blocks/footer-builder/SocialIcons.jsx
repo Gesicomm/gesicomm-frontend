@@ -5,9 +5,9 @@ import React from 'react';
 // (BuilderElement.jsx) y el render público (PublicFooterRenderer.jsx)
 // dibujen exactamente el mismo ícono para cada red, en vez de cada uno
 // definir su propia versión (que es como habían quedado desincronizados).
-function Svg({ size = 20, color = 'currentColor', children }) {
+function Svg({ size = 20, color = 'currentColor', className, children, ...rest }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...rest}>
       {children}
     </svg>
   );

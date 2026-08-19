@@ -24,7 +24,7 @@
  */
 export async function obtenerLandingPublica(slug) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}` : '/api/l/';
-  const res = await fetch(path);
+  const res = await fetch(path, { credentials: 'include' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('No se pudo cargar la landing.');
   return res.json();

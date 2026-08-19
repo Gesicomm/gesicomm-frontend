@@ -22,11 +22,14 @@ import LandingEditor from './pages/landing/LandingEditor';
 import MerchantEditor from './pages/landing/MerchantEditor';
 import FunnelSelector from './pages/landing/FunnelSelector';
 import LandingPublica from './pages/landing/LandingPublica';
+import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
+import LandingSimpleEditor from './pages/landing-simple/LandingSimpleEditor';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
 import EducacionView from './pages/educacion/EducacionView';
 import AdminEducacion from './pages/educacion/AdminEducacion';
+import CostosGastos from './pages/finanzas/CostosGastos';
 
 // Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
 // el App Dashboard de Meta para la revisión de la aplicación, así que tienen
@@ -85,12 +88,23 @@ function PaginaPublica({ children }) {
 // reescribe "/" a "/l" solo en el vhost de tiendas) — esto es la mitad
 // cliente, para cuando el visitante SÍ ejecuta JS. esHostnameDeTienda() es
 // la misma lógica que middleware/resolverTienda.js del backend.
+import CatalogoPublico from './pages/landing/CatalogoPublico';
+import ContactoPublico from './pages/landing/ContactoPublico';
+
 function RaizSegunHostname() {
   return esHostnameDeTienda() ? <LandingPublica /> : <PublicLayout><Landing /></PublicLayout>;
 }
 
 function ProductoSegunHostname() {
   return esHostnameDeTienda() ? <LandingPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function CatalogoSegunHostname() {
+  return esHostnameDeTienda() ? <CatalogoPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function ContactoSegunHostname() {
+  return esHostnameDeTienda() ? <ContactoPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function App() {
@@ -174,6 +188,11 @@ function App() {
           <RequireTienda><DynamicLayout><ComboConfiguracion /></DynamicLayout></RequireTienda>
         } />
 
+        {/* Finanzas */}
+        <Route path="/finanzas/costos-gastos" element={
+          <RequireTienda><DynamicLayout><CostosGastos /></DynamicLayout></RequireTienda>
+        } />
+
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}
         <Route path="/onboarding" element={
           <ProtectedRoute><Onboarding /></ProtectedRoute>
@@ -205,6 +224,15 @@ function App() {
         <Route path="/mi-landing/:id" element={
           <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
         } />
+        {/* Landing simple — 3 templates rígidos (Fitness/Beauty/Tech). Ver
+            pages/landing-simple/. Sistema paralelo al de arriba: el
+            comercio solo edita contenido, nunca estructura. */}
+        <Route path="/landing" element={
+          <RequireTienda><UserLayout><LandingSimpleEntry /></UserLayout></RequireTienda>
+        } />
+        <Route path="/landing/:id" element={
+          <RequireTienda><UserLayout><LandingSimpleEditor /></UserLayout></RequireTienda>
+        } />
         {/* Diseño de página propio de un producto — mismo editor, en modo
             producto (ver esModoProducto en LandingEditor.jsx). */}
         <Route path="/mi-landing/producto/:productoId/funnel-selector" element={
@@ -228,9 +256,16 @@ function App() {
         <Route path="/l" element={<LandingPublica />} />
         <Route path="/l/:slug" element={<LandingPublica />} />
         
+        {/* Catálogo y Contacto públicos de la tienda */}
+        <Route path="/catalogo" element={<CatalogoSegunHostname />} />
+        <Route path="/contacto" element={<ContactoSegunHostname />} />
+        {/* Alias para pruebas locales o previsualización. En producción se usará el hostname. */}
+        <Route path="/l/:slug/catalogo" element={<CatalogoPublico />} />
+        <Route path="/l/:slug/contacto" element={<ContactoPublico />} />
+
         {/* Producto publico */}
-        <Route path="/p/:productId" element={<ProductoSegunHostname />} />
-        <Route path="/l/:slug/p/:productId" element={<LandingPublica />} />
+        <Route path="/:productId" element={<ProductoSegunHostname />} />
+        <Route path="/l/:slug/:productId" element={<LandingPublica />} />
 
         {/* Comodín: sin esto una URL mal escrita renderiza una página en
             blanco, porque React Router no encuentra ninguna coincidencia. */}

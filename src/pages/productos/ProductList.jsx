@@ -7,7 +7,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Monitor
+  ToggleLeft, ToggleRight, Loader, Tag, Layers
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ProductCombosDrawer from './ProductCombosDrawer';
@@ -15,6 +15,22 @@ import { verificarSesion } from '../../utils/auth';
 import './productos.css';
 
 const ITEMS_POR_PAGINA = 10;
+
+const VISTAS_CATALOGO = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'activos', label: 'Activos' },
+  { id: 'sin_stock', label: 'Sin stock' },
+  { id: 'ofertas', label: 'Ofertas' },
+  { id: 'variantes', label: 'Variantes' },
+];
+
+const ORDENES_CATALOGO = [
+  { value: 'recientes', label: 'Más recientes' },
+  { value: 'nombre', label: 'Nombre A-Z' },
+  { value: 'precio_asc', label: 'Menor precio' },
+  { value: 'precio_desc', label: 'Mayor precio' },
+  { value: 'stock_asc', label: 'Menor stock' },
+];
 
 export default function ProductList() {
   const navigate = useNavigate();
@@ -34,8 +50,8 @@ export default function ProductList() {
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
-  const [soloActivos, setSoloActivos] = useState('true');
-  const [stockBajo, setStockBajo] = useState(false);
+  const [vista, setVista] = useState('activos');
+  const [ordenarPor, setOrdenarPor] = useState('recientes');
 
   // Debounce solo para el texto (los selects disparan inmediato)
   const textoBuscado = useDebounce(texto, 300);
@@ -57,11 +73,14 @@ export default function ProductList() {
       const body = {
         page: pag,
         limit: ITEMS_POR_PAGINA,
+        ordenar_por: ordenarPor,
         // Filtros dinámicos — solo incluir si tienen valor
         ...(textoBuscado.trim()  && { texto: textoBuscado.trim() }),
         ...(categoriaId          && { categoria_id: parseInt(categoriaId) }),
-        ...(soloActivos !== ''   && { activo: soloActivos === 'true' }),
-        ...(stockBajo            && { stock_bajo: true }),
+        ...(vista === 'activos'  && { activo: true }),
+        ...(vista === 'sin_stock' && { sin_stock: true }),
+        ...(vista === 'ofertas' && { con_ofertas: true }),
+        ...(vista === 'variantes' && { con_variantes: true }),
         mios_solamente: true,
       };
 
@@ -74,7 +93,7 @@ export default function ProductList() {
     } finally {
       setCargando(false);
     }
-  }, [textoBuscado, categoriaId, soloActivos, stockBajo]);
+  }, [textoBuscado, categoriaId, vista, ordenarPor]);
 
   // Única fuente de búsqueda: se dispara al montar, al cambiar de página,
   // y al cambiar cualquier filtro (porque `buscar` cambia de identidad
@@ -115,8 +134,8 @@ export default function ProductList() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const precioDisplay = (p) =>
-    `${parseFloat(p.precio_base).toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
+  const precioDisplay = (valor) =>
+    `${parseFloat(valor || 0).toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
 
   // ── Render ────────────────────────────────────────────────
   return (
@@ -167,28 +186,32 @@ export default function ProductList() {
           {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
 
-        {/* Estado */}
+        {/* Orden */}
         <select
-          id="filtro-estado"
+          id="filtro-orden"
           className="filter-select"
-          value={soloActivos}
-          onChange={e => { setSoloActivos(e.target.value); setPagina(1); }}
+          value={ordenarPor}
+          onChange={e => { setOrdenarPor(e.target.value); setPagina(1); }}
         >
-          <option value="true">Activos</option>
-          <option value="false">Inactivos</option>
-          <option value="">Todos</option>
+          {ORDENES_CATALOGO.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
         </select>
+      </div>
 
-        {/* Stock bajo */}
-        <label className="filter-check" htmlFor="filtro-stock-bajo">
-          <input
-            id="filtro-stock-bajo"
-            type="checkbox"
-            checked={stockBajo}
-            onChange={e => { setStockBajo(e.target.checked); setPagina(1); }}
-          />
-          <AlertTriangle size={13} /> Stock bajo
-        </label>
+      <div className="prod-view-tabs" role="tablist" aria-label="Vistas de catálogo">
+        {VISTAS_CATALOGO.map(v => (
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            aria-selected={vista === v.id}
+            className={`prod-view-tab ${vista === v.id ? 'active' : ''}`}
+            onClick={() => { setVista(v.id); setPagina(1); }}
+          >
+            {v.label}
+          </button>
+        ))}
       </div>
 
       {/* Tabla */}
@@ -213,22 +236,34 @@ export default function ProductList() {
                 <thead>
                   <tr>
                     <th>Producto</th>
-                    <th>Estado de venta</th>
-                    <th>Categoría</th>
                     <th>Precio</th>
                     <th>Stock</th>
-                    <th>Activo</th>
+                    <th>Indicadores</th>
+                    <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {productos.map(p => {
-                    const stockBajoItem = p.cantidad_disponible <= p.stock_minimo;
+                    const stock = Number(p.cantidad_disponible) || 0;
+                    const stockMinimo = Number(p.stock_minimo) || 0;
+                    const sinStockItem = stock <= 0;
+                    const stockBajoItem = stock > 0 && stock <= stockMinimo;
                     const imagen = p.imagenes?.[0]?.url;
+                    const precioBase = Number(p.precio_base) || 0;
+                    const precioAncla = Number(p.precio_ancla ?? p.precio_tachado) || 0;
+                    const tienePrecioAncla = precioAncla > precioBase;
+                    const tieneDescuento = tienePrecioAncla || Number(p.descuento_porcentaje) > 0 || Number(p.ofertas_count) > 0;
+                    const categoria = categorias.find(c => c.id === p.categoria_id)?.nombre;
                     return (
                       <tr
                         key={p.id}
-                        className={!p.activo ? 'row-inactive' : ''}
+                        className={`prod-row ${!p.activo ? 'row-inactive' : ''}`}
+                        onClick={() => navigate(`/products/${p.id}/editar`)}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') navigate(`/products/${p.id}/editar`);
+                        }}
                       >
                         <td>
                           <div className="prod-cell-name">
@@ -239,16 +274,56 @@ export default function ProductList() {
                               }
                             </div>
                             <div>
-                              <span className="prod-name">{p.nombre}</span>
-                              {p.destacado && (
-                                <span className="badge-star"><Star size={10} /> Destacado</span>
-                              )}
-                              {usuarioActual && p.creado_por === usuarioActual.id ? (
-                                <span style={{ marginLeft: 6, fontSize: '0.65rem', padding: '2px 6px', background: 'var(--primary)', color: '#fff', borderRadius: '4px' }}>Propio</span>
-                              ) : (
-                                <span style={{ marginLeft: 6, fontSize: '0.65rem', padding: '2px 6px', background: 'var(--surface-3)', color: 'var(--fg-muted)', borderRadius: '4px' }}>Global</span>
-                              )}
+                              <div className="prod-name-line">
+                                <span className="prod-name">{p.nombre}</span>
+                                {p.destacado && (
+                                  <span className="badge-star"><Star size={10} /> Destacado</span>
+                                )}
+                              </div>
+                              <div className="prod-meta-line">
+                                {p.sku && <span className="sku-tag">{p.sku}</span>}
+                                {categoria && <span>{categoria}</span>}
+                                {usuarioActual && p.creado_por === usuarioActual.id ? (
+                                  <span className="owner-badge own">Propio</span>
+                                ) : (
+                                  <span className="owner-badge">Global</span>
+                                )}
+                              </div>
                             </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="prod-price-stack">
+                            {tienePrecioAncla && <span className="anchor-price">{precioDisplay(precioAncla)}</span>}
+                            <span className="price-tag">{precioDisplay(precioBase)}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="stock-stack">
+                            <span className={`stock-badge ${sinStockItem ? 'stock-empty' : stockBajoItem ? 'stock-low' : 'stock-ok'}`}>
+                              {(stockBajoItem || sinStockItem) && <AlertTriangle size={11} />}
+                              {stock} unidades
+                            </span>
+                            <span className="stock-mini-label">
+                              {sinStockItem ? 'Agotado' : stockBajoItem ? 'Stock bajo' : 'Saludable'}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="prod-indicators">
+                            {tieneDescuento && <span className="prod-indicator offer"><Tag size={11} /> Oferta</span>}
+                            {Number(p.variantes_count) > 0 && (
+                              <span className="prod-indicator"><Layers size={11} /> {p.variantes_count} variantes</span>
+                            )}
+                            {Number(p.ofertas_count) > 0 && (
+                              <span className="prod-indicator"><Tag size={11} /> {p.ofertas_count} ofertas</span>
+                            )}
+                            {Number(p.tags_count) > 0 && (
+                              <span className="prod-indicator">{p.tags_count} tags</span>
+                            )}
+                            {!tieneDescuento && !p.variantes_count && !p.ofertas_count && !p.tags_count && (
+                              <span className="prod-indicator muted">Simple</span>
+                            )}
                           </div>
                         </td>
                         <td>
@@ -258,19 +333,9 @@ export default function ProductList() {
                               : p.estado_venta === 'fuera_de_stock' ? 'Fuera de stock'
                               : 'No disponible'}
                           </span>
-                        </td>
-                        <td>{categorias.find(c => c.id === p.categoria_id)?.nombre || '—'}</td>
-                        <td><span className="price-tag">{precioDisplay(p)}</span></td>
-                        <td>
-                          <span className={`stock-badge ${stockBajoItem ? 'stock-low' : 'stock-ok'}`}>
-                            {stockBajoItem && <AlertTriangle size={11} />}
-                            {p.cantidad_disponible}
-                          </span>
-                        </td>
-                        <td>
                           <button
                             className={`toggle-btn ${p.activo ? 'active' : ''}`}
-                            onClick={() => toggleActivo(p)}
+                            onClick={(e) => { e.stopPropagation(); toggleActivo(p); }}
                             title={p.activo ? 'Desactivar' : 'Activar'}
                           >
                             {p.activo ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
@@ -280,29 +345,32 @@ export default function ProductList() {
                           <div className="action-btns">
                             <button
                               className="btn-icon"
-                              onClick={() => navigate(`/products/${p.id}/editar`)}
-                              title="Editar Detalles"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/products/${p.id}/editar`); }}
+                              title="Abrir workspace"
                             >
                               <Edit2 size={15} />
                             </button>
-                            <button
+                            {/* Botón del sistema de landing flexible (Funnel por
+                                producto) — oculto a pedido, código/ruta intactos
+                                (ver UserLayout.jsx). */}
+                            {/* <button
                               className="lb-btn-primary"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', gap: '0.25rem', height: '28px', display: 'inline-flex', alignItems: 'center' }}
                               onClick={() => navigate(`/mi-landing/producto/${p.id}/funnel-selector`)}
                               title="Configurar Funnel de Venta"
                             >
                               <Monitor size={14} /> Funnel
-                            </button>
+                            </button> */}
                             <button
                               className="btn-icon"
-                              onClick={() => setComboProductoSeleccionado(p)}
+                              onClick={(e) => { e.stopPropagation(); setComboProductoSeleccionado(p); }}
                               title="Gestionar Combos"
                             >
                               <Tag size={15} />
                             </button>
                             <button
                               className="btn-icon danger"
-                              onClick={() => setProductoABajar(p)}
+                              onClick={(e) => { e.stopPropagation(); setProductoABajar(p); }}
                               title="Dar de baja"
                             >
                               <Trash2 size={15} />

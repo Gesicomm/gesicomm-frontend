@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, Truck, DollarSign } from 'lucide-react';
+import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, Truck, DollarSign, PiggyBank } from 'lucide-react';
 import './CentroInteligenciaComercial.css';
 import './analytics/analytics.css';
 
@@ -10,11 +10,12 @@ import { ReporteVentas } from './analytics/reports/ReporteVentas';
 import ReporteProductos from './analytics/reports/ReporteProductos';
 import ReporteConfirmadores from './analytics/reports/ReporteConfirmadores';
 import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
+import { ReporteRentabilidad } from './analytics/reports/ReporteRentabilidad';
 import { PlaceholderReport } from './analytics/reports/PlaceholderReport';
 import { DashboardGeneralTab } from './DashboardGeneralTab';
 import { RendicionTab } from './RendicionTab';
 
-const REPORTES_VALIDOS = ['resumen', 'ventas', 'productos', 'confirmadores', 'finanzas', 'resumen_pedidos', 'rendicion'];
+const REPORTES_VALIDOS = ['resumen', 'ventas', 'productos', 'confirmadores', 'finanzas', 'rentabilidad', 'resumen_pedidos', 'rendicion'];
 
 export function CentroInteligenciaComercial({ couriers = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,6 +57,8 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         return <ReporteConfirmadores filters={analyticsFilters} />;
       case 'finanzas':
         return <ReporteFinanzas filters={analyticsFilters} />;
+      case 'rentabilidad':
+        return <ReporteRentabilidad filters={analyticsFilters} />;
       case 'resumen_pedidos':
         return <DashboardGeneralTab couriers={couriers} />;
       case 'rendicion':
@@ -117,6 +120,9 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setTab('finanzas')}>
           <DollarSign size={16} /> Control Financiero
+        </button>
+        <button className={`cic-subnav-btn ${activeReport === 'rentabilidad' ? 'active' : ''}`} onClick={() => setTab('rentabilidad')}>
+          <PiggyBank size={16} /> Rentabilidad
         </button>
       </div>
 

@@ -15,6 +15,8 @@ import CartDrawer from './CartDrawer';
 import LandingDropdown from './LandingDropdown';
 import { PageRenderer } from '../../page-builder/core/PageRenderer';
 import { registerLegacyBlocks } from '../../page-builder/blocks/legacyBlocks';
+import { getComponenteTemplate } from '../landing-simple/templates';
+import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -546,7 +548,7 @@ export default function LandingPublica() {
     e.stopPropagation();
     const tieneOfertasNormales = (item.ofertas || []).some(o => o.estrategia === 'normal');
     if (item.variantes?.length > 0 || tieneOfertasNormales) {
-      navigate(slug ? `/l/${slug}/p/${item.content_id}` : `/p/${item.content_id}`);
+      navigate(slug ? `/l/${slug}/${item.content_id}` : `/${item.content_id}`);
       return;
     }
     agregarAlCarrito({
@@ -591,6 +593,62 @@ export default function LandingPublica() {
 
   const isProductView = Boolean(productId);
   const itemSeleccionado = isProductView ? data?.items?.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId)) : null;
+
+  // Landing de uno de los 3 templates rígidos (Fitness/Beauty/Tech/Básico)
+  // — ver pages/landing-simple/. Estructura fija, pero SÍ comparte carrito/
+  // checkout/order-bump con el sistema flexible (son genéricos sobre
+  // data.items, no dependen de secciones) — por eso esta rama vive acá,
+  // después de que carrito/agregarAlCarrito/CartDrawer ya están listos,
+  // en vez de cortar el render antes de tocarlos.
+  if (data?.template?.kind === 'rigido') {
+    const cartDrawerProps = {
+      items: Array.from(carrito.values()),
+      sugerencias: sugerenciasCarrito,
+      onAgregarSugerencia: agregarSugerencia,
+      abierto: carritoAbierto,
+      onAbrir: () => setCarritoAbierto(true),
+      onCerrar: () => setCarritoAbierto(false),
+      onCantidad: cambiarCantidadCarrito,
+      onQuitar: quitarDelCarrito,
+      onConfirmarPedido: confirmarPedido,
+    };
+
+    if (isProductView) {
+      if (!itemSeleccionado) {
+        return <div className="lp-status-page"><h1>Producto no encontrado</h1></div>;
+      }
+      return (
+        <>
+          <ProductPagePublica
+            item={itemSeleccionado}
+            onAgregar={agregarAlCarrito}
+            contacto={mapPublicDtoToTemplateData(data).contacto}
+            tema={mapPublicDtoToTemplateData(data).tema}
+            onContactar={contactar}
+            slug={slug}
+          />
+          <CartDrawer {...cartDrawerProps} />
+        </>
+      );
+    }
+
+    const ComponenteRigido = getComponenteTemplate(data.template.slug);
+    if (!ComponenteRigido) {
+      return <div className="lp-status-page"><h1>Esta vidriera no está disponible</h1></div>;
+    }
+    const cantidadCarritoRigida = Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0);
+    return (
+      <>
+        <ComponenteRigido
+          data={mapPublicDtoToTemplateData(data)}
+          onClickProducto={(p) => navigate(slug ? `/l/${slug}/${p.id}` : `/${p.id}`)}
+          cantidadCarrito={cantidadCarritoRigida}
+          onAbrirCarrito={() => setCarritoAbierto(true)}
+        />
+        <CartDrawer {...cartDrawerProps} />
+      </>
+    );
+  }
 
   const seccionesActivas = isProductView && data.secciones_producto?.length > 0
     ? data.secciones_producto

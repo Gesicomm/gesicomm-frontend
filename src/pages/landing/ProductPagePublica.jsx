@@ -1,14 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, ChevronDown } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
+import { RedesSocialesFooter } from '../landing-simple/templates/sections';
+import RichText from '../../components/RichText';
 
 /**
  * Página de producto dedicada a pantalla completa para la landing pública.
  * Sustituye al antiguo ProductDetailModal.
  */
-export default function ProductPagePublica({ item, onAgregar, contacto, onContactar, slug }) {
+export default function ProductPagePublica({ item, onAgregar, contacto, tema, onContactar, slug }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   // Solo las ofertas "normal" se eligen acá — order_bump/upsell se ofrecen
@@ -25,6 +27,7 @@ export default function ProductPagePublica({ item, onAgregar, contacto, onContac
   const [cantidad, setCantidad] = useState(1);
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [agregado, setAgregado] = useState(false);
+  const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
   const variante = tieneVariantes ? item.variantes.find(v => v.id === varianteId) : null;
   const oferta = ofertaId ? ofertasNormales.find(o => o.id === ofertaId) : null;
@@ -167,7 +170,7 @@ export default function ProductPagePublica({ item, onAgregar, contacto, onContac
               </div>
             )}
 
-            {descripcion && <p className="lp-product-desc">{descripcion}</p>}
+            {descripcion && <RichText text={descripcion} className="lp-product-desc" />}
 
             {/* Opciones */}
             <div className="lp-product-options-container">
@@ -257,7 +260,34 @@ export default function ProductPagePublica({ item, onAgregar, contacto, onContac
             </div>
           </div>
         </div>
+
+        {item.faq?.length > 0 && (
+          <div className="lp-product-faq">
+            <h2 className="lp-product-faq-titulo">{item.faq_titulo || 'Todo lo que necesitas saber'}</h2>
+            <div className="lp-product-faq-lista">
+              {item.faq.map((f, idx) => (
+                <div key={idx} className="lp-product-faq-item">
+                  <button
+                    type="button"
+                    className="lp-product-faq-pregunta"
+                    onClick={() => setPreguntaAbierta(preguntaAbierta === idx ? null : idx)}
+                  >
+                    {f.pregunta}
+                    <ChevronDown size={16} className={`lp-product-faq-icono ${preguntaAbierta === idx ? 'abierta' : ''}`} />
+                  </button>
+                  {preguntaAbierta === idx && <p className="lp-product-faq-respuesta">{f.respuesta}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {contacto && tema && (
+        <div style={{ marginTop: 'auto', paddingBottom: '2rem' }}>
+          <RedesSocialesFooter contacto={contacto} acento={tema.acento || 'var(--lp-acento)'} bordeSuave="rgba(0,0,0,0.1)" />
+        </div>
+      )}
     </div>
   );
 }

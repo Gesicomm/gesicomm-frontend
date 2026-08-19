@@ -12,7 +12,7 @@ export default function LandingProductos({
   // Si no hay navigate (como en preview), noop
   const onCardClick = (item) => {
     if (navigate) {
-      navigate(slug ? `/l/${slug}/p/${item.content_id}` : `/p/${item.content_id}`, item);
+      navigate(slug ? `/l/${slug}/${item.content_id}` : `/${item.content_id}`, item);
     }
   };
 

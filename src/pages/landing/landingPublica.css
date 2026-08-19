@@ -2194,6 +2194,62 @@ button.lp-tier-card--imagen {
   }
 }
 
+/* "Todo lo que necesitas saber" — FAQ propia del producto (ver
+   ProductoFaq.js), independiente del FAQ de la landing. */
+.lp-product-faq {
+  max-width: 40rem;
+  margin: 3rem auto 0;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.08));
+}
+.lp-product-faq-titulo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--l-text, #f8fafc);
+  margin: 0 0 1.5rem;
+}
+.lp-product-faq-lista {
+  display: flex;
+  flex-direction: column;
+}
+.lp-product-faq-item {
+  border-top: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.08));
+  padding: 1rem 0;
+}
+.lp-product-faq-item:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.lp-product-faq-pregunta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: left;
+  color: var(--l-text, #f8fafc);
+  cursor: pointer;
+}
+.lp-product-faq-icono {
+  flex-shrink: 0;
+  color: var(--l-primary);
+  transition: transform 0.15s ease;
+}
+.lp-product-faq-icono.abierta {
+  transform: rotate(180deg);
+}
+.lp-product-faq-respuesta {
+  margin: 0.6rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--l-text-muted, #94a3b8);
+}
+
 
 /* Color Schemes para secciones individuales */
 [data-color-scheme="light"] {
