@@ -11,7 +11,7 @@ import RichText from '../../components/RichText';
  * Página de producto dedicada a pantalla completa para la landing pública.
  * Sustituye al antiguo ProductDetailModal.
  */
-export default function ProductPagePublica({ item, onAgregar, contacto, tema, onContactar, slug, nombreComercio }) {
+export default function ProductPagePublica({ item, onAgregar, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   // Solo las ofertas "normal" se eligen acá — order_bump/upsell se ofrecen
@@ -104,9 +104,11 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
   // fondo oscuro (invisible). Se declaran acá a partir del tema de la
   // landing para que los botones existan visualmente y respeten la paleta.
   const varsTema = tema ? {
-    ...(tema.acento ? { '--l-primary': tema.acento, '--l-secondary': tema.acento } : null),
-    ...(tema.fondo ? { '--l-bg': tema.fondo, '--l-on-primary': tema.fondo } : null),
-    ...(tema.texto ? { '--l-text': tema.texto } : null),
+    '--l-primary': tema.acento,
+    '--l-secondary': tema.acento,
+    '--l-bg': tema.fondo,
+    '--l-on-primary': tema.fondo,
+    '--l-text': tema.texto,
   } : null;
 
   return (
@@ -292,6 +294,37 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
                   {preguntaAbierta === idx && <p className="lp-product-faq-respuesta">{f.respuesta}</p>}
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {relacionados?.items?.length > 0 && (
+          <div className="lp-product-relacionados">
+            <h2 className="lp-product-relacionados-titulo">
+              {relacionados.titulo || 'Productos relacionados'}
+            </h2>
+            <div className="lp-product-relacionados-grid">
+              {relacionados.items.map(r => {
+                const rEnOferta = r.precio_tachado != null && r.precio_tachado > r.precio;
+                return (
+                  <div
+                    key={r.id}
+                    className="lp-product-relacionados-card"
+                    onClick={() => onClickRelacionado?.(r)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="lp-product-relacionados-img">
+                      {r.imagen ? <img src={getMediaUrl(r.imagen)} alt={r.nombre} /> : <ImageOff size={20} />}
+                    </div>
+                    <p className="lp-product-relacionados-nombre">{r.nombre}</p>
+                    <div className="lp-product-relacionados-precio">
+                      <span>{formatPrecio(r.precio)}</span>
+                      {rEnOferta && <span className="tachado">{formatPrecio(r.precio_tachado)}</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

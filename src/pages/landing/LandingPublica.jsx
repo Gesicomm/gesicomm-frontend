@@ -17,6 +17,7 @@ import { PageRenderer } from '../../page-builder/core/PageRenderer';
 import { registerLegacyBlocks } from '../../page-builder/blocks/legacyBlocks';
 import { getComponenteTemplate } from '../landing-simple/templates';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
+import { resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -617,16 +618,28 @@ export default function LandingPublica() {
       if (!itemSeleccionado) {
         return <div className="lp-status-page"><h1>Producto no encontrado</h1></div>;
       }
+      // El tema crudo de la landing (dto.tema) suele venir con
+      // fondo/texto/acento en null si el comercio nunca los personalizó —
+      // acá se resuelve contra el default del template ACTIVO (cada uno
+      // tiene el suyo: Fitness oscuro/naranja, Beauty pastel, Tech
+      // oscuro/celeste), no un genérico blanco/negro. Antes se pasaba el
+      // dto crudo y la página de producto quedaba con los colores por
+      // defecto de landingPublica.css (verde/negro), sin relación con el
+      // template real de la landing.
+      const datosProductoPublico = mapPublicDtoToTemplateData(data);
+      const temaResuelto = resolverTemaPorSlug(datosProductoPublico.tema, data?.template?.slug);
       return (
         <>
           <ProductPagePublica
             item={itemSeleccionado}
             onAgregar={agregarAlCarrito}
-            contacto={mapPublicDtoToTemplateData(data).contacto}
-            tema={mapPublicDtoToTemplateData(data).tema}
-            nombreComercio={mapPublicDtoToTemplateData(data).nombreComercio}
+            contacto={datosProductoPublico.contacto}
+            tema={temaResuelto}
+            nombreComercio={datosProductoPublico.nombreComercio}
             onContactar={contactar}
             slug={slug}
+            relacionados={data?.relacionados}
+            onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
           />
           <CartDrawer {...cartDrawerProps} />
         </>
@@ -638,13 +651,36 @@ export default function LandingPublica() {
       return <div className="lp-status-page"><h1>Esta vidriera no está disponible</h1></div>;
     }
     const cantidadCarritoRigida = Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0);
+    const datosRigidos = mapPublicDtoToTemplateData(data);
+    // Las tarjetas del template reciben la forma reducida de TemplateData
+    // ({id, nombre, precio, ...}), pero el carrito/tracking necesitan el
+    // item COMPLETO del DTO (content_id, variantes, ofertas) — se resuelve
+    // por content_id, que es justamente el `id` que usa el template.
+    const itemPorContentId = (contentId) => (data.items || []).find(i => i.content_id === contentId);
+
     return (
       <>
         <ComponenteRigido
-          data={mapPublicDtoToTemplateData(data)}
+          data={datosRigidos}
           onClickProducto={(p) => navigate(slug ? `/l/${slug}/${p.id}` : `/${p.id}`)}
           cantidadCarrito={cantidadCarritoRigida}
           onAbrirCarrito={() => setCarritoAbierto(true)}
+          // Mismo agregarAlCarrito que la página de producto y el checkout
+          // (incluye el tracking de AddToCart a Pixel/CAPI/TikTok/GA).
+          onAgregarProducto={(p) => {
+            const item = itemPorContentId(p.id);
+            if (!item) return;
+            agregarAlCarrito({ item, variante: null, oferta: null, cantidad: 1, precio: item.precio });
+            setCarritoAbierto(true);
+          }}
+          linkWhatsappProducto={(p) => {
+            const item = itemPorContentId(p.id);
+            return item ? armarLinkWhatsapp(datosRigidos.contacto, item) : null;
+          }}
+          onContactarProducto={(p) => {
+            const item = itemPorContentId(p.id);
+            if (item) contactar(item);
+          }}
         />
         <CartDrawer {...cartDrawerProps} />
       </>

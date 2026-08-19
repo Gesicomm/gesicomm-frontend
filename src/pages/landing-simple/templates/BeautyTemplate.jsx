@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
-import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter } from './sections';
+import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
 
 const DEFAULT_TEMA = { fondo: '#FBEFEF', texto: '#3A2A2E', acento: '#E8A2B0' };
 const NOOP = () => {};
@@ -12,7 +12,7 @@ const NOOP = () => {};
  * propia (paleta pastel/clara por defecto). Ver FitnessTemplate.jsx para
  * el criterio general (contrato de props en mapLandingToTemplateData.js).
  */
-export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
+export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, onAgregarProducto = null, linkWhatsappProducto = null, onContactarProducto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
   const { nombreComercio, logo, hero, productos, productosTitulo, contacto, faq, beneficios, contenidoAdicional } = data;
   const tema = resolverTema(data.tema, DEFAULT_TEMA);
   const bordeSuave = hexToRgba(tema.texto, 0.12);
@@ -115,6 +115,16 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCa
                       )}
                     </div>
                   )}
+                    <AccionesProducto
+                      producto={p}
+                      onAgregar={onAgregarProducto}
+                      onElegir={onClickProducto}
+                      linkWhatsapp={linkWhatsappProducto ? linkWhatsappProducto(p) : null}
+                      onContactar={onContactarProducto}
+                      acento={tema.acento}
+                      fondo={'#fff'}
+                      bordeSuave={bordeSuave}
+                    />
                 </div>
               </div>
             ))}

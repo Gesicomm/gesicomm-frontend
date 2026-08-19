@@ -263,6 +263,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoDescripcion, setProductoDescripcion] = useState('');
   const [productoFaq, setProductoFaq] = useState([]);
   const [productoFaqTitulo, setProductoFaqTitulo] = useState('');
+  const [productoRelacionadosTitulo, setProductoRelacionadosTitulo] = useState('');
+  const [productoRelacionados, setProductoRelacionados] = useState([]); // [{id, nombre, imagen, precio_efectivo}]
   const [productoSubiendoImg, setProductoSubiendoImg] = useState(false);
   const [productoGuardando, setProductoGuardando] = useState(false);
   const [productoError, setProductoError] = useState('');
@@ -309,14 +311,23 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoFaqTitulo(p.faq_titulo || '');
     setProductoImagenes([]);
     setProductoFaq([]);
+    setProductoRelacionadosTitulo('');
+    setProductoRelacionados([]);
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
     Promise.all([
       productService.imagenes(p.id).catch(() => []),
       productService.faq(p.id).catch(() => []),
-    ]).then(([imgs, preguntas]) => {
+      productService.relacionados(p.id).catch(() => ({ titulo: null, items: [] })),
+    ]).then(([imgs, preguntas, relacionados]) => {
       setProductoImagenes(imgs);
       setProductoFaq(preguntas.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
+      setProductoRelacionadosTitulo(relacionados.titulo || '');
+      // El GET ya trae el fallback automático por categoría cuando no hay
+      // curación manual — se distingue con `relacionados.automatico` para
+      // no guardarlo como si el comercio lo hubiera elegido a mano
+      // (guardarProducto() solo persiste esto si el comercio lo tocó).
+      setProductoRelacionados(relacionados.automatico ? [] : relacionados.items.map(r => ({ id: r.id, nombre: r.nombre, imagen: r.imagen, precio_efectivo: r.precio })));
       setProductoCargando(false);
     });
   }
@@ -361,6 +372,17 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     }
   }
 
+  function agregarRelacionado(item) {
+    setProductoRelacionados(prev => {
+      if (prev.some(r => r.id === item.id) || item.id === productoPreview?.id) return prev;
+      return [...prev, { id: item.id, nombre: item.nombre, imagen: item.imagen, precio_efectivo: item.precio_efectivo ?? item.precio_base }];
+    });
+  }
+
+  function quitarRelacionado(id) {
+    setProductoRelacionados(prev => prev.filter(r => r.id !== id));
+  }
+
   async function guardarProducto() {
     setProductoGuardando(true);
     setProductoError('');
@@ -370,6 +392,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         descripcion_corta: productoDescripcion,
         faq_titulo: productoFaqTitulo,
         faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
+        relacionados_titulo: productoRelacionadosTitulo,
+        relacionados: productoRelacionados.map(r => r.id),
       });
       setProductoAviso('Cambios guardados.');
       recargarCatalogo();
@@ -523,6 +547,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               onFaqChange={setProductoFaq}
               faqTitulo={productoFaqTitulo}
               onFaqTitulo={setProductoFaqTitulo}
+              relacionadosTitulo={productoRelacionadosTitulo}
+              onRelacionadosTitulo={setProductoRelacionadosTitulo}
+              relacionados={productoRelacionados}
+              onAgregarRelacionado={agregarRelacionado}
+              onQuitarRelacionado={quitarRelacionado}
+              catalogo={catalogo}
               guardando={productoGuardando}
               onGuardar={guardarProducto}
               aviso={productoAviso}
@@ -612,6 +642,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   vistaContacto={vistaContacto}
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
+                  templateSlug={landing?.template?.slug}
                 />
               </div>
             </div>
@@ -637,6 +668,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   productoDescripcion={productoDescripcion}
                   productoFaq={productoFaq}
                   productoFaqTitulo={productoFaqTitulo}
+                  productoRelacionadosTitulo={productoRelacionadosTitulo}
+                  productoRelacionados={productoRelacionados}
                   datosPreview={datosPreview}
                   Componente={Componente}
                   abrirProducto={abrirProducto}
@@ -648,6 +681,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   vistaContacto={vistaContacto}
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
+                  templateSlug={landing?.template?.slug}
                 />
               </div>
             </div>
@@ -661,9 +695,10 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 // Subcomponente para renderizar el preview sin duplicar código
 function PreviewContent({
   productoPreview, productoImagenes, productoDescripcion, productoFaq, productoFaqTitulo,
+  productoRelacionadosTitulo, productoRelacionados,
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
-  vistaContacto, onAbrirContacto, onCerrarContacto,
+  vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug,
 }) {
   if (productoPreview) {
     return (
@@ -673,7 +708,10 @@ function PreviewContent({
         descripcion={productoDescripcion}
         faq={productoFaq}
         faqTitulo={productoFaqTitulo}
+        relacionadosTitulo={productoRelacionadosTitulo}
+        relacionados={productoRelacionados}
         tema={datosPreview.tema}
+        templateSlug={templateSlug}
         contacto={datosPreview.contacto}
         nombreComercio={datosPreview.nombreComercio}
         isMobile={viewportMode === 'mobile'}
@@ -688,6 +726,7 @@ function PreviewContent({
         titulo={datosPreview.catalogoTitulo}
         descripcion={datosPreview.catalogoDescripcion}
         tema={datosPreview.tema}
+        templateSlug={templateSlug}
         contacto={datosPreview.contacto}
         nombreComercio={datosPreview.nombreComercio}
         onClickProducto={(p) => abrirProducto(p)}
@@ -701,6 +740,7 @@ function PreviewContent({
       <ContactoPreview
         contacto={datosPreview.contacto}
         tema={datosPreview.tema}
+        templateSlug={templateSlug}
         nombreComercio={datosPreview.nombreComercio}
         onVolver={onCerrarContacto}
       />

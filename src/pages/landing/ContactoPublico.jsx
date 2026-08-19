@@ -5,9 +5,8 @@ import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { ContactoSection, DatosContactoSection } from '../landing-simple/templates/sections';
 import { Store, Loader } from 'lucide-react';
-import { hexToRgba, resolverTema } from '../landing-simple/templates/themeUtils';
+import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
 
-const DEFAULT_TEMA = { fondo: '#FFFFFF', texto: '#000000', acento: '#000000' };
 
 export default function ContactoPublico() {
   const { slug } = useParams();
@@ -39,7 +38,7 @@ export default function ContactoPublico() {
 
   const datosTemplate = mapPublicDtoToTemplateData(data);
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;
-  const tema = resolverTema(temaData, DEFAULT_TEMA);
+  const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
 
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dumbbell, Flame } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
-import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter } from './sections';
+import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
 
 const DEFAULT_TEMA = { fondo: '#0B0B0E', texto: '#FFFFFF', acento: '#FF5A1F' };
 const NOOP = () => {};
@@ -16,7 +16,7 @@ const NOOP = () => {};
  * landing pública (carrito/checkout, ver LandingPublica.jsx) — en el
  * preview del editor no se pasan, quedan como no-op/0.
  */
-export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
+export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, onAgregarProducto = null, linkWhatsappProducto = null, onContactarProducto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
   const { nombreComercio, logo, hero, productos, productosTitulo, contacto, faq, beneficios, contenidoAdicional } = data;
   const tema = resolverTema(data.tema, DEFAULT_TEMA);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
@@ -119,6 +119,16 @@ export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickC
                       )}
                     </div>
                   )}
+                    <AccionesProducto
+                      producto={p}
+                      onAgregar={onAgregarProducto}
+                      onElegir={onClickProducto}
+                      linkWhatsapp={linkWhatsappProducto ? linkWhatsappProducto(p) : null}
+                      onContactar={onContactarProducto}
+                      acento={tema.acento}
+                      fondo={tema.fondo}
+                      bordeSuave={bordeSuave}
+                    />
                 </div>
               </div>
             ))}

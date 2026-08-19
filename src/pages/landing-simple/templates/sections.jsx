@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock, Check, MessageCircle } from 'lucide-react';
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
 
@@ -56,6 +56,69 @@ export function BeneficiosSection({ beneficios, acento, textoSuave, tituloClase 
         );
       })}
     </section>
+  );
+}
+
+/**
+ * Acciones rápidas dentro de la tarjeta de producto: "Agregar" y WhatsApp,
+ * para no obligar al visitante a entrar al detalle. Están conectadas al
+ * MISMO carrito de la tienda que usa la página de producto y el checkout
+ * (agregarAlCarrito en LandingPublica.jsx, que además dispara el tracking
+ * de AddToCart a Pixel/CAPI).
+ *
+ * Si el producto tiene variantes u ofertas, "Agregar" no puede resolver
+ * sola qué opción quiere el visitante: en ese caso lleva al detalle
+ * (onElegir) en vez de agregar algo al azar.
+ *
+ * En el preview del editor no se pasan handlers → no se renderiza nada.
+ */
+export function AccionesProducto({ producto, onAgregar, onElegir, linkWhatsapp, onContactar, acento, fondo, bordeSuave }) {
+  const [agregado, setAgregado] = useState(false);
+  if (!onAgregar && !linkWhatsapp) return null;
+
+  const sinStock = producto?.stock != null && producto.stock <= 0;
+  const necesitaElegir = !!(producto?.tieneOpciones);
+
+  function alAgregar(e) {
+    e.stopPropagation();
+    if (sinStock) return;
+    if (necesitaElegir) { onElegir?.(producto); return; }
+    onAgregar?.(producto);
+    setAgregado(true);
+    setTimeout(() => setAgregado(false), 1500);
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 mt-2.5" onClick={(e) => e.stopPropagation()}>
+      {onAgregar && (
+        <button
+          type="button"
+          onClick={alAgregar}
+          disabled={sinStock}
+          title={sinStock ? 'Sin stock' : (necesitaElegir ? 'Elegir opciones' : 'Agregar al carrito')}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-bold px-2 py-2 rounded-lg transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ backgroundColor: agregado ? '#10b981' : acento, color: fondo }}
+        >
+          {sinStock ? 'Sin stock'
+            : agregado ? <><Check size={13} /> Agregado</>
+            : necesitaElegir ? 'Elegir'
+            : <><ShoppingCart size={13} /> Agregar</>}
+        </button>
+      )}
+      {linkWhatsapp && (
+        <a
+          href={linkWhatsapp}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => { e.stopPropagation(); onContactar?.(producto); }}
+          title="Consultar por WhatsApp"
+          className="inline-flex items-center justify-center p-2 rounded-lg transition-opacity hover:opacity-80 shrink-0"
+          style={{ border: `1px solid ${bordeSuave}`, color: acento }}
+        >
+          <MessageCircle size={15} />
+        </a>
+      )}
+    </div>
   );
 }
 

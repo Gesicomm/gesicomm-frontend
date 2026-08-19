@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowLeft, Loader, Save, Star, Trash2, Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Loader, Save, Star, Trash2, Upload, X, Search, ImageOff } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import FaqPanel from './FaqPanel';
 
@@ -21,9 +21,18 @@ export default function ProductoPanel({
   imagenes, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
   faqTitulo, onFaqTitulo,
   faq, onFaqChange,
+  relacionadosTitulo, onRelacionadosTitulo,
+  relacionados, onAgregarRelacionado, onQuitarRelacionado, catalogo,
   guardando, onGuardar, aviso, error,
   onVolver,
 }) {
+  const [buscandoRelacionado, setBuscandoRelacionado] = useState('');
+  const opcionesRelacionado = buscandoRelacionado.trim().length < 2 ? [] : [
+    ...(catalogo?.productos || []).map(p => ({ ...p, tipo: 'producto' })),
+  ]
+    .filter(p => p.id !== producto?.id && !relacionados?.some(r => r.id === p.id))
+    .filter(p => p.nombre?.toLowerCase().includes(buscandoRelacionado.trim().toLowerCase()))
+    .slice(0, 6);
   return (
     <div className="flex flex-col h-full">
       <button type="button" onClick={onVolver} className="p-4 border-b border-white/10 flex items-center gap-3 hover:bg-white/5 transition-colors w-full text-left">
@@ -98,6 +107,67 @@ export default function ProductoPanel({
               </div>
 
               <FaqPanel faq={faq} onChange={onFaqChange} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-white/60 mb-1.5">Productos relacionados</label>
+              <p className="text-xs text-white/30 mb-2">
+                Se muestran al final de la página de este producto. Si no elegís ninguno acá, se completan solos con productos de la misma categoría.
+              </p>
+
+              <div className="mb-3">
+                <input
+                  type="text"
+                  value={relacionadosTitulo}
+                  onChange={e => onRelacionadosTitulo(e.target.value)}
+                  placeholder="Ej: Productos relacionados"
+                  className={CAMPO}
+                />
+              </div>
+
+              {relacionados?.length > 0 && (
+                <div className="flex flex-col gap-1.5 mb-2">
+                  {relacionados.map(r => (
+                    <div key={r.id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+                      <div className="w-8 h-8 shrink-0 rounded overflow-hidden bg-black/40 flex items-center justify-center text-white/30">
+                        {r.imagen ? <img src={getMediaUrl(r.imagen)} alt="" className="w-full h-full object-cover" /> : <ImageOff size={12} />}
+                      </div>
+                      <span className="text-xs text-white flex-1 truncate">{r.nombre}</span>
+                      <button type="button" onClick={() => onQuitarRelacionado(r.id)} className="p-1 rounded text-white/40 hover:text-red-400 hover:bg-red-500/10 shrink-0">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="relative">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
+                <input
+                  type="text"
+                  value={buscandoRelacionado}
+                  onChange={e => setBuscandoRelacionado(e.target.value)}
+                  placeholder="Buscar producto para agregar..."
+                  className={`${CAMPO} pl-8`}
+                />
+              </div>
+              {opcionesRelacionado.length > 0 && (
+                <div className="mt-1.5 border border-white/10 rounded-lg overflow-hidden divide-y divide-white/10">
+                  {opcionesRelacionado.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => { onAgregarRelacionado(p); setBuscandoRelacionado(''); }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left hover:bg-white/5"
+                    >
+                      <div className="w-7 h-7 shrink-0 rounded overflow-hidden bg-black/40 flex items-center justify-center text-white/30">
+                        {p.imagen ? <img src={getMediaUrl(p.imagen)} alt="" className="w-full h-full object-cover" /> : <ImageOff size={11} />}
+                      </div>
+                      <span className="text-xs text-white truncate">{p.nombre}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button

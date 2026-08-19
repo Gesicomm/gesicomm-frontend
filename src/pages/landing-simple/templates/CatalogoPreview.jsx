@@ -1,10 +1,9 @@
 import React from 'react';
 import { ArrowLeft, ImageOff, Pencil } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
-import { hexToRgba, resolverTema } from './themeUtils';
+import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import { RedesSocialesFooter } from './sections';
 
-const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
 
 /**
  * Vista previa (dentro del editor) de la página de Catálogo completo —
@@ -20,9 +19,9 @@ const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
  * home (productos_titulo) — son dos páginas distintas.
  */
 export default function CatalogoPreview({
-  productos, titulo, descripcion, tema, contacto, nombreComercio, onClickProducto, onVolver, isMobile = false,
+  productos, titulo, descripcion, tema, templateSlug, contacto, nombreComercio, onClickProducto, onVolver, isMobile = false,
 }) {
-  const t = resolverTema(tema, DEFAULT_TEMA);
+  const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
 
   return (

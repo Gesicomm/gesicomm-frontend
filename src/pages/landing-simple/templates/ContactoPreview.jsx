@@ -1,9 +1,8 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { hexToRgba, resolverTema } from './themeUtils';
+import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import { ContactoSection, DatosContactoSection } from './sections';
 
-const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
 
 /**
  * Vista previa (dentro del editor) de la página de Contacto — igual que
@@ -14,8 +13,8 @@ const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
  * componente solo evita que el comercio se vaya del editor al mirar cómo
  * queda la página.
  */
-export default function ContactoPreview({ contacto, tema, nombreComercio, onVolver }) {
-  const t = resolverTema(tema, DEFAULT_TEMA);
+export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, onVolver }) {
+  const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
 
   return (

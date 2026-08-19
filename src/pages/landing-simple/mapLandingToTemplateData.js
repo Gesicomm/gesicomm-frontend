@@ -112,6 +112,11 @@ export function mapPublicDtoToTemplateData(dto) {
       precioAntes: i.precio_antes,
       imagen: i.imagen ? getMediaUrl(i.imagen) : null,
       etiqueta: i.etiqueta || null,
+      stock: i.stock,
+      // Con variantes u ofertas hay que elegir una opción antes de agregar
+      // al carrito — el botón de la tarjeta lleva al detalle en ese caso
+      // (ver AccionesProducto en templates/sections.jsx).
+      tieneOpciones: !!(i.variantes?.length || (i.ofertas || []).some(o => o.estrategia === 'normal')),
     })),
     contacto: {
       whatsapp: dto?.contacto_whatsapp || dto?.contacto_landing?.whatsapp || '',

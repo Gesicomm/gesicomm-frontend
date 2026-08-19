@@ -5,11 +5,10 @@ import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { getMediaUrl } from '../../services/api';
 import { Store, Loader, ImageOff } from 'lucide-react';
-import { hexToRgba, resolverTema } from '../landing-simple/templates/themeUtils';
+import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
 import { RedesSocialesFooter } from '../landing-simple/templates/sections';
 
 const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num || 0);
-const DEFAULT_TEMA = { fondo: '#FFFFFF', texto: '#000000', acento: '#000000' };
 
 const OPCIONES_ORDEN = [
   { id: 'destacados', label: 'Destacados' },
@@ -72,7 +71,7 @@ export default function CatalogoPublico() {
   // se cae al genérico — NUNCA a productos_titulo, que es el de la sección
   // "Productos destacados" del home (son dos páginas distintas).
   const tituloCatalogo = data?.catalogo_titulo || 'Catálogo de Productos';
-  const tema = resolverTema(temaData, DEFAULT_TEMA);
+  const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
 
   // A propósito NO es `data.items` (esa es solo la selección con

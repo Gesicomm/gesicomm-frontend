@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import { ChevronDown, ImageOff } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { RedesSocialesFooter } from './sections';
-import { hexToRgba, resolverTema } from './themeUtils';
+import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import RichText from '../../../components/RichText';
 
-const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
 
 /**
  * Vista previa (SOLO LECTURA) de la página de un producto dentro del
@@ -16,12 +15,12 @@ const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
  * se evita duplicar "Volver"/"Guardar" en dos lugares y el preview
  * responde a cada tecla sin esperar a un guardado.
  */
-export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, tema, contacto, nombreComercio, isMobile = false, previewMode = false }) {
+export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, relacionadosTitulo, relacionados, tema, templateSlug, contacto, nombreComercio, isMobile = false, previewMode = false }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
   if (!producto) return null;
-  const t = resolverTema(tema, DEFAULT_TEMA);
+  const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
   const precio = producto.precio_efectivo ?? producto.precio_base ?? null;
 
@@ -102,6 +101,38 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
                 )}
               </div>
               ))
+            )}
+          </div>
+        )}
+
+        {(relacionados?.length > 0 || previewMode) && (
+          <div className="mt-12 pt-8 max-w-4xl" style={{ borderTop: `1px solid ${bordeSuave}` }}>
+            <h2 className="text-lg font-extrabold mb-4">{relacionadosTitulo || 'Productos relacionados'}</h2>
+            {relacionados?.length === 0 ? (
+              <p className="text-sm italic" style={{ color: hexToRgba(t.texto, 0.4) }}>
+                (Los productos relacionados que agregues se mostrarán aquí)
+              </p>
+            ) : (
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'}`}>
+                {relacionados.map((r) => {
+                  const precioRel = r.precio_efectivo ?? r.precio_base ?? r.precio ?? null;
+                  return (
+                    <div key={r.id} className="rounded-xl overflow-hidden p-3 flex flex-col gap-2" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(t.texto, 0.02) }}>
+                      <div className="aspect-square rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.05) }}>
+                        {r.imagen ? (
+                          <img src={getMediaUrl(r.imagen)} alt={r.nombre} className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageOff size={20} style={{ color: hexToRgba(t.texto, 0.25) }} />
+                        )}
+                      </div>
+                      <p className="text-xs font-bold line-clamp-2">{r.nombre}</p>
+                      {precioRel != null && (
+                        <p className="text-xs font-semibold" style={{ color: t.acento }}>Gs {Number(precioRel).toLocaleString('es-PY')}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
