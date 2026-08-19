@@ -73,10 +73,20 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
   }
 
   function onEtiqueta(item, etiqueta) {
+    // item llega con id y tipo desde itemsOrdenados — reconstruimos la clave
+    // igual que al insertar para que `has` no falle.
     const k = clave(item.tipo, item.id);
     setSeleccion(prev => {
-      if (!prev.has(k)) return prev;
       const copia = new Map(prev);
+      // Fallback: si por algún motivo la clave no está (no debería pasar),
+      // buscamos por id para no perder la edición silenciosamente.
+      if (!copia.has(k)) {
+        const entrada = [...copia.entries()].find(([, v]) => v.id === item.id && v.tipo === item.tipo);
+        if (!entrada) return prev;
+        const [kReal, vReal] = entrada;
+        copia.set(kReal, { ...vReal, etiqueta });
+        return copia;
+      }
       copia.set(k, { ...copia.get(k), etiqueta });
       return copia;
     });
@@ -85,8 +95,14 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
   function onPrecioAncla(item, precio_ancla) {
     const k = clave(item.tipo, item.id);
     setSeleccion(prev => {
-      if (!prev.has(k)) return prev;
       const copia = new Map(prev);
+      if (!copia.has(k)) {
+        const entrada = [...copia.entries()].find(([, v]) => v.id === item.id && v.tipo === item.tipo);
+        if (!entrada) return prev;
+        const [kReal, vReal] = entrada;
+        copia.set(kReal, { ...vReal, precio_ancla });
+        return copia;
+      }
       copia.set(k, { ...copia.get(k), precio_ancla });
       return copia;
     });
