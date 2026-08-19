@@ -26,6 +26,10 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
 
   const galeria = (imagenes || []).map(i => i.url);
   const imagenActual = galeria[indiceImagen] || producto.imagen || null;
+  const itemsRelacionados = Array.isArray(relacionados)
+    ? relacionados
+    : (Array.isArray(relacionados?.items) ? relacionados.items : []);
+  const tituloRelacionados = relacionadosTitulo || (typeof relacionados === 'object' && !Array.isArray(relacionados) ? relacionados?.titulo : null) || 'Productos relacionados';
 
   return (
     <div className="w-full min-h-full" style={{ backgroundColor: t.fondo, color: t.texto }}>
@@ -79,7 +83,7 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
         </div>
 
         {(faq?.length > 0 || previewMode) && (
-          <div className="mt-12 pt-8 max-w-2xl" style={{ borderTop: `1px solid ${bordeSuave}` }}>
+          <div className="mt-12 pt-8 max-w-4xl" style={{ borderTop: `1px solid ${bordeSuave}` }}>
             <h2 className="text-lg font-extrabold mb-4">{faqTitulo || 'Todo lo que necesitas saber'}</h2>
             {faq?.length === 0 ? (
               <p className="text-sm italic" style={{ color: hexToRgba(t.texto, 0.4) }}>
@@ -105,17 +109,19 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
           </div>
         )}
 
-        {(relacionados?.length > 0 || previewMode) && (
+        {(itemsRelacionados.length > 0 || previewMode) && (
           <div className="mt-12 pt-8 max-w-4xl" style={{ borderTop: `1px solid ${bordeSuave}` }}>
-            <h2 className="text-lg font-extrabold mb-4">{relacionadosTitulo || 'Productos relacionados'}</h2>
-            {relacionados?.length === 0 ? (
+            <h2 className="text-lg font-extrabold mb-4">{tituloRelacionados}</h2>
+            {itemsRelacionados.length === 0 ? (
               <p className="text-sm italic" style={{ color: hexToRgba(t.texto, 0.4) }}>
                 (Los productos relacionados que agregues se mostrarán aquí)
               </p>
             ) : (
               <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'}`}>
-                {relacionados.map((r) => {
+                {itemsRelacionados.map((r) => {
                   const precioRel = r.precio_efectivo ?? r.precio_base ?? r.precio ?? null;
+                  const precioTachado = r.precio_tachado ?? r.precioAntes ?? null;
+                  const enOferta = precioTachado != null && precioTachado > precioRel;
                   return (
                     <div key={r.id} className="rounded-xl overflow-hidden p-3 flex flex-col gap-2" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(t.texto, 0.02) }}>
                       <div className="aspect-square rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.05) }}>
@@ -127,7 +133,12 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
                       </div>
                       <p className="text-xs font-bold line-clamp-2">{r.nombre}</p>
                       {precioRel != null && (
-                        <p className="text-xs font-semibold" style={{ color: t.acento }}>Gs {Number(precioRel).toLocaleString('es-PY')}</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold" style={{ color: t.acento }}>Gs {Number(precioRel).toLocaleString('es-PY')}</span>
+                          {enOferta && (
+                            <span className="text-[10px] line-through opacity-50">Gs {Number(precioTachado).toLocaleString('es-PY')}</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   );
