@@ -26,10 +26,8 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
 
   const galeria = (imagenes || []).map(i => i.url);
   const imagenActual = galeria[indiceImagen] || producto.imagen || null;
-  const itemsRelacionados = Array.isArray(relacionados)
-    ? relacionados
-    : (Array.isArray(relacionados?.items) ? relacionados.items : []);
-  const tituloRelacionados = relacionadosTitulo || (typeof relacionados === 'object' && !Array.isArray(relacionados) ? relacionados?.titulo : null) || 'Productos relacionados';
+  const itemsRelacionados = Array.isArray(relacionados) ? relacionados : [];
+  const tituloRelacionados = (relacionadosTitulo && relacionadosTitulo.trim()) ? relacionadosTitulo.trim() : 'Productos relacionados';
 
   return (
     <div className="w-full min-h-full" style={{ backgroundColor: t.fondo, color: t.texto }}>
@@ -111,35 +109,41 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
 
         {(itemsRelacionados.length > 0 || previewMode) && (
           <div className="mt-12 pt-8 max-w-4xl" style={{ borderTop: `1px solid ${bordeSuave}` }}>
-            <h2 className="text-lg font-extrabold mb-4">{tituloRelacionados}</h2>
+            <h2 className="text-lg font-extrabold mb-6">{tituloRelacionados}</h2>
             {itemsRelacionados.length === 0 ? (
               <p className="text-sm italic" style={{ color: hexToRgba(t.texto, 0.4) }}>
                 (Los productos relacionados que agregues se mostrarán aquí)
               </p>
             ) : (
-              <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'}`}>
+              <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
                 {itemsRelacionados.map((r) => {
                   const precioRel = r.precio_efectivo ?? r.precio_base ?? r.precio ?? null;
-                  const precioTachado = r.precio_tachado ?? r.precioAntes ?? null;
-                  const enOferta = precioTachado != null && precioTachado > precioRel;
+                  const precioAntes = r.precio_ancla ?? r.precio_tachado ?? null;
+                  const enOferta = precioAntes != null && precioRel != null && Number(precioAntes) > Number(precioRel);
+                  const imagenUrl = r.imagen ? getMediaUrl(r.imagen) : null;
                   return (
-                    <div key={r.id} className="rounded-xl overflow-hidden p-3 flex flex-col gap-2" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(t.texto, 0.02) }}>
-                      <div className="aspect-square rounded-lg overflow-hidden flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.05) }}>
-                        {r.imagen ? (
-                          <img src={getMediaUrl(r.imagen)} alt={r.nombre} className="w-full h-full object-cover" />
-                        ) : (
-                          <ImageOff size={20} style={{ color: hexToRgba(t.texto, 0.25) }} />
+                    <div
+                      key={r.id}
+                      className="rounded-xl overflow-hidden"
+                      style={{ border: `1px solid ${bordeSuave}` }}
+                    >
+                      <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.05) }}>
+                        {imagenUrl ? <img src={imagenUrl} alt={r.nombre} className="w-full h-full object-cover" /> : <ImageOff size={24} style={{ color: hexToRgba(t.texto, 0.2) }} />}
+                        {enOferta && (
+                          <div className="absolute top-2 left-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: t.acento, color: t.fondo }}>Oferta</span>
+                          </div>
                         )}
                       </div>
-                      <p className="text-xs font-bold line-clamp-2">{r.nombre}</p>
-                      {precioRel != null && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold" style={{ color: t.acento }}>Gs {Number(precioRel).toLocaleString('es-PY')}</span>
+                      <div className="p-3">
+                        <p className="font-semibold text-sm truncate">{r.nombre}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {precioRel != null && <span className="text-sm font-bold" style={{ color: t.acento }}>Gs {Number(precioRel).toLocaleString('es-PY')}</span>}
                           {enOferta && (
-                            <span className="text-[10px] line-through opacity-50">Gs {Number(precioTachado).toLocaleString('es-PY')}</span>
+                            <span className="text-xs line-through" style={{ color: hexToRgba(t.texto, 0.45) }}>Gs {Number(precioAntes).toLocaleString('es-PY')}</span>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
