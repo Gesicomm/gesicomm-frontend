@@ -956,7 +956,11 @@
   gap: 0.9rem;
 }
 
-.lb-card {
+/* .lb-card-wrap envuelve el botón de selección (.lb-card) + la barra de
+   "Editar producto" — antes .lb-card era a la vez el botón Y la tarjeta
+   visual completa, así que no había forma de meter otro control clickeable
+   (un <button> real) sin anidar botones (inválido en HTML). */
+.lb-card-wrap {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -964,20 +968,29 @@
   border: 1px solid var(--vit-border);
   border-radius: 13px;
   overflow: hidden;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
   transition: all var(--transition-base);
 }
-.lb-card:hover:not(.disabled) {
+.lb-card-wrap:hover {
   border-color: rgba(255,255,255,0.18);
   transform: translateY(-3px);
   box-shadow: 0 10px 30px rgba(0,0,0,0.45);
 }
-.lb-card.selected {
+.lb-card-wrap.selected {
   border-color: var(--vit-accent);
   box-shadow: 0 0 0 1px var(--vit-accent), 0 10px 30px rgba(16,185,129,0.12);
+}
+
+.lb-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  width: 100%;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
 }
 .lb-card.disabled { opacity: 0.4; cursor: not-allowed; }
 
@@ -1030,7 +1043,27 @@
   color: #04140d;
   transition: all var(--transition-fast);
 }
-.lb-card.selected .lb-card-check { background: var(--vit-accent); border-color: var(--vit-accent); }
+.lb-card-wrap.selected .lb-card-check { background: var(--vit-accent); border-color: var(--vit-accent); }
+
+/* Barra "Editar producto" — ancho completo y con texto (antes era un
+   ícono de 24px en una esquina, casi invisible y nadie lo encontraba).
+   Vive FUERA del <button> de selección (hermano, no hijo — ver
+   .lb-card-wrap) porque HTML no permite anidar <button>. */
+.lb-card-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.55rem;
+  background: rgba(255,255,255,0.04);
+  border-top: 1px solid var(--vit-border);
+  color: var(--vit-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.lb-card-edit:hover { background: var(--vit-accent); color: #04140d; border-top-color: var(--vit-accent); }
 
 .lb-card-body {
   padding: 0.65rem 0.75rem 0.8rem;
@@ -1066,15 +1099,19 @@
 .lb-orden-lista { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .lb-orden-fila {
-  display: flex; align-items: center; gap: 0.6rem;
+  display: flex; flex-direction: column; gap: 0.6rem;
   background: var(--vit-surface);
   border: 1px solid var(--vit-border);
   border-radius: 10px;
-  padding: 0.5rem 0.7rem;
+  padding: 0.6rem 0.7rem;
   transition: border-color var(--transition-fast), opacity var(--transition-fast);
 }
 .lb-orden-fila.dragging { opacity: 0.4; }
 .lb-orden-fila.over { border-color: var(--vit-accent); box-shadow: 0 -2px 0 -1px var(--vit-accent) inset; }
+
+.lb-orden-cabecera {
+  display: flex; align-items: center; gap: 0.6rem;
+}
 
 .lb-orden-handle {
   display: flex; align-items: center;
@@ -1114,20 +1151,38 @@
 }
 .lb-orden-precio { font-size: 0.72rem; color: var(--vit-muted); }
 
+.lb-orden-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 .lb-orden-etiqueta {
-  flex-shrink: 0;
-  width: 150px;
+  width: 100%;
   background: rgba(255,255,255,0.03);
   border: 1px solid var(--vit-border);
   border-radius: 7px;
-  padding: 0.35rem 0.55rem;
+  padding: 0.4rem 0.6rem;
   color: var(--vit-text);
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   outline: none;
+  box-sizing: border-box;
 }
 .lb-orden-etiqueta:focus { border-color: rgba(16,185,129,0.4); }
 .lb-orden-etiqueta::placeholder { color: var(--vit-muted-2); }
+
+.lb-orden-inicio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--vit-muted-2);
+  white-space: nowrap;
+  cursor: pointer;
+  padding: 0.15rem 0;
+}
+.lb-orden-inicio input { cursor: pointer; }
 
 .lb-orden-quitar {
   flex-shrink: 0;
@@ -1966,7 +2021,6 @@
   .lb-panel { padding: 1.15rem 1rem 1.4rem; }
   .lb-form-grid { grid-template-columns: minmax(0, 1fr); }
   .lb-hero-nombre { font-size: 1.35rem; }
-  .lb-orden-etiqueta { width: 110px; }
   .lb-select { max-width: none; flex: 1 1 140px; }
   .lb-diseno-grid { grid-template-columns: minmax(0, 1fr); }
   .lb-color-opciones { flex-direction: column; }

@@ -7,11 +7,15 @@ import { tiendaService } from '../../services/tiendaService';
 import { getComponenteTemplate } from './templates';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
+import CatalogoPreview from './templates/CatalogoPreview';
+import ContactoPreview from './templates/ContactoPreview';
 import { productService } from '../../services/productService';
 import MarcaPanel from './panels/MarcaPanel';
 import ContenidoPanel from './panels/ContenidoPanel';
-import ProductosPanel from './panels/ProductosPanel';
+import CatalogoPanel from './panels/CatalogoPanel';
+import DestacadosPanel from './panels/DestacadosPanel';
 import ContactoPanel from './panels/ContactoPanel';
+import RedesPanel from './panels/RedesPanel';
 import FaqPanel from './panels/FaqPanel';
 import BeneficiosPanel from './panels/BeneficiosPanel';
 import ColoresPanel from './panels/ColoresPanel';
@@ -21,13 +25,20 @@ import ProductoPanel from './panels/ProductoPanel';
 // `id="..."` en templates/*.jsx y templates/sections.jsx) — al cambiar de
 // tab, el preview se desplaza solo hasta ahí. "colores" no tiene una
 // sección propia (aplica a toda la landing), no dispara scroll.
+// "catalogo" y "destacados" son DOS editores distintos a propósito:
+// catalogo administra la página /catalogo (qué productos existen, orden,
+// etiquetas, precio ancla), destacados solo elige cuáles de esos se
+// muestran además en el inicio. Antes era un único tab "Productos" que
+// hacía las dos cosas y agregar un producto lo publicaba solo en el inicio.
 const TABS = [
   { key: 'marca', label: 'Marca', seccionId: 'header' },
   { key: 'contenido', label: 'Contenido', seccionId: 'hero' },
   { key: 'colores', label: 'Colores', seccionId: null },
-  { key: 'productos', label: 'Productos', seccionId: 'productos' },
+  { key: 'catalogo', label: 'Catálogo', seccionId: null },
+  { key: 'destacados', label: 'Destacados', seccionId: 'productos' },
   { key: 'beneficios', label: 'Beneficios', seccionId: 'beneficios' },
-  { key: 'contacto', label: 'Redes sociales', seccionId: 'contacto' },
+  { key: 'contacto', label: 'Contacto', seccionId: null },
+  { key: 'redes', label: 'Redes sociales', seccionId: 'contacto' },
   { key: 'faq', label: 'Preguntas', seccionId: 'faq' },
 ];
 
@@ -72,7 +83,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setDraft(l);
       setFaq(l.faq || []);
       setBeneficios((l.beneficios || []).map(b => ({ titulo: b.titulo, texto: b.texto, icono: b.icono })));
-      setItems((l.items || []).map(it => ({ tipo: it.tipo, referencia_id: it.referencia_id, etiqueta: it.etiqueta, orden: it.orden })));
+      setItems((l.items || []).map(it => ({ tipo: it.tipo, referencia_id: it.referencia_id, etiqueta: it.etiqueta, orden: it.orden, precio_ancla: it.precio_ancla, mostrar_en_inicio: it.mostrar_en_inicio !== false })));
       setCatalogo(cat);
       setTienda(t);
       setCargando(false);
@@ -87,8 +98,17 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   function cambiarTab(nuevoTab) {
     setTab(nuevoTab);
+    setProductoPreview(null);
+    // El panel "Productos" gestiona TODOS los items de la landing (no solo
+    // los destacados del home) — mostrar ahí la landing de inicio confundía
+    // (parecía que no pasaba nada al entrar a la pestaña). Ahora la derecha
+    // sigue a la pestaña activa: Productos → vista de Catálogo completo
+    // (clickeable para editar cada producto), Redes sociales → vista de
+    // Contacto, cualquier otra → la landing de inicio de siempre.
+    setVistaCatalogo(nuevoTab === 'catalogo');
+    setVistaContacto(nuevoTab === 'contacto');
     const seccionId = TABS.find(t => t.key === nuevoTab)?.seccionId;
-    if (!seccionId) return;
+    if (!seccionId || nuevoTab === 'catalogo' || nuevoTab === 'contacto') return;
     // El preview vive en el mismo árbol de React (no un iframe), así que
     // alcanza con buscar el id dentro del contenedor con scroll propio.
     requestAnimationFrame(() => {
@@ -112,6 +132,9 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         contacto_telefono: draft.contacto_telefono,
         contacto_email: draft.contacto_email,
         contacto_direccion: draft.contacto_direccion,
+        contacto_ciudad: draft.contacto_ciudad,
+        contacto_pais: draft.contacto_pais,
+        contacto_horarios: draft.contacto_horarios,
         contacto_instagram: draft.contacto_instagram,
         contacto_facebook: draft.contacto_facebook,
         contacto_tiktok: draft.contacto_tiktok,
@@ -120,6 +143,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         contenido_titulo: draft.contenido_titulo,
         contenido_texto: draft.contenido_texto,
         productos_titulo: draft.productos_titulo,
+        catalogo_titulo: draft.catalogo_titulo,
+        catalogo_descripcion: draft.catalogo_descripcion,
         color_fondo: draft.color_fondo,
         color_texto: draft.color_texto,
         color_primario: draft.color_primario,
@@ -217,6 +242,22 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // derecha solo refleja — así no hay que duplicar "Guardar"/"Volver" dentro
   // del área de preview, y esta escribe en vivo sin esperar un guardado.
   const [productoPreview, setProductoPreview] = useState(null);
+  // Vista in-editor del Catálogo completo — clickear "Catálogo" en el
+  // header del preview (antes navegaba a la landing pública de verdad, en
+  // una pestaña nueva, sin nada editable) abre esto en el mismo panel en
+  // vez de salir del editor.
+  const [vistaCatalogo, setVistaCatalogo] = useState(false);
+  const [vistaContacto, setVistaContacto] = useState(false);
+
+  // Mismos interruptores que cambiarTab, pero disparados desde los links
+  // "Catálogo"/"Contacto" DENTRO del preview (no desde el sidebar) —
+  // sincronizan la pestaña activa del sidebar para que ambos lados nunca
+  // queden mostrando cosas distintas.
+  function abrirCatalogo() { setVistaCatalogo(true); setVistaContacto(false); setProductoPreview(null); setTab('catalogo'); }
+  function cerrarCatalogo() { setVistaCatalogo(false); setTab('marca'); }
+  function abrirContacto() { setVistaContacto(true); setVistaCatalogo(false); setProductoPreview(null); setTab('contacto'); }
+  function cerrarContacto() { setVistaContacto(false); setTab('marca'); }
+
   const [productoCargando, setProductoCargando] = useState(false);
   const [productoImagenes, setProductoImagenes] = useState([]);
   const [productoDescripcion, setProductoDescripcion] = useState('');
@@ -260,7 +301,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoFaqTitulo('');
 
     if (!p) return;
-    setProductoDescripcion(p.tipo === 'combo' ? p.descripcion : p.descripcion_corta);
+    // Tanto producto como combo exponen la descripción corta bajo la
+    // misma clave `descripcion` en el catálogo (ver precioUsuario.service.js
+    // #listarCatalogo) — nunca `descripcion_corta`, esa es la columna real
+    // del modelo, no el campo del DTO del catálogo.
+    setProductoDescripcion(p.descripcion || '');
     setProductoFaqTitulo(p.faq_titulo || '');
     setProductoImagenes([]);
     setProductoFaq([]);
@@ -360,7 +405,15 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       : catalogo.combos.find(c => c.id === item.referencia_id);
     if (!c) return;
     const finalId = c.slug ? c.slug : `${item.tipo}:${item.referencia_id}`;
-    catalogoPorIdMapeado.set(finalId, c);
+    // Se mezclan `precio_ancla`/`etiqueta` del LandingItem sobre el registro
+    // del catálogo: son datos de ESTA landing (no del producto global), y sin
+    // ellos CatalogoPreview no podía mostrar el precio tachado ni la etiqueta
+    // — se veía igual con o sin precio ancla configurado.
+    catalogoPorIdMapeado.set(finalId, {
+      ...c,
+      precio_ancla: item.precio_ancla ?? null,
+      etiqueta: item.etiqueta || null,
+    });
   });
   // Mismo criterio que LandingEditor.jsx (sistema flexible): la landing
   // pública vive en la RAÍZ del subdominio de la tienda (es_home=true,
@@ -514,14 +567,20 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                 {tab === 'colores' && (
                   <ColoresPanel draft={draft} onCampo={campo} />
                 )}
-                {tab === 'productos' && (
-                  <ProductosPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} />
+                {tab === 'catalogo' && (
+                  <CatalogoPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} onEditarProducto={abrirProducto} />
+                )}
+                {tab === 'destacados' && (
+                  <DestacadosPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} />
                 )}
                 {tab === 'beneficios' && (
                   <BeneficiosPanel beneficios={beneficios} onChange={setBeneficios} />
                 )}
                 {tab === 'contacto' && (
                   <ContactoPanel draft={draft} onCampo={campo} />
+                )}
+                {tab === 'redes' && (
+                  <RedesPanel draft={draft} onCampo={campo} />
                 )}
                 {tab === 'faq' && (
                   <FaqPanel faq={faq} onChange={setFaq} />
@@ -547,6 +606,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   abrirProducto={abrirProducto}
                   catalogoPorIdMapeado={catalogoPorIdMapeado}
                   viewportMode={viewportMode}
+                  vistaCatalogo={vistaCatalogo}
+                  onAbrirCatalogo={abrirCatalogo}
+                  onCerrarCatalogo={cerrarCatalogo}
+                  vistaContacto={vistaContacto}
+                  onAbrirContacto={abrirContacto}
+                  onCerrarContacto={cerrarContacto}
                 />
               </div>
             </div>
@@ -577,6 +642,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   abrirProducto={abrirProducto}
                   catalogoPorIdMapeado={catalogoPorIdMapeado}
                   viewportMode={viewportMode}
+                  vistaCatalogo={vistaCatalogo}
+                  onAbrirCatalogo={abrirCatalogo}
+                  onCerrarCatalogo={cerrarCatalogo}
+                  vistaContacto={vistaContacto}
+                  onAbrirContacto={abrirContacto}
+                  onCerrarContacto={cerrarContacto}
                 />
               </div>
             </div>
@@ -590,34 +661,64 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 // Subcomponente para renderizar el preview sin duplicar código
 function PreviewContent({
   productoPreview, productoImagenes, productoDescripcion, productoFaq, productoFaqTitulo,
-  datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode
+  datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
+  vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
+  vistaContacto, onAbrirContacto, onCerrarContacto,
 }) {
-  return (
-    <>
-      {productoPreview ? (
-            <ProductoPreview
-              producto={productoPreview}
-              imagenes={productoImagenes}
-              descripcion={productoDescripcion}
-              faq={productoFaq}
-              faqTitulo={productoFaqTitulo}
-              tema={datosPreview.tema}
-              contacto={datosPreview.contacto}
-              isMobile={viewportMode === 'mobile'}
-              previewMode={true}
-            />
-          ) : Componente ? (
-            <Componente
-              data={datosPreview}
-              onClickProducto={(p) => abrirProducto(catalogoPorIdMapeado.get(p.id) || null)}
-              cantidadCarrito={0}
-              onAbrirCarrito={() => alert('El carrito funciona en la landing publicada.')}
-              isMobile={viewportMode === 'mobile'}
-              previewMode={true}
-            />
-          ) : (
-            <p className="p-8 text-white/40">Template no encontrado.</p>
-          )}
-    </>
-  );
+  if (productoPreview) {
+    return (
+      <ProductoPreview
+        producto={productoPreview}
+        imagenes={productoImagenes}
+        descripcion={productoDescripcion}
+        faq={productoFaq}
+        faqTitulo={productoFaqTitulo}
+        tema={datosPreview.tema}
+        contacto={datosPreview.contacto}
+        nombreComercio={datosPreview.nombreComercio}
+        isMobile={viewportMode === 'mobile'}
+        previewMode={true}
+      />
+    );
+  }
+  if (vistaCatalogo) {
+    return (
+      <CatalogoPreview
+        productos={Array.from(catalogoPorIdMapeado.values())}
+        titulo={datosPreview.catalogoTitulo}
+        descripcion={datosPreview.catalogoDescripcion}
+        tema={datosPreview.tema}
+        contacto={datosPreview.contacto}
+        nombreComercio={datosPreview.nombreComercio}
+        onClickProducto={(p) => abrirProducto(p)}
+        onVolver={onCerrarCatalogo}
+        isMobile={viewportMode === 'mobile'}
+      />
+    );
+  }
+  if (vistaContacto) {
+    return (
+      <ContactoPreview
+        contacto={datosPreview.contacto}
+        tema={datosPreview.tema}
+        nombreComercio={datosPreview.nombreComercio}
+        onVolver={onCerrarContacto}
+      />
+    );
+  }
+  if (Componente) {
+    return (
+      <Componente
+        data={datosPreview}
+        onClickProducto={(p) => abrirProducto(catalogoPorIdMapeado.get(p.id) || null)}
+        onClickCatalogo={onAbrirCatalogo}
+        onClickContacto={onAbrirContacto}
+        cantidadCarrito={0}
+        onAbrirCarrito={() => alert('El carrito funciona en la landing publicada.')}
+        isMobile={viewportMode === 'mobile'}
+        previewMode={true}
+      />
+    );
+  }
+  return <p className="p-8 text-white/40">Template no encontrado.</p>;
 }

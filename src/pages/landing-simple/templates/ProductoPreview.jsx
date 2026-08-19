@@ -16,7 +16,7 @@ const DEFAULT_TEMA = { fondo: '#ffffff', texto: '#111111', acento: '#111111' };
  * se evita duplicar "Volver"/"Guardar" en dos lugares y el preview
  * responde a cada tecla sin esperar a un guardado.
  */
-export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, tema, contacto, isMobile = false, previewMode = false }) {
+export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, tema, contacto, nombreComercio, isMobile = false, previewMode = false }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
@@ -108,10 +108,13 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
       </div>
 
       {contacto && (
-        <div style={{ paddingBottom: '2rem' }}>
+        <div>
           <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
         </div>
       )}
+      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(t.texto, 0.4) }}>
+        © {new Date().getFullYear()} {nombreComercio}
+      </footer>
     </div>
   );
 }

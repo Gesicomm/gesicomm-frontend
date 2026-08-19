@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import {
   Search, Check, Layers, ImageOff, Tag, Archive, GripVertical, X,
-  Package, Sparkles, Box,
+  Package, Sparkles, Box, Pencil,
 } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
+import CurrencyInput from '../../components/CurrencyInput';
 
 /**
  * Selección visual de productos/combos para una landing.
@@ -37,11 +38,12 @@ function claveItem(item) {
 }
 
 /* ─── Tarjeta seleccionable ───────────────────────────────────────────── */
-function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle }) {
+function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle, onEditar }) {
   const esCombo = item.tipo === 'combo';
   const sinStock = item.stock === 0;
 
   return (
+    <div className={`lb-card-wrap ${seleccionado ? 'selected' : ''}`}>
     <button
       type="button"
       className={`lb-card ${seleccionado ? 'selected' : ''} ${deshabilitado ? 'disabled' : ''}`}
@@ -83,11 +85,28 @@ function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle }) {
         </div>
       </div>
     </button>
+
+    {/* Fuera del <button> de arriba (no puede haber <button> anidado) —
+        barra ancha y con texto, no un ícono chico en una esquina: eso se
+        notaba muy poco y el comercio no encontraba cómo editar. */}
+    {onEditar && (
+      <span
+        role="button"
+        tabIndex={0}
+        className="lb-card-edit"
+        title="Editar descripción, imágenes y preguntas frecuentes"
+        onClick={(e) => { e.stopPropagation(); onEditar(item); }}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); onEditar(item); } }}
+      >
+        <Pencil size={12} /> Editar producto
+      </span>
+    )}
+    </div>
   );
 }
 
 /* ─── Lista ordenable de seleccionados ────────────────────────────────── */
-function ListaOrden({ items, onEtiqueta, onPrecioAncla, onQuitar, onReordenar }) {
+function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuitar, onReordenar }) {
   const [arrastrando, setArrastrando] = useState(null);
   const [encima, setEncima] = useState(null);
   // Una fila con inputs no puede ser draggable siempre: el navegador
@@ -123,31 +142,40 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onQuitar, onReordenar })
           onDrop={() => soltar(idx)}
           onDragEnd={() => { setArrastrando(null); setEncima(null); setHabilitada(null); }}
         >
-          <span
-            className="lb-orden-handle"
-            onMouseDown={() => setHabilitada(idx)}
-            onMouseUp={() => setHabilitada(null)}
-            title="Arrastrar para reordenar"
-          >
-            <GripVertical size={14} />
-          </span>
+          <div className="lb-orden-cabecera">
+            <span
+              className="lb-orden-handle"
+              onMouseDown={() => setHabilitada(idx)}
+              onMouseUp={() => setHabilitada(null)}
+              title="Arrastrar para reordenar"
+            >
+              <GripVertical size={14} />
+            </span>
 
-          <span className="lb-orden-pos">{idx + 1}</span>
+            <span className="lb-orden-pos">{idx + 1}</span>
 
-          <div className="lb-orden-thumb">
-            {item.imagen ? (
-              <img src={getMediaUrl(item.imagen)} alt="" />
-            ) : (
-              item.tipo === 'combo' ? <Layers size={14} /> : <ImageOff size={14} />
-            )}
+            <div className="lb-orden-thumb">
+              {item.imagen ? (
+                <img src={getMediaUrl(item.imagen)} alt="" />
+              ) : (
+                item.tipo === 'combo' ? <Layers size={14} /> : <ImageOff size={14} />
+              )}
+            </div>
+
+            <div className="lb-orden-info">
+              <span className="lb-orden-nombre">{item.nombre}</span>
+              <span className="lb-orden-precio">Gs {formatGs(item.precio_efectivo)}</span>
+            </div>
+
+            <button type="button" className="lb-orden-quitar" onClick={() => onQuitar(item)} title="Quitar">
+              <X size={14} />
+            </button>
           </div>
 
-          <div className="lb-orden-info">
-            <span className="lb-orden-nombre">{item.nombre}</span>
-            <span className="lb-orden-precio">Gs {formatGs(item.precio_efectivo)}</span>
-          </div>
-
-          <div className="lb-orden-inputs" style={{ display: 'flex', gap: '0.5rem', flex: 1 }}>
+          {/* Debajo, apilado (no en la misma fila que arriba) — en un
+              sidebar angosto (320px), etiqueta + precio ancla + checkbox no
+              entran junto al nombre/miniatura sin cortarse. */}
+          <div className="lb-orden-inputs">
             <input
               className="lb-orden-etiqueta"
               placeholder="Etiqueta (ej: Ofertas)"
@@ -155,19 +183,26 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onQuitar, onReordenar })
               value={item.etiqueta || ''}
               onChange={(e) => onEtiqueta(item, e.target.value)}
             />
-            <input
+            <CurrencyInput
               className="lb-orden-etiqueta"
-              type="number"
               placeholder="Precio ancla (tachado)"
               value={item.precio_ancla || ''}
-              onChange={(e) => onPrecioAncla(item, e.target.value)}
-              style={{ width: '120px' }}
+              onChange={(val) => onPrecioAncla(item, val)}
             />
+            {/* Solo si el contenedor lo pide. En el modo rígido esta
+                decisión vive en su propia pestaña (panels/DestacadosPanel.jsx)
+                para no mezclar el editor del catálogo con el del inicio. */}
+            {onMostrarInicio && (
+              <label className="lb-orden-inicio" title="Si está destildado, el producto solo aparece en la página de Catálogo completo, no en el inicio">
+                <input
+                  type="checkbox"
+                  checked={item.mostrar_en_inicio !== false}
+                  onChange={(e) => onMostrarInicio(item, e.target.checked)}
+                />
+                Mostrar en el inicio
+              </label>
+            )}
           </div>
-
-          <button type="button" className="lb-orden-quitar" onClick={() => onQuitar(item)} title="Quitar">
-            <X size={14} />
-          </button>
         </div>
       ))}
     </div>
@@ -176,7 +211,7 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onQuitar, onReordenar })
 
 /* ─── Componente principal ────────────────────────────────────────────── */
 export default function ProductPicker({
-  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onReordenar, max,
+  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar,
 }) {
   const [vista, setVista] = useState('catalogo');
   const [busqueda, setBusqueda] = useState('');
@@ -336,6 +371,7 @@ export default function ProductPicker({
                     seleccionado={seleccionado}
                     deshabilitado={!seleccionado && lleno}
                     onToggle={onToggle}
+                    onEditar={onEditar}
                   />
                 );
               })}
@@ -352,6 +388,7 @@ export default function ProductPicker({
             items={itemsOrdenados}
             onEtiqueta={onEtiqueta}
             onPrecioAncla={onPrecioAncla}
+            onMostrarInicio={onMostrarInicio}
             onQuitar={onToggle}
             onReordenar={onReordenar}
           />

@@ -4,13 +4,14 @@ import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, Chevro
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
 import { RedesSocialesFooter } from '../landing-simple/templates/sections';
+import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import RichText from '../../components/RichText';
 
 /**
  * Página de producto dedicada a pantalla completa para la landing pública.
  * Sustituye al antiguo ProductDetailModal.
  */
-export default function ProductPagePublica({ item, onAgregar, contacto, tema, onContactar, slug }) {
+export default function ProductPagePublica({ item, onAgregar, contacto, tema, onContactar, slug, nombreComercio }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   // Solo las ofertas "normal" se eligen acá — order_bump/upsell se ofrecen
@@ -95,8 +96,21 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
     }
   };
 
+  // Las clases lp-* toman los colores de las variables --l-* que
+  // landingPublica.css define en `.lp-page`. En una landing RÍGIDA esta
+  // página se monta sin ese wrapper (ver LandingPublica.jsx), así que las
+  // variables quedaban sin definir: `background: var(--l-primary)` no
+  // resolvía y el botón "Agregar al carrito" salía transparente sobre
+  // fondo oscuro (invisible). Se declaran acá a partir del tema de la
+  // landing para que los botones existan visualmente y respeten la paleta.
+  const varsTema = tema ? {
+    ...(tema.acento ? { '--l-primary': tema.acento, '--l-secondary': tema.acento } : null),
+    ...(tema.fondo ? { '--l-bg': tema.fondo, '--l-on-primary': tema.fondo } : null),
+    ...(tema.texto ? { '--l-text': tema.texto } : null),
+  } : null;
+
   return (
-    <div className="lp-product-page-container">
+    <div className="lp-page lp-product-page-container" style={varsTema || undefined}>
       <div className="lp-product-page-wrapper">
         <button type="button" className="lp-product-back-btn" onClick={handleVolver}>
            <ArrowLeft size={16} /> Volver al catálogo
@@ -284,10 +298,13 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
       </div>
 
       {contacto && tema && (
-        <div style={{ marginTop: 'auto', paddingBottom: '2rem' }}>
+        <div style={{ marginTop: 'auto' }}>
           <RedesSocialesFooter contacto={contacto} acento={tema.acento || 'var(--lp-acento)'} bordeSuave="rgba(0,0,0,0.1)" />
         </div>
       )}
+      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: '1px solid rgba(0,0,0,0.1)', color: hexToRgba(tema?.texto || '#000000', 0.4) }}>
+        © {new Date().getFullYear()} {nombreComercio}
+      </footer>
     </div>
   );
 }

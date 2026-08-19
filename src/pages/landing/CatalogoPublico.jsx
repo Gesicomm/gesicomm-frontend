@@ -1,30 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { obtenerLandingPublica } from '../../services/landingPublicaService';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
-import { Store, Loader, Filter, X, ChevronDown } from 'lucide-react';
+import { getMediaUrl } from '../../services/api';
+import { Store, Loader, ImageOff } from 'lucide-react';
 import { hexToRgba, resolverTema } from '../landing-simple/templates/themeUtils';
-// Remove missing import
-// We'll use inline JSX for the product card
+import { RedesSocialesFooter } from '../landing-simple/templates/sections';
 
-// Inline formatting function for prices
 const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num || 0);
 const DEFAULT_TEMA = { fondo: '#FFFFFF', texto: '#000000', acento: '#000000' };
 
+const OPCIONES_ORDEN = [
+  { id: 'destacados', label: 'Destacados' },
+  { id: 'az', label: 'Alfabéticamente, A-Z' },
+  { id: 'za', label: 'Alfabéticamente, Z-A' },
+  { id: 'min-max', label: 'Precio, menor a mayor' },
+  { id: 'max-min', label: 'Precio, mayor a menor' },
+];
+
+/**
+ * Catálogo completo de la landing (todos los items seleccionados en el
+ * panel "Productos" del editor, no solo los destacados del home). Barra de
+ * filtros horizontal y compacta (ordenar/disponibilidad/etiqueta + precio),
+ * en vez de un sidebar pesado — mismo criterio que una vidriera de
+ * e-commerce estándar (grilla al frente, filtros livianos arriba).
+ */
 export default function CatalogoPublico() {
   const { slug } = useParams();
-  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [estadoCarga, setEstadoCarga] = useState('cargando');
   const [data, setData] = useState(null);
 
-  // Filters
   const [filtroOrden, setFiltroOrden] = useState('destacados');
   const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
   const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('todos');
+  const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todas');
-  const [mobileFiltrosAbierto, setMobileFiltrosAbierto] = useState(false);
 
   useEffect(() => {
     let activo = true;
@@ -40,7 +53,7 @@ export default function CatalogoPublico() {
         if (activo) setEstadoCarga('no-encontrada');
       });
     return () => { activo = false; };
-  }, []);
+  }, [slug]);
 
   useDocumentSeo(data ? `Catálogo - ${data.titulo || data.tienda?.nombre}` : 'Catálogo', data?.seo_descripcion || '');
 
@@ -49,41 +62,45 @@ export default function CatalogoPublico() {
   if (estadoCarga === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">Esta tienda no está disponible actualmente.</div>;
 
   const datosTemplate = mapPublicDtoToTemplateData(data);
-  const { nombreComercio, logo, tema: temaData } = datosTemplate;
+  const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;
   // `productos_titulo` (panel "Productos" del editor) es el título de la
   // sección "Productos destacados" del home — en esta página de catálogo
   // completo se usa solo si el comercio lo personalizó explícitamente,
   // nunca el default genérico de esa sección ("Productos destacados"), que
   // no tiene sentido como título de esta página.
-  const tituloCatalogo = data?.productos_titulo || 'Catálogo de Productos';
+  // Título propio de esta página (catalogo_titulo); si no lo personalizaron,
+  // se cae al genérico — NUNCA a productos_titulo, que es el de la sección
+  // "Productos destacados" del home (son dos páginas distintas).
+  const tituloCatalogo = data?.catalogo_titulo || 'Catálogo de Productos';
   const tema = resolverTema(temaData, DEFAULT_TEMA);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
 
-  // Map products preserving extra raw fields like estado
-  const rawProducts = data?.items || [];
-  const mappedProducts = rawProducts.map(i => ({
+  // A propósito NO es `data.items` (esa es solo la selección con
+  // mostrar_en_inicio para "Productos destacados" del home) — `catalogo_items`
+  // trae TODOS los items que el comercio agregó a esta landing, sin importar
+  // ese flag, para que pueda tener productos que solo aparezcan acá.
+  const productos = (data?.catalogo_items || []).map(i => ({
     id: i.content_id,
     nombre: i.nombre,
     precio: i.precio,
     precioAntes: i.precio_antes,
-    imagen: i.imagen ? (i.imagen.startsWith('http') ? i.imagen : `https://api.gesicomm.com${i.imagen}`) : null, // A fallback if getMediaUrl is not accessible here
+    imagen: i.imagen ? getMediaUrl(i.imagen) : null,
+    categoria: i.categoria || null,
     etiqueta: i.etiqueta || null,
-    estado: i.estado || 'nuevo' // fallback
+    stock: i.stock,
   }));
 
-  // Sin useMemo: un Hook nunca puede ir después de los `return` tempranos
-  // de arriba (cambia la cantidad de Hooks entre renders y React tira
-  // "Rendered more hooks than during the previous render") — el cálculo es
-  // liviano (loop sobre los productos de la landing), no necesita memoizar.
-  const etiquetasUnicas = Array.from(new Set(mappedProducts.map(p => p.etiqueta).filter(Boolean))).sort();
+  const categoriasUnicas = Array.from(new Set(productos.map(p => p.categoria).filter(Boolean))).sort();
+  const etiquetasUnicas = Array.from(new Set(productos.map(p => p.etiqueta).filter(Boolean))).sort();
 
-  const filteredAndSortedProducts = mappedProducts.filter(p => {
-    // Rango de precios
+  const filteredAndSortedProducts = productos.filter(p => {
     if (filtroPrecioMin && p.precio < Number(filtroPrecioMin)) return false;
     if (filtroPrecioMax && p.precio > Number(filtroPrecioMax)) return false;
-    // Estado
-    if (filtroEstado !== 'todos' && p.estado !== filtroEstado) return false;
-    // Etiqueta
+    // Disponibilidad: `stock` es null cuando el producto no rastrea stock
+    // (siempre disponible) — solo se filtra cuando el dato existe.
+    if (filtroDisponibilidad === 'en_stock' && p.stock != null && p.stock <= 0) return false;
+    if (filtroDisponibilidad === 'agotado' && !(p.stock != null && p.stock <= 0)) return false;
+    if (filtroCategoria !== 'todas' && p.categoria !== filtroCategoria) return false;
     if (filtroEtiqueta !== 'todas' && p.etiqueta !== filtroEtiqueta) return false;
     return true;
   }).sort((a, b) => {
@@ -94,9 +111,21 @@ export default function CatalogoPublico() {
     return 0; // destacados (default)
   });
 
+  const hayFiltrosActivos = filtroPrecioMin || filtroPrecioMax || filtroDisponibilidad !== 'todos' || filtroCategoria !== 'todas' || filtroEtiqueta !== 'todas';
+  function limpiarFiltros() {
+    setFiltroPrecioMin('');
+    setFiltroPrecioMax('');
+    setFiltroDisponibilidad('todos');
+    setFiltroCategoria('todas');
+    setFiltroEtiqueta('todas');
+  }
+
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
   const linkInicio = isLocalFallback && slug ? `/l/${slug}` : '/';
   const linkContacto = isLocalFallback && slug ? `/l/${slug}/contacto` : '/contacto';
+  const linkProducto = (productoId) => (isLocalFallback && slug ? `/l/${slug}/${productoId}` : `/${productoId}`);
+
+  const inputClase = 'bg-transparent px-3 py-2 rounded-lg text-sm font-medium outline-none transition-colors';
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
@@ -114,135 +143,146 @@ export default function CatalogoPublico() {
         </nav>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 pt-8 pb-20 flex flex-col md:flex-row gap-8">
-        
-        {/* Filtros Sidebar */}
-        <aside className={`md:w-64 shrink-0 fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:static md:bg-transparent md:backdrop-blur-none transition-opacity ${mobileFiltrosAbierto ? 'opacity-100' : 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto'}`}>
-          <div className={`absolute right-0 top-0 bottom-0 w-80 max-w-[85vw] p-6 shadow-2xl transition-transform transform md:translate-x-0 md:static md:w-full md:p-0 md:shadow-none ${mobileFiltrosAbierto ? 'translate-x-0' : 'translate-x-full'}`} style={{ backgroundColor: tema.fondo, borderLeft: `1px solid ${bordeSuave}` }}>
-            <div className="flex items-center justify-between mb-6 md:hidden">
-              <h2 className="font-bold text-xl">Filtros</h2>
-              <button onClick={() => setMobileFiltrosAbierto(false)} className="p-2 -mr-2"><X size={20} /></button>
-            </div>
-            
-            <div className="space-y-8">
-              <div>
-                <h3 className="font-semibold mb-3 text-sm tracking-wider uppercase opacity-60">Ordenar por</h3>
-                <div className="flex flex-col gap-2">
-                  {[
-                    { id: 'destacados', label: 'Destacados' },
-                    { id: 'az', label: 'Alfabéticamente, A-Z' },
-                    { id: 'za', label: 'Alfabéticamente, Z-A' },
-                    { id: 'min-max', label: 'Precio, menor a mayor' },
-                    { id: 'max-min', label: 'Precio, mayor a menor' }
-                  ].map(opt => (
-                    <label key={opt.id} className="flex items-center gap-3 cursor-pointer group">
-                      <div className="w-4 h-4 rounded-full border flex items-center justify-center transition-colors" style={{ borderColor: filtroOrden === opt.id ? tema.acento : bordeSuave, backgroundColor: filtroOrden === opt.id ? tema.acento : 'transparent' }}>
-                        {filtroOrden === opt.id && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tema.fondo }} />}
-                      </div>
-                      <input type="radio" className="hidden" checked={filtroOrden === opt.id} onChange={() => setFiltroOrden(opt.id)} />
-                      <span className="text-sm font-medium opacity-80 group-hover:opacity-100 transition-opacity">{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 pt-8 pb-20">
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{tituloCatalogo}</h1>
+          {data?.catalogo_descripcion && (
+            <p className="mt-2 max-w-2xl text-sm" style={{ color: hexToRgba(tema.texto, 0.6) }}>{data.catalogo_descripcion}</p>
+          )}
+        </div>
 
-              <div>
-                <h3 className="font-semibold mb-3 text-sm tracking-wider uppercase opacity-60">Precio</h3>
-                <div className="flex items-center gap-2">
-                  <input type="number" placeholder="Mín" value={filtroPrecioMin} onChange={e => setFiltroPrecioMin(e.target.value)} className="w-full bg-transparent px-3 py-2 rounded-lg text-sm outline-none transition-colors" style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }} />
-                  <span>-</span>
-                  <input type="number" placeholder="Máx" value={filtroPrecioMax} onChange={e => setFiltroPrecioMax(e.target.value)} className="w-full bg-transparent px-3 py-2 rounded-lg text-sm outline-none transition-colors" style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }} />
-                </div>
-              </div>
+        {/* Barra de filtros horizontal — compacta, sin sidebar ni drawer móvil. */}
+        <div className="flex flex-wrap items-center gap-3 pb-5 mb-6" style={{ borderBottom: `1px solid ${bordeSuave}` }}>
+          <select
+            value={filtroOrden}
+            onChange={e => setFiltroOrden(e.target.value)}
+            className={inputClase}
+            style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+          >
+            {OPCIONES_ORDEN.map(o => <option key={o.id} value={o.id} style={{ color: '#000' }}>{o.label}</option>)}
+          </select>
 
-              <div>
-                <h3 className="font-semibold mb-3 text-sm tracking-wider uppercase opacity-60">Estado</h3>
-                <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className="w-full bg-transparent px-3 py-2.5 rounded-lg text-sm font-medium outline-none appearance-none cursor-pointer" style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}>
-                  <option value="todos" style={{ color: '#000' }}>Todos los estados</option>
-                  <option value="nuevo" style={{ color: '#000' }}>Nuevo</option>
-                  <option value="usado" style={{ color: '#000' }}>Usado</option>
-                </select>
-              </div>
+          <select
+            value={filtroDisponibilidad}
+            onChange={e => setFiltroDisponibilidad(e.target.value)}
+            className={inputClase}
+            style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+          >
+            <option value="todos" style={{ color: '#000' }}>Disponibilidad: todas</option>
+            <option value="en_stock" style={{ color: '#000' }}>En stock</option>
+            <option value="agotado" style={{ color: '#000' }}>Agotado</option>
+          </select>
 
-              {etiquetasUnicas.length > 0 && (
-                <div>
-                  <h3 className="font-semibold mb-3 text-sm tracking-wider uppercase opacity-60">Etiquetas</h3>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setFiltroEtiqueta('todas')}
-                      className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
-                      style={{
-                        backgroundColor: filtroEtiqueta === 'todas' ? tema.acento : 'transparent',
-                        color: filtroEtiqueta === 'todas' ? tema.fondo : tema.texto,
-                        border: `1px solid ${filtroEtiqueta === 'todas' ? tema.acento : bordeSuave}`
-                      }}
-                    >
-                      Todas
-                    </button>
-                    {etiquetasUnicas.map(etq => (
-                      <button
-                        key={etq}
-                        onClick={() => setFiltroEtiqueta(etq)}
-                        className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors uppercase tracking-wider"
-                        style={{
-                          backgroundColor: filtroEtiqueta === etq ? tema.acento : 'transparent',
-                          color: filtroEtiqueta === etq ? tema.fondo : tema.texto,
-                          border: `1px solid ${filtroEtiqueta === etq ? tema.acento : bordeSuave}`
-                        }}
-                      >
-                        {etq}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+          {categoriasUnicas.length > 0 && (
+            <select
+              value={filtroCategoria}
+              onChange={e => setFiltroCategoria(e.target.value)}
+              className={inputClase}
+              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+            >
+              <option value="todas" style={{ color: '#000' }}>Categoría: todas</option>
+              {categoriasUnicas.map(cat => <option key={cat} value={cat} style={{ color: '#000' }}>{cat}</option>)}
+            </select>
+          )}
+
+          {etiquetasUnicas.length > 0 && (
+            <select
+              value={filtroEtiqueta}
+              onChange={e => setFiltroEtiqueta(e.target.value)}
+              className={inputClase}
+              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+            >
+              <option value="todas" style={{ color: '#000' }}>Etiqueta: todas</option>
+              {etiquetasUnicas.map(etq => <option key={etq} value={etq} style={{ color: '#000' }}>{etq}</option>)}
+            </select>
+          )}
+
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              placeholder="Precio mín"
+              value={filtroPrecioMin}
+              onChange={e => setFiltroPrecioMin(e.target.value)}
+              className={`${inputClase} w-28`}
+              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+            />
+            <span style={{ color: hexToRgba(tema.texto, 0.4) }}>–</span>
+            <input
+              type="number"
+              placeholder="Precio máx"
+              value={filtroPrecioMax}
+              onChange={e => setFiltroPrecioMax(e.target.value)}
+              className={`${inputClase} w-28`}
+              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+            />
           </div>
-        </aside>
 
-        {/* Grilla */}
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-6 md:mb-8">
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{tituloCatalogo}</h1>
-            <button onClick={() => setMobileFiltrosAbierto(true)} className="md:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors" style={{ backgroundColor: hexToRgba(tema.texto, 0.05) }}>
-              <Filter size={16} /> Filtros
+          {hayFiltrosActivos && (
+            <button onClick={limpiarFiltros} className="text-xs font-semibold underline underline-offset-2 hover:opacity-70" style={{ color: hexToRgba(tema.texto, 0.6) }}>
+              Limpiar filtros
             </button>
-          </div>
+          )}
 
-          {filteredAndSortedProducts.length === 0 ? (
-            <div className="py-20 text-center flex flex-col items-center justify-center rounded-2xl" style={{ border: `1px dashed ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.02) }}>
-               <Filter size={48} className="opacity-20 mb-4" />
-               <h3 className="text-lg font-bold mb-2">No se encontraron productos</h3>
-               <p className="opacity-60 max-w-sm text-sm">Intenta ajustar los filtros o el rango de precios para ver más resultados.</p>
-               <button onClick={() => { setFiltroOrden('destacados'); setFiltroPrecioMin(''); setFiltroPrecioMax(''); setFiltroEstado('todos'); }} className="mt-6 px-6 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Limpiar filtros</button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {filteredAndSortedProducts.map((p) => (
-                <div key={p.id} onClick={() => window.location.href = `/${p.id}`} className="rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-opacity hover:opacity-90" style={{ backgroundColor: tema.fondo, border: `1px solid ${bordeSuave}` }}>
-                  <div className="aspect-square relative" style={{ backgroundColor: hexToRgba(tema.texto, 0.05) }}>
-                    {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
-                    {p.etiqueta && (
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.acento, color: tema.fondo }}>
-                        {p.etiqueta}
-                      </div>
-                    )}
+          <span className="ml-auto text-sm" style={{ color: hexToRgba(tema.texto, 0.5) }}>
+            {filteredAndSortedProducts.length} producto{filteredAndSortedProducts.length === 1 ? '' : 's'}
+          </span>
+        </div>
+
+        {filteredAndSortedProducts.length === 0 ? (
+          <div className="py-20 text-center flex flex-col items-center justify-center rounded-2xl" style={{ border: `1px dashed ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.02) }}>
+             <ImageOff size={40} className="opacity-20 mb-4" />
+             <h3 className="text-lg font-bold mb-2">No se encontraron productos</h3>
+             <p className="opacity-60 max-w-sm text-sm">Intenta ajustar los filtros para ver más resultados.</p>
+             {hayFiltrosActivos && (
+               <button onClick={limpiarFiltros} className="mt-6 px-6 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Limpiar filtros</button>
+             )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            {filteredAndSortedProducts.map((p) => {
+              const agotado = p.stock != null && p.stock <= 0;
+              const enOferta = p.precioAntes > p.precio;
+              return (
+                <div key={p.id} onClick={() => navigate(linkProducto(p.id))} className="rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-opacity hover:opacity-90" style={{ backgroundColor: tema.fondo, border: `1px solid ${bordeSuave}` }}>
+                  <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(tema.texto, 0.05) }}>
+                    {p.imagen ? <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" /> : <ImageOff size={28} style={{ color: hexToRgba(tema.texto, 0.2) }} />}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
+                      {agotado && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.texto, color: tema.fondo }}>Agotado</span>
+                      )}
+                      {enOferta && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Oferta</span>
+                      )}
+                      {p.etiqueta && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hexToRgba(tema.texto, 0.85), color: tema.fondo }}>{p.etiqueta}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="p-3">
                     <h3 className="font-semibold text-sm leading-tight mb-1 truncate">{p.nombre}</h3>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="font-bold">{fmtPrecio(p.precio)}</span>
-                      {p.precioAntes > p.precio && (
+                      {enOferta && (
                         <span className="text-xs line-through opacity-50">{fmtPrecio(p.precioAntes)}</span>
                       )}
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </main>
+
+      {/* Mismo pie que el home (BasicTemplate.jsx y hermanos): primero las
+          redes sociales, y el copyright al final de TODO — consistente en
+          las 3 páginas (inicio/catálogo/contacto). */}
+      {contacto && (
+        <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={false} />
+      )}
+      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(tema.texto, 0.4) }}>
+        © {new Date().getFullYear()} {nombreComercio}
+      </footer>
     </div>
   );
 }

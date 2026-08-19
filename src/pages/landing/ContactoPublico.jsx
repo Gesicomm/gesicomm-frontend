@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { obtenerLandingPublica } from '../../services/landingPublicaService';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
-import { ContactoSection, RedesSocialesFooter } from '../landing-simple/templates/sections';
+import { ContactoSection, DatosContactoSection } from '../landing-simple/templates/sections';
 import { Store, Loader } from 'lucide-react';
 import { hexToRgba, resolverTema } from '../landing-simple/templates/themeUtils';
 
@@ -62,15 +62,29 @@ export default function ContactoPublico() {
         </nav>
       </header>
 
+      {/* Dos bloques distintos: los datos de contacto reales (dirección,
+          ciudad, país, teléfono, email, horarios) y aparte las redes
+          sociales. Antes esta página mostraba SOLO redes y descartaba los
+          datos reales aunque estuvieran cargados. */}
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 pt-10 pb-20">
         <h1 className="text-4xl font-bold text-center mb-8">Contacto</h1>
-        <div className="rounded-3xl p-6 shadow-sm" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.03) }}>
+        <div className="rounded-3xl px-6 shadow-sm" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.03) }}>
+           <DatosContactoSection
+             contacto={contacto}
+             acento={tema.acento}
+             tituloClase="font-bold"
+             bordeSuave="transparent"
+             textoSuave={(a) => ({ color: hexToRgba(tema.texto, a) })}
+             isMobile={false}
+           />
            <ContactoSection contacto={contacto} acento={tema.acento} tituloClase="font-bold" bordeSuave={bordeSuave} isMobile={false} />
-           <div className="mt-8 pt-8" style={{ borderTop: `1px solid ${bordeSuave}` }}>
-             <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={false} />
-           </div>
         </div>
       </main>
+
+      {/* Mismo pie que el home y el catálogo — consistente en las 3 páginas. */}
+      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(tema.texto, 0.4) }}>
+        © {new Date().getFullYear()} {nombreComercio}
+      </footer>
     </div>
   );
 }

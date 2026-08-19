@@ -624,6 +624,7 @@ export default function LandingPublica() {
             onAgregar={agregarAlCarrito}
             contacto={mapPublicDtoToTemplateData(data).contacto}
             tema={mapPublicDtoToTemplateData(data).tema}
+            nombreComercio={mapPublicDtoToTemplateData(data).nombreComercio}
             onContactar={contactar}
             slug={slug}
           />

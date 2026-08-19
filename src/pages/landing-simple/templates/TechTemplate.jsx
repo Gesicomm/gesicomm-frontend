@@ -12,7 +12,7 @@ const NOOP = () => {};
  * visual propia (dark + acento cian por defecto). Ver FitnessTemplate.jsx
  * para el criterio general (contrato de props en mapLandingToTemplateData.js).
  */
-export default function TechTemplate({ data, onClickProducto = NOOP, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
+export default function TechTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
   const { nombreComercio, logo, hero, productos, productosTitulo, contacto, faq, beneficios, contenidoAdicional } = data;
   const tema = resolverTema(data.tema, DEFAULT_TEMA);
   const bordeSuave = hexToRgba(tema.acento, 0.15);
@@ -27,6 +27,8 @@ export default function TechTemplate({ data, onClickProducto = NOOP, cantidadCar
   const useAlias = isLocalFallback || previewMode;
   const linkInicio = useAlias && slug ? `/l/${slug}` : '/';
   const linkCatalogo = useAlias && slug ? `/l/${slug}/catalogo` : '/catalogo';
+  const catalogoClickProps = onClickCatalogo ? { onClick: (e) => { e.preventDefault(); onClickCatalogo(); } } : {};
+  const contactoClickProps = onClickContacto ? { onClick: (e) => { e.preventDefault(); onClickContacto(); } } : {};
   const linkContacto = useAlias && slug ? `/l/${slug}/contacto` : '/contacto';
 
   return (
@@ -44,13 +46,13 @@ export default function TechTemplate({ data, onClickProducto = NOOP, cantidadCar
           </a>
           
           <nav className="flex gap-3 sm:gap-4 ml-2 sm:ml-0" style={{ borderLeft: `1px solid ${bordeSuave}`, paddingLeft: '1rem' }}>
-            <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="font-mono font-semibold text-[13px] sm:text-sm hover:opacity-80 transition-opacity" style={{ color: tema.acento }}>Catálogo</a>
-            <a href={linkContacto} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="font-mono font-semibold text-[13px] sm:text-sm hover:opacity-80 transition-opacity" style={{ color: tema.acento }}>Contacto</a>
+            <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="font-mono font-semibold text-[13px] sm:text-sm hover:opacity-80 transition-opacity" style={{ color: tema.acento }} {...catalogoClickProps}>Catálogo</a>
+            <a href={linkContacto} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="font-mono font-semibold text-[13px] sm:text-sm hover:opacity-80 transition-opacity" style={{ color: tema.acento }} {...contactoClickProps}>Contacto</a>
           </nav>
         </div>
         <div className="flex items-center gap-2">
           <CartButton cantidad={cantidadCarrito} acento={tema.acento} color={tema.texto} onClick={onAbrirCarrito} />
-          <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Ver catálogo</a>
+          <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }} {...catalogoClickProps}>Ver catálogo</a>
         </div>
       </header>
 
@@ -144,9 +146,11 @@ export default function TechTemplate({ data, onClickProducto = NOOP, cantidadCar
       </section>
       */}
 
+      {/* Orden pedido explícitamente: primero las redes sociales, y el
+          copyright al final de TODO. Igual en las 3 páginas
+          (inicio/catálogo/contacto). */}
       <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
 
-      {/* Footer */}
       <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, ...textoSuave(0.4) }}>
         © {new Date().getFullYear()} {nombreComercio}
       </footer>

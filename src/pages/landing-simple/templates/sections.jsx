@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ShoppingCart } from 'lucide-react';
+import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
 
@@ -59,6 +59,50 @@ export function BeneficiosSection({ beneficios, acento, textoSuave, tituloClase 
   );
 }
 
+/**
+ * Datos de contacto REALES del comercio — dirección, ciudad, país,
+ * teléfono, email, horarios. Es lo propio de la página de Contacto y no
+ * tiene nada que ver con las redes sociales (esas van en ContactoSection /
+ * RedesSocialesFooter): antes la página de Contacto mostraba SOLO redes y
+ * descartaba teléfono/email/dirección aunque estuvieran cargados.
+ */
+export function DatosContactoSection({ contacto, acento, tituloClase, bordeSuave, textoSuave, isMobile = false }) {
+  const ubicacion = [contacto?.direccion, contacto?.ciudad, contacto?.pais].filter(Boolean).join(', ');
+
+  const filas = [
+    ubicacion && { Icon: MapPin, valor: ubicacion, href: `https://maps.google.com/?q=${encodeURIComponent(ubicacion)}`, label: 'Dirección' },
+    contacto?.telefono && { Icon: Phone, valor: contacto.telefono, href: `tel:${contacto.telefono.replace(/\D/g, '')}`, label: 'Teléfono' },
+    contacto?.email && { Icon: Mail, valor: contacto.email, href: `mailto:${contacto.email}`, label: 'Email' },
+    contacto?.horarios && { Icon: Clock, valor: contacto.horarios, href: null, label: 'Horarios' },
+  ].filter(Boolean);
+
+  if (!filas.length) return null;
+
+  return (
+    <section id="datos-contacto" className="px-6 py-14" style={{ borderTop: `1px solid ${bordeSuave}` }}>
+      <h2 className={`text-2xl mb-6 ${tituloClase}`}>Datos de contacto</h2>
+      <div className={`grid gap-5 text-sm ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
+        {filas.map(({ Icon, valor, href, label }, idx) => {
+          const contenido = (
+            <>
+              <Icon size={17} style={{ color: acento, flexShrink: 0, marginTop: '2px' }} />
+              <span className="flex flex-col">
+                <span className="text-xs font-semibold uppercase tracking-wider" style={textoSuave ? textoSuave(0.45) : undefined}>{label}</span>
+                <span>{valor}</span>
+              </span>
+            </>
+          );
+          return href ? (
+            <a key={idx} href={href} target="_blank" rel="noopener noreferrer" className="flex items-start gap-2.5 hover:opacity-80 transition-opacity">{contenido}</a>
+          ) : (
+            <div key={idx} className="flex items-start gap-2.5">{contenido}</div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function ContactoSection({ contacto, acento, tituloClase, bordeSuave, isMobile = false }) {
   const getHref = (type, valor) => {
     if (!valor) return null;
@@ -80,7 +124,7 @@ export function ContactoSection({ contacto, acento, tituloClase, bordeSuave, isM
     }
   };
 
-  const filas = [
+  const filasSociales = [
     contacto.whatsapp && { Icon: WhatsappIcon, valor: contacto.whatsapp, type: 'whatsapp' },
     contacto.instagram && { Icon: InstagramIcon, valor: contacto.instagram, type: 'instagram' },
     contacto.facebook && { Icon: FacebookIcon, valor: contacto.facebook, type: 'facebook' },
@@ -93,7 +137,7 @@ export function ContactoSection({ contacto, acento, tituloClase, bordeSuave, isM
     <section id="contacto" className="px-6 py-14" style={{ borderTop: `1px solid ${bordeSuave}` }}>
       <h2 className={`text-2xl mb-6 ${tituloClase}`}>Redes sociales</h2>
       <div className={`grid gap-4 text-sm ${isMobile ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2'}`}>
-        {filas.map(({ Icon, valor, type }, idx) => {
+        {filasSociales.map(({ Icon, valor, type }, idx) => {
           const href = getHref(type, valor);
           const content = (
             <>

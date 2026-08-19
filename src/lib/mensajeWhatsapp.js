@@ -25,6 +25,15 @@ function aplicarPlantilla(plantilla, datos) {
   return msg;
 }
 
+/**
+ * wa.me solo acepta dígitos: un número guardado como "+595 981 000 111"
+ * (formato natural que carga el comercio) generaba una URL con espacios y
+ * "+" que WhatsApp rechazaba. Se normaliza siempre acá, en un solo lugar.
+ */
+function soloDigitos(tel) {
+  return String(tel || '').replace(/\D/g, '');
+}
+
 /** @param {{whatsapp, mensaje, incluir_precio, incluir_url}} contacto @param {{nombre, precio}} item */
 export function armarLinkWhatsapp(contacto, item) {
   if (!contacto?.whatsapp) return null;
@@ -45,7 +54,7 @@ export function armarLinkWhatsapp(contacto, item) {
   if (contacto.incluir_url && !tieneInlineUrl) {
     mensaje += `\n${window.location.href}`;
   }
-  return `https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+  return `https://wa.me/${soloDigitos(contacto.whatsapp)}?text=${encodeURIComponent(mensaje)}`;
 }
 
 /**
@@ -89,7 +98,7 @@ export function armarLinkWhatsappCarrito(contacto, items) {
     mensaje += `\n${window.location.href}`;
   }
 
-  return `https://wa.me/${contacto.whatsapp}?text=${encodeURIComponent(mensaje)}`;
+  return `https://wa.me/${soloDigitos(contacto.whatsapp)}?text=${encodeURIComponent(mensaje)}`;
 }
 
 /**

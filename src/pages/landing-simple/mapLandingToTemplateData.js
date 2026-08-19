@@ -25,18 +25,23 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
   (catalogo?.productos || []).forEach(p => porClave.set(`producto:${p.id}`, p));
   (catalogo?.combos || []).forEach(c => porClave.set(`combo:${c.id}`, c));
 
-  const productos = (draft?.items || []).map(item => {
-    const c = porClave.get(`${item.tipo}:${item.referencia_id}`);
-    const finalId = c?.slug ? c.slug : `${item.tipo}:${item.referencia_id}`;
-    return {
-      id: finalId,
-      nombre: c?.nombre || '(producto no disponible)',
-      precio: c?.precio_efectivo ?? c?.precio_base ?? null,
-      precioAntes: item.precio_ancla ? Number(item.precio_ancla) : (c?.precio_tachado ? Number(c.precio_tachado) : null),
-      imagen: c?.imagen ? getMediaUrl(c.imagen) : null,
-      etiqueta: item.etiqueta || null,
-    };
-  });
+  // El preview del home solo muestra los items con mostrar_en_inicio (mismo
+  // filtro que aplica el backend en obtenerPublica) — el resto solo
+  // aparece en la página de Catálogo completo (/catalogo), no acá.
+  const productos = (draft?.items || [])
+    .filter(item => item.mostrar_en_inicio !== false)
+    .map(item => {
+      const c = porClave.get(`${item.tipo}:${item.referencia_id}`);
+      const finalId = c?.slug ? c.slug : `${item.tipo}:${item.referencia_id}`;
+      return {
+        id: finalId,
+        nombre: c?.nombre || '(producto no disponible)',
+        precio: c?.precio_efectivo ?? c?.precio_base ?? null,
+        precioAntes: item.precio_ancla ? Number(item.precio_ancla) : (c?.precio_tachado ? Number(c.precio_tachado) : null),
+        imagen: c?.imagen ? getMediaUrl(c.imagen) : null,
+        etiqueta: item.etiqueta || null,
+      };
+    });
 
   return {
     slug: draft?.slug,
@@ -51,12 +56,18 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
       opacidad: draft?.banner_opacidad,
     },
     productosTitulo: draft?.productos_titulo || 'Productos destacados',
+    // Propios de la página /catalogo, independientes de productosTitulo.
+    catalogoTitulo: draft?.catalogo_titulo || '',
+    catalogoDescripcion: draft?.catalogo_descripcion || '',
     productos,
     contacto: {
       whatsapp: draft?.contacto_whatsapp || '',
       telefono: draft?.contacto_telefono || '',
       email: draft?.contacto_email || '',
       direccion: draft?.contacto_direccion || '',
+      ciudad: draft?.contacto_ciudad || '',
+      pais: draft?.contacto_pais || '',
+      horarios: draft?.contacto_horarios || '',
       instagram: draft?.contacto_instagram || '',
       facebook: draft?.contacto_facebook || '',
       tiktok: draft?.contacto_tiktok || '',
@@ -92,6 +103,8 @@ export function mapPublicDtoToTemplateData(dto) {
       opacidad: dto?.banner_opacidad,
     },
     productosTitulo: dto?.productos_titulo || 'Productos destacados',
+    catalogoTitulo: dto?.catalogo_titulo || '',
+    catalogoDescripcion: dto?.catalogo_descripcion || '',
     productos: (dto?.items || []).map(i => ({
       id: i.content_id,
       nombre: i.nombre,
@@ -105,11 +118,22 @@ export function mapPublicDtoToTemplateData(dto) {
       telefono: dto?.contacto_telefono || dto?.contacto_landing?.telefono || '',
       email: dto?.contacto_email || dto?.contacto_landing?.email || '',
       direccion: dto?.contacto_direccion || dto?.contacto_landing?.direccion || '',
+      ciudad: dto?.contacto_landing?.ciudad || '',
+      pais: dto?.contacto_landing?.pais || '',
+      horarios: dto?.contacto_landing?.horarios || '',
       instagram: dto?.contacto_instagram || dto?.contacto_landing?.instagram || '',
       facebook: dto?.contacto_facebook || dto?.contacto_landing?.facebook || '',
       tiktok: dto?.contacto_tiktok || dto?.contacto_landing?.tiktok || '',
       youtube: dto?.contacto_youtube || dto?.contacto_landing?.youtube || '',
       twitter: dto?.contacto_twitter || dto?.contacto_landing?.twitter || '',
+      // Plantilla de mensaje de WhatsApp configurada en Mi tienda
+      // (Tienda.mensaje_contacto, placeholders {producto}/{precio}/{url} —
+      // ver lib/mensajeWhatsapp.js). Faltaban acá, así que las landings
+      // rígidas armaban el link con el texto por defecto e ignoraban lo
+      // que el comercio configuró.
+      mensaje: dto?.contacto?.mensaje || '',
+      incluir_precio: !!dto?.contacto?.incluir_precio,
+      incluir_url: !!dto?.contacto?.incluir_url,
     },
     faq: dto?.faq || [],
     beneficios: dto?.beneficios || [],
