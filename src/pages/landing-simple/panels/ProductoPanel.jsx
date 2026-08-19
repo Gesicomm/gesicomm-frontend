@@ -22,7 +22,7 @@ export default function ProductoPanel({
   faqTitulo, onFaqTitulo,
   faq, onFaqChange,
   relacionadosTitulo, onRelacionadosTitulo,
-  relacionados, onAgregarRelacionado, onQuitarRelacionado, catalogo,
+  relacionados, relacionadosAutomatico, onAgregarRelacionado, onQuitarRelacionado, catalogo,
   guardando, onGuardar, aviso, error,
   onVolver,
 }) {
@@ -111,9 +111,15 @@ export default function ProductoPanel({
 
             <div>
               <label className="block text-xs font-semibold text-white/60 mb-1.5">Productos relacionados</label>
-              <p className="text-xs text-white/30 mb-2">
-                Se muestran al final de la página de este producto. Si no elegís ninguno acá, se completan solos con productos de la misma categoría.
-              </p>
+              {relacionadosAutomatico ? (
+                <p className="text-xs text-amber-400/80 mb-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
+                  Ahora se muestran productos de la misma categoría. Podés agregar productos específicos abajo para reemplazarlos.
+                </p>
+              ) : (
+                <p className="text-xs text-white/30 mb-2">
+                  Se muestran al final de la página de este producto.
+                </p>
+              )}
 
               <div className="mb-3">
                 <input

@@ -1,8 +1,10 @@
-import React from 'react';
-import { Box, ImageOff, Layers } from 'lucide-react';
+import React, { useState } from 'react';
+import { Box, ImageOff, Layers, GripVertical } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
+import CurrencyInput from '../../../components/CurrencyInput';
 
 const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors';
+const CAMPO_CHICO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors';
 
 function formatGs(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -18,8 +20,20 @@ function formatGs(n) {
  * además en el inicio. Así el comercio decide explícitamente dónde
  * aparece cada uno (solo catálogo, o catálogo + inicio) en vez de que se
  * publiquen solos al agregarlos.
+ *
+ * Etiqueta, precio ancla y orden viven acá TAMBIÉN (no solo en Catálogo):
+ * son las mismas columnas del mismo LandingItem, así que editarlas desde
+ * cualquiera de los dos lados actualiza lo mismo — pero al separar
+ * Catálogo/Destacados en dos pestañas, dejar esto solo del lado de
+ * Catálogo hacía parecer que la función había desaparecido al entrar acá,
+ * que es justo donde el comercio decide el orden y las etiquetas de lo que
+ * se ve en el inicio.
  */
 export default function DestacadosPanel({ items, catalogo, onChange, draft, onCampo }) {
+  const [arrastrando, setArrastrando] = useState(null);
+  const [encima, setEncima] = useState(null);
+  const [habilitada, setHabilitada] = useState(null);
+
   const porClave = new Map();
   (catalogo?.productos || []).forEach(p => porClave.set(`producto:${p.id}`, p));
   (catalogo?.combos || []).forEach(c => porClave.set(`combo:${c.id}`, c));
@@ -40,11 +54,32 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
     onChange(items.map(it => ({ ...it, mostrar_en_inicio: mostrar })));
   }
 
+  function cambiarEtiqueta(idx, etiqueta) {
+    onChange(items.map((it, i) => (i === idx ? { ...it, etiqueta } : it)));
+  }
+
+  function cambiarPrecioAncla(idx, precio_ancla) {
+    onChange(items.map((it, i) => (i === idx ? { ...it, precio_ancla } : it)));
+  }
+
+  function soltar(destino) {
+    if (arrastrando !== null && arrastrando !== destino) {
+      const copia = [...items];
+      const [movida] = copia.splice(arrastrando, 1);
+      copia.splice(destino, 0, movida);
+      onChange(copia);
+    }
+    setArrastrando(null);
+    setEncima(null);
+    setHabilitada(null);
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-xs text-white/40 leading-relaxed">
         Elegí cuáles de los productos de tu <strong className="text-white/70">Catálogo</strong> se muestran también en la
         página de <strong className="text-white/70">inicio</strong>. Los que dejes sin marcar siguen estando en el catálogo.
+        La etiqueta y el precio ancla que pongas acá son los mismos del catálogo (es el mismo producto en la misma landing).
       </p>
 
       <div className="flex flex-col gap-1.5">
@@ -79,28 +114,60 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
           {filas.map(({ idx, item, entidad }) => {
             const activo = item.mostrar_en_inicio === true;
             return (
-              <label
+              <div
                 key={`${item.tipo}:${item.referencia_id}`}
-                className={`flex items-center gap-3 rounded-lg p-2.5 cursor-pointer transition-colors border ${activo ? 'border-emerald-500/40 bg-emerald-500/[0.07]' : 'border-white/10 bg-white/[0.02] hover:bg-white/5'}`}
+                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-emerald-400' : activo ? 'border-emerald-500/40 bg-emerald-500/[0.07]' : 'border-white/10 bg-white/[0.02]'}`}
+                draggable={habilitada === idx}
+                onDragStart={() => setArrastrando(idx)}
+                onDragOver={(e) => { e.preventDefault(); setEncima(idx); }}
+                onDrop={() => soltar(idx)}
+                onDragEnd={() => { setArrastrando(null); setEncima(null); setHabilitada(null); }}
               >
-                <input
-                  type="checkbox"
-                  checked={activo}
-                  onChange={e => alternar(idx, e.target.checked)}
-                  className="shrink-0 cursor-pointer"
-                />
-                <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/40 border border-white/10 flex items-center justify-center text-white/30">
-                  {entidad?.imagen ? (
-                    <img src={getMediaUrl(entidad.imagen)} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    item.tipo === 'combo' ? <Layers size={14} /> : <ImageOff size={14} />
-                  )}
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="shrink-0 text-white/30 hover:text-white/60 cursor-grab"
+                    onMouseDown={() => setHabilitada(idx)}
+                    onMouseUp={() => setHabilitada(null)}
+                    title="Arrastrar para reordenar"
+                  >
+                    <GripVertical size={14} />
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={activo}
+                    onChange={e => alternar(idx, e.target.checked)}
+                    className="shrink-0 cursor-pointer"
+                    title="Mostrar en el inicio"
+                  />
+                  <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/40 border border-white/10 flex items-center justify-center text-white/30">
+                    {entidad?.imagen ? (
+                      <img src={getMediaUrl(entidad.imagen)} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      item.tipo === 'combo' ? <Layers size={14} /> : <ImageOff size={14} />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-white truncate">{entidad?.nombre || '(ya no disponible)'}</p>
+                    <p className="text-[11px] text-white/40">Gs {formatGs(entidad?.precio_efectivo ?? entidad?.precio_base)}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold text-white truncate">{entidad?.nombre || '(ya no disponible)'}</p>
-                  <p className="text-[11px] text-white/40">Gs {formatGs(entidad?.precio_efectivo ?? entidad?.precio_base)}</p>
+
+                <div className="flex items-center gap-2 pl-9">
+                  <input
+                    type="text"
+                    value={item.etiqueta || ''}
+                    onChange={e => cambiarEtiqueta(idx, e.target.value)}
+                    placeholder="Etiqueta (ej: Ofertas)"
+                    className={CAMPO_CHICO}
+                  />
+                  <CurrencyInput
+                    value={item.precio_ancla || ''}
+                    onChange={val => cambiarPrecioAncla(idx, val)}
+                    placeholder="Precio ancla (tachado)"
+                    className={CAMPO_CHICO}
+                  />
                 </div>
-              </label>
+              </div>
             );
           })}
         </div>

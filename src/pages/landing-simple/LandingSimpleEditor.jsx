@@ -265,6 +265,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoFaqTitulo, setProductoFaqTitulo] = useState('');
   const [productoRelacionadosTitulo, setProductoRelacionadosTitulo] = useState('');
   const [productoRelacionados, setProductoRelacionados] = useState([]); // [{id, nombre, imagen, precio_efectivo}]
+  const [productoRelacionadosAutomatico, setProductoRelacionadosAutomatico] = useState(false);
   const [productoSubiendoImg, setProductoSubiendoImg] = useState(false);
   const [productoGuardando, setProductoGuardando] = useState(false);
   const [productoError, setProductoError] = useState('');
@@ -313,21 +314,21 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoFaq([]);
     setProductoRelacionadosTitulo('');
     setProductoRelacionados([]);
+    setProductoRelacionadosAutomatico(false);
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
     Promise.all([
       productService.imagenes(p.id).catch(() => []),
       productService.faq(p.id).catch(() => []),
-      productService.relacionados(p.id).catch(() => ({ titulo: null, items: [] })),
+      productService.relacionados(p.id).catch(() => ({ titulo: null, items: [], automatico: false })),
     ]).then(([imgs, preguntas, relacionados]) => {
       setProductoImagenes(imgs);
       setProductoFaq(preguntas.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
       setProductoRelacionadosTitulo(relacionados.titulo || '');
-      // El GET ya trae el fallback automático por categoría cuando no hay
-      // curación manual — se distingue con `relacionados.automatico` para
-      // no guardarlo como si el comercio lo hubiera elegido a mano
-      // (guardarProducto() solo persiste esto si el comercio lo tocó).
-      setProductoRelacionados(relacionados.automatico ? [] : relacionados.items.map(r => ({ id: r.id, nombre: r.nombre, imagen: r.imagen, precio_efectivo: r.precio })));
+      // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
+      // Usamos `automatico` solo para saber si el comercio los personalizó o no.
+      setProductoRelacionados((relacionados.items || []).map(r => ({ id: r.id, nombre: r.nombre, imagen: r.imagen, precio_efectivo: r.precio })));
+      setProductoRelacionadosAutomatico(!!relacionados.automatico);
       setProductoCargando(false);
     });
   }
@@ -377,10 +378,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       if (prev.some(r => r.id === item.id) || item.id === productoPreview?.id) return prev;
       return [...prev, { id: item.id, nombre: item.nombre, imagen: item.imagen, precio_efectivo: item.precio_efectivo ?? item.precio_base }];
     });
+    // Al agregar manualmente, ya no son auto-populados
+    setProductoRelacionadosAutomatico(false);
   }
 
   function quitarRelacionado(id) {
     setProductoRelacionados(prev => prev.filter(r => r.id !== id));
+    // Al quitar manualmente, ya no son auto-populados
+    setProductoRelacionadosAutomatico(false);
   }
 
   async function guardarProducto() {
@@ -393,7 +398,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         faq_titulo: productoFaqTitulo,
         faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
         relacionados_titulo: productoRelacionadosTitulo,
-        relacionados: productoRelacionados.map(r => r.id),
+        // Solo enviamos relacionados si el comercio los tocó (no si son auto-populados)
+        ...(!productoRelacionadosAutomatico && { relacionados: productoRelacionados.map(r => r.id) }),
       });
       setProductoAviso('Cambios guardados.');
       recargarCatalogo();
@@ -550,6 +556,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               relacionadosTitulo={productoRelacionadosTitulo}
               onRelacionadosTitulo={setProductoRelacionadosTitulo}
               relacionados={productoRelacionados}
+              relacionadosAutomatico={productoRelacionadosAutomatico}
               onAgregarRelacionado={agregarRelacionado}
               onQuitarRelacionado={quitarRelacionado}
               catalogo={catalogo}
@@ -631,6 +638,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   productoDescripcion={productoDescripcion}
                   productoFaq={productoFaq}
                   productoFaqTitulo={productoFaqTitulo}
+                  productoRelacionadosTitulo={productoRelacionadosTitulo}
+                  productoRelacionados={productoRelacionados}
                   datosPreview={datosPreview}
                   Componente={Componente}
                   abrirProducto={abrirProducto}
