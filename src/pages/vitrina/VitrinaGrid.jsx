@@ -71,6 +71,9 @@ function PrecioEditable({ item, onGuardar }) {
     }
   }
 
+  const numValor = parseFloat(valor) || 0;
+  const ganancia = numValor - (item.precio_base || 0);
+
   return (
     <div className="vit-price-editor" onClick={(e) => e.stopPropagation()}>
       <div className="vit-price-input-wrap">
@@ -86,14 +89,21 @@ function PrecioEditable({ item, onGuardar }) {
         {ok && <Check size={16} color="#10b981" />}
       </div>
 
+      <div style={{ fontSize: '0.85rem', marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ color: '#9ca3af' }}>Ganancia estimada:</span>
+        <strong style={{ color: ganancia >= 0 ? '#10b981' : '#ef4444' }}>
+          Gs {formatGs(ganancia)}
+        </strong>
+      </div>
+
       {huboCambio && !guardando && (
-        <button className="vit-price-save-btn" onClick={guardar} title="Guardar precio">
+        <button className="vit-price-save-btn" onClick={guardar} title="Guardar precio" style={{ marginTop: '12px' }}>
           Guardar
         </button>
       )}
 
       {error && (
-        <div className="vit-price-error"><AlertCircle size={12} /> {error}</div>
+        <div className="vit-price-error" style={{ marginTop: '8px' }}><AlertCircle size={12} /> {error}</div>
       )}
     </div>
   );
@@ -137,9 +147,9 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad }) {
         {(item.imagen || esCombo) && (
           <div className="vit-card-overlay">
             <div>
-              <div className="vit-card-overlay-label">Precio</div>
+              <div className="vit-card-overlay-label">Precio B2B</div>
               <div className="vit-card-overlay-price">
-                Gs {formatGs(item.precio_efectivo)}
+                Gs {formatGs(item.precio_base)}
               </div>
             </div>
           </div>
@@ -179,17 +189,23 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad }) {
 
         {/* Bloque precio principal */}
         <div className="vit-price-block">
+          <div style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            Precio de compra B2B
+          </div>
           <div className="vit-price-main">
             <span className="vit-price-currency">Gs</span>
-            {formatGs(item.precio_efectivo)}
+            {formatGs(item.precio_base)}
           </div>
           {item.precio_minimo ? (
-            <div className="vit-price-min">
-              Mínimo permitido: Gs {formatGs(item.precio_minimo)}
+            <div className="vit-price-min" style={{ marginTop: '4px' }}>
+              Mínimo de venta permitido: Gs {formatGs(item.precio_minimo)}
             </div>
           ) : null}
         </div>
 
+        <div style={{ margin: '12px 0 8px 0', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Tu precio de venta
+        </div>
         {/* Editor de precio */}
         <PrecioEditable item={item} onGuardar={onGuardarPrecio} />
 

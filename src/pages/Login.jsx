@@ -143,7 +143,12 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
-      navigate(res.usuario?.rol === 'administrador' ? '/dashboard' : '/mi-catalogo');
+      const rutaDestino = res.usuario?.rol === 'administrador' 
+        ? '/dashboard' 
+        : res.usuario?.rol === 'solo_pedidos' 
+          ? '/mis-pedidos' 
+          : '/mi-catalogo';
+      navigate(rutaDestino);
     } catch (err) {
       // Si el backend indica que necesita verificar el correo, llevar a la pantalla OTP
       if (err.response?.data?.requiere_verificacion) {
@@ -208,7 +213,12 @@ export default function Login() {
       });
       setSuccess(res.message);
       setTimeout(() => {
-        navigate(res.usuario?.rol === 'administrador' ? '/dashboard' : '/mi-catalogo');
+        const rutaDestino = res.usuario?.rol === 'administrador' 
+          ? '/dashboard' 
+          : res.usuario?.rol === 'solo_pedidos' 
+            ? '/mis-pedidos' 
+            : '/mi-catalogo';
+        navigate(rutaDestino);
       }, 1000);
     } catch (err) {
       if (err.response?.data?.codigo_expirado) {
