@@ -21,8 +21,11 @@ export default function BasicTemplate({ data, onClickProducto = NOOP, onClickCat
   const textoSuave = (a) => ({ color: hexToRgba(tema.texto, a) });
 
   const [filtro, setFiltro] = useState('Todos');
-  const etiquetas = ['Todos', ...new Set(productos.map(p => p.etiqueta).filter(Boolean))];
-  const productosFiltrados = filtro === 'Todos' ? productos : productos.filter(p => p.etiqueta === filtro);
+  const parseTags = (str) => str ? str.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const etiquetasSet = new Set();
+  productos.forEach(p => parseTags(p.etiqueta).forEach(t => etiquetasSet.add(t)));
+  const etiquetas = ['Todos', ...etiquetasSet];
+  const productosFiltrados = filtro === 'Todos' ? productos : productos.filter(p => parseTags(p.etiqueta).includes(filtro));
 
   const slug = data?.slug || data?.tienda?.subdominio;
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');

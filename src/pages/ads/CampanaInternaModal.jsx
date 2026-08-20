@@ -5,6 +5,7 @@ import { productService } from '../../services/productService';
 import { landingService } from '../../services/landingService';
 import { categoriaService } from '../../services/catalogoService';
 import { getMediaUrl } from '../../services/api';
+import FunnelStrategyStep from './FunnelStrategyStep';
 
 const PASOS = [
   { id: 1, label: 'Nombre' },
@@ -44,6 +45,12 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
   const [copiado, setCopiado] = useState(false);
 
   const esEdicion = !!campanaEditar;
+
+  // Con WhatsApp no hay landing/checkout propio — es "conversaciones /
+  // mensajes" (ver Paso 3 más abajo), así que el Paso 4 (Funnel) no aplica
+  // y se saca de la lista en vez de mostrarse vacío.
+  const pasosActivos = useMemo(() => (tipo === 'whatsapp' ? PASOS.filter(p => p.id !== 4) : PASOS), [tipo]);
+  const maxStep = pasosActivos[pasosActivos.length - 1]?.id || 1;
 
   useEffect(() => {
     if (!open) return;
@@ -96,11 +103,6 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
     });
   }, [productos, filtroCategoria, busquedaProducto]);
 
-  const funnelsDisponibles = useMemo(
-    () => funnels.filter(f => productoIds.includes(f.producto_id)),
-    [funnels, productoIds],
-  );
-
   if (!open) return null;
 
   const toggleProducto = (id) => {
@@ -114,8 +116,12 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
     return true;
   };
 
-  const irSiguiente = () => { if (puedeAvanzar()) setStep(s => Math.min(4, s + 1)); };
+  const irSiguiente = () => { if (puedeAvanzar()) setStep(s => Math.min(maxStep, s + 1)); };
   const irAtras = () => setStep(s => Math.max(1, s - 1));
+
+  // Si el canal cambia a WhatsApp mientras se estaba en el Paso 4, ese paso
+  // deja de existir — no dejar al wizard "parado" en un paso que ya no está.
+  useEffect(() => { setStep(s => Math.min(s, maxStep)); }, [maxStep]);
 
   const handleSubmit = async () => {
     setGuardando(true);
@@ -187,7 +193,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
           <>
             {/* Indicador de pasos */}
             <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
-              {PASOS.map((p) => (
+              {pasosActivos.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #a78bfa)' : 'rgba(255,255,255,0.1)' }} />
                   <span style={{ fontSize: '0.7rem', color: p.id === step ? '#fff' : '#777', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
@@ -332,48 +338,17 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                 </div>
               )}
 
-              {/* Paso 4: Funnel */}
+              {/* Paso 4: Funnel — solo existe con tipo='web' (ver pasosActivos) */}
               {step === 4 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#aaa' }}>Funnel a usar (opcional) — solo se muestran los de los productos elegidos.</p>
-
-                  <button
-                    type="button"
-                    onClick={() => setLandingId(null)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
-                      border: !landingId ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.12)',
-                      background: !landingId ? 'rgba(167,139,250,0.1)' : '#141416',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.85rem', color: '#fff' }}>Sin funnel por ahora</span>
-                  </button>
-
-                  {funnelsDisponibles.length === 0 ? (
-                    <div style={{ border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '8px', padding: '1.25rem', textAlign: 'center', color: '#888', fontSize: '0.8rem' }}>
-                      Ninguno de los productos elegidos tiene un funnel armado todavía. Podés crear la campaña igual y asignarlo después editándola.
-                    </div>
-                  ) : (
-                    funnelsDisponibles.map((f) => {
-                      const producto = productos.find(p => p.id === f.producto_id);
-                      return (
-                        <button
-                          type="button"
-                          key={f.id}
-                          onClick={() => setLandingId(f.id)}
-                          style={{
-                            display: 'flex', flexDirection: 'column', gap: '2px', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer', textAlign: 'left',
-                            border: landingId === f.id ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.12)',
-                            background: landingId === f.id ? 'rgba(167,139,250,0.1)' : '#141416',
-                          }}
-                        >
-                          <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{f.titulo || f.nombre}</span>
-                          <span style={{ fontSize: '0.72rem', color: '#888' }}>{producto?.nombre || `Producto #${f.producto_id}`}</span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
+                <FunnelStrategyStep
+                  productos={productos}
+                  productoIds={productoIds}
+                  funnels={funnels}
+                  landingId={landingId}
+                  setLandingId={setLandingId}
+                  onFunnelCreado={(creada) => setFunnels(prev => [...prev, creada])}
+                  onError={setError}
+                />
               )}
             </div>
 
@@ -383,7 +358,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                 <ArrowLeft size={15} style={{ marginRight: '0.3rem' }} /> Atrás
               </button>
 
-              {step < 4 ? (
+              {step < maxStep ? (
                 <button type="button" className="btn-primary" onClick={irSiguiente} disabled={!puedeAvanzar()}>
                   Siguiente <ArrowRight size={15} style={{ marginLeft: '0.3rem' }} />
                 </button>

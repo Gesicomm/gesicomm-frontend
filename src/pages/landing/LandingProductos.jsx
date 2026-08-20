@@ -55,7 +55,9 @@ export default function LandingProductos({
           )}
         </div>
         <div className="lp-card-body">
-          {item.etiqueta && <span className="lp-card-tag">{item.etiqueta}</span>}
+          {item.etiqueta && item.etiqueta.split(',').map(s => s.trim()).filter(Boolean).map((tag, idx) => (
+            <span key={idx} className="lp-card-tag">{tag}</span>
+          ))}
           <h3>{item.nombre}</h3>
           <div className="lp-card-price-block">
             {tieneOferta && (

@@ -165,7 +165,9 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
           <div className="lp-product-info">
             <div className="lp-product-header-tags">
               {item.tipo === 'combo' && <span className="lp-modal-badge combo"><Layers size={12} /> Combo especial</span>}
-              {item.etiqueta && <span className="lp-modal-tag">{item.etiqueta}</span>}
+              {item.etiqueta && item.etiqueta.split(',').map(s => s.trim()).filter(Boolean).map((tag, idx) => (
+                <span key={idx} className="lp-modal-tag">{tag}</span>
+              ))}
             </div>
 
             <h1 className="lp-product-title">{item.nombre}</h1>

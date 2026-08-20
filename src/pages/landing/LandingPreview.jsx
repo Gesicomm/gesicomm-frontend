@@ -130,8 +130,10 @@ export default function LandingPreview({
     const mapa = new Map();
     itemsPreview.forEach(i => {
       if (!i.etiqueta) return;
-      const clave = i.etiqueta.toLowerCase();
-      if (!mapa.has(clave)) mapa.set(clave, i.etiqueta);
+      i.etiqueta.split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
+        const clave = tag.toLowerCase();
+        if (!mapa.has(clave)) mapa.set(clave, tag);
+      });
     });
     return Array.from(mapa.values());
   }, [itemsPreview]);

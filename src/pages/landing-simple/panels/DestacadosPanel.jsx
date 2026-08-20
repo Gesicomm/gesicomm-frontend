@@ -157,7 +157,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
                     type="text"
                     value={item.etiqueta || ''}
                     onChange={e => cambiarEtiqueta(idx, e.target.value)}
-                    placeholder="Etiqueta (ej: Ofertas)"
+                    placeholder="Etiquetas (separadas por coma)"
                     className={CAMPO_CHICO}
                   />
                   <CurrencyInput

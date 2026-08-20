@@ -68,9 +68,9 @@ export default function CatalogoPreview({
                       {enOferta && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: t.acento, color: t.fondo }}>Oferta</span>
                       )}
-                      {p.etiqueta && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hexToRgba(t.texto, 0.85), color: t.fondo }}>{p.etiqueta}</span>
-                      )}
+                      {p.etiqueta && p.etiqueta.split(',').map((tag, idx) => (
+                        <span key={idx} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hexToRgba(t.texto, 0.85), color: t.fondo }}>{tag.trim()}</span>
+                      ))}
                     </div>
                     {/* Pista de que la tarjeta es clickeable para editar — el
                         comercio no encontraba cómo editar desde acá. */}

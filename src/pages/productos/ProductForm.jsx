@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
@@ -53,9 +53,16 @@ const ESTADO_VENTA_LABELS = {
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const esEdicion = Boolean(id);
 
-  const [tabActiva, setTabActiva] = useState('general');
+  // Permite deep-link directo a una pestaña (ej. desde el wizard de
+  // campañas: /products/123/editar?tab=ofertas), sin depender de que el
+  // usuario la busque a mano después de entrar.
+  const tabInicial = searchParams.get('tab');
+  const [tabActiva, setTabActiva] = useState(
+    TABS.some(t => t.id === tabInicial) ? tabInicial : 'general'
+  );
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);

@@ -506,8 +506,10 @@ export default function LandingPublica() {
     const mapa = new Map();
     data.items.forEach(i => {
       if (i.etiqueta) {
-        const clave = i.etiqueta.toLowerCase();
-        if (!mapa.has(clave)) mapa.set(clave, i.etiqueta);
+        i.etiqueta.split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
+          const clave = tag.toLowerCase();
+          if (!mapa.has(clave)) mapa.set(clave, tag);
+        });
       }
     });
     return Array.from(mapa.values());
@@ -522,7 +524,10 @@ export default function LandingPublica() {
     let arr = data.items;
     if (filtroCategoria) arr = arr.filter(i => i.categoria === filtroCategoria);
     if (filtroMarca) arr = arr.filter(i => i.marca === filtroMarca);
-    if (filtroEtiqueta) arr = arr.filter(i => i.etiqueta && i.etiqueta.toLowerCase() === filtroEtiqueta.toLowerCase());
+    if (filtroEtiqueta) {
+      const filtroL = filtroEtiqueta.toLowerCase();
+      arr = arr.filter(i => i.etiqueta && i.etiqueta.split(',').map(s => s.trim().toLowerCase()).includes(filtroL));
+    }
     if (busqueda.trim()) {
       const q = busqueda.trim().toLowerCase();
       arr = arr.filter(i => i.nombre.toLowerCase().includes(q));

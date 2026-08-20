@@ -178,7 +178,7 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
           <div className="lb-orden-inputs">
             <input
               className="lb-orden-etiqueta"
-              placeholder="Etiqueta (ej: Ofertas)"
+              placeholder="Etiquetas (separadas por coma)"
               maxLength={50}
               value={item.etiqueta || ''}
               onChange={(e) => onEtiqueta(item, e.target.value)}
