@@ -619,6 +619,33 @@ export default function LandingPublica() {
       onConfirmarPedido: confirmarPedido,
     };
 
+    // Armar el objeto `tema` compatible con calcularEstiloLanding a partir
+    // del tema resuelto del template rígido (acento → primario). Sin este
+    // wrapper, el CartDrawer no tiene acceso a --l-primary/--l-modal-bg/etc.
+    // y cae en los fallbacks hardcodeados del CSS (verde genérico, fondo
+    // oscuro genérico), ignorando por completo el diseño del template.
+    const datosRigidosBase = mapPublicDtoToTemplateData(data);
+    const temaRigidoResuelto = resolverTemaPorSlug(datosRigidosBase.tema, data?.template?.slug);
+    // Los templates rígidos no usan data.diseno (radio/fuente) — pasamos
+    // valores neutros para no afectar su propio sistema de estilos.
+    const cssVarsRigido = calcularEstiloLanding({
+      tema: {
+        primario: temaRigidoResuelto.acento,
+        fondo:    temaRigidoResuelto.fondo,
+        texto:    temaRigidoResuelto.texto,
+        // El modo lo inferimos: si el fondo es claro usamos 'claro', si es
+        // oscuro usamos 'oscuro'. Lo determinamos por la luminancia del fondo.
+        modo: (temaRigidoResuelto.fondo || '#000').toLowerCase().match(/#([0-9a-f]{6})/)?.[1]
+          ? (() => {
+              const h = (temaRigidoResuelto.fondo || '#000').replace('#', '');
+              const r = parseInt(h.slice(0,2),16)/255, g = parseInt(h.slice(2,4),16)/255, b = parseInt(h.slice(4,6),16)/255;
+              return (0.2126*r + 0.7152*g + 0.0722*b) > 0.5 ? 'claro' : 'oscuro';
+            })()
+          : 'oscuro',
+      },
+      diseno: {},
+    });
+
     if (isProductView) {
       if (!itemSeleccionado) {
         return <div className="lp-status-page"><h1>Producto no encontrado</h1></div>;
@@ -634,7 +661,7 @@ export default function LandingPublica() {
       const datosProductoPublico = mapPublicDtoToTemplateData(data);
       const temaResuelto = resolverTemaPorSlug(datosProductoPublico.tema, data?.template?.slug);
       return (
-        <>
+        <div style={cssVarsRigido}>
           <ProductPagePublica
             item={itemSeleccionado}
             onAgregar={agregarAlCarrito}
@@ -647,7 +674,7 @@ export default function LandingPublica() {
             onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
           />
           <CartDrawer {...cartDrawerProps} />
-        </>
+        </div>
       );
     }
 
@@ -664,7 +691,7 @@ export default function LandingPublica() {
     const itemPorContentId = (contentId) => (data.items || []).find(i => i.content_id === contentId);
 
     return (
-      <>
+      <div style={cssVarsRigido}>
         <ComponenteRigido
           data={datosRigidos}
           onClickProducto={(p) => navigate(slug ? `/l/${slug}/${p.id}` : `/${p.id}`)}
@@ -688,7 +715,7 @@ export default function LandingPublica() {
           }}
         />
         <CartDrawer {...cartDrawerProps} />
-      </>
+      </div>
     );
   }
 
