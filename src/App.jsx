@@ -90,6 +90,11 @@ function PaginaPublica({ children }) {
 // la misma lógica que middleware/resolverTienda.js del backend.
 import CatalogoPublico from './pages/landing/CatalogoPublico';
 import ContactoPublico from './pages/landing/ContactoPublico';
+import PoliticaPrivacidadPublica from './pages/landing/PoliticaPrivacidadPublica';
+import PoliticaReembolsoPublica from './pages/landing/PoliticaReembolsoPublica';
+import TerminosServicioPublica from './pages/landing/TerminosServicioPublica';
+import PoliticaEnvioPublica from './pages/landing/PoliticaEnvioPublica';
+import AvisoLegalPublico from './pages/landing/AvisoLegalPublico';
 
 function RaizSegunHostname() {
   return esHostnameDeTienda() ? <LandingPublica /> : <PublicLayout><Landing /></PublicLayout>;
@@ -105,6 +110,26 @@ function CatalogoSegunHostname() {
 
 function ContactoSegunHostname() {
   return esHostnameDeTienda() ? <ContactoPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function PoliticaPrivacidadSegunHostname() {
+  return esHostnameDeTienda() ? <PoliticaPrivacidadPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function PoliticaReembolsoSegunHostname() {
+  return esHostnameDeTienda() ? <PoliticaReembolsoPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function TerminosServicioSegunHostname() {
+  return esHostnameDeTienda() ? <TerminosServicioPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function PoliticaEnvioSegunHostname() {
+  return esHostnameDeTienda() ? <PoliticaEnvioPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function AvisoLegalSegunHostname() {
+  return esHostnameDeTienda() ? <AvisoLegalPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function App() {
@@ -259,9 +284,19 @@ function App() {
         {/* Catálogo y Contacto públicos de la tienda */}
         <Route path="/catalogo" element={<CatalogoSegunHostname />} />
         <Route path="/contacto" element={<ContactoSegunHostname />} />
+        <Route path="/politica-privacidad" element={<PoliticaPrivacidadSegunHostname />} />
+        <Route path="/politica-reembolso" element={<PoliticaReembolsoSegunHostname />} />
+        <Route path="/terminos-servicio" element={<TerminosServicioSegunHostname />} />
+        <Route path="/politica-envio" element={<PoliticaEnvioSegunHostname />} />
+        <Route path="/aviso-legal" element={<AvisoLegalSegunHostname />} />
         {/* Alias para pruebas locales o previsualización. En producción se usará el hostname. */}
         <Route path="/l/:slug/catalogo" element={<CatalogoPublico />} />
         <Route path="/l/:slug/contacto" element={<ContactoPublico />} />
+        <Route path="/l/:slug/politica-privacidad" element={<PoliticaPrivacidadPublica />} />
+        <Route path="/l/:slug/politica-reembolso" element={<PoliticaReembolsoPublica />} />
+        <Route path="/l/:slug/terminos-servicio" element={<TerminosServicioPublica />} />
+        <Route path="/l/:slug/politica-envio" element={<PoliticaEnvioPublica />} />
+        <Route path="/l/:slug/aviso-legal" element={<AvisoLegalPublico />} />
 
         {/* Producto publico */}
         <Route path="/:productId" element={<ProductoSegunHostname />} />

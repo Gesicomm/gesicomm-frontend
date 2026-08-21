@@ -67,7 +67,10 @@ export default function ContactoPublico() {
           sociales. Antes esta página mostraba SOLO redes y descartaba los
           datos reales aunque estuvieran cargados. */}
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 pt-10 pb-20">
-        <h1 className="text-4xl font-bold text-center mb-8">Contacto</h1>
+        <h1 className="text-4xl font-bold text-center mb-4">Información de Contacto</h1>
+        <p className="text-center max-w-2xl mx-auto mb-10 opacity-80" style={{ color: tema.texto }}>
+          Si tiene consultas, reclamos o necesita asistencia relacionada con nuestros productos, pedidos o políticas, puede comunicarse con nosotros a través de los siguientes medios. Nuestro equipo de atención al cliente hará sus mejores esfuerzos para responder en el menor tiempo posible.
+        </p>
         <div className="rounded-3xl px-6 shadow-sm" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.03) }}>
            <DatosContactoSection
              contacto={contacto}
