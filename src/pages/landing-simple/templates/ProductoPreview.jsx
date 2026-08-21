@@ -4,6 +4,7 @@ import { getMediaUrl } from '../../../services/api';
 import { RedesSocialesFooter } from './sections';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import RichText from '../../../components/RichText';
+import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
 
 /**
@@ -158,9 +159,7 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
           <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
         </div>
       )}
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(t.texto, 0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }

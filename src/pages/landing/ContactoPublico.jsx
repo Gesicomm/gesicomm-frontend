@@ -6,6 +6,7 @@ import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTempla
 import { ContactoSection, DatosContactoSection } from '../landing-simple/templates/sections';
 import { Store, Loader } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
+import StoreFooterLegal from './StoreFooterLegal';
 
 
 export default function ContactoPublico() {
@@ -81,9 +82,7 @@ export default function ContactoPublico() {
       </main>
 
       {/* Mismo pie que el home y el catálogo — consistente en las 3 páginas. */}
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(tema.texto, 0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={false} />
     </div>
   );
 }

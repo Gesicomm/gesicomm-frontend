@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dumbbell, Flame } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
 import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
+import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
 const DEFAULT_TEMA = { fondo: '#0B0B0E', texto: '#FFFFFF', acento: '#FF5A1F' };
 const NOOP = () => {};
@@ -167,9 +168,7 @@ export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickC
           (inicio/catálogo/contacto). */}
       <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
 
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, ...textoSuave(0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }

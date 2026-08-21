@@ -7,6 +7,7 @@ import { getMediaUrl } from '../../services/api';
 import { Store, Loader, ImageOff } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
 import { RedesSocialesFooter } from '../landing-simple/templates/sections';
+import StoreFooterLegal from './StoreFooterLegal';
 
 const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num || 0);
 
@@ -279,9 +280,7 @@ export default function CatalogoPublico() {
       {contacto && (
         <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={false} />
       )}
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(tema.texto, 0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={false} />
     </div>
   );
 }

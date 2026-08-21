@@ -6,6 +6,7 @@ import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
 import { RedesSocialesFooter } from '../landing-simple/templates/sections';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import RichText from '../../components/RichText';
+import StoreFooterLegal from './StoreFooterLegal';
 
 /**
  * Página de producto dedicada a pantalla completa para la landing pública.
@@ -103,12 +104,26 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
   // resolvía y el botón "Agregar al carrito" salía transparente sobre
   // fondo oscuro (invisible). Se declaran acá a partir del tema de la
   // landing para que los botones existan visualmente y respeten la paleta.
+  // Además de primary/bg/text, se pisan acá los tokens de "superficie"
+  // (fondo de miniaturas vacías, placeholders de relacionados, bordes,
+  // texto secundario) — si no, quedan con el default genérico gris/celeste
+  // de calcularEstiloLanding (pensado para el builder por secciones), que
+  // no tiene ninguna relación con el blanco/negro (u otro) del template
+  // rígido real. Se derivan del texto/fondo reales, mismo criterio que
+  // hexToRgba(tema.texto, ...) en BasicTemplate/ProductoPreview.
   const varsTema = tema ? {
     '--l-primary': tema.acento,
     '--l-secondary': tema.acento,
     '--l-bg': tema.fondo,
     '--l-on-primary': tema.fondo,
     '--l-text': tema.texto,
+    '--l-text-muted': hexToRgba(tema.texto, 0.55),
+    '--l-surface': hexToRgba(tema.texto, 0.05),
+    '--l-card-bg': tema.fondo,
+    '--l-card-border': hexToRgba(tema.texto, 0.1),
+    '--l-surface-border': hexToRgba(tema.texto, 0.12),
+    '--l-popover-bg': tema.fondo,
+    '--l-modal-bg': tema.fondo,
   } : null;
 
   return (
@@ -337,9 +352,7 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
           <RedesSocialesFooter contacto={contacto} acento={tema.acento || 'var(--lp-acento)'} bordeSuave="rgba(0,0,0,0.1)" />
         </div>
       )}
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: '1px solid rgba(0,0,0,0.1)', color: hexToRgba(tema?.texto || '#000000', 0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave='rgba(0,0,0,0.1)' nombreComercio={nombreComercio} isPreview={false} />
     </div>
   );
 }

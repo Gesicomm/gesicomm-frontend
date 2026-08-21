@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Store } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
 import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
+import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
 const DEFAULT_TEMA = { fondo: '#FFFFFF', texto: '#000000', acento: '#000000' };
 const NOOP = () => {};
@@ -170,9 +171,7 @@ export default function BasicTemplate({ data, onClickProducto = NOOP, onClickCat
           (inicio/catálogo/contacto). */}
       <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
 
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, ...textoSuave(0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }

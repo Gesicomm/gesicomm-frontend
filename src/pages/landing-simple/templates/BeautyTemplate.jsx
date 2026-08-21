@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
 import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
+import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
 const DEFAULT_TEMA = { fondo: '#FBEFEF', texto: '#3A2A2E', acento: '#E8A2B0' };
 const NOOP = () => {};
@@ -164,9 +165,7 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCa
           (inicio/catálogo/contacto). */}
       <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
 
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, ...textoSuave(0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }

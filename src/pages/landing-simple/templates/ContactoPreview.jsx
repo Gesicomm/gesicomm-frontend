@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import { ContactoSection, DatosContactoSection } from './sections';
+import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
 
 /**
@@ -41,9 +42,7 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
         </div>
       </main>
 
-      <footer className="px-6 py-8 text-center text-xs" style={{ borderTop: `1px solid ${bordeSuave}`, color: hexToRgba(t.texto, 0.4) }}>
-        © {new Date().getFullYear()} {nombreComercio}
-      </footer>
+      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }
