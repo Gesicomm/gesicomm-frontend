@@ -126,12 +126,7 @@ const UserLayout = ({ children }) => {
       >
         <header className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              width: '32px', height: '32px', borderRadius: '8px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <img src="/brand/gesicomm-icono-cuadrado.svg" alt="Gesicomm Icon" style={{ width: '32px', height: '32px', display: 'block' }} />
-            </div>
+            
             <div>
               <h2 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
                 GESICOMM<span className="dot" style={{ color: '#10b981' }}>.</span>
