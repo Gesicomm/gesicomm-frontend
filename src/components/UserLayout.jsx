@@ -128,15 +128,13 @@ const UserLayout = ({ children }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
-              background: 'linear-gradient(135deg, #10b981, #059669)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#fff', boxShadow: '0 4px 10px rgba(16, 185, 129, 0.25)'
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Store size={16} />
+              <img src="/brand/gesicomm-icono-cuadrado.svg" alt="Gesicomm Icon" style={{ width: '32px', height: '32px', display: 'block' }} />
             </div>
             <div>
-              <h2 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-                GESICOMM<span className="dot" style={{ color: '#10b981' }}>.</span>
+              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                <img src="/brand/gesicomm-horizontal.svg" alt="Gesicomm" style={{ height: '18px', display: 'block', marginTop: '2px' }} />
               </h2>
               <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
                 Panel de Usuario
