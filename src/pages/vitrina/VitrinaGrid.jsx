@@ -232,10 +232,12 @@ export default function VitrinaGrid() {
   const [error, setError]         = useState(null);
   const [filtro, setFiltro]       = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('');
+  const [filtroProveedor, setFiltroProveedor] = useState('');
   const [busqueda, setBusqueda]   = useState('');
   const [orden, setOrden]         = useState('nombre');
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
+  const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
   
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -246,10 +248,11 @@ export default function VitrinaGrid() {
     setError(null);
     try {
       const data = await vitrinaService.catalogoPaginado({
-        page, limit: 10, busqueda, filtroCategoria, orden, tipo: filtro
+        page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: filtro
       });
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
+      setProveedoresUnicos(data.proveedores || []);
       setTotalPages(data.totalPages || 1);
       setTotalItems(data.total || 0);
     } catch {
@@ -257,12 +260,12 @@ export default function VitrinaGrid() {
     } finally {
       setCargando(false);
     }
-  }, [page, busqueda, filtroCategoria, orden, filtro]);
+  }, [page, busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
 
   // Si cambia un filtro (excepto la pagina), volver a pagina 1
   useEffect(() => {
     setPage(1);
-  }, [busqueda, filtroCategoria, orden, filtro]);
+  }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -339,6 +342,21 @@ export default function VitrinaGrid() {
             <option value="">Todas las categorías</option>
             {categoriasUnicas.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Filtro de proveedor */}
+        {proveedoresUnicos.length > 0 && (
+          <select
+            className="vit-sort-select"
+            value={filtroProveedor}
+            onChange={(e) => setFiltroProveedor(e.target.value)}
+            title="Filtrar por proveedor"
+          >
+            <option value="">Todos los proveedores</option>
+            {proveedoresUnicos.map(prov => (
+              <option key={prov} value={prov}>{prov}</option>
             ))}
           </select>
         )}
