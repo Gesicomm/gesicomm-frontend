@@ -227,8 +227,7 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad }) {
 
 /* ─── Componente principal ────────────────────────────────────────────── */
 export default function VitrinaGrid() {
-  const [productos, setProductos] = useState([]);
-  const [combos, setCombos]       = useState([]);
+  const [items, setItems] = useState([]);
   const [cargando, setCargando]   = useState(true);
   const [error, setError]         = useState(null);
   const [filtro, setFiltro]       = useState('todos');
@@ -236,79 +235,54 @@ export default function VitrinaGrid() {
   const [busqueda, setBusqueda]   = useState('');
   const [orden, setOrden]         = useState('nombre');
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
+  const [categoriasUnicas, setCategoriasUnicas] = useState([]);
+  
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      const data = await vitrinaService.catalogo();
-      setProductos(data.productos || []);
-      setCombos(data.combos || []);
+      const data = await vitrinaService.catalogoPaginado({
+        page, limit: 10, busqueda, filtroCategoria, orden, tipo: filtro
+      });
+      setItems(data.items || []);
+      setCategoriasUnicas(data.categorias || []);
+      setTotalPages(data.totalPages || 1);
+      setTotalItems(data.total || 0);
     } catch {
       setError('No se pudo cargar el catálogo.');
     } finally {
       setCargando(false);
     }
-  }, []);
+  }, [page, busqueda, filtroCategoria, orden, filtro]);
+
+  // Si cambia un filtro (excepto la pagina), volver a pagina 1
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda, filtroCategoria, orden, filtro]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   async function handleGuardarPrecio(item, precio) {
     if (item.tipo === 'combo') {
       await vitrinaService.guardarPrecioCombo(item.id, precio);
-      setCombos(prev => prev.map(c =>
-        c.id === item.id ? { ...c, precio_usuario: precio, precio_efectivo: precio } : c
+      setItems(prev => prev.map(c =>
+        c.id === item.id && c.tipo === 'combo' ? { ...c, precio_usuario: precio, precio_efectivo: precio } : c
       ));
     } else {
       await vitrinaService.guardarPrecioProducto(item.id, precio);
-      setProductos(prev => prev.map(p =>
-        p.id === item.id ? { ...p, precio_usuario: precio, precio_efectivo: precio } : p
+      setItems(prev => prev.map(p =>
+        p.id === item.id && p.tipo === 'producto' ? { ...p, precio_usuario: precio, precio_efectivo: precio } : p
       ));
     }
   }
 
-  /* Combinar, filtrar, buscar y ordenar */
-  const items = useMemo(() => [
-    ...productos.map(p => ({ ...p, tipo: 'producto' })),
-    ...combos.map(c => ({ ...c, tipo: 'combo' })),
-  ], [productos, combos]);
-
-  const categoriasUnicas = useMemo(() => {
-    const cats = new Set(items.map(i => i.categoria).filter(Boolean));
-    return Array.from(cats).sort();
-  }, [items]);
-
-  const itemsFiltrados = useMemo(() => {
-    let lista = filtro === 'todos' ? items : items.filter(i => i.tipo === filtro);
-
-    if (filtroCategoria) {
-      lista = lista.filter(i => i.categoria === filtroCategoria);
-    }
-
-    if (busqueda.trim()) {
-      const q = busqueda.trim().toLowerCase();
-      lista = lista.filter(i =>
-        i.nombre?.toLowerCase().includes(q) ||
-        i.descripcion?.toLowerCase().includes(q) ||
-        i.categoria?.toLowerCase().includes(q)
-      );
-    }
-
-    switch (orden) {
-      case 'precio-asc':
-        return [...lista].sort((a, b) => (a.precio_efectivo ?? 0) - (b.precio_efectivo ?? 0));
-      case 'precio-desc':
-        return [...lista].sort((a, b) => (b.precio_efectivo ?? 0) - (a.precio_efectivo ?? 0));
-      case 'recientes':
-        return [...lista].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
-      case 'nombre':
-      default:
-        return [...lista].sort((a, b) => a.nombre?.localeCompare(b.nombre ?? '') ?? 0);
-    }
-  }, [items, filtro, busqueda, orden]);
-
-  const totalProductos = productos.length;
-  const totalCombos    = combos.length;
+  /* Items ya filtrados por el backend */
+  const itemsFiltrados = items;
+  const totalMostrado = items.length;
 
   return (
     <div className="vit-page">
@@ -321,11 +295,7 @@ export default function VitrinaGrid() {
           </p>
           <div className="vit-header-stats">
             <span className="vit-header-stat">
-              <Package size={11} /> {totalProductos} {totalProductos === 1 ? 'producto' : 'productos'}
-            </span>
-            <span className="vit-header-stat dot-sep">·</span>
-            <span className="vit-header-stat">
-              <Layers size={11} /> {totalCombos} {totalCombos === 1 ? 'combo' : 'combos'}
+              <Package size={11} /> {totalItems} resultados
             </span>
           </div>
         </div>
@@ -421,6 +391,21 @@ export default function VitrinaGrid() {
               onVerSensibilidad={setSeleccionSensibilidad}
             />
           ))}
+        </div>
+      )}
+
+      {/* ── Paginación ── */}
+      {totalPages > 1 && !cargando && !error && (
+        <div className="vit-pagination" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem', paddingBottom: '2rem' }}>
+          <button className="btn-secondary" disabled={page === 1} onClick={() => { setPage(p => p - 1); window.scrollTo(0, 0); }}>
+            Anterior
+          </button>
+          <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
+            Página {page} de {totalPages}
+          </span>
+          <button className="btn-secondary" disabled={page >= totalPages} onClick={() => { setPage(p => p + 1); window.scrollTo(0, 0); }}>
+            Siguiente
+          </button>
         </div>
       )}
 

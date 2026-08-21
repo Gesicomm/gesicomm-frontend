@@ -2017,6 +2017,14 @@ button.lp-tier-card--imagen {
   font-weight: 800;
   line-height: 1.1;
   color: var(--l-text, #f8fafc);
+  margin: 0 0 0.6rem 0;
+}
+
+/* Propuesta de valor: responde "¿por qué lo necesito?" antes del precio. */
+.lp-product-valor {
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: var(--l-text-muted, #94a3b8);
   margin: 0 0 1rem 0;
 }
 
@@ -2067,6 +2075,7 @@ button.lp-tier-card--imagen {
 }
 .lp-product-stock-badge.disponible { background: color-mix(in srgb, #10b981 15%, transparent); color: #10b981; }
 .lp-product-stock-badge.agotado { background: color-mix(in srgb, #ef4444 15%, transparent); color: #ef4444; }
+.lp-product-stock-badge.bajo { background: color-mix(in srgb, #f59e0b 15%, transparent); color: #f59e0b; }
 
 .lp-product-incluye-box {
   background: var(--l-surface, #0c0f17);
@@ -2182,6 +2191,25 @@ button.lp-tier-card--imagen {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.lp-product-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-top: 0.25rem;
+}
+.lp-product-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--l-text-muted, #94a3b8);
+  text-decoration: none;
+}
+.lp-product-trust-item:hover {
+  color: var(--l-text, inherit);
 }
 
 @media (max-width: 768px) {

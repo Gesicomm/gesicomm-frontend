@@ -7,7 +7,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Layers
+  ToggleLeft, ToggleRight, Loader, Tag, Layers, Zap
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ProductCombosDrawer from './ProductCombosDrawer';
@@ -350,17 +350,17 @@ export default function ProductList() {
                             >
                               <Edit2 size={15} />
                             </button>
-                            {/* Botón del sistema de landing flexible (Funnel por
-                                producto) — oculto a pedido, código/ruta intactos
-                                (ver UserLayout.jsx). */}
-                            {/* <button
+                            {/* Embudo del producto — módulo propio
+                                (pages/funnel/), NO el editor de landing ni el
+                                deprecado /mi-landing. */}
+                            <button
                               className="lb-btn-primary"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', gap: '0.25rem', height: '28px', display: 'inline-flex', alignItems: 'center' }}
-                              onClick={() => navigate(`/mi-landing/producto/${p.id}/funnel-selector`)}
-                              title="Configurar Funnel de Venta"
+                              onClick={(e) => { e.stopPropagation(); navigate(`/funnel/producto/${p.id}`); }}
+                              title="Embudo de venta de este producto"
                             >
-                              <Monitor size={14} /> Funnel
-                            </button> */}
+                              <Zap size={14} /> Embudo
+                            </button>
                             <button
                               className="btn-icon"
                               onClick={(e) => { e.stopPropagation(); setComboProductoSeleccionado(p); }}

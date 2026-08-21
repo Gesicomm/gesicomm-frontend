@@ -18,7 +18,7 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false }) {
+export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isPreview = false, style }) {
   const textColor = tema?.texto ? hexToRgba(tema.texto, 0.4) : 'rgba(0, 0, 0, 0.4)';
   const linkColor = tema?.texto ? hexToRgba(tema.texto, 0.6) : 'rgba(0, 0, 0, 0.6)';
   const accentColor = tema?.acento || '#000';
@@ -36,7 +36,7 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
   };
 
   return (
-    <footer className="px-6 py-8 flex flex-col items-center" style={{ borderTop: `1px solid ${bordeSuave}`, color: textColor }}>
+    <footer className="px-6 py-8 flex flex-col items-center" style={{ borderTop: `1px solid ${bordeSuave}`, color: textColor, ...style }}>
       <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mb-4">
         <Link to={isPreview ? '#' : `${basePath}/politica-privacidad`} style={linkStyle} className="hover:opacity-100 opacity-80">Política de Privacidad</Link>
         <Link to={isPreview ? '#' : `${basePath}/politica-reembolso`} style={linkStyle} className="hover:opacity-100 opacity-80">Política de Reembolso</Link>

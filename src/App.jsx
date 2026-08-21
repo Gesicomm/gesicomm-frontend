@@ -23,6 +23,8 @@ import MerchantEditor from './pages/landing/MerchantEditor';
 import FunnelSelector from './pages/landing/FunnelSelector';
 import LandingPublica from './pages/landing/LandingPublica';
 import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
+import FunnelEntry from './pages/funnel/FunnelEntry';
+import FunnelEditor from './pages/funnel/FunnelEditor';
 import LandingSimpleEditor from './pages/landing-simple/LandingSimpleEditor';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Onboarding from './pages/onboarding/Onboarding';
@@ -257,6 +259,15 @@ function App() {
         } />
         <Route path="/landing/:id" element={
           <RequireTienda><UserLayout><LandingSimpleEditor /></UserLayout></RequireTienda>
+        } />
+        {/* EMBUDOS — módulo propio (pages/funnel/). Una página por producto,
+            hecha para llevar al cliente al checkout. Nada que ver con
+            /mi-landing (deprecado) ni con /landing (la tienda). */}
+        <Route path="/funnel/producto/:productoId" element={
+          <RequireTienda><UserLayout><FunnelEntry /></UserLayout></RequireTienda>
+        } />
+        <Route path="/funnel/:id" element={
+          <RequireTienda><UserLayout><FunnelEditor /></UserLayout></RequireTienda>
         } />
         {/* Diseño de página propio de un producto — mismo editor, en modo
             producto (ver esModoProducto en LandingEditor.jsx). */}

@@ -5,14 +5,16 @@ import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
 import { categoriaService } from '../../services/catalogoService';
 import { comboAdminService } from '../../services/comboAdminService';
+import { proveedoresService } from '../../services/costosGastosService';
 import { verificarSesion } from '../../utils/auth';
 import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/comboPricingLocal';
 import CurrencyInput from '../../components/CurrencyInput';
 import OfertasProductoTab from './OfertasProductoTab';
+import FaqPanel from '../landing-simple/panels/FaqPanel';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor,
-  Settings, Layers
+  Settings, Layers, HelpCircle
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -30,12 +32,12 @@ const TABS = [
   { id: 'inventario', label: 'Inventario', icon: <BarChart2 size={15} /> },
   { id: 'variantes', label: 'Variantes', icon: <Layers size={15} /> },
   { id: 'multimedia', label: 'Multimedia', icon: <ImageIcon size={15} /> },
+  { id: 'faq', label: 'Todo lo que necesitas saber', icon: <HelpCircle size={15} /> },
   { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
   { id: 'configuracion', label: 'Configuración', icon: <Settings size={15} /> },
-  // Tab del sistema de landing flexible (Funnel por producto) — oculta a
-  // pedido, sin borrar el código/ruta (ver UserLayout.jsx). No re-agregar
-  // sin coordinar con el nuevo flujo de Landing simple (pages/landing-simple/).
-  // { id: 'diseno',   label: 'Diseño de página', icon: <ImageIcon size={15} /> },
+  // NO re-agregar una pestaña que apunte a /mi-landing: ese editor
+  // (FunnelSelector + MerchantEditor + page-builder) está deprecado. El
+  // funnel vive en su propio módulo, ver pages/funnel/.
 ];
 
 const ESTADOS_VENTA = [
@@ -79,13 +81,19 @@ export default function ProductForm() {
   const [creandoCategoria, setCreandoCategoria] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState('');
   const [guardandoCategoria, setGuardandoCategoria] = useState(false);
+  const [proveedores, setProveedores] = useState([]);
+  const [creandoProveedor, setCreandoProveedor] = useState(false);
+  const [nuevoProveedor, setNuevoProveedor] = useState('');
+  const [guardandoProveedor, setGuardandoProveedor] = useState(false);
   const [imagenes, setImagenes] = useState([]);
+  const [faq, setFaq] = useState([]);
   const [imagenesNuevas, setImagenesNuevas] = useState([]); // Para imágenes en cola (nuevo prod)
   const [subiendoImg, setSubiendoImg] = useState(false);
   const [tieneVariantes, setTieneVariantes] = useState(false);
   const [descuentoSimulado, setDescuentoSimulado] = useState(0);
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
   const [config, setConfig] = useState(null);
+  const [cotizacionUsd, setCotizacionUsd] = useState('');
   const [usuarioActual, setUsuarioActual] = useState(null);
   const esAdmin = usuarioActual?.rol === 'administrador';
 
@@ -93,12 +101,15 @@ export default function ProductForm() {
     defaultValues: {
       nombre: '',
       categoria_id: '',
+      proveedor_id: '',
       sku: '',
       descripcion_corta: '',
       descripcion_larga: '',
+      faq_titulo: '',
       tags: '',
       precio_base: '',
       precio_costo: '',
+      precio_dolar: '',
       precio_ancla: '',
       precio_minimo: '',
       descuento_porcentaje: '',
@@ -132,14 +143,17 @@ export default function ProductForm() {
   // necesidad — medido ~2x más lento que pedirlas todas juntas.
   useEffect(() => {
     const init = async () => {
-      const [catData, conf, p, vars, imgs] = await Promise.all([
+      const [catData, conf, p, vars, imgs, provData, faqData] = await Promise.all([
         categoriaService.buscar({ solo_activas: true, limit: 1000 }),
         comboAdminService.obtenerConfiguracion().catch(() => null),
         esEdicion ? productService.detalle(id).catch(() => null) : Promise.resolve(null),
         esEdicion ? productService.variantes(id).catch(() => []) : Promise.resolve([]),
         esEdicion ? productService.imagenes(id).catch(() => []) : Promise.resolve([]),
+        proveedoresService.buscar({}).catch(() => ({ proveedores: [] })),
+        esEdicion ? productService.faq(id).catch(() => []) : Promise.resolve([]),
       ]);
       setCategorias(catData.categorias || catData);
+      setProveedores(provData.proveedores || provData || []);
       if (conf) setConfig(conf);
 
       if (esEdicion) {
@@ -148,12 +162,15 @@ export default function ProductForm() {
           reset({
             nombre: p.nombre || '',
             categoria_id: p.categoria_id || '',
+            proveedor_id: p.proveedor_id || '',
             sku: p.sku || '',
             descripcion_corta: p.descripcion_corta || '',
             descripcion_larga: p.descripcion_larga || '',
+            faq_titulo: p.faq_titulo || '',
             tags: Array.isArray(p.tags) ? p.tags.join(', ') : '',
             precio_base: p.precio_base || '',
             precio_costo: p.precio_costo || '',
+            precio_dolar: p.precio_dolar || '',
             precio_ancla: p.precio_ancla ?? p.precio_tachado ?? '',
             precio_minimo: p.precio_minimo || '',
             descuento_porcentaje: p.descuento_porcentaje || '',
@@ -170,6 +187,7 @@ export default function ProductForm() {
           });
           if (vars?.length > 0) setTieneVariantes(true);
           setImagenes(imgs || []);
+          setFaq(Array.isArray(faqData) ? faqData.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })) : []);
         } catch {
           setError('No se pudo cargar el producto.');
         } finally {
@@ -229,12 +247,18 @@ export default function ProductForm() {
       const payload = {
         nombre: data.nombre.trim(),
         categoria_id: data.categoria_id || null,
+        proveedor_id: data.proveedor_id || null,
         sku: data.sku || null,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         descripcion_corta: data.descripcion_corta || null,
         descripcion_larga: data.descripcion_larga || null,
+        faq_titulo: data.faq_titulo || null,
+        faq: faq
+          .filter(f => f.pregunta?.trim() && f.respuesta?.trim())
+          .map((f, idx) => ({ pregunta: f.pregunta.trim(), respuesta: f.respuesta.trim(), orden: idx })),
         precio_base: parseFloat(data.precio_base),
         precio_costo: data.precio_costo ? parseFloat(data.precio_costo) : null,
+        precio_dolar: data.precio_dolar ? parseFloat(data.precio_dolar) : null,
         precio_ancla: data.precio_ancla ? parseFloat(data.precio_ancla) : null,
         precio_minimo: data.precio_minimo ? parseFloat(data.precio_minimo) : null,
         descuento_porcentaje: data.descuento_porcentaje ? parseFloat(data.descuento_porcentaje) : 0,
@@ -383,6 +407,22 @@ export default function ProductForm() {
     }
   };
 
+  const handleCrearProveedor = async () => {
+    if (!nuevoProveedor.trim()) return;
+    setGuardandoProveedor(true);
+    try {
+      const res = await proveedoresService.crear({ nombre: nuevoProveedor.trim() });
+      setProveedores(prev => [...prev, res]);
+      setValue('proveedor_id', res.id);
+      setCreandoProveedor(false);
+      setNuevoProveedor('');
+    } catch (err) {
+      setError('Error al crear proveedor: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setGuardandoProveedor(false);
+    }
+  };
+
   const stockActualVal = parseInt(watch('cantidad_disponible'), 10) || 0;
   const stockMinimoVal = parseInt(watch('stock_minimo'), 10) || 0;
   const unidadVal = watch('unidad_medida') || 'unidad';
@@ -515,6 +555,44 @@ export default function ProductForm() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="prod-proveedor">Proveedor</label>
+              {creandoProveedor ? (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="Nuevo proveedor..."
+                    value={nuevoProveedor}
+                    onChange={(e) => setNuevoProveedor(e.target.value)}
+                    disabled={guardandoProveedor}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCrearProveedor();
+                      }
+                    }}
+                  />
+                  <button type="button" className="btn-primary" onClick={handleCrearProveedor} disabled={guardandoProveedor} style={{ padding: '0 10px' }}>
+                    {guardandoProveedor ? '...' : <Save size={15}/>}
+                  </button>
+                  <button type="button" className="btn-icon danger" onClick={() => { setCreandoProveedor(false); setNuevoProveedor(''); }} disabled={guardandoProveedor}>
+                    <X size={15}/>
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select id="prod-proveedor" {...register('proveedor_id')} style={{ flex: 1 }}>
+                    <option value="">Sin proveedor</option>
+                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                  <button type="button" className="btn-icon" onClick={() => setCreandoProveedor(true)} title="Crear nuevo proveedor">
+                    <Plus size={16}/>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="form-group">
               <label htmlFor="prod-tags">
                 Tags <span className="hint">(separados por coma)</span>
               </label>
@@ -553,6 +631,59 @@ export default function ProductForm() {
         </div>
 
         <div className={`tab-content ${tabActiva === 'precio' ? 'active' : ''}`}>
+          {esAdmin && (
+            <div className="form-group" style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: 8 }}>
+              <label htmlFor="prod-precio-dolar">
+                Precio de compra en USD <span className="hint">(costo del proveedor, solo admins)</span>
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Controller
+                  name="precio_dolar"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      id="prod-precio-dolar"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Ej: 14.08"
+                      style={{ padding: '0.6rem', width: 140 }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+                <span style={{ opacity: 0.6 }}>×</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Cotización Gs/USD"
+                  style={{ padding: '0.6rem', width: 160 }}
+                  value={cotizacionUsd}
+                  onChange={(e) => setCotizacionUsd(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    const dolar = parseFloat(watch('precio_dolar'));
+                    const cot = parseFloat(cotizacionUsd);
+                    if (!dolar || !cot) return;
+                    const costo = Math.round(dolar * cot);
+                    setValue('precio_costo', costo, { shouldDirty: true });
+                    setValue('precio_base', Math.round(costo * 1.1), { shouldDirty: true });
+                  }}
+                >
+                  Recalcular con cotización
+                </button>
+              </div>
+              <p className="field-hint">
+                Guarda el costo en dólares para poder recalcular precio de compra y venta (margen 10%) el día que cambie la cotización, sin tener que volver a cargar el producto.
+              </p>
+            </div>
+          )}
           <div className={esAdmin ? 'form-grid-3' : 'form-grid-2'}>
                         <div className="form-group">
               <label htmlFor="prod-precio-costo">
@@ -1068,6 +1199,25 @@ export default function ProductForm() {
           <p className="field-hint">
             JPG, PNG o WEBP. Máx. 1&nbsp;MB.
           </p>
+        </div>
+
+        <div className={`tab-content ${tabActiva === 'faq' ? 'active' : ''}`}>
+          <div className="form-group">
+            <label htmlFor="prod-faq-titulo">Título de la sección</label>
+            <input
+              id="prod-faq-titulo"
+              type="text"
+              placeholder="Ej: Todo lo que necesitas saber"
+              {...register('faq_titulo')}
+            />
+            <p className="field-hint">
+              Se muestra en la página pública del producto, dentro de la landing. Dejalo vacío para usar el título por defecto.
+            </p>
+          </div>
+          <div className="form-group">
+            <label>Preguntas frecuentes propias de este producto</label>
+            <FaqPanel faq={faq} onChange={setFaq} />
+          </div>
         </div>
 
         <div className={`tab-content ${tabActiva === 'ofertas' ? 'active' : ''}`}>

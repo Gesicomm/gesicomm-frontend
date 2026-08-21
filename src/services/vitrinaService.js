@@ -2,6 +2,7 @@ import API from './api';
 
 export const vitrinaService = {
   catalogo: () => API.get('/vitrina/catalogo').then(r => r.data),
+  catalogoPaginado: (filtros = {}) => API.post('/vitrina/catalogo-paginado', filtros).then(r => r.data),
 
   guardarPrecioProducto: (id, precio) =>
     API.put(`/vitrina/productos/${id}/precio`, { precio }).then(r => r.data),

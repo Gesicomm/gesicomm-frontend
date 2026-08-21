@@ -17,7 +17,11 @@ import { PageRenderer } from '../../page-builder/core/PageRenderer';
 import { registerLegacyBlocks } from '../../page-builder/blocks/legacyBlocks';
 import { getComponenteTemplate } from '../landing-simple/templates';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
-import { resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
+import { resolverTemaPorSlug, hexToRgba } from '../landing-simple/templates/themeUtils';
+import StoreFooterLegal from './StoreFooterLegal';
+import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
+import FunnelCheckout from '../funnel/FunnelCheckout';
+import { mapPublicDtoToFunnelData } from '../funnel/mapFunnelToTemplateData';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -118,6 +122,9 @@ export default function LandingPublica() {
   const [agregadoRapido, setAgregadoRapido] = useState(null);
   const [wishlist, setWishlist] = useState(() => new Set());
   const [itemAbierto, setItemAbierto] = useState(null);
+  // Compra directa del embudo: qué se está comprando mientras el checkout
+  // de una pantalla está abierto (ver pages/funnel/FunnelCheckout.jsx).
+  const [compraFunnel, setCompraFunnel] = useState(null);
 
   useEffect(() => {
     let activo = true;
@@ -607,7 +614,83 @@ export default function LandingPublica() {
   }
 
   const isProductView = Boolean(productId);
-  const itemSeleccionado = isProductView ? data?.items?.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId)) : null;
+  // En un funnel la landing ES la página del producto: no hay :productId en
+  // la URL, el único item que trae el DTO es su producto (ver
+  // landing.service.js#obtenerPublica). Sin esto el bloque product_detail
+  // recibía item=null y mostraba "Producto no encontrado".
+  // OJO: no alcanza con tipo_pagina==='funnel' — la landing rígida de la
+  // tienda también lo usa (ver landingSimple.service.js#crear). El
+  // discriminador real de un embudo es el kind de su template.
+  const esFunnel = data?.template?.kind === 'funnel';
+  const itemSeleccionado = isProductView
+    ? data?.items?.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId))
+    : (esFunnel ? data?.items?.[0] || null : null);
+
+  // EMBUDO — una sola página, un solo producto, una sola decisión. Módulo
+  // propio (pages/funnel/), estructura fija. No usa CartDrawer como paso
+  // obligatorio: "Comprar ahora" va directo al checkout de una pantalla,
+  // porque en venta directa el carrito es un paso de fuga.
+  if (esFunnel) {
+    const datosFunnel = mapPublicDtoToFunnelData(data);
+    const temaFunnel = {
+      fondo: datosFunnel.tema.fondo || '#FFFFFF',
+      texto: datosFunnel.tema.texto || '#111827',
+      acento: datosFunnel.tema.acento || '#111827',
+    };
+
+    return (
+      <>
+        <VentaDirectaTemplate
+          data={datosFunnel}
+          isMobile={typeof window !== 'undefined' && window.innerWidth < 768}
+          linkWhatsapp={itemSeleccionado && data.contacto?.whatsapp
+            ? armarLinkWhatsapp(data.contacto, itemSeleccionado)
+            : null}
+          onContactar={() => itemSeleccionado && contactar(itemSeleccionado)}
+          onComprarAhora={({ variante, precio }) => setCompraFunnel({ variante, precio })}
+          onAgregarCarrito={({ variante, precio }) => {
+            if (!itemSeleccionado) return;
+            agregarAlCarrito({ item: itemSeleccionado, variante, oferta: null, cantidad: 1, precio });
+            setCarritoAbierto(true);
+          }}
+        />
+
+        <FunnelCheckout
+          abierto={!!compraFunnel}
+          onCerrar={() => setCompraFunnel(null)}
+          tema={temaFunnel}
+          resumen={compraFunnel && itemSeleccionado ? {
+            nombre: itemSeleccionado.nombre,
+            variante: compraFunnel.variante?.nombre || null,
+            precio: compraFunnel.precio,
+            imagen: datosFunnel.producto?.imagenes?.[0] || null,
+          } : null}
+          onConfirmar={(form) => comprarAhora(
+            itemSeleccionado,
+            compraFunnel.variante,
+            null,
+            1,
+            compraFunnel.precio,
+            form,
+          )}
+        />
+
+        {/* El carrito sigue existiendo para quien use la acción secundaria,
+            pero nunca es parte del camino principal del embudo. */}
+        <CartDrawer
+          items={Array.from(carrito.values())}
+          sugerencias={[]}
+          onAgregarSugerencia={agregarSugerencia}
+          abierto={carritoAbierto}
+          onAbrir={() => setCarritoAbierto(true)}
+          onCerrar={() => setCarritoAbierto(false)}
+          onCantidad={cambiarCantidadCarrito}
+          onQuitar={quitarDelCarrito}
+          onConfirmarPedido={confirmarPedido}
+        />
+      </>
+    );
+  }
 
   // Landing de uno de los 3 templates rígidos (Fitness/Beauty/Tech/Básico)
   // — ver pages/landing-simple/. Estructura fija, pero SÍ comparte carrito/
@@ -788,7 +871,18 @@ export default function LandingPublica() {
       style={{ ...calcularEstiloLanding({ tema: data.tema, diseno: data.diseno }), display: 'flex', flexDirection: 'column' }}
     >
       <PageRenderer context={renderContext} />
-      
+
+      {/* El camino flexible (landing general y funnel) nunca agregaba el
+          pie de copyright/links legales — el sistema de landing rígida sí
+          lo tiene (ver ProductPagePublica.jsx). marginTop:auto alcanza
+          porque el contenedor .lp-page ya es flex-column + min-height:100vh. */}
+      <StoreFooterLegal
+        tema={data.tema}
+        nombreComercio={data?.titulo || data?.tienda?.nombre}
+        bordeSuave={hexToRgba(data.tema?.texto, 0.1)}
+        style={{ marginTop: 'auto' }}
+      />
+
       <CartDrawer
         items={Array.from(carrito.values())}
         sugerencias={sugerenciasCarrito}
