@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 function hexToRgba(hex, alpha) {
   if (!hex) return `rgba(0, 0, 0, ${alpha})`;
@@ -23,11 +23,10 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
   const linkColor = tema?.texto ? hexToRgba(tema.texto, 0.6) : 'rgba(0, 0, 0, 0.6)';
   const accentColor = tema?.acento || '#000';
   
-  const location = useLocation();
-  // Obtener el slug base de la URL actual si estamos en ruta pública
-  // Ej: /mitienda/producto -> base /mitienda
-  const pathParts = location.pathname.split('/').filter(Boolean);
-  const basePath = isPreview ? '#' : `/${pathParts[0] || ''}`;
+  const { slug } = useParams();
+  
+  const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
+  const basePath = isPreview ? '#' : (isLocalFallback && slug ? `/l/${slug}` : '');
 
   const linkStyle = {
     color: linkColor,

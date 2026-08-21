@@ -2,9 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Upload, Plus, Copy, Check, Loader2, Edit2, Link2, Trash2,
   Archive, AlertCircle, ChevronLeft, ChevronRight, Package,
-  MessageCircle, Globe,
+  MessageCircle, Globe, Play, Pause,
 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
+import { productService } from '../../services/productService';
 import CampanaInternaModal from './CampanaInternaModal';
 
 const formatPYG = (value) => new Intl.NumberFormat('es-PY', {
@@ -12,6 +13,8 @@ const formatPYG = (value) => new Intl.NumberFormat('es-PY', {
 }).format(value || 0);
 
 const formatNum = (value) => new Intl.NumberFormat('es-PY').format(value || 0);
+
+const formatPct = (value) => `${(value || 0).toFixed(1)}%`;
 
 const formatFecha = (value) => {
   if (!value) return '-';
@@ -49,7 +52,16 @@ export default function MetaReportesTab({ tiendas = [] }) {
   const [errorImport, setErrorImport] = useState(null);
 
   const [metricas, setMetricas] = useState([]);
+  const [totalMetricas, setTotalMetricas] = useState(0);
+  const [paginaMetricas, setPaginaMetricas] = useState(1);
+  const [totalPaginasMetricas, setTotalPaginasMetricas] = useState(1);
+  const [tamanioPaginaMetricas, setTamanioPaginaMetricas] = useState(12);
   const [cargandoMetricas, setCargandoMetricas] = useState(true);
+  const [productosFiltro, setProductosFiltro] = useState([]);
+  const [filtroProductoMetricas, setFiltroProductoMetricas] = useState('ALL');
+  const [filtroCampanaMetricas, setFiltroCampanaMetricas] = useState('ALL');
+  const [fechaDesdeMetricas, setFechaDesdeMetricas] = useState('');
+  const [fechaHastaMetricas, setFechaHastaMetricas] = useState('');
 
   const [filas, setFilas] = useState([]);
   const [totalFilas, setTotalFilas] = useState(0);
@@ -57,6 +69,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
   const [cargandoFilas, setCargandoFilas] = useState(true);
   const [filtroCampana, setFiltroCampana] = useState('ALL');
   const [copiadoId, setCopiadoId] = useState(null);
+  const [vinculandoId, setVinculandoId] = useState(null);
 
   const cargarCampanas = useCallback(() => {
     setCargandoCampanas(true);
@@ -66,13 +79,26 @@ export default function MetaReportesTab({ tiendas = [] }) {
       .finally(() => setCargandoCampanas(false));
   }, []);
 
-  const cargarMetricas = useCallback(() => {
+  const cargarMetricas = useCallback((paginaActual = 1) => {
     setCargandoMetricas(true);
-    return metaReportesService.metricasPorProducto()
-      .then(setMetricas)
-      .catch(() => setMetricas([]))
+    const filtros = {
+      page: paginaActual,
+      page_size: tamanioPaginaMetricas,
+      ...(filtroProductoMetricas !== 'ALL' ? { producto_id: filtroProductoMetricas } : {}),
+      ...(filtroCampanaMetricas !== 'ALL' ? { campana_id: filtroCampanaMetricas } : {}),
+      ...(fechaDesdeMetricas ? { fecha_desde: fechaDesdeMetricas } : {}),
+      ...(fechaHastaMetricas ? { fecha_hasta: fechaHastaMetricas } : {}),
+    };
+    return metaReportesService.metricasPorProducto(filtros)
+      .then((res) => {
+        setMetricas(res.productos || []);
+        setTotalMetricas(res.total || 0);
+        setPaginaMetricas(res.page || 1);
+        setTotalPaginasMetricas(res.total_paginas || 1);
+      })
+      .catch(() => { setMetricas([]); setTotalMetricas(0); setTotalPaginasMetricas(1); })
       .finally(() => setCargandoMetricas(false));
-  }, []);
+  }, [tamanioPaginaMetricas, filtroProductoMetricas, filtroCampanaMetricas, fechaDesdeMetricas, fechaHastaMetricas]);
 
   const cargarFilas = useCallback((paginaActual = 1, campanaId = filtroCampana) => {
     setCargandoFilas(true);
@@ -93,10 +119,16 @@ export default function MetaReportesTab({ tiendas = [] }) {
       .finally(() => setCargandoFilas(false));
   }, [filtroCampana]);
 
-  useEffect(() => { cargarCampanas(); cargarMetricas(); }, [cargarCampanas, cargarMetricas]);
+  useEffect(() => { cargarCampanas(); }, [cargarCampanas]);
+  useEffect(() => { cargarMetricas(1); }, [cargarMetricas]);
   useEffect(() => { cargarFilas(1, filtroCampana); }, [filtroCampana, cargarFilas]);
+  useEffect(() => {
+    productService.buscar({ activo: true, limit: 200 })
+      .then((res) => setProductosFiltro(res.productos || []))
+      .catch(() => setProductosFiltro([]));
+  }, []);
 
-  const refrescarTodo = () => { cargarCampanas(); cargarMetricas(); cargarFilas(pagina, filtroCampana); };
+  const refrescarTodo = () => { cargarCampanas(); cargarMetricas(paginaMetricas); cargarFilas(pagina, filtroCampana); };
 
   const handleArchivoSeleccionado = async (e) => {
     const archivo = e.target.files?.[0];
@@ -120,6 +152,18 @@ export default function MetaReportesTab({ tiendas = [] }) {
 
   const handleCampanaCreada = () => { refrescarTodo(); };
 
+  const handleVincularFila = async (filaId, campanaId) => {
+    setVinculandoId(filaId);
+    try {
+      await metaReportesService.vincularFila(filaId, campanaId || null);
+      await Promise.all([cargarFilas(pagina, filtroCampana), cargarMetricas(paginaMetricas)]);
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'No se pudo vincular la fila.');
+    } finally {
+      setVinculandoId(null);
+    }
+  };
+
   const handleEliminarCampana = async (campana) => {
     if (!window.confirm(`¿Eliminar la campaña "${campana.nombre_display}"?`)) return;
     try {
@@ -136,6 +180,18 @@ export default function MetaReportesTab({ tiendas = [] }) {
       cargarCampanas();
     } catch (err) {
       alert(err.response?.data?.message || err.message || 'No se pudo archivar.');
+    }
+  };
+
+  // "Borrador" es el default al crearla — nada en el sistema la mueve sola
+  // a "activa" cuando el comercio efectivamente la carga en Meta Ads
+  // Manager, así que hace falta una acción manual para reflejar eso acá.
+  const handleCambiarEstadoCampana = async (campana, nuevoEstado) => {
+    try {
+      await metaReportesService.actualizarCampana(campana.id, { estado: nuevoEstado });
+      cargarCampanas();
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || 'No se pudo cambiar el estado.');
     }
   };
 
@@ -222,6 +278,16 @@ export default function MetaReportesTab({ tiendas = [] }) {
                             <button type="button" className="btn-icon" title="Editar" onClick={() => { setCampanaEditar(c); setModalOpen(true); }}>
                               <Edit2 size={15} />
                             </button>
+                            {(c.estado === 'borrador' || c.estado === 'pausada') && (
+                              <button type="button" className="btn-icon" title="Marcar como activa" onClick={() => handleCambiarEstadoCampana(c, 'activa')}>
+                                <Play size={15} />
+                              </button>
+                            )}
+                            {c.estado === 'activa' && (
+                              <button type="button" className="btn-icon" title="Pausar" onClick={() => handleCambiarEstadoCampana(c, 'pausada')}>
+                                <Pause size={15} />
+                              </button>
+                            )}
                             {c.estado !== 'archivada' && (
                               <button type="button" className="btn-icon" title="Archivar" onClick={() => handleArchivarCampana(c)}>
                                 <Archive size={15} />
@@ -275,31 +341,110 @@ export default function MetaReportesTab({ tiendas = [] }) {
 
       {/* ---- Métricas por producto ---- */}
       <section>
-        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: '#fff' }}>Métricas por producto</h2>
-        {cargandoMetricas ? (
-          <div className="skeleton-row" style={{ height: '60px' }} />
-        ) : metricas.length === 0 ? (
-          <div style={{ border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '8px', padding: '2rem', textAlign: 'center', color: '#888', fontSize: '0.85rem' }}>
-            Todavía no hay reportes importados vinculados a ningún producto.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Métricas por producto</h2>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#888' }}>
+              Confirmados/Entregados son del producto completo en el período — no se acotan al filtrar por campaña, porque hoy no hay un vínculo confiable entre un pedido y la campaña puntual que lo originó.
+            </p>
           </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '0.85rem' }}>
-            {metricas.map((m) => (
-              <div key={m.producto_id} style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '1rem', background: '#141416' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
-                  <Package size={14} color="#a78bfa" />
-                  <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#fff' }}>{m.producto?.nombre || `Producto #${m.producto_id}`}</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.78rem' }}>
-                  <div><span style={{ color: '#888' }}>Gasto</span><br /><strong>{formatPYG(m.gasto)}</strong></div>
-                  <div><span style={{ color: '#888' }}>Compras</span><br /><strong>{formatNum(m.compras)}</strong></div>
-                  <div><span style={{ color: '#888' }}>ROAS</span><br /><strong style={{ color: m.roas > 1 ? '#10b981' : '#f87171' }}>{m.roas.toFixed(2)}x</strong></div>
-                  <div><span style={{ color: '#888' }}>Costo x compra</span><br /><strong>{formatPYG(m.costo_por_compra)}</strong></div>
-                </div>
-              </div>
-            ))}
+        </div>
+
+        {/* Filtros — todos resueltos por el backend */}
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
+          <select className="filter-input" style={{ maxWidth: '220px' }} value={filtroProductoMetricas} onChange={(e) => setFiltroProductoMetricas(e.target.value)}>
+            <option value="ALL">Todos los productos</option>
+            {productosFiltro.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+          </select>
+          <select className="filter-input" style={{ maxWidth: '220px' }} value={filtroCampanaMetricas} onChange={(e) => setFiltroCampanaMetricas(e.target.value)}>
+            <option value="ALL">Todas las campañas</option>
+            {campanas.map(c => <option key={c.id} value={c.id}>{c.nombre_display}</option>)}
+          </select>
+          <input type="date" className="filter-input" style={{ maxWidth: '160px' }} value={fechaDesdeMetricas} onChange={(e) => setFechaDesdeMetricas(e.target.value)} title="Fecha desde" />
+          <input type="date" className="filter-input" style={{ maxWidth: '160px' }} value={fechaHastaMetricas} onChange={(e) => setFechaHastaMetricas(e.target.value)} title="Fecha hasta" />
+          <select className="filter-input" style={{ maxWidth: '140px' }} value={tamanioPaginaMetricas} onChange={(e) => setTamanioPaginaMetricas(Number(e.target.value))}>
+            {[12, 25, 50].map(n => <option key={n} value={n}>{n} / página</option>)}
+          </select>
+        </div>
+
+        <div className="data-table-wrapper">
+          <div className="table-scroll-container">
+            <table className="escalafy-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th className="text-right">Pedidos</th>
+                  <th className="text-right">Gasto Ads</th>
+                  <th className="text-right">CPA</th>
+                  <th className="text-right">Confirmados</th>
+                  <th className="text-right">% Confirmación</th>
+                  <th className="text-right">CPA Confirmado</th>
+                  <th className="text-right">Entregados</th>
+                  <th className="text-right">% Entrega</th>
+                  <th className="text-right">CPA Entregado</th>
+                  <th className="text-right">Costo Producto</th>
+                  <th className="text-right">Costo Envío</th>
+                  <th className="text-right">Precio Venta</th>
+                  <th className="text-right">Facturación</th>
+                  <th className="text-right">Utilidad Bruta</th>
+                  <th className="text-right">Margen Bruto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cargandoMetricas ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={`sk-m-${i}`}><td colSpan="16" style={{ padding: '1rem' }}><div className="skeleton-row" style={{ width: '100%' }} /></td></tr>
+                  ))
+                ) : metricas.length === 0 ? (
+                  <tr><td colSpan="16" style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>No hay datos para estos filtros.</td></tr>
+                ) : (
+                  metricas.map((m) => {
+                    let margenClass = 'text-neutral';
+                    if (m.margen_bruto > 0) margenClass = 'text-success';
+                    else if (m.margen_bruto < 0) margenClass = 'text-danger';
+                    return (
+                      <tr key={m.producto_id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Package size={14} color="#a78bfa" />
+                            <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>{m.producto?.nombre || `Producto #${m.producto_id}`}</span>
+                          </div>
+                        </td>
+                        <td className="text-right tabular-nums">{formatNum(m.pedidos)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.gasto_ads)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.cpa)}</td>
+                        <td className="text-right tabular-nums">{formatNum(m.confirmados)}</td>
+                        <td className="text-right tabular-nums">{formatPct(m.pct_confirmacion)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.cpa_confirmado)}</td>
+                        <td className="text-right tabular-nums">{formatNum(m.entregados)}</td>
+                        <td className="text-right tabular-nums">{formatPct(m.pct_entrega)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.cpa_entregado)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.costo_producto)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.costo_envio)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.precio_venta)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.facturacion)}</td>
+                        <td className="text-right tabular-nums">{formatPYG(m.utilidad_bruta)}</td>
+                        <td className={`text-right tabular-nums ${margenClass}`}>{formatPct(m.margen_bruto * 100)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+
+          <div className="pagination-controls">
+            <button onClick={() => cargarMetricas(paginaMetricas - 1)} disabled={paginaMetricas <= 1 || cargandoMetricas}>
+              <ChevronLeft size={16} /> Anterior
+            </button>
+            <span style={{ fontSize: '0.8rem', color: '#888', fontWeight: 600 }}>
+              {cargandoMetricas ? 'Cargando...' : `Página ${paginaMetricas} de ${totalPaginasMetricas} (${totalMetricas} productos)`}
+            </span>
+            <button onClick={() => cargarMetricas(paginaMetricas + 1)} disabled={paginaMetricas >= totalPaginasMetricas || cargandoMetricas}>
+              Siguiente <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* ---- Filas de reporte importadas ---- */}
@@ -320,7 +465,8 @@ export default function MetaReportesTab({ tiendas = [] }) {
                 <tr>
                   <th>Campaña (Meta)</th>
                   <th>Producto</th>
-                  <th>Período</th>
+                  <th>Fecha Inicio Informe</th>
+                  <th>Fecha Fin Informe</th>
                   <th className="text-right">Presupuesto</th>
                   <th className="text-right">Gasto</th>
                   <th className="text-right">Resultados</th>
@@ -348,19 +494,30 @@ export default function MetaReportesTab({ tiendas = [] }) {
                   filas.map((f) => (
                     <tr key={f.id}>
                       <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxWidth: '220px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '220px' }}>
                           <span style={{ fontSize: '0.82rem', color: '#fff' }}>{f.nombre_campana_meta}</span>
                           {!f.meta_campana_interna_id && (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', color: '#f59e0b' }}>
                               <Link2 size={10} /> sin vincular
                             </span>
                           )}
+                          <select
+                            className="filter-input"
+                            style={{ fontSize: '0.72rem', padding: '3px 6px', height: 'auto' }}
+                            value={f.meta_campana_interna_id || ''}
+                            disabled={vinculandoId === f.id}
+                            onChange={(e) => handleVincularFila(f.id, e.target.value || null)}
+                          >
+                            <option value="">Sin vincular</option>
+                            {campanas.map(c => <option key={c.id} value={c.id}>{c.nombre_display}</option>)}
+                          </select>
                         </div>
                       </td>
                       <td style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>
                         {f.campana ? ((campanas.find(c => c.id === f.campana.id)?.productos || []).map(p => p.nombre).join(', ') || '—') : '—'}
                       </td>
-                      <td style={{ fontSize: '0.78rem', color: '#888' }}>{formatFecha(f.fecha_inicio)} - {formatFecha(f.fecha_fin)}</td>
+                      <td style={{ fontSize: '0.78rem', color: '#c4c4c8' }}>{formatFecha(f.fecha_inicio)}</td>
+                      <td style={{ fontSize: '0.78rem', color: '#c4c4c8' }}>{formatFecha(f.fecha_fin)}</td>
                       <td className="text-right tabular-nums">{f.presupuesto != null ? formatPYG(f.presupuesto) : '—'}</td>
                       <td className="text-right tabular-nums">{formatPYG(f.importe_gastado)}</td>
                       <td className="text-right tabular-nums">{formatNum(f.resultados)}</td>

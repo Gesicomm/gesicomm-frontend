@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
@@ -53,16 +53,25 @@ const ESTADO_VENTA_LABELS = {
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const esEdicion = Boolean(id);
 
-  // Permite deep-link directo a una pestaña (ej. desde el wizard de
-  // campañas: /products/123/editar?tab=ofertas), sin depender de que el
-  // usuario la busque a mano después de entrar.
-  const tabInicial = searchParams.get('tab');
-  const [tabActiva, setTabActiva] = useState(
-    TABS.some(t => t.id === tabInicial) ? tabInicial : 'general'
-  );
+  const [tabActiva, setTabActiva] = useState('general');
+
+  // Permite abrir directo en una pestaña (ej. desde "Abrir ofertas del
+  // producto" en el wizard de campañas) sin filtrar nada por la URL — el
+  // payload viaja por sessionStorage (se copia a la pestaña nueva por ser
+  // same-origin) y se consume una sola vez, nunca queda en el link.
+  // Tiene que ir en un efecto, no en el inicializador de useState: bajo
+  // StrictMode React ejecuta el inicializador dos veces en un render que
+  // después descarta, y la segunda pasada ya encuentra el sessionStorage
+  // vacío (lo borró la primera) — el efecto sí es seguro porque corre
+  // sobre el árbol ya commiteado.
+  useEffect(() => {
+    const payload = sessionStorage.getItem('gesicomm:tabInicial');
+    if (!payload) return;
+    sessionStorage.removeItem('gesicomm:tabInicial');
+    if (TABS.some(t => t.id === payload)) setTabActiva(payload);
+  }, []);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);
@@ -545,6 +554,27 @@ export default function ProductForm() {
 
         <div className={`tab-content ${tabActiva === 'precio' ? 'active' : ''}`}>
           <div className={esAdmin ? 'form-grid-3' : 'form-grid-2'}>
+                        <div className="form-group">
+              <label htmlFor="prod-precio-costo">
+                Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
+              </label>
+              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                <Controller
+                  name="precio_costo"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput
+                      id="prod-precio-costo"
+                      className="w-full"
+                      style={{ padding: '0.6rem' }}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                    />
+                  )}
+                />
+              </div>
+            </div>
             <div className="form-group">
               <label htmlFor="prod-precio-base">
                 {esAdmin ? 'Precio de Venta Para las Tiendas' : 'Precio de venta a las personas'} <span className="req">*</span>
@@ -569,27 +599,6 @@ export default function ProductForm() {
               {errors.precio_base && <span className="field-error">{errors.precio_base.message}</span>}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="prod-precio-costo">
-                Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
-              </label>
-              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
-                <Controller
-                  name="precio_costo"
-                  control={control}
-                  render={({ field }) => (
-                    <CurrencyInput
-                      id="prod-precio-costo"
-                      className="w-full"
-                      style={{ padding: '0.6rem' }}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                    />
-                  )}
-                />
-              </div>
-            </div>
 
             {esAdmin && (
             <div className="form-group">

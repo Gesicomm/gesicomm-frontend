@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Zap, ShoppingCart, TrendingUp, Package, Check, Loader2, AlertTriangle,
-  ExternalLink, ArrowLeft, Search, ImageOff, Star, Sparkles,
+  ExternalLink, ArrowLeft, Search, ImageOff, Star, Sparkles, Eye, Copy, Link2,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
-import { landingService } from '../../services/landingService';
+import { landingSimpleService } from '../../services/landingSimpleService';
+import { tiendaService } from '../../services/tiendaService';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -131,7 +132,9 @@ function SelectorEstrategia({ recomendacion, landingActual, onElegir }) {
       {landingActual && (
         <div style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}>
           <Check size={15} color="#34d399" />
-          <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Este producto ya tiene un funnel armado — elegir una estrategia lo edita, no crea uno nuevo.</span>
+          <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>
+            La página ya existe en tu landing — la estrategia solo cambia qué se ofrece durante la compra.
+          </span>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
@@ -370,21 +373,48 @@ function PanelVentaRapida({ ofertas, guardando, onConfirmar }) {
 }
 
 /* ─── Componente principal ──────────────────────────────────────────── */
-export default function FunnelStrategyStep({ productos, productoIds, funnels, landingId, setLandingId, onFunnelCreado, onError }) {
+export default function FunnelStrategyStep({ productos, productoIds, setLandingId, onError }) {
   const [productoActivoId, setProductoActivoId] = useState(productoIds.length === 1 ? productoIds[0] : null);
   const [ofertas, setOfertas] = useState([]);
   const [cargandoOfertas, setCargandoOfertas] = useState(false);
-  const [templates, setTemplates] = useState([]);
   const [estrategiaAbierta, setEstrategiaAbierta] = useState(null);
-  const [creandoFunnel, setCreandoFunnel] = useState(false);
   const [mensajeCombo, setMensajeCombo] = useState(false);
+  const [tienda, setTienda] = useState(null);
+  const [landingTienda, setLandingTienda] = useState(undefined); // undefined = cargando
+  const [copiado, setCopiado] = useState(false);
 
   const producto = productos.find(p => p.id === productoActivoId);
-  const landingActual = productoActivoId ? funnels.find(f => f.producto_id === productoActivoId) : null;
+
+  // Un funnel de venta directa NO es una landing aparte: es la página de
+  // producto de la landing del comercio (la de /landing, template rígido).
+  // Así hereda header, footer, redes y colores sin configurarse dos veces
+  // — el comercio solo completa fotos y descripción desde ahí.
+  const urlPublica = tienda?.subdominio && producto?.slug
+    ? `https://${tienda.subdominio}.gesicomm.com/${producto.slug}`
+    : null;
+
+  const publicada = !!landingTienda?.activo;
+
+  function copiarUrl() {
+    if (!urlPublica) return;
+    navigator.clipboard.writeText(urlPublica).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1800);
+    });
+  }
 
   useEffect(() => {
-    landingService.listarTemplates().then(setTemplates).catch(() => {});
-  }, []);
+    tiendaService.obtener().then(setTienda).catch(() => {});
+    landingSimpleService.listar()
+      .then(ls => {
+        const propia = (ls || [])[0] || null;
+        setLandingTienda(propia);
+        // La campaña se vincula a la landing del comercio: es la página
+        // donde realmente cae el tráfico del anuncio.
+        if (propia?.id) setLandingId(propia.id);
+      })
+      .catch(() => setLandingTienda(null));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function recargarOfertas() {
     if (!productoActivoId) return;
@@ -405,19 +435,12 @@ export default function FunnelStrategyStep({ productos, productoIds, funnels, la
   const bumpActivo = ofertas.find(o => o.activo !== false && o.estrategia === 'order_bump');
   const upsellActivo = ofertas.find(o => o.activo !== false && o.estrategia === 'upsell');
 
-  async function asegurarFunnel() {
-    if (landingActual) { setLandingId(landingActual.id); return landingActual.id; }
-    const recomendado = templates.find(t => t.funnel_type === 'direct_sale') || templates[0];
-    if (!recomendado) throw new Error('No hay plantillas de landing disponibles todavía.');
-    setCreandoFunnel(true);
-    try {
-      const creada = await landingService.instanciarLanding(productoActivoId, recomendado.id);
-      setLandingId(creada.id);
-      onFunnelCreado?.(creada);
-      return creada.id;
-    } finally {
-      setCreandoFunnel(false);
-    }
+  // Abre el editor de la landing en la ficha de ESTE producto. El payload
+  // va por sessionStorage, no por query string (misma convención que el
+  // tab inicial de ProductForm).
+  function abrirEditorDeContenido() {
+    sessionStorage.setItem('gesicomm:landingProductoId', String(productoActivoId));
+    window.open('/landing', '_blank', 'noopener');
   }
 
   async function onElegirEstrategia(id) {
@@ -427,24 +450,6 @@ export default function FunnelStrategyStep({ productos, productoIds, funnels, la
       return;
     }
     setEstrategiaAbierta(id);
-    if (!landingActual) {
-      try {
-        await asegurarFunnel();
-      } catch (err) {
-        onError?.(err.response?.data?.message || err.message || 'No pudimos crear el funnel. Probá de nuevo.');
-        setEstrategiaAbierta(null);
-      }
-    } else {
-      setLandingId(landingActual.id);
-    }
-  }
-
-  async function confirmarVentaRapida() {
-    try {
-      await asegurarFunnel();
-    } catch (err) {
-      onError?.(err.response?.data?.message || err.message || 'No pudimos crear el funnel. Probá de nuevo.');
-    }
   }
 
   if (!productoActivoId) {
@@ -463,7 +468,67 @@ export default function FunnelStrategyStep({ productos, productoIds, funnels, la
         <div style={{ width: 30, height: 30, borderRadius: 6, overflow: 'hidden', background: '#1a1a1c', flexShrink: 0 }}>
           {producto?.imagenes?.[0]?.url ? <img src={getMediaUrl(producto.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
         </div>
-        <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{producto?.nombre}</span>
+        <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, flex: 1 }}>{producto?.nombre}</span>
+
+        {publicada ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
+            <Check size={12} /> Publicada
+          </span>
+        ) : landingTienda ? (
+          <span style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 600 }}>Landing en borrador</span>
+        ) : null}
+      </div>
+
+      <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <Link2 size={13} color="#888" />
+          <span style={{ fontSize: '0.72rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Link para tus anuncios
+          </span>
+        </div>
+
+        {landingTienda === undefined ? (
+          <span style={s.muted}>Cargando…</span>
+        ) : !landingTienda ? (
+          <span style={s.muted}>
+            Todavía no armaste tu landing. Creala desde “Landing” y este link aparece solo.
+          </span>
+        ) : urlPublica ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <code style={{ flex: 1, minWidth: '200px', fontSize: '0.8rem', color: '#34d399', wordBreak: 'break-all' }}>
+              {urlPublica}
+            </code>
+            <button type="button" className="btn-secondary" onClick={copiarUrl} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '4px 10px' }}>
+              {copiado ? <Check size={12} color="#34d399" /> : <Copy size={12} />}
+              {copiado ? 'Copiado' : 'Copiar'}
+            </button>
+            <a href={urlPublica} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', padding: '4px 10px', textDecoration: 'none' }}>
+              <ExternalLink size={12} /> Ver
+            </a>
+          </div>
+        ) : (
+          <span style={s.muted}>Este producto no tiene enlace propio todavía.</span>
+        )}
+
+        {landingTienda && !publicada && (
+          <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
+            Tu landing está en borrador — publicala desde “Landing” para que este link funcione.
+          </span>
+        )}
+
+        <span style={{ ...s.muted, fontSize: '0.72rem' }}>
+          El diseño, el header, el footer y las redes salen de tu landing — no se configuran de nuevo acá.
+        </span>
+
+        {landingTienda && (
+          <button
+            type="button"
+            onClick={abrirEditorDeContenido}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start', padding: 0 }}
+          >
+            Editar fotos y descripción de este producto <ExternalLink size={11} />
+          </button>
+        )}
       </div>
 
       {mensajeCombo && (
@@ -476,21 +541,15 @@ export default function FunnelStrategyStep({ productos, productoIds, funnels, la
       {cargandoOfertas ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader2 className="animate-spin" size={22} color="#a78bfa" /></div>
       ) : !estrategiaAbierta ? (
-        <SelectorEstrategia recomendacion={recomendacion} landingActual={landingActual} onElegir={onElegirEstrategia} />
+        <SelectorEstrategia recomendacion={recomendacion} landingActual={landingTienda} onElegir={onElegirEstrategia} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <button type="button" onClick={() => setEstrategiaAbierta(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}>
             <ArrowLeft size={13} /> Volver a estrategias
           </button>
 
-          {creandoFunnel && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#999' }}>
-              <Loader2 size={14} className="animate-spin" /> Configurando el funnel de este producto…
-            </div>
-          )}
-
           {estrategiaAbierta === 'venta_rapida' && (
-            <PanelVentaRapida ofertas={ofertas} guardando={creandoFunnel} onConfirmar={confirmarVentaRapida} />
+            <PanelVentaRapida ofertas={ofertas} guardando={false} onConfirmar={() => setEstrategiaAbierta(null)} />
           )}
 
           {estrategiaAbierta === 'venta_complemento' && (
@@ -511,9 +570,19 @@ export default function FunnelStrategyStep({ productos, productoIds, funnels, la
                   <Sparkles size={13} style={{ marginRight: '4px', verticalAlign: '-2px' }} color="#f59e0b" />
                   Oferta principal (packs/combos "normales"): administralos desde la ficha del producto.
                 </span>
-                <a href={`/products/${productoActivoId}/editar?tab=ofertas`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#a78bfa', marginTop: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Payload por sessionStorage, no por query string — se
+                    // copia a la pestaña nueva por ser same-origin y se
+                    // consume una sola vez (ver ProductForm.jsx).
+                    sessionStorage.setItem('gesicomm:tabInicial', 'ofertas');
+                    window.open(`/products/${productoActivoId}/editar`, '_blank');
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', marginTop: '0.4rem', padding: 0 }}
+                >
                   Abrir ofertas del producto <ExternalLink size={12} />
-                </a>
+                </button>
               </div>
 
               <SugerenciaForm tipo="order_bump" productoActivoId={productoActivoId} productos={productos} ofertaExistente={bumpActivo} onGuardado={recargarOfertas} onError={onError} />
@@ -524,6 +593,17 @@ export default function FunnelStrategyStep({ productos, productoIds, funnels, la
                 <PreviewRecorrido producto={producto} bump={bumpActivo} upsell={upsellActivo} />
               </div>
             </>
+          )}
+
+          {urlPublica && (
+            <a
+              href={urlPublica}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#a78bfa', alignSelf: 'flex-start' }}
+            >
+              Ver cómo queda <ExternalLink size={11} />
+            </a>
           )}
         </div>
       )}

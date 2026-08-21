@@ -128,8 +128,17 @@ export default function LandingPublica() {
     // obtenerProductoPublico en el backend) — antes esto nunca se llamaba
     // y secciones_producto quedaba siempre en la plantilla compartida,
     // sin importar qué producto se estuviera mirando.
+    // En la raíz del hostname de una tienda (/:algo, sin "/l/") ese único
+    // segmento puede ser dos cosas distintas: el slug de una landing/funnel
+    // o el slug de un producto. Se prueba primero como landing —es la URL
+    // que se comparte en anuncios— y recién si no existe se cae al
+    // endpoint por-producto, que era el único comportamiento anterior.
     const promesa = productId
-      ? obtenerProductoLanding(slug, productId)
+      ? (slug
+          ? obtenerProductoLanding(slug, productId)
+          : obtenerLandingPublica(productId)
+              .then(res => (res === null ? obtenerProductoLanding(null, productId) : res))
+              .catch(() => obtenerProductoLanding(null, productId)))
       : obtenerLandingPublica(slug);
     promesa
       .then((res) => {

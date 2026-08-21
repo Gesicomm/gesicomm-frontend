@@ -290,6 +290,21 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     return () => observer.disconnect();
   }, []);
 
+  // Deep-link desde el wizard de campañas ("Editar fotos y descripción de
+  // este producto"): el id viaja por sessionStorage, no por query string, y
+  // se consume una sola vez para que un F5 después no vuelva a saltar acá.
+  useEffect(() => {
+    const pedido = sessionStorage.getItem('gesicomm:landingProductoId');
+    if (!pedido || !catalogo.productos.length) return;
+    sessionStorage.removeItem('gesicomm:landingProductoId');
+    const p = catalogo.productos.find(x => String(x.id) === String(pedido));
+    if (p) {
+      setTab('catalogo');
+      setVistaCatalogo(false);
+      abrirProducto(p);
+    }
+  }, [catalogo.productos]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Tras editar un producto (imagen/descripción/FAQ) desde la vista previa
   // del editor, refresca el catálogo para que la tarjeta del producto en el
   // preview de la landing (imagen/nombre) no quede desactualizada.

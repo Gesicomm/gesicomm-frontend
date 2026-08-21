@@ -1,14 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
-  Save, Loader, ArrowLeft, Eye, EyeOff, Monitor, Smartphone, AlertCircle, Check
+  Save, Loader, ArrowLeft, Eye, EyeOff, Monitor, Smartphone, AlertCircle, Check, Pencil, X, Settings,
+  Copy, ExternalLink, Lock,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { productService } from '../../services/productService';
+import { tiendaService } from '../../services/tiendaService';
+import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import LandingPreview from './LandingPreview';
+import DisenoFunnelPicker from './DisenoFunnelPicker';
 import InspectorSeccion from './InspectorSeccion';
 import { BLOQUES_SCHEMA } from './BloquesSchema';
+
+/**
+ * Onboarding rígido: de todo el funnel, el comercio solo toca estas dos
+ * cosas. El resto (hero, beneficios, opiniones, FAQ, orden de bloques) lo
+ * define el diseño elegido y se muestra bloqueado — así armar un funnel es
+ * cuestión de minutos y no de aprender un page-builder.
+ *
+ * La descripción y las fotos salen de la ficha del producto; acá solo se
+ * eligen/ajustan, no se inventan aparte.
+ */
+const SECCIONES_EDITABLES = new Map([
+  ['product_detail', 'Fotos y descripción'],
+  ['footer', 'Datos de contacto y redes'],
+]);
 
 export default function MerchantEditor() {
   const { productoId } = useParams();
@@ -16,11 +34,20 @@ export default function MerchantEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publicando, setPublicando] = useState(false);
   const [error, setError] = useState('');
+  const [editandoSlug, setEditandoSlug] = useState(false);
+  const [slugBorrador, setSlugBorrador] = useState('');
+  const [guardandoSlug, setGuardandoSlug] = useState(false);
+  const [errorSlug, setErrorSlug] = useState('');
   
   const [landing, setLanding] = useState(null);
   const [producto, setProducto] = useState(null);
-  
+  const [tienda, setTienda] = useState(null);
+  const [variantes, setVariantes] = useState([]);
+  const [ofertas, setOfertas] = useState([]);
+  const [copiado, setCopiado] = useState(false);
+
   const [content, setContent] = useState({});
   const [seccionSeleccionadaId, setSeccionSeleccionadaId] = useState(null);
   const [dispositivo, setDispositivo] = useState('mobile'); // 'desktop' | 'mobile'
@@ -30,13 +57,23 @@ export default function MerchantEditor() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [land, prod] = await Promise.all([
+        // Variantes y ofertas van también: el bloque product_detail ya
+        // sabe renderizar selector de variante, precio tachado, % OFF y
+        // packs — sin estos dos el preview mostraba una versión pobre que
+        // no se parecía a la página real.
+        const [land, prod, tda, vars, ofs] = await Promise.all([
           landingService.obtenerLandingProducto(productoId),
-          productService.obtener(productoId)
+          productService.detalle(productoId),
+          tiendaService.obtener().catch(() => null),
+          productService.variantes(productoId).catch(() => []),
+          ofertaService.listarPorProducto(productoId).catch(() => []),
         ]);
-        
+
         setLanding(land);
         setProducto(prod);
+        setTienda(tda);
+        setVariantes(Array.isArray(vars) ? vars : []);
+        setOfertas(Array.isArray(ofs) ? ofs : []);
         setContent(land.content || {});
       } catch (err) {
         console.error(err);
@@ -45,9 +82,69 @@ export default function MerchantEditor() {
         setLoading(false);
       }
     };
-    
+
     fetchData();
   }, [productoId]);
+
+  // El slug cuelga directo de la raíz del hostname de la tienda. El viejo
+  // prefijo "/l/" sigue funcionando para links ya compartidos (ver
+  // App.jsx y deploy/nginx/tiendas.gesicomm.com), pero no es la ruta
+  // canónica: la que se muestra y se comparte es esta.
+  const urlPublica = useMemo(() => {
+    if (!tienda?.subdominio || !landing?.slug) return null;
+    return `https://${tienda.subdominio}.gesicomm.com/${landing.slug}`;
+  }, [tienda?.subdominio, landing?.slug]);
+
+  // El producto real del funnel, con la forma que espera LandingPreview.
+  // Sin esto el bloque product_detail caía en el mock interno ("Producto
+  // de prueba / 9.990 Gs") y el comercio no veía su propio producto.
+  // Va acá arriba junto al resto de los hooks: más abajo hay returns
+  // tempranos (loading / sin landing) y un hook después de ellos rompe
+  // el orden de hooks entre renders.
+  const itemsPreview = useMemo(() => {
+    if (!producto) return [];
+    const precioBase = Number(producto.precio_base) || 0;
+    const tachado = producto.precio_tachado ? Number(producto.precio_tachado) : null;
+    return [{
+      id: producto.id,
+      content_id: producto.slug || `producto-${producto.id}`,
+      tipo: 'producto',
+      nombre: producto.nombre,
+      precio: precioBase,
+      precio_antes: tachado,
+      descuento_pct: tachado && tachado > precioBase
+        ? Math.round((1 - precioBase / tachado) * 100)
+        : 0,
+      descripcion: producto.descripcion_corta || producto.descripcion_larga || '',
+      descripcion_larga: producto.descripcion_larga || '',
+      imagenes: (producto.imagenes || []).map(i => i.url),
+      stock: producto.cantidad_disponible,
+      slug: producto.slug,
+      variantes: (variantes || []).filter(v => v.activo !== false).map(v => ({
+        id: v.id,
+        nombre: v.nombre,
+        stock: v.stock,
+        precio_efectivo: precioBase + (Number(v.precio_diferencial) || 0),
+        imagenes: [],
+      })),
+      ofertas: (ofertas || []).filter(o => o.activo !== false).map(o => ({
+        id: o.id,
+        nombre: o.nombre,
+        tipo_contenido: o.tipo_contenido,
+        estrategia: o.estrategia,
+        precio: Number(o.precio) || 0,
+        descripcion: o.descripcion || null,
+      })),
+    }];
+  }, [producto, variantes, ofertas]);
+
+  function copiarUrlPublica() {
+    if (!urlPublica) return;
+    navigator.clipboard.writeText(urlPublica).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1500);
+    });
+  }
 
   const handleSave = async () => {
     try {
@@ -59,6 +156,43 @@ export default function MerchantEditor() {
       setError(err.response?.data?.message || 'Error al guardar.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTogglePublicado = async () => {
+    try {
+      setPublicando(true);
+      setError('');
+      const actualizada = await landingService.cambiarEstado(landing.id, !landing.activo);
+      setLanding(prev => ({ ...prev, activo: actualizada.activo }));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cambiar el estado.');
+    } finally {
+      setPublicando(false);
+    }
+  };
+
+  const abrirEdicionSlug = () => {
+    setSlugBorrador(landing.slug);
+    setErrorSlug('');
+    setEditandoSlug(true);
+  };
+
+  const handleGuardarSlug = async () => {
+    const limpio = slugBorrador.trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // sin tildes
+      .replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    if (!limpio) { setErrorSlug('Escribí al menos una palabra.'); return; }
+    try {
+      setGuardandoSlug(true);
+      setErrorSlug('');
+      const actualizada = await landingService.actualizar(landing.id, { slug: limpio });
+      setLanding(prev => ({ ...prev, slug: actualizada.slug }));
+      setEditandoSlug(false);
+    } catch (err) {
+      setErrorSlug(err.response?.data?.message || 'Ese link ya está en uso — probá con otro.');
+    } finally {
+      setGuardandoSlug(false);
     }
   };
 
@@ -107,10 +241,18 @@ export default function MerchantEditor() {
   // Transform schema and content into the shape LandingPreview expects
   const previewSections = schema.map((sSchema, idx) => {
     const sContent = content[sSchema.id] || {};
+    // El schema de LandingTemplate guarda el tipo de bloque como "type",
+    // pero LandingPreview y BLOQUES_SCHEMA lo leen como "tipo" — sin este
+    // mapeo el preview quedaba en blanco (ningún bloque matcheaba) y la
+    // lista de secciones mostraba todos los iconos genéricos.
+    const tipo = sSchema.tipo || sSchema.type;
     return {
       ...sSchema,
+      tipo,
       id: sSchema.id,
       orden: idx,
+      activo: true,
+      nombre_interno: sSchema.nombre_interno || BLOQUES_SCHEMA[tipo]?.label || tipo,
       // Hacemos merge del contenido del schema default y lo que llenó el usuario
       contenido: { ...(sSchema.contenido || {}), ...(sContent.contenido || {}) },
       config: { ...(sSchema.config || {}), ...(sContent.config || {}) },
@@ -164,8 +306,80 @@ export default function MerchantEditor() {
             {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
             {saving ? 'Guardando...' : 'Guardar Cambios'}
           </button>
+
+          <button
+            className={landing.activo ? 'lb-btn-secondary h-8 px-4 text-sm gap-2' : 'lb-btn-primary h-8 px-4 text-sm gap-2'}
+            onClick={handleTogglePublicado}
+            disabled={publicando}
+            title={landing.activo ? 'Los visitantes dejan de ver esta página' : 'La página queda visible públicamente en su URL'}
+          >
+            {publicando ? <Loader size={14} className="animate-spin" /> : (landing.activo ? <EyeOff size={14} /> : <Eye size={14} />)}
+            {publicando ? 'Guardando...' : (landing.activo ? 'Despublicar' : 'Publicar')}
+          </button>
+
+          {landing.activo && (
+            <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+              <Check size={13} /> Publicado
+            </span>
+          )}
         </div>
       </header>
+
+      {/* Barra de link público — el slug es lo único editable de la URL; el
+          prefijo "/l/" y el dominio de la tienda son fijos por diseño del
+          sistema de landings públicas. */}
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[var(--vit-border)] bg-[var(--vit-surface)] px-4 text-xs">
+        <span className="text-[var(--vit-muted)]">Link:</span>
+        {editandoSlug ? (
+          <>
+            <span className="text-[var(--vit-muted)]">
+              {tienda?.subdominio ? `${tienda.subdominio}.gesicomm.com/` : '/'}
+            </span>
+            <input
+              type="text"
+              value={slugBorrador}
+              onChange={(e) => setSlugBorrador(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGuardarSlug()}
+              autoFocus
+              className="rounded border border-[var(--vit-border)] bg-[var(--vit-card-bg)] px-2 py-0.5 text-xs text-[var(--vit-text)]"
+              style={{ width: '220px' }}
+            />
+            <button onClick={handleGuardarSlug} disabled={guardandoSlug} className="text-emerald-600 hover:text-emerald-500" title="Guardar">
+              {guardandoSlug ? <Loader size={13} className="animate-spin" /> : <Check size={13} />}
+            </button>
+            <button onClick={() => setEditandoSlug(false)} disabled={guardandoSlug} className="text-[var(--vit-muted)] hover:text-[var(--vit-text)]" title="Cancelar">
+              <X size={13} />
+            </button>
+            {errorSlug && <span className="text-red-500">{errorSlug}</span>}
+          </>
+        ) : (
+          <>
+            {urlPublica ? (
+              <a href={urlPublica} target="_blank" rel="noopener noreferrer" className="text-[var(--vit-text)] hover:text-[var(--vit-primary)] underline decoration-dotted">
+                {urlPublica.replace('https://', '')}
+              </a>
+            ) : (
+              <code className="text-[var(--vit-text)]">/{landing.slug}</code>
+            )}
+            <button onClick={abrirEdicionSlug} className="text-[var(--vit-muted)] hover:text-[var(--vit-primary)]" title="Editar el link">
+              <Pencil size={12} />
+            </button>
+            {urlPublica && (
+              <>
+                <button onClick={copiarUrlPublica} className="text-[var(--vit-muted)] hover:text-[var(--vit-primary)]" title="Copiar link">
+                  {copiado ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                </button>
+                <a href={urlPublica} target="_blank" rel="noopener noreferrer" className="text-[var(--vit-muted)] hover:text-[var(--vit-primary)]" title="Ver la página">
+                  <ExternalLink size={12} />
+                </a>
+              </>
+            )}
+            {!landing.activo && (
+              <span className="text-amber-500">— publicá para que este link funcione para tus visitantes</span>
+            )}
+          </>
+        )}
+      </div>
 
       {/* Main Workspace */}
       <div className="flex flex-1 overflow-hidden">
@@ -191,13 +405,46 @@ export default function MerchantEditor() {
                   <br/>Seleccioná cada sección para configurar su contenido.
                 </p>
               </div>
-              
+
+              {/* Diseño — mismo componente que usa el paso "Funnel" del
+                  wizard de campañas, para que no se dupliquen dos
+                  selectores que tienen que decir lo mismo. */}
+              <div className="p-4 border-b border-[var(--vit-border)]">
+                <DisenoFunnelPicker
+                  landing={landing}
+                  onAplicado={(parcial) => setLanding(prev => ({ ...prev, ...parcial }))}
+                  onError={setError}
+                />
+              </div>
+
               <div className="p-3 flex flex-col gap-2">
                 {previewSections.map((s, idx) => {
                   const bsSchema = BLOQUES_SCHEMA[s.tipo];
                   const Icono = bsSchema?.icon || Settings;
                   const configurado = content[s.id] && Object.keys(content[s.id]).length > 0;
-                  
+                  const editable = SECCIONES_EDITABLES.has(s.tipo);
+
+                  if (!editable) {
+                    return (
+                      <div
+                        key={s.id}
+                        title="Lo define el diseño del funnel — no se edita"
+                        className="flex items-center gap-3 w-full p-3 text-left bg-[var(--vit-surface)] border border-dashed border-[var(--vit-border)] rounded-xl opacity-60"
+                      >
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--vit-surface)] text-[var(--vit-muted)]">
+                          <Icono size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-[var(--vit-text)] truncate">
+                            {s.nombre_interno || bsSchema?.name || s.tipo}
+                          </p>
+                          <p className="text-xs text-[var(--vit-muted)] mt-0.5">Lo define el diseño</p>
+                        </div>
+                        <Lock size={13} className="text-[var(--vit-muted)]" />
+                      </div>
+                    );
+                  }
+
                   return (
                     <button
                       key={s.id}
@@ -212,11 +459,7 @@ export default function MerchantEditor() {
                           {s.nombre_interno || bsSchema?.name || s.tipo}
                         </p>
                         <p className="text-xs text-[var(--vit-muted)] flex items-center gap-1 mt-0.5">
-                          {configurado ? (
-                            <><Check size={10} className="text-emerald-500" /> Configurado</>
-                          ) : (
-                            <>Pendiente</>
-                          )}
+                          {SECCIONES_EDITABLES.get(s.tipo)}
                         </p>
                       </div>
                       <div className="text-[var(--vit-muted)] opacity-0 group-hover:opacity-100 transition-opacity">
@@ -246,21 +489,26 @@ export default function MerchantEditor() {
                       titulo={producto?.nombre}
                       descripcion={producto?.descripcion}
                       filtros={{}}
-                      items={[]} // En un funnel real esto vendría de los step products
-                      catalogo={{}} 
+                      items={itemsPreview}
+                      catalogo={{}}
+                      contacto={{
+                        whatsapp: tienda?.whatsapp || '',
+                        nombre: tienda?.nombre || '',
+                      }}
+                      /* El tema propio de la landing manda; los design_tokens
+                         del template son solo el default de arranque. */
                       tema={{
-                        modo: 'claro',
-                        primario: landing?.template?.design_tokens?.primary_color || '#3B82F6',
+                        modo: landing?.tema_modo || 'claro',
+                        primario: landing?.color_primario || landing?.template?.design_tokens?.primary_color || '#3B82F6',
                         secundario: '#1E293B',
-                        fondo: '#FFFFFF',
-                        texto: undefined,
-                        tarjeta: undefined
+                        fondo: landing?.color_fondo || (landing?.tema_modo === 'oscuro' ? '#0a0a0a' : '#FFFFFF'),
+                        texto: landing?.color_texto || undefined,
+                        tarjeta: landing?.color_tarjeta || undefined
                       }}
-                      diseno={{ 
-                        radio_bordes: 'xl', 
-                        fuente: landing?.template?.design_tokens?.font || 'inter' 
+                      diseno={{
+                        radio_bordes: 'xl',
+                        fuente: landing?.fuente || landing?.template?.design_tokens?.font || 'inter'
                       }}
-                      contacto={{}}
                       secciones={previewSections}
                       seccionSeleccionadaId={seccionSeleccionadaId}
                       onSelectSeccion={setSeccionSeleccionadaId}

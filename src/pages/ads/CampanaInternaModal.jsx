@@ -103,6 +103,12 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
     });
   }, [productos, filtroCategoria, busquedaProducto]);
 
+  // Si el canal cambia a WhatsApp mientras se estaba en el Paso 4, ese paso
+  // deja de existir — no dejar al wizard "parado" en un paso que ya no está.
+  // (Tiene que ir antes del "if (!open) return null" de abajo — los hooks
+  // no pueden ser condicionales.)
+  useEffect(() => { setStep(s => Math.min(s, maxStep)); }, [maxStep]);
+
   if (!open) return null;
 
   const toggleProducto = (id) => {
@@ -118,10 +124,6 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
 
   const irSiguiente = () => { if (puedeAvanzar()) setStep(s => Math.min(maxStep, s + 1)); };
   const irAtras = () => setStep(s => Math.max(1, s - 1));
-
-  // Si el canal cambia a WhatsApp mientras se estaba en el Paso 4, ese paso
-  // deja de existir — no dejar al wizard "parado" en un paso que ya no está.
-  useEffect(() => { setStep(s => Math.min(s, maxStep)); }, [maxStep]);
 
   const handleSubmit = async () => {
     setGuardando(true);
@@ -343,10 +345,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                 <FunnelStrategyStep
                   productos={productos}
                   productoIds={productoIds}
-                  funnels={funnels}
-                  landingId={landingId}
                   setLandingId={setLandingId}
-                  onFunnelCreado={(creada) => setFunnels(prev => [...prev, creada])}
                   onError={setError}
                 />
               )}
