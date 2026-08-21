@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, ImageOff, Pencil } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
@@ -24,6 +24,13 @@ export default function CatalogoPreview({
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
 
+  const [filtro, setFiltro] = useState('Todos');
+  const parseTags = (str) => str ? str.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const etiquetasSet = new Set();
+  productos.forEach(p => parseTags(p.etiqueta).forEach(tag => etiquetasSet.add(tag)));
+  const etiquetas = ['Todos', ...etiquetasSet];
+  const productosFiltrados = filtro === 'Todos' ? productos : productos.filter(p => parseTags(p.etiqueta).includes(filtro));
+
   return (
     <div className="w-full min-h-full" style={{ backgroundColor: t.fondo, color: t.texto }}>
       <div className="px-4 py-3 flex items-center justify-between sticky top-0 z-10" style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: t.fondo }}>
@@ -40,7 +47,22 @@ export default function CatalogoPreview({
         )}
 
         <div className="mt-6">
-        {productos.length === 0 ? (
+        {etiquetas.length > 1 && (
+          <div className="flex overflow-x-auto gap-2 pb-4 mb-4" style={{ scrollbarWidth: 'none' }}>
+            {etiquetas.map(e => (
+              <button 
+                key={e} 
+                onClick={() => setFiltro(e)}
+                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${filtro === e ? '' : 'hover:opacity-70'}`}
+                style={filtro === e ? { backgroundColor: t.acento, color: t.fondo } : { backgroundColor: hexToRgba(t.texto, 0.05), color: t.texto }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {productosFiltrados.length === 0 ? (
           <div className="py-16 text-center rounded-2xl" style={{ border: `1px dashed ${bordeSuave}` }}>
             <ImageOff size={32} style={{ color: hexToRgba(t.texto, 0.25), margin: '0 auto 0.75rem' }} />
             <p className="font-semibold mb-1">Todavía no agregaste productos</p>
@@ -48,7 +70,7 @@ export default function CatalogoPreview({
           </div>
         ) : (
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
-            {productos.map(p => {
+            {productosFiltrados.map(p => {
               const precio = p.precio_efectivo ?? p.precio_base ?? null;
               // precio_ancla (de esta landing) manda sobre precio_tachado (del
               // producto global) — mismo criterio que la landing pública.
@@ -68,9 +90,6 @@ export default function CatalogoPreview({
                       {enOferta && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: t.acento, color: t.fondo }}>Oferta</span>
                       )}
-                      {p.etiqueta && p.etiqueta.split(',').map((tag, idx) => (
-                        <span key={idx} className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hexToRgba(t.texto, 0.85), color: t.fondo }}>{tag.trim()}</span>
-                      ))}
                     </div>
                     {/* Pista de que la tarjeta es clickeable para editar — el
                         comercio no encontraba cómo editar desde acá. */}
