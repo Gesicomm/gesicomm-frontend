@@ -14,7 +14,7 @@ import FaqPanel from '../landing-simple/panels/FaqPanel';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor,
-  Settings, Layers, HelpCircle
+  Settings, Layers, HelpCircle, Megaphone, ShieldCheck, CheckSquare
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -32,6 +32,7 @@ const TABS = [
   { id: 'inventario', label: 'Inventario', icon: <BarChart2 size={15} /> },
   { id: 'variantes', label: 'Variantes', icon: <Layers size={15} /> },
   { id: 'multimedia', label: 'Multimedia', icon: <ImageIcon size={15} /> },
+  { id: 'marketing', label: 'Marketing & Embudo', icon: <Megaphone size={15} /> },
   { id: 'faq', label: 'Todo lo que necesitas saber', icon: <HelpCircle size={15} /> },
   { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
   { id: 'configuracion', label: 'Configuración', icon: <Settings size={15} /> },
@@ -105,6 +106,10 @@ export default function ProductForm() {
       sku: '',
       descripcion_corta: '',
       descripcion_larga: '',
+      sobre_este_producto: '',
+      propuesta_valor: '',
+      beneficios: [],
+      confianza: [{ texto: 'Envío a todo el país', icono: 'ShieldCheck' }, { texto: 'Pago seguro', icono: 'ShieldCheck' }, { texto: 'Cambios y devoluciones', icono: 'ShieldCheck' }, { texto: 'Soporte 24/7', icono: 'ShieldCheck' }],
       faq_titulo: '',
       tags: '',
       precio_base: '',
@@ -133,6 +138,12 @@ export default function ProductForm() {
   const { fields: variantesFields, append: appendVariante, remove: removeVariante, replace: replaceVariantes } =
     useFieldArray({ control, name: 'variantes', keyName: '_rhfKey' });
 
+  const { fields: beneficiosFields, append: appendBeneficio, remove: removeBeneficio } = 
+    useFieldArray({ control, name: 'beneficios', keyName: '_rhfKey' });
+
+  const { fields: confianzaFields, append: appendConfianza, remove: removeConfianza } = 
+    useFieldArray({ control, name: 'confianza', keyName: '_rhfKey' });
+
   const nombre = watch('nombre');
 
   // ── Cargar datos ──────────────────────────────────────────
@@ -143,7 +154,7 @@ export default function ProductForm() {
   // necesidad — medido ~2x más lento que pedirlas todas juntas.
   useEffect(() => {
     const init = async () => {
-      const [catData, conf, p, vars, imgs, provData, faqData] = await Promise.all([
+      const [catData, conf, p, vars, imgs, provData, faqData, sesion] = await Promise.all([
         categoriaService.buscar({ solo_activas: true, limit: 1000 }),
         comboAdminService.obtenerConfiguracion().catch(() => null),
         esEdicion ? productService.detalle(id).catch(() => null) : Promise.resolve(null),
@@ -151,6 +162,7 @@ export default function ProductForm() {
         esEdicion ? productService.imagenes(id).catch(() => []) : Promise.resolve([]),
         proveedoresService.buscar({}).catch(() => ({ proveedores: [] })),
         esEdicion ? productService.faq(id).catch(() => []) : Promise.resolve([]),
+        esEdicion ? verificarSesion().catch(() => null) : Promise.resolve(null),
       ]);
       setCategorias(catData.categorias || catData);
       setProveedores(provData.proveedores || provData || []);
@@ -159,6 +171,17 @@ export default function ProductForm() {
       if (esEdicion) {
         try {
           if (!p) throw new Error('No se pudo cargar el producto.');
+          // Defensa en profundidad: aunque el botón de editar ya está
+          // oculto en ProductList para productos que no son propios, esto
+          // bloquea también el acceso por URL directa — antes de llenar el
+          // formulario con datos de un producto ajeno, nunca después (ver
+          // mismo criterio en producto.service.js#actualizar, que además
+          // rechaza el guardado con 403).
+          const esAdminSesion = sesion?.rol === 'administrador';
+          if (sesion && !esAdminSesion && p.creado_por !== sesion.id) {
+            navigate('/products', { replace: true });
+            return;
+          }
           reset({
             nombre: p.nombre || '',
             categoria_id: p.categoria_id || '',
@@ -184,6 +207,11 @@ export default function ProductForm() {
             estado_venta: p.estado_venta || 'en_venta',
             destacado: p.destacado,
             variantes: vars?.length ? vars : [],
+            propuesta_valor: p.propuesta_valor || '',
+            beneficios: p.beneficios || [],
+            confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'ShieldCheck' }, { texto: 'Pago seguro', icono: 'ShieldCheck' }, { texto: 'Cambios y devoluciones', icono: 'ShieldCheck' }, { texto: 'Soporte 24/7', icono: 'ShieldCheck' }],
+            preguntas_frecuentes: p.preguntas_frecuentes || [],
+            sobre_este_producto: p.sobre_este_producto || '',
           });
           if (vars?.length > 0) setTieneVariantes(true);
           setImagenes(imgs || []);
@@ -1199,6 +1227,81 @@ export default function ProductForm() {
           <p className="field-hint">
             JPG, PNG o WEBP. Máx. 1&nbsp;MB.
           </p>
+        </div>
+
+        <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
+          <div className="form-group full">
+            <label>Propuesta de valor</label>
+            <textarea
+              {...register('propuesta_valor')}
+              placeholder="Ej: Definí tus cejas y barba con precisión y conseguí un acabado profesional en segundos."
+              rows={3}
+            />
+            <p className="field-hint">Una frase: producto → beneficio principal → acción. Aparece debajo del nombre en el embudo.</p>
+          </div>
+
+          <div className="form-group full">
+            <label>Sobre este producto</label>
+            <textarea
+              {...register('sobre_este_producto')}
+              placeholder="Descripción detallada para la sección 'Sobre este producto' del embudo."
+              rows={5}
+            />
+            <p className="field-hint">Si se deja vacío, el embudo usará la Descripción Larga.</p>
+          </div>
+
+          <div className="form-group full">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <label style={{ margin: 0 }}>Beneficios</label>
+              <button type="button" className="btn-secondary btn-small" onClick={() => appendBeneficio({ titulo: '', texto: '' })}>
+                <Plus size={14} /> Agregar beneficio
+              </button>
+            </div>
+            {beneficiosFields.length === 0 ? (
+              <p className="field-hint">No hay beneficios cargados. El embudo no mostrará esta sección.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {beneficiosFields.map((field, index) => (
+                  <div key={field._rhfKey} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--bg-card)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <input {...register(`beneficios.${index}.titulo`)} placeholder="Título corto (ej: Fácil de usar)" />
+                      <textarea {...register(`beneficios.${index}.texto`)} placeholder="Breve descripción del beneficio..." rows={2} />
+                    </div>
+                    <button type="button" className="btn-icon" onClick={() => removeBeneficio(index)} style={{ color: 'var(--text-muted)' }}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="form-group full">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <label style={{ margin: 0 }}>Confianza (Garantías) <span className="req">*mínimo 4 recomendados</span></label>
+              <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ texto: '', icono: 'ShieldCheck' })}>
+                <Plus size={14} /> Agregar
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {confianzaFields.map((field, index) => (
+                <div key={field._rhfKey} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <select {...register(`confianza.${index}.icono`)} style={{ width: '150px' }}>
+                    <option value="ShieldCheck">Escudo (Seguro)</option>
+                    <option value="Truck">Camión (Envío)</option>
+                    <option value="RotateCcw">Devolución</option>
+                    <option value="Headphones">Soporte</option>
+                    <option value="CheckCircle2">Check</option>
+                    <option value="Star">Estrella</option>
+                  </select>
+                  <input {...register(`confianza.${index}.texto`)} placeholder="Ej: Envío gratis" style={{ flex: 1 }} />
+                  <button type="button" className="btn-icon" onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className={`tab-content ${tabActiva === 'faq' ? 'active' : ''}`}>

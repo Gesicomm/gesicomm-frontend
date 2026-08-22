@@ -137,6 +137,13 @@ export default function ProductList() {
   const precioDisplay = (valor) =>
     `${parseFloat(valor || 0).toLocaleString('es-PY', { maximumFractionDigits: 0 })} Gs`;
 
+  const esAdmin = usuarioActual?.rol === 'administrador';
+  // Un producto "Global" (creado_por de otro usuario) nunca es editable ni
+  // dable de baja por una cuenta no-admin — ver mismo criterio en
+  // producto.service.js#actualizar/eliminar (backend ya lo rechaza con
+  // 403, esto evita que el front ni siquiera ofrezca la acción).
+  const puedeModificar = (p) => esAdmin || (usuarioActual && p.creado_por === usuarioActual.id);
+
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="prod-page">
@@ -255,14 +262,15 @@ export default function ProductList() {
                     const tienePrecioAncla = precioAncla > precioBase;
                     const tieneDescuento = tienePrecioAncla || Number(p.descuento_porcentaje) > 0 || Number(p.ofertas_count) > 0;
                     const categoria = categorias.find(c => c.id === p.categoria_id)?.nombre;
+                    const editable = puedeModificar(p);
                     return (
                       <tr
                         key={p.id}
                         className={`prod-row ${!p.activo ? 'row-inactive' : ''}`}
-                        onClick={() => navigate(`/products/${p.id}/editar`)}
+                        onClick={() => { if (editable) navigate(`/products/${p.id}/editar`); }}
                         tabIndex={0}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') navigate(`/products/${p.id}/editar`);
+                          if (e.key === 'Enter' && editable) navigate(`/products/${p.id}/editar`);
                         }}
                       >
                         <td>
@@ -335,24 +343,33 @@ export default function ProductList() {
                           </span>
                           <button
                             className={`toggle-btn ${p.activo ? 'active' : ''}`}
-                            onClick={(e) => { e.stopPropagation(); toggleActivo(p); }}
-                            title={p.activo ? 'Desactivar' : 'Activar'}
+                            onClick={(e) => { e.stopPropagation(); if (editable) toggleActivo(p); }}
+                            title={editable ? (p.activo ? 'Desactivar' : 'Activar') : 'No podés modificar un producto que no creaste'}
+                            disabled={!editable}
                           >
                             {p.activo ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                           </button>
                         </td>
                         <td>
                           <div className="action-btns">
-                            <button
-                              className="btn-icon"
-                              onClick={(e) => { e.stopPropagation(); navigate(`/products/${p.id}/editar`); }}
-                              title="Abrir workspace"
-                            >
-                              <Edit2 size={15} />
-                            </button>
+                            {/* Un producto Global (de otro usuario) nunca se
+                                edita ni se da de baja desde acá — ver
+                                puedeModificar() arriba y el mismo criterio
+                                en producto.service.js (backend). */}
+                            {editable && (
+                              <button
+                                className="btn-icon"
+                                onClick={(e) => { e.stopPropagation(); navigate(`/products/${p.id}/editar`); }}
+                                title="Abrir workspace"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                            )}
                             {/* Embudo del producto — módulo propio
                                 (pages/funnel/), NO el editor de landing ni el
-                                deprecado /mi-landing. */}
+                                deprecado /mi-landing. El marketing/funnel de
+                                un producto del catálogo compartido sí lo
+                                puede armar cualquier revendedor. */}
                             <button
                               className="lb-btn-primary"
                               style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', gap: '0.25rem', height: '28px', display: 'inline-flex', alignItems: 'center' }}
@@ -368,13 +385,15 @@ export default function ProductList() {
                             >
                               <Tag size={15} />
                             </button>
-                            <button
-                              className="btn-icon danger"
-                              onClick={(e) => { e.stopPropagation(); setProductoABajar(p); }}
-                              title="Dar de baja"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            {editable && (
+                              <button
+                                className="btn-icon danger"
+                                onClick={(e) => { e.stopPropagation(); setProductoABajar(p); }}
+                                title="Dar de baja"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

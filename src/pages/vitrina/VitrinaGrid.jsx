@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
@@ -110,7 +111,7 @@ function PrecioEditable({ item, onGuardar }) {
 }
 
 /* ─── Componente: card ────────────────────────────────────────────────── */
-function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad }) {
+function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion }) {
   const esCombo = item.tipo === 'combo';
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
@@ -118,7 +119,8 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad }) {
   return (
     <div
       className="vit-card"
-      onClick={() => onVerSensibilidad(item)}
+      onClick={() => onToggleSeleccion(item)}
+      style={seleccionado ? { outline: '2px solid #10b981', outlineOffset: '-2px' } : {}}
     >
       {/* ── Media ── */}
       <div className="vit-card-media">
@@ -142,6 +144,14 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad }) {
             <span>Sin imagen</span>
           </div>
         )}
+
+        {/* Checkbox de selección */}
+        <div 
+          style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: seleccionado ? '#10b981' : 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '4px', padding: '4px', cursor: 'pointer', display: 'flex' }}
+          onClick={(e) => { e.stopPropagation(); onToggleSeleccion(item); }}
+        >
+          <Check size={16} color={seleccionado ? '#fff' : 'transparent'} />
+        </div>
 
         {/* Overlay gradiente con precio superpuesto (solo si hay imagen) */}
         {(item.imagen || esCombo) && (
@@ -240,6 +250,29 @@ export default function VitrinaGrid() {
   const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
   
   const [page, setPage] = useState(1);
+  const [seleccionados, setSeleccionados] = useState(new Set());
+  const navigate = useNavigate();
+  
+  const toggleSeleccion = (item) => {
+    setSeleccionados(prev => {
+      const next = new Set(prev);
+      const key = `${item.tipo}:${item.id}`;
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+  
+  const generarLanding = () => {
+    if (seleccionados.size === 0) return;
+    const arrayItems = Array.from(seleccionados).map(k => {
+      const [tipo, id] = k.split(':');
+      return { tipo, referencia_id: parseInt(id) };
+    });
+    sessionStorage.setItem('gesicomm:prefilledLandingItems', JSON.stringify(arrayItems));
+    navigate('/landing');
+  };
+
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -303,6 +336,23 @@ export default function VitrinaGrid() {
           </div>
         </div>
       </div>
+
+      {/* ── Barra de selección ── */}
+      {seleccionados.size > 0 && (
+        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: '#10b981', padding: '12px 20px', margin: '-2rem -2rem 2rem -2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+          <div style={{ color: '#fff', fontWeight: 'bold' }}>
+            {seleccionados.size} {seleccionados.size === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn-secondary" style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff' }} onClick={() => setSeleccionados(new Set())}>
+              Cancelar
+            </button>
+            <button className="btn-primary" style={{ background: '#fff', color: '#10b981' }} onClick={generarLanding}>
+              Generar mi landing <ChevronRight size={16} style={{ marginLeft: 4 }} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Toolbar ── */}
       <div className="vit-toolbar">
@@ -404,6 +454,8 @@ export default function VitrinaGrid() {
           {itemsFiltrados.map(item => (
             <VitrinaCard
               key={`${item.tipo}-${item.id}`}
+              seleccionado={seleccionados.has(`${item.tipo}:${item.id}`)}
+              onToggleSeleccion={toggleSeleccion}
               item={item}
               onGuardarPrecio={handleGuardarPrecio}
               onVerSensibilidad={setSeleccionSensibilidad}

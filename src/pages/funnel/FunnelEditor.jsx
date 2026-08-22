@@ -7,6 +7,7 @@ import {
 import { funnelService } from '../../services/funnelService';
 import { productService } from '../../services/productService';
 import { tiendaService } from '../../services/tiendaService';
+import { verificarSesion } from '../../utils/auth';
 import { mapEditorDraftToFunnelData } from './mapFunnelToTemplateData';
 import VentaDirectaTemplate from './templates/VentaDirectaTemplate';
 import ProductoPanel from './panels/ProductoPanel';
@@ -51,6 +52,7 @@ export default function FunnelEditor() {
   const [imagenes, setImagenes] = useState([]);
   const [variantes, setVariantes] = useState([]);
   const [tienda, setTienda] = useState(null);
+  const [usuarioActual, setUsuarioActual] = useState(null);
 
   // Borrador local: el panel de la izquierda edita esto y el preview lo
   // refleja en vivo, sin esperar a un guardado (mismo patrón que
@@ -88,16 +90,18 @@ export default function FunnelEditor() {
         setFaq((f.faq || []).map(q => ({ pregunta: q.pregunta, respuesta: q.respuesta })));
 
         const pid = f.producto_id;
-        const [p, imgs, vars, t] = await Promise.all([
+        const [p, imgs, vars, t, sesion] = await Promise.all([
           pid ? productService.detalle(pid).catch(() => null) : Promise.resolve(null),
           pid ? productService.imagenes(pid).catch(() => []) : Promise.resolve([]),
           pid ? productService.variantes(pid).catch(() => []) : Promise.resolve([]),
           tiendaService.obtener().catch(() => null),
+          verificarSesion().catch(() => null),
         ]);
         if (!vivo) return;
         setProducto(p);
         setImagenes(imgs || []);
         setVariantes(vars || []);
+        setUsuarioActual(sesion);
         setTienda(t);
         setCargando(false);
       })
@@ -182,9 +186,15 @@ export default function FunnelEditor() {
     producto, imagenes, variantes, tienda,
   );
 
-  const urlPublica = tienda?.subdominio
-    ? `https://${tienda.subdominio}.gesicomm.com/${draft.slug}`
-    : `/l/${draft.slug}`;
+  // En local, resolverTienda.js (backend) NUNCA resuelve tienda por
+  // hostname (esHostnameDeTienda() da false en 'localhost') — el subdominio
+  // real de producción no sirve para probar acá. El fallback /l/:slug sí
+  // funciona en cualquier entorno, así que en dev se linkea directo ahí en
+  // vez de a una URL de producción que todavía no tiene este código.
+  const enLocal = typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  const urlPublica = enLocal
+    ? `${window.location.origin}/l/${draft.slug}`
+    : (tienda?.subdominio ? `https://${tienda.subdominio}.gesicomm.com/${draft.slug}` : `/l/${draft.slug}`);
 
   function copiarUrl() {
     navigator.clipboard.writeText(urlPublica).then(() => {
@@ -202,9 +212,9 @@ export default function FunnelEditor() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/products')}
+            onClick={() => navigate('/mi-catalogo')}
             className="p-2 -ml-2 text-white/50 hover:text-white transition-colors"
-            title="Volver a Mis Productos"
+            title="Volver a la Vitrina B2B"
           >
             <ArrowLeft size={18} />
           </button>
@@ -297,7 +307,14 @@ export default function FunnelEditor() {
               ))}
             </div>
             <div className="p-5">
-              {tab === 'producto' && <ProductoPanel producto={producto} imagenes={imagenes} variantes={variantes} />}
+              {tab === 'producto' && (
+                <ProductoPanel
+                  producto={producto}
+                  imagenes={imagenes}
+                  variantes={variantes}
+                  puedeEditar={usuarioActual?.rol === 'administrador' || (usuarioActual && producto?.creado_por === usuarioActual.id)}
+                />
+              )}
               {tab === 'valor' && <ValorPanel content={content} onContent={setContent} />}
               {tab === 'confianza' && <ConfianzaPanel content={content} onContent={setContent} />}
               {tab === 'beneficios' && <BeneficiosPanel beneficios={beneficios} onChange={setBeneficios} />}

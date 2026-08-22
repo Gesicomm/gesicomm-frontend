@@ -3,12 +3,12 @@ import {
   Store, ImageOff, Check, ChevronLeft, ChevronRight, ChevronDown, Zap,
   ShoppingCart, MessageCircle, Truck, Lock, Undo2, ShieldCheck, Headphones, Star,
 } from 'lucide-react';
-import { hexToRgba, resolverTema } from '../../landing-simple/templates/themeUtils';
+import { hexToRgba } from '../../landing-simple/templates/themeUtils';
+import { resolverTemaFunnel } from './funnelThemeUtils';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import RichText from '../../../components/RichText';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
-const DEFAULT_TEMA = { fondo: '#FFFFFF', texto: '#111827', acento: '#111827' };
 const NOOP = () => {};
 
 const ICONOS_CONFIANZA = {
@@ -73,10 +73,10 @@ export default function VentaDirectaTemplate({
 }) {
   const {
     nombreComercio, logo, producto, contenido, beneficios = [],
-    opiniones = [], faq = [], contacto,
+    opiniones = [], faq = [], contacto, templateSlug,
   } = data;
 
-  const tema = resolverTema(data.tema, DEFAULT_TEMA);
+  const tema = resolverTemaFunnel(data.tema, templateSlug);
   const bordeSuave = hexToRgba(tema.texto, 0.12);
   const textoSuave = (a) => ({ color: hexToRgba(tema.texto, a) });
 
@@ -122,7 +122,17 @@ export default function VentaDirectaTemplate({
     return { promedio: Math.round(prom * 10) / 10, cantidad: validas.length };
   }, [opiniones]);
 
-  const confianza = contenido?.confianza || [];
+  // --- Herencia del Producto ---
+  // El embudo prioriza lo que se carga específicamente para él (contenido).
+  // Si está vacío, hereda la configuración general del producto (ideal para B2B
+  // y para no repetir el trabajo si el copy base ya es bueno).
+  const confianza = contenido?.confianza?.length > 0 ? contenido.confianza : (producto?.confianza || []);
+  const propuestaValor = contenido?.propuesta_valor || producto?.propuesta_valor || '';
+  const beneficiosFinales = beneficios?.length > 0 ? beneficios : (producto?.beneficios || []);
+  const faqFinales = faq?.length > 0 ? faq : (producto?.preguntas_frecuentes || []);
+  const sobreTitulo = contenido?.descripcion_titulo || 'Sobre este producto';
+  const sobreTexto = contenido?.descripcion_texto || producto?.sobre_este_producto || producto?.descripcion_larga || '';
+  
   const textoCta = contenido?.cta_primario || 'Comprar ahora';
   const mostrarCarrito = contenido?.mostrar_agregar_carrito !== false;
   const mostrarWhatsapp = contenido?.mostrar_whatsapp !== false && !!linkWhatsapp;
@@ -266,9 +276,9 @@ export default function VentaDirectaTemplate({
             )}
 
             {/* PROPUESTA DE VALOR — "¿por qué lo necesito?", antes del precio */}
-            {contenido?.propuesta_valor && (
-              <p className="text-lg leading-relaxed mb-5" style={textoSuave(0.7)}>
-                {contenido.propuesta_valor}
+            {propuestaValor && (
+              <p className="text-base sm:text-lg mb-5 font-medium leading-relaxed" style={textoSuave(0.85)}>
+                {propuestaValor}
               </p>
             )}
 
@@ -410,10 +420,10 @@ export default function VentaDirectaTemplate({
       </section>
 
       {/* ══ BENEFICIOS RÁPIDOS ══ */}
-      {beneficios.length > 0 && (
+      {beneficiosFinales.length > 0 && (
         <section className="px-6 py-10" style={{ borderTop: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.03) }}>
           <div className={`mx-auto max-w-5xl grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-3'}`}>
-            {beneficios.map((b, idx) => (
+            {beneficiosFinales.map((b, idx) => (
               <div key={idx} className="flex gap-3">
                 <Check size={20} className="shrink-0 mt-0.5" style={{ color: tema.acento }} />
                 <div>
@@ -427,13 +437,23 @@ export default function VentaDirectaTemplate({
       )}
 
       {/* ══ DESCRIPCIÓN / CÓMO FUNCIONA ══ */}
-      {producto.descripcion_larga && (
-        <section className="px-6 py-12" style={{ borderTop: `1px solid ${bordeSuave}` }}>
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-2xl font-extrabold mb-4">
-              {contenido?.descripcion_titulo || 'Sobre este producto'}
-            </h2>
-            <RichText text={producto.descripcion_larga} className="leading-relaxed" style={textoSuave(0.75)} />
+      {sobreTexto && (
+        <section className="px-6 py-16" style={{ borderTop: `1px solid ${bordeSuave}` }}>
+          <div className={`mx-auto max-w-5xl grid gap-10 items-start ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            <div>
+              <h2 className="text-3xl font-extrabold mb-6 leading-tight">
+                {sobreTitulo}
+              </h2>
+              <RichText text={sobreTexto} className="leading-relaxed text-[15px]" style={textoSuave(0.75)} />
+            </div>
+            {/* Si tiene imagen secundaria, la mostramos acá para romper el texto. Si no, usamos la principal. */}
+            <div className="rounded-2xl overflow-hidden sticky top-8" style={{ border: `1px solid ${bordeSuave}` }}>
+              {(producto.imagenes?.length > 1) ? (
+                <img src={producto.imagenes[1]} alt="" className="w-full h-auto object-cover aspect-square" />
+              ) : (
+                producto.imagenes?.length > 0 && <img src={producto.imagenes[0]} alt="" className="w-full h-auto object-cover aspect-square" />
+              )}
+            </div>
           </div>
         </section>
       )}
@@ -466,29 +486,35 @@ export default function VentaDirectaTemplate({
       )}
 
       {/* ══ FAQ — resolver objeciones ══ */}
-      {faq.length > 0 && (
+      {/* ══ PREGUNTAS FRECUENTES ══ */}
+      {faqFinales.length > 0 && (
         <section className="px-6 py-12" style={{ borderTop: `1px solid ${bordeSuave}` }}>
-          <div className="mx-auto max-w-3xl">
-            <h2 className="text-2xl font-extrabold mb-5">Preguntas frecuentes</h2>
-            {faq.map((f, idx) => (
-              <div key={idx} className="py-3" style={{ borderTop: idx > 0 ? `1px solid ${bordeSuave}` : 'none' }}>
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between gap-3 text-left font-bold"
-                  onClick={() => setPreguntaAbierta(preguntaAbierta === idx ? null : idx)}
-                >
-                  {f.pregunta}
-                  <ChevronDown
-                    size={17}
-                    className="shrink-0 transition-transform"
-                    style={{ color: tema.acento, transform: preguntaAbierta === idx ? 'rotate(180deg)' : 'none' }}
-                  />
-                </button>
-                {preguntaAbierta === idx && (
-                  <p className="mt-2 text-sm leading-relaxed" style={textoSuave(0.65)}>{f.respuesta}</p>
-                )}
-              </div>
-            ))}
+          <div className="mx-auto max-w-2xl">
+            <h2 className="text-2xl font-extrabold mb-6 text-center">Todo lo que necesitás saber</h2>
+            <div className="flex flex-col gap-3">
+              {faqFinales.map((f, idx) => {
+                const abierto = preguntaAbierta === idx;
+                return (
+                  <div key={idx} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.02) }}>
+                    <button
+                      type="button"
+                      onClick={() => setPreguntaAbierta(abierto ? null : idx)}
+                      className="w-full text-left px-5 py-4 font-bold flex justify-between items-center"
+                    >
+                      {f.pregunta}
+                      <span className="shrink-0 ml-4 transition-transform duration-200" style={{ transform: abierto ? 'rotate(180deg)' : 'rotate(0)' }}>
+                        <ChevronDown size={18} style={{ color: tema.acento }} />
+                      </span>
+                    </button>
+                    {abierto && (
+                      <div className="px-5 pb-4 text-sm leading-relaxed" style={textoSuave(0.7)}>
+                        {f.respuesta}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
       )}

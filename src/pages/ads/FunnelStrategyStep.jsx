@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { funnelService } from '../../services/funnelService';
 import { tiendaService } from '../../services/tiendaService';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
@@ -351,8 +352,14 @@ function PreviewRecorrido({ producto, bump, upsell }) {
   );
 }
 
-/* ─── Panel: Venta rápida ────────────────────────────────────────────── */
-function PanelVentaRapida({ ofertas, guardando, onConfirmar }) {
+/* ─── Panel: Venta rápida — usa el módulo de EMBUDOS propio ─────────────
+   No es la página de producto de la landing del comercio (eso era el
+   comportamiento viejo): "Venta Directa" es su propio Landing con
+   template.kind='funnel', separado del editor de landing. Elegir esta
+   estrategia crea (o reutiliza, es idempotente) el embudo del producto y
+   lo deja linkeado a la campaña vía landingId — mismo id que
+   MetaCampanaInterna.landing_id. ────────────────────────────────────── */
+function PanelVentaRapida({ ofertas, guardando, onConfirmar, funnel, templates, cargandoFunnel, creandoId, errorFunnel, urlFunnel, onCrearFunnel }) {
   const activas = (ofertas || []).filter(o => o.activo !== false && o.estrategia !== 'normal');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -365,7 +372,69 @@ function PanelVentaRapida({ ofertas, guardando, onConfirmar }) {
           </span>
         </div>
       )}
-      <button type="button" className="btn-primary" onClick={onConfirmar} disabled={guardando} style={s.btnPrimary}>
+
+      {errorFunnel && <span style={s.err}>{errorFunnel}</span>}
+
+      {cargandoFunnel ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+          <Loader2 size={18} className="animate-spin" color="#a78bfa" />
+        </div>
+      ) : !funnel ? (
+        /* Sin embudo todavía: el comercio elige con qué tipo armarlo — nunca
+           se crea en silencio con un template elegido por el sistema. */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ccc' }}>Elegí el tipo de embudo</span>
+          {(templates || []).map(tpl => {
+            const creando = creandoId === tpl.id;
+            return (
+              <div key={tpl.id} style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>{tpl.name}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.74rem', color: '#888' }}>{tpl.description}</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => onCrearFunnel(tpl.id)}
+                  disabled={creandoId !== null}
+                  style={{ ...s.btnPrimary, flexShrink: 0 }}
+                >
+                  {creando ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                  {creando ? 'Creando…' : 'Usar este tipo'}
+                </button>
+              </div>
+            );
+          })}
+          {templates?.length === 0 && (
+            <span style={{ fontSize: '0.78rem', color: '#888' }}>No hay tipos de embudo disponibles.</span>
+          )}
+        </div>
+      ) : (
+        <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Check size={14} color="#34d399" />
+            <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Embudo de Venta Directa listo para este producto.</span>
+          </div>
+          {urlFunnel && (
+            <code style={{ fontSize: '0.76rem', color: '#34d399', wordBreak: 'break-all' }}>{urlFunnel}</code>
+          )}
+          <a
+            href={`/funnel/${funnel.id}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#a78bfa', alignSelf: 'flex-start' }}
+          >
+            Editar contenido del embudo <ExternalLink size={11} />
+          </a>
+          {!funnel.activo && (
+            <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
+              Está en borrador — publicalo desde el editor para que el link funcione.
+            </span>
+          )}
+        </div>
+      )}
+
+      <button type="button" className="btn-primary" onClick={onConfirmar} disabled={guardando || !funnel} style={s.btnPrimary}>
         {guardando ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Usar esta estrategia
       </button>
     </div>
@@ -382,6 +451,14 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
   const [tienda, setTienda] = useState(null);
   const [landingTienda, setLandingTienda] = useState(undefined); // undefined = cargando
   const [copiado, setCopiado] = useState(false);
+
+  // Embudo de Venta Directa del producto activo — módulo propio (ver
+  // pages/funnel/), nada que ver con landingTienda de acá arriba.
+  const [funnelVentaDirecta, setFunnelVentaDirecta] = useState(null);
+  const [templatesFunnel, setTemplatesFunnel] = useState([]);
+  const [cargandoFunnel, setCargandoFunnel] = useState(false);
+  const [creandoFunnelId, setCreandoFunnelId] = useState(null);
+  const [errorFunnel, setErrorFunnel] = useState(null);
 
   const producto = productos.find(p => p.id === productoActivoId);
 
@@ -428,19 +505,93 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
   useEffect(() => {
     setEstrategiaAbierta(null);
     setMensajeCombo(false);
+    setFunnelVentaDirecta(null);
+    setErrorFunnel(null);
     recargarOfertas();
   }, [productoActivoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Al abrir "Venta rápida" se busca el embudo del producto — si ya existe
+  // (funnelService.porProducto) se reusa y se linkea la campaña. Si no
+  // existe, se traen los tipos de embudo disponibles para que el comercio
+  // ELIJA con cuál crearlo (nunca se crea en silencio con un template
+  // decidido por el sistema — ver el selector en PanelVentaRapida).
+  useEffect(() => {
+    if (estrategiaAbierta !== 'venta_rapida' || !productoActivoId) return;
+    let vivo = true;
+    setCargandoFunnel(true);
+    setErrorFunnel(null);
+    setFunnelVentaDirecta(null);
+    funnelService.porProducto(productoActivoId)
+      .then(existente => {
+        if (!vivo) return;
+        if (existente) {
+          setFunnelVentaDirecta(existente);
+          setLandingId(existente.id);
+          return;
+        }
+        return funnelService.listarTemplates().then(tpls => { if (vivo) setTemplatesFunnel(tpls || []); });
+      })
+      .catch(err => {
+        if (!vivo) return;
+        setErrorFunnel(err?.response?.data?.message || err?.message || 'No se pudo cargar el embudo.');
+      })
+      .finally(() => { if (vivo) setCargandoFunnel(false); });
+    return () => { vivo = false; };
+  }, [estrategiaAbierta, productoActivoId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function crearFunnelVentaDirecta(templateId) {
+    setCreandoFunnelId(templateId);
+    setErrorFunnel(null);
+    funnelService.crear(productoActivoId, templateId)
+      .then(funnel => {
+        setFunnelVentaDirecta(funnel);
+        setLandingId(funnel.id);
+      })
+      .catch(err => {
+        setErrorFunnel(err?.response?.data?.message || err?.message || 'No se pudo crear el embudo.');
+      })
+      .finally(() => setCreandoFunnelId(null));
+  }
+
+  const urlFunnel = tienda?.subdominio && funnelVentaDirecta?.slug
+    ? `https://${tienda.subdominio}.gesicomm.com/${funnelVentaDirecta.slug}`
+    : null;
 
   const recomendacion = useMemo(() => computeRecomendacion(ofertas, productoActivoId), [ofertas, productoActivoId]);
   const bumpActivo = ofertas.find(o => o.activo !== false && o.estrategia === 'order_bump');
   const upsellActivo = ofertas.find(o => o.activo !== false && o.estrategia === 'upsell');
 
-  // Abre el editor de la landing en la ficha de ESTE producto. El payload
-  // va por sessionStorage, no por query string (misma convención que el
-  // tab inicial de ProductForm).
-  function abrirEditorDeContenido() {
+  // Abre el editor del funnel. Si no existe, lo crea automáticamente con el
+  // primer template disponible para que el usuario no tenga que elegirlo de nuevo.
+  async function abrirEditorDeContenido() {
+    if (funnelVentaDirecta) {
+      window.open(`/funnel/${funnelVentaDirecta.id}`, '_blank', 'noopener');
+      return;
+    }
+    
+    // Abrimos la pestaña sincronamente para evitar el bloqueador de popups
+    const nuevaPestana = window.open('about:blank', '_blank', 'noopener');
+    
+    try {
+      const existente = await funnelService.porProducto(productoActivoId);
+      if (existente) {
+        nuevaPestana.location.href = `/funnel/${existente.id}`;
+        return;
+      }
+      
+      const tpls = await funnelService.listarTemplates();
+      if (tpls && tpls.length > 0) {
+        const nuevo = await funnelService.crear(productoActivoId, tpls[0].id);
+        nuevaPestana.location.href = `/funnel/${nuevo.id}`;
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    
+    // Fallback original por si falla la API
     sessionStorage.setItem('gesicomm:landingProductoId', String(productoActivoId));
-    window.open('/landing', '_blank', 'noopener');
+    nuevaPestana.location.href = '/landing';
   }
 
   async function onElegirEstrategia(id) {
@@ -516,19 +667,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
           </span>
         )}
 
-        <span style={{ ...s.muted, fontSize: '0.72rem' }}>
-          El diseño, el header, el footer y las redes salen de tu landing — no se configuran de nuevo acá.
-        </span>
 
-        {landingTienda && (
-          <button
-            type="button"
-            onClick={abrirEditorDeContenido}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start', padding: 0 }}
-          >
-            Editar fotos y descripción de este producto <ExternalLink size={11} />
-          </button>
-        )}
       </div>
 
       {mensajeCombo && (
@@ -549,7 +688,18 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
           </button>
 
           {estrategiaAbierta === 'venta_rapida' && (
-            <PanelVentaRapida ofertas={ofertas} guardando={false} onConfirmar={() => setEstrategiaAbierta(null)} />
+            <PanelVentaRapida
+              ofertas={ofertas}
+              guardando={false}
+              onConfirmar={() => setEstrategiaAbierta(null)}
+              funnel={funnelVentaDirecta}
+              templates={templatesFunnel}
+              cargandoFunnel={cargandoFunnel}
+              creandoId={creandoFunnelId}
+              errorFunnel={errorFunnel}
+              urlFunnel={urlFunnel}
+              onCrearFunnel={crearFunnelVentaDirecta}
+            />
           )}
 
           {estrategiaAbierta === 'venta_complemento' && (
@@ -593,17 +743,6 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
                 <PreviewRecorrido producto={producto} bump={bumpActivo} upsell={upsellActivo} />
               </div>
             </>
-          )}
-
-          {urlPublica && (
-            <a
-              href={urlPublica}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#a78bfa', alignSelf: 'flex-start' }}
-            >
-              Ver cómo queda <ExternalLink size={11} />
-            </a>
           )}
         </div>
       )}

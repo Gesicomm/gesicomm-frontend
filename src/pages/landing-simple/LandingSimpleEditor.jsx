@@ -83,7 +83,30 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setDraft(l);
       setFaq(l.faq || []);
       setBeneficios((l.beneficios || []).map(b => ({ titulo: b.titulo, texto: b.texto, icono: b.icono })));
-      setItems((l.items || []).map(it => ({ tipo: it.tipo, referencia_id: it.referencia_id, etiqueta: it.etiqueta, orden: it.orden, precio_ancla: it.precio_ancla, mostrar_en_inicio: it.mostrar_en_inicio !== false })));
+      let prefilledItems = [];
+      try {
+        const stored = sessionStorage.getItem('gesicomm:prefilledLandingItems');
+        if (stored) {
+          prefilledItems = JSON.parse(stored);
+          sessionStorage.removeItem('gesicomm:prefilledLandingItems');
+        }
+      } catch(e){}
+
+      const currentItems = (l.items || []).map(it => ({ tipo: it.tipo, referencia_id: it.referencia_id, etiqueta: it.etiqueta, orden: it.orden, precio_ancla: it.precio_ancla, mostrar_en_inicio: it.mostrar_en_inicio !== false }));
+      const newItems = [...currentItems];
+      
+      prefilledItems.forEach(pi => {
+        if (!newItems.find(it => it.tipo === pi.tipo && Number(it.referencia_id) === Number(pi.referencia_id))) {
+          newItems.push({ tipo: pi.tipo, referencia_id: pi.referencia_id, etiqueta: '', orden: newItems.length, precio_ancla: null, mostrar_en_inicio: true });
+        }
+      });
+      
+      setItems(newItems);
+      if (prefilledItems.length > 0) {
+        setAviso('Productos seleccionados añadidos al catálogo. Recordá hacer clic en Guardar.');
+        setTab('catalogo');
+        setVistaCatalogo(true);
+      }
       setCatalogo(cat);
       setTienda(t);
       setCargando(false);

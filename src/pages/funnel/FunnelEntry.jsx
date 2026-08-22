@@ -76,10 +76,10 @@ export default function FunnelEntry() {
     <div className="p-8 max-w-4xl mx-auto">
       <button
         type="button"
-        onClick={() => navigate('/products')}
+        onClick={() => navigate('/mi-catalogo')}
         className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white mb-8"
       >
-        <ArrowLeft size={15} /> Volver a Mis Productos
+        <ArrowLeft size={15} /> Volver a la Vitrina B2B
       </button>
 
       <div className="mb-8">

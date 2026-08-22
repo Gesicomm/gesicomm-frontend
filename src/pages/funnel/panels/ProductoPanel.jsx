@@ -11,7 +11,7 @@ import { formatPrecio } from '../../../lib/mensajeWhatsapp';
  * embudo mostrara un precio distinto al que después cobra el checkout.
  * Desde acá solo se salta a editarlos donde corresponde.
  */
-export default function ProductoPanel({ producto, imagenes, variantes }) {
+export default function ProductoPanel({ producto, imagenes, variantes, puedeEditar }) {
   if (!producto) {
     return <p className="text-xs text-white/40">Este embudo no tiene producto asignado.</p>;
   }
@@ -77,18 +77,31 @@ export default function ProductoPanel({ producto, imagenes, variantes }) {
         </div>
       </div>
 
-      <a
-        href={`/products/${producto.id}/editar`}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"
-      >
-        Editar fotos, precio y descripción <ExternalLink size={12} />
-      </a>
-      <p className="text-[11px] text-white/35 leading-relaxed -mt-3">
-        Se editan en la ficha del producto para que el embudo y el checkout
-        nunca muestren datos distintos.
-      </p>
+      {/* Producto de otro usuario (catálogo global/admin): el embudo lo
+          puede armar cualquier revendedor, pero editar la ficha del
+          producto en sí NUNCA — ver mismo criterio en ProductList.jsx y
+          el guard de producto.service.js#actualizar. */}
+      {puedeEditar ? (
+        <>
+          <a
+            href={`/products/${producto.id}/editar`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"
+          >
+            Editar fotos, precio y descripción <ExternalLink size={12} />
+          </a>
+          <p className="text-[11px] text-white/35 leading-relaxed -mt-3">
+            Se editan en la ficha del producto para que el embudo y el checkout
+            nunca muestren datos distintos.
+          </p>
+        </>
+      ) : (
+        <p className="text-[11px] text-white/35 leading-relaxed">
+          Este producto es del catálogo global — sus fotos, precio y
+          descripción los administra quien lo cargó.
+        </p>
+      )}
     </div>
   );
 }

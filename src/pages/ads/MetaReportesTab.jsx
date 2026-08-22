@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Upload, Plus, Copy, Check, Loader2, Edit2, Link2, Trash2,
   Archive, AlertCircle, ChevronLeft, ChevronRight, Package,
-  MessageCircle, Globe, Play, Pause,
+  MessageCircle, Globe, Play, Pause, Zap,
 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
@@ -275,6 +275,21 @@ export default function MetaReportesTab({ tiendas = [] }) {
                         </td>
                         <td className="text-right">
                           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                            {/* Solo si el funnel vinculado es un embudo real
+                                (template.kind==='funnel') — un link a la
+                                landing vieja de la tienda no tiene editor
+                                propio en /funnel/:id. */}
+                            {c.funnel?.template?.kind === 'funnel' && (
+                              <a
+                                href={`/funnel/${c.funnel.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="btn-icon"
+                                title="Ir al embudo"
+                              >
+                                <Zap size={15} />
+                              </a>
+                            )}
                             <button type="button" className="btn-icon" title="Editar" onClick={() => { setCampanaEditar(c); setModalOpen(true); }}>
                               <Edit2 size={15} />
                             </button>
