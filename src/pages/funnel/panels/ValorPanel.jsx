@@ -59,6 +59,22 @@ export default function ValorPanel({ content, onContent }) {
         />
       </div>
 
+      <div>
+        <label className="block text-xs font-semibold text-white/60 mb-1.5">
+          Sobre este producto
+        </label>
+        <textarea
+          value={content.sobre_este_producto || ''}
+          onChange={e => set('sobre_este_producto', e.target.value)}
+          placeholder="Descripción detallada para la sección 'Sobre este producto' del embudo."
+          rows={4}
+          className={CAMPO}
+        />
+        <p className="text-[11px] text-white/35 mt-1.5 leading-relaxed">
+          Si se deja vacío, el embudo usará la Descripción Larga.
+        </p>
+      </div>
+
       <div className="flex flex-col gap-2.5 pt-1">
         <p className="text-xs font-semibold text-white/60">Acciones secundarias</p>
         <label className="flex items-center gap-2.5 text-sm text-white/80 cursor-pointer">

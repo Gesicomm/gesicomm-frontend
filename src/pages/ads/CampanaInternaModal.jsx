@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package } from 'lucide-react';
+import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
 import { landingService } from '../../services/landingService';
@@ -38,6 +38,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
 
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('ALL');
+  const [paginaProducto, setPaginaProducto] = useState(1);
 
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
@@ -61,6 +62,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
     setCopiado(false);
     setBusquedaProducto('');
     setFiltroCategoria('ALL');
+    setPaginaProducto(1);
     setCargandoOpciones(true);
 
     if (campanaEditar) {
@@ -78,7 +80,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
     }
 
     Promise.all([
-      productService.buscar({ activo: true, limit: 200 }),
+      productService.buscar({ activo: true, sin_limite: true }),
       categoriaService.buscar({}).catch(() => ({ categorias: [] })),
       landingService.listar().catch(() => []),
     ]).then(([productosRes, categoriasRes, landingsRes]) => {
@@ -89,6 +91,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
       setError(err.message || 'No se pudieron cargar los datos.');
     }).finally(() => setCargandoOpciones(false));
   }, [open, campanaEditar]);
+
+  useEffect(() => {
+    setPaginaProducto(1);
+  }, [busquedaProducto, filtroCategoria]);
 
   const mapaCategorias = useMemo(() => new Map(categorias.map(c => [c.id, c.nombre])), [categorias]);
 
@@ -102,6 +108,13 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
       return true;
     });
   }, [productos, filtroCategoria, busquedaProducto]);
+
+  const TAMANO_PAGINA = 10;
+  const totalPaginasProductos = Math.ceil(productosFiltrados.length / TAMANO_PAGINA) || 1;
+  const productosPaginados = useMemo(() => {
+    const inicio = (paginaProducto - 1) * TAMANO_PAGINA;
+    return productosFiltrados.slice(inicio, inicio + TAMANO_PAGINA);
+  }, [productosFiltrados, paginaProducto]);
 
   // Si el canal cambia a WhatsApp mientras se estaba en el Paso 4, ese paso
   // deja de existir — no dejar al wizard "parado" en un paso que ya no está.
@@ -259,52 +272,131 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                     </select>
                   </div>
 
-                  <span style={{ fontSize: '0.78rem', color: '#777' }}>{productoIds.length} producto(s) elegido(s)</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#777' }}>
+                      {productoIds.length} producto(s) elegido(s) • Total: {productosFiltrados.length}
+                    </span>
+                    {productosFiltrados.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#aaa' }}>
+                        <button
+                          type="button"
+                          disabled={paginaProducto <= 1}
+                          onClick={() => setPaginaProducto(p => Math.max(1, p - 1))}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '0.25rem 0.5rem', borderRadius: '6px',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            background: paginaProducto <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                            color: paginaProducto <= 1 ? '#555' : '#fff',
+                            cursor: paginaProducto <= 1 ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          <ChevronLeft size={14} />
+                        </button>
+                        <span>
+                          {paginaProducto} / {totalPaginasProductos}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={paginaProducto >= totalPaginasProductos}
+                          onClick={() => setPaginaProducto(p => Math.min(totalPaginasProductos, p + 1))}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '0.25rem 0.5rem', borderRadius: '6px',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            background: paginaProducto >= totalPaginasProductos ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                            color: paginaProducto >= totalPaginasProductos ? '#555' : '#fff',
+                            cursor: paginaProducto >= totalPaginasProductos ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                   {cargandoOpciones ? (
                     <div className="skeleton-row" style={{ height: '120px' }} />
                   ) : productosFiltrados.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '2rem', color: '#888', fontSize: '0.85rem' }}>No se encontraron productos.</div>
                   ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.6rem', maxHeight: '340px', overflowY: 'auto', paddingRight: '2px' }}>
-                      {productosFiltrados.map((p) => {
-                        const seleccionado = productoIds.includes(p.id);
-                        const img = p.imagenes?.[0]?.url;
-                        return (
+                    <>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.6rem', maxHeight: '340px', overflowY: 'auto', paddingRight: '2px' }}>
+                        {productosPaginados.map((p) => {
+                          const seleccionado = productoIds.includes(p.id);
+                          const img = p.imagenes?.[0]?.url;
+                          return (
+                            <button
+                              type="button"
+                              key={p.id}
+                              onClick={() => toggleProducto(p.id)}
+                              style={{
+                                display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer',
+                                border: seleccionado ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '8px', overflow: 'hidden', background: '#141416', padding: 0,
+                              }}
+                            >
+                              <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#1a1a1c' }}>
+                                {img ? (
+                                  <img src={getMediaUrl(img)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Package size={24} color="#444" />
+                                  </div>
+                                )}
+                                {seleccionado && (
+                                  <div style={{ position: 'absolute', top: '4px', right: '4px', background: '#a78bfa', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check size={12} color="#0a0a0b" />
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ padding: '0.5rem' }}>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
+                                {p.categoria_id && mapaCategorias.get(p.categoria_id) && (
+                                  <span style={{ fontSize: '0.68rem', color: '#a78bfa' }}>{mapaCategorias.get(p.categoria_id)}</span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {totalPaginasProductos > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem', fontSize: '0.78rem', color: '#aaa' }}>
                           <button
                             type="button"
-                            key={p.id}
-                            onClick={() => toggleProducto(p.id)}
+                            disabled={paginaProducto <= 1}
+                            onClick={() => setPaginaProducto(p => Math.max(1, p - 1))}
                             style={{
-                              display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer',
-                              border: seleccionado ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
-                              borderRadius: '8px', overflow: 'hidden', background: '#141416', padding: 0,
+                              padding: '0.25rem 0.75rem', borderRadius: '6px',
+                              border: '1px solid rgba(255,255,255,0.12)',
+                              background: paginaProducto <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                              color: paginaProducto <= 1 ? '#555' : '#fff',
+                              cursor: paginaProducto <= 1 ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                             }}
                           >
-                            <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#1a1a1c' }}>
-                              {img ? (
-                                <img src={getMediaUrl(img)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              ) : (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Package size={24} color="#444" />
-                                </div>
-                              )}
-                              {seleccionado && (
-                                <div style={{ position: 'absolute', top: '4px', right: '4px', background: '#a78bfa', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Check size={12} color="#0a0a0b" />
-                                </div>
-                              )}
-                            </div>
-                            <div style={{ padding: '0.5rem' }}>
-                              <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
-                              {p.categoria_id && mapaCategorias.get(p.categoria_id) && (
-                                <span style={{ fontSize: '0.68rem', color: '#a78bfa' }}>{mapaCategorias.get(p.categoria_id)}</span>
-                              )}
-                            </div>
+                            <ChevronLeft size={14} /> Anterior
                           </button>
-                        );
-                      })}
-                    </div>
+                          <span>Página {paginaProducto} de {totalPaginasProductos}</span>
+                          <button
+                            type="button"
+                            disabled={paginaProducto >= totalPaginasProductos}
+                            onClick={() => setPaginaProducto(p => Math.min(totalPaginasProductos, p + 1))}
+                            style={{
+                              padding: '0.25rem 0.75rem', borderRadius: '6px',
+                              border: '1px solid rgba(255,255,255,0.12)',
+                              background: paginaProducto >= totalPaginasProductos ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                              color: paginaProducto >= totalPaginasProductos ? '#555' : '#fff',
+                              cursor: paginaProducto >= totalPaginasProductos ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                            }}
+                          >
+                            Siguiente <ChevronRight size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

@@ -356,12 +356,22 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
     Promise.all([
+      productService.detalle(p.id).catch(() => null),
       productService.imagenes(p.id).catch(() => []),
       productService.faq(p.id).catch(() => []),
       productService.relacionados(p.id).catch(() => ({ titulo: null, items: [], automatico: false })),
-    ]).then(([imgs, preguntas, relacionados]) => {
+    ]).then(([pDetail, imgs, preguntas, relacionados]) => {
       setProductoImagenes(imgs);
-      setProductoFaq(preguntas.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
+
+      // Pre-cargar la descripción detallada si existe (sobre_este_producto > descripcion_larga > descripcion_corta)
+      const descPreCargada = pDetail?.sobre_este_producto || pDetail?.descripcion_larga || pDetail?.descripcion_corta || p.descripcion || '';
+      setProductoDescripcion(descPreCargada);
+
+      // Pre-cargar preguntas: si la landing no tiene preguntas específicas guardadas en la tabla de FAQs, usar pDetail.preguntas_frecuentes
+      const faqEsplicito = preguntas.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta }));
+      const faqProducto = (pDetail?.preguntas_frecuentes || pDetail?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta }));
+      setProductoFaq(faqEsplicito.length > 0 ? faqEsplicito : faqProducto);
+
       setProductoRelacionadosTitulo(relacionados.titulo || '');
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
       // Usamos `automatico` solo para saber si el comercio los personalizó o no.
@@ -432,6 +442,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoAviso('');
     try {
       await productService.actualizar(productoPreview.id, {
+        sobre_este_producto: productoDescripcion,
         descripcion_corta: productoDescripcion,
         faq_titulo: productoFaqTitulo,
         faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),

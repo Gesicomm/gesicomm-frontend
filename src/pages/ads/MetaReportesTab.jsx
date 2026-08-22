@@ -123,7 +123,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
   useEffect(() => { cargarMetricas(1); }, [cargarMetricas]);
   useEffect(() => { cargarFilas(1, filtroCampana); }, [filtroCampana, cargarFilas]);
   useEffect(() => {
-    productService.buscar({ activo: true, limit: 200 })
+    productService.buscar({ activo: true, sin_limite: true })
       .then((res) => setProductosFiltro(res.productos || []))
       .catch(() => setProductosFiltro([]));
   }, []);

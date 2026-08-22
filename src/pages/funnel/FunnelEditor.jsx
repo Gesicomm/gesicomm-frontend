@@ -103,6 +103,26 @@ export default function FunnelEditor() {
         setVariantes(vars || []);
         setUsuarioActual(sesion);
         setTienda(t);
+
+        if (p) {
+          setContent(prev => ({
+            ...prev,
+            propuesta_valor: prev?.propuesta_valor || p.propuesta_valor || '',
+            sobre_este_producto: prev?.sobre_este_producto || p.sobre_este_producto || '',
+          }));
+
+          setBeneficios(prev => {
+            if (prev && prev.length > 0) return prev;
+            return (p.beneficios || []).map(b => ({ titulo: b.titulo || '', texto: b.texto || '' }));
+          });
+
+          setFaq(prev => {
+            if (prev && prev.length > 0) return prev;
+            const pFaq = p.preguntas_frecuentes || p.faq || [];
+            return pFaq.map(q => ({ pregunta: q.pregunta || '', respuesta: q.respuesta || '' }));
+          });
+        }
+
         setCargando(false);
       })
       .catch(() => {
