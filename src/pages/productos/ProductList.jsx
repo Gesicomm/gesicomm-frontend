@@ -2,12 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { categoriaService } from '../../services/catalogoService';
+import { proveedoresService } from '../../services/costosGastosService';
 import { getMediaUrl } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Layers, Zap
+  ToggleLeft, ToggleRight, Loader, Tag, Layers, Zap, Truck
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ProductCombosDrawer from './ProductCombosDrawer';
@@ -42,6 +43,7 @@ export default function ProductList() {
   const [pagina, setPagina] = useState(1);
   const [cargando, setCargando] = useState(true);
   const [categorias, setCategorias] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
   const [comboProductoSeleccionado, setComboProductoSeleccionado] = useState(null);
   const [productoABajar, setProductoABajar] = useState(null);
   const [dandoBaja, setDandoBaja] = useState(false);
@@ -50,6 +52,7 @@ export default function ProductList() {
   // ── Filtros (todos controlados) ───────────────────────────
   const [texto, setTexto] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
+  const [proveedorId, setProveedorId] = useState('');
   const [vista, setVista] = useState('activos');
   const [ordenarPor, setOrdenarPor] = useState('recientes');
 
@@ -61,8 +64,10 @@ export default function ProductList() {
     verificarSesion().then(u => setUsuarioActual(u));
     Promise.all([
       categoriaService.buscar({ solo_activas: true, limit: 1000 }),
-    ]).then(([catData]) => {
+      proveedoresService.buscar({ limit: 1000 }).catch(() => ({ proveedores: [] }))
+    ]).then(([catData, provData]) => {
       setCategorias(catData.categorias || catData);
+      setProveedores(provData.proveedores || provData || []);
     });
   }, []);
 
@@ -77,6 +82,7 @@ export default function ProductList() {
         // Filtros dinámicos — solo incluir si tienen valor
         ...(textoBuscado.trim()  && { texto: textoBuscado.trim() }),
         ...(categoriaId          && { categoria_id: parseInt(categoriaId) }),
+        ...(proveedorId          && { proveedor_id: parseInt(proveedorId) }),
         ...(vista === 'activos'  && { activo: true }),
         ...(vista === 'sin_stock' && { sin_stock: true }),
         ...(vista === 'ofertas' && { con_ofertas: true }),
@@ -93,7 +99,7 @@ export default function ProductList() {
     } finally {
       setCargando(false);
     }
-  }, [textoBuscado, categoriaId, vista, ordenarPor]);
+  }, [textoBuscado, categoriaId, proveedorId, vista, ordenarPor]);
 
   // Única fuente de búsqueda: se dispara al montar, al cambiar de página,
   // y al cambiar cualquier filtro (porque `buscar` cambia de identidad
@@ -193,6 +199,17 @@ export default function ProductList() {
           {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
         </select>
 
+        {/* Proveedor */}
+        <select
+          id="filtro-proveedor"
+          className="filter-select"
+          value={proveedorId}
+          onChange={e => { setProveedorId(e.target.value); setPagina(1); }}
+        >
+          <option value="">Todos los proveedores</option>
+          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+        </select>
+
         {/* Orden */}
         <select
           id="filtro-orden"
@@ -262,6 +279,7 @@ export default function ProductList() {
                     const tienePrecioAncla = precioAncla > precioBase;
                     const tieneDescuento = tienePrecioAncla || Number(p.descuento_porcentaje) > 0 || Number(p.ofertas_count) > 0;
                     const categoria = categorias.find(c => c.id === p.categoria_id)?.nombre;
+                    const proveedor = proveedores.find(pr => pr.id === p.proveedor_id)?.nombre;
                     const editable = puedeModificar(p);
                     return (
                       <tr
@@ -291,6 +309,7 @@ export default function ProductList() {
                               <div className="prod-meta-line">
                                 {p.sku && <span className="sku-tag">{p.sku}</span>}
                                 {categoria && <span>{categoria}</span>}
+                                {proveedor && <span>• {proveedor}</span>}
                                 {usuarioActual && p.creado_por === usuarioActual.id ? (
                                   <span className="owner-badge own">Propio</span>
                                 ) : (

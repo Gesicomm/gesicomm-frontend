@@ -115,6 +115,7 @@ export default function ProductForm() {
       precio_base: '',
       precio_costo: '',
       precio_dolar: '',
+      es_dolar: false,
       precio_ancla: '',
       precio_minimo: '',
       descuento_porcentaje: '',
@@ -194,6 +195,7 @@ export default function ProductForm() {
             precio_base: p.precio_base || '',
             precio_costo: p.precio_costo || '',
             precio_dolar: p.precio_dolar || '',
+            es_dolar: !!p.es_dolar,
             precio_ancla: p.precio_ancla ?? p.precio_tachado ?? '',
             precio_minimo: p.precio_minimo || '',
             descuento_porcentaje: p.descuento_porcentaje || '',
@@ -267,6 +269,26 @@ export default function ProductForm() {
     return { ...result, finalPrice, profit, margin, simulador };
   }, [precioBaseVal, precioCostoVal, descuentoPctVal, config]);
 
+  const esDolarVal = watch('es_dolar');
+  const provIdVal = watch('proveedor_id');
+  const precioDolarVal = parseFloat(watch('precio_dolar')) || 0;
+  
+  useEffect(() => {
+    if (esDolarVal && provIdVal) {
+       const prov = proveedores.find(p => p.id === parseInt(provIdVal, 10) || p.id === provIdVal);
+       if (prov && prov.precio_dolar) {
+           setCotizacionUsd(prov.precio_dolar); // Show it in the UI so the user knows what rate was used
+           if (precioDolarVal > 0) {
+             const costoCalculado = Math.round(precioDolarVal * parseFloat(prov.precio_dolar));
+             const costoActual = parseFloat(watch('precio_costo')) || 0;
+             if (costoCalculado !== costoActual) {
+                setValue('precio_costo', costoCalculado, { shouldDirty: true, shouldValidate: true });
+             }
+           }
+       }
+    }
+  }, [esDolarVal, provIdVal, precioDolarVal, proveedores, setValue, watch]);
+
   // ── Submit ────────────────────────────────────────────────
   const onSubmit = async (data) => {
     setGuardando(true);
@@ -287,6 +309,7 @@ export default function ProductForm() {
         precio_base: parseFloat(data.precio_base),
         precio_costo: data.precio_costo ? parseFloat(data.precio_costo) : null,
         precio_dolar: data.precio_dolar ? parseFloat(data.precio_dolar) : null,
+        es_dolar: !!data.es_dolar,
         precio_ancla: data.precio_ancla ? parseFloat(data.precio_ancla) : null,
         precio_minimo: data.precio_minimo ? parseFloat(data.precio_minimo) : null,
         descuento_porcentaje: data.descuento_porcentaje ? parseFloat(data.descuento_porcentaje) : 0,
@@ -664,6 +687,12 @@ export default function ProductForm() {
               <label htmlFor="prod-precio-dolar">
                 Precio de compra en USD <span className="hint">(costo del proveedor, solo admins)</span>
               </label>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input type="checkbox" {...register('es_dolar')} />
+                  <span style={{ fontSize: '0.85rem' }}>Precio de proveedor fijado en dólares</span>
+                </label>
+              </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <Controller
                   name="precio_dolar"
@@ -691,24 +720,29 @@ export default function ProductForm() {
                   style={{ padding: '0.6rem', width: 160 }}
                   value={cotizacionUsd}
                   onChange={(e) => setCotizacionUsd(e.target.value)}
+                  disabled={esDolarVal}
                 />
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => {
-                    const dolar = parseFloat(watch('precio_dolar'));
-                    const cot = parseFloat(cotizacionUsd);
-                    if (!dolar || !cot) return;
-                    const costo = Math.round(dolar * cot);
-                    setValue('precio_costo', costo, { shouldDirty: true });
-                    setValue('precio_base', Math.round(costo * 1.1), { shouldDirty: true });
-                  }}
-                >
-                  Recalcular con cotización
-                </button>
+                {!esDolarVal && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => {
+                      const dolar = parseFloat(watch('precio_dolar'));
+                      const cot = parseFloat(cotizacionUsd);
+                      if (!dolar || !cot) return;
+                      const costo = Math.round(dolar * cot);
+                      setValue('precio_costo', costo, { shouldDirty: true });
+                      setValue('precio_base', Math.round(costo * 1.1), { shouldDirty: true });
+                    }}
+                  >
+                    Recalcular con cotización
+                  </button>
+                )}
               </div>
               <p className="field-hint">
-                Guarda el costo en dólares para poder recalcular precio de compra y venta (margen 10%) el día que cambie la cotización, sin tener que volver a cargar el producto.
+                {esDolarVal 
+                  ? "La cotización y el costo en guaraníes se calculan automáticamente según lo definido en el Proveedor seleccionado."
+                  : "Guarda el costo en dólares para poder recalcular precio de compra y venta (margen 10%) el día que cambie la cotización, sin tener que volver a cargar el producto."}
               </p>
             </div>
           )}
@@ -716,6 +750,7 @@ export default function ProductForm() {
                         <div className="form-group">
               <label htmlFor="prod-precio-costo">
                 Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
+                {esDolarVal && <span className="hint" style={{ color: 'var(--primary)', marginLeft: 8 }}>(Calculado según cotización del proveedor)</span>}
               </label>
               <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                 <Controller
@@ -729,6 +764,7 @@ export default function ProductForm() {
                       value={field.value}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
+                      disabled={esDolarVal}
                     />
                   )}
                 />

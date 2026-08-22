@@ -79,7 +79,14 @@ export function mapEditorDraftToFunnelData(draft, producto, imagenes, variantes,
       nombre: t.nombre, calificacion: t.calificacion, comentario: t.comentario,
     })),
     faq: (draft?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
-    contacto: { whatsapp: draft?.contacto_whatsapp || tienda?.whatsapp || '' },
+    contacto: { 
+      whatsapp: draft?.contacto_whatsapp || tienda?.whatsapp || '',
+      instagram: draft?.contacto_instagram || null,
+      facebook: draft?.contacto_facebook || null,
+      tiktok: draft?.contacto_tiktok || null,
+      youtube: draft?.contacto_youtube || null,
+      twitter: draft?.contacto_twitter || null,
+    },
   };
 }
 

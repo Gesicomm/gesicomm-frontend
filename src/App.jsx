@@ -32,6 +32,7 @@ import { ControlCourier } from './pages/courier/control-courier';
 import EducacionView from './pages/educacion/EducacionView';
 import AdminEducacion from './pages/educacion/AdminEducacion';
 import CostosGastos from './pages/finanzas/CostosGastos';
+import ProveedoresView from './pages/finanzas/Proveedores';
 
 // Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
 // el App Dashboard de Meta para la revisión de la aplicación, así que tienen
@@ -218,6 +219,9 @@ function App() {
         {/* Finanzas */}
         <Route path="/finanzas/costos-gastos" element={
           <RequireTienda><DynamicLayout><CostosGastos /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/finanzas/proveedores" element={
+          <AdminRoute><DynamicLayout><ProveedoresView /></DynamicLayout></AdminRoute>
         } />
 
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}

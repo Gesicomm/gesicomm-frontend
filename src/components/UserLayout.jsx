@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, ChevronRight, Menu, LayoutDashboard,
-  Package, BarChart3, Receipt
+  Package, BarChart3, Receipt, Truck
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -186,6 +186,7 @@ const UserLayout = ({ children }) => {
               <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
                 <ul className="sidebar-list">
                   {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y Gastos', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
+                  {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
                 </ul>
               </div>
 

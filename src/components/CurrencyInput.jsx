@@ -1,7 +1,7 @@
 import React from 'react';
 import { NumericFormat } from 'react-number-format';
 
-export default function CurrencyInput({ value, onChange, placeholder, disabled, id, className, style, onBlur, onKeyDown, prefix = 'Gs ' }) {
+export default function CurrencyInput({ value, onChange, placeholder, disabled, id, className, style, onBlur, onKeyDown, prefix = 'Gs ', decimals = 0 }) {
   return (
     <NumericFormat
       id={id}
@@ -16,7 +16,7 @@ export default function CurrencyInput({ value, onChange, placeholder, disabled, 
       onKeyDown={onKeyDown}
       thousandSeparator="."
       decimalSeparator=","
-      decimalScale={0}
+      decimalScale={decimals}
       prefix={prefix}
       placeholder={placeholder || '0'}
       disabled={disabled}

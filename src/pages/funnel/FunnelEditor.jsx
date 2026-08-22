@@ -17,6 +17,7 @@ import ConfianzaPanel from './panels/ConfianzaPanel';
 import OpinionesPanel from './panels/OpinionesPanel';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import ColoresPanel from '../landing-simple/panels/ColoresPanel';
+import RedesPanel from '../landing-simple/panels/RedesPanel';
 
 // Las tabs siguen el orden en que el comprador toma la decisión, no el
 // orden en que es cómodo programarlas: producto → por qué → confianza →
@@ -28,6 +29,7 @@ const TABS = [
   { key: 'beneficios', label: 'Beneficios' },
   { key: 'opiniones', label: 'Opiniones' },
   { key: 'faq', label: 'Preguntas' },
+  { key: 'redes', label: 'Redes' },
   { key: 'colores', label: 'Colores' },
 ];
 
@@ -161,6 +163,12 @@ export default function FunnelEditor() {
         color_primario: draft.color_primario,
         color_fondo: draft.color_fondo,
         color_texto: draft.color_texto,
+        contacto_whatsapp: draft.contacto_whatsapp,
+        contacto_instagram: draft.contacto_instagram,
+        contacto_facebook: draft.contacto_facebook,
+        contacto_tiktok: draft.contacto_tiktok,
+        contacto_youtube: draft.contacto_youtube,
+        contacto_twitter: draft.contacto_twitter,
       });
       setFunnel(actualizado);
       setDraft(actualizado);
@@ -340,6 +348,7 @@ export default function FunnelEditor() {
               {tab === 'beneficios' && <BeneficiosPanel beneficios={beneficios} onChange={setBeneficios} />}
               {tab === 'opiniones' && <OpinionesPanel opiniones={opiniones} onChange={setOpiniones} />}
               {tab === 'faq' && <FaqPanel faq={faq} onChange={setFaq} />}
+              {tab === 'redes' && <RedesPanel draft={draft} onCampo={campo} />}
               {tab === 'colores' && <ColoresPanel draft={draft} onCampo={campo} />}
             </div>
           </div>

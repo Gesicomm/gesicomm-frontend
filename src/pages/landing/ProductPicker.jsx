@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   Search, Check, Layers, ImageOff, Tag, Archive, GripVertical, X,
-  Package, Sparkles, Box, Pencil,
+  Package, Sparkles, Box, Pencil, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -221,6 +221,7 @@ export default function ProductPicker({
   const [stock, setStock] = useState('todos');
   const [orden, setOrden] = useState('nombre');
   const [soloSeleccionados, setSoloSeleccionados] = useState(false);
+  const [pagina, setPagina] = useState(1);
 
   const todos = useMemo(() => [
     ...(catalogo?.productos || []).map(p => ({ ...p, tipo: 'producto' })),
@@ -262,12 +263,23 @@ export default function ProductPicker({
     }
   }, [todos, tipo, categoria, marca, stock, soloSeleccionados, busqueda, orden, seleccion]);
 
+  React.useEffect(() => {
+    setPagina(1);
+  }, [busqueda, tipo, categoria, marca, stock, orden, soloSeleccionados]);
+
+  const TAMANO_PAGINA = 10;
+  const totalPaginas = Math.ceil(visibles.length / TAMANO_PAGINA) || 1;
+  const visiblesPaginados = useMemo(() => {
+    const inicio = (pagina - 1) * TAMANO_PAGINA;
+    return visibles.slice(inicio, inicio + TAMANO_PAGINA);
+  }, [visibles, pagina]);
+
   const cantidad = seleccion.size;
   const lleno = cantidad >= max;
   const hayFiltroActivo = !!(busqueda || categoria || marca || tipo !== 'todos' || stock !== 'todos' || soloSeleccionados);
 
   function limpiarFiltros() {
-    setBusqueda(''); setTipo('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false);
+    setBusqueda(''); setTipo('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false); setPagina(1);
   }
 
   return (
@@ -361,21 +373,90 @@ export default function ProductPicker({
               <p>Ningún producto coincide con los filtros.</p>
             </div>
           ) : (
-            <div className="lb-grid">
-              {visibles.map(item => {
-                const seleccionado = seleccion.has(claveItem(item));
-                return (
-                  <TarjetaProducto
-                    key={claveItem(item)}
-                    item={item}
-                    seleccionado={seleccionado}
-                    deshabilitado={!seleccionado && lleno}
-                    onToggle={onToggle}
-                    onEditar={onEditar}
-                  />
-                );
-              })}
-            </div>
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
+                <span>Mostrando {visiblesPaginados.length} de {visibles.length}</span>
+                {totalPaginas > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <button
+                      type="button"
+                      disabled={pagina <= 1}
+                      onClick={() => setPagina(p => Math.max(1, p - 1))}
+                      style={{
+                        padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)',
+                        background: pagina <= 1 ? 'transparent' : 'rgba(255,255,255,0.1)',
+                        color: pagina <= 1 ? '#555' : '#fff', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex', alignItems: 'center'
+                      }}
+                    >
+                      <ChevronLeft size={13} />
+                    </button>
+                    <span>{pagina} / {totalPaginas}</span>
+                    <button
+                      type="button"
+                      disabled={pagina >= totalPaginas}
+                      onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                      style={{
+                        padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)',
+                        background: pagina >= totalPaginas ? 'transparent' : 'rgba(255,255,255,0.1)',
+                        color: pagina >= totalPaginas ? '#555' : '#fff', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex', alignItems: 'center'
+                      }}
+                    >
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="lb-grid">
+                {visiblesPaginados.map(item => {
+                  const seleccionado = seleccion.has(claveItem(item));
+                  return (
+                    <TarjetaProducto
+                      key={claveItem(item)}
+                      item={item}
+                      seleccionado={seleccionado}
+                      deshabilitado={!seleccionado && lleno}
+                      onToggle={onToggle}
+                      onEditar={onEditar}
+                    />
+                  );
+                })}
+              </div>
+
+              {totalPaginas > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)' }}>
+                  <button
+                    type="button"
+                    disabled={pagina <= 1}
+                    onClick={() => setPagina(p => Math.max(1, p - 1))}
+                    style={{
+                      padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+                      background: pagina <= 1 ? 'transparent' : 'rgba(255,255,255,0.1)',
+                      color: pagina <= 1 ? '#555' : '#fff', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+                    }}
+                  >
+                    <ChevronLeft size={13} /> Anterior
+                  </button>
+                  <span>Página {pagina} de {totalPaginas}</span>
+                  <button
+                    type="button"
+                    disabled={pagina >= totalPaginas}
+                    onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
+                    style={{
+                      padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
+                      background: pagina >= totalPaginas ? 'transparent' : 'rgba(255,255,255,0.1)',
+                      color: pagina >= totalPaginas ? '#555' : '#fff', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+                    }}
+                  >
+                    Siguiente <ChevronRight size={13} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </>
       ) : (
