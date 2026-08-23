@@ -162,7 +162,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                   }}
                 >
                   {resumen.imagen
-                    ? <img src={resumen.imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <img src={getMediaUrl(resumen.imagen)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : <ImageOff size={18} style={{ color: hexToRgba(tema.texto, 0.3) }} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
