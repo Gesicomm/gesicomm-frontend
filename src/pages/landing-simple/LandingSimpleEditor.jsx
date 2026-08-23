@@ -374,7 +374,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       productService.detalle(p.id).catch(() => null),
       productService.imagenes(p.id).catch(() => []),
       productService.faq(p.id).catch(() => []),
-      productService.relacionados(p.id).catch(() => ({ titulo: null, items: [], automatico: false })),
+      productService.relacionados(p.id, id).catch(() => ({ titulo: null, items: [], automatico: false })),
     ]).then(([pDetail, imgs, preguntas, relacionados]) => {
       setProductoImagenes(imgs);
 

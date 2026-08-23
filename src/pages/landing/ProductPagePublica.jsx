@@ -282,33 +282,12 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
                 <button
                   type="button"
                   className="lp-modal-agregar"
-                  style={{ backgroundColor: 'var(--vit-accent)', color: 'var(--vit-accent-text)' }}
+                  style={{ backgroundColor: 'var(--vit-accent)', color: 'var(--vit-bg)' }}
                   onClick={() => setComprandoDirecto(true)}
                   disabled={sinStock || !onComprarAhora}
                 >
                   <Zap size={18} /> Comprar Ahora
                 </button>
-
-                <button
-                  type="button"
-                  className={`lp-modal-whatsapp ${agregado ? 'agregado' : ''}`}
-                  onClick={agregar}
-                  disabled={sinStock}
-                >
-                  {agregado ? <><Check size={18} /> ¡Agregado!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
-                </button>
-
-                {linkWhatsapp && (
-                  <a
-                    className="lp-modal-whatsapp"
-                    href={linkWhatsapp}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={() => onContactar && onContactar(item)}
-                  >
-                    <MessageCircle size={17} /> Consultar por WhatsApp
-                  </a>
-                )}
               </div>
             </div>
             
