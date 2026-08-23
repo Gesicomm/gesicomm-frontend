@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
+import Logo from './public/Logo';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
@@ -125,16 +126,11 @@ const UserLayout = ({ children }) => {
         style={{ borderRight: '1px solid rgba(255, 255, 255, 0.08)' }}
       >
         <header className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            
-            <div>
-              <h2 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-                GESICOMM<span className="dot">.</span>
-              </h2>
-              <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
-                Panel de Usuario
-              </span>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+            <Logo size={26} className="text-fg" />
+            <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
+              Panel de Usuario
+            </span>
           </div>
           <button
             type="button"
@@ -238,9 +234,7 @@ const UserLayout = ({ children }) => {
           >
             <Menu size={20} />
           </button>
-          <span className="text-sm font-bold tracking-tight text-fg">
-            GESICOMM<span className="text-primary">.</span>
-          </span>
+          <Logo size={24} className="text-fg" />
         </header>
 
         <main className="dashboard-main" style={{ background: '#050505', flex: 1, padding: 0, overflowY: 'auto' }}>

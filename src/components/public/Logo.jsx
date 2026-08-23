@@ -1,7 +1,5 @@
-import { useId } from 'react';
-
 /**
- * Logo de Gesicomm.
+ * Logo de Gesicomm — símbolo "G." + wordmark.
  *
  * El símbolo va como SVG inline (no como <img src="/brand/...">) por dos
  * motivos: no depende de una request extra que puede llegar después del
@@ -9,14 +7,15 @@ import { useId } from 'react';
  * texto HTML para que use la misma tipografía que ya carga la app — un
  * <text> dentro del SVG dependería de la resolución de fuentes del renderer.
  *
- * La geometría es la misma de public/brand/gesicomm-isotipo.svg; ver BRAND.md.
+ * La G se dibuja con `currentColor`: navy sobre fondo claro, blanco sobre
+ * fondo oscuro, sin necesitar dos variantes del componente (es lo que pide
+ * el manual en "Aplicación sobre fondos"). El punto es SIEMPRE el Oro
+ * Digital — es el único elemento que no cambia nunca.
+ *
+ * Geometría según el manual, sección 02: trazo = 0,18X y punto = 0,28X
+ * sobre la altura X de la G. Misma que public/brand/gesicomm-isotipo.svg.
  */
 export default function Logo({ size = 32, conTexto = true, className = '' }) {
-  // Los IDs de gradiente son globales al documento: sin useId, dos logos en
-  // la misma página (navbar y footer) colisionarían y el segundo pisaría al
-  // primero.
-  const idGradiente = useId();
-
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <svg
@@ -28,26 +27,20 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
         aria-hidden={conTexto ? 'true' : undefined}
         className="flex-shrink-0"
       >
-        <defs>
-          <linearGradient id={idGradiente} x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#15295A" />
-            <stop offset="1" stopColor="#0B1D3D" />
-          </linearGradient>
-        </defs>
         <path
-          d="M50.79 25.16 A20 20 0 1 0 50.79 38.84 L42 38.84"
+          d="M48.27 24.31 A18.9 18.9 0 1 0 49.49 35.93 L37 35.93"
           fill="none"
-          stroke={`url(#${idGradiente})`}
-          strokeWidth="9"
+          stroke="currentColor"
+          strokeWidth="8.3"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <circle cx="49" cy="49" r="6.5" fill="#FFC107" />
+        <circle cx="49" cy="48.5" r="6.5" fill="#FFC107" />
       </svg>
 
       {conTexto && (
         <span
-          className="text-[1.0625rem] font-bold text-fg"
+          className="text-[1.0625rem] font-bold"
           style={{ letterSpacing: '-0.03em' }}
         >
           Gesicomm

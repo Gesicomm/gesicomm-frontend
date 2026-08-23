@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import Logo from './public/Logo';
 import './dashboard.css';
 
 const DashboardLayout = ({ children }) => {
@@ -20,9 +21,7 @@ const DashboardLayout = ({ children }) => {
                     >
                         <Menu size={20} />
                     </button>
-                    <span className="text-sm font-bold tracking-tight text-fg">
-                        GESICOMM<span className="text-primary">.</span>
-                    </span>
+                    <Logo size={24} className="text-fg" />
                 </header>
 
                 <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-10 lg:py-8">

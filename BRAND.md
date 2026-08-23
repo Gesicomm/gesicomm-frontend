@@ -8,20 +8,27 @@ son la **fuente de verdad**: si cambia el logo se edita el SVG y se corre
 
 ## 1. El símbolo
 
-Un anillo abierto con un nodo en la apertura.
+**G + punto.** Es la G del wordmark `Gesicomm.` aislada, con su punto.
 
-- **El anillo** es el ciclo de operación que resuelve Gesicomm: sincronizar,
-  vender, despachar, medir, volver a empezar. Está abierto a propósito —
-  ninguna operación real es un circuito cerrado.
-- **El nodo** es la integración externa (Shopify, Meta, WhatsApp) que se
-  engancha a ese ciclo. Es el único elemento en color de acento, porque las
-  integraciones son la propuesta de valor del producto.
-- Al leerse rápido forma una letra que sirve tanto para **G**esicomm como
-  para e**C**ommerce.
+- **La G** es una grotesca geométrica de trazo único y terminaciones
+  redondeadas, con el travesaño llegando hasta el eje central.
+- **El punto** representa el ".com", el mundo digital y la conexión
+  comercial. Es el único elemento en Oro Digital y el único que **nunca**
+  cambia de color, en ninguna variante ni sobre ningún fondo.
 
-Es un trazo único con terminaciones redondeadas y un círculo. No tiene
-degradados internos complejos, texto ni sombras: sobrevive a 16 px, que es
-donde mueren la mayoría de los logos de SaaS.
+Construcción (proporciones sobre la altura X de la G):
+
+| Medida | Valor |
+|---|---|
+| Altura del símbolo (G) | X |
+| Diámetro del punto | 0,28X |
+| Grosor del trazo | 0,18X |
+| Espacio entre símbolo y texto | 0,6X |
+| Altura de las minúsculas | 0,56X |
+
+No tiene degradados, texto ni sombras: sobrevive a 16 px, que es donde
+mueren la mayoría de los logos de SaaS. En el favicon el trazo se engrosa
+y el punto crece, porque a ese tamaño la proporción nominal se cierra.
 
 ## 2. Archivos
 
@@ -36,8 +43,13 @@ donde mueren la mayoría de los logos de SaaS.
 
 Dentro de la aplicación **no se usan estos archivos**: se usa el componente
 `<Logo>` (`src/components/public/Logo.jsx`), que dibuja el símbolo en SVG
-inline y el wordmark en HTML, para que tome la Inter Variable que ya carga la
-app y herede el color del tema activo.
+inline y el wordmark en HTML, para que tome la tipografía que ya carga la app.
+La G va en `currentColor` (navy sobre claro, blanco sobre oscuro, sin dos
+variantes del componente) y el punto siempre en Oro Digital.
+
+Se usa en **todas** las cabeceras — sitio público, panel de admin, panel de
+usuario, login y onboarding. El wordmark `GESICOMM.` en versalitas que había
+antes en los paneles internos quedó eliminado: no es una variante de la marca.
 
 ## 3. PNG generados
 

@@ -6,6 +6,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import '../vitrina/vitrina.css';
 import '../tienda/tienda.css';
 import './onboarding.css';
+import Logo from '../../components/public/Logo';
 
 function slugifyLigero(texto) {
   return (texto || '')
@@ -103,8 +104,7 @@ export default function Onboarding() {
     <div className="onb-page">
       <div className="onb-card">
         <div className="onb-brand">
-          <Store size={20} />
-          <span>GESICOMM<span className="dot">.</span></span>
+          <Logo size={24} />
         </div>
 
         <div className="onb-steps">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CheckCircle2, Mail, RotateCcw, ShieldCheck } from 'lucide-react';
 import { api } from '../utils/api';
+import Logo from '../components/public/Logo';
 
 const INPUT_CLASS = 'w-full rounded-md border border-border bg-surface-2 px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-fg-subtle focus:border-primary';
 const LABEL_CLASS = 'mb-1.5 block text-sm font-medium text-fg-muted';
@@ -295,8 +296,8 @@ export default function Login() {
       </Link>
 
       <div className="w-full max-w-[400px] rounded-xl border border-border bg-surface p-8">
-        <Link to="/" className="mb-8 block text-center text-lg font-bold tracking-tight text-fg">
-          GESICOMM<span className="text-primary">.</span>
+        <Link to="/" className="mb-8 flex justify-center text-fg">
+          <Logo size={30} />
         </Link>
 
         {error && (
