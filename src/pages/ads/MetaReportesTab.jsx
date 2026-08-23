@@ -421,7 +421,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
                       <tr key={m.producto_id}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <Package size={14} color="#a78bfa" />
+                            <Package size={14} color="#3d5fa3" />
                             <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>{m.producto?.nombre || `Producto #${m.producto_id}`}</span>
                           </div>
                         </td>

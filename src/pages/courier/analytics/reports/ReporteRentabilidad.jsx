@@ -181,7 +181,7 @@ export function ReporteRentabilidad({ filters }) {
                   <tr key={g.id}>
                     <td>{g.concepto}</td>
                     <td>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', ...(g.tipo === 'costo' ? { background: 'rgba(96,165,250,0.15)', color: '#60a5fa' } : { background: 'rgba(46, 74, 133,0.15)', color: '#a78bfa' }) }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', ...(g.tipo === 'costo' ? { background: 'rgba(96,165,250,0.15)', color: '#60a5fa' } : { background: 'rgba(46, 74, 133,0.15)', color: '#3d5fa3' }) }}>
                         {g.tipo === 'costo' ? 'Costo' : 'Gasto'}
                       </span>
                     </td>

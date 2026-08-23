@@ -109,7 +109,7 @@ const UserLayout = ({ children }) => {
   };
 
   return (
-    <div className="dashboard-layout user-layout-container" style={{ '--bg-primary': '#10b981', '--bg-primary-soft': 'rgba(16, 185, 129, 0.1)' }}>
+    <div className="dashboard-layout user-layout-container">
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -129,7 +129,7 @@ const UserLayout = ({ children }) => {
             
             <div>
               <h2 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-                GESICOMM<span className="dot" style={{ color: '#10b981' }}>.</span>
+                GESICOMM<span className="dot">.</span>
               </h2>
               <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
                 Panel de Usuario
@@ -166,7 +166,7 @@ const UserLayout = ({ children }) => {
           <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>GENERAL</div>
           <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
             <ul className="sidebar-list">
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} style={{ color: '#10b981' }} />, menuKey: 'mi-dashboard' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Vitrina B2B', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
               
               {renderLink({ path: '/products', label: 'Mis Productos', icon: <Package size={14} />, prefix: '/products', menuKey: 'products' })}
@@ -204,7 +204,7 @@ const UserLayout = ({ children }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem' }}>
             <div style={{
               width: '24px', height: '24px', borderRadius: '50%',
-              background: 'rgba(16, 185, 129, 0.15)', color: '#10b981',
+              background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '11px', fontWeight: 'bold'
             }}>
@@ -239,7 +239,7 @@ const UserLayout = ({ children }) => {
             <Menu size={20} />
           </button>
           <span className="text-sm font-bold tracking-tight text-fg">
-            GESICOMM<span style={{ color: '#10b981' }}>.</span>
+            GESICOMM<span className="text-primary">.</span>
           </span>
         </header>
 

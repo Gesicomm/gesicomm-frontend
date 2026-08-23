@@ -6,15 +6,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-  --vit-accent:        #10b981;
-  --vit-accent-hover:  #0ea271;
-  --vit-accent-soft:   rgba(16, 185, 129, 0.12);
-  --vit-accent-glow:   rgba(16, 185, 129, 0.25);
+  --vit-accent:        #3d5fa3;
+  --vit-accent-hover:  #4e72b8;
+  --vit-accent-soft:   rgba(61, 95, 163, 0.12);
+  --vit-accent-glow:   rgba(61, 95, 163, 0.25);
   --vit-bg:            #060709;
   --vit-card-bg:       #0d1117;
   --vit-card-hover-bg: #111720;
   --vit-border:        rgba(255, 255, 255, 0.07);
-  --vit-border-hover:  rgba(16, 185, 129, 0.4);
+  --vit-border-hover:  rgba(61, 95, 163, 0.4);
   --vit-text:          #e2e8f0;
   --vit-muted:         #64748b;
   --vit-muted-2:       #475569;
@@ -58,10 +58,10 @@
 .user-topbar-icon {
   width: 34px; height: 34px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--vit-accent), #059669);
+  background: linear-gradient(135deg, var(--vit-accent), #2e4a85);
   display: flex; align-items: center; justify-content: center;
   color: #fff;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(61, 95, 163, 0.3);
   flex-shrink: 0;
 }
 
@@ -236,8 +236,8 @@
 }
 .vit-search-input::placeholder { color: var(--vit-muted); }
 .vit-search-input:focus {
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.08);
+  border-color: rgba(61, 95, 163, 0.4);
+  box-shadow: 0 0 0 3px rgba(61, 95, 163, 0.08);
 }
 
 .vit-filters {
@@ -287,7 +287,7 @@
   transition: border-color var(--transition-fast);
 }
 .vit-sort-select:hover { border-color: rgba(255,255,255,0.15); color: var(--vit-text); }
-.vit-sort-select:focus { border-color: rgba(16,185,129,0.4); }
+.vit-sort-select:focus { border-color: rgba(61,95,163,0.4); }
 .vit-sort-select option { background: #0d1117; color: var(--vit-text); }
 
 /* ─── Empty state ─────────────────────────────────────────────────────── */
@@ -346,8 +346,8 @@
   transform: translateY(-6px);
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(16, 185, 129, 0.15),
-    0 20px 60px rgba(16, 185, 129, 0.06);
+    0 0 0 1px rgba(61, 95, 163, 0.15),
+    0 20px 60px rgba(61, 95, 163, 0.06);
   background: var(--vit-card-hover-bg);
 }
 
@@ -540,7 +540,7 @@
 
 .vit-card-includes {
   font-size: 0.73rem;
-  color: rgba(16, 185, 129, 0.75);
+  color: rgba(61, 95, 163, 0.75);
   margin: 0 0 0.6rem;
   white-space: nowrap;
   overflow: hidden;
@@ -621,8 +621,8 @@
 }
 
 .vit-price-input-wrap:focus-within {
-  border-color: rgba(16, 185, 129, 0.45);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.08);
+  border-color: rgba(61, 95, 163, 0.45);
+  box-shadow: 0 0 0 2px rgba(61, 95, 163, 0.08);
 }
 
 .vit-price-input {

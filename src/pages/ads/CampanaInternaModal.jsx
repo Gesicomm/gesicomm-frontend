@@ -185,7 +185,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
           <h2 style={{ margin: 0, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Sparkles size={18} color="#a78bfa" /> {esEdicion ? 'Editar campaña' : 'Nueva campaña interna'}
+            <Sparkles size={18} color="#3d5fa3" /> {esEdicion ? 'Editar campaña' : 'Nueva campaña interna'}
           </h2>
           <button type="button" className="btn-icon" onClick={onClose}><X size={18} /></button>
         </div>
@@ -210,7 +210,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
             <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
               {pasosActivos.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #a78bfa)' : 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #3d5fa3)' : 'rgba(255,255,255,0.1)' }} />
                   <span style={{ fontSize: '0.7rem', color: p.id === step ? '#fff' : '#777', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
                 </div>
               ))}
@@ -332,7 +332,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                               onClick={() => toggleProducto(p.id)}
                               style={{
                                 display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer',
-                                border: seleccionado ? '2px solid #a78bfa' : '1px solid rgba(255,255,255,0.1)',
+                                border: seleccionado ? '2px solid #3d5fa3' : '1px solid rgba(255,255,255,0.1)',
                                 borderRadius: '8px', overflow: 'hidden', background: '#141416', padding: 0,
                               }}
                             >
@@ -345,7 +345,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                                   </div>
                                 )}
                                 {seleccionado && (
-                                  <div style={{ position: 'absolute', top: '4px', right: '4px', background: '#a78bfa', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <div style={{ position: 'absolute', top: '4px', right: '4px', background: '#3d5fa3', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Check size={12} color="#0a0a0b" />
                                   </div>
                                 )}
@@ -353,7 +353,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                               <div style={{ padding: '0.5rem' }}>
                                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
                                 {p.categoria_id && mapaCategorias.get(p.categoria_id) && (
-                                  <span style={{ fontSize: '0.68rem', color: '#a78bfa' }}>{mapaCategorias.get(p.categoria_id)}</span>
+                                  <span style={{ fontSize: '0.68rem', color: '#3d5fa3' }}>{mapaCategorias.get(p.categoria_id)}</span>
                                 )}
                               </div>
                             </button>

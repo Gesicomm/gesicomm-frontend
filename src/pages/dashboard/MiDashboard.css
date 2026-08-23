@@ -26,7 +26,7 @@
   --md-confirmado-soft: rgba(16, 185, 129, 0.14);
   --md-visitas: #38bdf8;
   --md-contactos: #10b981;
-  --md-ratio: #a78bfa;
+  --md-ratio: #3d5fa3;
 
   background: var(--md-bg);
   min-height: 100vh;
@@ -255,7 +255,7 @@
   color: var(--md-ink-muted);
 }
 .md-icon-visitas { color: var(--md-visitas); background: rgba(56, 189, 248, 0.1); }
-.md-icon-carrito { color: #a78bfa; background: rgba(167, 139, 250, 0.1); }
+.md-icon-carrito { color: #3d5fa3; background: rgba(61, 95, 163, 0.1); }
 .md-icon-checkout { color: #f472b6; background: rgba(244, 114, 182, 0.1); }
 .md-icon-contactos { color: var(--md-contactos); background: rgba(16, 185, 129, 0.1); }
 
@@ -427,7 +427,7 @@
 }
 .md-chart-tooltip strong { margin-bottom: 0.1rem; color: #fff; font-size: 0.78rem; }
 .md-chart-tooltip span { display: flex; align-items: center; gap: 0.4rem; color: var(--md-ink-muted); }
-.md-chart-tooltip small { color: #a78bfa; margin-top: 0.1rem; font-weight: 500; }
+.md-chart-tooltip small { color: #3d5fa3; margin-top: 0.1rem; font-weight: 500; }
 
 .md-table-wrap { overflow-x: auto; }
 .md-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }

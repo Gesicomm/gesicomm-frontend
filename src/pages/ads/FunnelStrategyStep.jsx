@@ -52,7 +52,7 @@ const ESTRATEGIAS = [
   {
     id: 'combo_especial',
     icon: Package,
-    color: '#a78bfa',
+    color: '#3d5fa3',
     titulo: 'Creá una oferta completa',
     desc: 'Vendé varios productos juntos, con precio y rentabilidad propios.',
     incluye: 'Ideal para: kits, packs especiales, liquidaciones.',
@@ -185,12 +185,12 @@ function SelectorComplementario({ productos, excluirId, value, onChange }) {
     <div>
       <label style={s.label}>Producto complementario</label>
       {elegido ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(167,139,250,0.4)', background: 'rgba(167,139,250,0.08)', borderRadius: '8px', padding: '0.5rem 0.7rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(61, 95, 163,0.4)', background: 'rgba(61, 95, 163,0.08)', borderRadius: '8px', padding: '0.5rem 0.7rem' }}>
           <div style={{ width: 28, height: 28, borderRadius: 5, overflow: 'hidden', background: '#1a1a1c', flexShrink: 0 }}>
             {elegido.imagenes?.[0]?.url ? <img src={getMediaUrl(elegido.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
           </div>
           <span style={{ fontSize: '0.82rem', color: '#fff', flex: 1 }}>{elegido.nombre}</span>
-          <button type="button" onClick={() => onChange('')} style={{ fontSize: '0.72rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>Cambiar</button>
+          <button type="button" onClick={() => onChange('')} style={{ fontSize: '0.72rem', color: '#3d5fa3', background: 'none', border: 'none', cursor: 'pointer' }}>Cambiar</button>
         </div>
       ) : (
         <>
@@ -377,7 +377,7 @@ function PanelVentaRapida({ ofertas, guardando, onConfirmar, funnel, templates, 
 
       {cargandoFunnel ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
-          <Loader2 size={18} className="animate-spin" color="#a78bfa" />
+          <Loader2 size={18} className="animate-spin" color="#3d5fa3" />
         </div>
       ) : !funnel ? (
         /* Sin embudo todavía: el comercio elige con qué tipo armarlo — nunca
@@ -422,7 +422,7 @@ function PanelVentaRapida({ ofertas, guardando, onConfirmar, funnel, templates, 
             href={`/funnel/${funnel.id}`}
             target="_blank"
             rel="noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#a78bfa', alignSelf: 'flex-start' }}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#3d5fa3', alignSelf: 'flex-start' }}
           >
             Editar contenido del embudo <ExternalLink size={11} />
           </a>
@@ -610,7 +610,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {productoIds.length > 1 && (
-        <button type="button" onClick={() => setProductoActivoId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}>
+        <button type="button" onClick={() => setProductoActivoId(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#3d5fa3', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}>
           <ArrowLeft size={13} /> Elegir otro producto
         </button>
       )}
@@ -671,19 +671,19 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
       </div>
 
       {mensajeCombo && (
-        <div style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(167,139,250,0.08)', borderColor: 'rgba(167,139,250,0.3)' }}>
-          <ExternalLink size={15} color="#a78bfa" />
+        <div style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(61, 95, 163,0.08)', borderColor: 'rgba(61, 95, 163,0.3)' }}>
+          <ExternalLink size={15} color="#3d5fa3" />
           <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Se abrió el editor de combos en una pestaña nueva. Cuando termines, podés volver acá y seguir con la campaña.</span>
         </div>
       )}
 
       {cargandoOfertas ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader2 className="animate-spin" size={22} color="#a78bfa" /></div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}><Loader2 className="animate-spin" size={22} color="#3d5fa3" /></div>
       ) : !estrategiaAbierta ? (
         <SelectorEstrategia recomendacion={recomendacion} landingActual={landingTienda} onElegir={onElegirEstrategia} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <button type="button" onClick={() => setEstrategiaAbierta(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <button type="button" onClick={() => setEstrategiaAbierta(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#3d5fa3', background: 'none', border: 'none', cursor: 'pointer', alignSelf: 'flex-start' }}>
             <ArrowLeft size={13} /> Volver a estrategias
           </button>
 
@@ -729,7 +729,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
                     sessionStorage.setItem('gesicomm:tabInicial', 'ofertas');
                     window.open(`/products/${productoActivoId}/editar`, '_blank');
                   }}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer', marginTop: '0.4rem', padding: 0 }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#3d5fa3', background: 'none', border: 'none', cursor: 'pointer', marginTop: '0.4rem', padding: 0 }}
                 >
                   Abrir ofertas del producto <ExternalLink size={12} />
                 </button>
