@@ -73,9 +73,9 @@ export default function ProductoPanel({
       </button>
 
       <div className="flex bg-white/5 border-b border-white/10 shrink-0">
-        <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-white/50 hover:text-white'}`}>Detalles</button>
-        <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-white/50 hover:text-white'}`}>Relacionados</button>
-        <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-white/50 hover:text-white'}`}>Checkout y Ofertas</button>
+        <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-primary text-primary' : 'border-transparent text-white/50 hover:text-white'}`}>Detalles</button>
+        <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-primary text-primary' : 'border-transparent text-white/50 hover:text-white'}`}>Relacionados</button>
+        <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-primary text-primary' : 'border-transparent text-white/50 hover:text-white'}`}>Checkout y Ofertas</button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">

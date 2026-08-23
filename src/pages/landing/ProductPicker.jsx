@@ -454,7 +454,7 @@ export default function ProductPicker({
           )}
             </div>
             <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
-              <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold rounded-lg transition-colors">Listo</button>
+              <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors">Listo</button>
             </div>
           </div>
         </div>, document.body)}

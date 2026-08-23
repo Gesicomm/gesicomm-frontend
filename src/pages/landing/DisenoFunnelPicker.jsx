@@ -121,10 +121,10 @@ export default function DisenoFunnelPicker({
               </div>
               <div className={`flex items-center justify-between gap-1 border-t px-2 py-1.5 ${claseBorde} ${claseSurface}`}>
                 <span className={`truncate text-[11px] font-semibold ${claseTitulo}`}>{p.nombre}</span>
-                {activa && <Check size={12} className="shrink-0 text-emerald-400" />}
+                {activa && <Check size={12} className="shrink-0 text-primary" />}
               </div>
               {p.esDeLaTienda && (
-                <div className="border-t border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-500">
+                <div className="border-t border-primary/30 bg-primary/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-primary">
                   El de tu landing
                 </div>
               )}

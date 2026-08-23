@@ -130,7 +130,7 @@ export default function FunnelSelector() {
                     </div>
                   )}
                   {tpl.funnel_type === 'direct_sale' && (
-                    <div className="absolute top-4 left-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white shadow-sm">
+                    <div className="absolute top-4 left-4 rounded-full bg-accent px-3 py-1 text-xs font-bold text-black shadow-sm">
                       ⚡ Más Recomendado
                     </div>
                   )}

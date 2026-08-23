@@ -64,7 +64,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
               max="100"
               value={draft.banner_opacidad !== undefined && draft.banner_opacidad !== null ? draft.banner_opacidad : 30}
               onChange={e => onCampo('banner_opacidad', parseInt(e.target.value, 10))}
-              className="w-full accent-emerald-500 bg-white/10 rounded-full h-1 appearance-none cursor-pointer"
+              className="w-full accent-primary bg-white/10 rounded-full h-1 appearance-none cursor-pointer"
             />
           </div>
         )}

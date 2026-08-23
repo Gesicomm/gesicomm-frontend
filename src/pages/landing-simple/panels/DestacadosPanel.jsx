@@ -3,8 +3,8 @@ import { Box, ImageOff, Layers, GripVertical } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import CurrencyInput from '../../../components/CurrencyInput';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors';
-const CAMPO_CHICO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors';
+const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors';
+const CAMPO_CHICO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors';
 
 function formatGs(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -116,7 +116,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
             return (
               <div
                 key={`${item.tipo}:${item.referencia_id}`}
-                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-emerald-400' : activo ? 'border-emerald-500/40 bg-emerald-500/[0.07]' : 'border-white/10 bg-white/[0.02]'}`}
+                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-primary' : activo ? 'border-primary/40 bg-primary/[0.07]' : 'border-white/10 bg-white/[0.02]'}`}
                 draggable={habilitada === idx}
                 onDragStart={() => setArrastrando(idx)}
                 onDragOver={(e) => { e.preventDefault(); setEncima(idx); }}

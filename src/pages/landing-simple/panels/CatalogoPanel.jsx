@@ -6,7 +6,7 @@ import '../../landing/landing.css';
 // reutilizado también acá — no hay un tope propio del modo rígido).
 const MAX_ITEMS = 40;
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors';
+const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors';
 
 function clave(tipo, id) { return `${tipo}:${id}`; }
 

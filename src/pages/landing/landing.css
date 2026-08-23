@@ -532,8 +532,8 @@
 
 /* ─── Guía de especificaciones de Banner ──────────────────────────────── */
 .lb-banner-guide-box {
-  background: rgba(16, 185, 129, 0.06);
-  border: 1px solid rgba(16, 185, 129, 0.22);
+  background: rgba(61, 95, 163, 0.06);
+  border: 1px solid rgba(61, 95, 163, 0.22);
   border-radius: 12px;
   padding: 0.85rem 1rem;
   margin-bottom: 1.1rem;
@@ -546,7 +546,7 @@
   align-items: center;
   gap: 0.45rem;
   font-size: 0.82rem;
-  color: #10b981;
+  color: var(--vit-accent);
 }
 .lb-banner-guide-specs {
   display: flex;
@@ -592,7 +592,7 @@
   padding: 0.75rem;
   transition: all var(--transition-fast);
 }
-.lb-banner-upload:hover { border-color: rgba(16, 185, 129, 0.4); color: var(--vit-text); }
+.lb-banner-upload:hover { border-color: rgba(61, 95, 163, 0.4); color: var(--vit-text); }
 .lb-banner-upload span { font-size: 0.8rem; font-weight: 600; }
 .lb-banner-upload small { font-size: 0.68rem; color: var(--vit-muted-2); }
 
@@ -1374,9 +1374,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border: 1px solid rgba(16, 185, 129, 0.28);
+  border: 1px solid rgba(61, 95, 163, 0.28);
   border-radius: 9px;
-  background: rgba(16, 185, 129, 0.09);
+  background: rgba(61, 95, 163, 0.09);
   color: var(--vit-accent);
   padding: 0.5rem 0.7rem;
   font-size: 0.78rem;
@@ -1384,7 +1384,7 @@
   cursor: pointer;
 }
 .lb-add-section button:hover {
-  background: rgba(16, 185, 129, 0.14);
+  background: rgba(61, 95, 163, 0.14);
 }
 
 /* Espejo de la landing pública (ver LandingPreview.jsx) */
