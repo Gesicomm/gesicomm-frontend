@@ -48,8 +48,8 @@
   color: var(--vit-muted);
   border: 1px solid var(--vit-border);
 }
-.onb-step.active { background: var(--vit-accent-soft); color: var(--vit-accent); border-color: rgba(16, 185, 129, 0.35); }
-.onb-step.done { background: var(--vit-accent); color: #04120c; border-color: var(--vit-accent); }
+.onb-step.active { background: var(--vit-accent-soft); color: var(--vit-accent); border-color: rgba(61, 95, 163, 0.35); }
+.onb-step.done { background: var(--vit-accent); color: #fff; border-color: var(--vit-accent); }
 .onb-step-line { flex: 1; height: 1px; background: var(--vit-border); }
 
 .onb-step-content { display: flex; flex-direction: column; gap: 0.9rem; }
@@ -91,7 +91,7 @@
   text-align: left;
   transition: border-color 0.15s;
 }
-.onb-plan-card:hover:not(:disabled) { border-color: rgba(16, 185, 129, 0.4); }
+.onb-plan-card:hover:not(:disabled) { border-color: rgba(61, 95, 163, 0.4); }
 .onb-plan-card:disabled { opacity: 0.6; cursor: default; }
 .onb-plan-card.selected { border-color: var(--vit-accent); background: var(--vit-accent-soft); }
 .onb-plan-card svg:first-child { color: var(--vit-accent); }

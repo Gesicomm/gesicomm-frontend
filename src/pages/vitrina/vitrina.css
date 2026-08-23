@@ -651,7 +651,7 @@
 .vit-price-save-btn {
   align-self: flex-start;
   background: var(--vit-accent);
-  color: #021a0d;
+  color: #fff;
   border: none;
   padding: 0.32rem 0.85rem;
   border-radius: 6px;
