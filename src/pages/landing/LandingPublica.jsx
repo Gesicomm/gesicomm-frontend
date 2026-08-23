@@ -197,6 +197,13 @@ export default function LandingPublica() {
   // carrito (mismo criterio que Oferta.estrategia documenta en el backend).
   const sugerenciasCarrito = useMemo(() => {
     if (!data?.items) return [];
+    
+    // Si la landing tiene configuracion específica de ofertas de carrito,
+    // solo mostramos las ofertas listadas ahí. Si no tiene nada configurado,
+    // por defecto no muestra NINGUNA oferta (comportamiento opt-in).
+    // NOTA: Antes mostraba todas por defecto, pero el usuario pidió control total.
+    const configOfertas = data?.content?.ofertas_carrito || [];
+    
     const contentIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.contentId));
     const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean));
     const sugerencias = [];
@@ -204,6 +211,11 @@ export default function LandingPublica() {
       if (item.tipo !== 'producto' || !item.ofertas?.length) continue;
       for (const oferta of item.ofertas) {
         if (ofertaIdsEnCarrito.has(oferta.id)) continue;
+        
+        // Filtro estricto: la oferta DEBE estar seleccionada en la configuración
+        const estaEnConfiguracion = configOfertas.includes(String(oferta.id)) || configOfertas.includes(Number(oferta.id));
+        if (!estaEnConfiguracion) continue;
+
         if (oferta.estrategia === 'order_bump') {
           sugerencias.push({ item, oferta });
         } else if (oferta.estrategia === 'upsell' && contentIdsEnCarrito.has(item.content_id)) {
@@ -757,8 +769,10 @@ export default function LandingPublica() {
           <ProductPagePublica
             item={itemSeleccionado}
             onAgregar={agregarAlCarrito}
+            onComprarAhora={comprarAhora}
             contacto={datosProductoPublico.contacto}
             tema={temaResuelto}
+            landingConfig={data.content || {}}
             nombreComercio={datosProductoPublico.nombreComercio}
             onContactar={contactar}
             slug={slug}

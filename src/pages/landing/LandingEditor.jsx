@@ -59,6 +59,7 @@ const FORM_INICIAL = {
   nombre: '',
   titulo: '',
   descripcion: '',
+  content: {},
   mostrar_filtro_categoria: true,
   mostrar_filtro_marca: true,
   mostrar_filtro_etiqueta: true,
@@ -120,6 +121,7 @@ export default function LandingEditor() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState(FORM_INICIAL);
+  const [leftTab, setLeftTab] = useState('secciones'); // 'secciones' o 'checkout'
   const [seleccion, setSeleccion] = useState(new Map()); // clave -> { tipo, referencia_id, etiqueta }
   // Testimonios/FAQ se guardan en bloque junto con el resto del form (ver
   // armarPayload) — igual que `seleccion`, no tienen persistencia propia
@@ -498,6 +500,7 @@ export default function LandingEditor() {
           seo_titulo: guardada.seo_titulo || '',
           seo_descripcion: guardada.seo_descripcion || '',
           seo_keywords: guardada.seo_keywords || '',
+          content: guardada.content || {},
         });
         // Ya vienen ordenados por "orden" (ver include en landing.service.js
         // obtener()) — se copian los campos editables nada más, sin
@@ -1466,18 +1469,18 @@ export default function LandingEditor() {
         {/* COLUMNA IZQUIERDA: Estructura */}
         {showLeftSidebar && (
         <div className="bg-[var(--vit-card-bg)] border-r border-[var(--vit-border)] flex flex-col w-[260px] flex-shrink-0 z-10 overflow-hidden">
-          <SidebarSecciones 
-            secciones={secciones}
-            viewMode={viewMode}
-            onSelect={setSeccionSeleccionadaId}
-            onAddClick={() => { setAgregarAlLadoDe(null); setSelectorAbierto(true); }}
-            onAddBeside={handleAgregarAlLado}
-            onToggleVisible={handleToggleVisible}
-            onDuplicate={handleDuplicarSeccion}
-            onDelete={handleEliminarSeccion}
-            onReorder={handleReordenarSeccion}
-            selectedId={seccionSeleccionadaId}
-          />
+            <SidebarSecciones 
+              secciones={secciones}
+              viewMode={viewMode}
+              onSelect={setSeccionSeleccionadaId}
+              onAddClick={() => { setAgregarAlLadoDe(null); setSelectorAbierto(true); }}
+              onAddBeside={handleAgregarAlLado}
+              onToggleVisible={handleToggleVisible}
+              onDuplicate={handleDuplicarSeccion}
+              onDelete={handleEliminarSeccion}
+              onReorder={handleReordenarSeccion}
+              selectedId={seccionSeleccionadaId}
+            />
         </div>
         )}
 

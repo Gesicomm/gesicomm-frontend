@@ -12,6 +12,7 @@ import { getMediaUrl } from '../../services/api';
 import LandingPreview from './LandingPreview';
 import DisenoFunnelPicker from './DisenoFunnelPicker';
 import InspectorSeccion from './InspectorSeccion';
+import ProductCheckoutOfertas from './ProductCheckoutOfertas';
 import { BLOQUES_SCHEMA } from './BloquesSchema';
 
 /**
@@ -468,6 +469,9 @@ export default function MerchantEditor() {
                     </button>
                   );
                 })}
+              </div>
+              <div className="px-3 pb-3">
+                <ProductCheckoutOfertas producto={producto} config={content} onChange={(k, v) => setContent(v)} catalogo={{ productos: items.filter(i => i.tipo === 'producto').map(i => ({ id: i.referencia_id, nombre: i.nombre || i.etiqueta })) }} />
               </div>
             </div>
           )}

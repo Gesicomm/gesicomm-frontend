@@ -3,6 +3,7 @@ import { ArrowLeft, Loader, Save, Star, Trash2, Upload } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
+import ProductCheckoutOfertas from '../../landing/ProductCheckoutOfertas';
 import '../../landing/landing.css';
 
 const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30';
@@ -21,10 +22,13 @@ export default function ProductoPanel({
   relacionadosTitulo, onRelacionadosTitulo,
   relacionados, relacionadosAutomatico, onAgregarRelacionado, onQuitarRelacionado, catalogo,
   guardando, onGuardar, aviso, error,
+  config, onChange,
   onVolver,
 }) {
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
   // un Map con clave "producto:id" para reutilizar ProductPicker sin cambios.
+  const [tab, setTab] = React.useState('detalles');
+
   const seleccionRelacionados = useMemo(() => {
     const map = new Map();
     (relacionados || []).forEach(r => {
@@ -68,6 +72,12 @@ export default function ProductoPanel({
         <span className="text-sm font-semibold">Volver a la landing</span>
       </button>
 
+      <div className="flex bg-white/5 border-b border-white/10 shrink-0">
+        <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-white/50 hover:text-white'}`}>Detalles</button>
+        <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-white/50 hover:text-white'}`}>Relacionados</button>
+        <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-white/50 hover:text-white'}`}>Checkout y Ofertas</button>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
         <div>
           <p className="text-xs text-white/40 mb-0.5">Editando producto</p>
@@ -80,6 +90,8 @@ export default function ProductoPanel({
           <div className="flex items-center gap-2 text-white/40 text-xs"><Loader size={14} className="animate-spin" /> Cargando...</div>
         ) : (
           <>
+            {tab === 'detalles' && (
+              <div className="flex flex-col gap-5">
             {/* ─── Imágenes ─────────────────────────────────────────── */}
             <div>
               <label className="block text-xs font-semibold text-white/60 mb-1.5">Imágenes</label>
@@ -137,7 +149,11 @@ export default function ProductoPanel({
 
               <FaqPanel faq={faq} onChange={onFaqChange} />
             </div>
+            </div>
+            )}
 
+            {tab === 'relacionados' && (
+              <div className="flex flex-col gap-5">
             {/* ─── Productos relacionados ───────────────────────────── */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-semibold text-white/60">Productos relacionados</label>
@@ -171,8 +187,17 @@ export default function ProductoPanel({
                 onPrecioAncla={() => {}}
                 onReordenar={() => {}}
                 max={12}
+                mostrarInputs={false}
               />
             </div>
+            </div>
+            )}
+
+            {tab === 'ofertas' && (
+              <div className="flex flex-col gap-5">
+              <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} />
+              </div>
+            )}
 
             {/* ─── Guardar ──────────────────────────────────────────── */}
             <button

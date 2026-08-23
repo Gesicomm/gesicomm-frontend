@@ -1,12 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { ofertaService } from '../../services/ofertaService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { tiendaService } from '../../services/tiendaService';
 import { getComponenteTemplate } from './templates';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
+import FunnelCheckout from '../funnel/FunnelCheckout';
 import CatalogoPreview from './templates/CatalogoPreview';
 import ContactoPreview from './templates/ContactoPreview';
 import { productService } from '../../services/productService';
@@ -265,6 +267,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // derecha solo refleja — así no hay que duplicar "Guardar"/"Volver" dentro
   // del área de preview, y esta escribe en vivo sin esperar un guardado.
   const [productoPreview, setProductoPreview] = useState(null);
+  const [compraFunnel, setCompraFunnel] = useState(null);
   // Vista in-editor del Catálogo completo — clickear "Catálogo" en el
   // header del preview (antes navegaba a la landing pública de verdad, en
   // una pestaña nueva, sin nada editable) abre esto en el mismo panel en
@@ -289,6 +292,18 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoRelacionadosTitulo, setProductoRelacionadosTitulo] = useState('');
   const [productoRelacionados, setProductoRelacionados] = useState([]); // [{id, nombre, imagen, precio_efectivo}]
   const [productoRelacionadosAutomatico, setProductoRelacionadosAutomatico] = useState(false);
+
+  const catalogoFiltradoParaRelacionados = useMemo(() => {
+    if (!catalogo || !items) return { productos: [], combos: [] };
+    const itemsIdsProductos = new Set(items.filter(i => i.tipo === 'producto').map(i => i.referencia_id));
+    const itemsIdsCombos = new Set(items.filter(i => i.tipo === 'combo').map(i => i.referencia_id));
+    return {
+      productos: (catalogo.productos || []).filter(p => itemsIdsProductos.has(p.id)),
+      combos: (catalogo.combos || []).filter(c => itemsIdsCombos.has(c.id)),
+    };
+  }, [catalogo, items]);
+
+
   const [productoSubiendoImg, setProductoSubiendoImg] = useState(false);
   const [productoGuardando, setProductoGuardando] = useState(false);
   const [productoError, setProductoError] = useState('');
@@ -375,7 +390,17 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setProductoRelacionadosTitulo(relacionados.titulo || '');
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
       // Usamos `automatico` solo para saber si el comercio los personalizó o no.
-      setProductoRelacionados((relacionados.items || []).map(r => ({ id: r.id, nombre: r.nombre, imagen: r.imagen, precio_efectivo: r.precio })));
+      setProductoRelacionados((relacionados.items || []).map(r => {
+        const landingItem = items.find(i => i.referencia_id === r.id && i.tipo === 'producto');
+        return { 
+          id: r.id, 
+          nombre: r.nombre, 
+          imagen: r.imagen, 
+          precio_efectivo: r.precio,
+          precio_ancla: landingItem?.precio_ancla || r.precio_tachado || null,
+          etiqueta: landingItem?.etiqueta || null
+        };
+      }));
       setProductoRelacionadosAutomatico(!!relacionados.automatico);
       setProductoCargando(false);
     });
@@ -424,7 +449,15 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   function agregarRelacionado(item) {
     setProductoRelacionados(prev => {
       if (prev.some(r => r.id === item.id) || item.id === productoPreview?.id) return prev;
-      return [...prev, { id: item.id, nombre: item.nombre, imagen: item.imagen, precio_efectivo: item.precio_efectivo ?? item.precio_base }];
+      const landingItem = items.find(i => Number(i.referencia_id) === Number(item.id) && i.tipo === 'producto');
+      return [...prev, { 
+        id: item.id, 
+        nombre: item.nombre, 
+        imagen: item.imagen, 
+        precio_efectivo: item.precio_efectivo ?? item.precio_base,
+        precio_ancla: landingItem?.precio_ancla || item.precio_tachado || null,
+        etiqueta: landingItem?.etiqueta || null
+      }];
     });
     // Al agregar manualmente, ya no son auto-populados
     setProductoRelacionadosAutomatico(false);
@@ -499,6 +532,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // ver landingSimple.service.js#crear), nunca en "/l/:slug" — ese path
   // es solo el fallback de desarrollo local (resolverTienda.js jamás
   // resuelve tienda por host en localhost).
+
   const publicUrl = tienda?.subdominio
     ? (landing?.es_home ? `https://${tienda.subdominio}.gesicomm.com` : `https://${tienda.subdominio}.gesicomm.com/l/${landing?.slug || ''}`)
     : `/l/${landing?.slug || ''}`;
@@ -598,6 +632,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               onSubirImagen={subirImagenProducto}
               onEliminarImagen={eliminarImagenProducto}
               onMarcarPrincipal={marcarPrincipalProducto}
+              config={draft?.content || {}}
+              onChange={(k, v) => campo(k, v)}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
               faqTitulo={productoFaqTitulo}
@@ -608,7 +644,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               relacionadosAutomatico={productoRelacionadosAutomatico}
               onAgregarRelacionado={agregarRelacionado}
               onQuitarRelacionado={quitarRelacionado}
-              catalogo={catalogo}
+              catalogo={catalogoFiltradoParaRelacionados}
               guardando={productoGuardando}
               onGuardar={guardarProducto}
               aviso={productoAviso}
@@ -701,6 +737,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
                   templateSlug={landing?.template?.slug}
+                  setCompraFunnel={setCompraFunnel}
                 />
               </div>
             </div>
@@ -740,6 +777,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
                   templateSlug={landing?.template?.slug}
+                  setCompraFunnel={setCompraFunnel}
                 />
               </div>
             </div>
@@ -756,7 +794,7 @@ function PreviewContent({
   productoRelacionadosTitulo, productoRelacionados,
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
-  vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug,
+  vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
 }) {
   if (productoPreview) {
     return (
@@ -774,6 +812,15 @@ function PreviewContent({
         nombreComercio={datosPreview.nombreComercio}
         isMobile={viewportMode === 'mobile'}
         previewMode={true}
+        onComprar={async () => {
+          try {
+            const ofs = await ofertaService.listarPorProducto(productoPreview?.id);
+            if (setCompraFunnel) setCompraFunnel(ofs);
+          } catch (e) {
+            console.error(e);
+            if (setCompraFunnel) setCompraFunnel([]);
+          }
+        }}
       />
     );
   }
