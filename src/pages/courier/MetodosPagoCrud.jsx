@@ -315,7 +315,7 @@ export function MetodosPagoCrud() {
               <button
                 type="submit"
                 style={{
-                  background: 'linear-gradient(135deg, #6d5ef8, #5b4bd6)',
+                  background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)',
                   color: '#ffffff',
                   border: 'none',
                   padding: '0.65rem 1.6rem',
@@ -323,7 +323,7 @@ export function MetodosPagoCrud() {
                   fontWeight: 700,
                   fontSize: '0.875rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(109, 94, 248, 0.4)'
+                  boxShadow: '0 4px 14px rgba(61, 95, 163, 0.4)'
                 }}
               >
                 {editing ? "Guardar cambios" : "Crear método"}

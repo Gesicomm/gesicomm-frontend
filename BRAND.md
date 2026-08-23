@@ -58,51 +58,67 @@ Los PNG se commitean: el build de producción no ejecuta la generación.
 
 ## 4. Paleta
 
+> Redefinida en `feature/rebrand-navy-gold`: se reemplazó el sistema
+> violeta/cian por navy/dorado. El símbolo (anillo + nodo) mantiene su
+> geometría; solo cambiaron sus colores. Los valores están declarados una
+> sola vez en `src/index.css` (`@theme` y los bloques `data-theme`); nada
+> de esto se declara a mano en los componentes.
+
 ### Color de marca
 
 | Rol | HEX | Uso |
 |---|---|---|
-| **Violeta Gesicomm** | `#6D5EF8` | Color primario. Botones, enlaces, foco, acentos. |
-| Violeta claro | `#8B7CFF` | Inicio del degradado del símbolo, hover en oscuro. |
-| Violeta profundo | `#4F3FD6` | Fin del degradado, estado activo/pressed. |
-| **Cian acento** | `#22D3EE` | El nodo del logo. Uso muy escaso: si aparece en todos lados deja de significar "integración". |
-| Cian claro | `#67E8F9` | El nodo sobre fondo violeta (app icon). |
+| **Azul Profundo** | `#0B1D3D` | Color de marca dominante. Primario del sitio público (fondo de botón, enlaces, foco): sobre el lienzo marfil rinde ~19:1, así que no necesita oscurecerse para pasar AA. |
+| Azul medio | `#3D5FA3` | Primario del panel interno (siempre oscuro) y del sitio público en su variante oscura: más claro que el Azul Profundo para no perderse contra un lienzo casi negro. |
+| Azul medio, hover/activo | `#4E72B8` / `#2E4A85` | Estados de interacción del azul medio. |
+| **Oro Digital** | `#FFC107` | Acento. Uso escaso: el nodo del logo, alguna métrica destacada puntual. Si aparece en todos lados deja de leerse como acento. |
+| Gris Pizarra | `#6B7280` | Texto sutil / secundario en ambos temas. |
 
-Degradado oficial del símbolo: `#8B7CFF → #4F3FD6` a 135°.
+Degradado oficial del símbolo: `#15295A → #0B1D3D` a 135° (dark theme:
+mismo degradado, el nodo dorado se mantiene fijo en `#FFC107`).
 
-### Neutros — tema oscuro (el de la aplicación)
+### Neutros — panel interno (siempre oscuro)
 
 | Rol | HEX |
 |---|---|
-| Lienzo | `#08080A` |
-| Superficie | `#0E0E11` |
-| Superficie elevada | `#16161A` |
-| Superficie 3 | `#1C1C21` |
-| Borde | `#232329` |
-| Borde marcado | `#2E2E35` |
-| Texto | `#F4F4F6` |
-| Texto atenuado | `#9A9AA6` |
-| Texto sutil | `#6B6B76` |
+| Lienzo | `#0A0E1A` |
+| Superficie | `#10152A` |
+| Superficie elevada | `#161C36` |
+| Superficie 3 | `#1C2444` |
+| Borde | `#262F52` |
+| Borde marcado | `#333F68` |
+| Texto | `#F5F5F2` |
+| Texto atenuado | `#A3A8B8` |
+| Texto sutil | `#6B7280` |
 
 ### Neutros — tema claro (sitio público)
 
 | Rol | HEX |
 |---|---|
-| Lienzo | `#FFFFFF` |
-| Superficie | `#FAFAFB` |
-| Superficie elevada | `#F4F4F6` |
-| Superficie 3 | `#EDEDF0` |
-| Borde | `#E4E4E9` |
-| Borde marcado | `#D3D3DA` |
-| Texto | `#0B0B10` |
-| Texto atenuado | `#5B5B67` |
-| Texto sutil | `#82828F` |
+| Lienzo (Marfil Cálido) | `#F7F7F5` |
+| Superficie | `#FFFFFF` |
+| Superficie elevada | `#EEEEEA` |
+| Superficie 3 | `#E2E2DC` |
+| Borde | `#D8D8D0` |
+| Borde marcado | `#C0C0B6` |
+| Texto (Azul Profundo) | `#0B1D3D` |
+| Texto atenuado | `#4B5568` |
+| Texto sutil | `#6B7280` |
 
-En claro el primario se oscurece a `#5B4BD6` para que el texto violeta sobre
-blanco pase AA (4.5:1). Está resuelto en `src/index.css`; no hay que
-declararlo a mano.
+### Neutros — tema oscuro (sitio público, toggle)
+
+| Rol | HEX |
+|---|---|
+| Lienzo | `#0C1224` |
+| Superficie | `#131A30` |
+| Superficie elevada | `#1A2140` |
+| Superficie 3 | `#212A4E` |
+| Borde | `#2B3558` |
+| Borde marcado | `#3C4870` |
 
 ### Semánticos
+
+Sin cambios — no son colores de marca.
 
 | Rol | HEX |
 |---|---|
@@ -113,8 +129,25 @@ declararlo a mano.
 
 ## 5. Tipografía
 
-**Inter Variable** — única familia del sistema, ya instalada vía
-`@fontsource-variable/inter`. No se agregan más fuentes.
+**SF Pro Display** es la tipografía de marca, pero es propietaria de Apple
+y no tiene licencia para @font-face en web. Se resuelve con la stack de
+sistema:
+
+```
+-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif
+```
+
+En Mac/iOS esto renderiza la SF Pro real; en el resto de plataformas cae a
+la tipografía nativa del sistema operativo (Segoe UI en Windows, Roboto en
+Android/Chrome OS). Es el único enfoque legal para usar SF Pro fuera del
+ecosistema Apple. Declarada en `--font-sans` / `--font-display`
+(`src/index.css`) — ambas apuntan a la misma stack, la marca usa una sola
+familia para todo, cuerpo y titulares.
+
+`IBM Plex Mono` se mantiene para cifras y etiquetas tabulares
+(`--font-mono`): es una necesidad funcional (números de ancho fijo que
+aliñan en columna), no parte de la identidad de marca, y el nuevo brand
+book no cubre ese caso de uso.
 
 | Uso | Peso | Tracking |
 |---|---|---|
@@ -126,17 +159,17 @@ declararlo a mano.
 | Etiquetas / eyebrows | 600, mayúsculas | `+0.08em` |
 
 El tracking negativo en los tamaños grandes es lo que separa una tipografía
-bien usada de la default: sin él, Inter a 60 px se ve suelta y amateur.
+bien usada de la default: sin él, un texto a 60 px se ve suelto y amateur.
 
-**Wordmark:** Inter 700 con `letter-spacing: -0.03em`. Se escribe
+**Wordmark:** peso 700 con `letter-spacing: -0.03em`. Se escribe
 `Gesicomm` en caja mixta. En espacios muy reducidos la app usa `GESICOMM.` en
 versalitas — es una variante heredada, no la forma preferida.
 
 ### Sustitutos
 
-Si Inter no está disponible (correos, documentos de terceros, un SVG suelto
-renderizado fuera del navegador), en orden: `Segoe UI`, `Helvetica Neue`,
-`Arial`. Nunca una serif ni una fuente condensada.
+Si la stack de sistema no está disponible (algún renderer que la ignore),
+en orden: `Segoe UI`, `Helvetica Neue`, `Arial`. Nunca una serif ni una
+fuente condensada.
 
 ## 6. Uso correcto
 

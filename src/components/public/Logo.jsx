@@ -6,8 +6,8 @@ import { useId } from 'react';
  * El símbolo va como SVG inline (no como <img src="/brand/...">) por dos
  * motivos: no depende de una request extra que puede llegar después del
  * primer render, y hereda el color del tema activo. El wordmark va como
- * texto HTML para que use la Inter Variable que ya carga la app — un <text>
- * dentro del SVG dependería de la resolución de fuentes del renderer.
+ * texto HTML para que use la misma tipografía que ya carga la app — un
+ * <text> dentro del SVG dependería de la resolución de fuentes del renderer.
  *
  * La geometría es la misma de public/brand/gesicomm-isotipo.svg; ver BRAND.md.
  */
@@ -30,8 +30,8 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
       >
         <defs>
           <linearGradient id={idGradiente} x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#8B7CFF" />
-            <stop offset="1" stopColor="#4F3FD6" />
+            <stop offset="0" stopColor="#15295A" />
+            <stop offset="1" stopColor="#0B1D3D" />
           </linearGradient>
         </defs>
         <path
@@ -41,7 +41,7 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
           strokeWidth="9"
           strokeLinecap="round"
         />
-        <circle cx="51.32" cy="26.82" r="6.5" fill="#22D3EE" />
+        <circle cx="51.32" cy="26.82" r="6.5" fill="#FFC107" />
       </svg>
 
       {conTexto && (

@@ -344,7 +344,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
         )}
 
         {resultadoImport && (
-          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', background: 'rgba(109,94,248,0.08)', border: '1px solid rgba(109,94,248,0.25)', borderRadius: '6px', padding: '0.75rem 1rem', fontSize: '0.82rem' }}>
+          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', background: 'rgba(61,95,163,0.08)', border: '1px solid rgba(61,95,163,0.25)', borderRadius: '6px', padding: '0.75rem 1rem', fontSize: '0.82rem' }}>
             <span>Filas leídas: <strong>{resultadoImport.total}</strong></span>
             <span style={{ color: '#34d399' }}>Mapeadas a un producto: <strong>{resultadoImport.matcheadas}</strong></span>
             {resultadoImport.sin_match > 0 && (

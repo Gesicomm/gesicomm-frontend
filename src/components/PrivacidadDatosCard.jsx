@@ -76,7 +76,7 @@ const PrivacidadDatosCard = () => {
                             href={`/data-deletion/estado/${resultado.solicitud.codigo}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            style={{ display: 'inline-block', marginTop: '0.9rem', fontSize: '0.85rem', color: '#6d5ef8' }}
+                            style={{ display: 'inline-block', marginTop: '0.9rem', fontSize: '0.85rem', color: '#7d9bd6' }}
                         >
                             Ver el estado de mi solicitud →
                         </a>
@@ -108,7 +108,7 @@ const PrivacidadDatosCard = () => {
                 Podés solicitar la eliminación de tus datos personales en cualquier momento y sin costo.
                 Procesamos cada pedido en un plazo máximo de 30 días. Antes de continuar, revisá qué se
                 elimina y qué se conserva por obligación legal en{' '}
-                <a href="/data-deletion" target="_blank" rel="noopener noreferrer" style={{ color: '#6d5ef8' }}>
+                <a href="/data-deletion" target="_blank" rel="noopener noreferrer" style={{ color: '#7d9bd6' }}>
                     la página de Eliminación de Datos
                 </a>.
             </p>
@@ -140,8 +140,8 @@ const PrivacidadDatosCard = () => {
                                 style={{
                                     display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
                                     padding: '0.85rem 1rem', marginBottom: '0.6rem',
-                                    background: alcance === opcion.valor ? 'rgba(109,94,248,0.08)' : 'rgba(255,255,255,0.03)',
-                                    border: `1px solid ${alcance === opcion.valor ? 'rgba(109,94,248,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                                    background: alcance === opcion.valor ? 'rgba(61,95,163,0.08)' : 'rgba(255,255,255,0.03)',
+                                    border: `1px solid ${alcance === opcion.valor ? 'rgba(61,95,163,0.4)' : 'rgba(255,255,255,0.08)'}`,
                                     borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s'
                                 }}
                             >
@@ -151,7 +151,7 @@ const PrivacidadDatosCard = () => {
                                     value={opcion.valor}
                                     checked={alcance === opcion.valor}
                                     onChange={(ev) => setAlcance(ev.target.value)}
-                                    style={{ marginTop: '0.2rem', accentColor: '#6d5ef8' }}
+                                    style={{ marginTop: '0.2rem', accentColor: '#3d5fa3' }}
                                 />
                                 <span>
                                     <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600 }}>

@@ -161,14 +161,14 @@ export function SummaryBar({ envios = [], couriers = [] }) {
           textColor="#10b981"
         />
 
-        {/* Caja Neta (métrica destacada — acento indigo, no rompe la paleta oscura) */}
+        {/* Caja Neta (métrica destacada — acento dorado, no rompe la paleta oscura) */}
         <MetricCard
           title="Caja Neta"
           value={stats.cajaNeta}
-          bg="rgba(109, 94, 248, 0.1)"
-          border="1px solid rgba(109, 94, 248, 0.3)"
-          textColor="#a79bfb"
-          labelColor="#8577fa"
+          bg="rgba(255, 193, 7, 0.1)"
+          border="1px solid rgba(255, 193, 7, 0.3)"
+          textColor="#ffd966"
+          labelColor="#e6ac00"
         />
       </div>
 

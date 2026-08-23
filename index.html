@@ -21,7 +21,7 @@
     <link rel="canonical" href="https://gesicomm.com/" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="author" content="Gesicomm" />
-    <meta name="theme-color" content="#6D5EF8" />
+    <meta name="theme-color" content="#0B1D3D" />
 
     <!-- Open Graph -->
     <meta property="og:site_name" content="Gesicomm" />
@@ -55,12 +55,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Tres familias, tres trabajos distintos:
+    <!-- Dos familias vía Google Fonts, más la stack de sistema:
 
-         · Archivo — titulares del sitio institucional. Es una grotesca de
-           ancho variable derivada de las góticas que se usaban en formularios
-           y grillas impresas; en su eje expandido da un titular que se lee
-           como el encabezado de una planilla y no como la Inter de siempre.
          · IBM Plex Mono — etiquetas, cifras y todo lo tabular. El registro
            operativo de la portada necesita cifras de ancho fijo que aliñen en
            columna; una proporcional ahí se ve mal y encima miente sobre la
@@ -70,13 +66,14 @@
            tipografía elegible). No borrar: sin esto las landings que la
            eligieron caen a la fuente del sistema.
 
-         El cuerpo de texto sigue siendo la Inter Variable que importa
-         main.jsx desde node_modules: es una neutra excelente para leer
-         párrafos y ya está local, sin costo de red. -->
+         El cuerpo de texto y los titulares institucionales usan la stack
+         de sistema (-apple-system, ...): en Mac/iOS resuelve a SF Pro, la
+         tipografía de marca, sin necesidad de licenciarla ni cargarla por
+         red. Ver --font-sans / --font-display en src/index.css. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;700;900&display=swap"
       rel="stylesheet"
     />
 

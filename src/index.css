@@ -5,32 +5,37 @@
    Declarados en @theme para que Tailwind genere utilidades
    (bg-canvas, text-fg, bg-primary, rounded-lg, etc). */
 @theme {
-    --color-canvas: #08080a;
-    --color-surface: #0e0e11;
-    --color-surface-2: #16161a;
-    --color-surface-3: #1c1c21;
-    --color-border: #232329;
-    --color-border-strong: #2e2e35;
+    --color-canvas: #0a0e1a;
+    --color-surface: #10152a;
+    --color-surface-2: #161c36;
+    --color-surface-3: #1c2444;
+    --color-border: #262f52;
+    --color-border-strong: #333f68;
 
-    --color-fg: #f4f4f6;
-    --color-fg-muted: #9a9aa6;
-    --color-fg-subtle: #6b6b76;
+    --color-fg: #f5f5f2;
+    --color-fg-muted: #a3a8b8;
+    --color-fg-subtle: #6b7280;
 
-    --color-primary: #6d5ef8;
-    --color-primary-hover: #7f71fa;
-    --color-primary-active: #5b4bd6;
+    --color-primary: #3d5fa3;
+    --color-primary-hover: #4e72b8;
+    --color-primary-active: #2e4a85;
+
+    --color-accent: #ffc107;
+    --color-accent-hover: #ffcf4d;
 
     --color-success: #10b981;
     --color-warning: #f59e0b;
     --color-danger: #ef4444;
     --color-info: #60a5fa;
 
-    --font-sans: 'InterVariable', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    /* Stack de sistema en vez de un web font: en Mac/iOS resuelve a la
+       SF Pro real de la marca, en el resto cae a la grotesca nativa del
+       SO. Es la única forma de usar SF Pro Display sin licenciarla. */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-    /* Titulares del sitio institucional. Archivo es una grotesca de ancho
-       variable: en el eje expandido da encabezados con aire de planilla
-       impresa, que es exactamente de lo que habla el producto. */
-    --font-display: 'Archivo', 'InterVariable', ui-sans-serif, system-ui, sans-serif;
+    /* Titulares del sitio institucional: misma stack que el cuerpo, la
+       marca usa una sola familia para todo. */
+    --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
     /* Etiquetas, cifras y todo lo tabular. Ancho fijo para que las columnas
        de números aliñen de verdad. */
@@ -56,25 +61,23 @@
        formulario impreso en papel de oficina. El blanco puro queda
        reservado para las superficies elevadas, así el contraste entre
        fondo y tarjeta lo da el papel y no una sombra. */
-    --color-canvas: #f7f8fa;
+    --color-canvas: #f7f7f5;
     --color-surface: #ffffff;
-    --color-surface-2: #eef0f4;
-    --color-surface-3: #e4e7ee;
-    --color-border: #dcdfe7;
-    --color-border-strong: #c3c8d4;
+    --color-surface-2: #eeeeea;
+    --color-surface-3: #e2e2dc;
+    --color-border: #d8d8d0;
+    --color-border-strong: #c0c0b6;
 
-    --color-fg: #111420;
-    --color-fg-muted: #545b6c;
-    --color-fg-subtle: #7b8294;
+    --color-fg: #0b1d3d;
+    --color-fg-muted: #4b5568;
+    --color-fg-subtle: #6b7280;
 
-    /* #6d5ef8 sobre blanco da 3.9:1 — no llega a AA para texto. El
-       primario se oscurece en claro solo para que enlaces y texto de
-       acento pasen 4.5:1; el violeta de marca original se mantiene en
-       superficies grandes (botones con texto blanco), donde el contraste
-       lo aporta el fondo. */
-    --color-primary: #5b4bd6;
-    --color-primary-hover: #4f3fc4;
-    --color-primary-active: #4536ad;
+    /* Azul Profundo de marca: ~19:1 sobre el lienzo marfil, así que no
+       hace falta oscurecerlo para texto como pasaba con el violeta
+       anterior — ya rinde AA de sobra en cualquier tamaño. */
+    --color-primary: #0b1d3d;
+    --color-primary-hover: #15295a;
+    --color-primary-active: #081527;
 
     --color-success: #047857;
     --color-warning: #b45309;
@@ -91,16 +94,16 @@
    diferencia entre un fondo apagado y uno con temperatura de tinta. Sobre
    ese fondo el violeta de marca deja de leerse como un neón sobre negro. */
 :root[data-theme='dark'] {
-    --color-canvas: #0a0b0f;
-    --color-surface: #101219;
-    --color-surface-2: #171a23;
-    --color-surface-3: #1e2230;
-    --color-border: #232733;
-    --color-border-strong: #333846;
+    --color-canvas: #0c1224;
+    --color-surface: #131a30;
+    --color-surface-2: #1a2140;
+    --color-surface-3: #212a4e;
+    --color-border: #2b3558;
+    --color-border-strong: #3c4870;
 
-    --color-fg: #f2f3f7;
-    --color-fg-muted: #9aa0b0;
-    --color-fg-subtle: #6b7183;
+    --color-fg: #f5f6f8;
+    --color-fg-muted: #a8adbc;
+    --color-fg-subtle: #6f7690;
 
     color-scheme: dark;
 }
@@ -123,7 +126,7 @@
     --text-sidebar-foreground: var(--color-fg);
     --text-muted-foreground: var(--color-fg-muted);
     --bg-primary: var(--color-primary);
-    --bg-primary-soft: rgba(109, 94, 248, 0.1);
+    --bg-primary-soft: rgba(61, 95, 163, 0.1);
     --border-border: var(--color-border);
 }
 
@@ -180,16 +183,14 @@ html {
 }
 
 /* ─── Tipografía del sitio institucional ─────────────
-   Tres roles bien separados. La regla es simple: si es un titular va en
-   Archivo, si es un dato o una etiqueta va en mono, y todo lo demás —o
-   sea, todo lo que se lee de corrido— va en Inter. */
+   Dos roles: si es un dato o una etiqueta va en mono, todo lo demás —o
+   sea, titulares y todo lo que se lee de corrido— va en la stack de
+   sistema (SF Pro en Mac/iOS, equivalente nativo en el resto). */
 
-/* Titulares. Archivo en su eje expandido (font-stretch mapea al eje wdth
-   de la variable) con el tracking cerrado: glifos anchos y huecos
-   apretados, que es como se componen los encabezados de una planilla. */
+/* Titulares, con tracking cerrado para que no se vean sueltos a tamaño
+   grande. */
 .sitio-publico .titular {
     font-family: var(--font-display);
-    font-stretch: 112%;
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.04;

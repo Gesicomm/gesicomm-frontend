@@ -37,7 +37,7 @@ export const selectStylesDark = {
     }),
     multiValue: (base) => ({
         ...base,
-        background: 'rgba(109, 94, 248, 0.15)',
+        background: 'rgba(61, 95, 163, 0.15)',
     }),
     multiValueLabel: (base) => ({
         ...base,
