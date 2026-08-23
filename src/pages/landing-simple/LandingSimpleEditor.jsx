@@ -173,6 +173,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         color_fondo: draft.color_fondo,
         color_texto: draft.color_texto,
         color_primario: draft.color_primario,
+        content: draft.content,
         items,
         faq,
         beneficios,
@@ -483,6 +484,10 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         // Solo enviamos relacionados si el comercio los tocó (no si son auto-populados)
         ...(!productoRelacionadosAutomatico && { relacionados: productoRelacionados.map(r => r.id) }),
       });
+      // Las configuraciones de Ofertas de Checkout (Order Bumps/Upsells) se guardan a nivel landing
+      if (draft.content) {
+        await landingSimpleService.actualizar(id, { content: draft.content });
+      }
       setProductoAviso('Cambios guardados.');
       recargarCatalogo();
     } catch (err) {
