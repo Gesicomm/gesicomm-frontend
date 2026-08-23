@@ -1,4 +1,4 @@
-# Identidad de marca — Gesicomm
+# Identidad de marca — Gesicom
 
 Guía de uso del logo, la paleta y la tipografía. Los SVG de `public/brand/`
 son la **fuente de verdad**: si cambia el logo se edita el SVG y se corre
@@ -8,7 +8,7 @@ son la **fuente de verdad**: si cambia el logo se edita el SVG y se corre
 
 ## 1. El símbolo
 
-**G + punto.** Es la G del wordmark `Gesicomm.` aislada, con su punto.
+**G + punto.** Es la G del wordmark `Gesicom.` aislada, con su punto.
 
 - **La G** es una grotesca geométrica de trazo único y terminaciones
   redondeadas, con el travesaño llegando hasta el eje central.
@@ -48,7 +48,7 @@ La G va en `currentColor` (navy sobre claro, blanco sobre oscuro, sin dos
 variantes del componente) y el punto siempre en Oro Digital.
 
 Se usa en **todas** las cabeceras — sitio público, panel de admin, panel de
-usuario, login y onboarding. El wordmark `GESICOMM.` en versalitas que había
+usuario, login y onboarding. El wordmark `GESICOM.` en versalitas que había
 antes en los paneles internos quedó eliminado: no es una variante de la marca.
 
 ## 3. PNG generados
@@ -70,11 +70,11 @@ Los PNG se commitean: el build de producción no ejecuta la generación.
 
 ## 4. Paleta
 
-> Redefinida en `feature/rebrand-navy-gold`: se reemplazó el sistema
-> violeta/cian por navy/dorado. El símbolo (anillo + nodo) mantiene su
-> geometría; solo cambiaron sus colores. Los valores están declarados una
-> sola vez en `src/index.css` (`@theme` y los bloques `data-theme`); nada
-> de esto se declara a mano en los componentes.
+> Se reemplazó el sistema violeta/cian anterior por navy/dorado, junto con
+> el símbolo (antes un anillo abierto con un nodo; ahora la "G." del
+> wordmark). Los valores están declarados una sola vez en `src/index.css`
+> (`@theme` y los bloques `data-theme`); nada de esto se declara a mano en
+> los componentes.
 
 ### Color de marca
 
@@ -83,11 +83,12 @@ Los PNG se commitean: el build de producción no ejecuta la generación.
 | **Azul Profundo** | `#0B1D3D` | Color de marca dominante. Primario del sitio público (fondo de botón, enlaces, foco): sobre el lienzo marfil rinde ~19:1, así que no necesita oscurecerse para pasar AA. |
 | Azul medio | `#3D5FA3` | Primario del panel interno (siempre oscuro) y del sitio público en su variante oscura: más claro que el Azul Profundo para no perderse contra un lienzo casi negro. |
 | Azul medio, hover/activo | `#4E72B8` / `#2E4A85` | Estados de interacción del azul medio. |
-| **Oro Digital** | `#FFC107` | Acento. Uso escaso: el nodo del logo, alguna métrica destacada puntual. Si aparece en todos lados deja de leerse como acento. |
+| **Oro Digital** | `#FFC107` | Acento. Uso escaso: el punto del logo, alguna métrica destacada puntual. Si aparece en todos lados deja de leerse como acento. |
 | Gris Pizarra | `#6B7280` | Texto sutil / secundario en ambos temas. |
 
-Degradado oficial del símbolo: `#15295A → #0B1D3D` a 135° (dark theme:
-mismo degradado, el nodo dorado se mantiene fijo en `#FFC107`).
+El símbolo es **plano, sin degradado**: la G toma el color del contexto
+(Azul Profundo sobre fondo claro, blanco sobre fondo oscuro) y el punto es
+siempre `#FFC107`.
 
 ### Neutros — panel interno (siempre oscuro)
 
@@ -174,8 +175,9 @@ El tracking negativo en los tamaños grandes es lo que separa una tipografía
 bien usada de la default: sin él, un texto a 60 px se ve suelto y amateur.
 
 **Wordmark:** peso 700 con `letter-spacing: -0.03em`. Se escribe
-`Gesicomm` en caja mixta. En espacios muy reducidos la app usa `GESICOMM.` en
-versalitas — es una variante heredada, no la forma preferida.
+`Gesicom` en caja mixta, **con una sola m**. Nunca en versalitas ni todo en
+mayúsculas. Ojo: el dominio sí lleva dos (`gesicomm.com`) — es una URL, no
+la marca, y no se unifican.
 
 ### Sustitutos
 
@@ -186,13 +188,14 @@ fuente condensada.
 ## 6. Uso correcto
 
 **Sí:**
-- Aire mínimo alrededor del logo igual al radio del nodo (≈10 % del alto).
-- El símbolo solo, sin wordmark, cuando el contexto ya dice "Gesicomm".
-- Monocromo en blanco o en `#0B0B10` cuando el degradado no se puede imprimir.
+- Aire mínimo alrededor del logo igual a la altura de la "G" del símbolo.
+- El símbolo solo, sin wordmark, cuando el contexto ya dice "Gesicom".
+- Monocromo (todo en blanco, o todo en Azul Profundo) cuando el punto en
+  dorado no se puede imprimir.
 
 **No:**
-- Rotarlo, espejarlo ni cerrar la apertura del anillo.
-- Cambiar el color del nodo por algo que no sea el cian de acento.
+- Rotarlo, espejarlo, estirarlo ni cerrar la abertura de la G.
+- Cambiar el color del punto por algo que no sea el Oro Digital.
 - Poner el lockup claro sobre fondo oscuro (existe la variante oscura).
-- Reescribir el wordmark en otra fuente o encerrarlo en una caja.
-- Aplicarle sombras, bisel o contorno.
+- Reescribir el wordmark en otra fuente, con dos emes, o encerrarlo en una caja.
+- Aplicarle sombras, contornos o degradados.

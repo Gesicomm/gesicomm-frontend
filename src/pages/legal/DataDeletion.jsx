@@ -57,7 +57,7 @@ const SECCIONES = [
     titulo: 'Tu derecho a eliminar tus datos',
     contenido: (
       <>
-        <Alert tono="info" titulo="Compromiso de Gesicomm">
+        <Alert tono="info" titulo="Compromiso de Gesicom">
           <p className="text-base font-medium text-fg">
             Los usuarios pueden solicitar la eliminación completa de sus datos personales en
             cualquier momento.
@@ -71,7 +71,7 @@ const SECCIONES = [
         <p className="mt-6">
           Este derecho está reconocido por el artículo 17 del RGPD («derecho de supresión» o
           «derecho al olvido»), por la sección 1798.105 de la CCPA/CPRA de California y por la
-          normativa de protección de datos de los países de Latinoamérica donde operamos. Gesicomm
+          normativa de protección de datos de los países de Latinoamérica donde operamos. Gesicom
           lo aplica a todos sus usuarios, con independencia de dónde residan.
         </p>
         <p>
@@ -176,7 +176,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Si conectaste Gesicomm con tu cuenta de Facebook, podés iniciar la eliminación desde la
+          Si conectaste Gesicom con tu cuenta de Facebook, podés iniciar la eliminación desde la
           propia configuración de Meta:
         </p>
         <ol>
@@ -187,7 +187,7 @@ const SECCIONES = [
             Buscá <strong>Aplicaciones y sitios web</strong>.
           </li>
           <li>
-            Localizá <strong>Gesicomm</strong> en la lista.
+            Localizá <strong>Gesicom</strong> en la lista.
           </li>
           <li>
             Seleccioná <strong>Quitar</strong> y confirmá.
@@ -213,7 +213,7 @@ const SECCIONES = [
         </ul>
         <p>
           La eliminación por esta vía alcanza a los datos obtenidos de las plataformas de Meta. Si
-          además querés eliminar el resto de tu información en Gesicomm, usá el método 1 o el
+          además querés eliminar el resto de tu información en Gesicom, usá el método 1 o el
           método 2.
         </p>
       </>
@@ -380,13 +380,13 @@ const SECCIONES = [
   },
   {
     id: 'clientes-de-tiendas',
-    titulo: 'Si sos comprador de una tienda que usa Gesicomm',
+    titulo: 'Si sos comprador de una tienda que usa Gesicom',
     contenido: (
       <>
         <p>
-          Si tus datos están en Gesicomm porque le compraste a un comercio que usa nuestra
+          Si tus datos están en Gesicom porque le compraste a un comercio que usa nuestra
           plataforma, la situación es distinta: <strong>el responsable de esos datos es el
-          comercio</strong>, no Gesicomm. Nosotros actuamos como encargado del tratamiento y
+          comercio</strong>, no Gesicom. Nosotros actuamos como encargado del tratamiento y
           seguimos sus instrucciones.
         </p>
         <p>Qué hacer:</p>
@@ -433,7 +433,7 @@ const SECCIONES = [
 
         <Subseccion titulo="¿Se eliminan también mis datos en Meta?">
           <p>
-            No. Gesicomm elimina lo que tiene en <strong>sus</strong> sistemas y revoca su acceso a
+            No. Gesicom elimina lo que tiene en <strong>sus</strong> sistemas y revoca su acceso a
             la API de Meta. Los datos que residan en Facebook —tus campañas, tus cuentas
             publicitarias, tu perfil— siguen bajo el control de Meta, y para eliminarlos hay que
             pedírselo directamente a ellos.
@@ -488,7 +488,7 @@ export default function DataDeletion() {
   return (
     <LegalDoc
       titulo="Eliminación de Datos"
-      descripcion="Cómo solicitar la eliminación completa de tus datos personales en Gesicomm: desde tu cuenta, mediante el formulario público sin iniciar sesión, o desde la configuración de Meta. Plazo máximo de 30 días, con verificación de identidad y seguimiento por código."
+      descripcion="Cómo solicitar la eliminación completa de tus datos personales en Gesicom: desde tu cuenta, mediante el formulario público sin iniciar sesión, o desde la configuración de Meta. Plazo máximo de 30 días, con verificación de identidad y seguimiento por código."
       resumen="Podés pedir que eliminemos todos tus datos personales en cualquier momento, sin costo y sin dar explicaciones. Acá está el cómo, el cuándo y el qué se elimina exactamente."
       ruta="/data-deletion"
       actualizado="2026-08-03"

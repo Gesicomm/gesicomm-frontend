@@ -1,5 +1,8 @@
 /**
- * Logo de Gesicomm — símbolo "G." + wordmark.
+ * Logo de Gesicom — símbolo "G." + wordmark.
+ *
+ * El wordmark se escribe **Gesicom**, con una sola m. El dominio sigue
+ * siendo gesicomm.com (con dos): es una URL, no la marca — no unificar.
  *
  * El símbolo va como SVG inline (no como <img src="/brand/...">) por dos
  * motivos: no depende de una request extra que puede llegar después del
@@ -23,7 +26,7 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
         height={size}
         viewBox="0 0 64 64"
         role="img"
-        aria-label={conTexto ? '' : 'Gesicomm'}
+        aria-label={conTexto ? '' : 'Gesicom'}
         aria-hidden={conTexto ? 'true' : undefined}
         className="flex-shrink-0"
       >
@@ -43,7 +46,7 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
           className="text-[1.0625rem] font-bold"
           style={{ letterSpacing: '-0.03em' }}
         >
-          Gesicomm
+          Gesicom
         </span>
       )}
     </span>

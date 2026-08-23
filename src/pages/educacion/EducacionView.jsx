@@ -294,7 +294,7 @@ export default function EducacionView() {
       <header className="aca-header-card">
         <div className="aca-header-left">
           <span className="aca-badge-pill">
-            <GraduationCap size={16} /> Academia Gesicomm
+            <GraduationCap size={16} /> Academia Gesicom
           </span>
           <h1 className="aca-title">Ruta de Formación E-commerce</h1>
           <p className="aca-subtitle">
@@ -407,7 +407,7 @@ export default function EducacionView() {
                   {/* Marca de agua dinámica de seguridad */}
                   <div className="aca-watermark-overlay" aria-hidden="true">
                     <span>
-                      <ShieldCheck size={11} /> Gesicomm Academia • {usuario?.email || usuario?.nombre || 'Alumno'} • ID: #{usuario?.id || 'PRO'}
+                      <ShieldCheck size={11} /> Gesicom Academia • {usuario?.email || usuario?.nombre || 'Alumno'} • ID: #{usuario?.id || 'PRO'}
                     </span>
                   </div>
 

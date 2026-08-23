@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 export const SITIO = 'https://gesicomm.com';
-export const NOMBRE_SITIO = 'Gesicomm';
+export const NOMBRE_SITIO = 'Gesicom';
 export const IMAGEN_OG = `${SITIO}/og-image.png`;
 
 /**

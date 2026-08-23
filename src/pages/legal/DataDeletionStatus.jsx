@@ -103,7 +103,7 @@ export default function DataDeletionStatus() {
     <>
       <Seo
         titulo="Estado de la solicitud de eliminación"
-        descripcion="Consultá el estado de tu solicitud de eliminación de datos personales en Gesicomm usando el código de seguimiento."
+        descripcion="Consultá el estado de tu solicitud de eliminación de datos personales en Gesicom usando el código de seguimiento."
         ruta="/data-deletion/estado"
         noIndex
       />

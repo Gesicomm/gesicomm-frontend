@@ -252,7 +252,7 @@ export default function EstadisticasPanel({ landingId }) {
       </div>
 
       <p className="lb-hint">
-        No incluye ventas ni pedidos: Gesicomm todavía no tiene un módulo de pedidos, así que "más vendido" no es un dato real que se pueda mostrar todavía.
+        No incluye ventas ni pedidos: Gesicom todavía no tiene un módulo de pedidos, así que "más vendido" no es un dato real que se pueda mostrar todavía.
       </p>
     </div>
   );

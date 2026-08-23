@@ -11,11 +11,11 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm («Gesicomm», «nosotros») opera la plataforma de gestión de eCommerce disponible
+          Gesicom («Gesicom», «nosotros») opera la plataforma de gestión de eCommerce disponible
           en <strong>https://gesicomm.com</strong> y su API en <strong>https://api.gesicomm.com</strong>.
         </p>
         <p>
-          Para los datos de las personas que contratan y usan Gesicomm —titulares de cuenta,
+          Para los datos de las personas que contratan y usan Gesicom —titulares de cuenta,
           administradores y empleados de una cuenta— actuamos como <strong>responsable del
           tratamiento</strong>: decidimos qué datos recogemos y para qué.
         </p>
@@ -42,20 +42,20 @@ const SECCIONES = [
         <p>Esta política se aplica a:</p>
         <ul>
           <li>El sitio web público gesicomm.com y todas sus páginas.</li>
-          <li>La aplicación web de Gesicomm y el panel de administración.</li>
-          <li>La API de Gesicomm (api.gesicomm.com).</li>
+          <li>La aplicación web de Gesicom y el panel de administración.</li>
+          <li>La API de Gesicom (api.gesicomm.com).</li>
           <li>
             La integración con Meta que decidas conectar, para el seguimiento de tus campañas de
             Facebook Ads. Es la única integración con acceso a datos que existe hoy.
           </li>
           <li>
-            Las tiendas y páginas públicas que publicás con Gesicomm bajo un subdominio de
+            Las tiendas y páginas públicas que publicás con Gesicom bajo un subdominio de
             gesicomm.com o un dominio propio.
           </li>
         </ul>
         <p>
           <strong>No se aplica</strong> a los sitios y servicios de terceros a los que puedas
-          llegar desde Gesicomm. Cuando conectás una plataforma externa, el tratamiento que esa
+          llegar desde Gesicom. Cuando conectás una plataforma externa, el tratamiento que esa
           plataforma haga de tus datos se rige por su propia política de privacidad, no por esta.
         </p>
       </>
@@ -154,13 +154,13 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          <strong>Meta es hoy la única plataforma externa que Gesicomm integra.</strong> No hay
+          <strong>Meta es hoy la única plataforma externa que Gesicom integra.</strong> No hay
           integración con Instagram, con WhatsApp Business Platform, con Shopify ni con ninguna
           otra plataforma. Si alguna se agrega en el futuro, esta política se actualiza y se
           notifica <strong>antes</strong> de activarla.
         </p>
         <p>
-          La conexión es opcional: Gesicomm solo accede a Meta si vos la habilitás explícitamente
+          La conexión es opcional: Gesicom solo accede a Meta si vos la habilitás explícitamente
           desde Configuración, y podés revocarla en cualquier momento.
         </p>
 
@@ -169,7 +169,7 @@ const SECCIONES = [
             La conexión se establece mediante el protocolo <strong>OAuth 2.0</strong>. Eso
             significa que <strong>nunca vemos ni recibimos tu contraseña</strong> de Facebook:
             recibimos un token de acceso emitido por Meta, limitado a los permisos concedidos y
-            revocable por vos en cualquier momento, tanto desde Gesicomm como desde tu propia
+            revocable por vos en cualquier momento, tanto desde Gesicom como desde tu propia
             configuración de Facebook.
           </p>
           <p>
@@ -180,7 +180,7 @@ const SECCIONES = [
 
         <Subseccion titulo="4.2 Los dos únicos permisos que pedimos">
           <p>
-            Gesicomm solicita exactamente dos permisos de la plataforma de Meta, y ninguno más:
+            Gesicom solicita exactamente dos permisos de la plataforma de Meta, y ninguno más:
           </p>
 
           <TablaLegal
@@ -219,9 +219,9 @@ const SECCIONES = [
 
         <Subseccion titulo="4.4 No usamos Facebook Login para autenticarte">
           <p>
-            El acceso a Gesicomm se hace con <strong>correo electrónico y contraseña propios</strong>,
+            El acceso a Gesicom se hace con <strong>correo electrónico y contraseña propios</strong>,
             gestionados por nosotros. Conectar Meta es una acción posterior e independiente, que
-            solo vincula tus cuentas publicitarias. Desconectar Meta no te deja fuera de Gesicomm.
+            solo vincula tus cuentas publicitarias. Desconectar Meta no te deja fuera de Gesicom.
           </p>
         </Subseccion>
 
@@ -229,7 +229,7 @@ const SECCIONES = [
           <p>
             Aparte de la conexión anterior, podés cargar el identificador de{' '}
             <strong>tu propio Meta Pixel</strong> para que se dispare en la vitrina pública de tu
-            tienda. En ese caso Gesicomm solo almacena ese identificador: los eventos de navegación
+            tienda. En ese caso Gesicom solo almacena ese identificador: los eventos de navegación
             los recibe Meta directamente desde el navegador de tu visitante, y su tratamiento se
             rige por la política de datos de Meta. Sos vos, como titular de esa vitrina, quien
             responde por informarlo y por recabar el consentimiento de tus visitantes. Está
@@ -244,7 +244,7 @@ const SECCIONES = [
             visitante y la conversación ocurre <strong>directamente entre esa persona y vos</strong>.
           </p>
           <p>
-            Gesicomm <strong>no usa la API de WhatsApp Business</strong>, no envía mensajes, no
+            Gesicom <strong>no usa la API de WhatsApp Business</strong>, no envía mensajes, no
             recibe mensajes y <strong>no almacena ninguna conversación ni número de teléfono de
             tus compradores por esa vía</strong>. El único número de WhatsApp que guardamos es{' '}
             <strong>el tuyo</strong>, el que configurás como contacto de tu tienda para que el
@@ -260,7 +260,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Además de los datos de cuenta, Gesicomm procesa la información operativa de tu negocio.
+          Además de los datos de cuenta, Gesicom procesa la información operativa de tu negocio.
           Esta tabla resume qué se guarda en cada categoría y quién es el titular de esos datos.
         </p>
 
@@ -308,7 +308,7 @@ const SECCIONES = [
               'Responsable / Encargado',
             ],
           ]}
-          notaAlPie="Los datos de pago de tu suscripción (número de tarjeta, CVV) son procesados directamente por nuestro proveedor de pagos. Gesicomm nunca almacena esos números."
+          notaAlPie="Los datos de pago de tu suscripción (número de tarjeta, CVV) son procesados directamente por nuestro proveedor de pagos. Gesicom nunca almacena esos números."
         />
       </>
     ),
@@ -438,7 +438,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm cumple dos roles distintos según de quién sean los datos, y de eso depende a
+          Gesicom cumple dos roles distintos según de quién sean los datos, y de eso depende a
           quién hay que dirigirse para ejercer derechos.
         </p>
         <ul>
@@ -453,8 +453,8 @@ const SECCIONES = [
             nosotros seguimos tus instrucciones.
           </li>
         </ul>
-        <Alert tono="info" titulo="Si sos comprador de una tienda que usa Gesicomm" className="mt-5">
-          Tus datos están en Gesicomm porque el comercio donde compraste usa nuestra plataforma.
+        <Alert tono="info" titulo="Si sos comprador de una tienda que usa Gesicom" className="mt-5">
+          Tus datos están en Gesicom porque el comercio donde compraste usa nuestra plataforma.
           Para ejercer tus derechos, dirigite primero a ese comercio, que es el responsable. Si no
           obtenés respuesta, escribinos a <Correo direccion="contacto@gesicomm.com" /> y te ayudamos
           a canalizar el pedido con el comercio correspondiente.
@@ -504,7 +504,7 @@ const SECCIONES = [
             [
               'Proveedor de procesamiento de pagos',
               'Cobro de la suscripción y emisión de comprobantes.',
-              'Datos de facturación. Los datos de la tarjeta los procesa el proveedor, no Gesicomm.',
+              'Datos de facturación. Los datos de la tarjeta los procesa el proveedor, no Gesicom.',
             ],
             [
               'Herramientas de analítica',
@@ -531,7 +531,7 @@ const SECCIONES = [
           prohíben usar los datos para fines propios.
         </p>
         <p>
-          Si Gesicomm se viera involucrada en una fusión, adquisición o venta de activos, los datos
+          Si Gesicom se viera involucrada en una fusión, adquisición o venta de activos, los datos
           podrían transferirse como parte de la operación. En ese caso lo notificaríamos con
           antelación y la política aplicable seguiría siendo esta hasta que se comunique un cambio.
         </p>
@@ -544,7 +544,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm opera con proveedores de infraestructura que pueden estar ubicados fuera de tu
+          Gesicom opera con proveedores de infraestructura que pueden estar ubicados fuera de tu
           país de residencia, y Meta —si conectás la integración— procesa datos en Estados Unidos
           y en otras jurisdicciones.
         </p>
@@ -747,7 +747,7 @@ const SECCIONES = [
           </li>
           <li>
             <strong>No ser objeto de decisiones automatizadas</strong> con efectos jurídicos o
-            significativos. Gesicomm no toma decisiones de ese tipo sobre personas.
+            significativos. Gesicom no toma decisiones de ese tipo sobre personas.
           </li>
           <li>
             <strong>Reclamar ante una autoridad de control</strong> si considerás que tratamos tus
@@ -806,7 +806,7 @@ const SECCIONES = [
         </p>
         <ul>
           <li>
-            <strong>Responsable:</strong> Gesicomm. Contacto en materia de protección de datos:{' '}
+            <strong>Responsable:</strong> Gesicom. Contacto en materia de protección de datos:{' '}
             <Correo direccion="contacto@gesicomm.com" />.
           </li>
           <li>
@@ -853,7 +853,7 @@ const SECCIONES = [
           aproximada derivada de la IP.
         </p>
         <p>
-          <strong>Venta y compartición.</strong> Gesicomm{' '}
+          <strong>Venta y compartición.</strong> Gesicom{' '}
           <strong>no vende información personal</strong> ni la <strong>comparte</strong> para
           publicidad conductual entre contextos, según la definición de esos términos en la CCPA.
           Tampoco lo hemos hecho en los doce meses anteriores. No vendemos ni compartimos
@@ -894,7 +894,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm opera principalmente en Latinoamérica y ajusta su tratamiento a la normativa
+          Gesicom opera principalmente en Latinoamérica y ajusta su tratamiento a la normativa
           local aplicable en cada país.
         </p>
         <ul>
@@ -950,7 +950,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm es una herramienta profesional dirigida exclusivamente a personas mayores de
+          Gesicom es una herramienta profesional dirigida exclusivamente a personas mayores de
           edad que administran un negocio. No está dirigida a menores de 16 años y no recopilamos
           conscientemente datos de menores como usuarios de la plataforma.
         </p>
@@ -1087,8 +1087,8 @@ export default function Privacy() {
   return (
     <LegalDoc
       titulo="Política de Privacidad"
-      descripcion="Cómo Gesicomm recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta al conectar Facebook Ads, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
-      resumen="Esta política explica qué datos trata Gesicomm, por qué, durante cuánto tiempo y qué control tenés sobre ellos. Está escrita para que se entienda sin ser abogado, sin perder precisión jurídica."
+      descripcion="Cómo Gesicom recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta al conectar Facebook Ads, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
+      resumen="Esta política explica qué datos trata Gesicom, por qué, durante cuánto tiempo y qué control tenés sobre ellos. Está escrita para que se entienda sin ser abogado, sin perder precisión jurídica."
       ruta="/privacy"
       actualizado="2026-08-03"
       vigenteDesde="2026-08-03"

@@ -12,7 +12,7 @@ const SECCIONES = [
       <>
         <p>
           Estos Términos y Condiciones («Términos») constituyen un contrato vinculante entre
-          Gesicomm y la persona física o jurídica que contrata o utiliza el servicio («vos», «el
+          Gesicom y la persona física o jurídica que contrata o utiliza el servicio («vos», «el
           Cliente»).
         </p>
         <p>
@@ -28,7 +28,7 @@ const SECCIONES = [
         </p>
         <p>
           <strong>Capacidad legal.</strong> Debés ser mayor de edad y tener capacidad legal para
-          contratar en tu jurisdicción. Gesicomm no está dirigida a menores de edad.
+          contratar en tu jurisdicción. Gesicom no está dirigida a menores de edad.
         </p>
       </>
     ),
@@ -40,7 +40,7 @@ const SECCIONES = [
       <>
         <ul>
           <li>
-            <strong>Servicio:</strong> la plataforma Gesicomm, incluyendo el sitio web, la
+            <strong>Servicio:</strong> la plataforma Gesicom, incluyendo el sitio web, la
             aplicación web, el panel de administración, la API y todas sus funcionalidades.
           </li>
           <li>
@@ -74,18 +74,18 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm es una plataforma de software como servicio (SaaS) para administrar la operación
+          Gesicom es una plataforma de software como servicio (SaaS) para administrar la operación
           de un negocio de comercio electrónico. Según el plan contratado, permite gestionar
           catálogo y productos, pedidos, inventario, clientes y CRM, logística y envíos, campañas
           de marketing, métricas y reportes, usuarios y permisos, y múltiples tiendas y sucursales.
         </p>
         <p>
           El Servicio se presta en modalidad de acceso remoto: no se entrega ni se licencia una
-          copia del software. Gesicomm conserva el control sobre la infraestructura y sobre las
+          copia del software. Gesicom conserva el control sobre la infraestructura y sobre las
           decisiones de arquitectura, versiones y despliegue.
         </p>
         <p>
-          Gesicomm es una <strong>herramienta de gestión</strong>. No es un procesador de pagos, no
+          Gesicom es una <strong>herramienta de gestión</strong>. No es un procesador de pagos, no
           es un transportista, no es un asesor fiscal ni contable, y no sustituye tus obligaciones
           legales como comerciante. Las decisiones comerciales, fiscales y logísticas siguen siendo
           tuyas.
@@ -101,7 +101,7 @@ const SECCIONES = [
         <Subseccion titulo="4.1 Datos de registro">
           <p>
             Te comprometés a proporcionar información veraz, exacta y actualizada al registrarte, y
-            a mantenerla actualizada. Gesicomm puede suspender o cancelar una cuenta con
+            a mantenerla actualizada. Gesicom puede suspender o cancelar una cuenta con
             información falsa o desactualizada.
           </p>
         </Subseccion>
@@ -120,7 +120,7 @@ const SECCIONES = [
             </li>
           </ul>
           <p>
-            Gesicomm no es responsable por pérdidas derivadas del uso no autorizado de credenciales
+            Gesicom no es responsable por pérdidas derivadas del uso no autorizado de credenciales
             cuando ese uso no sea consecuencia de un incumplimiento nuestro.
           </p>
         </Subseccion>
@@ -140,14 +140,14 @@ const SECCIONES = [
     titulo: 'Responsabilidades del Cliente',
     contenido: (
       <>
-        <p>Al usar Gesicomm, te comprometés a:</p>
+        <p>Al usar Gesicom, te comprometés a:</p>
         <ul>
           <li>
             Cumplir toda la normativa aplicable a tu actividad: comercial, fiscal, aduanera, de
             defensa del consumidor, de comercio electrónico y de protección de datos.
           </li>
           <li>
-            Tener <strong>base legal suficiente</strong> para cargar en Gesicomm los datos
+            Tener <strong>base legal suficiente</strong> para cargar en Gesicom los datos
             personales de tus clientes, y haberles informado adecuadamente sobre el tratamiento.
           </li>
           <li>
@@ -172,7 +172,7 @@ const SECCIONES = [
     titulo: 'Uso aceptable y usos prohibidos',
     contenido: (
       <>
-        <p>Está expresamente prohibido usar Gesicomm para:</p>
+        <p>Está expresamente prohibido usar Gesicom para:</p>
 
         <Subseccion titulo="6.1 Actividades ilícitas o lesivas">
           <ul>
@@ -202,7 +202,7 @@ const SECCIONES = [
           </ul>
           <p>
             El incumplimiento de estas reglas puede acarrear, además de la suspensión de tu cuenta
-            en Gesicomm, el bloqueo de tu número por parte de Meta, sobre el cual no tenemos
+            en Gesicom, el bloqueo de tu número por parte de Meta, sobre el cual no tenemos
             control.
           </p>
         </Subseccion>
@@ -253,7 +253,7 @@ const SECCIONES = [
         </Subseccion>
 
         <Alert tono="advertencia" titulo="Consecuencias" className="mt-6">
-          El uso indebido faculta a Gesicomm a suspender el acceso de inmediato, sin aviso previo y
+          El uso indebido faculta a Gesicom a suspender el acceso de inmediato, sin aviso previo y
           sin derecho a reembolso, además de perseguir las acciones legales que correspondan.
         </Alert>
       </>
@@ -264,11 +264,11 @@ const SECCIONES = [
     titulo: 'Propiedad intelectual',
     contenido: (
       <>
-        <Subseccion titulo="7.1 Propiedad de Gesicomm">
+        <Subseccion titulo="7.1 Propiedad de Gesicom">
           <p>
             El Servicio, su código fuente, su arquitectura, su interfaz, su diseño, sus bases de
-            datos, su documentación, la marca «Gesicomm», su logotipo y todos los signos
-            distintivos asociados son propiedad exclusiva de Gesicomm o de sus licenciantes, y
+            datos, su documentación, la marca «Gesicom», su logotipo y todos los signos
+            distintivos asociados son propiedad exclusiva de Gesicom o de sus licenciantes, y
             están protegidos por la normativa de propiedad intelectual e industrial.
           </p>
           <p>
@@ -279,7 +279,7 @@ const SECCIONES = [
 
         <Subseccion titulo="7.2 Licencia de uso que te otorgamos">
           <p>
-            Mientras tu suscripción esté vigente y al día, Gesicomm te concede una licencia{' '}
+            Mientras tu suscripción esté vigente y al día, Gesicom te concede una licencia{' '}
             <strong>limitada, no exclusiva, intransferible, no sublicenciable y revocable</strong>{' '}
             para acceder y usar el Servicio con fines internos de tu negocio, conforme al plan
             contratado y a estos Términos.
@@ -288,7 +288,7 @@ const SECCIONES = [
 
         <Subseccion titulo="7.3 Tu contenido sigue siendo tuyo">
           <p>
-            El Contenido del Cliente es y sigue siendo de tu propiedad. Gesicomm no reclama ningún
+            El Contenido del Cliente es y sigue siendo de tu propiedad. Gesicom no reclama ningún
             derecho de propiedad sobre él.
           </p>
           <p>
@@ -316,7 +316,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm permite conectar plataformas de terceros. Estas integraciones son opcionales y
+          Gesicom permite conectar plataformas de terceros. Estas integraciones son opcionales y
           se activan únicamente con tu autorización expresa mediante OAuth.
         </p>
 
@@ -327,13 +327,13 @@ const SECCIONES = [
               esa plataforma, que son independientes de estos Términos.
             </li>
             <li>
-              Gesicomm no controla las plataformas de terceros y no responde por su disponibilidad,
+              Gesicom no controla las plataformas de terceros y no responde por su disponibilidad,
               por cambios en sus APIs, por sus decisiones de suspensión ni por sus políticas.
             </li>
             <li>
               Si una plataforma modifica o discontinúa su API, la funcionalidad correspondiente
               puede verse afectada o discontinuarse, sin que ello genere responsabilidad para
-              Gesicomm.
+              Gesicom.
             </li>
             <li>
               Podés revocar cualquier integración en cualquier momento desde Configuración.
@@ -354,12 +354,12 @@ const SECCIONES = [
               publicitarias de Meta.
             </li>
             <li>
-              Gesicomm no responde por el rechazo de anuncios, la inhabilitación de cuentas
+              Gesicom no responde por el rechazo de anuncios, la inhabilitación de cuentas
               publicitarias, la restricción de páginas ni ninguna otra medida que Meta adopte sobre
               tus activos.
             </li>
             <li>
-              El gasto publicitario se factura directamente entre vos y Meta. Gesicomm no
+              El gasto publicitario se factura directamente entre vos y Meta. Gesicom no
               intermedia en ese pago ni percibe comisión sobre él, salvo pacto expreso distinto.
             </li>
           </ul>
@@ -367,12 +367,12 @@ const SECCIONES = [
 
         <Subseccion titulo="8.3 WhatsApp: enlace, no integración">
           <p>
-            Gesicomm <strong>no usa la API de WhatsApp Business</strong>. El botón de tu vitrina
+            Gesicom <strong>no usa la API de WhatsApp Business</strong>. El botón de tu vitrina
             genera un enlace <code>wa.me</code> que abre la aplicación en el dispositivo de quien
             te consulta, y la conversación transcurre directamente entre esa persona y vos.
           </p>
           <p>
-            En consecuencia, Gesicomm no envía ni recibe mensajes, no accede a su contenido y no
+            En consecuencia, Gesicom no envía ni recibe mensajes, no accede a su contenido y no
             responde por lo que ocurra en esas conversaciones. El cumplimiento de las políticas de
             WhatsApp respecto del número que publicás, y de la normativa de protección de datos
             aplicable a esos intercambios, corresponde exclusivamente a vos.
@@ -406,7 +406,7 @@ const SECCIONES = [
               canceles antes del vencimiento del período en curso.
             </li>
             <li>
-              Autorizás a Gesicomm y a su proveedor de pagos a debitar el importe correspondiente en
+              Autorizás a Gesicom y a su proveedor de pagos a debitar el importe correspondiente en
               cada renovación, con el medio de pago registrado.
             </li>
             <li>
@@ -417,7 +417,7 @@ const SECCIONES = [
 
         <Subseccion titulo="9.3 Cambios de precio">
           <p>
-            Gesicomm puede modificar sus precios notificándolo con al menos{' '}
+            Gesicom puede modificar sus precios notificándolo con al menos{' '}
             <strong>30 días de antelación</strong> a la fecha de renovación. El precio nuevo rige a
             partir del período siguiente. Si no estás de acuerdo, podés cancelar antes de esa fecha
             sin penalidad.
@@ -470,14 +470,14 @@ const SECCIONES = [
           </p>
           <ul>
             <li>
-              Gesicomm discontinúa el Servicio o una funcionalidad esencial durante un período ya
+              Gesicom discontinúa el Servicio o una funcionalidad esencial durante un período ya
               pagado.
             </li>
             <li>
-              Se produjo un error de facturación imputable a Gesicomm, como un cobro duplicado.
+              Se produjo un error de facturación imputable a Gesicom, como un cobro duplicado.
             </li>
             <li>
-              Una indisponibilidad prolongada e imputable a Gesicomm impidió materialmente el uso
+              Una indisponibilidad prolongada e imputable a Gesicom impidió materialmente el uso
               del Servicio.
             </li>
             <li>
@@ -499,7 +499,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm hace esfuerzos comercialmente razonables para mantener el Servicio disponible de
+          Gesicom hace esfuerzos comercialmente razonables para mantener el Servicio disponible de
           forma continua, pero no garantiza una disponibilidad ininterrumpida ni libre de errores,
           salvo que se haya pactado un Acuerdo de Nivel de Servicio (SLA) por escrito.
         </p>
@@ -519,7 +519,7 @@ const SECCIONES = [
           </li>
         </ul>
         <p>
-          No se consideran indisponibilidad imputable a Gesicomm las interrupciones causadas por
+          No se consideran indisponibilidad imputable a Gesicom las interrupciones causadas por
           fallas de plataformas de terceros, de tu conexión o equipos, por eventos de fuerza mayor,
           o por un uso del Servicio contrario a estos Términos.
         </p>
@@ -532,7 +532,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm puede suspender total o parcialmente el acceso, de forma inmediata, cuando:
+          Gesicom puede suspender total o parcialmente el acceso, de forma inmediata, cuando:
         </p>
         <ul>
           <li>Se incumplan estos Términos, en particular la sección de usos prohibidos.</li>
@@ -559,7 +559,7 @@ const SECCIONES = [
           la suscripción, con efecto al final del período facturado.
         </p>
         <p>
-          <strong>Por parte de Gesicomm:</strong> podemos terminar el contrato con{' '}
+          <strong>Por parte de Gesicom:</strong> podemos terminar el contrato con{' '}
           <strong>30 días de preaviso</strong> sin necesidad de invocar causa, o de forma inmediata
           ante un incumplimiento grave, actividad ilícita o impago sostenido.
         </p>
@@ -589,8 +589,8 @@ const SECCIONES = [
           <Link to="/privacy">Política de Privacidad</Link>, que forma parte de estos Términos.
         </p>
         <p>
-          Respecto de los datos de tus clientes, actuás como <strong>responsable</strong> y Gesicomm
-          como <strong>encargado del tratamiento</strong>. Gesicomm tratará esos datos únicamente
+          Respecto de los datos de tus clientes, actuás como <strong>responsable</strong> y Gesicom
+          como <strong>encargado del tratamiento</strong>. Gesicom tratará esos datos únicamente
           conforme a tus instrucciones documentadas y a lo previsto en estos Términos, aplicará
           medidas de seguridad apropiadas, impondrá deber de confidencialidad a su personal, te
           asistirá en la atención de los derechos de los titulares y, al terminar el contrato,
@@ -637,7 +637,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm garantiza que prestará el Servicio con la diligencia profesional razonable y
+          Gesicom garantiza que prestará el Servicio con la diligencia profesional razonable y
           conforme a la descripción de su plan.
         </p>
         <p>
@@ -646,7 +646,7 @@ const SECCIONES = [
           otro tipo, expresas o implícitas, incluidas —sin limitación— las garantías implícitas de
           comerciabilidad, idoneidad para un fin determinado y no infracción.
         </p>
-        <p>En particular, Gesicomm no garantiza que:</p>
+        <p>En particular, Gesicom no garantiza que:</p>
         <ul>
           <li>El Servicio funcione de forma ininterrumpida o libre de errores.</li>
           <li>Los resultados obtenidos satisfagan tus expectativas comerciales.</li>
@@ -670,26 +670,26 @@ const SECCIONES = [
         <p>En la máxima medida permitida por la ley aplicable:</p>
         <ul>
           <li>
-            Gesicomm <strong>no responde</strong> por daños indirectos, incidentales, especiales,
+            Gesicom <strong>no responde</strong> por daños indirectos, incidentales, especiales,
             punitivos o consecuenciales, ni por lucro cesante, pérdida de ingresos, de clientela,
             de oportunidades comerciales o de datos, aun cuando se hubiera advertido de su
             posibilidad.
           </li>
           <li>
-            La <strong>responsabilidad total y acumulada</strong> de Gesicomm por cualquier
+            La <strong>responsabilidad total y acumulada</strong> de Gesicom por cualquier
             reclamación derivada de estos Términos o del uso del Servicio no excederá, en conjunto,
             el <strong>importe efectivamente pagado por el Cliente en los doce meses anteriores</strong>{' '}
             al hecho que motiva la reclamación.
           </li>
           <li>
-            Gesicomm no responde por hechos de plataformas de terceros, incluyendo suspensiones o
+            Gesicom no responde por hechos de plataformas de terceros, incluyendo suspensiones o
             inhabilitaciones de cuentas publicitarias, cambios en la API de Meta o pérdida de datos
             en el origen.
           </li>
         </ul>
         <p>
           Estas limitaciones <strong>no se aplican</strong> a los daños causados por dolo o culpa
-          grave de Gesicomm, a los daños a la vida o la integridad física de las personas, ni a
+          grave de Gesicom, a los daños a la vida o la integridad física de las personas, ni a
           ninguna responsabilidad que la ley declare irrenunciable.
         </p>
         <p>
@@ -705,7 +705,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Te obligás a mantener indemne a Gesicomm, sus socios, administradores y personal frente a
+          Te obligás a mantener indemne a Gesicom, sus socios, administradores y personal frente a
           toda reclamación, demanda, sanción, pérdida, daño, costo o gasto —incluidos honorarios
           razonables de abogados— que derive de:
         </p>
@@ -726,7 +726,7 @@ const SECCIONES = [
           </li>
         </ul>
         <p>
-          Gesicomm te notificará la reclamación sin demora injustificada y podrá participar en su
+          Gesicom te notificará la reclamación sin demora injustificada y podrá participar en su
           defensa con letrado propio y a su costa.
         </p>
       </>
@@ -752,7 +752,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          <strong>Del Servicio.</strong> Gesicomm puede modificar, agregar o discontinuar
+          <strong>Del Servicio.</strong> Gesicom puede modificar, agregar o discontinuar
           funcionalidades para mejorar el producto. Si se discontinúa una funcionalidad esencial
           del plan contratado, se avisa con al menos 60 días de antelación y podés cancelar sin
           penalidad, con reembolso proporcional del período no utilizado.
@@ -773,7 +773,7 @@ const SECCIONES = [
     contenido: (
       <p>
         No podés ceder ni transferir este contrato, total o parcialmente, sin el consentimiento
-        previo y por escrito de Gesicomm. Gesicomm puede cederlo en el marco de una reorganización
+        previo y por escrito de Gesicom. Gesicom puede cederlo en el marco de una reorganización
         societaria, fusión, adquisición o venta de activos, notificándolo con antelación razonable
         y sin que ello altere tus derechos bajo estos Términos.
       </p>
@@ -796,7 +796,7 @@ const SECCIONES = [
           corresponderles.
         </p>
         <p>
-          <strong>Excepción para consumidores.</strong> Si usás Gesicomm como consumidor y la
+          <strong>Excepción para consumidores.</strong> Si usás Gesicom como consumidor y la
           normativa de tu país de residencia te reconoce el derecho a demandar ante los tribunales
           de tu domicilio, esa norma prevalece sobre esta cláusula.
         </p>
@@ -862,7 +862,7 @@ const SECCIONES = [
             empresa conjunta, relación laboral ni de agencia entre las partes.
           </li>
           <li>
-            <strong>Notificaciones.</strong> Las notificaciones a Gesicomm se envían a{' '}
+            <strong>Notificaciones.</strong> Las notificaciones a Gesicom se envían a{' '}
             <Correo direccion="contacto@gesicomm.com" />. Las dirigidas al Cliente se envían a la
             dirección de correo registrada en la Cuenta, y se tienen por recibidas al día hábil
             siguiente de su envío.
@@ -904,8 +904,8 @@ export default function Terms() {
   return (
     <LegalDoc
       titulo="Términos y Condiciones"
-      descripcion="Condiciones de uso del servicio Gesicomm: registro y cuenta, responsabilidades, propiedad intelectual, integración con Meta para Facebook Ads, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
-      resumen="Estas condiciones regulan la relación entre Gesicomm y quienes usan la plataforma. Definen qué podés hacer, qué nos comprometemos a hacer y qué pasa cuando algo sale mal."
+      descripcion="Condiciones de uso del servicio Gesicom: registro y cuenta, responsabilidades, propiedad intelectual, integración con Meta para Facebook Ads, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
+      resumen="Estas condiciones regulan la relación entre Gesicom y quienes usan la plataforma. Definen qué podés hacer, qué nos comprometemos a hacer y qué pasa cuando algo sale mal."
       ruta="/terms"
       actualizado="2026-08-03"
       vigenteDesde="2026-08-03"

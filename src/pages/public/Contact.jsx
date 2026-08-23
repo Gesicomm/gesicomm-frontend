@@ -107,7 +107,7 @@ export default function Contact() {
         '@type': 'ContactPage',
         '@id': `${SITIO}/contact`,
         url: `${SITIO}/contact`,
-        name: 'Contacto · Gesicomm',
+        name: 'Contacto · Gesicom',
         inLanguage: 'es',
       },
     ],
@@ -117,7 +117,7 @@ export default function Contact() {
     <>
       <Seo
         titulo="Contacto"
-        descripcion="Contactá con Gesicomm: soporte del producto, consultas comerciales, privacidad y ejercicio de derechos sobre datos personales, cuestiones legales y reporte de vulnerabilidades de seguridad."
+        descripcion="Contactá con Gesicom: soporte del producto, consultas comerciales, privacidad y ejercicio de derechos sobre datos personales, cuestiones legales y reporte de vulnerabilidades de seguridad."
         ruta="/contact"
         schema={schema}
       />

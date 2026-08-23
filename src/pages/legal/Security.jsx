@@ -51,7 +51,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm procesa información sensible de negocios reales: catálogos con costos y
+          Gesicom procesa información sensible de negocios reales: catálogos con costos y
           márgenes, pedidos, datos de contacto de compradores y conversaciones. La seguridad no es
           una capa que se agrega al final, sino una restricción de diseño desde el modelo de datos.
         </p>
@@ -83,7 +83,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Todo el tráfico entre tu navegador y Gesicomm viaja cifrado. No existe forma de acceder
+          Todo el tráfico entre tu navegador y Gesicom viaja cifrado. No existe forma de acceder
           al servicio por HTTP sin cifrar: las conexiones no cifradas se redirigen a HTTPS.
         </p>
         <ul>
@@ -105,7 +105,7 @@ const SECCIONES = [
           </li>
         </ul>
         <p>
-          Las llamadas a la Graph API de Meta, la única API externa que Gesicomm consume, también
+          Las llamadas a la Graph API de Meta, la única API externa que Gesicom consume, también
           se realizan exclusivamente sobre HTTPS.
         </p>
       </>
@@ -193,7 +193,7 @@ const SECCIONES = [
 
         <Subseccion titulo="4.1 OAuth 2.0 para integraciones">
           <p>
-            La conexión con Meta usa OAuth 2.0. Gesicomm <strong>nunca recibe ni almacena tu
+            La conexión con Meta usa OAuth 2.0. Gesicom <strong>nunca recibe ni almacena tu
             contraseña</strong> de Facebook, y solo solicita los permisos{' '}
             <code>ads_management</code> y <code>business_management</code>.
           </p>
@@ -221,7 +221,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm implementa <strong>control de acceso basado en roles (RBAC)</strong> con
+          Gesicom implementa <strong>control de acceso basado en roles (RBAC)</strong> con
           permisos granulares definidos en base de datos, no fijados en el código.
         </p>
         <ul>
@@ -256,7 +256,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm es una plataforma multiinquilino: varias cuentas comparten la misma
+          Gesicom es una plataforma multiinquilino: varias cuentas comparten la misma
           infraestructura. El aislamiento entre ellas está garantizado{' '}
           <strong>a nivel del modelo de datos</strong>, no por un filtro en la interfaz.
         </p>
@@ -340,7 +340,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm mantiene dos tipos de registro: los técnicos, de cada solicitud recibida, y los
+          Gesicom mantiene dos tipos de registro: los técnicos, de cada solicitud recibida, y los
           de <strong>auditoría</strong>, de las acciones con relevancia de seguridad.
         </p>
         <p>Se registran, entre otros:</p>
@@ -491,7 +491,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Si encontraste una vulnerabilidad en Gesicomm, queremos saberlo. Escribinos a{' '}
+          Si encontraste una vulnerabilidad en Gesicom, queremos saberlo. Escribinos a{' '}
           <Correo direccion="contacto@gesicomm.com" /> con:
         </p>
         <ul>
@@ -579,7 +579,7 @@ export default function Security() {
   return (
     <LegalDoc
       titulo="Seguridad de la Información"
-      descripcion="Cómo protege Gesicomm los datos: cifrado TLS en tránsito y AES-256-GCM en reposo, contraseñas con bcrypt, autenticación por cookies HttpOnly, control de acceso por roles, aislamiento entre cuentas, auditoría, copias de seguridad y respuesta a incidentes."
+      descripcion="Cómo protege Gesicom los datos: cifrado TLS en tránsito y AES-256-GCM en reposo, contraseñas con bcrypt, autenticación por cookies HttpOnly, control de acceso por roles, aislamiento entre cuentas, auditoría, copias de seguridad y respuesta a incidentes."
       resumen="Las medidas técnicas y organizativas concretas con las que protegemos tu información y la de tus clientes. Sin generalidades: qué se cifra, con qué, quién puede acceder y qué pasa si algo falla."
       ruta="/security"
       actualizado="2026-08-03"

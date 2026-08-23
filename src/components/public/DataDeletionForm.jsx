@@ -180,7 +180,7 @@ export default function DataDeletionForm() {
             <>
               Entiendo que la eliminación es <strong className="text-fg">permanente e
               irreversible</strong>, que perderé el acceso a mi cuenta y a todo su contenido
-              —catálogo, pedidos, clientes e historial— y que Gesicomm podrá conservar cierta
+              —catálogo, pedidos, clientes e historial— y que Gesicom podrá conservar cierta
               información cuando una obligación legal lo exija, según se detalla en los{' '}
               <Link to="/privacy" className="text-primary underline underline-offset-4">
                 plazos de retención

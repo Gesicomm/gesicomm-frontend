@@ -43,7 +43,7 @@ const SECCIONES = [
     titulo: 'Nuestro enfoque',
     contenido: (
       <>
-        <Alert tono="exito" titulo="El sitio público de Gesicomm no te rastrea">
+        <Alert tono="exito" titulo="El sitio público de Gesicom no te rastrea">
           En gesicomm.com —esta web institucional, con la landing y todas las páginas legales— no
           usamos cookies de analítica, de publicidad ni de terceros. No hay Google Analytics, no
           hay píxel de Meta y no hay banner de consentimiento, porque no hay nada que consentir.
@@ -132,12 +132,12 @@ const SECCIONES = [
         <ul>
           <li>
             <strong>De sesión.</strong> Existen mientras la pestaña o el navegador estén abiertos y
-            se borran al cerrarlos. Gesicomm las usa para el token de acceso: si cerrás el
+            se borran al cerrarlos. Gesicom las usa para el token de acceso: si cerrás el
             navegador, la sesión activa se pierde.
           </li>
           <li>
             <strong>Persistentes.</strong> Sobreviven al cierre del navegador hasta su fecha de
-            expiración o hasta que las borres. Gesicomm usa una sola de este tipo entre las
+            expiración o hasta que las borres. Gesicom usa una sola de este tipo entre las
             necesarias —el token de renovación, con hasta 7 días— para no obligarte a escribir la
             contraseña en cada visita.
           </li>
@@ -190,7 +190,7 @@ const SECCIONES = [
           informado.
         </p>
         <p>
-          <strong>Gesicomm no muestra publicidad en su sitio institucional ni en su aplicación, y
+          <strong>Gesicom no muestra publicidad en su sitio institucional ni en su aplicación, y
           no instala cookies publicitarias propias.</strong>
         </p>
 
@@ -200,7 +200,7 @@ const SECCIONES = [
             un sitio web para atribuirlas a campañas publicitarias y construir públicos.
           </p>
           <p>
-            En Gesicomm el Meta Pixel es una <strong>funcionalidad para nuestros clientes</strong>:
+            En Gesicom el Meta Pixel es una <strong>funcionalidad para nuestros clientes</strong>:
             cada comerciante puede cargar su propio identificador de píxel para su tienda. Cuando
             lo hace:
           </p>
@@ -232,7 +232,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm permite a sus clientes publicar tiendas y páginas de producto bajo un subdominio
+          Gesicom permite a sus clientes publicar tiendas y páginas de producto bajo un subdominio
           de gesicomm.com o bajo un dominio propio. Esas páginas <strong>no</strong> son el sitio
           institucional y pueden tener un comportamiento distinto en materia de cookies.
         </p>
@@ -247,10 +247,10 @@ const SECCIONES = [
           Cuando un comerciante activa una herramienta de analítica o de publicidad en su tienda,
           es él quien decide la finalidad del tratamiento y, por lo tanto, es el responsable de
           informarlo en su propia política de privacidad y de obtener el consentimiento de sus
-          visitantes. Gesicomm provee la herramienta técnica; no determina esa finalidad.
+          visitantes. Gesicom provee la herramienta técnica; no determina esa finalidad.
         </Alert>
         <p className="mt-5">
-          Si sos visitante de una tienda hecha con Gesicomm y tenés dudas sobre sus cookies,
+          Si sos visitante de una tienda hecha con Gesicom y tenés dudas sobre sus cookies,
           dirigite al comerciante titular de esa tienda.
         </p>
       </>
@@ -327,7 +327,7 @@ const SECCIONES = [
           </li>
           <li>
             <strong>CCPA / CPRA de California</strong>: reconoce el derecho a excluirse de la venta
-            o compartición de información personal. Gesicomm no vende ni comparte información
+            o compartición de información personal. Gesicom no vende ni comparte información
             personal en ese sentido.
           </li>
           <li>
@@ -372,8 +372,8 @@ export default function Cookies() {
   return (
     <LegalDoc
       titulo="Política de Cookies"
-      descripcion="Qué cookies y tecnologías similares usa Gesicomm, cuáles son estrictamente necesarias, qué hacen Meta Pixel y Google Analytics en las tiendas de nuestros clientes, y cómo controlarlas o deshabilitarlas desde tu navegador."
-      resumen="El sitio público de Gesicomm no usa cookies de analítica ni de publicidad. Acá está el detalle de qué se guarda en tu navegador, por qué, cuánto dura y cómo controlarlo."
+      descripcion="Qué cookies y tecnologías similares usa Gesicom, cuáles son estrictamente necesarias, qué hacen Meta Pixel y Google Analytics en las tiendas de nuestros clientes, y cómo controlarlas o deshabilitarlas desde tu navegador."
+      resumen="El sitio público de Gesicom no usa cookies de analítica ni de publicidad. Acá está el detalle de qué se guarda en tu navegador, por qué, cuánto dura y cómo controlarlo."
       ruta="/cookies"
       actualizado="2026-08-03"
       vigenteDesde="2026-08-03"

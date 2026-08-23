@@ -11,7 +11,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm opera como plataforma SaaS que trata datos personales por cuenta propia y por
+          Gesicom opera como plataforma SaaS que trata datos personales por cuenta propia y por
           cuenta de sus clientes, y que se integra con plataformas de terceros sujetas a sus
           propias condiciones. Eso nos coloca bajo tres bloques normativos simultáneos:
         </p>
@@ -36,7 +36,7 @@ const SECCIONES = [
         </p>
 
         <Alert tono="info" titulo="Transparencia sobre certificaciones" className="mt-6">
-          Gesicomm alinea sus prácticas con los controles del marco ISO/IEC 27001 y con los
+          Gesicom alinea sus prácticas con los controles del marco ISO/IEC 27001 y con los
           criterios de SOC 2, pero <strong>no declara estar certificada</strong> en ninguno de
           ellos. Preferimos decirlo con claridad antes que insinuar una certificación que no
           tenemos. Si necesitás completar un cuestionario de seguridad de proveedores, escribinos a{' '}
@@ -53,7 +53,7 @@ const SECCIONES = [
       <>
         <p>
           El Reglamento (UE) 2016/679 se aplica al tratamiento de datos de personas en la Unión
-          Europea, con independencia de dónde esté establecido el responsable. Gesicomm lo toma
+          Europea, con independencia de dónde esté establecido el responsable. Gesicom lo toma
           como estándar de referencia global: aplicamos sus garantías a todos los usuarios, no solo
           a los europeos, porque mantener dos niveles de protección distintos sería peor producto y
           peor ingeniería.
@@ -107,7 +107,7 @@ const SECCIONES = [
 
         <Subseccion titulo="2.3 Encargado del tratamiento y DPA">
           <p>
-            Respecto de los datos de tus compradores, Gesicomm actúa como{' '}
+            Respecto de los datos de tus compradores, Gesicom actúa como{' '}
             <strong>encargado del tratamiento</strong>. Ofrecemos un Acuerdo de Tratamiento de
             Datos con las cláusulas exigidas por el artículo 28 del RGPD, que cubre el objeto y la
             duración del tratamiento, la naturaleza y finalidad, el tipo de datos y las categorías
@@ -150,7 +150,7 @@ const SECCIONES = [
         </p>
 
         <TablaLegal
-          encabezados={['Obligación de la CCPA/CPRA', 'Situación en Gesicomm']}
+          encabezados={['Obligación de la CCPA/CPRA', 'Situación en Gesicom']}
           filas={[
             [
               'Aviso en el momento de la recolección',
@@ -170,7 +170,7 @@ const SECCIONES = [
             ],
             [
               'Derecho a excluirse de la venta o compartición',
-              'No aplicable: Gesicomm no vende ni comparte información personal en el sentido de la norma. Por eso no publicamos un enlace «Do Not Sell or Share».',
+              'No aplicable: Gesicom no vende ni comparte información personal en el sentido de la norma. Por eso no publicamos un enlace «Do Not Sell or Share».',
             ],
             [
               'Derecho a limitar el uso de información sensible',
@@ -206,7 +206,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm es un desarrollador de la plataforma de Meta y cumple con las Meta Platform
+          Gesicom es un desarrollador de la plataforma de Meta y cumple con las Meta Platform
           Terms, las Developer Policies y las políticas específicas de cada producto que utiliza.
         </p>
 
@@ -247,14 +247,14 @@ const SECCIONES = [
             ],
             [
               'Transparencia sobre la relación con Meta',
-              'El pie de todas las páginas aclara que Gesicomm no está afiliada ni respaldada por Meta.',
+              'El pie de todas las páginas aclara que Gesicom no está afiliada ni respaldada por Meta.',
             ],
           ]}
         />
 
         <Subseccion titulo="4.1 Alcance real de nuestra integración">
           <p>
-            Gesicomm usa <strong>un solo producto</strong> de la plataforma de Meta: la Marketing
+            Gesicom usa <strong>un solo producto</strong> de la plataforma de Meta: la Marketing
             API, con los permisos <code>ads_management</code> y <code>business_management</code>.
             No usamos Facebook Login como método de autenticación, no usamos la Pages API, no
             usamos la Instagram Graph API y no usamos la WhatsApp Business Platform.
@@ -274,7 +274,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm opera principalmente en Latinoamérica y ajusta su tratamiento a la ley de cada
+          Gesicom opera principalmente en Latinoamérica y ajusta su tratamiento a la ley de cada
           país. En todos los casos aplicamos el estándar más protector entre el local y el RGPD.
         </p>
 
@@ -301,7 +301,7 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicomm es una herramienta de gestión: no vende productos al consumidor final ni
+          Gesicom es una herramienta de gestión: no vende productos al consumidor final ni
           interviene en la relación entre el comerciante y su comprador. Esa relación —precio,
           entrega, garantía, devoluciones, facturación— es responsabilidad exclusiva del
           comerciante.
@@ -466,7 +466,7 @@ export default function Compliance() {
   return (
     <LegalDoc
       titulo="Cumplimiento Legal"
-      descripcion="Cómo cumple Gesicomm con el RGPD, la CCPA/CPRA, las Meta Platform Terms y la normativa de protección de datos de Latinoamérica, incluyendo el Data Deletion Callback de Meta, los DPA y la gestión de subprocesadores."
+      descripcion="Cómo cumple Gesicom con el RGPD, la CCPA/CPRA, las Meta Platform Terms y la normativa de protección de datos de Latinoamérica, incluyendo el Data Deletion Callback de Meta, los DPA y la gestión de subprocesadores."
       resumen="Un resumen del marco normativo que nos aplica y de las medidas concretas con las que lo cumplimos. Incluye lo que sí tenemos y, con la misma claridad, lo que todavía no."
       ruta="/compliance"
       actualizado="2026-08-03"

@@ -73,7 +73,7 @@ export default function PoliticaPrivacidadPublica() {
 
         <div className="prose prose-sm max-w-none opacity-90 leading-relaxed space-y-6" style={{ color: tema.texto }}>
           <p>
-            {nombreComercio} gestiona esta tienda y este sitio web, incluidos los datos, el contenido, las funciones, las herramientas, los productos y los servicios para ofrecerle a usted, el cliente, una experiencia de compra seleccionada (los "Servicios"). {nombreComercio} cuenta con tecnología de Gesicomm que nos permite ofrecerle los Servicios. Esta Política de privacidad describe cómo recopilamos, utilizamos y divulgamos su información personal cuando visita, utiliza o realiza una compra u otra transacción a través de los Servicios o cuando se comunica con nosotros por cualquier otro medio. En caso de conflicto entre nuestros Términos del Servicio y esta Política de privacidad, prevalecerá esta Política de privacidad en lo que respecta a la recopilación, el tratamiento y la divulgación de su información personal.
+            {nombreComercio} gestiona esta tienda y este sitio web, incluidos los datos, el contenido, las funciones, las herramientas, los productos y los servicios para ofrecerle a usted, el cliente, una experiencia de compra seleccionada (los "Servicios"). {nombreComercio} cuenta con tecnología de Gesicom que nos permite ofrecerle los Servicios. Esta Política de privacidad describe cómo recopilamos, utilizamos y divulgamos su información personal cuando visita, utiliza o realiza una compra u otra transacción a través de los Servicios o cuando se comunica con nosotros por cualquier otro medio. En caso de conflicto entre nuestros Términos del Servicio y esta Política de privacidad, prevalecerá esta Política de privacidad en lo que respecta a la recopilación, el tratamiento y la divulgación de su información personal.
           </p>
           <p>
             Le rogamos que lea atentamente esta Política de privacidad. Al utilizar y acceder a cualquiera de los Servicios, usted reconoce haber leído esta Política de privacidad y entender la forma en que se recopila, utiliza y divulga su información personal, de conformidad con lo establecido en la presente Política de privacidad.
@@ -115,16 +115,16 @@ export default function PoliticaPrivacidadPublica() {
           <h2 className="text-xl font-bold mt-8 mb-4">Cómo divulgamos la información personal</h2>
           <p>En determinadas circunstancias, podemos divulgar su información personal a terceros por motivos legítimos. Tales circunstancias pueden incluir:</p>
           <ul className="list-disc pl-6 space-y-2">
-            <li>Con Gesicomm, proveedores y otros terceros que prestan servicios en nuestro nombre (por ejemplo, gestión de TI, procesamiento de pagos, análisis de datos, atención al cliente, almacenamiento en la nube, gestión de pedidos y envíos).</li>
+            <li>Con Gesicom, proveedores y otros terceros que prestan servicios en nuestro nombre (por ejemplo, gestión de TI, procesamiento de pagos, análisis de datos, atención al cliente, almacenamiento en la nube, gestión de pedidos y envíos).</li>
             <li>Con partners comerciales y de marketing para prestar servicios de marketing y mostrarle publicidad.</li>
             <li>Cuando usted nos lo indique, lo solicite o consienta de otro modo la divulgación de determinada información a terceros.</li>
             <li>Con nuestros afiliados o, en general, dentro de nuestro grupo empresarial.</li>
             <li>En relación con una transacción comercial, como una fusión o un proceso de insolvencia, para cumplir con obligaciones legales aplicables.</li>
           </ul>
 
-          <h2 className="text-xl font-bold mt-8 mb-4">Relación con Gesicomm</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">Relación con Gesicom</h2>
           <p>
-            Los Servicios se alojan en Gesicomm, que recopila y procesa información personal sobre su acceso y uso de los Servicios, a fin de proporcionarle y mejorar los Servicios para usted. Con el objetivo de ofrecerle y mejorar los Servicios, la información que usted envíe a los Servicios se transmitirá y compartirá con Gesicomm y con terceros que podrían estar ubicados en países diferentes al suyo. Además, para ayudar a proteger, desarrollar y mejorar nuestro negocio, utilizamos determinadas funciones avanzadas de Gesicomm. Para obtener más información sobre cómo Gesicomm utiliza su información personal, puede consultar la Política de privacidad de Gesicomm en nuestro sitio web oficial.
+            Los Servicios se alojan en Gesicom, que recopila y procesa información personal sobre su acceso y uso de los Servicios, a fin de proporcionarle y mejorar los Servicios para usted. Con el objetivo de ofrecerle y mejorar los Servicios, la información que usted envíe a los Servicios se transmitirá y compartirá con Gesicom y con terceros que podrían estar ubicados en países diferentes al suyo. Además, para ayudar a proteger, desarrollar y mejorar nuestro negocio, utilizamos determinadas funciones avanzadas de Gesicom. Para obtener más información sobre cómo Gesicom utiliza su información personal, puede consultar la Política de privacidad de Gesicom en nuestro sitio web oficial.
           </p>
 
           <h2 className="text-xl font-bold mt-8 mb-4">Sitios web y enlaces de terceros</h2>

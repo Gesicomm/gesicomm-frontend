@@ -113,7 +113,7 @@ const INTEGRACIONES = [
     color: '#0081FB',
     alcance: 'business_management',
     descripcion:
-      'Conectás tu Business Manager por OAuth y Gesicomm lee las cuentas publicitarias a las que ya tenés acceso. No creamos ni modificamos activos por tu cuenta.',
+      'Conectás tu Business Manager por OAuth y Gesicom lee las cuentas publicitarias a las que ya tenés acceso. No creamos ni modificamos activos por tu cuenta.',
     datos: 'Business Managers y cuentas publicitarias que administrás.',
   },
   {
@@ -141,7 +141,7 @@ const CANALES_SIN_API = [
     nombre: 'WhatsApp',
     color: '#25D366',
     descripcion:
-      'El botón de tu vitrina abre un chat en el WhatsApp de quien te consulta, con el producto y el precio ya escritos. Es un enlace: la conversación ocurre entre tu cliente y vos, y Gesicomm no la ve ni la guarda.',
+      'El botón de tu vitrina abre un chat en el WhatsApp de quien te consulta, con el producto y el precio ya escritos. Es un enlace: la conversación ocurre entre tu cliente y vos, y Gesicom no la ve ni la guarda.',
   },
 ];
 
@@ -170,24 +170,24 @@ const SEGURIDAD = [
 
 const PREGUNTAS = [
   {
-    pregunta: '¿Qué datos de Meta usa Gesicomm exactamente?',
+    pregunta: '¿Qué datos de Meta usa Gesicom exactamente?',
     respuesta:
       'Al conectar tu cuenta pedimos dos permisos y nada más: ads_management y business_management. Con eso leemos los Business Managers y las cuentas publicitarias a las que ya tenés acceso, y las métricas de tus campañas de Facebook Ads. No pedimos tu perfil, ni tu correo, ni tus páginas, ni tus contactos, ni tu muro, ni ningún tipo de mensajería. Podés verificarlo vos mismo en la pantalla de permisos que te muestra Meta al conectar.',
   },
   {
-    pregunta: '¿Gesicomm tiene integración con Instagram, WhatsApp o Shopify?',
+    pregunta: '¿Gesicom tiene integración con Instagram, WhatsApp o Shopify?',
     respuesta:
-      'No. Hoy la única integración con acceso a datos es la de Meta para Facebook Ads. El botón de WhatsApp de tu vitrina es un enlace wa.me que abre la aplicación en el teléfono de quien te consulta: no usa la API de WhatsApp y Gesicomm no ve ni guarda esas conversaciones. Instagram y Shopify no están integrados. Si en algún momento se agregan, esta página y la Política de Privacidad se actualizan antes de activarlos.',
+      'No. Hoy la única integración con acceso a datos es la de Meta para Facebook Ads. El botón de WhatsApp de tu vitrina es un enlace wa.me que abre la aplicación en el teléfono de quien te consulta: no usa la API de WhatsApp y Gesicom no ve ni guarda esas conversaciones. Instagram y Shopify no están integrados. Si en algún momento se agregan, esta página y la Política de Privacidad se actualizan antes de activarlos.',
   },
   {
-    pregunta: '¿Usan Facebook Login para entrar a Gesicomm?',
+    pregunta: '¿Usan Facebook Login para entrar a Gesicom?',
     respuesta:
-      'No. El acceso a Gesicomm es con correo y contraseña propios. La conexión con Meta es una acción aparte, dentro de Configuración, y sirve únicamente para vincular tus cuentas publicitarias.',
+      'No. El acceso a Gesicom es con correo y contraseña propios. La conexión con Meta es una acción aparte, dentro de Configuración, y sirve únicamente para vincular tus cuentas publicitarias.',
   },
   {
     pregunta: '¿Puedo desconectar Meta sin perder mis datos?',
     respuesta:
-      'Sí. Desde Configuración podés desvincular la conexión en cualquier momento. Al hacerlo eliminamos el token de acceso y dejamos de consultar la API; tu catálogo, tus pedidos y tu historial dentro de Gesicomm quedan intactos.',
+      'Sí. Desde Configuración podés desvincular la conexión en cualquier momento. Al hacerlo eliminamos el token de acceso y dejamos de consultar la API; tu catálogo, tus pedidos y tu historial dentro de Gesicom quedan intactos.',
   },
   {
     pregunta: '¿Cómo pido que eliminen mis datos?',
@@ -195,7 +195,7 @@ const PREGUNTAS = [
       'De dos maneras: desde Configuración → Privacidad y datos si tenés sesión activa, o completando el formulario público de la página de Eliminación de Datos si ya no podés entrar. Verificamos tu identidad y procesamos la eliminación en un plazo máximo de 30 días.',
   },
   {
-    pregunta: '¿Gesicomm vende o comparte mis datos con terceros?',
+    pregunta: '¿Gesicom vende o comparte mis datos con terceros?',
     respuesta:
       'No. No vendemos datos personales ni los compartimos con fines publicitarios de terceros. Solo intervienen los subprocesadores necesarios para prestar el servicio (infraestructura, red de distribución) y la propia API de Meta cuando la conectás, listados uno por uno en la Política de Privacidad.',
   },
@@ -225,13 +225,13 @@ export default function Landing() {
         '@type': 'WebSite',
         '@id': `${SITIO}/#sitio`,
         url: SITIO,
-        name: 'Gesicomm',
+        name: 'Gesicom',
         inLanguage: 'es',
         publisher: { '@id': `${SITIO}/#organizacion` },
       },
       {
         '@type': 'SoftwareApplication',
-        name: 'Gesicomm',
+        name: 'Gesicom',
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
         url: SITIO,
@@ -258,7 +258,7 @@ export default function Landing() {
   return (
     <>
       <Seo
-        titulo="Gesicomm · Gestión de eCommerce en un solo panel"
+        titulo="Gesicom · Gestión de eCommerce en un solo panel"
         descripcion="Plataforma SaaS para administrar toda la operación de tu eCommerce: productos, pedidos, inventario, clientes, logística, CRM y métricas en un solo panel, con integración a Meta Business para seguir el rendimiento de tus campañas de Facebook Ads."
         ruta="/"
         schema={schema}
@@ -280,7 +280,7 @@ export default function Landing() {
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-fg-muted sm:text-lg">
-              Gesicomm es un ERP y software SaaS para gestión de eCommerce que reúne catálogo, pedidos,
+              Gesicom es un ERP y software SaaS para gestión de eCommerce que reúne catálogo, pedidos,
               inventario, clientes, logística y campañas en un único panel. Ve el rendimiento de tus
               anuncios de Facebook Ads al lado del margen real de cada producto. Ideal para tiendas en línea,
               Shopify y negocios de venta por internet que necesitan control operativo real.
@@ -463,7 +463,7 @@ export default function Landing() {
           <SectionHeading
             eyebrow="Integraciones"
             titulo="Una sola integración, y bien hecha"
-            descripcion="Hoy Gesicomm se conecta con Meta y nada más. Pide exactamente dos permisos y podés revocarla en cualquier momento desde Configuración."
+            descripcion="Hoy Gesicom se conecta con Meta y nada más. Pide exactamente dos permisos y podés revocarla en cualquier momento desde Configuración."
           />
         </Reveal>
 
@@ -552,7 +552,7 @@ export default function Landing() {
               La información de tus clientes no es un detalle de implementación
             </h2>
             <p className="mt-5 text-base leading-relaxed text-fg-muted">
-              Gesicomm procesa datos de compradores reales: nombres, direcciones, teléfonos e
+              Gesicom procesa datos de compradores reales: nombres, direcciones, teléfonos e
               historial de compra. El control de acceso, el cifrado y la auditoría son parte del
               diseño del sistema, no una capa agregada después.
             </p>

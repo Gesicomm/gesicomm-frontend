@@ -1,4 +1,4 @@
-# Gesicomm — https://gesicomm.com
+# Gesicom — https://gesicomm.com
 
 User-agent: *
 Allow: /

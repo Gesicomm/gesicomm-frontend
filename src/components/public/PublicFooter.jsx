@@ -89,7 +89,7 @@ export default function PublicFooter() {
 
         <div className="mt-12 flex flex-col gap-5 border-t border-border pt-8 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-fg-subtle">
-            © {anio} Gesicomm. Todos los derechos reservados.
+            © {anio} Gesicom. Todos los derechos reservados.
           </p>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-fg-subtle">
@@ -104,7 +104,7 @@ export default function PublicFooter() {
         </div>
 
         <p className="mt-6 max-w-4xl text-xs leading-relaxed text-fg-subtle">
-          Gesicomm no está afiliada, patrocinada ni respaldada por Meta Platforms, Inc. ni por
+          Gesicom no está afiliada, patrocinada ni respaldada por Meta Platforms, Inc. ni por
           ninguna de sus filiales. Facebook y WhatsApp son marcas registradas de Meta Platforms,
           Inc. Los nombres se usan únicamente para describir la integración disponible.
         </p>

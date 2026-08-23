@@ -60,7 +60,7 @@ export default function PublicNavbar() {
     >
       <Container>
         <nav className="flex h-16 items-center justify-between gap-6" aria-label="Principal">
-          <Link to="/" className="flex-shrink-0" aria-label="Gesicomm, ir al inicio">
+          <Link to="/" className="flex-shrink-0" aria-label="Gesicom, ir al inicio">
             <Logo size={30} />
           </Link>
 

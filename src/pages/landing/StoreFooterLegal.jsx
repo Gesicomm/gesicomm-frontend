@@ -50,7 +50,7 @@ export default function StoreFooterLegal({ tema, bordeSuave, nombreComercio, isP
         © 2026 {nombreComercio}
       </div>
       <div className="text-xs opacity-75">
-        Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer" style={{color: accentColor, fontWeight: 600}}>Gesicomm</a>
+        Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer" style={{color: accentColor, fontWeight: 600}}>Gesicom</a>
       </div>
     </footer>
   );

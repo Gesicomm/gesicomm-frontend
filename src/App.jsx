@@ -166,7 +166,7 @@ function App() {
 
         {/* Rutas protegidas — panel admin */}
         <Route path="/dashboard" element={
-          <AdminRoute><DashboardLayout><div><h1>Dashboard</h1><p>Bienvenido a Gesicomm.</p></div></DashboardLayout></AdminRoute>
+          <AdminRoute><DashboardLayout><div><h1>Dashboard</h1><p>Bienvenido a Gesicom.</p></div></DashboardLayout></AdminRoute>
         } />
 
         {/* Productos */}

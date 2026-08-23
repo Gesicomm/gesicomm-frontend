@@ -33,7 +33,7 @@ export const BENEFICIOS_ICONS = {
 /**
  * Copy genérico pero HONESTO — nada de "envío gratis" ni "pago 100% seguro"
  * sin un campo real detrás. Estos cuatro puntos son ciertos para cualquier
- * tienda de Gesicomm, sea lo que sea que venda: el pedido se cierra por
+ * tienda de Gesicom, sea lo que sea que venda: el pedido se cierra por
  * WhatsApp, el catálogo es el mismo que administra la dueña en vivo, y el
  * pago/entrega se coordina directo con ella (no hay checkout ni pasarela).
  */

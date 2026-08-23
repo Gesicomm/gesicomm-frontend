@@ -535,7 +535,7 @@ export default function AdminEducacion() {
         <div className="lms-header-top">
           <div className="lms-header-title-area">
             <span className="lms-badge-tag">
-              <GraduationCap size={16} /> Gesicomm Learning Journey Studio
+              <GraduationCap size={16} /> Gesicom Learning Journey Studio
             </span>
             <h1 className="lms-studio-title">Ruta de Aprendizaje & Academia</h1>
             <p className="lms-studio-subtitle">

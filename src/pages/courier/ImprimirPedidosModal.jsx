@@ -7,7 +7,7 @@ import "./impresion-pedidos.css";
 
 export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, onChangeFechaDesde, fechaHasta, onChangeFechaHasta }) {
   // Título principal del encabezado personalizable
-  const [tituloEncabezado, setTituloEncabezado] = useState("GESICOMM LOGÍSTICA");
+  const [tituloEncabezado, setTituloEncabezado] = useState("GESICOM LOGÍSTICA");
 
   // Estados seleccionados para filtrar (por defecto Pendiente y En camino)
   const [estadosFiltro, setEstadosFiltro] = useState(["Pendiente", "En camino"]);
@@ -114,7 +114,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
                 style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
                 value={tituloEncabezado}
                 onChange={e => setTituloEncabezado(e.target.value)}
-                placeholder="Ej: GESICOMM LOGÍSTICA"
+                placeholder="Ej: GESICOM LOGÍSTICA"
               />
             </div>
 
