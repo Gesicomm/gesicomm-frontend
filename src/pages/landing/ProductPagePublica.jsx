@@ -1,18 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, ChevronDown, Zap } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
 import { RedesSocialesFooter } from '../landing-simple/templates/sections';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import RichText from '../../components/RichText';
 import StoreFooterLegal from './StoreFooterLegal';
+import FunnelCheckout from '../funnel/FunnelCheckout';
 
 /**
  * Página de producto dedicada a pantalla completa para la landing pública.
  * Sustituye al antiguo ProductDetailModal.
  */
-export default function ProductPagePublica({ item, onAgregar, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado }) {
+export default function ProductPagePublica({ item, onAgregar, onComprarAhora, landingConfig, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   // Solo las ofertas "normal" se eligen acá — order_bump/upsell se ofrecen
@@ -25,6 +26,7 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
     const conStock = item.variantes.find(v => v.stock > 0);
     return (conStock || item.variantes[0]).id;
   });
+  const [comprandoDirecto, setComprandoDirecto] = useState(false);
   const [ofertaId, setOfertaId] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [indiceImagen, setIndiceImagen] = useState(0);
@@ -188,7 +190,15 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
             <h1 className="lp-product-title">{item.nombre}</h1>
             
             <div className="lp-product-price-row">
-              <span className="lp-product-price">{formatPrecio(precio)}</span>
+              <div className="lp-product-price-group">
+                {item.precio_antes && item.precio_antes > precio && (
+                  <span className="lp-product-price-antes" style={{ textDecoration: 'line-through', color: 'var(--vit-muted)', fontSize: '0.9em', marginRight: '8px' }}>{formatPrecio(item.precio_antes)}</span>
+                )}
+                <span className="lp-product-price">{formatPrecio(precio)}</span>
+                {item.precio_antes && item.precio_antes > precio && item.descuento_pct > 0 && (
+                  <span className="lp-product-descuento-badge">-{item.descuento_pct}%</span>
+                )}
+              </div>
               {stockConocido && (
                 <span className={`lp-product-stock-badge ${sinStock ? 'agotado' : 'disponible'}`}>
                   {sinStock ? 'Sin stock' : `✓ ${stock} disponibles`}
@@ -268,14 +278,24 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
                 </div>
               </div>
 
-              <div className="lp-product-botones-grid">
+              <div className="lp-product-botones-grid" style={{ gridTemplateColumns: '1fr', gap: '8px' }}>
                 <button
                   type="button"
-                  className={`lp-modal-agregar ${agregado ? 'agregado' : ''}`}
+                  className="lp-modal-agregar"
+                  style={{ backgroundColor: 'var(--vit-accent)', color: 'var(--vit-accent-text)' }}
+                  onClick={() => setComprandoDirecto(true)}
+                  disabled={sinStock || !onComprarAhora}
+                >
+                  <Zap size={18} /> Comprar Ahora
+                </button>
+
+                <button
+                  type="button"
+                  className={`lp-modal-whatsapp ${agregado ? 'agregado' : ''}`}
                   onClick={agregar}
                   disabled={sinStock}
                 >
-                  {agregado ? <><Check size={18} /> ¡Agregado al carrito!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
+                  {agregado ? <><Check size={18} /> ¡Agregado!</> : <><ShoppingCart size={18} /> Agregar al carrito</>}
                 </button>
 
                 {linkWhatsapp && (
@@ -291,6 +311,25 @@ export default function ProductPagePublica({ item, onAgregar, contacto, tema, on
                 )}
               </div>
             </div>
+            
+            <FunnelCheckout
+              abierto={comprandoDirecto}
+              onCerrar={() => setComprandoDirecto(false)}
+              tema={tema || {}}
+              resumen={{
+                nombre: item.nombre,
+                variante: variante?.nombre || null,
+                precio: precio * cantidad,
+                imagen: galeria[0] || null,
+              }}
+              ofertasLanding={landingConfig?.ofertas_producto_vista || []}
+              itemOriginal={item}
+              onConfirmar={(form, orderBumpSeleccionado) => {
+                if (onComprarAhora) {
+                  onComprarAhora(item, variante, orderBumpSeleccionado || oferta, cantidad, precio, form);
+                }
+              }}
+            />
           </div>
         </div>
 

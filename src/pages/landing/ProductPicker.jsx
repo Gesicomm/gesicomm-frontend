@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search, Check, Layers, ImageOff, Tag, Archive, GripVertical, X,
   Package, Sparkles, Box, Pencil, ChevronLeft, ChevronRight,
@@ -106,7 +107,7 @@ function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle, onEditar
 }
 
 /* ─── Lista ordenable de seleccionados ────────────────────────────────── */
-function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuitar, onReordenar }) {
+function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuitar, onReordenar, mostrarInputs = true }) {
   const [arrastrando, setArrastrando] = useState(null);
   const [encima, setEncima] = useState(null);
   // Una fila con inputs no puede ser draggable siempre: el navegador
@@ -175,34 +176,33 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
           {/* Debajo, apilado (no en la misma fila que arriba) — en un
               sidebar angosto (320px), etiqueta + precio ancla + checkbox no
               entran junto al nombre/miniatura sin cortarse. */}
-          <div className="lb-orden-inputs">
-            <input
-              className="lb-orden-etiqueta"
-              placeholder="Etiquetas (separadas por coma)"
-              maxLength={50}
-              value={item.etiqueta || ''}
-              onChange={(e) => onEtiqueta(item, e.target.value)}
-            />
-            <CurrencyInput
-              className="lb-orden-etiqueta"
-              placeholder="Precio ancla (tachado)"
-              value={item.precio_ancla || ''}
-              onChange={(val) => onPrecioAncla(item, val)}
-            />
-            {/* Solo si el contenedor lo pide. En el modo rígido esta
-                decisión vive en su propia pestaña (panels/DestacadosPanel.jsx)
-                para no mezclar el editor del catálogo con el del inicio. */}
-            {onMostrarInicio && (
-              <label className="lb-orden-inicio" title="Si está destildado, el producto solo aparece en la página de Catálogo completo, no en el inicio">
-                <input
-                  type="checkbox"
-                  checked={item.mostrar_en_inicio !== false}
-                  onChange={(e) => onMostrarInicio(item, e.target.checked)}
-                />
-                Mostrar en el inicio
-              </label>
-            )}
-          </div>
+          {mostrarInputs && (
+            <div className="lb-orden-inputs">
+              <input
+                className="lb-orden-etiqueta"
+                placeholder="Etiquetas (separadas por coma)"
+                maxLength={50}
+                value={item.etiqueta || ''}
+                onChange={(e) => onEtiqueta(item, e.target.value)}
+              />
+              <CurrencyInput
+                className="lb-orden-etiqueta"
+                placeholder="Precio ancla (tachado)"
+                value={item.precio_ancla || ''}
+                onChange={(val) => onPrecioAncla(item, val)}
+              />
+              {onMostrarInicio && (
+                <label className="lb-orden-inicio" title="Si está destildado, el producto solo aparece en la página de Catálogo completo, no en el inicio">
+                  <input
+                    type="checkbox"
+                    checked={item.mostrar_en_inicio !== false}
+                    onChange={(e) => onMostrarInicio(item, e.target.checked)}
+                  />
+                  <span>Mostrar en el inicio</span>
+                </label>
+              )}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -211,9 +211,9 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
 
 /* ─── Componente principal ────────────────────────────────────────────── */
 export default function ProductPicker({
-  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar,
+  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar, mostrarInputs = true,
 }) {
-  const [vista, setVista] = useState('catalogo');
+  const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('todos');
   const [categoria, setCategoria] = useState('');
@@ -284,28 +284,22 @@ export default function ProductPicker({
 
   return (
     <div className="lb-picker">
-      <div className="lb-subtabs">
-        <button
-          type="button"
-          className={vista === 'catalogo' ? 'active' : ''}
-          onClick={() => setVista('catalogo')}
-        >
-          Catálogo
+      <div className="flex items-center justify-between mb-3 px-1">
+        <span className="text-[13px] font-semibold text-white/60">{cantidad} / {max} seleccionados</span>
+        <button type="button" onClick={() => setModalAbierto(true)} className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+          <Search size={14} /> Elegir productos
         </button>
-        <button
-          type="button"
-          className={vista === 'orden' ? 'active' : ''}
-          onClick={() => setVista('orden')}
-        >
-          Orden y etiquetas
-          <span className="lb-subtab-count">{cantidad}</span>
-        </button>
-        <span className={`lb-contador ${lleno ? 'lleno' : ''}`}>{cantidad} / {max}</span>
       </div>
 
-      {vista === 'catalogo' ? (
-        <>
-          <div className="lb-toolbar">
+      {modalAbierto && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#1e1e1e] border border-white/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+              <h3 className="text-base font-semibold text-white">Seleccionar productos</h3>
+              <button type="button" onClick={() => setModalAbierto(false)} className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"><X size={18} /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+              <div className="lb-toolbar">
             <div className="lb-search">
               <Search size={14} />
               <input
@@ -458,13 +452,20 @@ export default function ProductPicker({
               )}
             </>
           )}
-        </>
-      ) : (
-        <>
+            </div>
+            <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
+              <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold rounded-lg transition-colors">Listo</button>
+            </div>
+          </div>
+        </div>, document.body)}
+
+      <>
+        {mostrarInputs && (
           <p className="lb-hint">
             Arrastrá desde la manija para definir en qué orden aparecen en tu tienda.
             La etiqueta agrupa productos dentro de esta landing (ej: “Ofertas”) y funciona como filtro para el visitante.
           </p>
+        )}
           <ListaOrden
             items={itemsOrdenados}
             onEtiqueta={onEtiqueta}
@@ -472,9 +473,9 @@ export default function ProductPicker({
             onMostrarInicio={onMostrarInicio}
             onQuitar={onToggle}
             onReordenar={onReordenar}
+            mostrarInputs={mostrarInputs}
           />
         </>
-      )}
     </div>
   );
 }

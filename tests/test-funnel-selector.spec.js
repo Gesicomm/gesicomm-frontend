@@ -66,7 +66,7 @@ test.describe('Funnel Selector', () => {
       });
     });
 
-    await page.goto('http://localhost:5176/mi-landing/producto/10/funnel-selector');
+    await page.goto('http://localhost:5174/mi-landing/producto/10/funnel-selector');
 
     // Título principal con el nombre del producto
     await expect(page.locator('h1')).toHaveText('Producto Test');
@@ -98,7 +98,7 @@ test.describe('Funnel Selector', () => {
       });
     });
 
-    await page.goto('http://localhost:5176/mi-landing/producto/10/funnel-selector');
+    await page.goto('http://localhost:5174/mi-landing/producto/10/funnel-selector');
     await page.waitForSelector('text=Direct Sale Classic');
 
     // Clic en el primer botón "Usar este embudo"
@@ -108,7 +108,7 @@ test.describe('Funnel Selector', () => {
     expect(apiCalled).toBe(true);
 
     // Debe intentar navegar al editor (la URL cambiará)
-    await page.waitForURL('http://localhost:5176/mi-landing/producto/10');
+    await page.waitForURL('http://localhost:5174/mi-landing/producto/10');
   });
 
   test('debe manejar errores al cargar la información (caso borde)', async ({ page }) => {
@@ -121,7 +121,7 @@ test.describe('Funnel Selector', () => {
       });
     });
 
-    await page.goto('http://localhost:5176/mi-landing/producto/10/funnel-selector');
+    await page.goto('http://localhost:5174/mi-landing/producto/10/funnel-selector');
     
     // Debe mostrar el cartel de error
     await expect(page.locator('text=Error al cargar la información. Intenta nuevamente.')).toBeVisible();

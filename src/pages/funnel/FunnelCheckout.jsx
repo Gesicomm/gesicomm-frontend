@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { X, Check, Loader, ImageOff } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, Check, Loader, ImageOff, Gift } from 'lucide-react';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
+import { getMediaUrl } from '../../services/api';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '',
@@ -9,19 +10,21 @@ const FORM_VACIO = {
 
 /**
  * Checkout del embudo: UNA sola pantalla, sin pasar por el carrito.
- *
- * En venta directa el carrito es un paso de fuga — el comprador ya decidió
- * en la página; meterlo en un carrito multi-producto le da una oportunidad
- * más de irse. Por eso "Comprar ahora" abre esto directo.
- *
- * Sin order bump ni upsell a propósito: son mecanismos de otros embudos.
  */
-export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema }) {
+export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null }) {
   const [form, setForm] = useState(FORM_VACIO);
   const [acepta, setAcepta] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
+  const [orderBumpId, setOrderBumpId] = useState(null);
+
+  const orderBumpOfertas = useMemo(() => {
+    if (!itemOriginal?.ofertas || !ofertasLanding?.length) return [];
+    return itemOriginal.ofertas.filter(o => 
+      ofertasLanding.includes(String(o.id)) || ofertasLanding.includes(Number(o.id))
+    );
+  }, [itemOriginal, ofertasLanding]);
 
   if (!abierto) return null;
 
@@ -51,7 +54,8 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     setError(null);
     setEnviando(true);
     try {
-      const res = await onConfirmar(form);
+      const selectedBump = orderBumpId ? orderBumpOfertas.find(o => o.id === orderBumpId) : null;
+      const res = await onConfirmar(form, selectedBump);
       setConfirmado(res || {});
     } catch (err) {
       setError(err?.message || 'No se pudo enviar el pedido. Probá de nuevo.');
@@ -208,6 +212,36 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               <span>Acepto que mis datos se usen para procesar este pedido.</span>
             </label>
 
+            {orderBumpOfertas.length > 0 && orderBumpOfertas.map(bump => {
+              const mainProd = bump.producto_complementario || bump.componentes?.find(c => String(c.producto_id) !== String(itemOriginal?.id))?.Producto || bump;
+              const bumpImgRaw = mainProd?.imagen || mainProd?.imagen_principal || mainProd?.imagenes?.[0];
+              const bumpImg = typeof bumpImgRaw === 'string' ? bumpImgRaw : (bumpImgRaw?.url || bumpImgRaw?.ruta || null);
+              const isSelected = orderBumpId === bump.id;
+              return (
+                <label key={bump.id} style={{
+                  display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
+                  borderRadius: '0.5rem', border: `2px ${isSelected ? 'solid' : 'dashed'}`,
+                  borderColor: isSelected ? tema.acento : bordeSuave,
+                  backgroundColor: hexToRgba(tema.texto, 0.02), cursor: 'pointer',
+                  marginTop: '0.5rem', transition: 'border-color 0.2s'
+                }}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={e => setOrderBumpId(e.target.checked ? bump.id : null)}
+                    style={{ width: '1.2rem', height: '1.2rem', accentColor: tema.acento }}
+                  />
+                  <div style={{ width: 44, height: 44, borderRadius: '0.25rem', overflow: 'hidden', backgroundColor: hexToRgba(tema.texto, 0.06), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {bumpImg ? <img src={getMediaUrl(bumpImg)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: tema.acento }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: tema.texto, lineHeight: 1.2 }}>{bump.descripcion || bump.nombre || `Agregar ${mainProd?.nombre || 'oferta'}`}</span>
+                    {bump.precio > 0 && <span style={{ fontSize: '0.9rem', fontWeight: 800, marginTop: '2px', color: tema.texto }}>{formatPrecio(bump.precio)}</span>}
+                  </div>
+                </label>
+              );
+            })}
+
             <button
               type="submit"
               disabled={!valido || enviando}
@@ -222,7 +256,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
             >
               {enviando
                 ? <><Loader size={17} className="animate-spin" /> Enviando...</>
-                : `Confirmar pedido — ${formatPrecio(resumen?.precio)}`}
+                : `Confirmar pedido — ${formatPrecio((resumen?.precio || 0) + (orderBumpId ? (orderBumpOfertas.find(o => o.id === orderBumpId)?.precio || 0) : 0))}`}
             </button>
           </form>
         )}

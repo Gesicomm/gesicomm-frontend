@@ -16,7 +16,7 @@ import StoreFooterLegal from '../../landing/StoreFooterLegal';
  * se evita duplicar "Volver"/"Guardar" en dos lugares y el preview
  * responde a cada tecla sin esperar a un guardado.
  */
-export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, relacionadosTitulo, relacionados, tema, templateSlug, contacto, nombreComercio, isMobile = false, previewMode = false }) {
+export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, relacionadosTitulo, relacionados, tema, templateSlug, contacto, nombreComercio, isMobile = false, previewMode = false, onComprar }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
@@ -71,12 +71,11 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
 
             <button
               type="button"
-              disabled
-              title="El carrito funciona en la landing publicada"
-              className="w-full font-bold px-6 py-3 rounded-lg opacity-60 cursor-not-allowed"
+              onClick={() => onComprar && onComprar()}
+              className="w-full font-bold px-6 py-3 rounded-lg flex items-center justify-center gap-2"
               style={{ backgroundColor: t.acento, color: t.fondo }}
             >
-              Agregar al carrito
+              Comprar Ahora
             </button>
           </div>
         </div>
@@ -108,7 +107,7 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
           </div>
         )}
 
-        {(itemsRelacionados.length > 0 || previewMode) && (
+        {itemsRelacionados.length > 0 && (
           <div className="mt-12 pt-8 max-w-4xl" style={{ borderTop: `1px solid ${bordeSuave}` }}>
             <h2 className="text-lg font-extrabold mb-6">{tituloRelacionados}</h2>
             {itemsRelacionados.length === 0 ? (
