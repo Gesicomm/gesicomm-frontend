@@ -79,11 +79,11 @@ export function ReporteVentas({ filters }) {
               placeholder="Buscar cliente, tel, #pedido..." 
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-[#12131a] border border-[rgba(255,255,255,0.1)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#6366f1] text-[#f1f5f9]"
+              className="pl-9 pr-3 py-2 bg-[#12131a] border border-[rgba(255,255,255,0.1)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#3d5fa3] text-[#f1f5f9]"
             />
           </div>
           
-          <button type="submit" className="px-4 py-2 bg-[#6366f1] text-white font-semibold rounded-lg text-sm hover:bg-[#4f46e5] transition-colors">
+          <button type="submit" className="px-4 py-2 bg-[#3d5fa3] text-white font-semibold rounded-lg text-sm hover:bg-[#2e4a85] transition-colors">
             Buscar
           </button>
         </form>
@@ -93,23 +93,23 @@ export function ReporteVentas({ filters }) {
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 shrink-0">
         <KpiCard icon={<DollarSign size={20} />} title="Ventas Totales" value={formatPrecio(kpis.ventas_totales)} color="text-green-400" />
         <KpiCard icon={<ShoppingBag size={20} />} title="Pedidos" value={kpis.pedidos} color="text-blue-400" />
-        <KpiCard icon={<TrendingUp size={20} />} title="Ticket Promedio" value={formatPrecio(kpis.ticket_promedio)} color="text-purple-400" />
+        <KpiCard icon={<TrendingUp size={20} />} title="Ticket Promedio" value={formatPrecio(kpis.ticket_promedio)} color="text-[#d4a537]" />
         <KpiCard icon={<Package size={20} />} title="Order Bumps" value={kpis.order_bumps} color="text-orange-400" />
         <KpiCard icon={<TrendingUp size={20} />} title="Upsells" value={kpis.upsells} color="text-pink-400" />
-        <KpiCard icon={<Layers size={20} />} title="Bundles" value={kpis.bundles} color="text-indigo-400" />
+        <KpiCard icon={<Layers size={20} />} title="Bundles" value={kpis.bundles} color="text-[#7d9bd6]" />
       </div>
 
       {/* TABS & VIEWS */}
       <div className="flex-1 flex flex-col min-h-0 bg-[rgba(255,255,255,0.02)] rounded-xl border border-[rgba(255,255,255,0.08)] shadow-sm overflow-hidden">
         <div className="flex border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.2)] shrink-0">
           <button 
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'pedidos' ? 'text-[#818cf8] border-b-2 border-[#6366f1] bg-[rgba(99,102,241,0.05)]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'pedidos' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61, 95, 163,0.05)]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'}`}
             onClick={() => setActiveTab('pedidos')}
           >
             <LayoutList size={16} /> Vista Pedidos
           </button>
           <button 
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'items' ? 'text-[#818cf8] border-b-2 border-[#6366f1] bg-[rgba(99,102,241,0.05)]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'items' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61, 95, 163,0.05)]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'}`}
             onClick={() => setActiveTab('items')}
           >
             <Table2 size={16} /> Vista Ítems Vendidos

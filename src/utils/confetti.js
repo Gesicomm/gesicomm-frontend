@@ -5,7 +5,7 @@
 export default function triggerConfetti(options = {}) {
   const {
     particleCount = 80,
-    colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#38bdf8'],
+    colors = ['#3b82f6', '#10b981', '#f59e0b', '#2e4a85', '#ec4899', '#38bdf8'],
   } = options;
 
   let canvas = document.getElementById('lms-confetti-canvas');

@@ -122,7 +122,7 @@ export default function ComboConfiguracion() {
       {/* Header */}
       <div className="combo-header">
         <div className="combo-header-left">
-          <div className="combo-icon-wrap" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+          <div className="combo-icon-wrap" style={{ background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)' }}>
             <Settings size={20} />
           </div>
           <div>

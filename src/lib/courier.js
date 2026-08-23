@@ -26,15 +26,15 @@ export const STATUS = {
   },
   "Confirmado": {
     label: "Confirmado",
-    columnBar: "bg-cyan-400",
-    chipBg: "rgba(34, 211, 238, 0.15)",
-    chipText: "#22d3ee",
+    columnBar: "bg-teal-400",
+    chipBg: "rgba(45, 212, 191, 0.15)",
+    chipText: "#2dd4bf",
   },
   "Preparado": {
     label: "Preparado",
-    columnBar: "bg-blue-400",
-    chipBg: "rgba(129, 140, 248, 0.15)",
-    chipText: "#818cf8",
+    columnBar: "bg-[#3d5fa3]",
+    chipBg: "rgba(61, 95, 163, 0.15)",
+    chipText: "#3d5fa3",
   },
   "Despachado": {
     label: "Despachado",
@@ -62,9 +62,9 @@ export const STATUS = {
   },
   "Devuelto": {
     label: "Devuelto",
-    columnBar: "bg-purple-400",
-    chipBg: "rgba(196, 181, 253, 0.15)",
-    chipText: "#c4b5fd",
+    columnBar: "bg-[#a8917a]",
+    chipBg: "rgba(168, 145, 122, 0.15)",
+    chipText: "#a8917a",
   },
   "Perdido": {
     label: "Perdido",

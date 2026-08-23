@@ -91,7 +91,7 @@ export function detectVideoPlatform(rawUrl) {
     return { name: 'YouTube', color: '#ef4444', badge: 'YouTube', icon: '▶️' };
   }
   if (url.includes('loom.com')) {
-    return { name: 'Loom', color: '#6366f1', badge: 'Loom', icon: '🎥' };
+    return { name: 'Loom', color: '#3d5fa3', badge: 'Loom', icon: '🎥' };
   }
   if (url.includes('vimeo.com')) {
     return { name: 'Vimeo', color: '#0ea5e9', badge: 'Vimeo', icon: '🎬' };
@@ -100,7 +100,7 @@ export function detectVideoPlatform(rawUrl) {
     return { name: 'Wistia', color: '#f59e0b', badge: 'Wistia', icon: '⚡' };
   }
   if (url.match(/\.(mp4|webm|ogg)($|\?)/i)) {
-    return { name: 'Video MP4/WebM', color: '#8b5cf6', badge: 'Video Directo', icon: '📹' };
+    return { name: 'Video MP4/WebM', color: '#2e4a85', badge: 'Video Directo', icon: '📹' };
   }
   return null;
 }

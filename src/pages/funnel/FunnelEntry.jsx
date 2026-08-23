@@ -83,7 +83,7 @@ export default function FunnelEntry() {
       </button>
 
       <div className="mb-8">
-        <p className="text-[11px] font-bold uppercase tracking-wider text-violet-300 mb-1">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-accent mb-1">
           Nuevo embudo
         </p>
         <h1 className="text-2xl font-extrabold text-white mb-2">
@@ -116,7 +116,7 @@ export default function FunnelEntry() {
                 key={tpl.id}
                 className="flex flex-col rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:border-white/25"
               >
-                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-accent/15 text-accent">
                   <Icono size={22} />
                 </div>
                 <h2 className="mb-2 text-lg font-bold text-white">{tpl.name}</h2>

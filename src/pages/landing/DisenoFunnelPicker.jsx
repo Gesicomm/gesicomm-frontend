@@ -81,7 +81,7 @@ export default function DisenoFunnelPicker({
   const claseTitulo = compacto ? 'text-white' : 'text-[var(--vit-text)]';
   const claseSuave = compacto ? 'text-white/50' : 'text-[var(--vit-muted)]';
   const claseBorde = compacto ? 'border-white/15' : 'border-[var(--vit-border)]';
-  const claseBordeActivo = compacto ? 'border-violet-400 ring-2 ring-violet-400/30' : 'border-[var(--vit-primary)] ring-2 ring-[var(--vit-primary)]/30';
+  const claseBordeActivo = compacto ? 'border-primary ring-2 ring-primary/30' : 'border-[var(--vit-primary)] ring-2 ring-[var(--vit-primary)]/30';
   const claseSurface = compacto ? 'bg-white/5' : 'bg-[var(--vit-surface)]';
 
   return (
@@ -106,7 +106,7 @@ export default function DisenoFunnelPicker({
               onClick={() => aplicar({ color_primario: p.color_primario, color_fondo: p.color_fondo, tema_modo: p.tema_modo })}
               disabled={guardando}
               title={`${p.nombre} — fondo ${p.tema_modo}`}
-              className={`overflow-hidden rounded-lg border text-left transition-all ${activa ? claseBordeActivo : `${claseBorde} hover:border-violet-400`}`}
+              className={`overflow-hidden rounded-lg border text-left transition-all ${activa ? claseBordeActivo : `${claseBorde} hover:border-primary`}`}
             >
               <div className="p-2.5" style={{ background: oscuro ? '#0f172a' : '#ffffff' }}>
                 <Icono size={12} className="mb-1.5" style={{ color: p.color_primario }} />

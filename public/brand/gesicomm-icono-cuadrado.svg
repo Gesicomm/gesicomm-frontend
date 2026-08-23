@@ -8,14 +8,14 @@
   -->
   <defs>
     <linearGradient id="tile" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7C6BFF"/>
-      <stop offset="1" stop-color="#4A38CF"/>
+      <stop offset="0" stop-color="#3d5fa3"/>
+      <stop offset="1" stop-color="#1f3868"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#tile)"/>
   <g transform="translate(63.3 67.2) scale(5.9)">
-    <path d="M43.47 15.62 A20 20 0 1 0 50.13 40.45"
-          fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
-    <circle cx="51.32" cy="26.82" r="6.5" fill="#67E8F9"/>
+    <path d="M50.79 25.16 A20 20 0 1 0 50.79 38.84 L42 38.84"
+          fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="49" cy="49" r="6.5" fill="#FFC107"/>
   </g>
 </svg>

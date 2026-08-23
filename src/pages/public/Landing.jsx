@@ -126,7 +126,7 @@ const INTEGRACIONES = [
   },
   {
     nombre: 'Meta Pixel',
-    color: '#7C6BFF',
+    color: '#3d5fa3',
     alcance: 'Sin permiso de API',
     descripcion:
       'Cargás el identificador de tu propio píxel y tu vitrina lo dispara, para que las conversiones vuelvan a tus campañas.',

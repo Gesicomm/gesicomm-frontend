@@ -69,10 +69,10 @@ export function OrderCard({
             fontWeight: 700,
             background: envio.metodo_pago === 'Efectivo' ? 'rgba(16,185,129,0.15)' :
                        envio.metodo_pago === 'Transferencia' ? 'rgba(59,130,246,0.15)' :
-                       envio.metodo_pago === 'POS' ? 'rgba(139,92,246,0.15)' : 'rgba(245,158,11,0.15)',
+                       envio.metodo_pago === 'POS' ? 'rgba(46, 74, 133,0.15)' : 'rgba(245,158,11,0.15)',
             color: envio.metodo_pago === 'Efectivo' ? '#10b981' :
                    envio.metodo_pago === 'Transferencia' ? '#3b82f6' :
-                   envio.metodo_pago === 'POS' ? '#8b5cf6' : '#f59e0b'
+                   envio.metodo_pago === 'POS' ? '#2e4a85' : '#f59e0b'
           }}>
             {envio.metodo_pago === 'Efectivo' ? 'Al Recibir (Efectivo)' : 
              envio.metodo_pago === 'POS' ? 'Al Recibir (POS)' : envio.metodo_pago}

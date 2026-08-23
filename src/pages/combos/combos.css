@@ -382,7 +382,7 @@
 .combo-badge.borrador   { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
 .combo-badge.activo     { background: rgba(16, 185, 129, 0.12);  color: #10b981; }
 .combo-badge.inactivo   { background: rgba(239, 68, 68, 0.12);   color: #ef4444; }
-.combo-badge.excelente  { background: rgba(99, 102, 241, 0.12);  color: #6366f1; }
+.combo-badge.excelente  { background: rgba(61, 95, 163, 0.12);  color: #3d5fa3; }
 .combo-badge.buena      { background: rgba(16, 185, 129, 0.12);  color: #10b981; }
 .combo-badge.revisar    { background: rgba(239, 68, 68, 0.12);   color: #ef4444; }
 .combo-badge.saludable  { background: rgba(16, 185, 129, 0.12);  color: #10b981; }

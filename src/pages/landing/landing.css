@@ -1028,7 +1028,7 @@
 .lb-card-badge.producto { background: rgba(59,130,246,0.22); color: #93c5fd; }
 .lb-card-badge.combo { background: rgba(16,185,129,0.22); color: #6ee7b7; }
 .lb-card-badge.sin-stock { background: rgba(239,68,68,0.22); color: #fca5a5; }
-.lb-card-badge.destacado { background: rgba(139,92,246,0.22); color: #c4b5fd; }
+.lb-card-badge.destacado { background: rgba(46, 74, 133,0.22); color: #93a5c9; }
 
 .lb-card-check {
   position: absolute;

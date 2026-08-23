@@ -562,7 +562,7 @@
 .bg-blue-400 { background-color: #3b82f6; }
 .bg-emerald-400 { background-color: #10b981; }
 .bg-red-400 { background-color: #ef4444; }
-.bg-purple-400 { background-color: #8b5cf6; }
+.bg-purple-400 { background-color: #2e4a85; }
 
 .text-amber-700 { color: #fbbf24; }
 .text-blue-700 { color: #60a5fa; }
@@ -573,12 +573,12 @@
 .text-indigo-700 { color: #c7d2fe; }
 
 .bg-orange-400 { background-color: #f97316; }
-.bg-indigo-400 { background-color: #818cf8; }
+.bg-indigo-400 { background-color: #7d9bd6; }
 .bg-red-500 { background-color: #ef4444; }
 
 .text-emerald-600 { color: #10b981; }
 .text-red-600 { color: #ef4444; }
-.text-purple-600 { color: #8b5cf6; }
+.text-purple-600 { color: #2e4a85; }
 .text-foreground { color: #ffffff; }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -701,12 +701,12 @@
   position: relative;
   transition: all 0.2s;
 }
-.pt-filter-toggle:hover, .pt-filter-toggle.active { border-color: #818cf8; color: #818cf8; }
+.pt-filter-toggle:hover, .pt-filter-toggle.active { border-color: #7d9bd6; color: #7d9bd6; }
 .pt-filter-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #818cf8;
+  background: #7d9bd6;
   position: absolute;
   top: 6px;
   right: 6px;
@@ -903,7 +903,7 @@
 .pt-cliente-nombre { font-weight: 500; color: #e5e5e5; }
 .pt-cliente-tel { font-size: 0.75rem; color: #666; margin-top: 2px; }
 .pt-pago { font-size: 0.8rem; color: #aaa; }
-.pt-courier { font-size: 0.82rem; color: #818cf8; font-weight: 500; }
+.pt-courier { font-size: 0.82rem; color: #7d9bd6; font-weight: 500; }
 .pt-sin-courier { color: #444; }
 
 .pt-empty {
@@ -924,7 +924,7 @@
   width: 18px;
   height: 18px;
   border: 2px solid rgba(255,255,255,0.1);
-  border-top-color: #818cf8;
+  border-top-color: #7d9bd6;
   border-radius: 50%;
   animation: pt-spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -953,8 +953,8 @@
   cursor: pointer;
   transition: all 0.15s;
 }
-.pt-pag-btn:hover:not(:disabled) { border-color: #818cf8; color: #818cf8; }
-.pt-pag-btn.active { background: #818cf8; border-color: #818cf8; color: #fff; font-weight: 700; }
+.pt-pag-btn:hover:not(:disabled) { border-color: #7d9bd6; color: #7d9bd6; }
+.pt-pag-btn.active { background: #7d9bd6; border-color: #7d9bd6; color: #fff; font-weight: 700; }
 .pt-pag-btn:disabled { opacity: 0.3; cursor: default; }
 .pt-pag-ellipsis { color: #555; padding: 0 4px; font-size: 0.9rem; }
 .pt-pag-info { font-size: 0.78rem; color: #555; margin-left: 0.5rem; }

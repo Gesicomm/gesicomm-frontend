@@ -98,15 +98,15 @@
 }
 
 .cic-btn-primary {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  border-color: #6366f1;
+  background: linear-gradient(135deg, #3d5fa3 0%, #2e4a85 100%);
+  border-color: #3d5fa3;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 14px rgba(61, 95, 163, 0.3);
 }
 
 .cic-btn-primary:hover {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  background: linear-gradient(135deg, #2e4a85 0%, #1f3868 100%);
+  box-shadow: 0 6px 20px rgba(61, 95, 163, 0.45);
 }
 
 /* Preset Pills */
@@ -137,10 +137,10 @@
 }
 
 .cic-preset-pill.active {
-  background: rgba(99, 102, 241, 0.18);
-  border-color: #6366f1;
+  background: rgba(61, 95, 163, 0.18);
+  border-color: #3d5fa3;
   color: #a5b4fc;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 0 12px rgba(61, 95, 163, 0.25);
 }
 
 /* Dropdown Filters */
@@ -179,7 +179,7 @@
 }
 
 .cic-select:focus {
-  border-color: #6366f1;
+  border-color: #3d5fa3;
 }
 
 /* FIX: Ensure options are visible in Windows native select */
@@ -251,7 +251,7 @@
 
 .cic-funnel-step.step-created { border-left: 4px solid #3b82f6; }
 .cic-funnel-step.step-confirmed { border-left: 4px solid #10b981; }
-.cic-funnel-step.step-dispatched { border-left: 4px solid #8b5cf6; }
+.cic-funnel-step.step-dispatched { border-left: 4px solid #2e4a85; }
 .cic-funnel-step.step-delivered { border-left: 4px solid #06b6d4; }
 .cic-funnel-step.step-returned { border-left: 4px solid #f43f5e; }
 
@@ -284,7 +284,7 @@
 
 .rate-green { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 .rate-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-.rate-purple { background: rgba(139, 92, 246, 0.15); color: #c084fc; }
+.rate-purple { background: rgba(46, 74, 133, 0.15); color: #d4a537; }
 .rate-red { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
 
 .cic-step-progress-bar {
@@ -339,7 +339,7 @@
 .icon-positivo { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 .icon-alerta { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 .icon-critico { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.icon-info { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
+.icon-info { background: rgba(61, 95, 163, 0.15); color: #7d9bd6; }
 
 .cic-insight-content h4 {
   font-size: 0.86rem;
@@ -550,7 +550,7 @@
 
 .tag-web { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
 .tag-whatsapp { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-.tag-landing { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.tag-landing { background: rgba(255, 193, 7, 0.15); color: #d4a537; }
 
 /* ==========================================================================
    F. COURIER CARDS GRID
@@ -678,5 +678,5 @@
 }
 
 .cic-input:focus {
-  border-color: #6366f1;
+  border-color: #3d5fa3;
 }

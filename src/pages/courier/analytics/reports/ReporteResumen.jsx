@@ -42,7 +42,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
   if (loading && !data) {
     return (
       <div style={{ padding: '4rem', textAlign: 'center', color: '#94a3b8' }}>
-        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%' }} />
+        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid #3d5fa3', borderTopColor: 'transparent', borderRadius: '50%' }} />
         Calculando métricas comerciales y ejecutivas...
       </div>
     );
@@ -69,13 +69,13 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
           <div className="cic-kpi-sub">{funnel.tasa_confirmacion}% Tasa de Confirmación</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid #06b6d4' }}>
-          <div className="cic-kpi-header"><span>Entregados</span><Trophy size={16} style={{ color: '#22d3ee' }} /></div>
+          <div className="cic-kpi-header"><span>Entregados</span><Trophy size={16} style={{ color: '#5b8fd6' }} /></div>
           <div className="cic-kpi-val">{funnel.entregados}</div>
           <div className="cic-kpi-sub">{funnel.tasa_entrega}% Tasa de Entrega</div>
         </div>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #8b5cf6' }}>
-          <div className="cic-kpi-header"><span>Facturación Entregada</span><DollarSign size={16} style={{ color: '#c084fc' }} /></div>
-          <div className="cic-kpi-val" style={{ color: '#c084fc' }}>{formatGs(kpis.facturacion_entregada)}</div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid #2e4a85' }}>
+          <div className="cic-kpi-header"><span>Facturación Entregada</span><DollarSign size={16} style={{ color: '#d4a537' }} /></div>
+          <div className="cic-kpi-val" style={{ color: '#d4a537' }}>{formatGs(kpis.facturacion_entregada)}</div>
           <div className="cic-kpi-sub">Ingreso real bruto</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid #f59e0b' }}>
@@ -121,7 +121,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
               <div className="cic-step-head"><span>3. Despachados</span></div>
               <div className="cic-step-val">{funnel.despachados}</div>
               <div className="cic-step-rate-badge rate-purple">{funnel.tasa_despacho}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_despacho)}%`, background: '#8b5cf6' }} /></div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_despacho)}%`, background: '#2e4a85' }} /></div>
             </div>
             {/* Entregados */}
             <div className="cic-funnel-step step-delivered">

@@ -256,7 +256,7 @@ export default function FunnelEditor() {
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-violet-300">Embudo</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-accent">Embudo</span>
               <h1 className="text-sm font-bold truncate max-w-[240px]">{producto?.nombre || draft.nombre}</h1>
             </div>
             <div className="flex items-center gap-1.5 text-[11px] text-white/45">

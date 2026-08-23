@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Versión favicon: trazo más grueso y nodo más grande que el isotipo
+  <!-- Versión favicon: trazo más grueso y punto más grande que el isotipo
        base, para que el símbolo siga leyéndose a 16 px. -->
   <defs>
     <linearGradient id="f" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#8B7CFF"/>
-      <stop offset="1" stop-color="#4F3FD6"/>
+      <stop offset="0" stop-color="#15295A"/>
+      <stop offset="1" stop-color="#0B1D3D"/>
     </linearGradient>
   </defs>
-  <path d="M43.47 15.62 A20 20 0 1 0 50.13 40.45"
-        fill="none" stroke="url(#f)" stroke-width="11" stroke-linecap="round"/>
-  <circle cx="51.32" cy="26.82" r="7" fill="#22D3EE"/>
+  <path d="M50.79 25.16 A20 20 0 1 0 50.79 38.84 L42 38.84"
+        fill="none" stroke="url(#f)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="49" cy="49" r="7" fill="#FFC107"/>
 </svg>

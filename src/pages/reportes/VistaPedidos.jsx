@@ -50,7 +50,7 @@ export default function VistaPedidos({ filtros }) {
     return (
       <div className="flex gap-1 flex-wrap">
         {stats.base > 0 && <Badge color="bg-blue-500/10 text-blue-400 border-blue-500/20">Base</Badge>}
-        {stats.combo > 0 && <Badge color="bg-indigo-500/10 text-indigo-400 border-indigo-500/20">Combo</Badge>}
+        {stats.combo > 0 && <Badge color="bg-[#3d5fa3]/10 text-[#7d9bd6] border-[#3d5fa3]/20">Combo</Badge>}
         {stats.order_bump > 0 && <Badge color="bg-orange-500/10 text-orange-400 border-orange-500/20">Order Bump</Badge>}
         {stats.upsell > 0 && <Badge color="bg-pink-500/10 text-pink-400 border-pink-500/20">Upsell</Badge>}
       </div>

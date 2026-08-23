@@ -59,7 +59,7 @@ export function ReporteRentabilidad({ filters }) {
   if (loading && !kpis) {
     return (
       <div style={{ padding: '4rem', textAlign: 'center', color: '#94a3b8' }}>
-        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid #6366f1', borderTopColor: 'transparent', borderRadius: '50%' }} />
+        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid #3d5fa3', borderTopColor: 'transparent', borderRadius: '50%' }} />
         Calculando rentabilidad real del negocio...
       </div>
     );
@@ -71,9 +71,9 @@ export function ReporteRentabilidad({ filters }) {
     <div className="cic-wrapper" style={{ marginTop: '1rem' }}>
       {/* KPIs de rentabilidad */}
       <div className="cic-kpis-grid" style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #8b5cf6' }}>
-          <div className="cic-kpi-header"><span>Margen Bruto</span><Wallet size={16} style={{ color: '#c084fc' }} /></div>
-          <div className="cic-kpi-val" style={{ color: '#c084fc' }}>{formatGs(kpis.margen_bruto_estimado)}</div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid #2e4a85' }}>
+          <div className="cic-kpi-header"><span>Margen Bruto</span><Wallet size={16} style={{ color: '#d4a537' }} /></div>
+          <div className="cic-kpi-val" style={{ color: '#d4a537' }}>{formatGs(kpis.margen_bruto_estimado)}</div>
           <div className="cic-kpi-sub">{kpis.pct_margen_bruto}% — ya neto de COGS, comisión, logística e IVA</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid #f43f5e' }}>
@@ -87,8 +87,8 @@ export function ReporteRentabilidad({ filters }) {
           <div className="cic-kpi-sub">Ingresos − costos de venta − costos y gastos</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid #06b6d4' }}>
-          <div className="cic-kpi-header"><span>Margen Neto</span><Percent size={16} style={{ color: '#22d3ee' }} /></div>
-          <div className="cic-kpi-val" style={{ color: '#22d3ee' }}>{kpis.pct_margen_neto}%</div>
+          <div className="cic-kpi-header"><span>Margen Neto</span><Percent size={16} style={{ color: '#5b8fd6' }} /></div>
+          <div className="cic-kpi-val" style={{ color: '#5b8fd6' }}>{kpis.pct_margen_neto}%</div>
           <div className="cic-kpi-sub">Ganancia neta sobre ventas</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid #f59e0b' }}>
@@ -144,7 +144,7 @@ export function ReporteRentabilidad({ filters }) {
                 <span style={{ color: '#94a3b8' }}>{formatGs(c.total)}</span>
               </div>
               <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${c.pct}%`, background: '#8b5cf6', borderRadius: '3px' }} />
+                <div style={{ height: '100%', width: `${c.pct}%`, background: '#2e4a85', borderRadius: '3px' }} />
               </div>
               <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>{GRUPO_LABELS[c.grupo] || c.grupo} · {c.pct}%</div>
             </div>
@@ -161,7 +161,7 @@ export function ReporteRentabilidad({ filters }) {
         <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
           <div className="cic-card-header">
             <div>
-              <h3 className="cic-card-title"><Package size={18} style={{ color: '#8b5cf6' }} /> Principales Costos y Gastos</h3>
+              <h3 className="cic-card-title"><Package size={18} style={{ color: '#2e4a85' }} /> Principales Costos y Gastos</h3>
               <p className="cic-card-subtitle">Los montos más altos registrados en el período</p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export function ReporteRentabilidad({ filters }) {
                   <tr key={g.id}>
                     <td>{g.concepto}</td>
                     <td>
-                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', ...(g.tipo === 'costo' ? { background: 'rgba(96,165,250,0.15)', color: '#60a5fa' } : { background: 'rgba(139,92,246,0.15)', color: '#a78bfa' }) }}>
+                      <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: '6px', ...(g.tipo === 'costo' ? { background: 'rgba(96,165,250,0.15)', color: '#60a5fa' } : { background: 'rgba(46, 74, 133,0.15)', color: '#a78bfa' }) }}>
                         {g.tipo === 'costo' ? 'Costo' : 'Gasto'}
                       </span>
                     </td>

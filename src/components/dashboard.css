@@ -520,8 +520,8 @@
     background: rgba(255, 255, 255, 0.05);
 }
 .sidebar-sublink.active {
-    color: #818cf8;
-    background: rgba(99, 102, 241, 0.12);
+    color: #7d9bd6;
+    background: rgba(61, 95, 163, 0.12);
 }
 
 @keyframes fadeIn {

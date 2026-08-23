@@ -69,7 +69,7 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
       <div className="modal-content" style={{ maxWidth: "560px", background: "#0a0a0b", border: "1px solid rgba(255,255,255,0.15)", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Undo2 size={18} color="#818cf8" /> Registrar devolución #{envio.id}
+            <Undo2 size={18} color="#7d9bd6" /> Registrar devolución #{envio.id}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>

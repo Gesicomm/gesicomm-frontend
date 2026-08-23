@@ -35,7 +35,7 @@ import {
 import './AdminEducacion.css';
 
 const EMOJI_OPTIONS = ['🚀', '🎯', '🚚', '📦', '📊', '💡', '🎓', '⚡', '🔥', '⚙️', '💎', '📈'];
-const COLOR_OPTIONS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4'];
+const COLOR_OPTIONS = ['#3b82f6', '#2e4a85', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4'];
 
 const UNLOCK_OPTIONS = [
   {
@@ -48,7 +48,7 @@ const UNLOCK_OPTIONS = [
     id: 'productos',
     titulo: 'Catálogo & Combos',
     desc: 'Gestión de productos, variantes y descuentos por volumen.',
-    icon: <Package size={20} color="#8b5cf6" />,
+    icon: <Package size={20} color="#2e4a85" />,
   },
   {
     id: 'pedidos',
@@ -578,7 +578,7 @@ export default function AdminEducacion() {
             </div>
           </div>
           <div className="lms-stat-item">
-            <div className="lms-stat-icon-wrapper" style={{ color: '#c084fc' }}>
+            <div className="lms-stat-icon-wrapper" style={{ color: '#d4a537' }}>
               <HelpCircle size={20} />
             </div>
             <div className="lms-stat-info">
@@ -1034,7 +1034,7 @@ export default function AdminEducacion() {
                             </div>
                             <p className="lms-ecosystem-card-desc">{opt.desc}</p>
                             {isSelected && (
-                              <span style={{ fontSize: '0.75rem', color: '#c084fc', fontWeight: 'bold' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#d4a537', fontWeight: 'bold' }}>
                                 ✓ Seleccionado para desbloquear
                               </span>
                             )}

@@ -38,10 +38,10 @@
   transform: translateY(-1px);
 }
 .cic-subnav-btn.active {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818cf8;
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  background: rgba(61, 95, 163, 0.15);
+  color: #7d9bd6;
+  border-color: rgba(61, 95, 163, 0.4);
+  box-shadow: 0 4px 12px rgba(61, 95, 163, 0.1);
 }
 
 /* Make sure the main wrapper is centered if needed */

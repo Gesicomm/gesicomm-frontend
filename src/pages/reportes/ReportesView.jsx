@@ -95,10 +95,10 @@ export default function ReportesView() {
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 shrink-0">
         <KpiCard icon={<DollarSign size={20} />} title="Ventas Totales" value={formatPrecio(kpis.ventas_totales)} color="text-green-400" />
         <KpiCard icon={<ShoppingBag size={20} />} title="Pedidos" value={kpis.pedidos} color="text-blue-400" />
-        <KpiCard icon={<TrendingUp size={20} />} title="Ticket Promedio" value={formatPrecio(kpis.ticket_promedio)} color="text-purple-400" />
+        <KpiCard icon={<TrendingUp size={20} />} title="Ticket Promedio" value={formatPrecio(kpis.ticket_promedio)} color="text-[#d4a537]" />
         <KpiCard icon={<Package size={20} />} title="Order Bumps" value={kpis.order_bumps} color="text-orange-400" />
         <KpiCard icon={<TrendingUp size={20} />} title="Upsells" value={kpis.upsells} color="text-pink-400" />
-        <KpiCard icon={<Layers size={20} />} title="Bundles / Packs" value={kpis.bundles} color="text-indigo-400" />
+        <KpiCard icon={<Layers size={20} />} title="Bundles / Packs" value={kpis.bundles} color="text-[#7d9bd6]" />
       </div>
 
       {/* TABS & VIEWS */}

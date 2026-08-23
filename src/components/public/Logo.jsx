@@ -35,13 +35,14 @@ export default function Logo({ size = 32, conTexto = true, className = '' }) {
           </linearGradient>
         </defs>
         <path
-          d="M43.47 15.62 A20 20 0 1 0 50.13 40.45"
+          d="M50.79 25.16 A20 20 0 1 0 50.79 38.84 L42 38.84"
           fill="none"
           stroke={`url(#${idGradiente})`}
           strokeWidth="9"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <circle cx="51.32" cy="26.82" r="6.5" fill="#FFC107" />
+        <circle cx="49" cy="49" r="6.5" fill="#FFC107" />
       </svg>
 
       {conTexto && (

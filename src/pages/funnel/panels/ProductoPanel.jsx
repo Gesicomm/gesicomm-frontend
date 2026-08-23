@@ -87,7 +87,7 @@ export default function ProductoPanel({ producto, imagenes, variantes, puedeEdit
             href={`/products/${producto.id}/editar`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-300 hover:text-violet-200"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-hover"
           >
             Editar fotos, precio y descripción <ExternalLink size={12} />
           </a>

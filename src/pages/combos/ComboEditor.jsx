@@ -479,7 +479,7 @@ export default function ComboEditor() {
                   const utilidad = precio - costo;
                   const margen = precio > 0 ? utilidad / precio : 0;
                   return (
-                    <tr style={{ background: 'rgba(99,102,241,0.06)' }}>
+                    <tr style={{ background: 'rgba(61, 95, 163,0.06)' }}>
                       <td><div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{principal.nombre}</div></td>
                       <td className="readonly" style={{ textAlign: 'right' }}>{fmtGs(costo)}</td>
                       <td className="readonly" style={{ textAlign: 'right' }}>{fmtGs(precio)}</td>

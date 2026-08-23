@@ -13,7 +13,7 @@
   --lms-text-secondary: #94a3b8;
   --lms-text-muted: #64748b;
   --lms-accent-blue: #3b82f6;
-  --lms-accent-purple: #8b5cf6;
+  --lms-accent-purple: #2e4a85;
   --lms-accent-emerald: #10b981;
   --lms-accent-amber: #f59e0b;
   --lms-accent-rose: #f43f5e;
@@ -24,7 +24,7 @@
   background-color: var(--lms-bg-main);
   background-image: 
     radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 60%, rgba(139, 92, 246, 0.08) 0%, transparent 45%);
+    radial-gradient(circle at 85% 60%, rgba(46, 74, 133, 0.08) 0%, transparent 45%);
   color: var(--lms-text-primary);
   padding: 2.5rem 2rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -178,7 +178,7 @@
   bottom: 60px;
   left: 47px;
   width: 3px;
-  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 50%, rgba(255, 255, 255, 0.1) 100%);
+  background: linear-gradient(180deg, #3b82f6 0%, #2e4a85 50%, rgba(255, 255, 255, 0.1) 100%);
   border-radius: 4px;
   z-index: 1;
 }
@@ -341,9 +341,9 @@
 }
 
 .lms-meta-pill-unlock {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: rgba(139, 92, 246, 0.3);
-  color: #c084fc;
+  background: rgba(46, 74, 133, 0.12);
+  border-color: rgba(46, 74, 133, 0.3);
+  color: #d4a537;
   font-weight: 600;
 }
 
@@ -787,9 +787,9 @@
 }
 
 .lms-ecosystem-card.selected {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: #a855f7;
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+  background: rgba(46, 74, 133, 0.12);
+  border-color: #ffc107;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.25);
 }
 
 .lms-ecosystem-card-title {

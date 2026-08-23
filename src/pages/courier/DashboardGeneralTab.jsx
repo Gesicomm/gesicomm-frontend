@@ -116,8 +116,8 @@ export function DashboardGeneralTab({ couriers = [] }) {
           <Bloque titulo="Trabajo pendiente">
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1.2rem" }}>
               <Stat label="Pendientes de confirmar" value={tp.pendientes_confirmar} color="#fbbf24" />
-              <Stat label="Confirmados por preparar" value={tp.confirmados_preparar} color="#22d3ee" />
-              <Stat label="Preparados por despachar" value={tp.preparados_despachar} color="#818cf8" />
+              <Stat label="Confirmados por preparar" value={tp.confirmados_preparar} color="#2dd4bf" />
+              <Stat label="Preparados por despachar" value={tp.preparados_despachar} color="#3d5fa3" />
               <Stat label="Despachados sin resultado" value={tp.despachados_sin_resultado} color="#60a5fa" />
               <Stat label="Reprogramados para hoy" value={tp.reprogramados_hoy} color="#fb923c" />
               <Stat label="Reprogramados vencidos" value={tp.reprogramados_vencidos} color="#f87171" />
@@ -130,12 +130,12 @@ export function DashboardGeneralTab({ couriers = [] }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1.2rem", alignItems: "center" }}>
               <Stat label="Ingresados" value={ro.ingresados} />
               <span style={{ color: "#444" }}>→</span>
-              <Stat label="Confirmados" value={ro.confirmados} color="#22d3ee" />
+              <Stat label="Confirmados" value={ro.confirmados} color="#2dd4bf" />
               <span style={{ color: "#444" }}>→</span>
               <Stat label="Entregados" value={ro.entregados} color="#34d399" />
               <span style={{ color: "#444", marginLeft: "0.5rem" }}>·</span>
               <Stat label="Cancelados" value={ro.cancelados} color="#f87171" />
-              <Stat label="Devueltos" value={ro.devueltos} color="#c4b5fd" />
+              <Stat label="Devueltos" value={ro.devueltos} color="#a8917a" />
               <Stat label="Perdidos" value={ro.perdidos} color="#f87171" />
             </div>
           </Bloque>
@@ -163,7 +163,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
                         <td>{c.courier_nombre}</td>
                         <td style={{ textAlign: "center" }}>{c.despachados}</td>
                         <td style={{ textAlign: "center", color: "#34d399" }}>{c.entregados}</td>
-                        <td style={{ textAlign: "center", color: "#c4b5fd" }}>{c.devueltos}</td>
+                        <td style={{ textAlign: "center", color: "#a8917a" }}>{c.devueltos}</td>
                         <td style={{ textAlign: "center", color: "#f87171" }}>{c.perdidos}</td>
                         <td style={{ textAlign: "center", fontWeight: 700, color: c.pct_entrega >= 80 ? "#34d399" : c.pct_entrega >= 70 ? "#fbbf24" : "#f87171" }}>
                           {c.pct_entrega}%
