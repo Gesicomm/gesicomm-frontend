@@ -158,7 +158,7 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
           <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={bordeSuave} isMobile={isMobile} />
         </div>
       )}
-      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
+      <StoreFooterLegal tema={t} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }

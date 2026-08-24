@@ -42,7 +42,7 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
         </div>
       </main>
 
-      <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
+      <StoreFooterLegal tema={t} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />
     </div>
   );
 }
