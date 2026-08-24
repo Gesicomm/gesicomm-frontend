@@ -31,10 +31,12 @@ function formatGs(n) {
   return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 });
 }
 
+// Sin emojis: el color del badge ya codifica el tipo, y el 🟢 de "Producto"
+// metía un verde que no es de la paleta justo al lado de un badge azul.
 function getBadgeConfig(item) {
-  if (item.tipo === 'combo') return { cls: 'combo',    icon: '📦', label: 'Combo' };
-  if (item.stock === 0)      return { cls: 'sin-stock', icon: '⛔', label: 'Sin stock' };
-  return                           { cls: 'producto',  icon: '🟢', label: 'Producto' };
+  if (item.tipo === 'combo') return { cls: 'combo',     label: 'Combo' };
+  if (item.stock === 0)      return { cls: 'sin-stock', label: 'Sin stock' };
+  return                           { cls: 'producto',  label: 'Producto' };
 }
 
 /* ─── Componente: editor de precio ───────────────────────────────────── */
@@ -74,9 +76,19 @@ function PrecioEditable({ item, onGuardar }) {
 
   const numValor = parseFloat(valor) || 0;
   const ganancia = numValor - (item.precio_base || 0);
+  // Margen sobre el precio de venta (mismo criterio que los reportes de
+  // rentabilidad), no markup sobre el costo: es el que se compara contra
+  // el margen objetivo del negocio.
+  const margenPct = numValor > 0 ? (ganancia / numValor) * 100 : 0;
+
+  // Ganancia cero no es un éxito: significa que estás vendiendo al costo.
+  // Verde solo cuando de verdad ganás; ámbar cuando empatás.
+  const estado = ganancia > 0 ? 'ok' : ganancia < 0 ? 'perdida' : 'empate';
 
   return (
     <div className="vit-price-editor" onClick={(e) => e.stopPropagation()}>
+      <label className="vit-price-label">Tu precio de venta</label>
+
       <div className="vit-price-input-wrap">
         <CurrencyInput
           className={`vit-price-input ${error ? 'error' : ''}`}
@@ -87,24 +99,29 @@ function PrecioEditable({ item, onGuardar }) {
         />
         <span className="vit-price-suffix">Gs</span>
         {guardando && <Loader size={14} className="spin-icon" />}
-        {ok && <Check size={16} color="#10b981" />}
+        {ok && <Check size={16} className="vit-price-ok" />}
       </div>
 
-      <div style={{ fontSize: '0.85rem', marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ color: '#9ca3af' }}>Ganancia estimada:</span>
-        <strong style={{ color: ganancia >= 0 ? '#10b981' : '#ef4444' }}>
+      <div className={`vit-margen vit-margen--${estado}`}>
+        <span className="vit-margen-label">
+          {estado === 'perdida' ? 'Pérdida' : estado === 'empate' ? 'Sin ganancia' : 'Ganancia'}
+        </span>
+        <span className="vit-margen-valor">
           Gs {formatGs(ganancia)}
-        </strong>
+          {ganancia !== 0 && (
+            <span className="vit-margen-pct">{margenPct.toFixed(0)}%</span>
+          )}
+        </span>
       </div>
 
       {huboCambio && !guardando && (
-        <button className="vit-price-save-btn" onClick={guardar} title="Guardar precio" style={{ marginTop: '12px' }}>
-          Guardar
+        <button className="vit-price-save-btn" onClick={guardar} title="Guardar precio">
+          Guardar cambio
         </button>
       )}
 
       {error && (
-        <div className="vit-price-error" style={{ marginTop: '8px' }}><AlertCircle size={12} /> {error}</div>
+        <div className="vit-price-error"><AlertCircle size={12} /> {error}</div>
       )}
     </div>
   );
@@ -118,16 +135,18 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
 
   return (
     <div
-      className="vit-card"
+      className={`vit-card ${seleccionado ? 'is-selected' : ''}`}
       onClick={() => onToggleSeleccion(item)}
-      style={seleccionado ? { outline: '2px solid #10b981', outlineOffset: '-2px' } : {}}
+      role="checkbox"
+      aria-checked={seleccionado}
+      aria-label={`Seleccionar ${item.nombre}`}
     >
       {/* ── Media ── */}
       <div className="vit-card-media">
 
         {/* Badge tipo (arriba izquierda) */}
         <span className={`vit-card-badge ${badge.cls}`}>
-          {badge.icon} {badge.label}
+          {badge.label}
         </span>
 
         {/* Imagen o placeholder */}
@@ -146,24 +165,13 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
         )}
 
         {/* Checkbox de selección */}
-        <div 
-          style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, background: seleccionado ? '#10b981' : 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '4px', padding: '4px', cursor: 'pointer', display: 'flex' }}
+        <span
+          className="vit-card-check"
           onClick={(e) => { e.stopPropagation(); onToggleSeleccion(item); }}
+          aria-hidden="true"
         >
-          <Check size={16} color={seleccionado ? '#fff' : 'transparent'} />
-        </div>
-
-        {/* Overlay gradiente con precio superpuesto (solo si hay imagen) */}
-        {(item.imagen || esCombo) && (
-          <div className="vit-card-overlay">
-            <div>
-              <div className="vit-card-overlay-label">Precio B2B</div>
-              <div className="vit-card-overlay-price">
-                Gs {formatGs(item.precio_base)}
-              </div>
-            </div>
-          </div>
-        )}
+          <Check size={14} strokeWidth={3} />
+        </span>
       </div>
 
       {/* ── Body ── */}
@@ -197,26 +205,22 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
           )}
         </div>
 
-        {/* Bloque precio principal */}
-        <div className="vit-price-block">
-          <div style={{ fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-            Precio de compra B2B
-          </div>
-          <div className="vit-price-main">
-            <span className="vit-price-currency">Gs</span>
-            {formatGs(item.precio_base)}
+        {/* Costo y piso: datos de referencia, no lo accionable — van
+            compactos en una fila y no compiten con el input de venta. */}
+        <dl className="vit-costos">
+          <div className="vit-costo-fila">
+            <dt>Te cuesta</dt>
+            <dd>Gs {formatGs(item.precio_base)}</dd>
           </div>
           {item.precio_minimo ? (
-            <div className="vit-price-min" style={{ marginTop: '4px' }}>
-              Mínimo de venta permitido: Gs {formatGs(item.precio_minimo)}
+            <div className="vit-costo-fila">
+              <dt>Mínimo permitido</dt>
+              <dd>Gs {formatGs(item.precio_minimo)}</dd>
             </div>
           ) : null}
-        </div>
+        </dl>
 
-        <div style={{ margin: '12px 0 8px 0', fontSize: '0.75rem', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Tu precio de venta
-        </div>
-        {/* Editor de precio */}
+        {/* Editor de precio — el foco de la tarjeta */}
         <PrecioEditable item={item} onGuardar={onGuardarPrecio} />
 
         <div className="vit-card-divider" />
@@ -339,16 +343,17 @@ export default function VitrinaGrid() {
 
       {/* ── Barra de selección ── */}
       {seleccionados.size > 0 && (
-        <div style={{ position: 'sticky', top: 0, zIndex: 50, background: '#10b981', padding: '12px 20px', margin: '-2rem -2rem 2rem -2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-          <div style={{ color: '#fff', fontWeight: 'bold' }}>
-            {seleccionados.size} {seleccionados.size === 1 ? 'producto seleccionado' : 'productos seleccionados'}
-          </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-secondary" style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff' }} onClick={() => setSeleccionados(new Set())}>
-              Cancelar
+        <div className="vit-seleccion-bar" role="region" aria-label="Productos seleccionados">
+          <p className="vit-seleccion-conteo">
+            <span className="vit-seleccion-num">{seleccionados.size}</span>
+            {seleccionados.size === 1 ? 'producto seleccionado' : 'productos seleccionados'}
+          </p>
+          <div className="vit-seleccion-acciones">
+            <button type="button" className="vit-seleccion-cancelar" onClick={() => setSeleccionados(new Set())}>
+              Quitar selección
             </button>
-            <button className="btn-primary" style={{ background: '#fff', color: '#10b981' }} onClick={generarLanding}>
-              Generar mi landing <ChevronRight size={16} style={{ marginLeft: 4 }} />
+            <button type="button" className="vit-seleccion-cta" onClick={generarLanding}>
+              Generar mi landing <ChevronRight size={15} />
             </button>
           </div>
         </div>

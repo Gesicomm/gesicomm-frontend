@@ -15,6 +15,7 @@
   --vit-card-hover-bg: #111720;
   --vit-border:        rgba(255, 255, 255, 0.07);
   --vit-border-hover:  rgba(61, 95, 163, 0.4);
+  --vit-ok:            #34d399;
   --vit-text:          #e2e8f0;
   --vit-muted:         #64748b;
   --vit-muted-2:       #475569;
@@ -324,6 +325,94 @@
   .vit-grid { grid-template-columns: 1fr; }
 }
 
+/* ─── Barra de selección ──────────────────────────────────────────────────
+   Aparece al marcar productos. Antes era una franja verde esmeralda a
+   sangre (con márgenes negativos para romper el contenedor) que no tenía
+   nada que ver con la paleta. Ahora es una superficie elevada de la marca,
+   pegada arriba, y el dorado —el acento— se reserva para el único CTA. */
+.vit-seleccion-bar {
+  position: sticky;
+  top: 0.75rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+  padding: 0.8rem 1rem 0.8rem 1.15rem;
+  background: var(--vit-card-bg);
+  border: 1px solid var(--vit-accent);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.vit-seleccion-conteo {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--vit-muted);
+}
+
+.vit-seleccion-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--vit-accent);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vit-seleccion-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vit-seleccion-cancelar {
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  color: var(--vit-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+.vit-seleccion-cancelar:hover {
+  color: var(--vit-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* El dorado sobre texto azul profundo da ~10:1: es el uso correcto del
+   acento — una sola acción, la más importante de la pantalla. */
+.vit-seleccion-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #ffc107;
+  color: #0b1d3d;
+  border: none;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+.vit-seleccion-cta:hover { background: #ffcf4d; }
+
 /* ─── Card ────────────────────────────────────────────────────────────── */
 .vit-card {
   background: var(--vit-card-bg);
@@ -343,12 +432,55 @@
 
 .vit-card:hover {
   border-color: var(--vit-border-hover);
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(61, 95, 163, 0.15),
     0 20px 60px rgba(61, 95, 163, 0.06);
   background: var(--vit-card-hover-bg);
+}
+
+/* Seleccionada: anillo del primario + un tinte muy leve. El check dorado
+   es la confirmación puntual; el borde entero en dorado sería demasiado
+   acento repetido 12 veces en la grilla. */
+.vit-card.is-selected {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 1px var(--vit-accent), 0 10px 30px rgba(0, 0, 0, 0.45);
+  background: var(--vit-card-hover-bg);
+}
+
+/* ─── Check de selección ──────────────────────────────────────────────── */
+.vit-card-check {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 7px;
+  cursor: pointer;
+  background: rgba(8, 11, 16, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: transparent;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color var(--transition-fast),
+              border-color var(--transition-fast),
+              color var(--transition-fast);
+}
+
+.vit-card:hover .vit-card-check {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.vit-card.is-selected .vit-card-check {
+  background: #ffc107;
+  border-color: #ffc107;
+  color: #0b1d3d;
 }
 
 /* ─── Media / imagen ──────────────────────────────────────────────────── */
@@ -386,36 +518,10 @@
   z-index: 1;
 }
 
-/* Overlay de precio sobre la imagen (estilo MercadoLibre) */
-.vit-card-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 0.75rem 1rem 0.8rem;
-  z-index: 2;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.vit-card-overlay-price {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
-  line-height: 1.2;
-}
-
-.vit-card-overlay-label {
-  font-size: 0.66rem;
-  font-weight: 600;
-  color: rgba(255,255,255,0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
+/* El overlay de precio sobre la imagen se eliminó: repetía exactamente el
+   mismo número que ya está en el cuerpo de la tarjeta, y encima quedaba
+   ilegible sobre las fotos de producto claras (la mayoría, porque vienen
+   recortadas sobre blanco). */
 
 /* Placeholder sin imagen */
 .vit-card-media-placeholder {
@@ -435,8 +541,8 @@
 }
 
 .vit-card-media-placeholder.combo {
-  background: linear-gradient(135deg, #061210 0%, #0a1f18 50%, #071410 100%);
-  color: rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #0a0f1a 0%, #101a2e 50%, #0a1120 100%);
+  color: rgba(125, 155, 214, 0.55);
 }
 
 .vit-card-media-placeholder svg {
@@ -469,9 +575,9 @@
 }
 
 .vit-card-badge.combo {
-  background: rgba(16, 185, 129, 0.22);
-  color: #6ee7b7;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(61, 95, 163, 0.25);
+  color: #a8c0e8;
+  border: 1px solid rgba(61, 95, 163, 0.4);
 }
 
 .vit-card-badge.sin-stock {
@@ -602,12 +708,57 @@
   gap: 0.25rem;
 }
 
+/* ─── Costos de referencia ────────────────────────────────────────────────
+   Lo que cuesta y el piso permitido son DATOS, no la acción. Antes el costo
+   se mostraba dos veces (encima de la foto y otra vez acá, a 1.65rem y peso
+   800: lo más grande de la tarjeta) cuando lo que el comercio realmente
+   decide es su precio de venta. Ahora van en una fila compacta y tabular,
+   con el número alineado a la derecha para poder comparar entre tarjetas. */
+.vit-costos {
+  margin: 0 0 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--vit-border);
+}
+
+.vit-costo-fila {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.vit-costo-fila dt {
+  font-size: 0.76rem;
+  color: var(--vit-muted);
+}
+
+.vit-costo-fila dd {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--vit-text);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ─── Editor de precio ────────────────────────────────────────────────── */
 .vit-price-editor {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
+
+.vit-price-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--vit-text);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vit-price-ok { color: var(--vit-ok); }
 
 .vit-price-input-wrap {
   display: flex;
@@ -648,27 +799,80 @@
   flex-shrink: 0;
 }
 
+/* ─── Chip de margen ──────────────────────────────────────────────────────
+   Tres estados semánticos reales, no "verde siempre". Vender al costo
+   (ganancia 0) salía en verde de éxito, que es exactamente el mensaje
+   contrario al que corresponde: ahí va ámbar. El % se muestra sobre el
+   precio de venta, mismo criterio que los reportes de rentabilidad. */
+.vit-margen {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.vit-margen-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.vit-margen-valor {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.vit-margen-pct {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.vit-margen--ok {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.24);
+  color: #34d399;
+}
+
+.vit-margen--empate {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.24);
+  color: #fbbf24;
+}
+
+.vit-margen--perdida {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.26);
+  color: #f87171;
+}
+
 .vit-price-save-btn {
-  align-self: flex-start;
+  align-self: stretch;
   background: var(--vit-accent);
   color: #fff;
   border: none;
-  padding: 0.32rem 0.85rem;
-  border-radius: 6px;
-  font-size: 0.76rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   cursor: pointer;
-  transition: filter var(--transition-fast), transform var(--transition-fast);
+  transition: background-color var(--transition-fast);
 }
-.vit-price-save-btn:hover { filter: brightness(1.1); transform: scale(1.02); }
+.vit-price-save-btn:hover { background: var(--vit-accent-hover); }
 
 .vit-price-error {
   display: flex;
   align-items: center;
   gap: 0.3rem;
   font-size: 0.72rem;
-  color: #ef4444;
+  color: #f87171;
 }
 
 /* ─── Divider ─────────────────────────────────────────────────────────── */
