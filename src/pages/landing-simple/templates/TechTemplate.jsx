@@ -56,7 +56,7 @@ export default function TechTemplate({ data, onClickProducto = NOOP, onClickCata
         </div>
         <div className="flex items-center gap-2">
           <CartButton cantidad={cantidadCarrito} acento={tema.acento} color={tema.texto} onClick={onAbrirCarrito} />
-          <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }} {...catalogoClickProps}>Ver catálogo</a>
+          <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="hidden sm:inline-block text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }} {...catalogoClickProps}>Ver catálogo</a>
         </div>
       </header>
 
@@ -110,7 +110,7 @@ export default function TechTemplate({ data, onClickProducto = NOOP, onClickCata
                   {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
                 </div>
                 <div className="p-3">
-                  <p className="font-semibold text-sm truncate">{p.nombre}</p>
+                  <p className="font-semibold text-sm line-clamp-2 leading-snug">{p.nombre}</p>
                   {p.precio != null && (
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-sm" style={{ color: tema.acento }}>Gs {Number(p.precio).toLocaleString('es-PY')}</p>
