@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, ChevronRight, Menu, LayoutDashboard,
-  Package, BarChart3, Receipt, Truck
+  Package, BarChart3, Receipt, Truck, PanelLeftClose
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -20,8 +20,20 @@ const UserLayout = ({ children }) => {
   });
   const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopClosed, setDesktopClosed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Ocultar automáticamente en rutas de edición de landing/funnel
+  const isLandingRoute = location.pathname.match(/\/(mi-landing|landing|funnel)\/[a-zA-Z0-9_-]+/) || location.pathname.includes('funnel-selector') || location.pathname.includes('/mi-landing/producto/');
+
+  useEffect(() => {
+    if (isLandingRoute) {
+      setDesktopClosed(true);
+    } else {
+      setDesktopClosed(false);
+    }
+  }, [isLandingRoute]);
 
   useEffect(() => {
     verificarSesion().then(setUsuario);
@@ -120,8 +132,10 @@ const UserLayout = ({ children }) => {
       )}
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 transition-transform duration-200 ease-out lg:static lg:translate-x-0 ${
+        className={`sidebar fixed inset-y-0 left-0 transition-transform duration-200 ease-out z-40 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${
+          desktopClosed ? 'lg:hidden' : 'lg:static lg:translate-x-0'
         }`}
         style={{ borderRight: '1px solid rgba(255, 255, 255, 0.08)' }}
       >
@@ -132,14 +146,24 @@ const UserLayout = ({ children }) => {
               Panel de Usuario
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setMobileOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:hidden"
-            aria-label="Cerrar menú"
-          >
-            <X size={18} />
-          </button>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button
+              type="button"
+              onClick={() => setMobileOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:hidden"
+              aria-label="Cerrar menú"
+            >
+              <X size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setDesktopClosed(true)}
+              className="hidden h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:flex"
+              aria-label="Ocultar menú"
+            >
+              <PanelLeftClose size={18} />
+            </button>
+          </div>
         </header>
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
@@ -225,10 +249,16 @@ const UserLayout = ({ children }) => {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-border px-4 lg:hidden">
+        <header className={`flex h-14 flex-shrink-0 items-center gap-3 border-b border-border px-4 ${desktopClosed ? '' : 'lg:hidden'}`}>
           <button
             type="button"
-            onClick={() => setMobileOpen(true)}
+            onClick={() => {
+              if (window.innerWidth >= 1024) {
+                setDesktopClosed(false);
+              } else {
+                setMobileOpen(true);
+              }
+            }}
             className="flex h-9 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
             aria-label="Abrir menú"
           >
