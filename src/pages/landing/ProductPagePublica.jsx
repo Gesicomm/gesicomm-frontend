@@ -201,7 +201,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
               </div>
               {stockConocido && (
                 <span className={`lp-product-stock-badge ${sinStock ? 'agotado' : 'disponible'}`}>
-                  {sinStock ? 'Sin stock' : `✓ ${stock} disponibles`}
+                  {sinStock ? 'Sin stock' : '✓ En stock'}
                 </span>
               )}
             </div>
@@ -269,6 +269,14 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
             </div>
 
             <div className="lp-product-actions-wrapper">
+              <div className="lp-product-cantidad-row">
+                <span className="lp-modal-label">Cantidad:</span>
+                <div className="lp-modal-stepper">
+                  <button type="button" onClick={() => ajustarCantidad(-1)} disabled={cantidad <= 1}><Minus size={14} /></button>
+                  <span>{cantidad}</span>
+                  <button type="button" onClick={() => ajustarCantidad(1)} disabled={cantidad >= maxCantidad}><Plus size={14} /></button>
+                </div>
+              </div>
 
               <div className="lp-product-botones-grid" style={{ gridTemplateColumns: '1fr', gap: '8px' }}>
                 <button
