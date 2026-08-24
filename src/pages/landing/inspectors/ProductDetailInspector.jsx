@@ -93,7 +93,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
         nombre: formPack.nombre.trim(),
         tipo_contenido: 'pack',
         estrategia: 'normal',
-        precio: Number(formPack.precio) || 0,
+        precio_normal: Number(formPack.precio) || 0,
         activo: true,
         componentes: [{ producto_id: Number(productoId), cantidad: Number(formPack.cantidad) || 1, descuento_porcentaje: 0 }],
       });
@@ -129,7 +129,12 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
         nombre: formBump.nombre.trim(),
         tipo_contenido: 'combo',
         estrategia: 'order_bump',
-        precio: Number(formBump.precio) || 0,
+        // Acá la oferta es el PAQUETE completo (producto ancla + extras, ver
+        // los componentes de abajo), así que este precio es el del paquete y
+        // va como precio_normal. Sin precio promocional propio se cobra ese
+        // mismo — este armador no ofrece todavía un precio de checkout aparte.
+        precio_normal: Number(formBump.precio) || 0,
+        precio_order_bump: null,
         activo: true,
         componentes: [
           { producto_id: Number(productoId), cantidad: 1, descuento_porcentaje: 0 },
@@ -164,7 +169,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
             order_bump_oferta_id: ofertaCreada.id,
             _preview_bump_nombre: ofertaCreada.nombre,
             _preview_bump_imagen: img || null,
-            _preview_bump_precio: ofertaCreada.precio || 0,
+            _preview_bump_precio: ofertaCreada.precio_normal ?? ofertaCreada.precio ?? 0,
             _preview_bump_descripcion: ofertaCreada.descripcion || null
           }
         });

@@ -216,7 +216,10 @@ export default function LandingPublica() {
         const estaEnConfiguracion = configOfertas.includes(String(oferta.id)) || configOfertas.includes(Number(oferta.id));
         if (!estaEnConfiguracion) continue;
 
-        if (oferta.estrategia === 'order_bump') {
+        // order_bump y combo son ofertas de checkout: se sugieren siempre.
+        // El upsell, por definición, solo cuando su producto ancla ya está
+        // en el carrito.
+        if (oferta.estrategia === 'order_bump' || oferta.estrategia === 'combo') {
           sugerencias.push({ item, oferta });
         } else if (oferta.estrategia === 'upsell' && contentIdsEnCarrito.has(item.content_id)) {
           sugerencias.push({ item, oferta });
@@ -227,7 +230,11 @@ export default function LandingPublica() {
   }, [data, carrito]);
 
   function agregarSugerencia(item, oferta) {
-    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio: oferta.precio });
+    // precio_efectivo es el que el backend va a cobrar por esta oferta
+    // (promocional si la tiene, normal si no) — ver landing.service.js. Los
+    // fallbacks cubren un DTO servido antes de separar ambos precios.
+    const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
+    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio });
   }
 
   function agregarAlCarrito({ item, variante, oferta, cantidad, precio }) {
@@ -459,8 +466,16 @@ export default function LandingPublica() {
     return { redirigido, pedido_id: resultado.pedido_id };
   }
 
-  /** Compra directa de un solo producto — ver confirmarPedido(). */
-  function comprarAhora(item, variante, oferta, cantidad, precio, datosFormulario) {
+  /**
+   * Compra directa de un solo producto — ver confirmarPedido().
+   *
+   * @param {Array} [ofertasCheckout] - ofertas que el visitante aceptó en el
+   *   checkout (order bumps / combos). Van como líneas PROPIAS del pedido,
+   *   no reemplazando la oferta del producto principal: antes el bump se
+   *   pasaba en el lugar de `oferta` y el backend terminaba cobrando el
+   *   producto entero al precio promocional del bump.
+   */
+  function comprarAhora(item, variante, oferta, cantidad, precio, datosFormulario, ofertasCheckout = []) {
     const itemCarrito = {
       clave: claveCarrito(item, variante?.id, oferta?.id),
       tipo: item.tipo,
@@ -475,7 +490,26 @@ export default function LandingPublica() {
       imagen: item.imagenes?.[0] || item.imagen || null,
       stockMax: variante ? variante.stock : (oferta ? null : item.stock),
     };
-    return confirmarPedido(datosFormulario, [itemCarrito]);
+
+    // El precio que se arma acá es solo para el tracking y el mensaje de
+    // WhatsApp: el backend vuelve a resolver cada línea por oferta_id y
+    // decide cuál de los dos precios de la oferta corresponde cobrar.
+    const lineasOferta = (ofertasCheckout || []).map(of => ({
+      clave: claveCarrito(item, null, of.id),
+      tipo: item.tipo,
+      contentId: item.content_id,
+      nombre: item.nombre,
+      varianteId: null,
+      varianteNombre: null,
+      ofertaId: of.id,
+      ofertaNombre: of.nombre,
+      precio: of.precio_efectivo ?? of.precio_order_bump ?? of.precio_normal ?? of.precio ?? 0,
+      cantidad: 1,
+      imagen: of.producto_complementario?.imagen || item.imagen || null,
+      stockMax: null,
+    }));
+
+    return confirmarPedido(datosFormulario, [itemCarrito, ...lineasOferta]);
   }
 
   function contactar(item) {
@@ -677,13 +711,16 @@ export default function LandingPublica() {
             precio: compraFunnel.precio,
             imagen: datosFunnel.producto?.imagenes?.[0] || null,
           } : null}
-          onConfirmar={(form) => comprarAhora(
+          ofertasLanding={data?.content?.ofertas_producto_vista || []}
+          itemOriginal={itemSeleccionado}
+          onConfirmar={(form, ofertasCheckout = []) => comprarAhora(
             itemSeleccionado,
             compraFunnel.variante,
             null,
             1,
             compraFunnel.precio,
             form,
+            ofertasCheckout,
           )}
         />
 

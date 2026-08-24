@@ -379,30 +379,54 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     ]).then(([pDetail, imgs, preguntas, relacionados]) => {
       setProductoImagenes(imgs);
 
+      // Lo que este comercio ya personalizó de este producto EN ESTA landing
+      // manda sobre el catálogo global (ver guardarProducto y
+      // LandingService.overrideDeProducto en el backend). El producto sigue
+      // siendo el punto de partida para lo que todavía no se tocó — lo que
+      // no pasa nunca es el camino inverso: editar acá no lo reescribe.
+      const propio = (draft?.content?.productos || {})[String(p.id)] || null;
+
       // Pre-cargar la descripción detallada si existe (sobre_este_producto > descripcion_larga > descripcion_corta)
       const descPreCargada = pDetail?.sobre_este_producto || pDetail?.descripcion_larga || pDetail?.descripcion_corta || p.descripcion || '';
-      setProductoDescripcion(descPreCargada);
+      setProductoDescripcion(propio?.descripcion ?? descPreCargada);
 
       // Pre-cargar preguntas: si la landing no tiene preguntas específicas guardadas en la tabla de FAQs, usar pDetail.preguntas_frecuentes
       const faqEsplicito = preguntas.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta }));
       const faqProducto = (pDetail?.preguntas_frecuentes || pDetail?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta }));
-      setProductoFaq(faqEsplicito.length > 0 ? faqEsplicito : faqProducto);
+      setProductoFaq(propio?.faq ?? (faqEsplicito.length > 0 ? faqEsplicito : faqProducto));
+      if (propio?.faq_titulo != null) setProductoFaqTitulo(propio.faq_titulo);
 
-      setProductoRelacionadosTitulo(relacionados.titulo || '');
+      setProductoRelacionadosTitulo(propio?.relacionados_titulo ?? (relacionados.titulo || ''));
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
       // Usamos `automatico` solo para saber si el comercio los personalizó o no.
-      setProductoRelacionados((relacionados.items || []).map(r => {
+      const conDatosDeLanding = (r) => {
         const landingItem = items.find(i => i.referencia_id === r.id && i.tipo === 'producto');
-        return { 
-          id: r.id, 
-          nombre: r.nombre, 
-          imagen: r.imagen, 
-          precio_efectivo: r.precio,
+        return {
+          id: r.id,
+          nombre: r.nombre,
+          imagen: r.imagen,
+          precio_efectivo: r.precio ?? r.precio_efectivo,
           precio_ancla: landingItem?.precio_ancla || r.precio_tachado || null,
-          etiqueta: landingItem?.etiqueta || null
+          etiqueta: landingItem?.etiqueta || null,
         };
-      }));
-      setProductoRelacionadosAutomatico(!!relacionados.automatico);
+      };
+
+      if (Array.isArray(propio?.relacionados)) {
+        // Elegidos a mano en esta landing. Se resuelven contra el catálogo
+        // porque pueden no estar entre los que devuelve el producto global.
+        const porId = new Map((catalogo.productos || []).map(x => [Number(x.id), x]));
+        const delProducto = new Map((relacionados.items || []).map(x => [Number(x.id), x]));
+        setProductoRelacionados(
+          propio.relacionados
+            .map(rid => porId.get(Number(rid)) || delProducto.get(Number(rid)))
+            .filter(Boolean)
+            .map(conDatosDeLanding)
+        );
+        setProductoRelacionadosAutomatico(false);
+      } else {
+        setProductoRelacionados((relacionados.items || []).map(conDatosDeLanding));
+        setProductoRelacionadosAutomatico(!!relacionados.automatico);
+      }
       setProductoCargando(false);
     });
   }
@@ -470,25 +494,44 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoRelacionadosAutomatico(false);
   }
 
+  /**
+   * Guarda TODO el panel de producto dentro de ESTA landing, nunca sobre el
+   * Producto del catálogo.
+   *
+   * Un Producto es compartido por todo el inquilino: escribirle la
+   * descripción, la FAQ o los relacionados desde el armador le cambiaba la
+   * ficha a cualquier otro comercio que vendiera el mismo producto. Y como el
+   * backend solo deja editar productos propios, quien no lo había creado
+   * directamente no podía tocar ni su propia landing.
+   *
+   * Ahora todo eso vive en Landing.content.productos["<id>"], que es de la
+   * landing y por lo tanto de quien la edita. El backend lo aplica encima del
+   * catálogo al publicar (ver LandingService.overrideDeProducto).
+   */
   async function guardarProducto() {
     setProductoGuardando(true);
     setProductoError('');
     setProductoAviso('');
     try {
-      await productService.actualizar(productoPreview.id, {
-        sobre_este_producto: productoDescripcion,
-        descripcion_corta: productoDescripcion,
+      const contenido = draft?.content || {};
+      const porProducto = { ...(contenido.productos || {}) };
+      porProducto[String(productoPreview.id)] = {
+        ...(porProducto[String(productoPreview.id)] || {}),
+        descripcion: productoDescripcion,
         faq_titulo: productoFaqTitulo,
         faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
         relacionados_titulo: productoRelacionadosTitulo,
-        // Solo enviamos relacionados si el comercio los tocó (no si son auto-populados)
-        ...(!productoRelacionadosAutomatico && { relacionados: productoRelacionados.map(r => r.id) }),
-      });
-      // Las configuraciones de Ofertas de Checkout (Order Bumps/Upsells) se guardan a nivel landing
-      if (draft.content) {
-        await landingSimpleService.actualizar(id, { content: draft.content });
-      }
-      setProductoAviso('Cambios guardados.');
+        // Los automáticos (rellenados por categoría) no se congelan: si el
+        // comercio no eligió nada, la landing sigue mostrando lo que el
+        // backend calcule, no una foto vieja de esa lista.
+        relacionados: productoRelacionadosAutomatico ? null : productoRelacionados.map(r => r.id),
+      };
+
+      const contenidoNuevo = { ...contenido, productos: porProducto };
+      await landingSimpleService.actualizar(id, { content: contenidoNuevo });
+      setDraft(prev => ({ ...prev, content: contenidoNuevo }));
+
+      setProductoAviso('Cambios guardados en esta landing.');
       recargarCatalogo();
     } catch (err) {
       setProductoError(err?.response?.data?.message || 'No se pudo guardar.');

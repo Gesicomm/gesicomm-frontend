@@ -11,20 +11,53 @@ const FORM_VACIO = {
 /**
  * Checkout del embudo: UNA sola pantalla, sin pasar por el carrito.
  */
+/** Estrategias que se ofrecen DENTRO del checkout (ver Oferta.js). */
+const ESTRATEGIAS_CHECKOUT = ['order_bump', 'combo'];
+
+/**
+ * Lo que se cobra si el visitante acepta la oferta acá. El backend ya manda
+ * `precio_efectivo` resuelto; los fallbacks cubren ofertas servidas por una
+ * versión anterior del DTO, que traían un único `precio`.
+ */
+function precioEnCheckout(oferta) {
+  if (oferta?.precio_efectivo !== undefined && oferta.precio_efectivo !== null) return oferta.precio_efectivo;
+  if (oferta?.precio_order_bump !== undefined && oferta.precio_order_bump !== null) return oferta.precio_order_bump;
+  return oferta?.precio_normal ?? oferta?.precio ?? 0;
+}
+
 export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null }) {
   const [form, setForm] = useState(FORM_VACIO);
   const [acepta, setAcepta] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
-  const [orderBumpId, setOrderBumpId] = useState(null);
+  // Varias ofertas a la vez: son casillas independientes, no un radio.
+  const [seleccionadas, setSeleccionadas] = useState(() => new Set());
 
-  const orderBumpOfertas = useMemo(() => {
-    if (!itemOriginal?.ofertas || !ofertasLanding?.length) return [];
-    return itemOriginal.ofertas.filter(o => 
-      ofertasLanding.includes(String(o.id)) || ofertasLanding.includes(Number(o.id))
+  const ofertasCheckout = useMemo(() => {
+    if (!itemOriginal?.ofertas?.length || !ofertasLanding?.length) return [];
+    // Se compara por número: la config de la landing guarda ids numéricos,
+    // pero puede venir de un JSON donde quedaron como strings.
+    const habilitadas = new Set(ofertasLanding.map(Number));
+    return itemOriginal.ofertas.filter(o =>
+      ESTRATEGIAS_CHECKOUT.includes(o.estrategia) && habilitadas.has(Number(o.id))
     );
   }, [itemOriginal, ofertasLanding]);
+
+  const ofertasElegidas = useMemo(
+    () => ofertasCheckout.filter(o => seleccionadas.has(o.id)),
+    [ofertasCheckout, seleccionadas]
+  );
+  const totalOfertas = ofertasElegidas.reduce((s, o) => s + precioEnCheckout(o), 0);
+  const total = (resumen?.precio || 0) + totalOfertas;
+
+  function alternarOferta(ofertaId, elegida) {
+    setSeleccionadas(prev => {
+      const copia = new Set(prev);
+      if (elegida) copia.add(ofertaId); else copia.delete(ofertaId);
+      return copia;
+    });
+  }
 
   if (!abierto) return null;
 
@@ -45,6 +78,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
       setAcepta(false);
       setError(null);
       setConfirmado(null);
+      setSeleccionadas(new Set());
     }, 200);
   }
 
@@ -54,8 +88,10 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     setError(null);
     setEnviando(true);
     try {
-      const selectedBump = orderBumpId ? orderBumpOfertas.find(o => o.id === orderBumpId) : null;
-      const res = await onConfirmar(form, selectedBump);
+      // Las ofertas aceptadas van como líneas APARTE del producto principal.
+      // Antes se mandaba la oferta del bump EN LUGAR de la del producto, así
+      // que el backend cobraba todo el pedido al precio promocional del bump.
+      const res = await onConfirmar(form, ofertasElegidas);
       setConfirmado(res || {});
     } catch (err) {
       setError(err?.message || 'No se pudo enviar el pedido. Probá de nuevo.');
@@ -212,31 +248,51 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               <span>Acepto que mis datos se usen para procesar este pedido.</span>
             </label>
 
-            {orderBumpOfertas.length > 0 && orderBumpOfertas.map(bump => {
-              const mainProd = bump.producto_complementario || bump.componentes?.find(c => String(c.producto_id) !== String(itemOriginal?.id))?.Producto || bump;
-              const bumpImgRaw = mainProd?.imagen || mainProd?.imagen_principal || mainProd?.imagenes?.[0];
-              const bumpImg = typeof bumpImgRaw === 'string' ? bumpImgRaw : (bumpImgRaw?.url || bumpImgRaw?.ruta || null);
-              const isSelected = orderBumpId === bump.id;
+            {ofertasCheckout.map(oferta => {
+              const principal = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
+              const imgCruda = principal?.imagen;
+              const img = typeof imgCruda === 'string' ? imgCruda : (imgCruda?.url || imgCruda?.ruta || null);
+              const elegida = seleccionadas.has(oferta.id);
+              const precio = precioEnCheckout(oferta);
+              const precioNormal = oferta.precio_normal ?? oferta.precio;
+              // Solo se tacha si el promocional es de verdad más barato —
+              // si no, se vería un "antes" igual al "ahora".
+              const hayDescuento = precioNormal > precio;
+              // Un combo se describe por lo que trae; un order bump por el
+              // producto que suma.
+              const detalle = oferta.estrategia === 'combo'
+                ? (oferta.productos_incluidos || []).map(p => p.nombre).join(' + ')
+                : principal?.nombre;
               return (
-                <label key={bump.id} style={{
+                <label key={oferta.id} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
-                  borderRadius: '0.5rem', border: `2px ${isSelected ? 'solid' : 'dashed'}`,
-                  borderColor: isSelected ? tema.acento : bordeSuave,
+                  borderRadius: '0.5rem', border: `2px ${elegida ? 'solid' : 'dashed'}`,
+                  borderColor: elegida ? tema.acento : bordeSuave,
                   backgroundColor: hexToRgba(tema.texto, 0.02), cursor: 'pointer',
                   marginTop: '0.5rem', transition: 'border-color 0.2s'
                 }}>
                   <input
                     type="checkbox"
-                    checked={isSelected}
-                    onChange={e => setOrderBumpId(e.target.checked ? bump.id : null)}
+                    checked={elegida}
+                    onChange={e => alternarOferta(oferta.id, e.target.checked)}
                     style={{ width: '1.2rem', height: '1.2rem', accentColor: tema.acento }}
                   />
                   <div style={{ width: 44, height: 44, borderRadius: '0.25rem', overflow: 'hidden', backgroundColor: hexToRgba(tema.texto, 0.06), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {bumpImg ? <img src={getMediaUrl(bumpImg)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: tema.acento }} />}
+                    {img ? <img src={getMediaUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: tema.acento }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: tema.texto, lineHeight: 1.2 }}>{bump.descripcion || bump.nombre || `Agregar ${mainProd?.nombre || 'oferta'}`}</span>
-                    {bump.precio > 0 && <span style={{ fontSize: '0.9rem', fontWeight: 800, marginTop: '2px', color: tema.texto }}>{formatPrecio(bump.precio)}</span>}
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: tema.texto, lineHeight: 1.2 }}>
+                      {oferta.descripcion || oferta.nombre || `Agregar ${detalle || 'oferta'}`}
+                    </span>
+                    {detalle && (
+                      <span style={{ fontSize: '0.72rem', color: hexToRgba(tema.texto, 0.55), lineHeight: 1.3, marginTop: '1px' }}>{detalle}</span>
+                    )}
+                    <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: tema.texto }}>{formatPrecio(precio)}</span>
+                      {hayDescuento && (
+                        <span style={{ fontSize: '0.75rem', color: hexToRgba(tema.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioNormal)}</span>
+                      )}
+                    </span>
                   </div>
                 </label>
               );
@@ -256,7 +312,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
             >
               {enviando
                 ? <><Loader size={17} className="animate-spin" /> Enviando...</>
-                : `Confirmar pedido — ${formatPrecio((resumen?.precio || 0) + (orderBumpId ? (orderBumpOfertas.find(o => o.id === orderBumpId)?.precio || 0) : 0))}`}
+                : `Confirmar pedido — ${formatPrecio(total)}`}
             </button>
           </form>
         )}

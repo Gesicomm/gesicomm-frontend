@@ -8,6 +8,7 @@ import { landingService } from '../../services/landingService';
 import { productService } from '../../services/productService';
 import { tiendaService } from '../../services/tiendaService';
 import { ofertaService } from '../../services/ofertaService';
+import { vitrinaService } from '../../services/vitrinaService';
 import { getMediaUrl } from '../../services/api';
 import LandingPreview from './LandingPreview';
 import DisenoFunnelPicker from './DisenoFunnelPicker';
@@ -47,6 +48,10 @@ export default function MerchantEditor() {
   const [tienda, setTienda] = useState(null);
   const [variantes, setVariantes] = useState([]);
   const [ofertas, setOfertas] = useState([]);
+  // Catálogo completo del comercio — lo necesita ProductCheckoutOfertas para
+  // elegir qué producto ofrece un order bump y para leer su precio de venta
+  // ya configurado (precio_efectivo).
+  const [catalogo, setCatalogo] = useState({ productos: [], combos: [] });
   const [copiado, setCopiado] = useState(false);
 
   const [content, setContent] = useState({});
@@ -62,12 +67,13 @@ export default function MerchantEditor() {
         // sabe renderizar selector de variante, precio tachado, % OFF y
         // packs — sin estos dos el preview mostraba una versión pobre que
         // no se parecía a la página real.
-        const [land, prod, tda, vars, ofs] = await Promise.all([
+        const [land, prod, tda, vars, ofs, cat] = await Promise.all([
           landingService.obtenerLandingProducto(productoId),
           productService.detalle(productoId),
           tiendaService.obtener().catch(() => null),
           productService.variantes(productoId).catch(() => []),
           ofertaService.listarPorProducto(productoId).catch(() => []),
+          vitrinaService.catalogo().catch(() => ({ productos: [], combos: [] })),
         ]);
 
         setLanding(land);
@@ -75,6 +81,7 @@ export default function MerchantEditor() {
         setTienda(tda);
         setVariantes(Array.isArray(vars) ? vars : []);
         setOfertas(Array.isArray(ofs) ? ofs : []);
+        setCatalogo(cat && Array.isArray(cat.productos) ? cat : { productos: [], combos: [] });
         setContent(land.content || {});
       } catch (err) {
         console.error(err);
@@ -471,7 +478,7 @@ export default function MerchantEditor() {
                 })}
               </div>
               <div className="px-3 pb-3">
-                <ProductCheckoutOfertas producto={producto} config={content} onChange={(k, v) => setContent(v)} catalogo={{ productos: items.filter(i => i.tipo === 'producto').map(i => ({ id: i.referencia_id, nombre: i.nombre || i.etiqueta })) }} />
+                <ProductCheckoutOfertas producto={producto} config={content} onChange={(k, v) => setContent(v)} catalogo={catalogo} />
               </div>
             </div>
           )}

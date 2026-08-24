@@ -18,9 +18,17 @@ const TIPOS_CONTENIDO = [
 
 const ESTRATEGIAS = [
   { value: 'normal', label: 'Normal — selector en la ficha del producto' },
-  { value: 'order_bump', label: 'Order bump — ofrecida en el carrito' },
+  { value: 'order_bump', label: 'Order bump — un producto extra en el checkout' },
+  { value: 'combo', label: 'Combo — varios productos a precio fijo en el checkout' },
   { value: 'upsell', label: 'Upsell — ofrecida cuando este producto ya está en el carrito' },
 ];
+
+/**
+ * Estrategias que se presentan DENTRO del checkout. Son las únicas que
+ * pueden tener un precio promocional propio (ver Oferta.js en el backend):
+ * el resto se vende siempre a su precio normal.
+ */
+const ESTRATEGIAS_CHECKOUT = ['order_bump', 'combo'];
 
 const RESUMEN_OFERTAS = [
   {
@@ -34,6 +42,12 @@ const RESUMEN_OFERTAS = [
     titulo: 'Order Bumps',
     descripcion: 'Productos adicionales ofrecidos durante el checkout.',
     icon: Tag,
+  },
+  {
+    id: 'combo',
+    titulo: 'Combos de Checkout',
+    descripcion: 'Paquetes de varios productos a precio fijo, elegibles en el checkout.',
+    icon: Layers,
   },
   {
     id: 'upsell',
@@ -51,7 +65,12 @@ function emptyForm(productoId) {
     nombre: '',
     tipo_contenido: 'pack',
     estrategia: 'normal',
+    // `precio` es el precio NORMAL de la oferta: es lo que consumen el
+    // simulador de descuentos y las recomendaciones de margen de abajo. Se
+    // manda al backend como precio_normal.
     precio: 0,
+    // Promocional, solo para estrategias de checkout. Vacío = se cobra el normal.
+    precio_order_bump: '',
     descripcion: '',
     activo: true,
     componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }],
@@ -126,7 +145,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
   function formPorEstrategia(estrategia) {
     const base = emptyForm(productoId);
-    if (estrategia === 'order_bump' || estrategia === 'upsell') {
+    if (estrategia === 'order_bump' || estrategia === 'upsell' || estrategia === 'combo') {
       return { ...base, estrategia, tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0 }] };
     }
     return { ...base, estrategia: 'normal', tipo_contenido: 'pack' };
@@ -146,7 +165,8 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       nombre: oferta.nombre,
       tipo_contenido: oferta.tipo_contenido,
       estrategia: oferta.estrategia,
-      precio: oferta.precio,
+      precio: oferta.precio_normal ?? oferta.precio,
+      precio_order_bump: oferta.precio_order_bump ?? '',
       descripcion: oferta.descripcion || '',
       activo: oferta.activo,
       componentes: (oferta.componentes || []).map(c => ({ producto_id: c.producto_id, cantidad: c.cantidad, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
@@ -224,7 +244,11 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
         nombre: form.nombre.trim(),
         tipo_contenido: form.tipo_contenido,
         estrategia: form.estrategia,
-        precio: Number(form.precio) || 0,
+        precio_normal: Number(form.precio) || 0,
+        // Vacío = sin promo; se cobra el normal. No se manda 0, que sería
+        // regalar la oferta por un campo que quedó sin completar.
+        precio_order_bump: ESTRATEGIAS_CHECKOUT.includes(form.estrategia) && form.precio_order_bump !== '' && form.precio_order_bump !== null
+          ? Number(form.precio_order_bump) : null,
         precio_minimo: form.precio_minimo ? Number(form.precio_minimo) : null,
         descripcion: form.descripcion.trim() || null,
         activo: form.activo,
@@ -406,7 +430,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               ? (oferta.componentes || []).find(c => Number(c.producto_id) === Number(productoId))
               : null;
             const precioNormal = propio ? productoAnclaPrecioBase * (Number(propio.cantidad) || 1) : null;
-            const ahorroPct = precioNormal > 0 ? Math.round((1 - Number(oferta.precio) / precioNormal) * 100) : null;
+            // Precio propio de la oferta (no el del catálogo) y su promo de
+            // checkout, que son dos campos distintos justamente para que
+            // configurar la promo no pise el precio de venta normal.
+            const precioOferta = Number(oferta.precio_normal ?? oferta.precio) || 0;
+            const promoCheckout = (oferta.precio_order_bump === null || oferta.precio_order_bump === undefined
+              || Number(oferta.precio_order_bump) === precioOferta)
+              ? null : Number(oferta.precio_order_bump);
+            const ahorroPct = precioNormal > 0 ? Math.round((1 - precioOferta / precioNormal) * 100) : null;
 
             return (
             <div key={oferta.id} className={`combo-list-card ${!oferta.activo ? 'inactivo' : ''}`}>
@@ -439,8 +470,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 )}
                 <div className="combo-list-card-metric">
                   <span className="combo-list-card-metric-label">Precio aplicado</span>
-                  <span className="combo-list-card-metric-value">{formatMoney(oferta.precio)}</span>
+                  <span className="combo-list-card-metric-value">{formatMoney(precioOferta)}</span>
                 </div>
+                {promoCheckout !== null && (
+                  <div className="combo-list-card-metric">
+                    <span className="combo-list-card-metric-label">Promo en checkout</span>
+                    <span className="combo-list-card-metric-value" style={{ color: '#f59e0b' }}>{formatMoney(promoCheckout)}</span>
+                  </div>
+                )}
                 {ahorroPct > 0 && (
                   <div className="combo-list-card-metric">
                     <span className="combo-list-card-metric-label">Descuento</span>
@@ -514,7 +551,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 </select>
               </div>
               <div className="form-group">
-                <label>Precio</label>
+                <label>Precio normal</label>
                 <CurrencyInput value={form.precio} onChange={val => setForm(f => ({ ...f, precio: val }))} />
                 {precioRecomendado !== null && Number(form.precio) !== precioRecomendado && (
                   <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
@@ -525,6 +562,16 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                   </p>
                 )}
               </div>
+              {ESTRATEGIAS_CHECKOUT.includes(form.estrategia) && (
+                <div className="form-group">
+                  <label>Precio promocional en checkout <span className="hint">(opcional)</span></label>
+                  <CurrencyInput value={form.precio_order_bump} onChange={val => setForm(f => ({ ...f, precio_order_bump: val }))} />
+                  <p className="field-hint">
+                    Se cobra solo si el cliente acepta la oferta dentro del checkout. Vacío = se cobra el precio normal.
+                    El precio normal nunca se toca: es el que usa la reportería para medir cuánto costó el descuento.
+                  </p>
+                </div>
+              )}
               {usuarioActual?.rol === 'administrador' && (
                 <div className="form-group">
                   <label>Precio mínimo <span className="hint">(Límite de rentabilidad)</span></label>

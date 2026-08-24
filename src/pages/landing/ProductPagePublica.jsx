@@ -303,10 +303,14 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
               }}
               ofertasLanding={landingConfig?.ofertas_producto_vista || []}
               itemOriginal={item}
-              onConfirmar={(form, orderBumpSeleccionado) => {
-                if (onComprarAhora) {
-                  onComprarAhora(item, variante, orderBumpSeleccionado || oferta, cantidad, precio, form);
-                }
+              onConfirmar={(form, ofertasCheckout = []) => {
+                if (!onComprarAhora) return;
+                // `oferta` (el pack/combo elegido en la ficha) y las ofertas
+                // de checkout son cosas distintas: estas últimas van aparte
+                // para no pisar el precio del producto principal.
+                // Se devuelve la promesa: FunnelCheckout la espera para
+                // mostrar la confirmación o el error del backend.
+                return onComprarAhora(item, variante, oferta, cantidad, precio, form, ofertasCheckout);
               }}
             />
           </div>

@@ -129,11 +129,16 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                             </div>
                             <div className="lp-cart-item-info">
                               <span className="lp-cart-item-nombre">
-                                {oferta.estrategia === 'order_bump' ? '¿Agregás esto? ' : 'También te puede interesar: '}
+                                {(oferta.estrategia === 'order_bump' || oferta.estrategia === 'combo') ? '¿Agregás esto? ' : 'También te puede interesar: '}
                                 {item.nombre} — {oferta.nombre}
                               </span>
                               {oferta.descripcion && <span className="lp-cart-item-variante">{oferta.descripcion}</span>}
-                              <span className="lp-cart-item-precio">{formatPrecio(oferta.precio)}</span>
+                              {/* precio_efectivo = lo que el backend va a cobrar por esta
+                                  oferta; los fallbacks cubren el DTO anterior a que
+                                  precio normal y promocional fueran dos campos. */}
+                              <span className="lp-cart-item-precio">
+                                {formatPrecio(oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio)}
+                              </span>
                             </div>
                             <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta)} title="Agregar">
                               <Plus size={16} />

@@ -188,7 +188,12 @@ export const ProductDetailBlock = ({ content, settings }) => {
   // respuesta del recálculo, o si falla) vs. el resuelto por el backend
   // (fuente de verdad real — el mismo Pricing Engine que cobra el
   // checkout, incluye packs por cantidad y descuento por fecha).
-  const precioLocal = oferta ? oferta.precio : (variante ? variante.precio_efectivo : (item.precio ?? item.precio_base ?? item.precio_efectivo ?? 0));
+  // precio_efectivo = el que el backend va a cobrar por esta oferta (el
+  // promocional de checkout si lo tiene, el normal si no). El fallback a
+  // `precio` cubre el DTO anterior a que fueran dos campos separados.
+  const precioLocal = oferta
+    ? (oferta.precio_efectivo ?? oferta.precio)
+    : (variante ? variante.precio_efectivo : (item.precio ?? item.precio_base ?? item.precio_efectivo ?? 0));
   const precio = precioResuelto ? precioResuelto.precio_unitario : precioLocal;
   const stock = variante ? variante.stock : item.stock;
   const stockConocido = stock !== null && stock !== undefined;

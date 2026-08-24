@@ -210,8 +210,15 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
 }
 
 /* ─── Componente principal ────────────────────────────────────────────── */
+/**
+ * @param {boolean} [mostrarLista=true] - false oculta la lista de orden de
+ *   abajo y deja solo el botón + el modal de selección. Lo usa
+ *   ProductCheckoutOfertas, que necesita el mismo popup de catálogo pero
+ *   muestra lo elegido con su propia lista (con cantidad por producto, que
+ *   esta no tiene).
+ */
 export default function ProductPicker({
-  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar, mostrarInputs = true,
+  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar, mostrarInputs = true, mostrarLista = true,
 }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -459,13 +466,14 @@ export default function ProductPicker({
           </div>
         </div>, document.body)}
 
-      <>
-        {mostrarInputs && (
-          <p className="lb-hint">
-            Arrastrá desde la manija para definir en qué orden aparecen en tu tienda.
-            La etiqueta agrupa productos dentro de esta landing (ej: “Ofertas”) y funciona como filtro para el visitante.
-          </p>
-        )}
+      {mostrarLista && (
+        <>
+          {mostrarInputs && (
+            <p className="lb-hint">
+              Arrastrá desde la manija para definir en qué orden aparecen en tu tienda.
+              La etiqueta agrupa productos dentro de esta landing (ej: “Ofertas”) y funciona como filtro para el visitante.
+            </p>
+          )}
           <ListaOrden
             items={itemsOrdenados}
             onEtiqueta={onEtiqueta}
@@ -476,6 +484,7 @@ export default function ProductPicker({
             mostrarInputs={mostrarInputs}
           />
         </>
+      )}
     </div>
   );
 }
