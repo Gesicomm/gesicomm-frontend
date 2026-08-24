@@ -25,7 +25,11 @@ const UserLayout = ({ children }) => {
   const navigate = useNavigate();
 
   // Ocultar automáticamente en rutas de edición de landing/funnel
-  const isLandingRoute = location.pathname.match(/\/(mi-landing|landing|funnel)\/[a-zA-Z0-9_-]+/) || location.pathname.includes('funnel-selector') || location.pathname.includes('/mi-landing/producto/');
+  const isLandingRoute = Boolean(
+    location.pathname.match(/\/(mi-landing|landing|funnel)\/[a-zA-Z0-9_-]+/) ||
+    location.pathname.includes('funnel-selector') ||
+    location.pathname.includes('/mi-landing/producto/')
+  );
 
   useEffect(() => {
     if (isLandingRoute) {
