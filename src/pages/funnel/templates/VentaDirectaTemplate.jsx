@@ -8,7 +8,7 @@ import { resolverTemaFunnel } from './funnelThemeUtils';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import RichText from '../../../components/RichText';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
-import { InstagramIcon, FacebookIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
+import { RedesSocialesFooter } from '../../landing-simple/templates/sections';
 
 const NOOP = () => {};
 
@@ -536,38 +536,11 @@ export default function VentaDirectaTemplate({
         </button>
       </section>
 
-      {/* ══ REDES SOCIALES ══ */}
-      {(contacto?.instagram || contacto?.facebook || contacto?.tiktok || contacto?.youtube || contacto?.twitter) && (
-        <section className="px-6 pt-10 pb-2 text-center" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
-          <div className="flex justify-center gap-6">
-            {contacto.instagram && (
-              <a href={contacto.instagram.startsWith('http') ? contacto.instagram : `https://instagram.com/${contacto.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-100 opacity-60" style={{ color: tema.texto }}>
-                <InstagramIcon size={24} />
-              </a>
-            )}
-            {contacto.facebook && (
-              <a href={contacto.facebook.startsWith('http') ? contacto.facebook : `https://facebook.com/${contacto.facebook}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-100 opacity-60" style={{ color: tema.texto }}>
-                <FacebookIcon size={24} />
-              </a>
-            )}
-            {contacto.tiktok && (
-              <a href={contacto.tiktok.startsWith('http') ? contacto.tiktok : `https://tiktok.com/@${contacto.tiktok.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-100 opacity-60" style={{ color: tema.texto }}>
-                <TikTokIcon size={24} />
-              </a>
-            )}
-            {contacto.youtube && (
-              <a href={contacto.youtube.startsWith('http') ? contacto.youtube : `https://youtube.com/@${contacto.youtube.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-100 opacity-60" style={{ color: tema.texto }}>
-                <YoutubeIcon size={24} />
-              </a>
-            )}
-            {contacto.twitter && (
-              <a href={contacto.twitter.startsWith('http') ? contacto.twitter : `https://x.com/${contacto.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-100 opacity-60" style={{ color: tema.texto }}>
-                <TwitterIcon size={24} />
-              </a>
-            )}
-          </div>
-        </section>
-      )}
+      {/* ══ REDES SOCIALES — mismo componente que la landing (sections.jsx),
+             no una reimplementación aparte: así los íconos, el orden
+             (WhatsApp/Facebook/Instagram/TikTok/YouTube/Twitter), el color
+             de acento y el tamaño nunca pueden divergir entre ambas. ══ */}
+      <RedesSocialesFooter contacto={contacto} acento={tema.acento} bordeSuave={bordeSuave} />
 
       {/* El copyright cierra la página SIEMPRE. mt-auto lo empuja al fondo
           aunque el embudo sea corto (el contenedor es flex-column con

@@ -18,12 +18,21 @@ import OpinionesPanel from './panels/OpinionesPanel';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import ColoresPanel from '../landing-simple/panels/ColoresPanel';
 import RedesPanel from '../landing-simple/panels/RedesPanel';
+import ComplementoPanel from './panels/ComplementoPanel';
+import { ofertaService } from '../../services/ofertaService';
+import {
+  guardarComplementoDelFunnel, encontrarOfertaComplemento,
+  productoDelComplemento, SLUG_VENTA_COMPLEMENTO,
+} from './complementoOferta';
 
 // Las tabs siguen el orden en que el comprador toma la decisión, no el
 // orden en que es cómodo programarlas: producto → por qué → confianza →
-// beneficios → opiniones → objeciones.
+// beneficios → opiniones → objeciones. "Complemento" va justo después de
+// Producto porque es lo segundo que se vende, y solo existe en el embudo
+// que realmente lo ofrece.
 const TABS = [
   { key: 'producto', label: 'Producto' },
+  { key: 'complemento', label: 'Complemento', soloEn: SLUG_VENTA_COMPLEMENTO },
   { key: 'valor', label: 'Propuesta' },
   { key: 'confianza', label: 'Confianza' },
   { key: 'beneficios', label: 'Beneficios' },
@@ -55,6 +64,11 @@ export default function FunnelEditor() {
   const [variantes, setVariantes] = useState([]);
   const [tienda, setTienda] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
+  // Ofertas del producto — de acá sale el complemento actualmente enlazado
+  // al embudo (ver complementoOferta.js).
+  const [ofertas, setOfertas] = useState([]);
+  const [guardandoComplemento, setGuardandoComplemento] = useState(false);
+  const [errorComplemento, setErrorComplemento] = useState(null);
 
   // Borrador local: el panel de la izquierda edita esto y el preview lo
   // refleja en vivo, sin esperar a un guardado (mismo patrón que
@@ -92,12 +106,13 @@ export default function FunnelEditor() {
         setFaq((f.faq || []).map(q => ({ pregunta: q.pregunta, respuesta: q.respuesta })));
 
         const pid = f.producto_id;
-        const [p, imgs, vars, t, sesion] = await Promise.all([
+        const [p, imgs, vars, t, sesion, ofs] = await Promise.all([
           pid ? productService.detalle(pid).catch(() => null) : Promise.resolve(null),
           pid ? productService.imagenes(pid).catch(() => []) : Promise.resolve([]),
           pid ? productService.variantes(pid).catch(() => []) : Promise.resolve([]),
           tiendaService.obtener().catch(() => null),
           verificarSesion().catch(() => null),
+          pid ? ofertaService.listarPorProducto(pid, { soloActivas: true }).catch(() => []) : Promise.resolve([]),
         ]);
         if (!vivo) return;
         setProducto(p);
@@ -105,6 +120,7 @@ export default function FunnelEditor() {
         setVariantes(vars || []);
         setUsuarioActual(sesion);
         setTienda(t);
+        setOfertas(Array.isArray(ofs) ? ofs : []);
 
         if (p) {
           setContent(prev => ({
@@ -146,6 +162,16 @@ export default function FunnelEditor() {
     return () => observer.disconnect();
   }, [cargando]);
 
+  // Qué complemento está ofreciendo hoy este embudo (si es del tipo que los
+  // ofrece). Se deriva de la oferta enlazada en content.ofertas_producto_vista,
+  // nunca se guarda por duplicado en el embudo.
+  const esFunnelComplemento = funnel?.template?.slug === SLUG_VENTA_COMPLEMENTO;
+  const ofertaComplemento = esFunnelComplemento ? encontrarOfertaComplemento(funnel, ofertas) : null;
+  const complementoProductoId = ofertaComplemento
+    ? productoDelComplemento(ofertaComplemento, funnel?.producto_id)
+    : null;
+  const tabsVisibles = TABS.filter(t => !t.soloEn || t.soloEn === funnel?.template?.slug);
+
   function campo(clave, valor) {
     setDraft(prev => ({ ...prev, [clave]: valor }));
     setAviso('');
@@ -177,6 +203,35 @@ export default function FunnelEditor() {
       setError(err?.response?.data?.message || 'No se pudo guardar.');
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function guardarComplemento({ complementoId, precio }) {
+    setGuardandoComplemento(true);
+    setErrorComplemento(null);
+    try {
+      const nombreComplemento = (await productService.detalle(complementoId).catch(() => null))?.nombre
+        || 'Complemento';
+      const actualizado = await guardarComplementoDelFunnel({
+        funnel,
+        productoId: funnel.producto_id,
+        complementoId,
+        precio,
+        nombreComplemento,
+        ofertaExistente: ofertaComplemento,
+      });
+      setFunnel(actualizado);
+      setDraft(prev => ({ ...prev, content: actualizado.content }));
+      setContent(actualizado.content || {});
+      // Releer las ofertas: la que se acaba de crear/editar tiene que quedar
+      // reflejada en el panel sin recargar la página.
+      const ofs = await ofertaService.listarPorProducto(funnel.producto_id, { soloActivas: true }).catch(() => []);
+      setOfertas(Array.isArray(ofs) ? ofs : []);
+      setAviso('Complemento guardado.');
+    } catch (err) {
+      setErrorComplemento(err?.response?.data?.message || err?.message || 'No se pudo guardar el complemento.');
+    } finally {
+      setGuardandoComplemento(false);
     }
   }
 
@@ -323,7 +378,7 @@ export default function FunnelEditor() {
         {sidebarVisible && (
           <div className="w-80 shrink-0 border-r border-white/10 overflow-y-auto">
             <div className="grid grid-cols-4 gap-1 p-2 border-b border-white/10">
-              {TABS.map(t => (
+              {tabsVisibles.map(t => (
                 <button
                   key={t.key}
                   type="button"
@@ -343,6 +398,16 @@ export default function FunnelEditor() {
                   puedeEditar={usuarioActual?.rol === 'administrador' || (usuarioActual && producto?.creado_por === usuarioActual.id)}
                 />
               )}
+              {tab === 'complemento' && (
+                <ComplementoPanel
+                  producto={producto}
+                  complementoId={complementoProductoId}
+                  precio={ofertaComplemento?.precio_order_bump ?? ofertaComplemento?.precio_normal ?? null}
+                  guardando={guardandoComplemento}
+                  error={errorComplemento}
+                  onGuardar={guardarComplemento}
+                />
+              )}
               {tab === 'valor' && <ValorPanel content={content} onContent={setContent} />}
               {tab === 'confianza' && <ConfianzaPanel content={content} onContent={setContent} />}
               {tab === 'beneficios' && <BeneficiosPanel beneficios={beneficios} onChange={setBeneficios} />}
@@ -356,8 +421,12 @@ export default function FunnelEditor() {
 
         <div ref={containerRef} className="flex-1 overflow-y-auto bg-black/30 flex justify-center w-full relative">
           {viewportMode === 'desktop' && desktopScale < 1 ? (
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'center', transform: `scale(${desktopScale})`, transformOrigin: 'top center' }}>
-              <div style={{ width: '1440px', flexShrink: 0 }}>
+            // El transform:scale no cambia la caja de layout — sin compensar
+            // la altura acá, el contenedor scrolleable calculaba scrollHeight
+            // contra el tamaño SIN escalar y el scroll quedaba desalineado
+            // (parecía "trabado"). Mismo truco que LandingSimpleEditor.jsx.
+            <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', transform: `scale(${desktopScale})`, transformOrigin: 'top center' }}>
+              <div style={{ width: '1440px', height: `${100 / desktopScale}%`, flexShrink: 0 }}>
                 <VentaDirectaTemplate data={datosPreview} previewMode isMobile={false} />
               </div>
             </div>

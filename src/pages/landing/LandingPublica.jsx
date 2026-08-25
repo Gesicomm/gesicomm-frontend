@@ -192,11 +192,27 @@ export default function LandingPublica() {
     });
   }
 
+  /**
+   * TODOS los productos de la landing, destacados o no.
+   *
+   * En las plantillas rígidas `data.items` son solo los que el comercio
+   * marcó para el home ("Productos destacados"); el catálogo completo va en
+   * `data.catalogo_items` (ver landing.service.js#obtenerPublica). Resolver
+   * un producto por content_id contra `items` hacía que la página de
+   * cualquier producto NO destacado devolviera "Esta vidriera no está
+   * disponible", aunque el catálogo lo mostrara y linkeara. mostrar_en_inicio
+   * decide dónde aparece, nunca si su página existe.
+   */
+  const catalogoCompleto = useMemo(
+    () => (data?.catalogo_items?.length ? data.catalogo_items : (data?.items || [])),
+    [data]
+  );
+
   // Ofertas para mostrar como sugerencia en el carrito: order_bump siempre
   // que no esté ya agregada, upsell solo si su producto ancla ya está en el
   // carrito (mismo criterio que Oferta.estrategia documenta en el backend).
   const sugerenciasCarrito = useMemo(() => {
-    if (!data?.items) return [];
+    if (!data) return [];
     
     // Si la landing tiene configuracion específica de ofertas de carrito,
     // solo mostramos las ofertas listadas ahí. Si no tiene nada configurado,
@@ -207,7 +223,7 @@ export default function LandingPublica() {
     const contentIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.contentId));
     const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean));
     const sugerencias = [];
-    for (const item of data.items) {
+    for (const item of catalogoCompleto) {
       if (item.tipo !== 'producto' || !item.ofertas?.length) continue;
       for (const oferta of item.ofertas) {
         if (ofertaIdsEnCarrito.has(oferta.id)) continue;
@@ -227,7 +243,7 @@ export default function LandingPublica() {
       }
     }
     return sugerencias;
-  }, [data, carrito]);
+  }, [data, catalogoCompleto, carrito]);
 
   function agregarSugerencia(item, oferta) {
     // precio_efectivo es el que el backend va a cobrar por esta oferta
@@ -669,7 +685,7 @@ export default function LandingPublica() {
   // discriminador real de un embudo es el kind de su template.
   const esFunnel = data?.template?.kind === 'funnel';
   const itemSeleccionado = isProductView
-    ? data?.items?.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId))
+    ? catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId))
     : (esFunnel ? data?.items?.[0] || null : null);
 
   // EMBUDO — una sola página, un solo producto, una sola decisión. Módulo
@@ -831,7 +847,7 @@ export default function LandingPublica() {
     // ({id, nombre, precio, ...}), pero el carrito/tracking necesitan el
     // item COMPLETO del DTO (content_id, variantes, ofertas) — se resuelve
     // por content_id, que es justamente el `id` que usa el template.
-    const itemPorContentId = (contentId) => (data.items || []).find(i => i.content_id === contentId);
+    const itemPorContentId = (contentId) => catalogoCompleto.find(i => i.content_id === contentId);
 
     return (
       <div style={cssVarsRigido}>

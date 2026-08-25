@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft, Loader, Save, Star, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Loader, Lock, Save, Star, Trash2, Upload } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
@@ -16,7 +16,7 @@ const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 tex
 export default function ProductoPanel({
   producto, editable, cargando,
   descripcion, onDescripcion,
-  imagenes, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
+  imagenes, imagenesEditables = true, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
   faqTitulo, onFaqTitulo,
   faq, onFaqChange,
   relacionadosTitulo, onRelacionadosTitulo,
@@ -100,24 +100,37 @@ export default function ProductoPanel({
                   <div key={img.id} className="relative w-14 h-14 rounded-lg overflow-hidden border border-white/10 group">
                     <img src={getMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
                     {img.es_principal && <span className="absolute top-0.5 left-0.5 bg-white rounded-full p-0.5"><Star size={9} className="text-black" fill="black" /></span>}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                      {!img.es_principal && (
-                        <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-white/90 hover:bg-white">
-                          <Star size={11} />
+                    {imagenesEditables && (
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                        {!img.es_principal && (
+                          <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-white/90 hover:bg-white">
+                            <Star size={11} />
+                          </button>
+                        )}
+                        <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-white/90 hover:bg-white">
+                          <Trash2 size={11} />
                         </button>
-                      )}
-                      <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-white/90 hover:bg-white">
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-              <label className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white cursor-pointer w-fit">
-                {subiendoImg ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
-                Agregar imagen
-                <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={onSubirImagen} disabled={subiendoImg} />
-              </label>
+              {imagenesEditables ? (
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white cursor-pointer w-fit">
+                  {subiendoImg ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
+                  Agregar imagen
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={onSubirImagen} disabled={subiendoImg} />
+                </label>
+              ) : (
+                /* A diferencia de la descripción o la FAQ, las imágenes no se
+                   pueden personalizar por landing: son del producto del
+                   catálogo, que es compartido. Se explica en vez de mostrar un
+                   botón que el backend va a rechazar. */
+                <p className="text-xs text-white/40 flex items-start gap-1.5 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+                  <Lock size={12} className="mt-0.5 shrink-0" />
+                  <span>Las imágenes son del producto del catálogo y las administra quien lo cargó. Todo lo demás de esta página sí lo podés editar.</span>
+                </p>
+              )}
             </div>
 
             {/* ─── Descripción ──────────────────────────────────────── */}

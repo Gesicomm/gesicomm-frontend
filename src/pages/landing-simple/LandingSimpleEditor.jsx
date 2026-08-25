@@ -305,6 +305,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   }, [catalogo, items]);
 
 
+  // Las imágenes son del Producto del catálogo, compartido por todo el
+  // inquilino — no se pueden personalizar por landing como la descripción o
+  // la FAQ. Por eso acá sí manda la propiedad del producto: solo su creador
+  // (o un admin) puede tocarlas. Ver imagen.controller.js en el backend.
+  const [productoImagenesEditables, setProductoImagenesEditables] = useState(true);
   const [productoSubiendoImg, setProductoSubiendoImg] = useState(false);
   const [productoGuardando, setProductoGuardando] = useState(false);
   const [productoError, setProductoError] = useState('');
@@ -369,6 +374,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoRelacionadosTitulo('');
     setProductoRelacionados([]);
     setProductoRelacionadosAutomatico(false);
+    setProductoImagenesEditables(true);
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
     Promise.all([
@@ -378,6 +384,9 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       productService.relacionados(p.id, id).catch(() => ({ titulo: null, items: [], automatico: false })),
     ]).then(([pDetail, imgs, preguntas, relacionados]) => {
       setProductoImagenes(imgs);
+      // pDetail null = no se pudo leer el detalle; se asume no editable para
+      // no ofrecer un botón que el backend va a rechazar igual.
+      setProductoImagenesEditables(pDetail?.puede_editar === true);
 
       // Lo que este comercio ya personalizó de este producto EN ESTA landing
       // manda sobre el catálogo global (ver guardarProducto y
@@ -676,6 +685,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               descripcion={productoDescripcion}
               onDescripcion={setProductoDescripcion}
               imagenes={productoImagenes}
+              imagenesEditables={productoImagenesEditables}
               subiendoImg={productoSubiendoImg}
               onSubirImagen={subirImagenProducto}
               onEliminarImagen={eliminarImagenProducto}
