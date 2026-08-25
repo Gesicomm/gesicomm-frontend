@@ -232,10 +232,10 @@ export default function LandingPublica() {
         const estaEnConfiguracion = configOfertas.includes(String(oferta.id)) || configOfertas.includes(Number(oferta.id));
         if (!estaEnConfiguracion) continue;
 
-        // order_bump y combo son ofertas de checkout: se sugieren siempre.
-        // El upsell, por definición, solo cuando su producto ancla ya está
-        // en el carrito.
-        if (oferta.estrategia === 'order_bump' || oferta.estrategia === 'combo') {
+        // El order bump se sugiere siempre; el upsell solo cuando su producto
+        // ancla ya está en el carrito. Los combos no entran acá: se eligen en
+        // la ficha del producto, antes de agregar nada al carrito.
+        if (oferta.estrategia === 'order_bump') {
           sugerencias.push({ item, oferta });
         } else if (oferta.estrategia === 'upsell' && contentIdsEnCarrito.has(item.content_id)) {
           sugerencias.push({ item, oferta });

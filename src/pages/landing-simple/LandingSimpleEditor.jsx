@@ -293,6 +293,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoRelacionadosTitulo, setProductoRelacionadosTitulo] = useState('');
   const [productoRelacionados, setProductoRelacionados] = useState([]); // [{id, nombre, imagen, precio_efectivo}]
   const [productoRelacionadosAutomatico, setProductoRelacionadosAutomatico] = useState(false);
+  const [productoOfertas, setProductoOfertas] = useState([]);
 
   const catalogoFiltradoParaRelacionados = useMemo(() => {
     if (!catalogo || !items) return { productos: [], combos: [] };
@@ -374,6 +375,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoRelacionadosTitulo('');
     setProductoRelacionados([]);
     setProductoRelacionadosAutomatico(false);
+    setProductoOfertas([]);
     setProductoImagenesEditables(true);
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
@@ -382,8 +384,10 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       productService.imagenes(p.id).catch(() => []),
       productService.faq(p.id).catch(() => []),
       productService.relacionados(p.id, id).catch(() => ({ titulo: null, items: [], automatico: false })),
-    ]).then(([pDetail, imgs, preguntas, relacionados]) => {
+      ofertaService.listarPorProducto(p.id, { soloActivas: true }).catch(() => []),
+    ]).then(([pDetail, imgs, preguntas, relacionados, ofertas]) => {
       setProductoImagenes(imgs);
+      setProductoOfertas((ofertas || []).filter(o => o.estrategia === 'normal' || o.estrategia === 'order_bump'));
       // pDetail null = no se pudo leer el detalle; se asume no editable para
       // no ofrecer un botón que el backend va a rechazar igual.
       setProductoImagenesEditables(pDetail?.puede_editar === true);
@@ -692,6 +696,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               onMarcarPrincipal={marcarPrincipalProducto}
               config={draft?.content || {}}
               onChange={(k, v) => campo(k, v)}
+              onOfertasChange={setProductoOfertas}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
               faqTitulo={productoFaqTitulo}
@@ -777,6 +782,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               <div style={{ width: '1440px', height: `${100 / desktopScale}%`, flexShrink: 0, backgroundColor: 'transparent' }}>
                 <PreviewContent
                   productoPreview={productoPreview}
+                  productoOfertas={productoOfertas}
                   productoImagenes={productoImagenes}
                   productoDescripcion={productoDescripcion}
                   productoFaq={productoFaq}
@@ -817,6 +823,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               <div className="w-full h-full overflow-y-auto" ref={previewRef}>
                 <PreviewContent
                   productoPreview={productoPreview}
+                  productoOfertas={productoOfertas}
                   productoImagenes={productoImagenes}
                   productoDescripcion={productoDescripcion}
                   productoFaq={productoFaq}
@@ -882,11 +889,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
  * Ver landing.service.js#obtenerPublica (armado de `ofertasDto`).
  */
 export function ofertaAFormaPublica(o, productoAnclaId) {
-  const esCheckout = o.estrategia === 'order_bump' || o.estrategia === 'combo';
-  // Un combo se muestra entero; un order bump solo lo que suma.
-  const comps = o.estrategia === 'combo'
-    ? (o.componentes || [])
-    : (o.componentes || []).filter(c => Number(c.producto_id) !== Number(productoAnclaId));
+  // Solo el order bump vive en el checkout (ver Oferta.js). Un paquete
+  // (estrategia 'normal') no pasa por acá: se elige en la ficha del
+  // producto, no como casilla del checkout.
+  const esCheckout = o.estrategia === 'order_bump';
+  const componentes = o.componentes || [];
+  const compPack = componentes.find(c => Number(c.producto_id) === Number(productoAnclaId)) || componentes[0];
+  const unidades = o.tipo_contenido === 'pack' ? (Number(o.unidades ?? compPack?.cantidad) || null) : null;
+  const comps = componentes.filter(c => Number(c.producto_id) !== Number(productoAnclaId));
   const productos_incluidos = comps.map(c => {
     const imgs = c.producto?.imagenes || [];
     const principal = imgs.find(i => i.es_principal) || imgs[0];
@@ -907,6 +917,7 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
     precio_normal: precioNormal,
     precio_order_bump: bump,
     precio_efectivo: esCheckout ? (bump ?? precioNormal) : precioNormal,
+    unidades,
     producto_complementario: productos_incluidos[0] || null,
     productos_incluidos,
   };
@@ -914,16 +925,18 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
 
 // Subcomponente para renderizar el preview sin duplicar código
 function PreviewContent({
-  productoPreview, productoImagenes, productoDescripcion, productoFaq, productoFaqTitulo,
+  productoPreview, productoOfertas = [], productoImagenes, productoDescripcion, productoFaq, productoFaqTitulo,
   productoRelacionadosTitulo, productoRelacionados,
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
 }) {
   if (productoPreview) {
+    const ofertasPublicas = productoOfertas.map(o => ofertaAFormaPublica(o, productoPreview?.id));
     return (
       <ProductoPreview
         producto={productoPreview}
+        ofertas={ofertasPublicas}
         imagenes={productoImagenes}
         descripcion={productoDescripcion}
         faq={productoFaq}
@@ -936,15 +949,7 @@ function PreviewContent({
         nombreComercio={datosPreview.nombreComercio}
         isMobile={viewportMode === 'mobile'}
         previewMode={true}
-        onComprar={async () => {
-          try {
-            const ofs = await ofertaService.listarPorProducto(productoPreview?.id, { soloActivas: true });
-            if (setCompraFunnel) setCompraFunnel(ofs.map(o => ofertaAFormaPublica(o, productoPreview?.id)));
-          } catch (e) {
-            console.error(e);
-            if (setCompraFunnel) setCompraFunnel([]);
-          }
-        }}
+        onComprar={() => setCompraFunnel?.(ofertasPublicas)}
       />
     );
   }

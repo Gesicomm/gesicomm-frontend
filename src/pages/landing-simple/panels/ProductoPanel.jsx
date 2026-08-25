@@ -23,6 +23,7 @@ export default function ProductoPanel({
   relacionados, relacionadosAutomatico, onAgregarRelacionado, onQuitarRelacionado, catalogo,
   guardando, onGuardar, aviso, error,
   config, onChange,
+  onOfertasChange,
   onVolver,
 }) {
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
@@ -208,7 +209,7 @@ export default function ProductoPanel({
 
             {tab === 'ofertas' && (
               <div className="flex flex-col gap-5">
-              <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} />
+              <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
               </div>
             )}
 

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ImageOff } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
+import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import { RedesSocialesFooter } from './sections';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import RichText from '../../../components/RichText';
@@ -16,19 +17,43 @@ import StoreFooterLegal from '../../landing/StoreFooterLegal';
  * se evita duplicar "Volver"/"Guardar" en dos lugares y el preview
  * responde a cada tecla sin esperar a un guardado.
  */
-export default function ProductoPreview({ producto, imagenes, descripcion, faq, faqTitulo, relacionadosTitulo, relacionados, tema, templateSlug, contacto, nombreComercio, isMobile = false, previewMode = false, onComprar }) {
+export default function ProductoPreview({ producto, ofertas, imagenes, descripcion, faq, faqTitulo, relacionadosTitulo, relacionados, tema, templateSlug, contacto, nombreComercio, isMobile = false, previewMode = false, onComprar }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
+  const [ofertaSeleccionadaId, setOfertaSeleccionadaId] = useState(null);
 
-  if (!producto) return null;
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
-  const precio = producto.precio_efectivo ?? producto.precio_base ?? null;
+  const precioBase = producto?.precio_efectivo ?? producto?.precio_base ?? producto?.precio ?? null;
+  const paquetes = useMemo(
+    () => (ofertas || []).filter(o => o.estrategia === 'normal' && o.tipo_contenido === 'pack'),
+    [ofertas]
+  );
+  const paqueteSeleccionado = paquetes.find(o => Number(o.id) === Number(ofertaSeleccionadaId)) || null;
+  const precio = paqueteSeleccionado ? (paqueteSeleccionado.precio_efectivo ?? paqueteSeleccionado.precio) : precioBase;
 
   const galeria = (imagenes || []).map(i => i.url);
-  const imagenActual = galeria[indiceImagen] || producto.imagen || null;
+  const imagenActual = galeria[indiceImagen] || producto?.imagen || null;
   const itemsRelacionados = Array.isArray(relacionados) ? relacionados : [];
   const tituloRelacionados = (relacionadosTitulo && relacionadosTitulo.trim()) ? relacionadosTitulo.trim() : 'Productos relacionados';
+
+  useEffect(() => {
+    if (!ofertaSeleccionadaId) return;
+    if (!paquetes.some(o => Number(o.id) === Number(ofertaSeleccionadaId))) {
+      setOfertaSeleccionadaId(null);
+    }
+  }, [paquetes, ofertaSeleccionadaId]);
+
+  function ahorroPaquete(paquete) {
+    const unidades = Number(paquete.unidades) || 0;
+    const precioUnitario = Number(precioBase) || 0;
+    const precioPack = Number(paquete.precio_efectivo ?? paquete.precio) || 0;
+    if (unidades < 2 || precioUnitario <= 0 || precioPack <= 0) return null;
+    const ahorro = Math.round((1 - precioPack / (precioUnitario * unidades)) * 100);
+    return ahorro > 0 ? ahorro : null;
+  }
+
+  if (!producto) return null;
 
   return (
     <div className="w-full min-h-full" style={{ backgroundColor: t.fondo, color: t.texto }}>
@@ -65,13 +90,69 @@ export default function ProductoPreview({ producto, imagenes, descripcion, faq, 
             )}
             <h1 className="text-2xl font-extrabold mb-3">{producto.nombre}</h1>
             {precio != null && (
-              <p className="text-xl font-bold mb-4" style={{ color: t.acento }}>Gs {Number(precio).toLocaleString('es-PY')}</p>
+              <p className="text-xl font-bold mb-4" style={{ color: t.acento }}>{formatPrecio(precio)}</p>
             )}
             {descripcion && <RichText text={descripcion} className="text-sm mb-6" style={{ color: hexToRgba(t.texto, 0.7) }} />}
 
+            {paquetes.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: hexToRgba(t.texto, 0.55) }}>
+                  Elegí cómo comprarlo
+                </p>
+                <div className={`grid gap-2 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  <button
+                    type="button"
+                    onClick={() => setOfertaSeleccionadaId(null)}
+                    className="rounded-xl px-3 py-3 text-left transition-colors"
+                    style={{
+                      border: `1.5px solid ${!paqueteSeleccionado ? t.acento : bordeSuave}`,
+                      backgroundColor: !paqueteSeleccionado ? hexToRgba(t.acento, 0.14) : hexToRgba(t.texto, 0.04),
+                      color: t.texto,
+                    }}
+                  >
+                    <span className="block text-sm font-bold">Individual</span>
+                    <span className="block text-sm font-extrabold mt-1" style={{ color: t.acento }}>{formatPrecio(precioBase)}</span>
+                  </button>
+
+                  {paquetes.map(paquete => {
+                    const activa = Number(paquete.id) === Number(ofertaSeleccionadaId);
+                    const ahorro = ahorroPaquete(paquete);
+                    return (
+                      <button
+                        key={paquete.id}
+                        type="button"
+                        onClick={() => setOfertaSeleccionadaId(paquete.id)}
+                        className="rounded-xl px-3 py-3 text-left transition-colors relative overflow-hidden"
+                        style={{
+                          border: `1.5px solid ${activa ? t.acento : bordeSuave}`,
+                          backgroundColor: activa ? hexToRgba(t.acento, 0.14) : hexToRgba(t.texto, 0.04),
+                          color: t.texto,
+                        }}
+                      >
+                        {ahorro && (
+                          <span className="absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-extrabold" style={{ backgroundColor: t.acento, color: t.fondo }}>
+                            -{ahorro}%
+                          </span>
+                        )}
+                        <span className="block text-sm font-bold pr-12">{paquete.nombre}</span>
+                        <span className="block text-sm font-extrabold mt-1" style={{ color: t.acento }}>
+                          {formatPrecio(paquete.precio_efectivo ?? paquete.precio)}
+                        </span>
+                        {paquete.unidades && (
+                          <span className="block text-xs mt-1" style={{ color: hexToRgba(t.texto, 0.55) }}>
+                            Paquete × {paquete.unidades}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={() => onComprar && onComprar()}
+              onClick={() => onComprar && onComprar(paqueteSeleccionado)}
               className="w-full font-bold px-6 py-3 rounded-lg flex items-center justify-center gap-2"
               style={{ backgroundColor: t.acento, color: t.fondo }}
             >

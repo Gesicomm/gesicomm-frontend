@@ -16,10 +16,19 @@ import FunnelCheckout from '../funnel/FunnelCheckout';
 export default function ProductPagePublica({ item, onAgregar, onComprarAhora, landingConfig, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
-  // Solo las ofertas "normal" se eligen acá — order_bump/upsell se ofrecen
-  // en el carrito (ver CartDrawer.jsx)
-  const ofertasNormales = (item.ofertas || []).filter(o => o.estrategia === 'normal');
-  const tieneOfertas = ofertasNormales.length > 0;
+  /**
+   * Paquetes de este mismo producto ("1 x 233.176 / 2 x 400.000 / 3 x
+   * 550.000") — se eligen ACÁ, antes de agregarlo, junto con la cantidad. No
+   * son otros productos: son el producto ancla en más unidades, a un precio
+   * que el comercio fija a mano (ver ProductCheckoutOfertas.jsx). El order
+   * bump y el upsell no entran acá: se ofrecen después, en el checkout y en
+   * el carrito respectivamente.
+   */
+  const ofertasProducto = useMemo(
+    () => (item.ofertas || []).filter(o => o.estrategia === 'normal'),
+    [item.ofertas]
+  );
+  const tieneOfertas = ofertasProducto.length > 0;
 
   const [varianteId, setVarianteId] = useState(() => {
     if (!tieneVariantes) return null;
@@ -34,7 +43,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
   const variante = tieneVariantes ? item.variantes.find(v => v.id === varianteId) : null;
-  const oferta = ofertaId ? ofertasNormales.find(o => o.id === ofertaId) : null;
+  const oferta = ofertaId ? ofertasProducto.find(o => o.id === ofertaId) : null;
 
   const galeria = useMemo(() => {
     const propia = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
@@ -252,7 +261,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
                       <span>Individual</span>
                       <small className="lp-pill-precio">{formatPrecio(item.precio)}</small>
                     </button>
-                    {ofertasNormales.map(o => (
+                    {ofertasProducto.map(o => (
                       <button
                         key={o.id}
                         type="button"

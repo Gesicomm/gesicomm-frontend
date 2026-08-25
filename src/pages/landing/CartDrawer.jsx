@@ -129,7 +129,7 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                             </div>
                             <div className="lp-cart-item-info">
                               <span className="lp-cart-item-nombre">
-                                {(oferta.estrategia === 'order_bump' || oferta.estrategia === 'combo') ? '¿Agregás esto? ' : 'También te puede interesar: '}
+                                {oferta.estrategia === 'order_bump' ? '¿Agregás esto? ' : 'También te puede interesar: '}
                                 {item.nombre} — {oferta.nombre}
                               </span>
                               {oferta.descripcion && <span className="lp-cart-item-variante">{oferta.descripcion}</span>}

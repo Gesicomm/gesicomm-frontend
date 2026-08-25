@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity, X 
 import { ofertaService } from '../../services/ofertaService';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
+import { getMediaUrl } from '../../services/api';
 import { verificarSesion } from '../../utils/auth';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
 import { formatPrecio as formatMoney } from '../../lib/mensajeWhatsapp';
@@ -19,7 +20,6 @@ const TIPOS_CONTENIDO = [
 const ESTRATEGIAS = [
   { value: 'normal', label: 'Normal — selector en la ficha del producto' },
   { value: 'order_bump', label: 'Order bump — un producto extra en el checkout' },
-  { value: 'combo', label: 'Combo — varios productos a precio fijo en el checkout' },
   { value: 'upsell', label: 'Upsell — ofrecida cuando este producto ya está en el carrito' },
 ];
 
@@ -28,13 +28,13 @@ const ESTRATEGIAS = [
  * pueden tener un precio promocional propio (ver Oferta.js en el backend):
  * el resto se vende siempre a su precio normal.
  */
-const ESTRATEGIAS_CHECKOUT = ['order_bump', 'combo'];
+const ESTRATEGIAS_CHECKOUT = ['order_bump'];
 
 const RESUMEN_OFERTAS = [
   {
     id: 'normal',
-    titulo: 'Packs / Combos',
-    descripcion: 'Presentaciones del producto o combinaciones visibles en la ficha.',
+    titulo: 'Paquetes',
+    descripcion: 'El mismo producto en más cantidad a precio especial (ej. 2 x 770.000). Se eligen en su ficha.',
     icon: Layers,
   },
   {
@@ -42,12 +42,6 @@ const RESUMEN_OFERTAS = [
     titulo: 'Order Bumps',
     descripcion: 'Productos adicionales ofrecidos durante el checkout.',
     icon: Tag,
-  },
-  {
-    id: 'combo',
-    titulo: 'Combos de Checkout',
-    descripcion: 'Paquetes de varios productos a precio fijo, elegibles en el checkout.',
-    icon: Layers,
   },
   {
     id: 'upsell',
@@ -71,6 +65,9 @@ function emptyForm(productoId) {
     precio: 0,
     // Promocional, solo para estrategias de checkout. Vacío = se cobra el normal.
     precio_order_bump: '',
+    imagen_url: '',
+    fecha_inicio: '',
+    fecha_fin: '',
     descripcion: '',
     activo: true,
     componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }],
@@ -167,6 +164,9 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       estrategia: oferta.estrategia,
       precio: oferta.precio_normal ?? oferta.precio,
       precio_order_bump: oferta.precio_order_bump ?? '',
+      imagen_url: oferta.imagen_url || '',
+      fecha_inicio: oferta.fecha_inicio ? String(oferta.fecha_inicio).slice(0, 10) : '',
+      fecha_fin: oferta.fecha_fin ? String(oferta.fecha_fin).slice(0, 10) : '',
       descripcion: oferta.descripcion || '',
       activo: oferta.activo,
       componentes: (oferta.componentes || []).map(c => ({ producto_id: c.producto_id, cantidad: c.cantidad, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
@@ -250,6 +250,10 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
         precio_order_bump: ESTRATEGIAS_CHECKOUT.includes(form.estrategia) && form.precio_order_bump !== '' && form.precio_order_bump !== null
           ? Number(form.precio_order_bump) : null,
         precio_minimo: form.precio_minimo ? Number(form.precio_minimo) : null,
+        imagen_url: form.imagen_url || null,
+        // Vacío = sin límite por ese lado (ver PricingService.ofertaVigente).
+        fecha_inicio: form.fecha_inicio || null,
+        fecha_fin: form.fecha_fin || null,
         descripcion: form.descripcion.trim() || null,
         activo: form.activo,
         componentes: form.componentes
@@ -353,6 +357,43 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       return acc;
     }, {})
   ), [ofertas]);
+
+  /**
+   * Un Pack es una presentación alternativa de ESTE producto: el producto
+   * base lo define la ficha desde la que se está creando, no un selector.
+   * Por eso acá no hay dónde elegirlo ni cambiarlo — para armar un pack de
+   * otro producto hay que entrar a ese producto.
+   */
+  const esPack = form.estrategia === 'normal';
+
+  const productoBase = useMemo(() => {
+    const enCatalogo = productosDisponibles.find(x => Number(x.id) === Number(productoId));
+    return {
+      nombre: productoNombre,
+      precio: Number(productoAnclaPrecioBase) || 0,
+      imagen: enCatalogo?.imagen || enCatalogo?.imagenes?.[0]?.url || enCatalogo?.imagenes?.[0] || null,
+    };
+  }, [productosDisponibles, productoId, productoNombre, productoAnclaPrecioBase]);
+
+  const unidadesPack = Math.max(1, parseInt(form.componentes[0]?.cantidad, 10) || 1);
+
+  /**
+   * El precio del Pack lo fija el usuario a mano; el ahorro se deriva de
+   * comparar contra lo que costarían esas mismas unidades sueltas. Nunca al
+   * revés: el sistema no impone el precio.
+   */
+  const ahorroPack = useMemo(() => {
+    const valorIndividual = productoBase.precio * unidadesPack;
+    const precioPack = Number(form.precio) || 0;
+    if (!valorIndividual || !precioPack) return null;
+    const ahorro = valorIndividual - precioPack;
+    return {
+      valorIndividual,
+      precioPack,
+      ahorro,
+      porcentaje: (ahorro / valorIndividual) * 100,
+    };
+  }, [productoBase.precio, unidadesPack, form.precio]);
 
   const ofertasVisibles = useMemo(
     () => ofertas.filter(oferta => (oferta.estrategia || 'normal') === estrategiaVista),
@@ -538,21 +579,32 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 <label>Código interno <span className="hint">(estable, no depende del nombre)</span></label>
                 <input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value.toUpperCase() }))} placeholder="Ej. EAR-X3" required />
               </div>
+              {/* En un Pack no se eligen: el tipo es "pack" por definición y la
+                  estrategia la fija la pestaña desde la que se está creando. */}
+              {!esPack && (
+                <>
+                  <div className="form-group">
+                    <label>Tipo de contenido</label>
+                    <select value={form.tipo_contenido} onChange={e => handleTipoContenidoChange(e.target.value)}>
+                      {TIPOS_CONTENIDO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Estrategia de venta</label>
+                    <select value={form.estrategia} onChange={e => handleEstrategiaChange(e.target.value)}>
+                      {ESTRATEGIAS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
               <div className="form-group">
-                <label>Tipo de contenido</label>
-                <select value={form.tipo_contenido} onChange={e => handleTipoContenidoChange(e.target.value)}>
-                  {TIPOS_CONTENIDO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Estrategia de venta</label>
-                <select value={form.estrategia} onChange={e => handleEstrategiaChange(e.target.value)}>
-                  {ESTRATEGIAS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Precio normal</label>
+                <label>{esPack ? 'Precio del paquete' : 'Precio normal'}</label>
                 <CurrencyInput value={form.precio} onChange={val => setForm(f => ({ ...f, precio: val }))} />
+                {esPack && (
+                  <p className="field-hint">
+                    Lo definís vos. No modifica el precio del producto ({formatMoney(productoBase.precio)}), que sigue vendiéndose igual por separado.
+                  </p>
+                )}
                 {precioRecomendado !== null && Number(form.precio) !== precioRecomendado && (
                   <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                     Recomendado según catálogo y descuentos: <strong>{formatMoney(precioRecomendado)}</strong>
@@ -580,19 +632,96 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               )}
               <div className="form-group full">
                 <label>Descripción (opcional)</label>
-                <input value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Copy para mostrar en el checkout" />
+                <input value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder={esPack ? 'Ej: Llevá 2 y pagá menos' : 'Copy para mostrar en el checkout'} />
+              </div>
+              <div className="form-group full">
+                <label>Imagen de la oferta <span className="hint">(opcional)</span></label>
+                <input value={form.imagen_url} onChange={e => setForm(f => ({ ...f, imagen_url: e.target.value }))} placeholder="URL de la imagen" />
+                <p className="field-hint">Si la dejás vacía se usa la imagen del producto.</p>
+              </div>
+              {/* Vigencia. Vacío = sin límite por ese lado; fuera de la ventana
+                  la oferta deja de mostrarse y de cobrarse sola, sin tener que
+                  acordarse de desactivarla a mano. */}
+              <div className="form-group">
+                <label>Desde <span className="hint">(opcional)</span></label>
+                <input type="date" value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Hasta <span className="hint">(opcional)</span></label>
+                <input type="date" value={form.fecha_fin} onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))} />
+                {form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio && (
+                  <p className="field-hint" style={{ color: '#ef4444' }}>La fecha de fin no puede ser anterior a la de inicio.</p>
+                )}
               </div>
             </div>
 
             <div className="form-section-title" style={{ marginTop: '1.25rem' }}>
-              Componentes (receta de stock)
-              {form.tipo_contenido === 'combo' && (
+              {esPack ? 'Producto del paquete' : 'Componentes (receta de stock)'}
+              {!esPack && form.tipo_contenido === 'combo' && (
                 <button type="button" className="btn-ghost" style={{ marginLeft: 'auto' }} onClick={addComponente}>
                   <Plus size={14} /> Agregar producto
                 </button>
               )}
             </div>
-            {form.tipo_contenido === 'pack' ? (
+
+            {esPack ? (
+              <>
+                {/* Contexto, no selector: el producto base ya lo definió la
+                    ficha desde la que se entró. Para armar un pack de otro
+                    producto hay que ir a ese producto. */}
+                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {productoBase.imagen
+                      ? <img src={getMediaUrl(productoBase.imagen)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <Layers size={20} style={{ opacity: 0.4 }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{productoBase.nombre}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
+                      Precio actual: <strong style={{ color: '#cbd5e1' }}>{formatMoney(productoBase.precio)}</strong>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                      Este paquete es de este producto: solo cambia la cantidad.
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Unidades</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.componentes[0]?.cantidad ?? 1}
+                      onChange={e => setForm(f => ({ ...f, componentes: [{ producto_id: productoId, cantidad: e.target.value }] }))}
+                      style={{ width: '70px', padding: '0.45rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* El ahorro se deriva del precio que puso el usuario; el
+                    sistema informa, no impone. */}
+                {ahorroPack && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <MetricCard label={`Valor individual (${unidadesPack}×)`} value={formatMoney(ahorroPack.valorIndividual)} />
+                    <MetricCard label="Precio del paquete" value={formatMoney(ahorroPack.precioPack)} />
+                    <MetricCard
+                      label="Ahorro"
+                      value={formatMoney(ahorroPack.ahorro)}
+                      valueClass={ahorroPack.ahorro > 0 ? 'positive' : 'negative'}
+                    />
+                    <MetricCard
+                      label="Descuento"
+                      value={`${ahorroPack.porcentaje.toFixed(2).replace('.', ',')}%`}
+                      valueClass={ahorroPack.porcentaje > 0 ? 'positive' : 'negative'}
+                    />
+                  </div>
+                )}
+                {ahorroPack && ahorroPack.ahorro < 0 && (
+                  <p className="field-hint" style={{ color: '#f59e0b' }}>
+                    El paquete sale más caro que comprar {unidadesPack} unidades sueltas. Revisá el precio.
+                  </p>
+                )}
+              </>
+            ) : form.tipo_contenido === 'pack' ? (
               <div className="form-group" style={{ flexDirection: 'row', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '0.75rem' }}>
                 <div style={{ flex: 1, color: '#ccc', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
                   <Layers size={15} style={{ marginRight: '8px', opacity: 0.7 }} />
@@ -669,11 +798,13 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 );
               })
             )}
-            <p className="field-hint">
-              {form.tipo_contenido === 'pack'
-                ? 'Un "pack" es una presentación alternativa de este mismo producto (ej. "x3") — no puede incluir otros productos. Para combinar varios productos, elegí "Combo".'
-                : 'Un "combo" agrupa varios productos — una fila por cada producto incluido. El % de descuento de cada uno alimenta el análisis de abajo, no cambia el Precio de la oferta.'}
-            </p>
+            {!esPack && (
+              <p className="field-hint">
+                {form.tipo_contenido === 'pack'
+                  ? 'Un "pack" es una presentación alternativa de este mismo producto (ej. "x3") — no puede incluir otros productos. Para combinar varios productos, elegí "Combo".'
+                  : 'Un "combo" agrupa varios productos — una fila por cada producto incluido. El % de descuento de cada uno alimenta el análisis de abajo, no cambia el Precio de la oferta.'}
+              </p>
+            )}
 
             {form.tipo_contenido === 'combo' && (
               <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>

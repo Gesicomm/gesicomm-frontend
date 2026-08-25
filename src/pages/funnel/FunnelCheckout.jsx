@@ -11,8 +11,12 @@ const FORM_VACIO = {
 /**
  * Checkout del embudo: UNA sola pantalla, sin pasar por el carrito.
  */
-/** Estrategias que se ofrecen DENTRO del checkout (ver Oferta.js). */
-const ESTRATEGIAS_CHECKOUT = ['order_bump', 'combo'];
+/**
+ * Solo el order bump se ofrece DENTRO del checkout (ver Oferta.js). Un combo
+ * se elige ANTES, en la ficha del producto, junto con la cantidad — acá ya
+ * sería tarde para cambiar lo que se está comprando.
+ */
+const ESTRATEGIAS_CHECKOUT = ['order_bump'];
 
 /**
  * Lo que se cobra si el visitante acepta la oferta acá. El backend ya manda
@@ -258,11 +262,9 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               // Solo se tacha si el promocional es de verdad más barato —
               // si no, se vería un "antes" igual al "ahora".
               const hayDescuento = precioNormal > precio;
-              // Un combo se describe por lo que trae; un order bump por el
-              // producto que suma.
-              const detalle = oferta.estrategia === 'combo'
-                ? (oferta.productos_incluidos || []).map(p => p.nombre).join(' + ')
-                : principal?.nombre;
+              // Solo el order bump aparece acá (ver ESTRATEGIAS_CHECKOUT arriba):
+              // se describe por el producto que suma.
+              const detalle = principal?.nombre;
               return (
                 <label key={oferta.id} style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
