@@ -842,8 +842,74 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           )}
         </div>
       </div>
+
+      {/* Vista previa del checkout. Es el MISMO componente que usa la landing
+          pública, alimentado con la misma configuración (draft.content) y las
+          ofertas del producto ya traducidas a la forma del DTO — así se puede
+          comprobar si un order bump aparece sin tener que publicar y abrir la
+          tienda en otra pestaña. No crea ningún pedido: onConfirmar corta con
+          un aviso, que FunnelCheckout muestra dentro del formulario. */}
+      <FunnelCheckout
+        abierto={!!compraFunnel && !!productoPreview}
+        onCerrar={() => setCompraFunnel(null)}
+        tema={{
+          fondo: datosPreview?.tema?.fondo || '#ffffff',
+          texto: datosPreview?.tema?.texto || '#111827',
+          acento: datosPreview?.tema?.acento || '#111827',
+        }}
+        resumen={productoPreview ? {
+          nombre: productoPreview.nombre,
+          variante: null,
+          precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? 0,
+          imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
+        } : null}
+        ofertasLanding={draft?.content?.ofertas_producto_vista || []}
+        itemOriginal={{ id: productoPreview?.id, ofertas: compraFunnel || [] }}
+        onConfirmar={() => {
+          throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
+        }}
+      />
     </div>
   );
+}
+
+/**
+ * Traduce una Oferta como la devuelve el admin (`/productos/:id/ofertas`) a
+ * la forma que publica el backend en el DTO de la landing, que es la que
+ * espera FunnelCheckout. Se replica acá para que la vista previa muestre
+ * EXACTAMENTE lo que va a ver el visitante — incluido cuál de los dos
+ * precios se cobra — sin tener que publicar la landing para comprobarlo.
+ * Ver landing.service.js#obtenerPublica (armado de `ofertasDto`).
+ */
+export function ofertaAFormaPublica(o, productoAnclaId) {
+  const esCheckout = o.estrategia === 'order_bump' || o.estrategia === 'combo';
+  // Un combo se muestra entero; un order bump solo lo que suma.
+  const comps = o.estrategia === 'combo'
+    ? (o.componentes || [])
+    : (o.componentes || []).filter(c => Number(c.producto_id) !== Number(productoAnclaId));
+  const productos_incluidos = comps.map(c => {
+    const imgs = c.producto?.imagenes || [];
+    const principal = imgs.find(i => i.es_principal) || imgs[0];
+    return { nombre: c.producto?.nombre || null, imagen: principal?.url || null };
+  }).filter(x => x.nombre);
+
+  const precioNormal = Number(o.precio_normal ?? o.precio) || 0;
+  const bump = (o.precio_order_bump === null || o.precio_order_bump === undefined)
+    ? null : Number(o.precio_order_bump);
+
+  return {
+    id: o.id,
+    nombre: o.nombre,
+    estrategia: o.estrategia,
+    tipo_contenido: o.tipo_contenido,
+    descripcion: o.descripcion || null,
+    precio: precioNormal,
+    precio_normal: precioNormal,
+    precio_order_bump: bump,
+    precio_efectivo: esCheckout ? (bump ?? precioNormal) : precioNormal,
+    producto_complementario: productos_incluidos[0] || null,
+    productos_incluidos,
+  };
 }
 
 // Subcomponente para renderizar el preview sin duplicar código
@@ -872,8 +938,8 @@ function PreviewContent({
         previewMode={true}
         onComprar={async () => {
           try {
-            const ofs = await ofertaService.listarPorProducto(productoPreview?.id);
-            if (setCompraFunnel) setCompraFunnel(ofs);
+            const ofs = await ofertaService.listarPorProducto(productoPreview?.id, { soloActivas: true });
+            if (setCompraFunnel) setCompraFunnel(ofs.map(o => ofertaAFormaPublica(o, productoPreview?.id)));
           } catch (e) {
             console.error(e);
             if (setCompraFunnel) setCompraFunnel([]);
