@@ -18,6 +18,7 @@ import { registerLegacyBlocks } from '../../page-builder/blocks/legacyBlocks';
 import { getComponenteTemplate } from '../landing-simple/templates';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { resolverTemaPorSlug, hexToRgba } from '../landing-simple/templates/themeUtils';
+import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
 import StoreFooterLegal from './StoreFooterLegal';
 import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
 import FunnelCheckout from '../funnel/FunnelCheckout';
@@ -625,6 +626,20 @@ export default function LandingPublica() {
         <h1>Esta vidriera no está disponible</h1>
         <p>El link puede haber cambiado o el catálogo ya no está activo.</p>
       </div>
+    );
+  }
+
+  // LIENZO EN BLANCO — la landing es el HTML/CSS/JS que escribió el
+  // comercio (ver pages/landing-simple/). Nada de lo que viene abajo
+  // aplica: no hay secciones, ni carrito, ni checkout, ni páginas de
+  // producto. Va lo más arriba posible, apenas pasan los estados de
+  // carga, justamente porque no comparte NADA con los otros modos.
+  if (data?.template?.kind === 'codigo') {
+    return (
+      <LandingCodigoPublica
+        codigo={data.content?.codigo}
+        titulo={data.seo?.titulo || data.titulo || data.tienda?.nombre}
+      />
     );
   }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader, Dumbbell, Sparkles, Cpu, Store, ArrowRight } from 'lucide-react';
+import { Loader, Dumbbell, Sparkles, Cpu, Store, ArrowRight, ArrowLeft } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { getComponenteTemplate } from './templates';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
@@ -24,7 +24,7 @@ const DATA_PREVIEW = mapEditorDraftToTemplateData({
  * haya borrado la anterior (spec punto 12): la lista sale de
  * LandingTemplate (kind=rigido), nunca de si existe o no una Landing.
  */
-export default function TemplateSelector({ onCreada }) {
+export default function TemplateSelector({ onCreada, onVolver }) {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -64,6 +64,18 @@ export default function TemplateSelector({ onCreada }) {
 
   return (
     <div className="p-6 md:p-10 max-w-6xl mx-auto">
+      {/* Solo aparece si se llegó desde ModoSelector — cuando el comercio
+          ya eligió "con template" pero se quiere arrepentir y usar el
+          lienzo en blanco. */}
+      {onVolver && (
+        <button
+          type="button"
+          onClick={onVolver}
+          className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition-colors mb-4"
+        >
+          <ArrowLeft size={13} /> Volver a elegir cómo armarla
+        </button>
+      )}
       <h1 className="text-2xl font-bold text-white mb-1">Elegí un template para comenzar</h1>
       <p className="text-white/50 mb-8">Estructura y diseño ya definidos — vos solo cargás productos, contacto y preguntas frecuentes.</p>
 

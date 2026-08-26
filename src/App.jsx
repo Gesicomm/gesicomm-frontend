@@ -25,7 +25,7 @@ import LandingPublica from './pages/landing/LandingPublica';
 import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
 import FunnelEntry from './pages/funnel/FunnelEntry';
 import FunnelEditor from './pages/funnel/FunnelEditor';
-import LandingSimpleEditor from './pages/landing-simple/LandingSimpleEditor';
+import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
@@ -255,14 +255,16 @@ function App() {
         <Route path="/mi-landing/:id" element={
           <RequireTienda><UserLayout><LandingEditor /></UserLayout></RequireTienda>
         } />
-        {/* Landing simple — 3 templates rígidos (Fitness/Beauty/Tech). Ver
-            pages/landing-simple/. Sistema paralelo al de arriba: el
-            comercio solo edita contenido, nunca estructura. */}
+        {/* Landing de la tienda — ver pages/landing-simple/. Sistema
+            paralelo al de arriba, con dos modos que arrancan en
+            ModoSelector: templates rígidos (Fitness/Beauty/Tech/Básico,
+            el comercio solo edita contenido) o lienzo en blanco (escribe
+            el HTML/CSS/JS a mano). EditorSegunModo elige el editor. */}
         <Route path="/landing" element={
           <RequireTienda><UserLayout><LandingSimpleEntry /></UserLayout></RequireTienda>
         } />
         <Route path="/landing/:id" element={
-          <RequireTienda><UserLayout><LandingSimpleEditor /></UserLayout></RequireTienda>
+          <RequireTienda><UserLayout><EditorSegunModo /></UserLayout></RequireTienda>
         } />
         {/* EMBUDOS — módulo propio (pages/funnel/). Una página por producto,
             hecha para llevar al cliente al checkout. Nada que ver con

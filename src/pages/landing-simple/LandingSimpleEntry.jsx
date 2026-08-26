@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
-import TemplateSelector from './TemplateSelector';
+import ModoSelector from './ModoSelector';
 
 /**
- * Puerta de entrada de "/landing" — si el comercio ya tiene una landing
- * rígida, la abre directo; si no tiene ninguna (nunca creó una, o borró
- * la única que tenía — spec punto 12), muestra el selector de los 3
- * templates. La lista de templates sale de LandingTemplate (kind=rigido),
- * nunca depende de si existe o no una Landing — por eso reaparece siempre.
+ * Puerta de entrada de "/landing" — si el comercio ya tiene una landing,
+ * la abre directo; si no tiene ninguna (nunca creó una, o borró la única
+ * que tenía — spec punto 12), muestra ModoSelector: primero cómo armarla
+ * (template o lienzo en blanco) y recién después con qué template. Ese
+ * selector no depende de si existe o no una Landing — por eso reaparece
+ * siempre que se queda en cero.
  */
 export default function LandingSimpleEntry() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function LandingSimpleEntry() {
   }
 
   if (sinLandings) {
-    return <TemplateSelector />;
+    return <ModoSelector />;
   }
 
   return null;

@@ -9,6 +9,9 @@ export const landingSimpleService = {
 
   listar: () => API.get('/mis-landings-simples').then(r => r.data),
   crear: (templateId) => API.post('/mis-landings-simples', { template_id: templateId }).then(r => r.data),
+  // Lienzo en blanco (kind='codigo'): no lleva template_id — el template
+  // de código es uno solo y lo resuelve el backend por slug.
+  crearLienzoBlanco: () => API.post('/mis-landings-simples/lienzo-blanco').then(r => r.data),
   obtener: (id) => API.get(`/mis-landings-simples/${id}`).then(r => r.data),
   actualizar: (id, payload) => API.put(`/mis-landings-simples/${id}`, payload).then(r => r.data),
   eliminar: (id) => API.delete(`/mis-landings-simples/${id}`).then(r => r.data),
