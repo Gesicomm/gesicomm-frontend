@@ -6,6 +6,8 @@ import {
 import { ofertaService } from '../../services/ofertaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { funnelService } from '../../services/funnelService';
+import ComplementoConfig from '../funnel/ComplementoConfig';
+import { guardarComplementoDelFunnel, leerConfigComplemento, SLUG_VENTA_COMPLEMENTO } from '../funnel/complementoOferta';
 import { tiendaService } from '../../services/tiendaService';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
@@ -59,6 +61,16 @@ const ESTRATEGIAS = [
     cta: 'Crear combo',
   },
 ];
+
+/**
+ * Estrategias que se materializan en un EMBUDO propio (pages/funnel/), con
+ * su slug de template. Las que no están acá siguen siendo solo configuración
+ * de Ofertas sobre la landing del comercio.
+ */
+const ESTRATEGIAS_CON_EMBUDO = {
+  venta_rapida: 'venta-directa',
+  venta_complemento: SLUG_VENTA_COMPLEMENTO,
+};
 
 function generarCodigo(prefijo, productoId) {
   return `${prefijo}-${productoId}-${Date.now().toString(36).toUpperCase()}`;
@@ -352,6 +364,54 @@ function PreviewRecorrido({ producto, bump, upsell }) {
   );
 }
 
+/**
+ * Estado "ya existe el embudo" — compartido por las dos estrategias que se
+ * materializan en uno, para que digan lo mismo de la misma forma.
+ */
+function EmbudoListo({ funnel, urlFunnel, etiqueta }) {
+  return (
+    <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <Check size={14} color="#34d399" />
+        <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Embudo de {etiqueta} listo para este producto.</span>
+      </div>
+      {urlFunnel && (
+        <code style={{ fontSize: '0.76rem', color: '#34d399', wordBreak: 'break-all' }}>{urlFunnel}</code>
+      )}
+      <a
+        href={`/funnel/${funnel.id}`}
+        target="_blank"
+        rel="noreferrer"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#3d5fa3', alignSelf: 'flex-start' }}
+      >
+        Editar contenido del embudo <ExternalLink size={11} />
+      </a>
+      {!funnel.activo && (
+        <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
+          Está en borrador — publicalo desde el editor para que el link funcione.
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Un producto tiene UN embudo. Si ya tiene uno de otro tipo, esta estrategia
+ * lo convertiría — se avisa antes en vez de cambiarlo por sorpresa.
+ */
+function AvisoCambioDeTipo({ funnel }) {
+  return (
+    <div style={{ ...s.card, display: 'flex', gap: '0.5rem', background: 'rgba(217,119,6,0.08)', borderColor: 'rgba(217,119,6,0.3)' }}>
+      <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+      <span style={{ fontSize: '0.8rem', color: '#e0b978' }}>
+        Este producto ya tiene un embudo de <b>{funnel.template?.name}</b>. Un
+        producto tiene un solo embudo, así que continuar lo convierte a esta
+        estrategia (el contenido que ya cargaste se conserva).
+      </span>
+    </div>
+  );
+}
+
 /* ─── Panel: Venta rápida — usa el módulo de EMBUDOS propio ─────────────
    No es la página de producto de la landing del comercio (eso era el
    comportamiento viejo): "Venta Directa" es su propio Landing con
@@ -359,7 +419,7 @@ function PreviewRecorrido({ producto, bump, upsell }) {
    estrategia crea (o reutiliza, es idempotente) el embudo del producto y
    lo deja linkeado a la campaña vía landingId — mismo id que
    MetaCampanaInterna.landing_id. ────────────────────────────────────── */
-function PanelVentaRapida({ ofertas, guardando, onConfirmar, funnel, templates, cargandoFunnel, creandoId, errorFunnel, urlFunnel, onCrearFunnel }) {
+function PanelVentaRapida({ ofertas, onConfirmar, funnel, esDeEstaEstrategia, cargandoFunnel, creando, errorFunnel, urlFunnel, onCrearFunnel }) {
   const activas = (ofertas || []).filter(o => o.activo !== false && o.estrategia !== 'normal');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -379,63 +439,81 @@ function PanelVentaRapida({ ofertas, guardando, onConfirmar, funnel, templates, 
         <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
           <Loader2 size={18} className="animate-spin" color="#3d5fa3" />
         </div>
-      ) : !funnel ? (
-        /* Sin embudo todavía: el comercio elige con qué tipo armarlo — nunca
-           se crea en silencio con un template elegido por el sistema. */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#ccc' }}>Elegí el tipo de embudo</span>
-          {(templates || []).map(tpl => {
-            const creando = creandoId === tpl.id;
-            return (
-              <div key={tpl.id} style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>{tpl.name}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.74rem', color: '#888' }}>{tpl.description}</p>
-                </div>
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => onCrearFunnel(tpl.id)}
-                  disabled={creandoId !== null}
-                  style={{ ...s.btnPrimary, flexShrink: 0 }}
-                >
-                  {creando ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                  {creando ? 'Creando…' : 'Usar este tipo'}
-                </button>
-              </div>
-            );
-          })}
-          {templates?.length === 0 && (
-            <span style={{ fontSize: '0.78rem', color: '#888' }}>No hay tipos de embudo disponibles.</span>
-          )}
-        </div>
+      ) : esDeEstaEstrategia ? (
+        <EmbudoListo funnel={funnel} urlFunnel={urlFunnel} etiqueta="Venta Directa" />
       ) : (
-        <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Check size={14} color="#34d399" />
-            <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Embudo de Venta Directa listo para este producto.</span>
-          </div>
-          {urlFunnel && (
-            <code style={{ fontSize: '0.76rem', color: '#34d399', wordBreak: 'break-all' }}>{urlFunnel}</code>
-          )}
-          <a
-            href={`/funnel/${funnel.id}`}
-            target="_blank"
-            rel="noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: '#3d5fa3', alignSelf: 'flex-start' }}
+        <>
+          {funnel && <AvisoCambioDeTipo funnel={funnel} />}
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={onCrearFunnel}
+            disabled={creando}
+            style={s.btnPrimary}
           >
-            Editar contenido del embudo <ExternalLink size={11} />
-          </a>
-          {!funnel.activo && (
-            <span style={{ fontSize: '0.72rem', color: '#f59e0b' }}>
-              Está en borrador — publicalo desde el editor para que el link funcione.
-            </span>
-          )}
-        </div>
+            {creando ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+            {creando ? 'Creando…' : (funnel ? 'Convertir a Venta Directa' : 'Crear embudo de Venta Directa')}
+          </button>
+        </>
       )}
 
-      <button type="button" className="btn-primary" onClick={onConfirmar} disabled={guardando || !funnel} style={s.btnPrimary}>
-        {guardando ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Usar esta estrategia
+      <button type="button" className="btn-primary" onClick={onConfirmar} disabled={!esDeEstaEstrategia} style={s.btnPrimary}>
+        <Check size={14} /> Usar esta estrategia
+      </button>
+    </div>
+  );
+}
+
+/* ─── Panel: Venta con complemento ──────────────────────────────────────
+   Misma estrategia que se arma desde Mis Productos, con el MISMO
+   configurador (ComplementoConfig) — el complemento se elige antes de crear
+   el embudo, nunca queda a medias. El order bump no es una sección de la
+   página: se ofrece en el checkout (ver FunnelCheckout.jsx). ─────────── */
+function PanelVentaComplemento({
+  producto, funnel, esDeEstaEstrategia, cargandoFunnel, creando,
+  errorFunnel, urlFunnel, complementoActual, onCrearFunnel, onConfirmar,
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+      <p style={s.muted}>
+        El cliente compra tu producto principal y, justo antes de terminar, se
+        le ofrece un complemento relacionado.
+      </p>
+
+      {errorFunnel && <span style={s.err}>{errorFunnel}</span>}
+
+      {cargandoFunnel ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+          <Loader2 size={18} className="animate-spin" color="#3d5fa3" />
+        </div>
+      ) : esDeEstaEstrategia ? (
+        <>
+          <EmbudoListo funnel={funnel} urlFunnel={urlFunnel} etiqueta="Venta con complemento" />
+          <span style={{ ...s.muted, fontSize: '0.74rem' }}>
+            El complemento se cambia desde la pestaña “Complemento” del editor.
+          </span>
+        </>
+      ) : (
+        <>
+          {funnel && <AvisoCambioDeTipo funnel={funnel} />}
+          <div style={{ ...s.card }}>
+            <ComplementoConfig
+              producto={producto}
+              complementoInicialId={complementoActual?.productoId || null}
+              precioInicial={complementoActual?.precio ?? null}
+              precioListaInicial={complementoActual?.precioLista ?? null}
+              descripcionInicial={complementoActual?.descripcion || ''}
+              cantidadInicial={complementoActual?.cantidad || 1}
+              guardando={creando}
+              textoConfirmar={funnel ? 'Convertir y guardar' : 'Crear embudo'}
+              onConfirmar={onCrearFunnel}
+            />
+          </div>
+        </>
+      )}
+
+      <button type="button" className="btn-primary" onClick={onConfirmar} disabled={!esDeEstaEstrategia} style={s.btnPrimary}>
+        <Check size={14} /> Usar esta estrategia
       </button>
     </div>
   );
@@ -454,7 +532,10 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
 
   // Embudo de Venta Directa del producto activo — módulo propio (ver
   // pages/funnel/), nada que ver con landingTienda de acá arriba.
-  const [funnelVentaDirecta, setFunnelVentaDirecta] = useState(null);
+  // Un producto tiene UN embudo (funnelService.crear es idempotente) — este
+  // es el que ya existe, sea del tipo que sea. Cada card sabe si coincide
+  // con el suyo mirando funnel.template.slug.
+  const [funnelDelProducto, setFunnelDelProducto] = useState(null);
   const [templatesFunnel, setTemplatesFunnel] = useState([]);
   const [cargandoFunnel, setCargandoFunnel] = useState(false);
   const [creandoFunnelId, setCreandoFunnelId] = useState(null);
@@ -505,31 +586,32 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
   useEffect(() => {
     setEstrategiaAbierta(null);
     setMensajeCombo(false);
-    setFunnelVentaDirecta(null);
+    setFunnelDelProducto(null);
     setErrorFunnel(null);
     recargarOfertas();
   }, [productoActivoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Al abrir "Venta rápida" se busca el embudo del producto — si ya existe
-  // (funnelService.porProducto) se reusa y se linkea la campaña. Si no
-  // existe, se traen los tipos de embudo disponibles para que el comercio
-  // ELIJA con cuál crearlo (nunca se crea en silencio con un template
-  // decidido por el sistema — ver el selector en PanelVentaRapida).
+  // Al abrir una estrategia que se materializa en un embudo se busca el que
+  // el producto ya tenga (funnelService.crear es idempotente) y se linkea la
+  // campaña. Nunca se crea uno en silencio: cada panel pide primero lo que
+  // su estrategia necesita.
   useEffect(() => {
-    if (estrategiaAbierta !== 'venta_rapida' || !productoActivoId) return;
+    if (!ESTRATEGIAS_CON_EMBUDO[estrategiaAbierta] || !productoActivoId) return;
     let vivo = true;
     setCargandoFunnel(true);
     setErrorFunnel(null);
-    setFunnelVentaDirecta(null);
-    funnelService.porProducto(productoActivoId)
-      .then(existente => {
+    setFunnelDelProducto(null);
+    Promise.all([
+      funnelService.porProducto(productoActivoId),
+      funnelService.listarTemplates().catch(() => []),
+    ])
+      .then(([existente, tpls]) => {
         if (!vivo) return;
+        setTemplatesFunnel(tpls || []);
         if (existente) {
-          setFunnelVentaDirecta(existente);
+          setFunnelDelProducto(existente);
           setLandingId(existente.id);
-          return;
         }
-        return funnelService.listarTemplates().then(tpls => { if (vivo) setTemplatesFunnel(tpls || []); });
       })
       .catch(err => {
         if (!vivo) return;
@@ -539,33 +621,72 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
     return () => { vivo = false; };
   }, [estrategiaAbierta, productoActivoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function crearFunnelVentaDirecta(templateId) {
-    setCreandoFunnelId(templateId);
-    setErrorFunnel(null);
-    funnelService.crear(productoActivoId, templateId)
-      .then(funnel => {
-        setFunnelVentaDirecta(funnel);
-        setLandingId(funnel.id);
-      })
-      .catch(err => {
-        setErrorFunnel(err?.response?.data?.message || err?.message || 'No se pudo crear el embudo.');
-      })
-      .finally(() => setCreandoFunnelId(null));
+  /** El template de embudo que corresponde a la estrategia abierta. */
+  function templateDe(slug) {
+    return (templatesFunnel || []).find(t => t.slug === slug) || null;
   }
 
-  const urlFunnel = tienda?.subdominio && funnelVentaDirecta?.slug
-    ? `https://${tienda.subdominio}.gesicomm.com/${funnelVentaDirecta.slug}`
+  /**
+   * Crea (o convierte) el embudo del producto al tipo de esta estrategia y lo
+   * deja vinculado a la campaña. `extras` lo usa Venta con complemento para
+   * configurar el order bump en el mismo paso.
+   */
+  async function crearFunnel(slug, extras = null) {
+    const tpl = templateDe(slug);
+    if (!tpl) {
+      setErrorFunnel('No se encontró el tipo de embudo. Probá recargar la página.');
+      return;
+    }
+    setCreandoFunnelId(tpl.id);
+    setErrorFunnel(null);
+    try {
+      let funnel = await funnelService.crear(productoActivoId, tpl.id);
+      if (extras?.complementoId) {
+        const nombreComplemento = productos.find(p => p.id === Number(extras.complementoId))?.nombre || 'Complemento';
+        funnel = await guardarComplementoDelFunnel({
+          funnel,
+          productoId: Number(productoActivoId),
+          complementoId: extras.complementoId,
+          precio: extras.precio,
+          precioLista: extras.precioLista,
+          descripcion: extras.descripcion,
+          cantidad: extras.cantidad,
+          nombreComplemento,
+          ofertaExistente: bumpActivo,
+        });
+        recargarOfertas();
+      }
+      setFunnelDelProducto(funnel);
+      setLandingId(funnel.id);
+    } catch (err) {
+      setErrorFunnel(err?.response?.data?.message || err?.message || 'No se pudo crear el embudo.');
+    } finally {
+      setCreandoFunnelId(null);
+    }
+  }
+
+  const urlFunnel = tienda?.subdominio && funnelDelProducto?.slug
+    ? `https://${tienda.subdominio}.gesicomm.com/${funnelDelProducto.slug}`
     : null;
+
 
   const recomendacion = useMemo(() => computeRecomendacion(ofertas, productoActivoId), [ofertas, productoActivoId]);
   const bumpActivo = ofertas.find(o => o.activo !== false && o.estrategia === 'order_bump');
   const upsellActivo = ofertas.find(o => o.activo !== false && o.estrategia === 'upsell');
 
+  // Si el producto ya tiene un order bump cargado (por el flujo viejo o por
+  // otro embudo), el configurador arranca con esa config en vez de pedirla
+  // de cero. Mismo lector que usa el editor del embudo — una sola fuente.
+  const complementoActual = useMemo(
+    () => leerConfigComplemento(bumpActivo, productoActivoId),
+    [bumpActivo, productoActivoId]
+  );
+
   // Abre el editor del funnel. Si no existe, lo crea automáticamente con el
   // primer template disponible para que el usuario no tenga que elegirlo de nuevo.
   async function abrirEditorDeContenido() {
-    if (funnelVentaDirecta) {
-      window.open(`/funnel/${funnelVentaDirecta.id}`, '_blank', 'noopener');
+    if (funnelDelProducto) {
+      window.open(`/funnel/${funnelDelProducto.id}`, '_blank', 'noopener');
       return;
     }
     
@@ -690,26 +811,29 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
           {estrategiaAbierta === 'venta_rapida' && (
             <PanelVentaRapida
               ofertas={ofertas}
-              guardando={false}
               onConfirmar={() => setEstrategiaAbierta(null)}
-              funnel={funnelVentaDirecta}
-              templates={templatesFunnel}
+              funnel={funnelDelProducto}
+              esDeEstaEstrategia={funnelDelProducto?.template?.slug === 'venta-directa'}
               cargandoFunnel={cargandoFunnel}
-              creandoId={creandoFunnelId}
+              creando={creandoFunnelId !== null}
               errorFunnel={errorFunnel}
               urlFunnel={urlFunnel}
-              onCrearFunnel={crearFunnelVentaDirecta}
+              onCrearFunnel={() => crearFunnel('venta-directa')}
             />
           )}
 
           {estrategiaAbierta === 'venta_complemento' && (
-            <SugerenciaForm
-              tipo="order_bump"
-              productoActivoId={productoActivoId}
-              productos={productos}
-              ofertaExistente={bumpActivo}
-              onGuardado={recargarOfertas}
-              onError={onError}
+            <PanelVentaComplemento
+              producto={producto}
+              funnel={funnelDelProducto}
+              esDeEstaEstrategia={funnelDelProducto?.template?.slug === SLUG_VENTA_COMPLEMENTO}
+              cargandoFunnel={cargandoFunnel}
+              creando={creandoFunnelId !== null}
+              errorFunnel={errorFunnel}
+              urlFunnel={urlFunnel}
+              complementoActual={complementoActual}
+              onCrearFunnel={(datos) => crearFunnel(SLUG_VENTA_COMPLEMENTO, datos)}
+              onConfirmar={() => setEstrategiaAbierta(null)}
             />
           )}
 

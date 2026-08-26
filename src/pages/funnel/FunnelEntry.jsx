@@ -139,7 +139,7 @@ export default function FunnelEntry() {
     }
   }
 
-  async function crearConComplemento({ complementoId, precio }) {
+  async function crearConComplemento({ complementoId, precio, precioLista, descripcion, cantidad }) {
     setCreandoId(configurando.id);
     setError('');
     try {
@@ -151,6 +151,9 @@ export default function FunnelEntry() {
         productoId: Number(productoId),
         complementoId,
         precio,
+        precioLista,
+        descripcion,
+        cantidad,
         nombreComplemento,
         ofertaExistente: bumpExistente,
       });

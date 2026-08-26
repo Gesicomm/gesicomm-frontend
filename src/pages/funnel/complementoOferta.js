@@ -18,18 +18,28 @@ export const SLUG_VENTA_COMPLEMENTO = 'venta-complemento';
  * tipo_contenido='combo' porque un "pack" solo admite el propio producto
  * ancla como componente (ver oferta.service.js#validarComponentesParaTipo).
  */
-export function armarPayloadComplemento({ nombreComplemento, complementoId, precio, codigoExistente, productoId }) {
+export function armarPayloadComplemento({
+  nombreComplemento, complementoId, precio, precioLista, descripcion,
+  cantidad = 1, codigoExistente, productoId,
+}) {
+  const bump = Number(precio) || 0;
+  // Los dos precios existen a propósito (ver Oferta.js): precio_normal es el
+  // de referencia (lo que vale por su canal habitual) y precio_order_bump es
+  // el promocional que se cobra al aceptarlo en el checkout. El tachado del
+  // checkout se dibuja SOLO si el normal es mayor — si el comercio no carga
+  // un precio de lista, ambos quedan iguales y no se tacha nada (no se
+  // inventa un "antes" que nunca existió).
+  const lista = Number(precioLista) || 0;
   return {
     codigo: codigoExistente || `CMP-${productoId}-${Date.now().toString(36).toUpperCase()}`,
     nombre: `Complemento — ${nombreComplemento}`,
     tipo_contenido: 'combo',
     estrategia: 'order_bump',
-    // Los dos precios existen a propósito (ver Oferta.js): el bump es lo
-    // que se cobra al aceptarlo en el checkout.
-    precio_normal: precio,
-    precio_order_bump: precio,
+    precio_normal: lista > bump ? lista : bump,
+    precio_order_bump: bump,
+    descripcion: descripcion?.trim() || null,
     activo: true,
-    componentes: [{ producto_id: Number(complementoId), cantidad: 1 }],
+    componentes: [{ producto_id: Number(complementoId), cantidad: Math.max(1, Number(cantidad) || 1) }],
   };
 }
 
@@ -42,6 +52,9 @@ export async function guardarComplementoDelFunnel({
   productoId,
   complementoId,
   precio,
+  precioLista,
+  descripcion,
+  cantidad,
   nombreComplemento,
   ofertaExistente = null,
 }) {
@@ -49,6 +62,9 @@ export async function guardarComplementoDelFunnel({
     nombreComplemento,
     complementoId,
     precio,
+    precioLista,
+    descripcion,
+    cantidad,
     productoId,
     codigoExistente: ofertaExistente?.codigo,
   });
@@ -78,4 +94,28 @@ export function productoDelComplemento(oferta, productoPrincipalId) {
     c => Number(c.producto_id) !== Number(productoPrincipalId)
   ) || (oferta?.componentes || [])[0];
   return comp ? Number(comp.producto_id) : null;
+}
+
+/**
+ * Todo lo configurable del complemento, leído de la Oferta — para precargar
+ * el configurador sin que el comercio tenga que recargarlo a mano.
+ */
+export function leerConfigComplemento(oferta, productoPrincipalId) {
+  if (!oferta) return null;
+  const comp = (oferta.componentes || []).find(
+    c => Number(c.producto_id) !== Number(productoPrincipalId)
+  ) || (oferta.componentes || [])[0];
+  if (!comp) return null;
+
+  const bump = oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? null;
+  const normal = oferta.precio_normal ?? oferta.precio ?? null;
+  return {
+    productoId: Number(comp.producto_id),
+    precio: bump,
+    // Solo se considera "precio de lista" si de verdad es mayor: si son
+    // iguales no hay descuento que mostrar y el campo debe verse vacío.
+    precioLista: normal != null && bump != null && normal > bump ? normal : null,
+    descripcion: oferta.descripcion || '',
+    cantidad: Number(comp.cantidad) || 1,
+  };
 }

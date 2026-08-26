@@ -22,7 +22,7 @@ import ComplementoPanel from './panels/ComplementoPanel';
 import { ofertaService } from '../../services/ofertaService';
 import {
   guardarComplementoDelFunnel, encontrarOfertaComplemento,
-  productoDelComplemento, SLUG_VENTA_COMPLEMENTO,
+  leerConfigComplemento, SLUG_VENTA_COMPLEMENTO,
 } from './complementoOferta';
 
 // Las tabs siguen el orden en que el comprador toma la decisión, no el
@@ -167,9 +167,7 @@ export default function FunnelEditor() {
   // nunca se guarda por duplicado en el embudo.
   const esFunnelComplemento = funnel?.template?.slug === SLUG_VENTA_COMPLEMENTO;
   const ofertaComplemento = esFunnelComplemento ? encontrarOfertaComplemento(funnel, ofertas) : null;
-  const complementoProductoId = ofertaComplemento
-    ? productoDelComplemento(ofertaComplemento, funnel?.producto_id)
-    : null;
+  const configComplemento = leerConfigComplemento(ofertaComplemento, funnel?.producto_id);
   const tabsVisibles = TABS.filter(t => !t.soloEn || t.soloEn === funnel?.template?.slug);
 
   function campo(clave, valor) {
@@ -206,7 +204,7 @@ export default function FunnelEditor() {
     }
   }
 
-  async function guardarComplemento({ complementoId, precio }) {
+  async function guardarComplemento({ complementoId, precio, precioLista, descripcion, cantidad }) {
     setGuardandoComplemento(true);
     setErrorComplemento(null);
     try {
@@ -217,6 +215,9 @@ export default function FunnelEditor() {
         productoId: funnel.producto_id,
         complementoId,
         precio,
+        precioLista,
+        descripcion,
+        cantidad,
         nombreComplemento,
         ofertaExistente: ofertaComplemento,
       });
@@ -401,8 +402,11 @@ export default function FunnelEditor() {
               {tab === 'complemento' && (
                 <ComplementoPanel
                   producto={producto}
-                  complementoId={complementoProductoId}
-                  precio={ofertaComplemento?.precio_order_bump ?? ofertaComplemento?.precio_normal ?? null}
+                  complementoId={configComplemento?.productoId || null}
+                  precio={configComplemento?.precio ?? null}
+                  precioLista={configComplemento?.precioLista ?? null}
+                  descripcion={configComplemento?.descripcion || ''}
+                  cantidad={configComplemento?.cantidad || 1}
                   guardando={guardandoComplemento}
                   error={errorComplemento}
                   onGuardar={guardarComplemento}

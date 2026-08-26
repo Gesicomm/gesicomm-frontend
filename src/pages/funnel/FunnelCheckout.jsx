@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Check, Loader, ImageOff, Gift } from 'lucide-react';
+import { X, Check, Loader, ImageOff, Gift, Sparkles } from 'lucide-react';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
@@ -215,6 +215,74 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               </div>
             )}
 
+            {/* ORDER BUMP — va acá, entre el resumen y el formulario: el
+                cliente ya decidió qué compra y todavía no empezó a completar
+                datos, que es el momento en que sumar algo cuesta menos. No es
+                otra página de venta: es una decisión chica y contextual. */}
+            {ofertasCheckout.length > 0 && (
+              <div style={{ borderTop: `1px solid ${bordeSuave}`, paddingTop: '0.85rem', marginTop: '0.15rem' }}>
+                <p style={{
+                  display: 'flex', alignItems: 'center', gap: '0.35rem',
+                  fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.04em',
+                  textTransform: 'uppercase', color: hexToRgba(tema.texto, 0.55),
+                  marginBottom: '0.5rem',
+                }}>
+                  <Sparkles size={13} style={{ color: tema.acento }} /> Completá tu compra
+                </p>
+
+                {ofertasCheckout.map(oferta => {
+                  const principal = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
+                  const imgCruda = principal?.imagen;
+                  const img = typeof imgCruda === 'string' ? imgCruda : (imgCruda?.url || imgCruda?.ruta || null);
+                  const elegida = seleccionadas.has(oferta.id);
+                  const precio = precioEnCheckout(oferta);
+                  const precioNormal = oferta.precio_normal ?? oferta.precio;
+                  // Solo se tacha si el promocional es de verdad más barato —
+                  // si no, se vería un "antes" igual al "ahora".
+                  const hayDescuento = precioNormal > precio;
+                  const unidades = oferta.unidades > 1 ? oferta.unidades : null;
+                  // Solo el order bump aparece acá (ver ESTRATEGIAS_CHECKOUT arriba):
+                  // se describe por el producto que suma.
+                  const detalle = principal?.nombre;
+                  return (
+                    <label key={oferta.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
+                      borderRadius: '0.5rem', border: `2px ${elegida ? 'solid' : 'dashed'}`,
+                      borderColor: elegida ? tema.acento : bordeSuave,
+                      backgroundColor: elegida ? hexToRgba(tema.acento, 0.06) : hexToRgba(tema.texto, 0.02),
+                      cursor: 'pointer', marginTop: '0.4rem', transition: 'border-color 0.2s, background-color 0.2s',
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={elegida}
+                        onChange={e => alternarOferta(oferta.id, e.target.checked)}
+                        style={{ width: '1.2rem', height: '1.2rem', accentColor: tema.acento }}
+                      />
+                      <div style={{ width: 44, height: 44, borderRadius: '0.25rem', overflow: 'hidden', backgroundColor: hexToRgba(tema.texto, 0.06), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {img ? <img src={getMediaUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: tema.acento }} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: tema.texto, lineHeight: 1.2 }}>
+                          {oferta.descripcion || oferta.nombre || `Agregar ${detalle || 'oferta'}`}
+                        </span>
+                        {detalle && (
+                          <span style={{ fontSize: '0.72rem', color: hexToRgba(tema.texto, 0.55), lineHeight: 1.3, marginTop: '1px' }}>
+                            {unidades ? `${unidades} × ` : ''}{detalle}
+                          </span>
+                        )}
+                        <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '2px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 800, color: tema.texto }}>{formatPrecio(precio)}</span>
+                          {hayDescuento && (
+                            <span style={{ fontSize: '0.75rem', color: hexToRgba(tema.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioNormal)}</span>
+                          )}
+                        </span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
             {error && (
               <p style={{ fontSize: '0.82rem', color: '#ef4444', fontWeight: 600 }}>{error}</p>
             )}
@@ -251,54 +319,6 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)} style={{ marginTop: '0.15rem' }} />
               <span>Acepto que mis datos se usen para procesar este pedido.</span>
             </label>
-
-            {ofertasCheckout.map(oferta => {
-              const principal = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
-              const imgCruda = principal?.imagen;
-              const img = typeof imgCruda === 'string' ? imgCruda : (imgCruda?.url || imgCruda?.ruta || null);
-              const elegida = seleccionadas.has(oferta.id);
-              const precio = precioEnCheckout(oferta);
-              const precioNormal = oferta.precio_normal ?? oferta.precio;
-              // Solo se tacha si el promocional es de verdad más barato —
-              // si no, se vería un "antes" igual al "ahora".
-              const hayDescuento = precioNormal > precio;
-              // Solo el order bump aparece acá (ver ESTRATEGIAS_CHECKOUT arriba):
-              // se describe por el producto que suma.
-              const detalle = principal?.nombre;
-              return (
-                <label key={oferta.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem',
-                  borderRadius: '0.5rem', border: `2px ${elegida ? 'solid' : 'dashed'}`,
-                  borderColor: elegida ? tema.acento : bordeSuave,
-                  backgroundColor: hexToRgba(tema.texto, 0.02), cursor: 'pointer',
-                  marginTop: '0.5rem', transition: 'border-color 0.2s'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={elegida}
-                    onChange={e => alternarOferta(oferta.id, e.target.checked)}
-                    style={{ width: '1.2rem', height: '1.2rem', accentColor: tema.acento }}
-                  />
-                  <div style={{ width: 44, height: 44, borderRadius: '0.25rem', overflow: 'hidden', backgroundColor: hexToRgba(tema.texto, 0.06), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {img ? <img src={getMediaUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: tema.acento }} />}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: tema.texto, lineHeight: 1.2 }}>
-                      {oferta.descripcion || oferta.nombre || `Agregar ${detalle || 'oferta'}`}
-                    </span>
-                    {detalle && (
-                      <span style={{ fontSize: '0.72rem', color: hexToRgba(tema.texto, 0.55), lineHeight: 1.3, marginTop: '1px' }}>{detalle}</span>
-                    )}
-                    <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '2px' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 800, color: tema.texto }}>{formatPrecio(precio)}</span>
-                      {hayDescuento && (
-                        <span style={{ fontSize: '0.75rem', color: hexToRgba(tema.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioNormal)}</span>
-                      )}
-                    </span>
-                  </div>
-                </label>
-              );
-            })}
 
             <button
               type="submit"

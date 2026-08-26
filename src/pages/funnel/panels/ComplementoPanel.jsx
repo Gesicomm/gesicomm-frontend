@@ -12,6 +12,9 @@ export default function ComplementoPanel({
   producto,
   complementoId,
   precio,
+  precioLista,
+  descripcion,
+  cantidad,
   guardando,
   error,
   aviso,
@@ -49,6 +52,9 @@ export default function ComplementoPanel({
         producto={producto}
         complementoInicialId={complementoId}
         precioInicial={precio}
+        precioListaInicial={precioLista}
+        descripcionInicial={descripcion}
+        cantidadInicial={cantidad}
         guardando={guardando}
         error={error}
         textoConfirmar="Guardar complemento"
