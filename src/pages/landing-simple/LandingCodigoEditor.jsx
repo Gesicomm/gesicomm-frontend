@@ -7,6 +7,7 @@ import {
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
 import CodigoPreview from './CodigoPreview';
+import { urlPublicaLanding } from './urlPublicaLanding';
 
 /**
  * Editor del modo "Lienzo en blanco": tres campos de código (HTML/CSS/JS)
@@ -164,11 +165,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = ini + 2; });
   }
 
-  const publicUrl = useMemo(() => (
-    tienda?.subdominio
-      ? (landing?.es_home ? `https://${tienda.subdominio}.gesicomm.com` : `https://${tienda.subdominio}.gesicomm.com/l/${landing?.slug || ''}`)
-      : `/l/${landing?.slug || ''}`
-  ), [tienda, landing]);
+  const publicUrl = useMemo(() => urlPublicaLanding(tienda, landing), [tienda, landing]);
 
   if (cargando) {
     return (
@@ -195,7 +192,13 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           </button>
           <div>
             <h1 className="text-sm font-bold truncate">{landing?.titulo || 'Landing en blanco'}</h1>
-            <span className="text-[11px] text-white/40">Lienzo en blanco · HTML, CSS y JavaScript propios</span>
+            {/* Se muestra la URL real a la que lleva "Ver": en local es la
+                de este mismo entorno, no la de producción. */}
+            <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-white/50 hover:text-white/80">
+              {publicUrl.startsWith('http') ? publicUrl.replace(/^https?:\/\//, '') : `${window.location.host}${publicUrl}`}
+              <ExternalLink size={10} />
+              {!landing?.activo && <span className="ml-1 text-amber-400/80">(sin publicar)</span>}
+            </a>
           </div>
         </div>
 
@@ -383,7 +386,7 @@ const PLACEHOLDERS = {
 };
 
 const AYUDAS = {
-  html: 'Solo el contenido del <body>. Se quitan <script> y atributos como onclick al guardar.',
+  html: 'Podés pegar una página completa: al guardar, su <style> y su <script> se mueven solos a las otras pestañas.',
   css: 'Se inyecta en un <style> propio. @import no está permitido: usá <link> en el HTML o @font-face.',
   js: 'Corre al final del body, dentro del iframe aislado. Sin fetch, localStorage ni acceso a la ventana contenedora.',
 };

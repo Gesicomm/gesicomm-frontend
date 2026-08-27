@@ -71,13 +71,14 @@ export function construirDocumentoCodigo(codigo, opciones = {}) {
 
   // El puente de errores lo inyectamos nosotros, no el comercio: por eso
   // puede usar postMessage aunque el JS del comercio lo tenga prohibido.
-  const puenteErrores = reportarErrores ? `
-    window.addEventListener('error', function (e) {
-      parent.postMessage({ tipo: 'gesicomm:error-codigo', mensaje: String(e.message || e.error || 'Error') }, '*');
-    });
-    window.addEventListener('unhandledrejection', function (e) {
-      parent.postMessage({ tipo: 'gesicomm:error-codigo', mensaje: String((e.reason && e.reason.message) || e.reason || 'Promesa rechazada') }, '*');
-    });` : '';
+  const puenteErrores = reportarErrores ? `<script>
+window.addEventListener('error', function (e) {
+  parent.postMessage({ tipo: 'gesicomm:error-codigo', mensaje: String(e.message || e.error || 'Error') }, '*');
+});
+window.addEventListener('unhandledrejection', function (e) {
+  parent.postMessage({ tipo: 'gesicomm:error-codigo', mensaje: String((e.reason && e.reason.message) || e.reason || 'Promesa rechazada') }, '*');
+});
+</script>` : '';
 
   return `<!doctype html>
 <html lang="es">
@@ -98,14 +99,14 @@ ${escaparCierreStyle(css)}
 </head>
 <body>
 ${html || ''}
-<script>${puenteErrores}
-try {
+${puenteErrores}
+<!-- El codigo del comercio va en su propio script, en el nivel mas alto y
+     sin envolverlo en nada: metido dentro de un try/catch o de una
+     funcion, sus declaraciones dejan de ser globales y cualquier
+     onclick="miFuncion()" del HTML deja de encontrarlas. Los errores los
+     levanta el listener de arriba, no un catch. -->
+<script>
 ${escaparCierreScript(js)}
-} catch (e) {
-  ${reportarErrores
-    ? "parent.postMessage({ tipo: 'gesicomm:error-codigo', mensaje: String(e && e.message || e) }, '*');"
-    : 'console.error(e);'}
-}
 </script>
 </body>
 </html>`;

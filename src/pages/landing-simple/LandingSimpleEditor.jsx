@@ -6,6 +6,7 @@ import { ofertaService } from '../../services/ofertaService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { tiendaService } from '../../services/tiendaService';
 import { getComponenteTemplate } from './templates';
+import { urlPublicaLanding } from './urlPublicaLanding';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
 import FunnelCheckout from '../funnel/FunnelCheckout';
@@ -588,15 +589,9 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       etiqueta: item.etiqueta || null,
     });
   });
-  // Mismo criterio que LandingEditor.jsx (sistema flexible): la landing
-  // pública vive en la RAÍZ del subdominio de la tienda (es_home=true,
-  // ver landingSimple.service.js#crear), nunca en "/l/:slug" — ese path
-  // es solo el fallback de desarrollo local (resolverTienda.js jamás
-  // resuelve tienda por host en localhost).
-
-  const publicUrl = tienda?.subdominio
-    ? (landing?.es_home ? `https://${tienda.subdominio}.gesicomm.com` : `https://${tienda.subdominio}.gesicomm.com/l/${landing?.slug || ''}`)
-    : `/l/${landing?.slug || ''}`;
+  // Raíz del subdominio en producción, "/l/:slug" en local — ver
+  // urlPublicaLanding.js, compartido con el editor del lienzo en blanco.
+  const publicUrl = urlPublicaLanding(tienda, landing);
 
   return (
     <div className="flex flex-col h-full">
