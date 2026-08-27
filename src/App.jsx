@@ -34,6 +34,7 @@ import AdminEducacion from './pages/educacion/AdminEducacion';
 import CostosGastos from './pages/finanzas/CostosGastos';
 import ProveedoresView from './pages/finanzas/Proveedores';
 import AutomationHub from './pages/automation-hub/AutomationHub';
+import FinanzasAutomatizacion from './pages/finanzas/FinanzasAutomatizacion';
 
 // Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
 // el App Dashboard de Meta para la revisión de la aplicación, así que tienen
@@ -226,6 +227,9 @@ function App() {
         } />
         <Route path="/finanzas/proveedores" element={
           <AdminRoute><DynamicLayout><ProveedoresView /></DynamicLayout></AdminRoute>
+        } />
+        <Route path="/finanzas/automatizacion" element={
+          <RequireTienda><DynamicLayout><FinanzasAutomatizacion /></DynamicLayout></RequireTienda>
         } />
 
         {/* Automatización de contenido — Gesicomm Automation Hub (backend independiente) */}
