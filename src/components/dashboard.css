@@ -3,7 +3,7 @@
     display: flex;
     width: 100vw;
     height: 100vh;
-    background: #050505;
+    background: var(--color-canvas);
     overflow: hidden;
 }
 
@@ -251,7 +251,7 @@
     display: grid;
     grid-template-columns: 1fr;
     gap: 1rem;
-    background: #0A0A0B;
+    background: var(--color-surface);
     padding: 1.25rem;
     border-radius: 12px;
     border: 1px solid var(--border-border);
@@ -291,22 +291,22 @@
 }
 
 .filter-input {
-    background: #141416;
+    background: var(--color-surface-2);
     border: 1px solid var(--border-border);
-    color: #fff;
+    color: var(--color-fg);
     padding: 0.6rem;
     border-radius: 6px;
     font-family: inherit;
     font-size: 0.85rem;
     outline: none;
     transition: border-color 0.2s;
-    color-scheme: dark; /* Force dark mode for date inputs */
+    color-scheme: inherit;
 }
 
 /* Fix option contrast bug */
 .filter-input option {
-    background: #141416;
-    color: #fff;
+    background: var(--color-surface-2);
+    color: var(--color-fg);
 }
 
 .filter-input:focus {
@@ -320,7 +320,7 @@
 
 /* Escalafy Style Table */
 .data-table-wrapper {
-    background: #0A0A0B;
+    background: var(--color-surface);
     border: 1px solid var(--border-border);
     border-radius: 12px;
     overflow: hidden;
@@ -341,7 +341,7 @@
 }
 
 .escalafy-table th {
-    background: #141416;
+    background: var(--color-surface-2);
     color: var(--text-muted-foreground);
     font-weight: 600;
     text-transform: uppercase;
@@ -358,19 +358,19 @@
     text-align: left;
     position: sticky;
     left: 0;
-    background: #0A0A0B;
+    background: var(--color-surface);
     z-index: 2;
 }
 
 .escalafy-table th:first-child {
     z-index: 3;
-    background: #141416;
+    background: var(--color-surface-2);
 }
 
 .escalafy-table td {
     padding: 1rem;
     color: var(--text-sidebar-foreground);
-    border-bottom: 1px solid rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .escalafy-table tbody tr {
@@ -378,11 +378,11 @@
 }
 
 .escalafy-table tbody tr:hover td {
-    background: #1a1a1c;
+    background: var(--color-surface-2);
 }
 
 .escalafy-table tbody tr:hover td:first-child {
-    background: #1a1a1c;
+    background: var(--color-surface-2);
 }
 
 /* Utilities for Table */

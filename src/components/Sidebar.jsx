@@ -6,6 +6,7 @@ import {
   GraduationCap, Receipt, Truck
 } from 'lucide-react';
 import Logo from './public/Logo';
+import ThemeToggle from './public/ThemeToggle';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
 const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
@@ -57,14 +58,17 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
       >
         <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4">
           <Logo size={26} className="text-fg" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:hidden"
-            aria-label="Cerrar menú"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <ThemeToggle className="h-8 w-8 !border-none" />
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg lg:hidden"
+              aria-label="Cerrar menú"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </header>
 
         <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4">

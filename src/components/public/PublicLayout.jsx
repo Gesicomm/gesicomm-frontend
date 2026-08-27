@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import ThemeProvider from './ThemeProvider';
 import PublicNavbar from './PublicNavbar';
 import PublicFooter from './PublicFooter';
 
@@ -43,7 +42,7 @@ function RestaurarScroll() {
  */
 export default function PublicLayout({ children }) {
   return (
-    <ThemeProvider>
+    <>
       <RestaurarScroll />
       <div className="sitio-publico flex min-h-screen flex-col bg-canvas text-fg">
         <a href="#contenido" className="saltar-al-contenido no-imprimir">
@@ -58,6 +57,6 @@ export default function PublicLayout({ children }) {
 
         <PublicFooter />
       </div>
-    </ThemeProvider>
+    </>
   );
 }

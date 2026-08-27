@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, ChevronRight, Menu, LayoutDashboard,
-  Package, BarChart3, Receipt, Truck, PanelLeftClose
+  Package, BarChart3, Receipt, Truck, PanelLeftClose, Bot
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
 import Logo from './public/Logo';
+import ThemeToggle from './public/ThemeToggle';
 import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
@@ -141,16 +142,17 @@ const UserLayout = ({ children }) => {
         } ${
           desktopClosed ? 'lg:hidden' : 'lg:static lg:translate-x-0'
         }`}
-        style={{ borderRight: '1px solid rgba(255, 255, 255, 0.08)' }}
+        style={{ borderRight: '1px solid var(--color-border)' }}
       >
-        <header className="sidebar-header" style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <header className="sidebar-header" style={{ borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             <Logo size={26} className="text-fg" />
             <span style={{ fontSize: '0.68rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600 }}>
               Panel de Usuario
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+            <ThemeToggle className="h-8 w-8 !border-none" />
             <button
               type="button"
               onClick={() => setMobileOpen(false)}
@@ -201,6 +203,7 @@ const UserLayout = ({ children }) => {
               
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles size={14} />, prefix: '/landing', menuKey: 'landing' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Automatización', icon: <Bot size={14} />, menuKey: 'automatizacion' })}
             </ul>
           </div>
 
@@ -224,7 +227,7 @@ const UserLayout = ({ children }) => {
           )}
         </nav>
 
-        <footer className="sidebar-footer" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <footer className="sidebar-footer" style={{ borderTop: '1px solid var(--color-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', marginBottom: '0.5rem' }}>
             <div style={{
               width: '24px', height: '24px', borderRadius: '50%',
@@ -253,25 +256,28 @@ const UserLayout = ({ children }) => {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className={`flex h-14 flex-shrink-0 items-center gap-3 border-b border-border px-4 ${desktopClosed ? '' : 'lg:hidden'}`}>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.innerWidth >= 1024) {
-                setDesktopClosed(false);
-              } else {
-                setMobileOpen(true);
-              }
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
-            aria-label="Abrir menú"
-          >
-            <Menu size={20} />
-          </button>
-          <Logo size={24} className="text-fg" />
+        <header className={`flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4 ${desktopClosed ? '' : 'lg:hidden'}`}>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.innerWidth >= 1024) {
+                  setDesktopClosed(false);
+                } else {
+                  setMobileOpen(true);
+                }
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
+              aria-label="Abrir menú"
+            >
+              <Menu size={20} />
+            </button>
+            <Logo size={24} className="text-fg" />
+          </div>
+          <ThemeToggle className="h-8 w-8 !border-none" />
         </header>
 
-        <main className="dashboard-main" style={{ background: '#050505', flex: 1, padding: 0, overflowY: 'auto' }}>
+        <main className="dashboard-main" style={{ background: 'var(--color-canvas)', flex: 1, padding: 0, overflowY: 'auto' }}>
           {children}
         </main>
       </div>
