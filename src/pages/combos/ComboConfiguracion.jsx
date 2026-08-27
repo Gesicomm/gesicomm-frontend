@@ -99,11 +99,11 @@ export default function ComboConfiguracion() {
 
   const inputStyle = {
     width: '100%',
-    background: '#0a0a0b',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'var(--color-surface-2)',
+    border: '1px solid var(--color-border)',
     borderRadius: 8,
     padding: '0.55rem 0.9rem',
-    color: '#e2e8f0',
+    color: 'var(--color-fg)',
     fontSize: '0.875rem',
     fontFamily: 'inherit',
     boxSizing: 'border-box',

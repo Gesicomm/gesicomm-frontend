@@ -40,6 +40,25 @@
   margin: 0 auto;
 }
 
+:root[data-theme='light'] .md-page {
+  --md-bg: #f7f7f5;
+  --md-surface: #ffffff;
+  --md-surface-2: #eeeeea;
+  --md-border: #d8d8d0;
+  --md-border-strong: #c0c0b6;
+  --md-ink: #0b1d3d;
+  --md-ink-muted: #4b5568;
+  --md-ink-faint: #6b7280;
+  --md-confirmado: #047857;
+  --md-confirmado-soft: rgba(4, 120, 87, 0.12);
+  --md-visitas: #0284c7;
+  --md-contactos: #047857;
+  --md-ratio: #3d5fa3;
+}
+
+.md-page {
+}
+
 .md-eyebrow {
   display: block;
   font-size: 0.72rem;
@@ -108,7 +127,7 @@
   white-space: nowrap;
 }
 .md-tab:hover { color: var(--md-ink); }
-.md-tab.activo { background: var(--md-confirmado-soft); color: #6ee7b7; }
+.md-tab.activo { background: var(--md-confirmado-soft); color: var(--md-confirmado); }
 
 .md-selects { display: flex; gap: 0.4rem; }
 .md-select {
@@ -154,7 +173,7 @@
   gap: 0.4rem;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #6ee7b7;
+  color: var(--md-confirmado);
   background: var(--md-confirmado-soft);
   border: 1px solid rgba(16, 185, 129, 0.28);
   padding: 0.25rem 0.65rem;
@@ -394,8 +413,8 @@
 
 .md-chart-svg-wrap { position: relative; width: 100%; cursor: crosshair; touch-action: none; }
 .md-chart-svg { width: 100%; height: auto; display: block; overflow: visible; pointer-events: none; }
-.md-chart-grid { stroke: rgba(255, 255, 255, 0.045); stroke-width: 1; }
-.md-chart-baseline { stroke: rgba(255, 255, 255, 0.14); stroke-width: 1; }
+.md-chart-grid { stroke: var(--md-border); stroke-width: 1; }
+.md-chart-baseline { stroke: var(--md-border-strong); stroke-width: 1; }
 .md-bar { transition: opacity 0.15s, filter 0.15s; }
 .md-bar-visitas { fill: var(--md-visitas); }
 .md-bar-contactos { fill: var(--md-contactos); }
@@ -406,7 +425,7 @@
 .md-chart-tooltip {
   position: absolute;
   top: -8px;
-  background: #14161e;
+  background: var(--md-surface-2);
   border: 1px solid var(--md-border-strong);
   border-radius: 9px;
   padding: 0.55rem 0.75rem;

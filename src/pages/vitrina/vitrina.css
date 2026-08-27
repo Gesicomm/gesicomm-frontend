@@ -12,6 +12,7 @@
   --vit-accent-glow:   rgba(61, 95, 163, 0.25);
   --vit-bg:            #060709;
   --vit-card-bg:       #0d1117;
+  --vit-card-bg-transparent: rgba(13, 17, 23, 0);
   --vit-card-hover-bg: #111720;
   --vit-border:        rgba(255, 255, 255, 0.07);
   --vit-border-hover:  rgba(61, 95, 163, 0.4);
@@ -29,6 +30,7 @@
 :root[data-theme='light'] {
   --vit-bg:            #f7f7f5;
   --vit-card-bg:       #ffffff;
+  --vit-card-bg-transparent: rgba(255, 255, 255, 0);
   --vit-card-hover-bg: #eeeeea;
   --vit-border:        #d8d8d0;
   --vit-border-hover:  #c0c0b6;
@@ -524,7 +526,7 @@
   inset: 0;
   background: linear-gradient(
     to bottom,
-    transparent 45%,
+    var(--vit-card-bg-transparent) 45%,
     var(--vit-card-bg) 100%
   );
   pointer-events: none;

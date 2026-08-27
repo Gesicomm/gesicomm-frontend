@@ -958,3 +958,64 @@
 .pt-pag-btn:disabled { opacity: 0.3; cursor: default; }
 .pt-pag-ellipsis { color: #555; padding: 0 4px; font-size: 0.9rem; }
 .pt-pag-info { font-size: 0.78rem; color: #555; margin-left: 0.5rem; }
+
+:root[data-theme='light'] {
+  /* Contenedor principal y cabeceras */
+  .courier-container { color: var(--color-fg); }
+  .courier-header { border-bottom-color: var(--color-border); }
+  .courier-header h1 { color: var(--color-fg) !important; }
+  .courier-header p { color: var(--color-fg-muted) !important; }
+  
+  /* Tabs */
+  .courier-tabs { background-color: var(--color-surface-2); border-color: var(--color-border); }
+  .tab-btn { color: var(--color-fg-muted); }
+  .tab-btn:hover { background-color: var(--color-surface-3); color: var(--color-fg); }
+  .tab-btn.active { color: #ffffff; }
+
+  /* Kanban */
+  .kanban-column { background: var(--color-surface); border-color: var(--color-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); }
+  .kanban-column.is-over { background: var(--color-surface-2); border-color: var(--color-primary); }
+  .kanban-col-header { border-bottom-color: var(--color-border); }
+  .kanban-col-title { color: var(--color-fg); }
+  .kanban-col-count { color: var(--color-fg-muted); background: var(--color-surface-2); border-color: var(--color-border); }
+
+  /* Toolbar */
+  .pt-toolbar { background: var(--color-surface); border-color: var(--color-border); }
+  .pt-search { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-fg); }
+  .pt-search:focus { border-color: var(--color-primary-hover); }
+  .pt-search::placeholder { color: var(--color-fg-subtle); }
+  .pt-search-icon { color: var(--color-fg-subtle); }
+  .pt-clear-btn { color: var(--color-fg-subtle); }
+  .pt-clear-btn:hover { color: var(--color-fg); }
+  .pt-filter-select { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-fg); }
+  .pt-filter-select option { background: var(--color-surface); color: var(--color-fg); }
+  
+  /* Advanced/Extra Filters */
+  .pt-extra-label { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-fg-muted); }
+  .pt-extra-label:focus-within { border-color: var(--color-primary); color: var(--color-fg); }
+  .pt-extra-input { color: var(--color-fg); }
+  .pt-extra-input::placeholder { color: var(--color-fg-subtle); }
+
+  /* Table Grid */
+  .pt-table-wrap { border-color: var(--color-border); background: var(--color-surface); }
+  .pt-th { border-bottom-color: var(--color-border); background: var(--color-surface-2); color: var(--color-fg-muted); }
+  .pt-row { border-bottom-color: var(--color-border); }
+  .pt-row:hover { background: var(--color-surface-2); }
+  .pt-td { color: var(--color-fg); }
+  .pt-td-fecha { color: var(--color-fg-muted); }
+  .pt-td-items { color: var(--color-fg-muted); }
+  .pt-td-id { color: var(--color-fg-subtle); }
+  .pt-depto { color: var(--color-fg-subtle); }
+
+  /* Pagination */
+  .pt-pag-btn { background: var(--color-surface-2); border-color: var(--color-border); color: var(--color-fg-muted); }
+  .pt-pag-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+  .pt-pag-btn.active { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  .pt-pag-ellipsis { color: var(--color-fg-subtle); }
+  .pt-pag-info { color: var(--color-fg-subtle); }
+
+  /* Dropdowns */
+  .pt-estado-dropdown { background: var(--color-surface); border-color: var(--color-border); box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
+  .pt-estado-option { color: var(--color-fg); }
+  .pt-estado-option:hover { background: var(--color-surface-2); }
+}

@@ -615,3 +615,67 @@
   background: rgba(255, 255, 255, 0.06);
   margin: 0.25rem 0;
 }
+
+:root[data-theme='light'] {
+  .combo-title,
+  .combo-list-card-name,
+  .combo-list-card-metric-value,
+  .combo-principal-name,
+  .combo-section-title {
+    color: var(--color-fg) !important;
+  }
+  .combo-subtitle,
+  .combo-list-card-principal,
+  .combo-section-label {
+    color: var(--color-fg-muted) !important;
+  }
+  
+  .combo-list-card,
+  .combo-section {
+    background: var(--color-surface) !important;
+    border-color: var(--color-border) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+  }
+  .combo-list-card:hover {
+    border-color: var(--color-primary-hover) !important;
+  }
+  .combo-list-card-metric-label {
+    color: var(--color-fg-subtle) !important;
+  }
+  
+  .combo-footer {
+    background: var(--color-surface) !important;
+    border-color: var(--color-border) !important;
+  }
+  
+  .combo-empty h3 {
+    color: var(--color-fg) !important;
+  }
+  .combo-empty p {
+    color: var(--color-fg-muted) !important;
+  }
+
+  .combo-filter-btn {
+    background: var(--color-surface-2) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-fg-muted) !important;
+  }
+  .combo-filter-btn.active, .combo-filter-btn:hover {
+    background: var(--vit-accent-soft) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--color-primary) !important;
+  }
+  
+  .combo-divider {
+    background: var(--color-border) !important;
+  }
+  
+  .combo-sensitivity-table th {
+    color: var(--color-fg-muted) !important;
+    border-bottom-color: var(--color-border) !important;
+  }
+  .combo-sensitivity-table td {
+    border-bottom-color: var(--color-border) !important;
+    color: var(--color-fg) !important;
+  }
+}

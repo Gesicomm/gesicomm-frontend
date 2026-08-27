@@ -991,3 +991,100 @@
   font-size: 0.85rem;
   font-weight: 500;
 }
+
+:root[data-theme='light'] {
+  /* Títulos y textos */
+  .prod-title { color: var(--color-fg) !important; }
+  .prod-subtitle { color: var(--color-fg-muted) !important; }
+  .prod-name { color: var(--color-fg) !important; }
+  .prod-view-tab { color: var(--color-fg-muted) !important; }
+  .prod-view-tab:hover { color: var(--color-fg) !important; border-color: var(--color-border-strong) !important; }
+  .prod-view-tab.active { color: var(--color-primary) !important; border-color: var(--color-primary) !important; }
+
+  /* Inputs y selects de filtrado */
+  .filter-input { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; color: var(--color-fg) !important; }
+  .filter-input:focus { border-color: var(--color-primary) !important; }
+  .filter-select { background-color: var(--color-surface-2) !important; border-color: var(--color-border) !important; color: var(--color-fg) !important; }
+  .filter-select option { background: var(--color-surface) !important; color: var(--color-fg) !important; }
+
+  /* Elementos de tabla y grilla */
+  .prod-table-wrap { border-color: var(--color-border) !important; }
+  .prod-th { border-bottom-color: var(--color-border) !important; color: var(--color-fg-muted) !important; }
+  .prod-row { border-bottom-color: var(--color-border) !important; }
+  .prod-row:hover { background: var(--color-surface-2) !important; }
+  .prod-td { color: var(--color-fg) !important; }
+
+  /* Formulario, secciones y tarjetas */
+  .prod-section,
+  .prod-precio-card { background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+  .prod-section h3 { color: var(--color-fg) !important; }
+  .prod-section label { color: var(--color-fg-muted) !important; }
+  
+  .form-group label { color: var(--color-fg-muted) !important; }
+  .form-group input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+  .form-group select,
+  .form-group textarea {
+    background: var(--color-surface-2) !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-fg) !important;
+  }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--color-primary) !important;
+  }
+  .form-group select option {
+    background: var(--color-surface) !important;
+    color: var(--color-fg) !important;
+  }
+
+  /* Paneles de inventario y KPI */
+  .inventory-panel { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; }
+  .inventory-total { color: var(--color-fg) !important; }
+  .inventory-status { color: var(--color-fg-muted) !important; }
+  .inventory-meter { background: var(--color-surface-3) !important; }
+
+  /* Panel resumen (sidebar de edición) */
+  .prod-summary-panel { background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+  .prod-summary-panel h2 { color: var(--color-fg) !important; }
+  .prod-summary-panel p { color: var(--color-fg-muted) !important; }
+  .summary-media { background: var(--color-surface-2) !important; color: var(--color-fg-subtle) !important; }
+  .summary-price span { color: var(--color-fg-subtle) !important; }
+  .summary-kpis > div,
+  .summary-list > div { background: var(--color-surface-2) !important; }
+  .summary-kpis span,
+  .summary-list span { color: var(--color-fg-subtle) !important; }
+  .summary-kpis strong,
+  .summary-list strong { color: var(--color-fg) !important; }
+
+  /* Estrategia de ofertas */
+  .offer-strategy-card { background: var(--color-surface) !important; border-color: var(--color-border) !important; color: var(--color-fg-muted) !important; }
+  .offer-strategy-card:hover,
+  .offer-strategy-card.active { border-color: var(--color-primary) !important; background: var(--color-surface-2) !important; color: var(--color-fg) !important; }
+  .offer-strategy-icon { background: var(--color-surface-2) !important; color: var(--color-primary) !important; }
+  .offer-strategy-card strong { color: var(--color-fg) !important; }
+  .offer-strategy-card small { color: var(--color-fg-subtle) !important; }
+  .offer-strategy-card b { color: var(--color-primary) !important; }
+
+  /* Variantes */
+  .variante-row { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; }
+  .variantes-header { color: var(--color-fg-muted) !important; }
+  .variantes-empty { border-color: var(--color-border) !important; color: var(--color-fg-subtle) !important; }
+  .variantes-empty p { color: var(--color-fg-muted) !important; }
+
+  /* Imágenes */
+  .imagen-card { background: var(--color-surface-2) !important; }
+  .imagen-card.principal { border-color: var(--color-primary) !important; }
+  .imagen-upload-btn { border-color: var(--color-border) !important; color: var(--color-primary) !important; background: var(--color-surface-2) !important; }
+  .imagen-upload-btn:hover { background: var(--color-surface-3) !important; border-color: var(--color-primary) !important; }
+
+  /* Save bar flotante */
+  .prod-save-bar { background: var(--color-surface) !important; border-color: var(--color-border) !important; color: var(--color-fg) !important; box-shadow: 0 8px 28px rgba(0,0,0,0.1) !important; }
+  
+  /* Banners */
+  .info-banner { background: var(--color-surface-2) !important; border-color: var(--color-border) !important; color: var(--color-primary) !important; }
+
+  /* Modales */
+  .cat-modal { background: var(--color-surface) !important; border-color: var(--color-border) !important; }
+  .cat-modal h3 { color: var(--color-fg) !important; }
+}
