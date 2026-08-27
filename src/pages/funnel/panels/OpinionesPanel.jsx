@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, Star } from 'lucide-react';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 const MAX = 12;
 
 /**
@@ -29,17 +29,17 @@ export default function OpinionesPanel({ opiniones, onChange }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[11px] text-white/40 leading-relaxed">
+      <p className="text-[11px] text-fg/40 leading-relaxed">
         Cargá opiniones reales de tus clientes. Si no cargás ninguna, el embudo
         no muestra estrellas ni esta sección — mejor eso que inventar reseñas.
       </p>
 
       {items.length === 0 && (
-        <p className="text-xs text-white/40">Todavía no agregaste opiniones.</p>
+        <p className="text-xs text-fg/40">Todavía no agregaste opiniones.</p>
       )}
 
       {items.map((o, idx) => (
-        <div key={idx} className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2.5">
+        <div key={idx} className="rounded-lg border border-fg/10 bg-fg/5 p-3 flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <input
               type="text"
@@ -51,7 +51,7 @@ export default function OpinionesPanel({ opiniones, onChange }) {
             <button
               type="button"
               onClick={() => quitar(idx)}
-              className="p-1 rounded hover:bg-red-500/10 text-white/40 hover:text-red-400 shrink-0"
+              className="p-1 rounded hover:bg-red-500/10 text-fg/40 hover:text-red-400 shrink-0"
             >
               <Trash2 size={14} />
             </button>
@@ -68,7 +68,7 @@ export default function OpinionesPanel({ opiniones, onChange }) {
               >
                 <Star
                   size={17}
-                  className={n <= Number(o.calificacion) ? 'text-amber-400' : 'text-white/20'}
+                  className={n <= Number(o.calificacion) ? 'text-amber-400' : 'text-fg/20'}
                   fill={n <= Number(o.calificacion) ? 'currentColor' : 'transparent'}
                 />
               </button>
@@ -89,7 +89,7 @@ export default function OpinionesPanel({ opiniones, onChange }) {
         <button
           type="button"
           onClick={agregar}
-          className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white self-start"
+          className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg self-start"
         >
           <Plus size={13} /> Agregar opinión
         </button>

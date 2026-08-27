@@ -102,7 +102,7 @@ export default function OpportunitiesBoard() {
                       className={`w-72 shrink-0 rounded-lg border border-border p-2 ${snapshot.isDraggingOver ? 'bg-primary/5' : 'bg-surface-2'}`}>
                       <div className="mb-2 flex items-center justify-between px-1">
                         <span className="text-xs font-semibold text-fg">{stage.name}</span>
-                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">{tarjetas.length}</span>
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-text">{tarjetas.length}</span>
                       </div>
                       <div className="flex min-h-[80px] flex-col gap-2">
                         {tarjetas.map((op, index) => (

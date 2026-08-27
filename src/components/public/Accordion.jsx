@@ -28,7 +28,7 @@ function AccordionItem({ pregunta, respuesta, abiertoInicial = false }) {
           aria-expanded={abierto}
           aria-controls={idPanel}
           onClick={() => setAbierto((valor) => !valor)}
-          className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-primary"
+          className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-primary-text"
         >
           <span className="text-base font-medium text-fg" style={{ letterSpacing: '-0.01em' }}>
             {pregunta}

@@ -142,20 +142,18 @@ Sin cambios — no son colores de marca.
 
 ## 5. Tipografía
 
-**SF Pro Display** es la tipografía de marca, pero es propietaria de Apple
-y no tiene licencia para @font-face en web. Se resuelve con la stack de
-sistema:
+**Plus Jakarta Sans** — geométrica humanista, de la misma familia formal
+que la SF Pro Display del manual, pero licenciable para web (OFL) y
+auto-hospedada vía `@fontsource-variable/plus-jakarta-sans`: no hay request
+a Google Fonts ni dependencia de red.
 
-```
--apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif
-```
+Antes se resolvía con la stack de sistema (`-apple-system, Segoe UI, …`),
+que en Mac daba la SF Pro real pero en Windows caía a Segoe UI — sin el
+refinamiento que la marca pide, que es la mayoría de los equipos del
+equipo. Es variable: un solo archivo cubre de 200 a 800.
 
-En Mac/iOS esto renderiza la SF Pro real; en el resto de plataformas cae a
-la tipografía nativa del sistema operativo (Segoe UI en Windows, Roboto en
-Android/Chrome OS). Es el único enfoque legal para usar SF Pro fuera del
-ecosistema Apple. Declarada en `--font-sans` / `--font-display`
-(`src/index.css`) — ambas apuntan a la misma stack, la marca usa una sola
-familia para todo, cuerpo y titulares.
+Declarada en `--font-sans` / `--font-display` (`src/index.css`) — ambas
+apuntan a la misma familia, la marca usa una sola para cuerpo y titulares.
 
 `IBM Plex Mono` se mantiene para cifras y etiquetas tabulares
 (`--font-mono`): es una necesidad funcional (números de ancho fijo que

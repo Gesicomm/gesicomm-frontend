@@ -9,9 +9,9 @@ import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
-const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary hover:bg-primary/10 hover:text-primary before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
+const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary-text hover:bg-primary/10 hover:text-primary-text before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
 const SUB_LINK = 'flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] transition-colors';
-const SUB_LINK_ACTIVE = 'bg-primary/10 text-primary';
+const SUB_LINK_ACTIVE = 'bg-primary/10 text-primary-text';
 const SUB_LINK_INACTIVE = 'text-fg-subtle hover:bg-surface-2 hover:text-fg';
 const ICON_WRAP = 'flex h-4 w-4 items-center justify-center [&>svg]:h-4 [&>svg]:w-4';
 

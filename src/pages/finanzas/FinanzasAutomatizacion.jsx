@@ -59,7 +59,7 @@ export default function FinanzasAutomatizacion() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="m-0 flex items-center gap-2 text-2xl font-bold text-fg">
-            <Bot className="text-primary" size={24} /> Finanzas · Automatización
+            <Bot className="text-primary-text" size={24} /> Finanzas · Automatización
           </h1>
           <p className="mt-1 max-w-xl text-sm text-fg-muted">
             Ingresos, costos y ROI generados por el programa de contenido — alumnos, comisiones y gastos asociados.

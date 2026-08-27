@@ -10,6 +10,7 @@ import { calcularEstiloLanding, cargarFuenteGoogle } from '../../lib/landingDise
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
 import ProductPagePublica from './ProductPagePublica';
+import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
 import LandingDropdown from './LandingDropdown';
@@ -832,6 +833,31 @@ export default function LandingPublica() {
       // template real de la landing.
       const datosProductoPublico = mapPublicDtoToTemplateData(data);
       const temaResuelto = resolverTemaPorSlug(datosProductoPublico.tema, data?.template?.slug);
+
+      // Fitness estrena la ficha de producto rediseñada (12 secciones
+      // editables). Es el MISMO componente que dibuja el preview del
+      // armador, no una copia: ver FitnessProductPage.jsx. Los otros tres
+      // templates rígidos siguen con la ficha genérica de abajo hasta que
+      // se adapten.
+      if (data.template.slug === 'fitness-suplementos') {
+        return (
+          <div style={cssVarsRigido}>
+            <FitnessProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={data.content || {}}
+              tema={temaResuelto}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              relacionados={data?.relacionados}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
       return (
         <div style={cssVarsRigido}>
           <ProductPagePublica

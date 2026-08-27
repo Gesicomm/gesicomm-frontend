@@ -155,12 +155,12 @@ export default function Contact() {
             >
               <span
                 aria-hidden="true"
-                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary-text"
               >
                 <Mail size={18} />
               </span>
               <span className="min-w-0">
-                <span className="block break-all text-base font-semibold text-primary">
+                <span className="block break-all text-base font-semibold text-primary-text">
                   {CORREO_CONTACTO}
                 </span>
                 <span className="mt-0.5 block text-sm text-fg-muted">
@@ -215,7 +215,7 @@ export default function Contact() {
                   </p>
                   <Link
                     to="/data-deletion"
-                    className="mt-3 inline-block text-sm font-medium text-primary hover:underline"
+                    className="mt-3 inline-block text-sm font-medium text-primary-text hover:underline"
                   >
                     Ir a Eliminación de Datos →
                   </Link>
@@ -358,7 +358,7 @@ export default function Contact() {
                 <p className="mt-5 text-xs leading-relaxed text-fg-subtle">
                   Al enviar este formulario aceptás que tratemos tus datos para responder tu
                   consulta, conforme a nuestra{' '}
-                  <Link to="/privacy" className="text-primary underline underline-offset-4">
+                  <Link to="/privacy" className="text-primary-text underline underline-offset-4">
                     Política de Privacidad
                   </Link>
                   . No los usamos para enviarte publicidad.
@@ -372,7 +372,7 @@ export default function Contact() {
           Los plazos indicados corresponden a días hábiles y se cuentan desde la recepción del
           mensaje. Las solicitudes de ejercicio de derechos sobre datos personales tienen un plazo
           máximo de resolución de <strong>30 días corridos</strong>, según lo detallado en la{' '}
-          <Link to="/privacy" className="text-primary underline underline-offset-4">
+          <Link to="/privacy" className="text-primary-text underline underline-offset-4">
             Política de Privacidad
           </Link>
           .

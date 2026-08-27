@@ -213,13 +213,13 @@ const Ads = () => {
                 <MetaReportesTab tiendas={tiendas} />
             ) : (
                 <div className="flex flex-col items-center gap-3 rounded-xl border border-border bg-surface px-8 py-14 text-center">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary-text">
                         <Store size={20} />
                     </div>
                     <p className="m-0 max-w-sm text-sm text-fg-muted">No tenés tiendas conectadas todavía. Conectá tu cuenta de Meta para ver métricas en vivo acá.</p>
                     <a
                       href={window.location.pathname.startsWith('/mis-anuncios') ? '/configuracion' : '/settings'}
-                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-hover"
+                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-hover"
                     >
                       Ir a Configuración <ArrowRight size={14} />
                     </a>
@@ -243,7 +243,7 @@ const Ads = () => {
                     <p className="m-0 max-w-sm text-sm text-danger">{error}</p>
                     <a
                       href={window.location.pathname.startsWith('/mis-anuncios') ? '/configuracion' : '/settings'}
-                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-hover"
+                      className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:text-primary-hover"
                     >
                       Ir a Configuración <ArrowRight size={14} />
                     </a>

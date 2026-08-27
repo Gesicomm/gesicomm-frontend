@@ -58,7 +58,7 @@ function IndiceLateral({ secciones }) {
               aria-current={activa === seccion.id ? 'true' : undefined}
               className={`-ml-px block border-l py-1.5 pl-3.5 leading-snug transition-colors ${
                 activa === seccion.id
-                  ? 'border-primary font-medium text-primary'
+                  ? 'border-primary font-medium text-primary-text'
                   : 'border-transparent text-fg-muted hover:border-border-strong hover:text-fg'
               }`}
             >
@@ -152,7 +152,7 @@ export default function LegalDoc({
             <button
               type="button"
               onClick={() => window.print()}
-              className="no-imprimir inline-flex items-center gap-1.5 text-fg-muted transition-colors hover:text-primary"
+              className="no-imprimir inline-flex items-center gap-1.5 text-fg-muted transition-colors hover:text-primary-text"
             >
               <Printer size={14} aria-hidden="true" />
               Imprimir o guardar en PDF

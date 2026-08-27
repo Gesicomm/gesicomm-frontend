@@ -32,7 +32,7 @@ export default function NotFound() {
 
       <Container ancho="estrecho" className="py-24 text-center sm:py-32">
         <p
-          className="text-sm font-semibold uppercase text-primary"
+          className="text-sm font-semibold uppercase text-primary-text"
           style={{ letterSpacing: '0.08em' }}
         >
           Error 404

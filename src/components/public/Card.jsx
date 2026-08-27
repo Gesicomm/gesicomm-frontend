@@ -26,7 +26,7 @@ export function FeatureCard({ icono: Icono, titulo, children, className = '' }) 
   return (
     <Card interactiva className={className}>
       {Icono && (
-        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary-text">
           <Icono size={19} aria-hidden="true" />
         </div>
       )}

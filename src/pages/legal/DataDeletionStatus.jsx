@@ -28,7 +28,7 @@ const ESTADOS = {
     descripcion:
       'Identidad confirmada. Estamos eliminando tu información de todos los sistemas donde esté.',
     Icono: Loader2,
-    clases: 'border-primary/30 bg-primary/10 text-primary',
+    clases: 'border-primary/30 bg-primary/10 text-primary-text',
   },
   completada: {
     etiqueta: 'Completada',
@@ -170,7 +170,7 @@ export default function DataDeletionStatus() {
                 escribinos a{' '}
                 <a
                   href="mailto:contacto@gesicomm.com"
-                  className="text-primary underline underline-offset-4"
+                  className="text-primary-text underline underline-offset-4"
                 >
                   contacto@gesicomm.com
                 </a>{' '}

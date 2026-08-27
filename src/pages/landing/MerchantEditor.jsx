@@ -459,7 +459,7 @@ export default function MerchantEditor() {
                       onClick={() => setSeccionSeleccionadaId(s.id)}
                       className="group flex items-center gap-3 w-full p-3 text-left bg-white border border-[var(--vit-border)] rounded-xl hover:border-[var(--vit-primary)] hover:shadow-sm transition-all"
                     >
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${configurado ? 'bg-[var(--vit-primary)] text-white' : 'bg-[var(--vit-surface)] text-[var(--vit-muted)] group-hover:text-[var(--vit-primary)]'}`}>
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${configurado ? 'bg-[var(--vit-primary)] text-fg' : 'bg-[var(--vit-surface)] text-[var(--vit-muted)] group-hover:text-[var(--vit-primary)]'}`}>
                         <Icono size={16} />
                       </div>
                       <div className="flex-1 min-w-0">

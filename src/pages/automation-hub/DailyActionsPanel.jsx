@@ -47,7 +47,7 @@ export default function DailyActionsPanel() {
         <div key={item.id} className="rounded-lg border border-border bg-surface p-3">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <div className="text-sm font-semibold text-primary">{item.tracking_code}</div>
+              <div className="text-sm font-semibold text-primary-text">{item.tracking_code}</div>
               <div className="mt-1 text-xs text-fg-muted">
                 {FORMATO_LABEL[item.format]} · {item.topic} · CTA: <strong>{item.keyword}</strong>
               </div>

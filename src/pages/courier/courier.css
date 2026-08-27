@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
-  color: #e0e0e0;
+  color: var(--color-fg);
 }
 
 /* Header del Módulo Logístico */
@@ -14,7 +14,7 @@
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   padding-bottom: 1rem;
 }
 
@@ -22,10 +22,10 @@
 .courier-tabs {
   display: flex;
   gap: 0.5rem;
-  background-color: #141416;
+  background-color: var(--color-surface-2);
   padding: 0.35rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   max-width: 100%;
   overflow-x: auto;
 }
@@ -38,7 +38,7 @@
   border-radius: 0.5rem;
   border: none;
   background: transparent;
-  color: #888888;
+  color: var(--color-fg-muted);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -46,8 +46,8 @@
 }
 
 .tab-btn:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background-color: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  color: var(--color-fg);
 }
 
 .tab-btn.active {
@@ -91,9 +91,9 @@
 
 .kanban-column {
   flex: 0 0 320px;
-  background: #0a0a0b;
+  background: var(--color-canvas);
   border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -110,7 +110,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
 }
 
 .kanban-col-title {
@@ -118,7 +118,7 @@
   align-items: center;
   gap: 0.6rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-fg);
   font-size: 0.95rem;
   margin: 0;
 }
@@ -131,10 +131,10 @@
 
 .kanban-col-count {
   font-size: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
   padding: 0.15rem 0.6rem;
   border-radius: 1rem;
-  color: #ffffff;
+  color: var(--color-fg);
   font-weight: 700;
 }
 
@@ -144,7 +144,7 @@
   font-weight: 700;
   color: #10b981;
   background: rgba(0, 0, 0, 0.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
   text-align: right;
   font-family: monospace;
 }
@@ -159,8 +159,8 @@
 
 /* Tarjetas de Pedidos / Envíos */
 .order-card {
-  background: #141416;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-2);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -170,7 +170,7 @@
 }
 
 .order-card:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: color-mix(in srgb, var(--color-fg) 20%, transparent);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
@@ -193,14 +193,14 @@
 
 .order-card-client {
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-fg);
   font-size: 0.95rem;
   margin: 0;
 }
 
 .order-card-address {
   font-size: 0.8rem;
-  color: #888888;
+  color: var(--color-fg-muted);
   margin: 0.2rem 0 0 0;
   line-height: 1.3;
 }
@@ -217,9 +217,9 @@
   font-weight: 600;
   padding: 0.15rem 0.45rem;
   border-radius: 0.375rem;
-  background: rgba(255, 255, 255, 0.06);
-  color: #ccc;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
+  color: var(--color-fg-muted);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
 }
 
 .tag-badge.pay {
@@ -234,7 +234,7 @@
   align-items: center;
   margin-top: 0.75rem;
   padding-top: 0.6rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
 }
 
 .order-card-price {
@@ -248,18 +248,18 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: color-mix(in srgb, var(--color-fg) 6%, transparent);
   padding: 0.25rem 0.5rem;
   border-radius: 0.375rem;
   font-size: 0.75rem;
-  color: #e0e0e0;
+  color: var(--color-fg);
   font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
 }
 
 .order-card-courier select {
   background: transparent;
-  color: #fff;
+  color: var(--color-fg);
   border: none;
   outline: none;
   font-size: 0.75rem;
@@ -275,8 +275,8 @@
 }
 
 .stat-box {
-  background: #0a0a0b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-canvas);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   border-radius: 0.85rem;
   padding: 1rem 1.2rem;
   display: flex;
@@ -288,7 +288,7 @@
 
 .stat-title {
   font-size: 0.7rem;
-  color: #888888;
+  color: var(--color-fg-muted);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -305,8 +305,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #0a0a0b;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-canvas);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   border-radius: 0.6rem;
   padding: 0.3rem 0.5rem;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
@@ -321,13 +321,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #888888;
+  color: var(--color-fg-muted);
   transition: all 0.2s;
 }
 
 .day-filter button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  color: var(--color-fg);
 }
 
 .day-filter input[type="date"] {
@@ -335,7 +335,7 @@
   border: none;
   outline: none;
   font-family: inherit;
-  color: #ffffff;
+  color: var(--color-fg);
   font-weight: 600;
   font-size: 0.85rem;
   padding: 0 0.25rem;
@@ -346,10 +346,10 @@
 .np-modal-container {
   max-width: 900px !important;
   padding: 0 !important;
-  background: #0a0a0b !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: var(--color-canvas) !important;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 15%, transparent) !important;
   overflow: hidden !important;
-  color: #fff;
+  color: var(--color-fg);
 }
 
 .np-header-banner {
@@ -362,7 +362,7 @@
 
 .np-header-banner h2 {
   margin: 0;
-  color: #ffffff;
+  color: var(--color-fg);
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -393,8 +393,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
   padding: 1.2rem;
   border-radius: 0.75rem;
 }
@@ -407,7 +407,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
   padding-bottom: 0.5rem;
 }
 
@@ -419,7 +419,7 @@
 
 .np-row label {
   font-size: 0.8rem;
-  color: #aaaaaa;
+  color: var(--color-fg-muted);
   font-weight: 600;
 }
 
@@ -441,9 +441,9 @@
 .np-empty-items {
   padding: 1.5rem;
   text-align: center;
-  color: #666;
+  color: var(--color-fg-subtle);
   font-size: 0.85rem;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border: 1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 0.5rem;
   margin-top: 0.5rem;
 }
@@ -455,10 +455,10 @@
   gap: 1rem;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   font-size: 1rem;
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--color-fg);
 }
 
 .np-total-amount {
@@ -469,7 +469,7 @@
 
 .np-label-obs {
   font-size: 0.85rem;
-  color: #aaa;
+  color: var(--color-fg-muted);
   font-weight: 600;
   margin-bottom: 0.3rem;
   display: block;
@@ -516,9 +516,9 @@
 }
 
 .form-input {
-  background: #141416;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--color-surface-2);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  color: var(--color-fg);
   padding: 0.6rem 0.8rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
@@ -549,12 +549,12 @@
 }
 
 .close-btn.dark {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-fg);
+  background: color-mix(in srgb, var(--color-fg) 10%, transparent);
 }
 
 .close-btn.dark:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--color-fg) 20%, transparent);
 }
 
 /* Status colors en Kanban Header y Dot */
@@ -579,7 +579,7 @@
 .text-emerald-600 { color: #10b981; }
 .text-red-600 { color: #ef4444; }
 .text-purple-600 { color: #2e4a85; }
-.text-foreground { color: #ffffff; }
+.text-foreground { color: var(--color-fg); }
 
 /* ═══════════════════════════════════════════════════════════════════
    PEDIDOS TABLE — Vista tabla paginada (PedidosTable.jsx)
@@ -597,8 +597,8 @@
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 10px;
   padding: 0.65rem 1rem;
 }
@@ -613,40 +613,40 @@
 .pt-search-icon {
   position: absolute;
   left: 0.7rem;
-  color: #666;
+  color: var(--color-fg-subtle);
   pointer-events: none;
 }
 .pt-search {
   width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 7px;
-  color: #fff;
+  color: var(--color-fg);
   font-size: 0.84rem;
   padding: 0.45rem 2rem 0.45rem 2.1rem;
   outline: none;
   transition: border-color 0.2s;
 }
-.pt-search:focus { border-color: rgba(255,255,255,0.25); }
-.pt-search::placeholder { color: #555; }
+.pt-search:focus { border-color: color-mix(in srgb, var(--color-fg) 25%, transparent); }
+.pt-search::placeholder { color: var(--color-fg-subtle); }
 .pt-clear-btn {
   position: absolute;
   right: 0.5rem;
   background: none;
   border: none;
-  color: #555;
+  color: var(--color-fg-subtle);
   cursor: pointer;
   padding: 2px;
   display: flex;
   align-items: center;
 }
-.pt-clear-btn:hover { color: #fff; }
+.pt-clear-btn:hover { color: var(--color-fg); }
 
 .pt-filter-select {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 7px;
-  color: #ccc;
+  color: var(--color-fg-muted);
   font-size: 0.82rem;
   padding: 0.45rem 0.75rem;
   outline: none;
@@ -655,31 +655,31 @@
   white-space: nowrap;
   color-scheme: dark;
 }
-.pt-filter-select:hover, .pt-filter-select:focus { border-color: rgba(255,255,255,0.25); color: #fff; }
+.pt-filter-select:hover, .pt-filter-select:focus { border-color: color-mix(in srgb, var(--color-fg) 25%, transparent); color: var(--color-fg); }
 
 /* FIX: Ensure options are visible in Windows native select */
 .pt-filter-select option {
   background-color: #0f111a;
-  color: #f1f5f9;
+  color: var(--color-fg);
 }
 
 .pt-date-label {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: #666;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--color-fg-subtle);
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 7px;
   padding: 0 0.75rem;
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.pt-date-label:hover { border-color: rgba(255,255,255,0.25); color: #aaa; }
+.pt-date-label:hover { border-color: color-mix(in srgb, var(--color-fg) 25%, transparent); color: var(--color-fg-muted); }
 .pt-date-input {
   background: transparent;
   border: none;
-  color: #ccc;
+  color: var(--color-fg-muted);
   font-size: 0.82rem;
   padding: 0.45rem 0;
   outline: none;
@@ -691,8 +691,8 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 7px;
   color: #999;
   font-size: 0.82rem;
@@ -728,7 +728,7 @@
 .pt-count {
   margin-left: auto;
   font-size: 0.8rem;
-  color: #666;
+  color: var(--color-fg-subtle);
   white-space: nowrap;
 }
 
@@ -738,8 +738,8 @@
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
   border-radius: 10px;
   padding: 0.65rem 1rem;
   animation: pt-slide-down 0.2s ease;
@@ -752,24 +752,24 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: #666;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--color-fg-subtle);
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 7px;
   padding: 0 0.75rem;
   transition: border-color 0.2s;
 }
-.pt-extra-label:focus-within { border-color: rgba(255,255,255,0.25); color: #aaa; }
+.pt-extra-label:focus-within { border-color: color-mix(in srgb, var(--color-fg) 25%, transparent); color: var(--color-fg-muted); }
 .pt-extra-input {
   background: transparent;
   border: none;
-  color: #ccc;
+  color: var(--color-fg-muted);
   font-size: 0.82rem;
   padding: 0.45rem 0;
   outline: none;
   min-width: 130px;
 }
-.pt-extra-input::placeholder { color: #555; }
+.pt-extra-input::placeholder { color: var(--color-fg-subtle); }
 
 /* ── Multi-estado dropdown ── */
 .pt-estado-dropdown {
@@ -778,7 +778,7 @@
   left: 0;
   z-index: 200;
   background: #111;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
   border-radius: 10px;
   padding: 0.4rem;
   min-width: 200px;
@@ -795,7 +795,7 @@
   user-select: none;
   transition: background 0.15s;
 }
-.pt-estado-option:hover { background: rgba(255,255,255,0.07); }
+.pt-estado-option:hover { background: color-mix(in srgb, var(--color-fg) 7%, transparent); }
 .pt-estado-dot {
   width: 8px;
   height: 8px;
@@ -819,9 +819,9 @@
 /* ── Tabla ── */
 .pt-table-wrap {
   overflow: visible;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 12px;
-  background: rgba(255,255,255,0.015);
+  background: color-mix(in srgb, var(--color-fg) 1.5%, transparent);
 }
 .pt-table {
   width: 100%;
@@ -833,23 +833,23 @@
   padding: 0.75rem 0.9rem;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #666;
+  color: var(--color-fg-subtle);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   white-space: nowrap;
-  background: rgba(255,255,255,0.02);
+  background: color-mix(in srgb, var(--color-fg) 2%, transparent);
 }
 .pt-th-id { width: 56px; text-align: center; }
 .pt-th-num { text-align: right; }
 
 .pt-row {
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
   cursor: pointer;
   transition: background 0.12s;
 }
 .pt-row:last-child { border-bottom: none; }
-.pt-row:hover { background: rgba(255,255,255,0.04); }
+.pt-row:hover { background: color-mix(in srgb, var(--color-fg) 4%, transparent); }
 
 .pt-td {
   padding: 0.75rem 0.9rem;
@@ -858,13 +858,13 @@
 }
 .pt-td-id {
   text-align: center;
-  color: #555;
+  color: var(--color-fg-subtle);
   font-size: 0.78rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .pt-td-fecha {
-  color: #888;
+  color: var(--color-fg-muted);
   font-size: 0.8rem;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -875,7 +875,7 @@
 .pt-depto {
   display: block;
   font-size: 0.72rem;
-  color: #555;
+  color: var(--color-fg-subtle);
   margin-top: 2px;
 }
 .pt-td-items {
@@ -895,21 +895,21 @@
 .pt-delivery {
   display: block;
   font-size: 0.72rem;
-  color: #666;
+  color: var(--color-fg-subtle);
   font-weight: 400;
   margin-top: 2px;
 }
 .pt-cliente { display: flex; flex-direction: column; }
 .pt-cliente-nombre { font-weight: 500; color: #e5e5e5; }
-.pt-cliente-tel { font-size: 0.75rem; color: #666; margin-top: 2px; }
-.pt-pago { font-size: 0.8rem; color: #aaa; }
+.pt-cliente-tel { font-size: 0.75rem; color: var(--color-fg-subtle); margin-top: 2px; }
+.pt-pago { font-size: 0.8rem; color: var(--color-fg-muted); }
 .pt-courier { font-size: 0.82rem; color: #7d9bd6; font-weight: 500; }
 .pt-sin-courier { color: #444; }
 
 .pt-empty {
   text-align: center;
   padding: 3rem;
-  color: #555;
+  color: var(--color-fg-subtle);
   font-size: 0.9rem;
   display: flex;
   align-items: center;
@@ -923,7 +923,7 @@
   display: inline-block;
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255,255,255,0.1);
+  border: 2px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-top-color: #7d9bd6;
   border-radius: 50%;
   animation: pt-spin 0.7s linear infinite;
@@ -940,10 +940,10 @@
   flex-wrap: wrap;
 }
 .pt-pag-btn {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
   border-radius: 6px;
-  color: #aaa;
+  color: var(--color-fg-muted);
   font-size: 0.82rem;
   min-width: 34px;
   height: 34px;
@@ -956,8 +956,8 @@
 .pt-pag-btn:hover:not(:disabled) { border-color: #7d9bd6; color: #7d9bd6; }
 .pt-pag-btn.active { background: #7d9bd6; border-color: #7d9bd6; color: #fff; font-weight: 700; }
 .pt-pag-btn:disabled { opacity: 0.3; cursor: default; }
-.pt-pag-ellipsis { color: #555; padding: 0 4px; font-size: 0.9rem; }
-.pt-pag-info { font-size: 0.78rem; color: #555; margin-left: 0.5rem; }
+.pt-pag-ellipsis { color: var(--color-fg-subtle); padding: 0 4px; font-size: 0.9rem; }
+.pt-pag-info { font-size: 0.78rem; color: var(--color-fg-subtle); margin-left: 0.5rem; }
 
 :root[data-theme='light'] {
   /* Contenedor principal y cabeceras */
@@ -970,7 +970,10 @@
   .courier-tabs { background-color: var(--color-surface-2); border-color: var(--color-border); }
   .tab-btn { color: var(--color-fg-muted); }
   .tab-btn:hover { background-color: var(--color-surface-3); color: var(--color-fg); }
-  .tab-btn.active { color: #ffffff; }
+  /* La pestaña activa conserva su fondo navy de marca en los dos temas, así
+     que su texto sigue siendo blanco: oscurecerlo daba navy sobre navy
+     (2,68:1). No heredar de .tab-btn. */
+  .tab-btn.active { color: #fff; }
 
   /* Kanban */
   .kanban-column { background: var(--color-surface); border-color: var(--color-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); }

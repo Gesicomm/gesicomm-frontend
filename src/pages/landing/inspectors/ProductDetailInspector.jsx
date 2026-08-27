@@ -337,7 +337,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                     <input type="number" min="0" required value={formPack.precio} onChange={e => setFormPack(f => ({ ...f, precio: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
                   </div>
                 </div>
-                <button type="submit" disabled={guardandoOferta} className="mt-1 h-8 rounded-md bg-[var(--vit-accent)] text-white text-sm font-semibold disabled:opacity-50">
+                <button type="submit" disabled={guardandoOferta} className="mt-1 h-8 rounded-md bg-[var(--vit-accent)] text-fg text-sm font-semibold disabled:opacity-50">
                   {guardandoOferta ? 'Creando...' : 'Crear pack'}
                 </button>
               </form>
@@ -455,7 +455,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
                   <label className="text-[10px] text-[var(--vit-muted-2)] uppercase">Precio total (este producto + el agregado)</label>
                   <input type="number" min="0" required value={formBump.precio} onChange={e => setFormBump(f => ({ ...f, precio: e.target.value }))} className="w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm focus:border-[var(--vit-accent)] focus:outline-none" />
                 </div>
-                <button type="submit" disabled={guardandoOferta} className="mt-1 h-8 rounded-md bg-[var(--vit-accent)] text-white text-sm font-semibold disabled:opacity-50">
+                <button type="submit" disabled={guardandoOferta} className="mt-1 h-8 rounded-md bg-[var(--vit-accent)] text-fg text-sm font-semibold disabled:opacity-50">
                   {guardandoOferta ? 'Creando...' : 'Crear order bump'}
                 </button>
               </form>

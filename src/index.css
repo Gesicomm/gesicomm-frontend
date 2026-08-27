@@ -14,12 +14,17 @@
 
     --color-fg: #f5f5f2;
     --color-fg-muted: #a3a8b8;
-    --color-fg-subtle: #6b7280;
+    --color-fg-subtle: #868ea0;
 
     --color-primary: #3d5fa3;
     --color-primary-hover: #4e72b8;
     --color-primary-active: #2e4a85;
     --color-primary-fg: #ffffff;
+
+    /* El primario navy sirve como FONDO de botón (blanco encima da 6,2:1),
+       pero como TEXTO sobre superficie oscura da 2,8:1. Este es su par
+       legible: no hay un solo valor que sirva para las dos cosas. */
+    --color-primary-text: #7d9bd6;
 
     --color-accent: #ffc107;
     --color-accent-hover: #ffcf4d;
@@ -29,14 +34,16 @@
     --color-danger: #ef4444;
     --color-info: #60a5fa;
 
-    /* Stack de sistema en vez de un web font: en Mac/iOS resuelve a la
-       SF Pro real de la marca, en el resto cae a la grotesca nativa del
-       SO. Es la única forma de usar SF Pro Display sin licenciarla. */
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* Plus Jakarta Sans — geométrica humanista, de la misma familia formal
+       que la SF Pro Display del manual, pero SÍ licenciable para web y
+       auto-hospedada (la importa main.jsx, no hay request a Google).
+       Se eligió sobre la stack de sistema porque esa caía a Segoe UI en
+       Windows, que no tiene el refinamiento que la marca pide.
+       Es variable: un archivo cubre de 200 a 800. */
+    --font-sans: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-    /* Titulares del sitio institucional: misma stack que el cuerpo, la
-       marca usa una sola familia para todo. */
-    --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    /* Titulares: misma familia que el cuerpo — la marca usa una sola. */
+    --font-display: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
     /* Etiquetas, cifras y todo lo tabular. Ancho fijo para que las columnas
        de números aliñen de verdad. */
@@ -71,7 +78,7 @@
 
     --color-fg: #0b1d3d;
     --color-fg-muted: #4b5568;
-    --color-fg-subtle: #6b7280;
+    --color-fg-subtle: #5f6775;
 
     /* Azul Profundo de marca: ~19:1 sobre el lienzo marfil, así que no
        hace falta oscurecerlo para texto como pasaba con el violeta
@@ -79,6 +86,7 @@
     --color-primary: #0b1d3d;
     --color-primary-hover: #15295a;
     --color-primary-active: #081527;
+    --color-primary-text: #0b1d3d;
 
     --color-success: #047857;
     --color-warning: #b45309;
@@ -104,7 +112,7 @@
 
     --color-fg: #f5f6f8;
     --color-fg-muted: #a8adbc;
-    --color-fg-subtle: #6f7690;
+    --color-fg-subtle: #868ea0;
 
     color-scheme: dark;
 }
@@ -281,7 +289,7 @@ html {
 .texto-legal li + li { margin-top: 0.5rem; }
 
 .texto-legal a {
-    color: var(--color-primary);
+    color: var(--color-primary-text);
     text-decoration: underline;
     text-underline-offset: 3px;
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 
 /**
  * La propuesta de valor y el CTA — el par que decide si el embudo convierte.
@@ -14,7 +14,7 @@ export default function ValorPanel({ content, onContent }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <label className="block text-xs font-semibold text-white/60 mb-1.5">
+        <label className="block text-xs font-semibold text-fg/60 mb-1.5">
           Propuesta de valor
         </label>
         <textarea
@@ -25,14 +25,14 @@ export default function ValorPanel({ content, onContent }) {
           maxLength={300}
           className={CAMPO}
         />
-        <p className="text-[11px] text-white/35 mt-1.5 leading-relaxed">
+        <p className="text-[11px] text-fg/35 mt-1.5 leading-relaxed">
           Una frase: producto → beneficio principal → acción. Aparece debajo del
           nombre, antes del precio.
         </p>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-white/60 mb-1.5">
+        <label className="block text-xs font-semibold text-fg/60 mb-1.5">
           Texto del botón principal
         </label>
         <input
@@ -46,7 +46,7 @@ export default function ValorPanel({ content, onContent }) {
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-white/60 mb-1.5">
+        <label className="block text-xs font-semibold text-fg/60 mb-1.5">
           Título de la descripción
         </label>
         <input
@@ -60,7 +60,7 @@ export default function ValorPanel({ content, onContent }) {
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-white/60 mb-1.5">
+        <label className="block text-xs font-semibold text-fg/60 mb-1.5">
           Sobre este producto
         </label>
         <textarea
@@ -70,14 +70,14 @@ export default function ValorPanel({ content, onContent }) {
           rows={4}
           className={CAMPO}
         />
-        <p className="text-[11px] text-white/35 mt-1.5 leading-relaxed">
+        <p className="text-[11px] text-fg/35 mt-1.5 leading-relaxed">
           Si se deja vacío, el embudo usará la Descripción Larga.
         </p>
       </div>
 
       <div className="flex flex-col gap-2.5 pt-1">
-        <p className="text-xs font-semibold text-white/60">Acciones secundarias</p>
-        <label className="flex items-center gap-2.5 text-sm text-white/80 cursor-pointer">
+        <p className="text-xs font-semibold text-fg/60">Acciones secundarias</p>
+        <label className="flex items-center gap-2.5 text-sm text-fg/80 cursor-pointer">
           <input
             type="checkbox"
             checked={content.mostrar_agregar_carrito !== false}
@@ -86,7 +86,7 @@ export default function ValorPanel({ content, onContent }) {
           />
           Mostrar "Agregar al carrito"
         </label>
-        <label className="flex items-center gap-2.5 text-sm text-white/80 cursor-pointer">
+        <label className="flex items-center gap-2.5 text-sm text-fg/80 cursor-pointer">
           <input
             type="checkbox"
             checked={content.mostrar_whatsapp !== false}
@@ -95,7 +95,7 @@ export default function ValorPanel({ content, onContent }) {
           />
           Mostrar "Consultar por WhatsApp"
         </label>
-        <p className="text-[11px] text-white/35 leading-relaxed">
+        <p className="text-[11px] text-fg/35 leading-relaxed">
           En un embudo de venta directa, cuantas menos salidas haya, mejor
           convierte. "Comprar ahora" siempre se muestra.
         </p>

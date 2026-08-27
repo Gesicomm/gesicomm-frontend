@@ -7,7 +7,7 @@ import {
 import { es } from 'date-fns/locale';
 
 const FORMATO_CLASE = {
-  R: 'border-l-primary bg-primary/10 text-primary',
+  R: 'border-l-primary bg-primary/10 text-primary-text',
   C: 'border-l-warning bg-warning/10 text-warning',
   H: 'border-l-danger bg-danger/10 text-danger',
 };

@@ -259,7 +259,7 @@ export default function FunnelEditor() {
 
   if (cargando || !draft) {
     return (
-      <div className="flex items-center justify-center gap-2 text-white/60 p-16">
+      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
         <Loader size={20} className="animate-spin" /> Cargando embudo...
       </div>
     );
@@ -292,12 +292,12 @@ export default function FunnelEditor() {
   return (
     <div className="flex flex-col h-full">
       {/* Barra superior */}
-      <div className="h-14 border-b border-white/10 shrink-0 flex items-center justify-between px-5">
+      <div className="h-14 border-b border-fg/10 shrink-0 flex items-center justify-between px-5">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate('/mi-catalogo')}
-            className="p-2 -ml-2 text-white/50 hover:text-white transition-colors"
+            className="p-2 -ml-2 text-fg/50 hover:text-fg transition-colors"
             title="Volver a la Vitrina B2B"
           >
             <ArrowLeft size={18} />
@@ -305,7 +305,7 @@ export default function FunnelEditor() {
           <button
             type="button"
             onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="flex items-center gap-1.5 p-2 text-white/50 hover:text-white transition-colors text-xs font-semibold bg-white/5 rounded-lg px-3"
+            className="flex items-center gap-1.5 p-2 text-fg/50 hover:text-fg transition-colors text-xs font-semibold bg-fg/5 rounded-lg px-3"
             title={sidebarVisible ? 'Ocultar panel' : 'Mostrar panel'}
           >
             {sidebarVisible ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
@@ -315,7 +315,7 @@ export default function FunnelEditor() {
               <span className="text-[10px] font-bold uppercase tracking-wider text-accent">Embudo</span>
               <h1 className="text-sm font-bold truncate max-w-[240px]">{producto?.nombre || draft.nombre}</h1>
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-white/45">
+            <div className="flex items-center gap-1.5 text-[11px] text-fg/45">
               <span className="truncate max-w-[260px]">{urlPublica.replace('https://', '')}</span>
               <button type="button" onClick={copiarUrl} title="Copiar link">
                 {copiado ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
@@ -326,7 +326,7 @@ export default function FunnelEditor() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-white/5 rounded-lg p-0.5 mr-1 border border-white/10">
+          <div className="flex items-center bg-fg/5 rounded-lg p-0.5 mr-1 border border-fg/10">
             {[
               { modo: 'desktop', Icono: Monitor },
               { modo: 'tablet', Icono: Tablet },
@@ -336,7 +336,7 @@ export default function FunnelEditor() {
                 key={modo}
                 type="button"
                 onClick={() => setViewportMode(modo)}
-                className={`p-1.5 rounded transition-colors ${viewportMode === modo ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                className={`p-1.5 rounded transition-colors ${viewportMode === modo ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
                 title={modo}
               >
                 <Icono size={14} />
@@ -346,16 +346,16 @@ export default function FunnelEditor() {
 
           {aviso && <span className="text-xs text-emerald-400">{aviso}</span>}
 
-          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400" title="Eliminar embudo">
+          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-fg/40 hover:text-red-400" title="Eliminar embudo">
             <Trash2 size={16} />
           </button>
-          <a href={urlPublica} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white" title="Ver embudo público">
+          <a href={urlPublica} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg" title="Ver embudo público">
             <ExternalLink size={16} />
           </a>
           <button
             type="button"
             onClick={() => cambiarEstado(!draft.activo)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg"
           >
             {draft.activo ? <><EyeOff size={13} /> Despublicar</> : <><Eye size={13} /> Publicar</>}
           </button>
@@ -363,7 +363,7 @@ export default function FunnelEditor() {
             type="button"
             onClick={guardar}
             disabled={guardando}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-white text-black hover:bg-white/90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-fg text-canvas hover:bg-fg-muted disabled:opacity-50"
           >
             {guardando ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
             Guardar
@@ -377,14 +377,14 @@ export default function FunnelEditor() {
 
       <div className="flex flex-1 min-h-0">
         {sidebarVisible && (
-          <div className="w-80 shrink-0 border-r border-white/10 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-1 p-2 border-b border-white/10">
+          <div className="w-80 shrink-0 border-r border-fg/10 overflow-y-auto">
+            <div className="grid grid-cols-4 gap-1 p-2 border-b border-fg/10">
               {tabsVisibles.map(t => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setTab(t.key)}
-                  className={`px-2 py-2 rounded-lg text-[11px] font-semibold text-center transition-colors ${tab === t.key ? 'bg-white text-black' : 'text-white/50 hover:bg-white/10'}`}
+                  className={`px-2 py-2 rounded-lg text-[11px] font-semibold text-center transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10'}`}
                 >
                   {t.label}
                 </button>

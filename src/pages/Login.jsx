@@ -6,7 +6,7 @@ import Logo from '../components/public/Logo';
 
 const INPUT_CLASS = 'w-full rounded-md border border-border bg-surface-2 px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-fg-subtle focus:border-primary';
 const LABEL_CLASS = 'mb-1.5 block text-sm font-medium text-fg-muted';
-const LINK_CLASS = 'cursor-pointer font-medium text-primary hover:text-primary-hover';
+const LINK_CLASS = 'cursor-pointer font-medium text-primary-text hover:text-primary-hover';
 
 const OTP_TTL = 15 * 60; // 15 minutos en segundos
 
@@ -379,7 +379,7 @@ export default function Login() {
           <div className="flex flex-col gap-5">
             <div className="text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <ShieldCheck size={24} className="text-primary" />
+                <ShieldCheck size={24} className="text-primary-text" />
               </div>
               <h2 className="m-0 mb-1 text-xl font-semibold">Verificá tu correo</h2>
               <p className="m-0 text-sm leading-relaxed text-fg-muted">

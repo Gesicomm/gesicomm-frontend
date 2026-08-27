@@ -9,6 +9,10 @@ import { getComponenteTemplate } from './templates';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
+import FitnessProductPage from './templates/fitness/FitnessProductPage';
+import {
+  armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
+} from './templates/fitness/fichaFitness';
 import FunnelCheckout from '../funnel/FunnelCheckout';
 import CatalogoPreview from './templates/CatalogoPreview';
 import ContactoPreview from './templates/ContactoPreview';
@@ -23,6 +27,7 @@ import FaqPanel from './panels/FaqPanel';
 import BeneficiosPanel from './panels/BeneficiosPanel';
 import ColoresPanel from './panels/ColoresPanel';
 import ProductoPanel from './panels/ProductoPanel';
+import FichaFitnessPanel from './panels/FichaFitnessPanel';
 
 // El id de la sección apunta a la misma sección del template (ver los
 // `id="..."` en templates/*.jsx y templates/sections.jsx) — al cambiar de
@@ -33,6 +38,11 @@ import ProductoPanel from './panels/ProductoPanel';
 // etiquetas, precio ancla), destacados solo elige cuáles de esos se
 // muestran además en el inicio. Antes era un único tab "Productos" que
 // hacía las dos cosas y agregar un producto lo publicaba solo en el inicio.
+// El template que estrena la ficha de producto rediseñada (12 secciones
+// editables, ver templates/fitness/). Los otros tres siguen con la ficha
+// genérica de siempre hasta que se adapten.
+const SLUG_FICHA_RICA = 'fitness-suplementos';
+
 const TABS = [
   { key: 'marca', label: 'Marca', seccionId: 'header' },
   { key: 'contenido', label: 'Contenido', seccionId: 'hero' },
@@ -43,6 +53,8 @@ const TABS = [
   { key: 'contacto', label: 'Contacto', seccionId: null },
   { key: 'redes', label: 'Redes sociales', seccionId: 'contacto' },
   { key: 'faq', label: 'Preguntas', seccionId: 'faq' },
+  // Solo en el template Fitness — se filtra por `soloFicha` al renderizar.
+  { key: 'ficha', label: 'Ficha producto', seccionId: null, soloFicha: true },
 ];
 
 /**
@@ -295,6 +307,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoRelacionados, setProductoRelacionados] = useState([]); // [{id, nombre, imagen, precio_efectivo}]
   const [productoRelacionadosAutomatico, setProductoRelacionadosAutomatico] = useState(false);
   const [productoOfertas, setProductoOfertas] = useState([]);
+  // Ficha rediseñada: `productoFicha` es SOLO lo que este producto pisa en
+  // esta landing (content.productos[id].ficha) — puede quedar null entero si
+  // hereda todo. `productoMarketing` es el detalle del producto, del que sale
+  // la capa "Marketing & Embudo". Ver fichaFitness.js.
+  const [productoFicha, setProductoFicha] = useState(null);
+  const [productoMarketing, setProductoMarketing] = useState(null);
 
   const catalogoFiltradoParaRelacionados = useMemo(() => {
     if (!catalogo || !items) return { productos: [], combos: [] };
@@ -377,6 +395,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoRelacionados([]);
     setProductoRelacionadosAutomatico(false);
     setProductoOfertas([]);
+    setProductoFicha(null);
+    setProductoMarketing(null);
     setProductoImagenesEditables(true);
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
@@ -392,6 +412,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       // pDetail null = no se pudo leer el detalle; se asume no editable para
       // no ofrecer un botón que el backend va a rechazar igual.
       setProductoImagenesEditables(pDetail?.puede_editar === true);
+      // Detalle completo: de acá salen propuesta_valor / beneficios /
+      // confianza / sobre_este_producto, o sea la pestaña "Marketing &
+      // Embudo" de la carga de productos. La ficha los usa como fuente antes
+      // de caer en los defaults de la landing.
+      setProductoMarketing(pDetail || null);
 
       // Lo que este comercio ya personalizó de este producto EN ESTA landing
       // manda sobre el catálogo global (ver guardarProducto y
@@ -409,6 +434,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       const faqProducto = (pDetail?.preguntas_frecuentes || pDetail?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta }));
       setProductoFaq(propio?.faq ?? (faqEsplicito.length > 0 ? faqEsplicito : faqProducto));
       if (propio?.faq_titulo != null) setProductoFaqTitulo(propio.faq_titulo);
+      setProductoFicha(propio?.ficha || null);
 
       setProductoRelacionadosTitulo(propio?.relacionados_titulo ?? (relacionados.titulo || ''));
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
@@ -502,6 +528,17 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoRelacionadosAutomatico(false);
   }
 
+  /**
+   * Clic en un producto complementario desde la ficha. El objeto que llega
+   * es el resumido de `relacionados` ({id, nombre, imagen, precio}), sin
+   * `tipo` — abrirProducto necesita el registro del catálogo para traer
+   * detalle/imágenes/FAQ, así que se resuelve por id antes de abrirlo.
+   */
+  function abrirRelacionado(rel) {
+    const delCatalogo = (catalogo.productos || []).find(p => Number(p.id) === Number(rel?.id));
+    if (delCatalogo) abrirProducto(delCatalogo);
+  }
+
   function quitarRelacionado(id) {
     setProductoRelacionados(prev => prev.filter(r => r.id !== id));
     // Al quitar manualmente, ya no son auto-populados
@@ -539,6 +576,10 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         // comercio no eligió nada, la landing sigue mostrando lo que el
         // backend calcule, no una foto vieja de esa lista.
         relacionados: productoRelacionadosAutomatico ? null : productoRelacionados.map(r => r.id),
+        // Solo las secciones que este producto pisa. Sin nada propio se
+        // guarda null y la ficha vuelve a heredar entera — no se congela
+        // una copia de los defaults de la landing.
+        ficha: productoFicha && Object.keys(productoFicha).length ? productoFicha : null,
       };
 
       const contenidoNuevo = { ...contenido, productos: porProducto };
@@ -556,13 +597,23 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   if (cargando || !draft) {
     return (
-      <div className="flex items-center justify-center gap-2 text-white/60 p-16">
+      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
         <Loader size={20} className="animate-spin" /> Cargando...
       </div>
     );
   }
 
   const Componente = getComponenteTemplate(landing?.template?.slug);
+  const templateSlug = landing?.template?.slug;
+  // Ficha rediseñada: activa solo en Fitness. Se resuelve acá (y no dentro
+  // del panel o del preview) porque los dos lados tienen que ver
+  // exactamente lo mismo — es el mismo objeto.
+  const fichaActiva = templateSlug === SLUG_FICHA_RICA;
+  const fichaLanding = draft?.content?.ficha_fitness || null;
+  const fichaMarketing = fichaDesdeMarketing(productoMarketing);
+  const fichaResuelta = fichaActiva
+    ? resolverFichaFitness(productoFicha, fichaLanding, fichaMarketing)
+    : null;
   const draftParaPreview = { ...draft, items, faq, beneficios };
   const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo);
   datosPreview.tienda = { subdominio: tienda?.subdominio };
@@ -595,12 +646,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="h-14 border-b border-white/10 shrink-0 flex items-center justify-between px-5">
+      <div className="h-14 border-b border-fg/10 shrink-0 flex items-center justify-between px-5">
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="flex items-center gap-1.5 p-2 -ml-2 text-white/50 hover:text-white transition-colors text-xs font-semibold bg-white/5 rounded-lg px-3"
+            className="flex items-center gap-1.5 p-2 -ml-2 text-fg/50 hover:text-fg transition-colors text-xs font-semibold bg-fg/5 rounded-lg px-3"
             title={sidebarVisible ? 'Ocultar panel lateral' : 'Mostrar panel lateral'}
           >
             {sidebarVisible ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
@@ -611,7 +662,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             <h1 className="text-sm font-bold truncate">
               {landing?.titulo || 'Mi Landing'}
             </h1>
-            <a href={`/${landing?.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-white/50 hover:text-white/80">
+            <a href={`/${landing?.slug}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-fg/50 hover:text-fg/80">
               {window.location.host}/{landing?.slug} <ExternalLink size={10} />
             </a>
           </div>
@@ -619,11 +670,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
         <div className="flex items-center gap-2">
           {/* Viewport Toggles */}
-          <div className="flex items-center bg-white/5 rounded-lg p-0.5 mr-2 border border-white/10">
+          <div className="flex items-center bg-fg/5 rounded-lg p-0.5 mr-2 border border-fg/10">
             <button
               type="button"
               onClick={() => setViewportMode('desktop')}
-              className={`p-1.5 rounded transition-colors ${viewportMode === 'desktop' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`p-1.5 rounded transition-colors ${viewportMode === 'desktop' ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
               title="Desktop"
             >
               <Monitor size={14} />
@@ -631,7 +682,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             <button
               type="button"
               onClick={() => setViewportMode('tablet')}
-              className={`p-1.5 rounded transition-colors ${viewportMode === 'tablet' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`p-1.5 rounded transition-colors ${viewportMode === 'tablet' ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
               title="Tablet"
             >
               <Tablet size={14} />
@@ -639,23 +690,23 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             <button
               type="button"
               onClick={() => setViewportMode('mobile')}
-              className={`p-1.5 rounded transition-colors ${viewportMode === 'mobile' ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+              className={`p-1.5 rounded transition-colors ${viewportMode === 'mobile' ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
               title="Mobile"
             >
               <Smartphone size={14} />
             </button>
           </div>
           {aviso && <span className="text-xs text-emerald-400">{aviso}</span>}
-          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400" title="Eliminar landing">
+          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-fg/40 hover:text-red-400" title="Eliminar landing">
             <Trash2 size={16} />
           </button>
-          <a href={publicUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white" title="Ver landing pública">
+          <a href={publicUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg" title="Ver landing pública">
             <ExternalLink size={16} />
           </a>
           <button
             type="button"
             onClick={() => cambiarEstado(!landing?.activo)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg"
           >
             {landing?.activo ? <><EyeOff size={13} /> Despublicar</> : <><Eye size={13} /> Publicar</>}
           </button>
@@ -663,7 +714,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             type="button"
             onClick={guardar}
             disabled={guardando}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-white text-black hover:bg-white/90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-fg text-canvas hover:bg-fg-muted disabled:opacity-50"
           >
             {guardando ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
             Guardar
@@ -675,7 +726,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
       <div className="flex flex-1 min-h-0">
         {sidebarVisible && (
-          <div className="w-80 shrink-0 border-r border-white/10 overflow-y-auto">
+          <div className="w-80 shrink-0 border-r border-fg/10 overflow-y-auto">
             {productoPreview ? (
             <ProductoPanel
               producto={productoPreview}
@@ -692,6 +743,13 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               config={draft?.content || {}}
               onChange={(k, v) => campo(k, v)}
               onOfertasChange={setProductoOfertas}
+              fichaActiva={fichaActiva}
+              ficha={productoFicha}
+              fichaResuelta={fichaResuelta}
+              fichaLanding={fichaLanding}
+              fichaMarketing={fichaMarketing}
+              onFicha={setProductoFicha}
+              packs={productoOfertas.filter(o => o.estrategia === 'normal' && o.tipo_contenido === 'pack')}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
               faqTitulo={productoFaqTitulo}
@@ -711,13 +769,13 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             />
           ) : (
             <>
-              <div className="grid grid-cols-4 gap-1 p-2 border-b border-white/10">
-                {TABS.map(t => (
+              <div className="grid grid-cols-4 gap-1 p-2 border-b border-fg/10">
+                {TABS.filter(t => !t.soloFicha || fichaActiva).map(t => (
                   <button
                     key={t.key}
                     type="button"
                     onClick={() => cambiarTab(t.key)}
-                    className={`px-2 py-2 rounded-lg text-[11px] font-semibold text-center transition-colors ${tab === t.key ? 'bg-white text-black' : 'text-white/50 hover:bg-white/10'}`}
+                    className={`px-2 py-2 rounded-lg text-[11px] font-semibold text-center transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10'}`}
                   >
                     {t.label}
                   </button>
@@ -765,6 +823,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                 {tab === 'faq' && (
                   <FaqPanel faq={faq} onChange={setFaq} />
                 )}
+                {tab === 'ficha' && fichaActiva && (
+                  <FichaFitnessPanel
+                    ficha={fichaLanding}
+                    fichaResuelta={resolverFichaFitness(null, fichaLanding, null)}
+                    modo="landing"
+                    onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_fitness: nueva })}
+                  />
+                )}
               </div>
             </>
           )}
@@ -795,8 +861,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   vistaContacto={vistaContacto}
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
-                  templateSlug={landing?.template?.slug}
+                  templateSlug={templateSlug}
                   setCompraFunnel={setCompraFunnel}
+                  fichaResuelta={fichaResuelta}
+                  onCerrarProducto={() => setProductoPreview(null)}
+                  onAbrirRelacionado={abrirRelacionado}
                 />
               </div>
             </div>
@@ -836,8 +905,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   vistaContacto={vistaContacto}
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
-                  templateSlug={landing?.template?.slug}
+                  templateSlug={templateSlug}
                   setCompraFunnel={setCompraFunnel}
+                  fichaResuelta={fichaResuelta}
+                  onCerrarProducto={() => setProductoPreview(null)}
+                  onAbrirRelacionado={abrirRelacionado}
                 />
               </div>
             </div>
@@ -925,9 +997,45 @@ function PreviewContent({
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
+  fichaResuelta = null, onCerrarProducto = null, onAbrirRelacionado = null,
 }) {
   if (productoPreview) {
     const ofertasPublicas = productoOfertas.map(o => ofertaAFormaPublica(o, productoPreview?.id));
+
+    // Ficha rediseñada (Fitness). Es EL MISMO componente que monta la
+    // landing publicada (ver LandingPublica.jsx) alimentado con la misma
+    // forma de datos — por eso el preview y lo publicado no pueden
+    // desincronizarse como pasaba con ProductoPreview vs ProductPagePublica.
+    if (fichaResuelta) {
+      return (
+        <FitnessProductPage
+          item={armarItemFicha({
+            nombre: productoPreview.nombre,
+            categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
+            descripcion: productoDescripcion,
+            precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+            precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+            imagenes: (productoImagenes || []).map(i => i.url),
+            ofertas: ofertasPublicas,
+            faq: productoFaq,
+            faqTitulo: productoFaqTitulo,
+            relacionados: productoRelacionados,
+            relacionadosTitulo: productoRelacionadosTitulo,
+          })}
+          ficha={fichaResuelta}
+          tema={datosPreview.tema}
+          templateSlug={templateSlug}
+          contacto={datosPreview.contacto}
+          nombreComercio={datosPreview.nombreComercio}
+          isMobile={viewportMode === 'mobile'}
+          previewMode
+          onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+          onVolver={onCerrarProducto}
+          onClickRelacionado={onAbrirRelacionado}
+        />
+      );
+    }
+
     return (
       <ProductoPreview
         producto={productoPreview}
@@ -989,5 +1097,5 @@ function PreviewContent({
       />
     );
   }
-  return <p className="p-8 text-white/40">Template no encontrado.</p>;
+  return <p className="p-8 text-fg/40">Template no encontrado.</p>;
 }

@@ -1,8 +1,8 @@
 import React from 'react';
 import { MapPin, Building2, Globe, Phone, Mail, Clock } from 'lucide-react';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30';
-const LABEL = 'block text-xs font-semibold text-white/60 mb-1.5';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg pl-9 pr-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
+const LABEL = 'block text-xs font-semibold text-fg/60 mb-1.5';
 
 /**
  * Datos de contacto REALES del comercio — lo que se muestra en la página
@@ -23,15 +23,15 @@ const CAMPOS = [
 export default function ContactoPanel({ draft, onCampo }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-xs text-white/40 leading-relaxed">
-        Se muestran en la página de <strong className="text-white/70">Contacto</strong>. Dejá vacío el que no uses — no aparece.
+      <p className="text-xs text-fg/40 leading-relaxed">
+        Se muestran en la página de <strong className="text-fg/70">Contacto</strong>. Dejá vacío el que no uses — no aparece.
         Las redes sociales se cargan en su propia pestaña.
       </p>
       {CAMPOS.map(({ key, label, placeholder, Icon }) => (
         <div key={key}>
           <label className={LABEL}>{label}</label>
           <div className="relative">
-            <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+            <Icon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg/40" />
             <input
               type="text"
               value={draft[key] || ''}

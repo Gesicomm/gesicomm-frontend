@@ -1,0 +1,711 @@
+/**
+ * Ficha de producto del template "Fitness & Suplementos".
+ *
+ * Ni un color literal en todo el archivo: todo sale de las variables
+ * --fpp-* que FitnessProductPage.jsx calcula a partir del tema de la
+ * landing (fondo/texto/acento, los tres que el comercio edita en la
+ * pestaña "Colores"). Es la única forma de que la estructura sea fija y
+ * la paleta siga siendo editable — que era el problema original: las
+ * landings se distinguían SOLO por el color porque la estructura estaba
+ * congelada, y acá la estructura es rica pero la paleta sigue mandando.
+ *
+ * Todo cuelga de .fpp-root para no tocar el resto de la landing (la ficha
+ * convive con landingPublica.css y con Tailwind).
+ */
+
+.fpp-root {
+  background: var(--fpp-bg);
+  color: var(--fpp-fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.fpp-root *,
+.fpp-root *::before,
+.fpp-root *::after { box-sizing: border-box; }
+
+.fpp-wrap {
+  width: min(1160px, calc(100% - 40px));
+  margin-inline: auto;
+}
+
+.fpp-root button { font: inherit; cursor: pointer; }
+
+/* ── 1 · Barra de anuncio ─────────────────────────────────────────── */
+
+.fpp-anuncio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 18px;
+  padding: 9px 5%;
+  background: var(--fpp-band);
+  color: var(--fpp-on-band);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.fpp-anuncio-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fpp-anuncio-cta {
+  margin-left: 10px;
+  border: 0;
+  border-radius: 5px;
+  padding: 9px 17px;
+  background: var(--fpp-accent);
+  color: var(--fpp-on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* ── Volver ───────────────────────────────────────────────────────── */
+
+.fpp-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 18px 0 -10px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--fpp-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.fpp-volver:hover { color: var(--fpp-fg); }
+
+/* ── 2 · Hero ─────────────────────────────────────────────────────── */
+
+.fpp-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 56px;
+  padding: 54px 0 52px;
+}
+
+.fpp-hero-galeria { display: flex; flex-direction: column; gap: 12px; }
+
+.fpp-hero-imagen {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 18px;
+  background: var(--fpp-surface);
+}
+
+.fpp-hero-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fpp-hero-imagen.vacia { color: var(--fpp-muted); }
+
+.fpp-hero-badge-descuento {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--fpp-accent);
+  color: var(--fpp-on-accent);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.fpp-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.fpp-miniatura {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--fpp-border);
+  border-radius: 10px;
+  background: var(--fpp-surface);
+}
+
+.fpp-miniatura.activa { border: 2px solid var(--fpp-accent); }
+.fpp-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+
+.fpp-eyebrow {
+  margin: 0;
+  color: var(--fpp-accent);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.fpp-hero h1 {
+  margin: 13px 0 16px;
+  font-size: clamp(34px, 4.4vw, 58px);
+  font-weight: 900;
+  line-height: .99;
+  letter-spacing: -.045em;
+  text-transform: uppercase;
+}
+
+.fpp-hero h1 em {
+  display: block;
+  color: var(--fpp-accent);
+  font-style: normal;
+}
+
+.fpp-lead {
+  max-width: 510px;
+  margin: 0;
+  color: var(--fpp-muted);
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.fpp-checklist {
+  display: grid;
+  gap: 9px;
+  margin: 22px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+
+.fpp-checklist li { display: flex; align-items: center; gap: 9px; }
+.fpp-checklist svg { flex-shrink: 0; color: var(--fpp-accent); }
+
+.fpp-precio-hero {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.fpp-precio-hero b { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+.fpp-precio-hero del { color: var(--fpp-muted); font-size: 15px; }
+
+.fpp-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  border: 0;
+  border-radius: 7px;
+  padding: 16px 26px;
+  background: var(--fpp-accent);
+  color: var(--fpp-on-accent);
+  font-size: 13.5px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 0 var(--fpp-accent-sombra);
+  transition: transform .12s, box-shadow .12s;
+}
+
+.fpp-cta:hover { transform: translateY(1px); box-shadow: 0 3px 0 var(--fpp-accent-sombra); }
+.fpp-cta:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.fpp-cta--ancho { width: 100%; }
+
+.fpp-microcopy {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  color: var(--fpp-muted);
+  font-size: 11.5px;
+}
+
+/* ── 3 · Prueba social rápida ─────────────────────────────────────── */
+
+.fpp-prueba-social {
+  border-block: 1px solid var(--fpp-border);
+  background: var(--fpp-surface-suave);
+}
+
+.fpp-prueba-social-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  padding-block: 18px;
+  font-size: 12.5px;
+}
+
+.fpp-prueba-social-izq { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.fpp-prueba-social-izq b { text-transform: uppercase; letter-spacing: .06em; font-size: 11.5px; }
+.fpp-prueba-social-izq small { color: var(--fpp-muted); }
+
+.fpp-estrellas { display: inline-flex; gap: 1px; color: var(--fpp-estrella); }
+
+.fpp-avatares { display: flex; align-items: center; }
+
+.fpp-avatar {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  margin-left: -6px;
+  border: 2px solid var(--fpp-bg);
+  border-radius: 50%;
+  background: var(--fpp-accent);
+  color: var(--fpp-on-accent);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.fpp-avatar:first-child { margin-left: 0; }
+.fpp-avatares b { margin-left: 10px; font-size: 11.5px; }
+
+/* ── Encabezado de sección numerado ───────────────────────────────── */
+
+.fpp-seccion { padding: 58px 0; }
+.fpp-seccion--fondo { background: var(--fpp-surface-suave); border-block: 1px solid var(--fpp-border); }
+
+.fpp-seccion-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 26px;
+  text-align: center;
+}
+
+.fpp-seccion-titulo h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+}
+
+/* ── 4 · Paquetes ─────────────────────────────────────────────────── */
+
+.fpp-packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.fpp-pack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 26px 17px 17px;
+  border: 1px solid var(--fpp-border-fuerte);
+  border-radius: 10px;
+  background: var(--fpp-card);
+  color: inherit;
+  text-align: center;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+
+.fpp-pack:hover { border-color: var(--fpp-accent); }
+
+.fpp-pack.elegido {
+  border: 2px solid var(--fpp-accent);
+  transform: translateY(-5px);
+  box-shadow: 0 12px 22px var(--fpp-sombra);
+}
+
+.fpp-pack-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: var(--fpp-fg);
+  color: var(--fpp-bg);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.fpp-pack.elegido .fpp-pack-badge { background: var(--fpp-accent); color: var(--fpp-on-accent); }
+
+.fpp-pack-nombre { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+.fpp-pack-sub { color: var(--fpp-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
+
+.fpp-pack-imagen {
+  width: 100%;
+  height: 108px;
+  margin: 6px 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--fpp-surface);
+  overflow: hidden;
+  color: var(--fpp-muted);
+}
+
+.fpp-pack-imagen img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.fpp-pack-precio { font-size: 21px; font-weight: 900; letter-spacing: -.02em; }
+.fpp-pack-precio small { font-size: 11px; font-weight: 600; color: var(--fpp-muted); }
+.fpp-pack del { color: var(--fpp-muted); font-size: 11px; }
+.fpp-pack-ahorro { color: var(--fpp-accent); font-size: 10.5px; font-weight: 900; text-transform: uppercase; }
+
+.fpp-pack-elegir {
+  width: 100%;
+  margin-top: 12px;
+  padding: 11px;
+  border-radius: 5px;
+  background: var(--fpp-fg);
+  color: var(--fpp-bg);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.fpp-pack.elegido .fpp-pack-elegir { background: var(--fpp-accent); color: var(--fpp-on-accent); }
+
+.fpp-suscripcion {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--fpp-border);
+  border-radius: 8px;
+  background: var(--fpp-card);
+  font-size: 11.5px;
+}
+
+.fpp-suscripcion b { font-size: 12px; }
+.fpp-suscripcion small { color: var(--fpp-muted); }
+
+.fpp-packs-cta { margin-top: 22px; text-align: center; }
+
+/* ── 5 · Beneficios ───────────────────────────────────────────────── */
+
+.fpp-beneficios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.fpp-beneficio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 18px;
+  border-right: 1px solid var(--fpp-border);
+  text-align: center;
+}
+
+.fpp-beneficio:last-child { border-right: 0; }
+.fpp-beneficio svg { color: var(--fpp-accent); }
+.fpp-beneficio b { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+.fpp-beneficio p { margin: 0; color: var(--fpp-muted); font-size: 11px; line-height: 1.5; }
+
+/* ── 6 · Ingredientes ─────────────────────────────────────────────── */
+
+.fpp-ingredientes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+.fpp-ingrediente { display: flex; align-items: flex-start; gap: 12px; }
+
+.fpp-ingrediente-icono {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--fpp-accent-suave);
+  color: var(--fpp-accent);
+}
+
+.fpp-ingrediente b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.fpp-ingrediente b small { margin-left: 5px; color: var(--fpp-accent); font-size: 10px; }
+.fpp-ingrediente p { margin: 5px 0 0; color: var(--fpp-muted); font-size: 11px; line-height: 1.5; }
+
+/* ── 7 · Opiniones ────────────────────────────────────────────────── */
+
+.fpp-opiniones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.fpp-opinion {
+  display: flex;
+  gap: 13px;
+  padding: 17px;
+  border: 1px solid var(--fpp-border);
+  border-radius: 10px;
+  background: var(--fpp-card);
+}
+
+.fpp-opinion-cara {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--fpp-accent-suave);
+  color: var(--fpp-accent);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.fpp-opinion-cara img { width: 100%; height: 100%; object-fit: cover; }
+.fpp-opinion p { margin: 7px 0; color: var(--fpp-muted); font-size: 11.5px; line-height: 1.5; }
+.fpp-opinion b { font-size: 10.5px; }
+
+/* ── 8 · Cómo funciona ────────────────────────────────────────────── */
+
+.fpp-pasos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.fpp-paso {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.fpp-paso:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  top: 22px;
+  right: -12px;
+  color: var(--fpp-accent);
+  font-size: 21px;
+}
+
+.fpp-paso-icono {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--fpp-accent-borde);
+  border-radius: 50%;
+  color: var(--fpp-accent);
+}
+
+.fpp-paso b { font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+.fpp-paso p { max-width: 165px; margin: 0; color: var(--fpp-muted); font-size: 10.5px; line-height: 1.5; }
+
+/* ── 9 · Garantías ────────────────────────────────────────────────── */
+
+.fpp-garantias { background: var(--fpp-band); color: var(--fpp-on-band); }
+
+.fpp-garantias-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+.fpp-garantia {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  column-gap: 9px;
+  padding: 22px 18px;
+  border-right: 1px solid var(--fpp-on-band-borde);
+}
+
+.fpp-garantia:last-child { border-right: 0; }
+.fpp-garantia svg { grid-row: span 2; color: var(--fpp-accent-band); }
+.fpp-garantia b { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+.fpp-garantia small { opacity: .72; font-size: 9.5px; }
+
+/* ── 10 · FAQ ─────────────────────────────────────────────────────── */
+
+.fpp-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+
+.fpp-faq-item { border-top: 1px solid var(--fpp-border); }
+
+.fpp-faq-item button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.fpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; }
+.fpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--fpp-accent); }
+.fpp-faq-item p { margin: 0; padding: 0 6px 16px; color: var(--fpp-muted); font-size: 11.5px; line-height: 1.6; }
+
+/* ── 11 · Complementarios ─────────────────────────────────────────── */
+
+.fpp-upsells { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+
+.fpp-upsell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--fpp-border);
+  border-radius: 10px;
+  background: var(--fpp-card);
+}
+
+.fpp-upsell-img {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--fpp-surface);
+  color: var(--fpp-muted);
+}
+
+.fpp-upsell-img img { width: 100%; height: 100%; object-fit: cover; }
+.fpp-upsell-datos { flex: 1; min-width: 0; }
+.fpp-upsell-datos b { display: block; font-size: 12.5px; }
+.fpp-upsell-datos p { margin: 3px 0; color: var(--fpp-muted); font-size: 10.5px; }
+.fpp-upsell-precio { display: flex; align-items: baseline; gap: 7px; }
+.fpp-upsell-precio strong { font-size: 14px; }
+.fpp-upsell-precio del { color: var(--fpp-muted); font-size: 11px; }
+
+.fpp-upsell-cta {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 5px;
+  padding: 10px 15px;
+  background: var(--fpp-accent);
+  color: var(--fpp-on-accent);
+  font-size: 10.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* ── 12 · Cierre y urgencia ───────────────────────────────────────── */
+
+.fpp-cierre { background: var(--fpp-accent); color: var(--fpp-on-accent); }
+
+.fpp-cierre-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 24px 0;
+}
+
+.fpp-cierre-etiqueta { margin: 0 0 6px; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+
+.fpp-contador { display: flex; align-items: center; gap: 8px; font-size: 30px; font-weight: 700; }
+.fpp-contador b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; }
+.fpp-contador-labels { display: flex; gap: 15px; margin-top: 3px; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+
+.fpp-cierre-copy h2 { margin: 0 0 5px; font-size: 17px; font-weight: 900; text-transform: uppercase; }
+.fpp-cierre-copy p { margin: 0; font-size: 11.5px; opacity: .85; }
+
+.fpp-cierre-cta {
+  min-width: 200px;
+  border: 0;
+  border-radius: 7px;
+  padding: 15px 24px;
+  background: var(--fpp-on-accent);
+  color: var(--fpp-accent);
+  font-size: 13.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fpp-cierre-cta small { display: block; margin-top: 3px; font-size: 8.5px; letter-spacing: .06em; }
+
+/* ── Barra fija de compra (móvil) ─────────────────────────────────── */
+
+.fpp-barra-movil {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--fpp-border);
+  background: var(--fpp-bg);
+}
+
+.fpp-barra-movil-precio { flex: 1; min-width: 0; }
+.fpp-barra-movil-precio b { display: block; font-size: 16px; font-weight: 900; }
+.fpp-barra-movil-precio small { color: var(--fpp-muted); font-size: 10px; }
+.fpp-barra-movil .fpp-cta { padding: 13px 20px; font-size: 12px; box-shadow: none; }
+
+/* ── Vacíos del editor ────────────────────────────────────────────── */
+
+/* Solo en el preview: una sección activada pero sin contenido cargado no
+   se puede dejar invisible, porque el comercio la prendió y no entendería
+   por qué "no pasa nada". En la landing publicada esa misma sección
+   simplemente no se dibuja. */
+.fpp-vacio {
+  margin: 0;
+  padding: 22px;
+  border: 1px dashed var(--fpp-border-fuerte);
+  border-radius: 10px;
+  color: var(--fpp-muted);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+
+.fpp-root.es-movil .fpp-wrap { width: calc(100% - 28px); }
+.fpp-root.es-movil .fpp-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 0; }
+.fpp-root.es-movil .fpp-hero h1 { font-size: 34px; }
+.fpp-root.es-movil .fpp-faq-grid { grid-template-columns: 1fr; }
+.fpp-root.es-movil .fpp-seccion { padding: 38px 0; }
+.fpp-root.es-movil .fpp-beneficio { border-right: 0; border-bottom: 1px solid var(--fpp-border); }
+.fpp-root.es-movil .fpp-garantia { border-right: 0; border-bottom: 1px solid var(--fpp-on-band-borde); }
+.fpp-root.es-movil .fpp-paso::after { display: none; }
+.fpp-root.es-movil .fpp-cierre-inner { flex-direction: column; align-items: flex-start; }
+.fpp-root.es-movil .fpp-cierre-cta { width: 100%; }
+.fpp-root.es-movil .fpp-barra-movil { display: flex; }
+
+@media (max-width: 860px) {
+  .fpp-wrap { width: calc(100% - 28px); }
+  .fpp-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 0; }
+  .fpp-hero h1 { font-size: 34px; }
+  .fpp-faq-grid { grid-template-columns: 1fr; }
+  .fpp-seccion { padding: 38px 0; }
+  .fpp-beneficio { border-right: 0; border-bottom: 1px solid var(--fpp-border); }
+  .fpp-garantia { border-right: 0; border-bottom: 1px solid var(--fpp-on-band-borde); }
+  .fpp-paso::after { display: none; }
+  .fpp-cierre-inner { flex-direction: column; align-items: flex-start; }
+  .fpp-cierre-cta { width: 100%; }
+  .fpp-barra-movil { display: flex; }
+  .fpp-anuncio { font-size: 9px; }
+}

@@ -23,12 +23,12 @@ export default function ComplementoPanel({
   const [tocado, setTocado] = useState(false);
 
   if (!producto) {
-    return <p className="text-xs text-white/40">Este embudo no tiene producto asignado.</p>;
+    return <p className="text-xs text-fg/40">Este embudo no tiene producto asignado.</p>;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-[11px] text-white/40 leading-relaxed">
+      <p className="text-[11px] text-fg/40 leading-relaxed">
         Se ofrece durante la compra, después de que el cliente ya decidió
         llevar el producto principal. No aparece en la página del embudo: es
         parte del checkout.

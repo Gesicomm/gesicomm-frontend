@@ -432,7 +432,7 @@ export default function Landing() {
           {MODULOS.map((grupo) => (
             <Reveal key={grupo.grupo}>
               <div className="grid gap-4 lg:grid-cols-[13rem_1fr] lg:gap-10">
-                <p className="etiqueta pt-5 text-primary lg:pt-6">{grupo.grupo}</p>
+                <p className="etiqueta pt-5 text-primary-text lg:pt-6">{grupo.grupo}</p>
 
                 {/* La regla de apertura va en la <dl> y la de cierre en cada
                     fila: así el grupo queda encerrado y no se cuela una
@@ -534,7 +534,7 @@ export default function Landing() {
             </p>
             <p>
               El detalle de qué se recopila, con qué base legal y por cuánto tiempo está en la{' '}
-              <Link to="/privacy" className="font-medium text-primary underline underline-offset-4">
+              <Link to="/privacy" className="font-medium text-primary-text underline underline-offset-4">
                 Política de Privacidad
               </Link>
               .
@@ -598,7 +598,7 @@ export default function Landing() {
                 </p>
                 <Link
                   to="/compliance"
-                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-text hover:underline"
                 >
                   Leer la página de cumplimiento
                   <ArrowRight size={15} aria-hidden="true" />
@@ -620,13 +620,13 @@ export default function Landing() {
             />
             <p className="mt-6 text-sm leading-relaxed text-fg-muted">
               ¿Tenés otra consulta?{' '}
-              <Link to="/contact" className="font-medium text-primary underline underline-offset-4">
+              <Link to="/contact" className="font-medium text-primary-text underline underline-offset-4">
                 Escribinos
               </Link>{' '}
               o mandanos un correo a{' '}
               <a
                 href="mailto:contacto@gesicomm.com"
-                className="font-medium text-primary underline underline-offset-4"
+                className="font-medium text-primary-text underline underline-offset-4"
               >
                 contacto@gesicomm.com
               </a>

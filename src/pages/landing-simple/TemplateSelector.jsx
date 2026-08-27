@@ -56,7 +56,7 @@ export default function TemplateSelector({ onCreada, onVolver }) {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center gap-2 text-white/60 p-16">
+      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
         <Loader size={20} className="animate-spin" /> Cargando templates...
       </div>
     );
@@ -71,13 +71,13 @@ export default function TemplateSelector({ onCreada, onVolver }) {
         <button
           type="button"
           onClick={onVolver}
-          className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition-colors mb-4"
+          className="inline-flex items-center gap-1.5 text-xs text-fg/40 hover:text-fg transition-colors mb-4"
         >
           <ArrowLeft size={13} /> Volver a elegir cómo armarla
         </button>
       )}
-      <h1 className="text-2xl font-bold text-white mb-1">Elegí un template para comenzar</h1>
-      <p className="text-white/50 mb-8">Estructura y diseño ya definidos — vos solo cargás productos, contacto y preguntas frecuentes.</p>
+      <h1 className="text-2xl font-bold text-fg mb-1">Elegí un template para comenzar</h1>
+      <p className="text-fg/50 mb-8">Estructura y diseño ya definidos — vos solo cargás productos, contacto y preguntas frecuentes.</p>
 
       {error && <div className="mb-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">{error}</div>}
 
@@ -86,27 +86,27 @@ export default function TemplateSelector({ onCreada, onVolver }) {
           const Componente = getComponenteTemplate(template.slug);
           const Icono = ICONOS[template.slug];
           return (
-            <div key={template.id} className="rounded-2xl overflow-hidden border border-white/10 bg-white/5 flex flex-col">
+            <div key={template.id} className="rounded-2xl overflow-hidden border border-fg/10 bg-fg/5 flex flex-col">
               <div className="h-56 overflow-hidden relative bg-black/40">
                 {Componente ? (
                   <div className="absolute inset-0 scale-[0.32] origin-top-left w-[312%] pointer-events-none">
                     <Componente data={DATA_PREVIEW} />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-full text-white/30">Sin preview</div>
+                  <div className="flex items-center justify-center h-full text-fg/30">Sin preview</div>
                 )}
               </div>
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <div className="flex items-center gap-2">
-                  {Icono && <Icono size={18} className="text-white/70" />}
-                  <h2 className="font-semibold text-white">{template.name}</h2>
+                  {Icono && <Icono size={18} className="text-fg/70" />}
+                  <h2 className="font-semibold text-fg">{template.name}</h2>
                 </div>
-                <p className="text-sm text-white/50 flex-1">{template.description}</p>
+                <p className="text-sm text-fg/50 flex-1">{template.description}</p>
                 <button
                   type="button"
                   onClick={() => usarTemplate(template)}
                   disabled={creandoId === template.id}
-                  className="mt-2 inline-flex items-center justify-center gap-2 bg-white text-black font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-white/90 transition-colors disabled:opacity-50"
+                  className="mt-2 inline-flex items-center justify-center gap-2 bg-fg text-canvas font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-fg-muted transition-colors disabled:opacity-50"
                 >
                   {creandoId === template.id ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                   Usar template

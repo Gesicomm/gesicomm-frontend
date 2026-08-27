@@ -18,12 +18,12 @@ function precioDe(p) {
 function Miniatura({ src, size = 48 }) {
   return (
     <div
-      className="rounded-lg overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center shrink-0"
+      className="rounded-lg overflow-hidden bg-fg/5 border border-fg/10 flex items-center justify-center shrink-0"
       style={{ width: size, height: size }}
     >
       {src
         ? <img src={src} alt="" className="w-full h-full object-cover" />
-        : <ImageOff size={size / 3} className="text-white/25" />}
+        : <ImageOff size={size / 3} className="text-fg/25" />}
     </div>
   );
 }
@@ -107,33 +107,33 @@ export default function ComplementoConfig({
     <div className="flex flex-col gap-6">
       {/* Producto principal — fijo, ya viene definido por dónde se entró */}
       <div>
-        <p className="text-xs font-semibold text-white/60 mb-2">Tu producto principal</p>
-        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+        <p className="text-xs font-semibold text-fg/60 mb-2">Tu producto principal</p>
+        <div className="flex items-center gap-3 rounded-xl border border-fg/10 bg-fg/5 p-3">
           <Miniatura src={imagenDe(producto)} />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-white truncate">{producto?.nombre}</p>
-            <p className="text-xs text-white/50">{formatPrecio(precioDe(producto))}</p>
+            <p className="text-sm font-bold text-fg truncate">{producto?.nombre}</p>
+            <p className="text-xs text-fg/50">{formatPrecio(precioDe(producto))}</p>
           </div>
         </div>
       </div>
 
       <div className="flex justify-center -my-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-white/60">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-fg/10 text-fg/60">
           <Plus size={14} />
         </div>
       </div>
 
       {/* Complemento */}
       <div>
-        <p className="text-xs font-semibold text-white/60 mb-2">Complemento</p>
+        <p className="text-xs font-semibold text-fg/60 mb-2">Complemento</p>
 
         {complemento && !eligiendo ? (
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3">
+            <div className="flex items-center gap-3 rounded-xl border border-fg/10 bg-fg/5 p-3">
               <Miniatura src={imagenDe(complemento)} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-white truncate">{complemento.nombre}</p>
-                <p className="text-xs text-white/50">{formatPrecio(precioDe(complemento))} en su ficha</p>
+                <p className="text-sm font-bold text-fg truncate">{complemento.nombre}</p>
+                <p className="text-xs text-fg/50">{formatPrecio(precioDe(complemento))} en su ficha</p>
               </div>
               <button
                 type="button"
@@ -145,7 +145,7 @@ export default function ComplementoConfig({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1.5">
+              <label className="block text-xs font-semibold text-fg/60 mb-1.5">
                 Texto de la oferta
               </label>
               <input
@@ -154,9 +154,9 @@ export default function ComplementoConfig({
                 onChange={e => setDescripcion(e.target.value)}
                 placeholder="Ideal para acompañar tu compra"
                 maxLength={120}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+                className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30"
               />
-              <p className="text-[11px] text-white/35 mt-1.5 leading-relaxed">
+              <p className="text-[11px] text-fg/35 mt-1.5 leading-relaxed">
                 Es el título de la tarjeta en el checkout. Si lo dejás vacío se
                 usa el nombre del producto.
               </p>
@@ -164,34 +164,34 @@ export default function ComplementoConfig({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-white/60 mb-1.5">
+                <label className="block text-xs font-semibold text-fg/60 mb-1.5">
                   Precio de lista
                 </label>
                 <CurrencyInput
                   value={precioLista}
                   onChange={setPrecioLista}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30"
+                  className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:border-fg/30"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-white/60 mb-1.5">
+                <label className="block text-xs font-semibold text-fg/60 mb-1.5">
                   Precio en el checkout
                 </label>
                 <CurrencyInput
                   value={precio}
                   onChange={setPrecio}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30"
+                  className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:border-fg/30"
                 />
               </div>
             </div>
-            <p className="text-[11px] text-white/35 -mt-1 leading-relaxed">
+            <p className="text-[11px] text-fg/35 -mt-1 leading-relaxed">
               {hayDescuento
                 ? `El comprador ve el de lista tachado y ahorra ${formatPrecio(ahorro)}.`
                 : 'Poné un precio de lista mayor al del checkout para que se vea tachado. Si lo dejás vacío, se muestra un solo precio.'}
             </p>
 
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1.5">
+              <label className="block text-xs font-semibold text-fg/60 mb-1.5">
                 Cantidad que se agrega
               </label>
               <input
@@ -199,34 +199,34 @@ export default function ComplementoConfig({
                 min={1}
                 value={cantidad}
                 onChange={e => setCantidad(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-white/30"
+                className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg focus:outline-none focus:border-fg/30"
               />
-              <p className="text-[11px] text-white/35 mt-1.5 leading-relaxed">
+              <p className="text-[11px] text-fg/35 mt-1.5 leading-relaxed">
                 Cuántas unidades del complemento entran al pedido al aceptarlo.
               </p>
             </div>
           </div>
         ) : (
           /* Selector de complemento */
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+          <div className="rounded-xl border border-fg/10 bg-fg/5 p-3">
             <div className="relative mb-2">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg/35" />
               <input
                 type="text"
                 value={busqueda}
                 onChange={e => setBusqueda(e.target.value)}
                 placeholder="Buscar producto..."
                 autoFocus
-                className="w-full bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+                className="w-full bg-fg/5 border border-fg/10 rounded-lg pl-8 pr-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30"
               />
             </div>
 
             {cargando ? (
-              <div className="flex items-center gap-2 p-4 text-xs text-white/40">
+              <div className="flex items-center gap-2 p-4 text-xs text-fg/40">
                 <Loader size={14} className="animate-spin" /> Cargando productos...
               </div>
             ) : opciones.length === 0 ? (
-              <p className="p-4 text-xs text-white/40">No se encontraron productos.</p>
+              <p className="p-4 text-xs text-fg/40">No se encontraron productos.</p>
             ) : (
               <div className="max-h-64 overflow-y-auto flex flex-col gap-1">
                 {opciones.map(p => (
@@ -238,12 +238,12 @@ export default function ComplementoConfig({
                       setPrecio(precioDe(p) || '');
                       setEligiendo(false);
                     }}
-                    className="flex items-center gap-3 rounded-lg p-2 text-left hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-3 rounded-lg p-2 text-left hover:bg-fg/10 transition-colors"
                   >
                     <Miniatura src={imagenDe(p)} size={36} />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-white truncate">{p.nombre}</p>
-                      <p className="text-[11px] text-white/45">{formatPrecio(precioDe(p))}</p>
+                      <p className="text-sm text-fg truncate">{p.nombre}</p>
+                      <p className="text-[11px] text-fg/45">{formatPrecio(precioDe(p))}</p>
                     </div>
                   </button>
                 ))}
@@ -254,7 +254,7 @@ export default function ComplementoConfig({
               <button
                 type="button"
                 onClick={() => setEligiendo(false)}
-                className="mt-2 text-xs text-white/45 hover:text-white"
+                className="mt-2 text-xs text-fg/45 hover:text-fg"
               >
                 Cancelar
               </button>
@@ -267,25 +267,25 @@ export default function ComplementoConfig({
           FunnelCheckout.jsx, para que no haya sorpresas al publicar. */}
       {complemento && precioNumero > 0 && (
         <div>
-          <p className="text-xs font-semibold text-white/60 mb-2">Cómo aparecerá al comprar</p>
-          <div className="rounded-xl border border-white/10 bg-black/30 p-4">
-            <p className="mb-3 flex items-center gap-1.5 text-sm font-bold text-white">
+          <p className="text-xs font-semibold text-fg/60 mb-2">Cómo aparecerá al comprar</p>
+          <div className="rounded-xl border border-fg/10 bg-black/30 p-4">
+            <p className="mb-3 flex items-center gap-1.5 text-sm font-bold text-fg">
               <Sparkles size={14} className="text-accent" /> Completá tu compra
             </p>
-            <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-white/15 p-3">
-              <div className="h-4 w-4 shrink-0 rounded border-2 border-white/30" />
+            <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-fg/15 p-3">
+              <div className="h-4 w-4 shrink-0 rounded border-2 border-fg/30" />
               <Miniatura src={imagenDe(complemento)} size={40} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-white truncate">
+                <p className="text-sm font-bold text-fg truncate">
                   {descripcion.trim() || `Agregar ${complemento.nombre}`}
                 </p>
-                <p className="text-[11px] text-white/50 truncate">
+                <p className="text-[11px] text-fg/50 truncate">
                   {cantidadNumero > 1 ? `${cantidadNumero} × ` : ''}{complemento.nombre}
                 </p>
                 <span className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-extrabold text-white">{formatPrecio(precioNumero)}</span>
+                  <span className="text-sm font-extrabold text-fg">{formatPrecio(precioNumero)}</span>
                   {hayDescuento && (
-                    <span className="text-[11px] text-white/45 line-through">{formatPrecio(precioListaNumero)}</span>
+                    <span className="text-[11px] text-fg/45 line-through">{formatPrecio(precioListaNumero)}</span>
                   )}
                 </span>
               </div>
@@ -304,7 +304,7 @@ export default function ComplementoConfig({
             type="button"
             onClick={onCancelar}
             disabled={guardando}
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-white/60 hover:text-white disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-semibold text-fg/60 hover:text-fg disabled:opacity-50"
           >
             <ArrowLeft size={15} /> Volver
           </button>

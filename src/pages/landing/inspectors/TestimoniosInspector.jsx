@@ -86,7 +86,7 @@ export default function TestimoniosInspector({ seccion, schema, onUpdate, onUplo
                     <>
                       <img src={getMediaUrl(t.foto)} alt="" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center">
-                        <label className="cursor-pointer text-white">
+                        <label className="cursor-pointer text-fg">
                           <Trash2 size={14} onClick={(e) => { e.preventDefault(); actualizarItem(idx, 'foto', null); }} />
                         </label>
                       </div>

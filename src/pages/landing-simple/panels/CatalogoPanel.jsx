@@ -6,7 +6,7 @@ import '../../landing/landing.css';
 // reutilizado también acá — no hay un tope propio del modo rígido).
 const MAX_ITEMS = 40;
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-primary/50 transition-colors';
 
 function clave(tipo, id) { return `${tipo}:${id}`; }
 
@@ -139,13 +139,13 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-xs text-white/40 leading-relaxed">
-        Esta es la página de <strong className="text-white/70">Catálogo completo</strong>. Los productos que agregues acá
-        NO aparecen en el inicio: eso se elige en la pestaña <strong className="text-white/70">Destacados</strong>.
+      <p className="text-xs text-fg/40 leading-relaxed">
+        Esta es la página de <strong className="text-fg/70">Catálogo completo</strong>. Los productos que agregues acá
+        NO aparecen en el inicio: eso se elige en la pestaña <strong className="text-fg/70">Destacados</strong>.
       </p>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-white/70">Título de la página</label>
+        <label className="text-xs font-semibold text-fg/70">Título de la página</label>
         <input
           type="text"
           value={draft?.catalogo_titulo || ''}
@@ -156,7 +156,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-white/70">Descripción</label>
+        <label className="text-xs font-semibold text-fg/70">Descripción</label>
         <textarea
           value={draft?.catalogo_descripcion || ''}
           onChange={e => onCampo?.('catalogo_descripcion', e.target.value)}
@@ -164,11 +164,11 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
           rows={2}
           className={`${CAMPO} resize-none`}
         />
-        <p className="text-xs text-white/40">Aparece debajo del título. Opcional.</p>
+        <p className="text-xs text-fg/40">Aparece debajo del título. Opcional.</p>
       </div>
 
       <div className="flex flex-col gap-2 pt-1">
-        <label className="text-sm font-semibold text-white">Productos del catálogo</label>
+        <label className="text-sm font-semibold text-fg">Productos del catálogo</label>
         <ProductPicker
           catalogo={catalogo}
           seleccion={seleccion}

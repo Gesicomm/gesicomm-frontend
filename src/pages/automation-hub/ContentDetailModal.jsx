@@ -44,7 +44,7 @@ export default function ContentDetailModal({ item, onClose, onCambio }) {
           <div className="rounded-lg border border-border bg-surface-2 p-3">
             <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Código de tracking</div>
             <div className="flex items-center justify-between gap-2">
-              <strong className="text-sm text-primary">{item.tracking_code}</strong>
+              <strong className="text-sm text-primary-text">{item.tracking_code}</strong>
               <button type="button" onClick={copiarCodigo} className="rounded-md border border-border p-1.5 text-fg-muted hover:bg-surface hover:text-fg">
                 <Copy size={14} />
               </button>

@@ -177,7 +177,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
               </button>
               <button type="button" onClick={() => elegirTipo('gasto')}
                 className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface-2 p-5 text-left transition-colors hover:border-primary hover:bg-primary/5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary"><Receipt size={18} /></div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary-text"><Receipt size={18} /></div>
                 <span className="text-base font-bold text-fg">Gasto</span>
                 <span className="text-xs text-fg-muted">Necesario para mantener funcionando el negocio.</span>
               </button>
@@ -208,7 +208,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
                 <div className="mb-4 flex gap-2">
                   {['costo', 'gasto'].map(t => (
                     <button key={t} type="button" onClick={() => setDatos(d => ({ ...d, tipo: t }))}
-                      className={`flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors ${datos.tipo === t ? (t === 'costo' ? 'border-info bg-info/10 text-info' : 'border-primary bg-primary/10 text-primary') : 'border-border text-fg-muted hover:bg-surface-2'}`}>
+                      className={`flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors ${datos.tipo === t ? (t === 'costo' ? 'border-info bg-info/10 text-info' : 'border-primary bg-primary/10 text-primary-text') : 'border-border text-fg-muted hover:bg-surface-2'}`}>
                       {t === 'costo' ? 'Costo' : 'Gasto'}
                     </button>
                   ))}
@@ -288,7 +288,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
                     <div className="flex gap-2">
                       {[{ id: '', label: 'Sin definir' }, { id: 'fijo', label: 'Fijo' }, { id: 'variable', label: 'Variable' }].map(o => (
                         <button key={o.id} type="button" onClick={() => setDatos(d => ({ ...d, clasificacion: o.id }))}
-                          className={`flex-1 rounded-md border py-1.5 text-xs font-medium ${datos.clasificacion === o.id ? 'border-primary bg-primary/10 text-primary' : 'border-border text-fg-muted hover:bg-surface-2'}`}>
+                          className={`flex-1 rounded-md border py-1.5 text-xs font-medium ${datos.clasificacion === o.id ? 'border-primary bg-primary/10 text-primary-text' : 'border-border text-fg-muted hover:bg-surface-2'}`}>
                           {o.label}
                         </button>
                       ))}
@@ -349,7 +349,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
                   </Campo>
 
                   <Campo label="Comprobante">
-                    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-surface-2 px-3 py-3 text-sm text-fg-muted hover:border-primary hover:text-primary">
+                    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-surface-2 px-3 py-3 text-sm text-fg-muted hover:border-primary hover:text-primary-text">
                       {comprobante ? <FileText size={16} /> : <Upload size={16} />}
                       {comprobante ? comprobante.name : (registro?.comprobante_url ? 'Reemplazar comprobante' : 'Adjuntar imagen o PDF')}
                       <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden"

@@ -3,22 +3,25 @@
    Diseño premium inspirado en Shopify Admin · Stripe · Vercel Dashboard
 ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
   --vit-accent:        #3d5fa3;
   --vit-accent-hover:  #4e72b8;
   --vit-accent-soft:   rgba(61, 95, 163, 0.12);
   --vit-accent-glow:   rgba(61, 95, 163, 0.25);
+  /* El acento pleno (#3d5fa3) sirve como FONDO de botón, pero como texto
+     sobre superficie oscura da 3,03:1. Este es su par legible: 6,8:1 en
+     oscuro, 9:1 en claro. */
+  --vit-accent-fg:     #7d9bd6;
   --vit-bg:            #060709;
   --vit-card-bg:       #0d1117;
   --vit-card-bg-transparent: rgba(13, 17, 23, 0);
   --vit-card-hover-bg: #111720;
-  --vit-border:        rgba(255, 255, 255, 0.07);
+  --vit-border:        color-mix(in srgb, var(--color-fg) 7%, transparent);
   --vit-border-hover:  rgba(61, 95, 163, 0.4);
   --vit-ok:            #34d399;
   --vit-text:          #e2e8f0;
-  --vit-muted:         #64748b;
+  --vit-muted:         #8a94a6;
   --vit-muted-2:       #475569;
   --vit-surface:       #0a0d13;
   --radius-card:       16px;
@@ -30,7 +33,7 @@
 :root[data-theme='light'] {
   --vit-bg:            #f7f7f5;
   --vit-card-bg:       #ffffff;
-  --vit-card-bg-transparent: rgba(255, 255, 255, 0);
+  --vit-card-bg-transparent: color-mix(in srgb, var(--color-fg) 0%, transparent);
   --vit-card-hover-bg: #eeeeea;
   --vit-border:        #d8d8d0;
   --vit-border-hover:  #c0c0b6;
@@ -39,6 +42,7 @@
   --vit-muted-2:       #6b7280;
   --vit-surface:       #ffffff;
   --vit-accent-soft:   rgba(61, 95, 163, 0.1);
+  --vit-accent-fg:     #2e4a85;
 }
 
 /* ─── Layout global ───────────────────────────────────────────────────── */
@@ -47,7 +51,7 @@
   background: var(--vit-bg);
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .user-topbar {
@@ -90,7 +94,7 @@
   letter-spacing: -0.02em;
 }
 
-.user-topbar-brand .dot { color: var(--vit-accent); }
+.user-topbar-brand .dot { color: var(--vit-accent-fg); }
 
 .user-topbar-subtitle {
   font-size: 0.72rem;
@@ -115,8 +119,8 @@
   border-radius: 8px;
   transition: color var(--transition-fast), background-color var(--transition-fast);
 }
-.user-topbar-tab:hover { color: var(--vit-text); background: rgba(255,255,255,0.04); }
-.user-topbar-tab.active { color: var(--vit-accent); background: var(--vit-accent-soft); }
+.user-topbar-tab:hover { color: var(--vit-text); background: color-mix(in srgb, var(--color-fg) 4%, transparent); }
+.user-topbar-tab.active { color: var(--vit-accent-fg); background: var(--vit-accent-soft); }
 
 .user-topbar-right {
   display: flex;
@@ -244,7 +248,7 @@
   border-radius: 10px;
   padding: 0.55rem 0.9rem 0.55rem 2.35rem;
   font-size: 0.85rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   color: var(--vit-text);
   outline: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
@@ -273,12 +277,12 @@
   border-radius: 7px;
   font-size: 0.82rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
 }
-.vit-filter-btn:hover { color: var(--vit-text); background: rgba(255,255,255,0.04); }
+.vit-filter-btn:hover { color: var(--vit-text); background: color-mix(in srgb, var(--color-fg) 4%, transparent); }
 .vit-filter-btn.active {
   background: var(--vit-accent-soft);
   color: var(--vit-accent);
@@ -292,7 +296,7 @@
   color: var(--vit-muted);
   font-size: 0.82rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   padding: 0.5rem 2rem 0.5rem 0.9rem;
   outline: none;
   cursor: pointer;
@@ -302,7 +306,7 @@
   background-position: right 0.7rem center;
   transition: border-color var(--transition-fast);
 }
-.vit-sort-select:hover { border-color: rgba(255,255,255,0.15); color: var(--vit-text); }
+.vit-sort-select:hover { border-color: color-mix(in srgb, var(--color-fg) 15%, transparent); color: var(--vit-text); }
 .vit-sort-select:focus { border-color: rgba(61,95,163,0.4); }
 .vit-sort-select option { background: var(--vit-card-bg); color: var(--vit-text); }
 
@@ -406,7 +410,7 @@
 }
 .vit-seleccion-cancelar:hover {
   color: var(--vit-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
 }
 
 /* El dorado sobre texto azul profundo da ~10:1: es el uso correcto del
@@ -478,7 +482,7 @@
   border-radius: 7px;
   cursor: pointer;
   background: rgba(8, 11, 16, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 35%, transparent);
   color: transparent;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -489,7 +493,7 @@
 
 .vit-card:hover .vit-card-check {
   border-color: rgba(255, 255, 255, 0.6);
-  color: rgba(255, 255, 255, 0.5);
+  color: color-mix(in srgb, var(--color-fg) 50%, transparent);
 }
 
 .vit-card.is-selected .vit-card-check {
@@ -799,7 +803,7 @@
   color: var(--vit-text);
   font-size: 1.05rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   width: 100%;
   min-width: 0;
 }
@@ -907,7 +911,7 @@
   color: var(--vit-muted);
   font-size: 0.78rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   cursor: pointer;
   padding: 0;
   transition: color var(--transition-fast);
@@ -975,7 +979,7 @@
   background: transparent; border: none; color: var(--vit-muted); cursor: pointer;
   padding: 0.3rem; border-radius: 6px; line-height: 1;
 }
-.vit-modal-close:hover { color: var(--vit-text); background: rgba(255,255,255,0.06); }
+.vit-modal-close:hover { color: var(--vit-text); background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
 
 .vit-modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
 
@@ -1024,7 +1028,7 @@
   text-align: right;
   padding: 0.55rem 0.6rem;
   color: var(--vit-text);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
 }
 .vit-sensitivity-table td:first-child { text-align: left; font-weight: 600; }
 .vit-sensitivity-table tr.margen-bajo td  { color: #f59e0b; }
@@ -1054,12 +1058,12 @@
   padding: 0.5rem 1rem;
   border-radius: 8px;
   font-size: 0.82rem;
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   cursor: pointer;
   transition: border-color var(--transition-fast);
 }
-.btn-secondary:hover { border-color: rgba(255,255,255,0.25); }
+.btn-secondary:hover { border-color: color-mix(in srgb, var(--color-fg) 25%, transparent); }
 
 /* Padding scoped to user sidebar layout */
 .user-layout-container .settings-container {

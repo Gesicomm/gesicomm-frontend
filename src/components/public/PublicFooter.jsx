@@ -56,7 +56,7 @@ export default function PublicFooter() {
               <Mail size={14} className="flex-shrink-0 text-fg-subtle" aria-hidden="true" />
               <a
                 href={`mailto:${CORREO_CONTACTO}`}
-                className="text-fg-muted transition-colors hover:text-primary"
+                className="text-fg-muted transition-colors hover:text-primary-text"
               >
                 {CORREO_CONTACTO}
               </a>

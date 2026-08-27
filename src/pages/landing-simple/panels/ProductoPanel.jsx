@@ -4,9 +4,10 @@ import { getMediaUrl } from '../../../services/api';
 import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
 import ProductCheckoutOfertas from '../../landing/ProductCheckoutOfertas';
+import FichaFitnessPanel from './FichaFitnessPanel';
 import '../../landing/landing.css';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 
 /**
  * Panel de edición de UN producto, dentro del sidebar del armador de
@@ -15,7 +16,14 @@ const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 tex
  */
 export default function ProductoPanel({
   producto, editable, cargando,
+  // Ficha rediseñada del template Fitness (12 secciones editables, ver
+  // templates/fitness/). Solo aparece en ese template: los otros tres
+  // siguen con la ficha genérica de siempre, así que sin estas props el
+  // panel se comporta exactamente como antes.
+  fichaActiva = false, ficha = null, fichaResuelta = null,
+  fichaLanding = null, fichaMarketing = null, onFicha = null,
   descripcion, onDescripcion,
+  packs = [],
   imagenes, imagenesEditables = true, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
   faqTitulo, onFaqTitulo,
   faq, onFaqChange,
@@ -66,49 +74,52 @@ export default function ProductoPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <button type="button" onClick={onVolver} className="p-4 border-b border-white/10 flex items-center gap-3 hover:bg-white/5 transition-colors w-full text-left">
+      <button type="button" onClick={onVolver} className="p-4 border-b border-fg/10 flex items-center gap-3 hover:bg-fg/5 transition-colors w-full text-left">
         <div className="p-1 rounded-full transition-colors">
           <ArrowLeft size={16} />
         </div>
         <span className="text-sm font-semibold">Volver a la landing</span>
       </button>
 
-      <div className="flex bg-white/5 border-b border-white/10 shrink-0">
-        <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-primary text-primary' : 'border-transparent text-white/50 hover:text-white'}`}>Detalles</button>
-        <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-primary text-primary' : 'border-transparent text-white/50 hover:text-white'}`}>Relacionados</button>
-        <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-primary text-primary' : 'border-transparent text-white/50 hover:text-white'}`}>Checkout y Ofertas</button>
+      <div className="flex bg-fg/5 border-b border-fg/10 shrink-0">
+        <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Detalles</button>
+        <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Relacionados</button>
+        <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ofertas</button>
+        {fichaActiva && (
+          <button type="button" onClick={() => setTab('ficha')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ficha' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ficha</button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
         <div>
-          <p className="text-xs text-white/40 mb-0.5">Editando producto</p>
-          <p className="text-sm font-bold text-white truncate">{producto?.nombre}</p>
+          <p className="text-xs text-fg/40 mb-0.5">Editando producto</p>
+          <p className="text-sm font-bold text-fg truncate">{producto?.nombre}</p>
         </div>
 
         {!editable ? (
-          <p className="text-xs text-white/40">Los combos se editan desde Mis Productos.</p>
+          <p className="text-xs text-fg/40">Los combos se editan desde Mis Productos.</p>
         ) : cargando ? (
-          <div className="flex items-center gap-2 text-white/40 text-xs"><Loader size={14} className="animate-spin" /> Cargando...</div>
+          <div className="flex items-center gap-2 text-fg/40 text-xs"><Loader size={14} className="animate-spin" /> Cargando...</div>
         ) : (
           <>
             {tab === 'detalles' && (
               <div className="flex flex-col gap-5">
             {/* ─── Imágenes ─────────────────────────────────────────── */}
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1.5">Imágenes</label>
+              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Imágenes</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {imagenes.map(img => (
-                  <div key={img.id} className="relative w-14 h-14 rounded-lg overflow-hidden border border-white/10 group">
+                  <div key={img.id} className="relative w-14 h-14 rounded-lg overflow-hidden border border-fg/10 group">
                     <img src={getMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
                     {img.es_principal && <span className="absolute top-0.5 left-0.5 bg-white rounded-full p-0.5"><Star size={9} className="text-black" fill="black" /></span>}
                     {imagenesEditables && (
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                         {!img.es_principal && (
-                          <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-white/90 hover:bg-white">
+                          <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-white hover:bg-white/80">
                             <Star size={11} />
                           </button>
                         )}
-                        <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-white/90 hover:bg-white">
+                        <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-white hover:bg-white/80">
                           <Trash2 size={11} />
                         </button>
                       </div>
@@ -117,7 +128,7 @@ export default function ProductoPanel({
                 ))}
               </div>
               {imagenesEditables ? (
-                <label className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white cursor-pointer w-fit">
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg cursor-pointer w-fit">
                   {subiendoImg ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
                   Agregar imagen
                   <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={onSubirImagen} disabled={subiendoImg} />
@@ -127,7 +138,7 @@ export default function ProductoPanel({
                    pueden personalizar por landing: son del producto del
                    catálogo, que es compartido. Se explica en vez de mostrar un
                    botón que el backend va a rechazar. */
-                <p className="text-xs text-white/40 flex items-start gap-1.5 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5">
+                <p className="text-xs text-fg/40 flex items-start gap-1.5 bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5">
                   <Lock size={12} className="mt-0.5 shrink-0" />
                   <span>Las imágenes son del producto del catálogo y las administra quien lo cargó. Todo lo demás de esta página sí lo podés editar.</span>
                 </p>
@@ -136,7 +147,7 @@ export default function ProductoPanel({
 
             {/* ─── Descripción ──────────────────────────────────────── */}
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1.5">Descripción</label>
+              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Descripción</label>
               <textarea
                 value={descripcion}
                 onChange={e => onDescripcion(e.target.value)}
@@ -148,8 +159,8 @@ export default function ProductoPanel({
 
             {/* ─── FAQ ──────────────────────────────────────────────── */}
             <div>
-              <label className="block text-xs font-semibold text-white/60 mb-1.5">Todo lo que necesitas saber</label>
-              <p className="text-xs text-white/30 mb-2">Preguntas frecuentes propias de este producto.</p>
+              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Todo lo que necesitas saber</label>
+              <p className="text-xs text-fg/30 mb-2">Preguntas frecuentes propias de este producto.</p>
 
               <div className="mb-3">
                 <input
@@ -170,14 +181,14 @@ export default function ProductoPanel({
               <div className="flex flex-col gap-5">
             {/* ─── Productos relacionados ───────────────────────────── */}
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-white/60">Productos relacionados</label>
+              <label className="text-xs font-semibold text-fg/60">Productos relacionados</label>
 
               {relacionadosAutomatico ? (
                 <p className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
                   Se muestran productos de la misma categoría. Agregá productos específicos abajo para personalizar.
                 </p>
               ) : (
-                <p className="text-xs text-white/30">
+                <p className="text-xs text-fg/30">
                   Se muestran al final de la página de este producto.
                 </p>
               )}
@@ -213,12 +224,24 @@ export default function ProductoPanel({
               </div>
             )}
 
+            {tab === 'ficha' && fichaActiva && fichaResuelta && (
+              <FichaFitnessPanel
+                ficha={ficha}
+                fichaResuelta={fichaResuelta}
+                fichaLanding={fichaLanding}
+                fichaMarketing={fichaMarketing}
+                packs={packs}
+                modo="producto"
+                onChange={onFicha}
+              />
+            )}
+
             {/* ─── Guardar ──────────────────────────────────────────── */}
             <button
               type="button"
               onClick={onGuardar}
               disabled={guardando}
-              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-white text-black hover:bg-white/90 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-fg text-canvas hover:bg-fg-muted disabled:opacity-50"
             >
               {guardando ? <Loader size={14} className="animate-spin" /> : <Save size={14} />} Guardar cambios
             </button>

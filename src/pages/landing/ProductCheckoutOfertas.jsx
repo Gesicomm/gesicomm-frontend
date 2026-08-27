@@ -354,7 +354,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
             </>
           )}
 
-          <button type="submit" disabled={guardandoOferta} className="w-full h-8 rounded-md bg-[var(--vit-accent)] text-white text-xs font-semibold hover:bg-[var(--vit-accent-hover)] disabled:opacity-50 transition-colors flex items-center justify-center">
+          <button type="submit" disabled={guardandoOferta} className="w-full h-8 rounded-md bg-[var(--vit-accent)] text-fg text-xs font-semibold hover:bg-[var(--vit-accent-hover)] disabled:opacity-50 transition-colors flex items-center justify-center">
             {guardandoOferta ? <Loader className="animate-spin" size={14} /> : 'Guardar'}
           </button>
         </form>

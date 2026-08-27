@@ -53,7 +53,7 @@ export default function ProveedoresView() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="m-0 flex items-center gap-2 text-2xl font-bold text-fg">
-            <Truck className="text-primary" size={24} /> Proveedores
+            <Truck className="text-primary-text" size={24} /> Proveedores
           </h1>
           <p className="mt-1 max-w-xl text-sm text-fg-muted">
             Administra los proveedores de tu tienda y configura el precio de dólar particular de cada uno.
@@ -217,7 +217,7 @@ function ProveedorFormModal({ registro, onClose, onGuardado }) {
 
             {esEdicion && (
                <label className="flex items-center gap-2 mt-2">
-                 <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} className="rounded border-border bg-surface text-primary" />
+                 <input type="checkbox" checked={activo} onChange={e => setActivo(e.target.checked)} className="rounded border-border bg-surface text-primary-text" />
                  <span className="text-sm font-medium text-fg">Activo</span>
                </label>
             )}

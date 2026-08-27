@@ -1,6 +1,6 @@
 const TONOS = {
   neutro: 'border-border bg-surface-2 text-fg-muted',
-  primario: 'border-primary/30 bg-primary/10 text-primary',
+  primario: 'border-primary/30 bg-primary/10 text-primary-text',
   exito: 'border-success/30 bg-success/10 text-success',
   advertencia: 'border-warning/30 bg-warning/10 text-warning',
   peligro: 'border-danger/30 bg-danger/10 text-danger',

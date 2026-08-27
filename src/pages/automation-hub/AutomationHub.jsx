@@ -56,7 +56,7 @@ export default function AutomationHub() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="m-0 flex items-center gap-2 text-2xl font-bold text-fg">
-            <Sparkles className="text-primary" size={24} /> Automatización de contenido
+            <Sparkles className="text-primary-text" size={24} /> Automatización de contenido
           </h1>
           <p className="mt-1 max-w-xl text-sm text-fg-muted">
             Planificá tu contenido, generá su código de tracking y gestioná la vinculación con ManyChat.

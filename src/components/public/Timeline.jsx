@@ -24,7 +24,7 @@ export default function Timeline({ pasos, className = '' }) {
 
             <span
               aria-hidden="true"
-              className="relative z-10 flex h-9.5 w-9.5 flex-shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-sm font-semibold text-primary"
+              className="relative z-10 flex h-9.5 w-9.5 flex-shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-sm font-semibold text-primary-text"
               style={{ height: '2.375rem', width: '2.375rem' }}
             >
               {indice + 1}

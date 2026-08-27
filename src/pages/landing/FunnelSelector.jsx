@@ -145,7 +145,7 @@ export default function FunnelSelector() {
                   <button
                     onClick={() => handleSelectTemplate(tpl.id)}
                     disabled={instanciandoId !== null}
-                    className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-gray-800 disabled:opacity-70 disabled:hover:bg-gray-900"
+                    className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3.5 text-sm font-semibold text-fg shadow-sm transition-all hover:bg-gray-800 disabled:opacity-70 disabled:hover:bg-gray-900"
                   >
                     {isInstantiating ? (
                       <>

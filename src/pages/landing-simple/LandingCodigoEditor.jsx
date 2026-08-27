@@ -169,7 +169,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center gap-2 text-white/60 p-16">
+      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
         <Loader size={20} className="animate-spin" /> Cargando...
       </div>
     );
@@ -179,12 +179,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="h-14 border-b border-white/10 shrink-0 flex items-center justify-between px-5">
+      <div className="h-14 border-b border-fg/10 shrink-0 flex items-center justify-between px-5">
         <div className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => setSidebarVisible(!sidebarVisible)}
-            className="flex items-center gap-1.5 p-2 -ml-2 text-white/50 hover:text-white transition-colors text-xs font-semibold bg-white/5 rounded-lg px-3"
+            className="flex items-center gap-1.5 p-2 -ml-2 text-fg/50 hover:text-fg transition-colors text-xs font-semibold bg-fg/5 rounded-lg px-3"
             title={sidebarVisible ? 'Ocultar editor de código' : 'Mostrar editor de código'}
           >
             {sidebarVisible ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
@@ -194,7 +194,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             <h1 className="text-sm font-bold truncate">{landing?.titulo || 'Landing en blanco'}</h1>
             {/* Se muestra la URL real a la que lleva "Ver": en local es la
                 de este mismo entorno, no la de producción. */}
-            <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-white/50 hover:text-white/80">
+            <a href={publicUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[11px] text-fg/50 hover:text-fg/80">
               {publicUrl.startsWith('http') ? publicUrl.replace(/^https?:\/\//, '') : `${window.location.host}${publicUrl}`}
               <ExternalLink size={10} />
               {!landing?.activo && <span className="ml-1 text-amber-400/80">(sin publicar)</span>}
@@ -203,13 +203,13 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-white/5 rounded-lg p-0.5 mr-2 border border-white/10">
+          <div className="flex items-center bg-fg/5 rounded-lg p-0.5 mr-2 border border-fg/10">
             {[['desktop', Monitor, 'Desktop'], ['tablet', Tablet, 'Tablet'], ['mobile', Smartphone, 'Mobile']].map(([modo, Icono, titulo]) => (
               <button
                 key={modo}
                 type="button"
                 onClick={() => setViewportMode(modo)}
-                className={`p-1.5 rounded transition-colors ${viewportMode === modo ? 'bg-white text-black' : 'text-white/50 hover:text-white'}`}
+                className={`p-1.5 rounded transition-colors ${viewportMode === modo ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
                 title={titulo}
               >
                 <Icono size={14} />
@@ -217,16 +217,16 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             ))}
           </div>
           {aviso && <span className="text-xs text-emerald-400">{aviso}</span>}
-          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-white/40 hover:text-red-400" title="Eliminar landing">
+          <button type="button" onClick={eliminar} className="p-2 rounded-lg hover:bg-red-500/10 text-fg/40 hover:text-red-400" title="Eliminar landing">
             <Trash2 size={16} />
           </button>
-          <a href={publicUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white" title="Ver landing pública">
+          <a href={publicUrl} target="_blank" rel="noreferrer" className="p-2 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg" title="Ver landing pública">
             <ExternalLink size={16} />
           </a>
           <button
             type="button"
             onClick={() => cambiarEstado(!landing?.activo)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg"
           >
             {landing?.activo ? <><EyeOff size={13} /> Despublicar</> : <><Eye size={13} /> Publicar</>}
           </button>
@@ -234,7 +234,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             type="button"
             onClick={guardar}
             disabled={guardando}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-white text-black hover:bg-white/90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg bg-fg text-canvas hover:bg-fg-muted disabled:opacity-50"
           >
             {guardando ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
             Guardar
@@ -264,14 +264,14 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
       <div className="flex flex-1 min-h-0">
         {sidebarVisible && (
-          <div className="w-[46%] max-w-[720px] min-w-[320px] shrink-0 border-r border-white/10 flex flex-col min-h-0">
-            <div className="flex gap-1 p-2 border-b border-white/10">
+          <div className="w-[46%] max-w-[720px] min-w-[320px] shrink-0 border-r border-fg/10 flex flex-col min-h-0">
+            <div className="flex gap-1 p-2 border-b border-fg/10">
               {TABS.map(t => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setTab(t.key)}
-                  className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-colors ${tab === t.key ? 'bg-white text-black' : 'text-white/50 hover:bg-white/10'}`}
+                  className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10'}`}
                 >
                   {t.label}
                 </button>
@@ -289,9 +289,9 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   autoCapitalize="off"
                   autoCorrect="off"
                   placeholder={PLACEHOLDERS[tabActiva.lenguaje]}
-                  className="flex-1 min-h-0 w-full resize-none bg-black/40 text-white/90 font-mono text-[12.5px] leading-[1.6] p-4 outline-none placeholder:text-white/25"
+                  className="flex-1 min-h-0 w-full resize-none bg-black/40 text-fg/90 font-mono text-[12.5px] leading-[1.6] p-4 outline-none placeholder:text-fg/25"
                 />
-                <p className="px-4 py-2 border-t border-white/10 text-[11px] text-white/35">
+                <p className="px-4 py-2 border-t border-fg/10 text-[11px] text-fg/35">
                   {AYUDAS[tabActiva.lenguaje]}
                 </p>
               </div>
@@ -316,12 +316,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   onChange={v => { setAjustes(a => ({ ...a, seo_descripcion: v })); setAviso(''); }}
                   multilinea
                 />
-                <div className="pt-2 border-t border-white/10 text-[11px] text-white/40 leading-relaxed">
+                <div className="pt-2 border-t border-fg/10 text-[11px] text-fg/40 leading-relaxed">
                   Tu código corre aislado: no puede leer la sesión de la tienda ni
                   mandar datos a otros servidores. Por eso el JavaScript no admite
-                  <code className="mx-1 text-white/60">fetch</code>,
-                  <code className="mx-1 text-white/60">localStorage</code> ni
-                  <code className="mx-1 text-white/60">document.cookie</code>.
+                  <code className="mx-1 text-fg/60">fetch</code>,
+                  <code className="mx-1 text-fg/60">localStorage</code> ni
+                  <code className="mx-1 text-fg/60">document.cookie</code>.
                 </div>
               </div>
             )}
@@ -329,8 +329,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         )}
 
         <div className="flex-1 min-w-0 flex flex-col bg-neutral-900/40">
-          <div className="h-9 shrink-0 border-b border-white/10 flex items-center justify-between px-3">
-            <span className="text-[11px] text-white/35">Vista previa en vivo</span>
+          <div className="h-9 shrink-0 border-b border-fg/10 flex items-center justify-between px-3">
+            <span className="text-[11px] text-fg/35">Vista previa en vivo</span>
             <div className="flex items-center gap-2">
               {errorRuntime && (
                 <span className="text-[11px] text-red-300 truncate max-w-[420px]" title={errorRuntime}>
@@ -340,7 +340,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
               <button
                 type="button"
                 onClick={() => { setErrorRuntime(''); setGeneracion(g => g + 1); }}
-                className="p-1.5 rounded hover:bg-white/10 text-white/40 hover:text-white"
+                className="p-1.5 rounded hover:bg-fg/10 text-fg/40 hover:text-fg"
                 title="Volver a ejecutar"
               >
                 <RefreshCw size={13} />
@@ -367,14 +367,14 @@ function Campo({ etiqueta, ayuda, valor, onChange, multilinea }) {
   const Elemento = multilinea ? 'textarea' : 'input';
   return (
     <label className="block">
-      <span className="block text-xs font-semibold text-white/70 mb-1">{etiqueta}</span>
+      <span className="block text-xs font-semibold text-fg/70 mb-1">{etiqueta}</span>
       <Elemento
         value={valor}
         onChange={e => onChange(e.target.value)}
         rows={multilinea ? 3 : undefined}
-        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-white/30"
+        className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
       />
-      {ayuda && <span className="block mt-1 text-[11px] text-white/35">{ayuda}</span>}
+      {ayuda && <span className="block mt-1 text-[11px] text-fg/35">{ayuda}</span>}
     </label>
   );
 }

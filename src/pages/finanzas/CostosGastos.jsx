@@ -102,7 +102,7 @@ function CardResumen({ icon, label, valor, tono = 'default', sufijo }) {
     default: 'text-fg',
     success: 'text-success',
     danger: 'text-danger',
-    primary: 'text-primary',
+    primary: 'text-primary-text',
   };
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
@@ -255,7 +255,7 @@ export default function CostosGastos() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="m-0 flex items-center gap-2 text-2xl font-bold text-fg">
-            <Receipt className="text-primary" size={24} /> Costos y Gastos
+            <Receipt className="text-primary-text" size={24} /> Costos y Gastos
           </h1>
           <p className="mt-1 max-w-xl text-sm text-fg-muted">
             Administra los costos y gastos de tu negocio y conoce cuánto realmente cuesta operar y cuánto estás ganando.
@@ -265,7 +265,7 @@ export default function CostosGastos() {
           <button
             type="button"
             onClick={() => setFiltrosAbiertos(o => !o)}
-            className={`flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium transition-colors ${filtrosAbiertos ? 'bg-primary/10 text-primary' : 'text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
+            className={`flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium transition-colors ${filtrosAbiertos ? 'bg-primary/10 text-primary-text' : 'text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
           >
             <Filter size={14} /> Filtros {chipsActivos.length > 0 && `(${chipsActivos.length})`}
           </button>
@@ -300,7 +300,7 @@ export default function CostosGastos() {
             key={p.id}
             type="button"
             onClick={() => setPreset(p.id)}
-            className={`h-8 rounded-full border px-3 text-xs font-medium transition-colors ${preset === p.id ? 'border-primary bg-primary/10 text-primary' : 'border-border text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
+            className={`h-8 rounded-full border px-3 text-xs font-medium transition-colors ${preset === p.id ? 'border-primary bg-primary/10 text-primary-text' : 'border-border text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
           >
             {p.label}
           </button>
@@ -378,7 +378,7 @@ export default function CostosGastos() {
       {chipsActivos.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {chipsActivos.map(chip => (
-            <span key={chip.key} className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 py-1 pl-3 pr-1.5 text-xs font-medium text-primary">
+            <span key={chip.key} className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 py-1 pl-3 pr-1.5 text-xs font-medium text-primary-text">
               {chip.label}
               <button type="button" onClick={() => quitarChip(chip.key)} className="rounded-full p-0.5 hover:bg-primary/20">
                 <X size={12} />
@@ -517,7 +517,7 @@ function FilaTabla({ registro: r, activo, onClick, onEditar, onDuplicar, onMarca
         {r.proveedor?.nombre && <div className="text-xs text-fg-subtle">{r.proveedor.nombre}</div>}
       </td>
       <td className="p-3">
-        <Badge className={r.tipo === 'costo' ? 'bg-info/10 text-info border-info/20' : 'bg-primary/10 text-primary border-primary/20'}>
+        <Badge className={r.tipo === 'costo' ? 'bg-info/10 text-info border-info/20' : 'bg-primary/10 text-primary-text border-primary/20'}>
           {r.tipo === 'costo' ? 'Costo' : 'Gasto'}
         </Badge>
       </td>
@@ -571,7 +571,7 @@ function DetalleDrawer({ registro: r, onClose, onEditar, onDuplicar, onMarcarPag
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex flex-wrap gap-2">
-          <Badge className={r.tipo === 'costo' ? 'bg-info/10 text-info border-info/20' : 'bg-primary/10 text-primary border-primary/20'}>{r.tipo === 'costo' ? 'Costo' : 'Gasto'}</Badge>
+          <Badge className={r.tipo === 'costo' ? 'bg-info/10 text-info border-info/20' : 'bg-primary/10 text-primary-text border-primary/20'}>{r.tipo === 'costo' ? 'Costo' : 'Gasto'}</Badge>
           <Badge className={ESTADO_BADGE[r.estado]}>{ESTADO_LABEL[r.estado]}</Badge>
           {r.clasificacion && <Badge className="border-border bg-surface-2 text-fg-muted">{r.clasificacion === 'fijo' ? 'Fijo' : 'Variable'}</Badge>}
         </div>
@@ -598,7 +598,7 @@ function DetalleDrawer({ registro: r, onClose, onEditar, onDuplicar, onMarcarPag
 
         {r.es_recurrente && (
           <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-primary">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-primary-text">
               <Repeat size={14} /> Recurrente · {FRECUENCIA_LABELS[r.frecuencia]}
             </div>
             {r.proxima_fecha && <p className="mt-1 text-xs text-fg-muted">Próximo registro: {formatFecha(r.proxima_fecha)}</p>}
@@ -625,7 +625,7 @@ function DetalleDrawer({ registro: r, onClose, onEditar, onDuplicar, onMarcarPag
             <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-fg-subtle">Comprobante</h4>
             <a href={getMediaUrl(r.comprobante_url)} target="_blank" rel="noreferrer"
               className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 p-3 text-sm text-fg hover:bg-surface-3">
-              <FileText size={16} className="text-primary" /> {r.comprobante_nombre || 'Ver comprobante'}
+              <FileText size={16} className="text-primary-text" /> {r.comprobante_nombre || 'Ver comprobante'}
             </a>
           </div>
         )}
@@ -655,7 +655,7 @@ function EmptyState({ onRegistrar }) {
   const ejemplos = ['Alquiler', 'Electricidad', 'Internet', 'Salarios', 'Publicidad', 'Software', 'Transporte'];
   return (
     <div className="flex flex-col items-center rounded-xl border border-dashed border-border bg-surface px-6 py-16 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary-text">
         <Receipt size={26} />
       </div>
       <h3 className="m-0 text-lg font-bold text-fg">Todavía no registraste ningún costo o gasto</h3>

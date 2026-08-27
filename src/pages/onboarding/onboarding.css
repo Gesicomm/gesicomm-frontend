@@ -44,7 +44,7 @@
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.78rem; font-weight: 700;
-  background: rgba(255,255,255,0.05);
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
   color: var(--vit-muted);
   border: 1px solid var(--vit-border);
 }
@@ -61,7 +61,7 @@
   font-size: 0.78rem; color: var(--vit-muted);
 }
 .onb-label input {
-  background: #0a0c10;
+  background: var(--color-canvas);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.6rem 0.7rem;
@@ -82,7 +82,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.35rem;
-  background: #0a0c10;
+  background: var(--color-canvas);
   border: 1px solid var(--vit-border);
   border-radius: 12px;
   padding: 1rem;

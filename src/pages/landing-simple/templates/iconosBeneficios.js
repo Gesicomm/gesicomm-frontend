@@ -1,7 +1,7 @@
 import {
   ShieldCheck, Truck, Zap, Award, Heart, Leaf, Sun, Flower2, HeadphonesIcon,
   Package, BadgeCheck, Clock, Gift, Star, Lock, Flame, Wifi, Battery, Cpu,
-  Dumbbell, Sparkles, ThumbsUp,
+  Dumbbell, Sparkles, ThumbsUp, RotateCcw, Droplet, Brain, Moon,
 } from 'lucide-react';
 
 /**
@@ -34,6 +34,13 @@ export const CATALOGO_ICONOS_BENEFICIOS = [
   { key: 'dumbbell', label: 'Fitness', Icon: Dumbbell },
   { key: 'sparkles', label: 'Especial', Icon: Sparkles },
   { key: 'thumbs-up', label: 'Satisfacción', Icon: ThumbsUp },
+  // Agregados para la ficha de producto de Fitness (ingredientes, cómo
+  // funciona, garantías). Sirven igual en los otros templates: el catálogo
+  // es uno solo y compartido.
+  { key: 'rotate', label: 'Devolución', Icon: RotateCcw },
+  { key: 'droplet', label: 'Absorción', Icon: Droplet },
+  { key: 'brain', label: 'Enfoque', Icon: Brain },
+  { key: 'moon', label: 'Descanso', Icon: Moon },
 ];
 
 const MAPA = new Map(CATALOGO_ICONOS_BENEFICIOS.map(i => [i.key, i.Icon]));

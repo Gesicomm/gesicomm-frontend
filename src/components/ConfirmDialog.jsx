@@ -31,7 +31,7 @@ export default function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
       >
-        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${danger ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary'}`}>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${danger ? 'bg-danger/10 text-danger' : 'bg-primary/10 text-primary-text'}`}>
           <AlertTriangle size={18} />
         </div>
         <h3 id="confirm-dialog-title" className="m-0 mt-4 text-base font-semibold text-fg">

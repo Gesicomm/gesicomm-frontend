@@ -13,7 +13,7 @@ import { formatPrecio } from '../../../lib/mensajeWhatsapp';
  */
 export default function ProductoPanel({ producto, imagenes, variantes, puedeEditar }) {
   if (!producto) {
-    return <p className="text-xs text-white/40">Este embudo no tiene producto asignado.</p>;
+    return <p className="text-xs text-fg/40">Este embudo no tiene producto asignado.</p>;
   }
 
   const galeria = imagenes || [];
@@ -26,8 +26,8 @@ export default function ProductoPanel({ producto, imagenes, variantes, puedeEdit
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-xs text-white/40 mb-0.5">Producto del embudo</p>
-        <p className="text-sm font-bold text-white">{producto.nombre}</p>
+        <p className="text-xs text-fg/40 mb-0.5">Producto del embudo</p>
+        <p className="text-sm font-bold text-fg">{producto.nombre}</p>
       </div>
 
       {/* Avisos accionables: sin fotos ni descripción el embudo no puede
@@ -43,15 +43,15 @@ export default function ProductoPanel({ producto, imagenes, variantes, puedeEdit
       )}
 
       <div>
-        <p className="text-xs font-semibold text-white/60 mb-2">Fotos ({galeria.length})</p>
+        <p className="text-xs font-semibold text-fg/60 mb-2">Fotos ({galeria.length})</p>
         {sinFotos ? (
-          <div className="flex items-center gap-2 text-xs text-white/35">
+          <div className="flex items-center gap-2 text-xs text-fg/35">
             <ImageOff size={14} /> Sin imágenes
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-1.5">
             {galeria.slice(0, 8).map(img => (
-              <div key={img.id} className="aspect-square rounded-lg overflow-hidden bg-white/5">
+              <div key={img.id} className="aspect-square rounded-lg overflow-hidden bg-fg/5">
                 <img src={getMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
               </div>
             ))}
@@ -61,19 +61,19 @@ export default function ProductoPanel({ producto, imagenes, variantes, puedeEdit
 
       <div className="flex flex-col gap-1.5 text-xs">
         <div className="flex justify-between">
-          <span className="text-white/45">Precio</span>
-          <span className="text-white font-semibold">
+          <span className="text-fg/45">Precio</span>
+          <span className="text-fg font-semibold">
             {formatPrecio(precioBase)}
-            {enOferta && <span className="text-white/40 line-through ml-2">{formatPrecio(tachado)}</span>}
+            {enOferta && <span className="text-fg/40 line-through ml-2">{formatPrecio(tachado)}</span>}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-white/45">Stock</span>
-          <span className="text-white font-semibold">{producto.cantidad_disponible ?? '—'}</span>
+          <span className="text-fg/45">Stock</span>
+          <span className="text-fg font-semibold">{producto.cantidad_disponible ?? '—'}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-white/45">Variantes</span>
-          <span className="text-white font-semibold">{(variantes || []).length}</span>
+          <span className="text-fg/45">Variantes</span>
+          <span className="text-fg font-semibold">{(variantes || []).length}</span>
         </div>
       </div>
 
@@ -91,13 +91,13 @@ export default function ProductoPanel({ producto, imagenes, variantes, puedeEdit
           >
             Editar fotos, precio y descripción <ExternalLink size={12} />
           </a>
-          <p className="text-[11px] text-white/35 leading-relaxed -mt-3">
+          <p className="text-[11px] text-fg/35 leading-relaxed -mt-3">
             Se editan en la ficha del producto para que el embudo y el checkout
             nunca muestren datos distintos.
           </p>
         </>
       ) : (
-        <p className="text-[11px] text-white/35 leading-relaxed">
+        <p className="text-[11px] text-fg/35 leading-relaxed">
           Este producto es del catálogo global — sus fotos, precio y
           descripción los administra quien lo cargó.
         </p>

@@ -93,6 +93,33 @@
         }
       }
     </script>
+    <!--
+      El tema se aplica ANTES del primer pintado, no desde React.
+
+      No es solo por el parpadeo: ThemeProvider ponía data-theme en un
+      useEffect, o sea DESPUÉS del primer render. Ese cambio tardío de los
+      custom properties dejaba congelados en el tema anterior a todos los
+      elementos con `transition: all` (105 en el proyecto) — Chromium no
+      re-resuelve un `background: var(--x)` que está en transición. Ese era
+      el motivo de que el modo claro "se tomara" en unos lados y en otros
+      no, de forma aparentemente aleatoria.
+
+      Va inline y sin async a propósito: tiene que correr antes de que el
+      navegador pinte. Misma clave que usa ThemeProvider.
+    -->
+    <script>
+      (function () {
+        try {
+          var g = localStorage.getItem('gesicomm-tema-publico');
+          if (g !== 'light' && g !== 'dark') {
+            g = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.setAttribute('data-theme', g);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -106,7 +106,7 @@ export default function ContentAnalytics() {
             <tbody>
               {datos.contents.filter((c) => c.sales > 0).map((c) => (
                 <tr key={c.id} className="border-t border-border">
-                  <td className="py-1.5 font-semibold text-primary">{c.trackingCode}</td>
+                  <td className="py-1.5 font-semibold text-primary-text">{c.trackingCode}</td>
                   <td className="py-1.5 text-fg-muted">{FORMATO_LABEL[c.format] || c.format}</td>
                   <td className="py-1.5 text-fg">{c.topic}</td>
                   <td className="py-1.5 text-fg">{c.sales}</td>

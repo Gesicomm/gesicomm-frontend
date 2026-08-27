@@ -37,26 +37,26 @@ const ESTRATEGIAS = {
 function Recorrido({ slug, producto }) {
   const precio = Number(producto?.precio_efectivo ?? producto?.precio_base ?? 0);
   const paso = (texto, sub) => (
-    <div className="w-full rounded-lg bg-white/5 px-3 py-2 text-center">
-      <p className="truncate text-[11px] font-bold text-white">{texto}</p>
-      {sub && <p className="truncate text-[10px] text-white/45">{sub}</p>}
+    <div className="w-full rounded-lg bg-fg/5 px-3 py-2 text-center">
+      <p className="truncate text-[11px] font-bold text-fg">{texto}</p>
+      {sub && <p className="truncate text-[10px] text-fg/45">{sub}</p>}
     </div>
   );
   const flecha = (
-    <div className="flex justify-center py-1 text-white/25">
+    <div className="flex justify-center py-1 text-fg/25">
       <ArrowDown size={12} />
     </div>
   );
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/25 p-3">
+    <div className="rounded-xl border border-fg/10 bg-black/25 p-3">
       {paso(producto?.nombre || 'Tu producto', precio ? formatPrecio(precio) : null)}
       {flecha}
       {slug === SLUG_VENTA_COMPLEMENTO && (
         <>
           <div className="w-full rounded-lg border-2 border-dashed border-accent/40 bg-accent/5 px-3 py-2 text-center">
             <p className="text-[11px] font-bold text-accent">✨ ¿Querés agregar este producto?</p>
-            <p className="text-[10px] text-white/45">Complemento</p>
+            <p className="text-[10px] text-fg/45">Complemento</p>
           </div>
           {flecha}
         </>
@@ -166,7 +166,7 @@ export default function FunnelEntry() {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center gap-2 text-white/60 p-16">
+      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
         <Loader size={20} className="animate-spin" /> Cargando...
       </div>
     );
@@ -177,7 +177,7 @@ export default function FunnelEntry() {
       <button
         type="button"
         onClick={() => (configurando ? setConfigurando(null) : navigate('/mi-catalogo'))}
-        className="inline-flex items-center gap-1.5 text-sm text-white/50 hover:text-white mb-8"
+        className="inline-flex items-center gap-1.5 text-sm text-fg/50 hover:text-fg mb-8"
       >
         <ArrowLeft size={15} /> {configurando ? 'Volver a las estrategias' : 'Volver a la Vitrina B2B'}
       </button>
@@ -186,12 +186,12 @@ export default function FunnelEntry() {
         <p className="text-[11px] font-bold uppercase tracking-wider text-accent mb-1">
           {configurando ? 'Venta con complemento' : 'Nuevo embudo'}
         </p>
-        <h1 className="text-2xl font-extrabold text-white mb-2">
+        <h1 className="text-2xl font-extrabold text-fg mb-2">
           {configurando
             ? 'Configurá tu complemento'
             : `¿Cómo querés vender ${producto?.nombre}?`}
         </h1>
-        <p className="text-sm text-white/50 leading-relaxed max-w-xl">
+        <p className="text-sm text-fg/50 leading-relaxed max-w-xl">
           {configurando
             ? 'Elegí qué producto se le va a ofrecer al cliente durante la compra, y a qué precio.'
             : 'Un embudo es una página dedicada a un solo producto, hecha para que el cliente decida y compre. Es distinta de tu landing: no tiene catálogo, ni menú, ni nada que lo distraiga.'}
@@ -216,7 +216,7 @@ export default function FunnelEntry() {
           />
         </div>
       ) : templates.length === 0 ? (
-        <p className="text-sm text-white/40">No hay tipos de embudo disponibles todavía.</p>
+        <p className="text-sm text-fg/40">No hay tipos de embudo disponibles todavía.</p>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {templates.map(tpl => {
@@ -229,7 +229,7 @@ export default function FunnelEntry() {
               <div
                 key={tpl.id}
                 className={`flex flex-col rounded-2xl border p-6 transition-colors ${
-                  recomendado ? 'border-accent/40 bg-accent/[0.04]' : 'border-white/10 bg-white/5 hover:border-white/25'
+                  recomendado ? 'border-accent/40 bg-accent/[0.04]' : 'border-fg/10 bg-fg/5 hover:border-fg/25'
                 }`}
               >
                 <div className="mb-4 flex items-start justify-between gap-3">
@@ -243,9 +243,9 @@ export default function FunnelEntry() {
                   )}
                 </div>
 
-                <h2 className="text-lg font-bold text-white">{tpl.name}</h2>
-                <p className="mb-2 text-sm font-semibold text-white/80">{ficha.subtitulo}</p>
-                <p className="mb-5 text-sm leading-relaxed text-white/50">{ficha.descripcion}</p>
+                <h2 className="text-lg font-bold text-fg">{tpl.name}</h2>
+                <p className="mb-2 text-sm font-semibold text-fg/80">{ficha.subtitulo}</p>
+                <p className="mb-5 text-sm leading-relaxed text-fg/50">{ficha.descripcion}</p>
 
                 {/* El recorrido, no un ícono decorativo: es lo que deja clara
                     la diferencia entre una estrategia y la otra. */}
@@ -255,16 +255,16 @@ export default function FunnelEntry() {
 
                 <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1.5">
                   {ficha.incluye.map(item => (
-                    <span key={item} className="inline-flex items-center gap-1.5 text-xs text-white/60">
+                    <span key={item} className="inline-flex items-center gap-1.5 text-xs text-fg/60">
                       <Check size={12} className="text-accent" /> {item}
                     </span>
                   ))}
                 </div>
 
                 <div className="mb-5 flex-1">
-                  <p className="text-[11px] text-white/40">{ficha.idealPara}</p>
+                  <p className="text-[11px] text-fg/40">{ficha.idealPara}</p>
                   {ficha.ejemplos.length > 0 && (
-                    <p className="mt-1 text-[11px] text-white/30">{ficha.ejemplos.join(' · ')}</p>
+                    <p className="mt-1 text-[11px] text-fg/30">{ficha.ejemplos.join(' · ')}</p>
                   )}
                   {tpl.slug === SLUG_VENTA_COMPLEMENTO && bumpExistente && (
                     <p className="mt-2 text-[11px] font-semibold text-accent">

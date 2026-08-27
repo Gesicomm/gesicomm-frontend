@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 const MAX_BENEFICIOS = 6;
 
 /**
@@ -41,18 +41,18 @@ export default function BeneficiosPanel({ beneficios, onChange }) {
   return (
     <div className="flex flex-col gap-4">
       {(beneficios || []).length === 0 && (
-        <p className="text-xs text-white/40">Todavía no agregaste beneficios.</p>
+        <p className="text-xs text-fg/40">Todavía no agregaste beneficios.</p>
       )}
       {(beneficios || []).map((b, idx) => {
         const IconoActual = getIconoBeneficio(b.icono);
         return (
-          <div key={idx} className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2">
+          <div key={idx} className="rounded-lg border border-fg/10 bg-fg/5 p-3 flex flex-col gap-2">
             <div className="flex items-start gap-2">
               <button
                 type="button"
                 onClick={() => setPickerAbierto(pickerAbierto === idx ? null : idx)}
                 title="Cambiar ícono"
-                className="h-9 w-9 rounded-lg bg-white/10 hover:bg-white/15 flex items-center justify-center text-white shrink-0"
+                className="h-9 w-9 rounded-lg bg-fg/10 hover:bg-fg/15 flex items-center justify-center text-fg shrink-0"
               >
                 <IconoActual size={16} />
               </button>
@@ -75,26 +75,26 @@ export default function BeneficiosPanel({ beneficios, onChange }) {
                 />
               </div>
               <div className="flex flex-col gap-1 shrink-0">
-                <button type="button" onClick={() => mover(idx, -1)} disabled={idx === 0} className="p-1 rounded hover:bg-white/10 disabled:opacity-30 text-white/50">
+                <button type="button" onClick={() => mover(idx, -1)} disabled={idx === 0} className="p-1 rounded hover:bg-fg/10 disabled:opacity-30 text-fg/50">
                   <ChevronUp size={14} />
                 </button>
-                <button type="button" onClick={() => mover(idx, 1)} disabled={idx === beneficios.length - 1} className="p-1 rounded hover:bg-white/10 disabled:opacity-30 text-white/50">
+                <button type="button" onClick={() => mover(idx, 1)} disabled={idx === beneficios.length - 1} className="p-1 rounded hover:bg-fg/10 disabled:opacity-30 text-fg/50">
                   <ChevronDown size={14} />
                 </button>
-                <button type="button" onClick={() => quitar(idx)} className="p-1 rounded hover:bg-red-500/10 text-white/40 hover:text-red-400">
+                <button type="button" onClick={() => quitar(idx)} className="p-1 rounded hover:bg-red-500/10 text-fg/40 hover:text-red-400">
                   <Trash2 size={14} />
                 </button>
               </div>
             </div>
             {pickerAbierto === idx && (
-              <div className="grid grid-cols-7 gap-1.5 p-2 rounded-lg bg-black/30 border border-white/10">
+              <div className="grid grid-cols-7 gap-1.5 p-2 rounded-lg bg-black/30 border border-fg/10">
                 {CATALOGO_ICONOS_BENEFICIOS.map(({ key, label, Icon }) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => elegirIcono(idx, key)}
                     title={label}
-                    className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors ${b.icono === key ? 'bg-white text-black' : 'text-white/60 hover:bg-white/10'}`}
+                    className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors ${b.icono === key ? 'bg-fg text-canvas' : 'text-fg/60 hover:bg-fg/10'}`}
                   >
                     <Icon size={15} />
                   </button>
@@ -109,7 +109,7 @@ export default function BeneficiosPanel({ beneficios, onChange }) {
         onClick={agregar}
         disabled={lleno}
         title={lleno ? `Máximo ${MAX_BENEFICIOS} beneficios` : undefined}
-        className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 disabled:opacity-40 text-white self-start"
+        className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg/10 hover:bg-fg/15 disabled:opacity-40 text-fg self-start"
       >
         <Plus size={13} /> Agregar beneficio
       </button>

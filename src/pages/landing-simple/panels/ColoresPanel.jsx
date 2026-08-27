@@ -19,7 +19,7 @@ const CAMPOS = [
 export default function ColoresPanel({ draft, onCampo }) {
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-xs text-white/40">
+      <p className="text-xs text-fg/40">
         Se aplican a toda la landing. Dejá un color vacío para usar el de este template.
       </p>
       {CAMPOS.map(({ key, label }) => {
@@ -28,12 +28,12 @@ export default function ColoresPanel({ draft, onCampo }) {
         return (
           <div key={key}>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-white/60">{label}</label>
+              <label className="text-xs font-semibold text-fg/60">{label}</label>
               {draft[key] && (
                 <button
                   type="button"
                   onClick={() => onCampo(key, null)}
-                  className="text-xs text-white/40 hover:text-white flex items-center gap-1"
+                  className="text-xs text-fg/40 hover:text-fg flex items-center gap-1"
                 >
                   <RotateCcw size={11} /> Restablecer
                 </button>
@@ -44,7 +44,7 @@ export default function ColoresPanel({ draft, onCampo }) {
                 type="color"
                 value={valorValido}
                 onChange={e => onCampo(key, e.target.value)}
-                className="h-9 w-9 rounded-lg border border-white/10 bg-transparent cursor-pointer shrink-0"
+                className="h-9 w-9 rounded-lg border border-fg/10 bg-transparent cursor-pointer shrink-0"
               />
               <input
                 type="text"
@@ -52,7 +52,7 @@ export default function ColoresPanel({ draft, onCampo }) {
                 onChange={e => onCampo(key, e.target.value)}
                 placeholder="#000000"
                 maxLength={7}
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30"
+                className="flex-1 bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30"
               />
             </div>
           </div>

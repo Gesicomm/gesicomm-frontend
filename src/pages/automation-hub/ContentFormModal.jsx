@@ -72,7 +72,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                     onClick={() => setDatos((d) => ({ ...d, format: f.value }))}
                     className={`rounded-md border px-2 py-2 text-xs font-semibold ${
                       datos.format === f.value
-                        ? 'border-primary bg-primary/10 text-primary'
+                        ? 'border-primary bg-primary/10 text-primary-text'
                         : 'border-border bg-surface-2 text-fg-muted'
                     }`}
                   >

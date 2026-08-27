@@ -3,8 +3,8 @@ import { Box, ImageOff, Layers, GripVertical } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import CurrencyInput from '../../../components/CurrencyInput';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors';
-const CAMPO_CHICO = 'w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-white/30 focus:outline-none focus:border-primary/50 transition-colors';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-primary/50 transition-colors';
+const CAMPO_CHICO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-xs text-fg placeholder:text-fg/30 focus:outline-none focus:border-primary/50 transition-colors';
 
 function formatGs(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -76,14 +76,14 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
 
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-xs text-white/40 leading-relaxed">
-        Elegí cuáles de los productos de tu <strong className="text-white/70">Catálogo</strong> se muestran también en la
-        página de <strong className="text-white/70">inicio</strong>. Los que dejes sin marcar siguen estando en el catálogo.
+      <p className="text-xs text-fg/40 leading-relaxed">
+        Elegí cuáles de los productos de tu <strong className="text-fg/70">Catálogo</strong> se muestran también en la
+        página de <strong className="text-fg/70">inicio</strong>. Los que dejes sin marcar siguen estando en el catálogo.
         La etiqueta y el precio ancla que pongas acá son los mismos del catálogo (es el mismo producto en la misma landing).
       </p>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-semibold text-white/70">Título de la sección en el inicio</label>
+        <label className="text-xs font-semibold text-fg/70">Título de la sección en el inicio</label>
         <input
           type="text"
           value={draft?.productos_titulo || ''}
@@ -94,20 +94,20 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
       </div>
 
       {filas.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/15 py-10 px-4 text-center flex flex-col items-center gap-2">
-          <Box size={26} className="text-white/20" />
-          <p className="text-sm font-semibold text-white/70">Todavía no hay productos</p>
-          <p className="text-xs text-white/40">Agregalos primero en la pestaña "Catálogo".</p>
+        <div className="rounded-xl border border-dashed border-fg/15 py-10 px-4 text-center flex flex-col items-center gap-2">
+          <Box size={26} className="text-fg/20" />
+          <p className="text-sm font-semibold text-fg/70">Todavía no hay productos</p>
+          <p className="text-xs text-fg/40">Agregalos primero en la pestaña "Catálogo".</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-white/70">
+            <span className="text-xs font-semibold text-fg/70">
               En el inicio: {cantidadEnInicio} de {filas.length}
             </span>
             <div className="flex gap-2">
-              <button type="button" onClick={() => todos(true)} className="text-[11px] font-semibold text-white/50 hover:text-white underline underline-offset-2">Todos</button>
-              <button type="button" onClick={() => todos(false)} className="text-[11px] font-semibold text-white/50 hover:text-white underline underline-offset-2">Ninguno</button>
+              <button type="button" onClick={() => todos(true)} className="text-[11px] font-semibold text-fg/50 hover:text-fg underline underline-offset-2">Todos</button>
+              <button type="button" onClick={() => todos(false)} className="text-[11px] font-semibold text-fg/50 hover:text-fg underline underline-offset-2">Ninguno</button>
             </div>
           </div>
 
@@ -116,7 +116,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
             return (
               <div
                 key={`${item.tipo}:${item.referencia_id}`}
-                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-primary' : activo ? 'border-primary/40 bg-primary/[0.07]' : 'border-white/10 bg-white/[0.02]'}`}
+                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-primary' : activo ? 'border-primary/40 bg-primary/[0.07]' : 'border-fg/10 bg-white/[0.02]'}`}
                 draggable={habilitada === idx}
                 onDragStart={() => setArrastrando(idx)}
                 onDragOver={(e) => { e.preventDefault(); setEncima(idx); }}
@@ -125,7 +125,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
               >
                 <div className="flex items-center gap-2.5">
                   <span
-                    className="shrink-0 text-white/30 hover:text-white/60 cursor-grab"
+                    className="shrink-0 text-fg/30 hover:text-fg/60 cursor-grab"
                     onMouseDown={() => setHabilitada(idx)}
                     onMouseUp={() => setHabilitada(null)}
                     title="Arrastrar para reordenar"
@@ -139,7 +139,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
                     className="shrink-0 cursor-pointer"
                     title="Mostrar en el inicio"
                   />
-                  <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/40 border border-white/10 flex items-center justify-center text-white/30">
+                  <div className="w-9 h-9 shrink-0 rounded-md overflow-hidden bg-black/40 border border-fg/10 flex items-center justify-center text-fg/30">
                     {entidad?.imagen ? (
                       <img src={getMediaUrl(entidad.imagen)} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -147,8 +147,8 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-white truncate">{entidad?.nombre || '(ya no disponible)'}</p>
-                    <p className="text-[11px] text-white/40">Gs {formatGs(entidad?.precio_efectivo ?? entidad?.precio_base)}</p>
+                    <p className="text-xs font-semibold text-fg truncate">{entidad?.nombre || '(ya no disponible)'}</p>
+                    <p className="text-[11px] text-fg/40">Gs {formatGs(entidad?.precio_efectivo ?? entidad?.precio_base)}</p>
                   </div>
                 </div>
 

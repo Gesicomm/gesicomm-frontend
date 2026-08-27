@@ -75,14 +75,14 @@ export default function DisenoFunnelPicker({
   }
 
   if (!templates.length) {
-    return <p className={compacto ? 'text-xs text-white/40' : 'text-xs text-[var(--vit-muted)]'}>Cargando diseños…</p>;
+    return <p className={compacto ? 'text-xs text-fg/40' : 'text-xs text-[var(--vit-muted)]'}>Cargando diseños…</p>;
   }
 
-  const claseTitulo = compacto ? 'text-white' : 'text-[var(--vit-text)]';
-  const claseSuave = compacto ? 'text-white/50' : 'text-[var(--vit-muted)]';
-  const claseBorde = compacto ? 'border-white/15' : 'border-[var(--vit-border)]';
+  const claseTitulo = compacto ? 'text-fg' : 'text-[var(--vit-text)]';
+  const claseSuave = compacto ? 'text-fg/50' : 'text-[var(--vit-muted)]';
+  const claseBorde = compacto ? 'border-fg/15' : 'border-[var(--vit-border)]';
   const claseBordeActivo = compacto ? 'border-primary ring-2 ring-primary/30' : 'border-[var(--vit-primary)] ring-2 ring-[var(--vit-primary)]/30';
-  const claseSurface = compacto ? 'bg-white/5' : 'bg-[var(--vit-surface)]';
+  const claseSurface = compacto ? 'bg-fg/5' : 'bg-[var(--vit-surface)]';
 
   return (
     <div>
@@ -113,7 +113,7 @@ export default function DisenoFunnelPicker({
                 <div className="mb-1.5 h-1.5 w-2/3 rounded-full" style={{ background: oscuro ? '#e2e8f0' : '#0f172a' }} />
                 <div className="mb-2 h-1 w-1/2 rounded-full" style={{ background: oscuro ? '#475569' : '#cbd5e1' }} />
                 <div
-                  className="flex h-5 items-center justify-center rounded text-[9px] font-bold text-white"
+                  className="flex h-5 items-center justify-center rounded text-[9px] font-bold text-fg"
                   style={{ background: p.color_primario }}
                 >
                   Comprar
@@ -121,10 +121,10 @@ export default function DisenoFunnelPicker({
               </div>
               <div className={`flex items-center justify-between gap-1 border-t px-2 py-1.5 ${claseBorde} ${claseSurface}`}>
                 <span className={`truncate text-[11px] font-semibold ${claseTitulo}`}>{p.nombre}</span>
-                {activa && <Check size={12} className="shrink-0 text-primary" />}
+                {activa && <Check size={12} className="shrink-0 text-primary-text" />}
               </div>
               {p.esDeLaTienda && (
-                <div className="border-t border-primary/30 bg-primary/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-primary">
+                <div className="border-t border-primary/30 bg-primary/10 px-2 py-1 text-[9px] font-semibold uppercase tracking-wide text-primary-text">
                   El de tu landing
                 </div>
               )}

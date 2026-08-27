@@ -38,13 +38,13 @@
   flex-shrink: 0;
 }
 
-.combo-title    { font-size: 1.35rem; font-weight: 700; color: #e2e8f0; margin: 0; }
-.combo-subtitle { font-size: 0.8rem; color: #64748b; margin: 0.1rem 0 0; }
+.combo-title    { font-size: 1.35rem; font-weight: 700; color: var(--color-fg); margin: 0; }
+.combo-subtitle { font-size: 0.8rem; color: var(--color-fg-subtle); margin: 0.1rem 0 0; }
 
 /* ─── Secciones del editor ───────────────────────────────────────────────── */
 .combo-section {
   background: #0f1117;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
   padding: 1.5rem;
   display: flex;
@@ -71,7 +71,7 @@
 .combo-section-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--color-fg);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -79,7 +79,7 @@
 
 .combo-section-label {
   font-size: 0.7rem;
-  color: #475569;
+  color: var(--color-fg-subtle);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -105,8 +105,8 @@
 }
 
 .combo-metric-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 10px;
   padding: 0.85rem 1rem;
   display: flex;
@@ -116,7 +116,7 @@
 
 .combo-metric-label {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--color-fg-subtle);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -125,7 +125,7 @@
 .combo-metric-value {
   font-size: 1rem;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--color-fg);
 }
 
 .combo-metric-value.positive { color: #10b981; }
@@ -141,8 +141,8 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: #0a0a0b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-canvas);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 8px;
   padding: 0.55rem 0.9rem;
   transition: border-color 0.2s;
@@ -157,20 +157,20 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #e2e8f0;
+  color: var(--color-fg);
   font-size: 0.875rem;
   width: 100%;
   font-family: inherit;
 }
 
-.combo-search-input-wrap input::placeholder { color: #475569; }
+.combo-search-input-wrap input::placeholder { color: var(--color-fg-subtle); }
 
 .combo-search-dropdown {
   position: absolute;
   top: calc(100% + 4px);
   left: 0; right: 0;
-  background: #1a1a1c;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--color-surface-2);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 10px;
   z-index: 50;
   max-height: 220px;
@@ -180,7 +180,7 @@
 
 .combo-search-item {
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -188,12 +188,12 @@
   transition: background 0.15s;
 }
 
-.combo-search-item:hover { background: rgba(255, 255, 255, 0.05); }
+.combo-search-item:hover { background: color-mix(in srgb, var(--color-fg) 5%, transparent); }
 .combo-search-item:last-child { border-bottom: none; }
 .combo-search-item.disabled { opacity: 0.4; cursor: not-allowed; }
 
-.combo-search-item-name { font-size: 0.875rem; font-weight: 600; color: #e2e8f0; }
-.combo-search-item-sub  { font-size: 0.73rem; color: #64748b; margin-top: 0.1rem; }
+.combo-search-item-name { font-size: 0.875rem; font-weight: 600; color: var(--color-fg); }
+.combo-search-item-sub  { font-size: 0.73rem; color: var(--color-fg-subtle); margin-top: 0.1rem; }
 
 /* ─── Producto Principal seleccionado ────────────────────────────────────── */
 .combo-principal-card {
@@ -207,8 +207,8 @@
 }
 
 .combo-principal-info { flex: 1; }
-.combo-principal-name { font-size: 0.95rem; font-weight: 700; color: #e2e8f0; }
-.combo-principal-sku  { font-size: 0.75rem; color: #64748b; margin-top: 0.15rem; }
+.combo-principal-name { font-size: 0.95rem; font-weight: 700; color: var(--color-fg); }
+.combo-principal-sku  { font-size: 0.75rem; color: var(--color-fg-subtle); margin-top: 0.15rem; }
 
 /* ─── Tabla de Upsells ───────────────────────────────────────────────────── */
 .combo-upsells-table {
@@ -219,34 +219,34 @@
 
 .combo-upsells-table th {
   text-align: left;
-  color: #475569;
+  color: var(--color-fg-subtle);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
 }
 
 .combo-upsells-table td {
   padding: 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
   color: #cbd5e1;
   vertical-align: middle;
 }
 
 .combo-upsells-table tr:last-child td { border-bottom: none; }
-.combo-upsells-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+.combo-upsells-table tr:hover td { background: color-mix(in srgb, var(--color-fg) 2%, transparent); }
 
-.combo-upsells-table .readonly { color: #64748b; }
+.combo-upsells-table .readonly { color: var(--color-fg-subtle); }
 
 /* ─── Input de descuento en tabla ────────────────────────────────────────── */
 .combo-discount-input {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 6px;
   padding: 0.35rem 0.6rem;
   width: 80px;
@@ -259,7 +259,7 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #e2e8f0;
+  color: var(--color-fg);
   font-size: 0.85rem;
   flex: 1;
   min-width: 0;
@@ -267,7 +267,7 @@
   font-family: inherit;
 }
 
-.combo-discount-input span { color: #64748b; font-size: 0.8rem; }
+.combo-discount-input span { color: var(--color-fg-subtle); font-size: 0.8rem; }
 
 /* ─── Precio del combo editable ──────────────────────────────────────────── */
 .combo-price-editor {
@@ -289,13 +289,13 @@
 .combo-price-input-wrap label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--color-fg-muted);
   white-space: nowrap;
 }
 
 .combo-price-real-margin {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--color-fg-muted);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -313,14 +313,14 @@
 }
 
 .combo-rec-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
-  color: #e2e8f0;
+  color: var(--color-fg);
 }
 
 .combo-rec-btn:hover {
@@ -328,7 +328,7 @@
   border-color: rgba(245, 158, 11, 0.3);
 }
 
-.combo-rec-btn-margin { font-size: 0.68rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+.combo-rec-btn-margin { font-size: 0.68rem; color: var(--color-fg-subtle); font-weight: 600; text-transform: uppercase; }
 .combo-rec-btn-price  { font-size: 0.9rem; font-weight: 700; margin-top: 0.2rem; }
 .combo-rec-btn-profit { font-size: 0.72rem; color: #10b981; margin-top: 0.1rem; }
 
@@ -344,8 +344,8 @@
 }
 
 .combo-compare-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 10px;
   padding: 1rem;
   display: flex;
@@ -363,7 +363,7 @@
   background: rgba(239, 68, 68, 0.04);
 }
 
-.combo-compare-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+.combo-compare-label { font-size: 0.7rem; color: var(--color-fg-subtle); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
 .combo-compare-value { font-size: 1.15rem; font-weight: 700; }
 
 /* ─── Badges de estado ────────────────────────────────────────────────────── */
@@ -379,7 +379,7 @@
   border-radius: 6px;
 }
 
-.combo-badge.borrador   { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
+.combo-badge.borrador   { background: rgba(148, 163, 184, 0.12); color: var(--color-fg-muted); }
 .combo-badge.activo     { background: rgba(16, 185, 129, 0.12);  color: #10b981; }
 .combo-badge.inactivo   { background: rgba(239, 68, 68, 0.12);   color: #ef4444; }
 .combo-badge.excelente  { background: rgba(61, 95, 163, 0.12);  color: #3d5fa3; }
@@ -397,21 +397,21 @@
 }
 
 .combo-sensitivity-table th {
-  color: #475569;
+  color: var(--color-fg-subtle);
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
   padding: 0.5rem 0.75rem;
   text-align: right;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 6%, transparent);
 }
 
 .combo-sensitivity-table th:first-child { text-align: left; }
 
 .combo-sensitivity-table td {
   padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 3%, transparent);
   text-align: right;
   color: #cbd5e1;
 }
@@ -431,7 +431,7 @@
 
 .combo-list-card {
   background: #0f1117;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
   padding: 1.25rem;
   display: flex;
@@ -454,8 +454,8 @@
   gap: 0.5rem;
 }
 
-.combo-list-card-name { font-size: 1rem; font-weight: 700; color: #e2e8f0; }
-.combo-list-card-principal { font-size: 0.78rem; color: #64748b; margin-top: 0.15rem; }
+.combo-list-card-name { font-size: 1rem; font-weight: 700; color: var(--color-fg); }
+.combo-list-card-principal { font-size: 0.78rem; color: var(--color-fg-subtle); margin-top: 0.15rem; }
 
 .combo-list-card-metrics {
   display: flex;
@@ -464,8 +464,8 @@
 }
 
 .combo-list-card-metric { display: flex; flex-direction: column; gap: 0.15rem; }
-.combo-list-card-metric-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; }
-.combo-list-card-metric-value { font-size: 0.9rem; font-weight: 700; color: #e2e8f0; }
+.combo-list-card-metric-label { font-size: 0.68rem; color: var(--color-fg-subtle); text-transform: uppercase; letter-spacing: 0.3px; }
+.combo-list-card-metric-value { font-size: 0.9rem; font-weight: 700; color: var(--color-fg); }
 
 .combo-list-card-actions {
   display: flex;
@@ -494,8 +494,8 @@
 
 /* ─── Footer de acciones ─────────────────────────────────────────────────── */
 .combo-footer {
-  background: #0a0a0b;
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--color-canvas);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -564,7 +564,7 @@
 .combo-empty {
   text-align: center;
   padding: 4rem 2rem;
-  color: #475569;
+  color: var(--color-fg-subtle);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -580,7 +580,7 @@
   color: #f59e0b;
 }
 
-.combo-empty h3 { color: #94a3b8; margin: 0; font-size: 1rem; }
+.combo-empty h3 { color: var(--color-fg-muted); margin: 0; font-size: 1rem; }
 .combo-empty p  { margin: 0; font-size: 0.85rem; }
 
 /* ─── Filtros ─────────────────────────────────────────────────────────────── */
@@ -591,9 +591,9 @@
 }
 
 .combo-filter-btn {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #64748b;
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  color: var(--color-fg-subtle);
   border-radius: 8px;
   padding: 0.4rem 0.85rem;
   font-size: 0.8rem;
@@ -612,7 +612,7 @@
 /* ─── Divider ─────────────────────────────────────────────────────────────── */
 .combo-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
   margin: 0.25rem 0;
 }
 

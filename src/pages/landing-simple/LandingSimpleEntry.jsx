@@ -35,7 +35,7 @@ export default function LandingSimpleEntry() {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center gap-2 text-white/60 p-16">
+      <div className="flex items-center justify-center gap-2 text-fg/60 p-16">
         <Loader size={20} className="animate-spin" /> Cargando...
       </div>
     );

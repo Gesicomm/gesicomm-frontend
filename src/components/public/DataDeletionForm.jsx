@@ -101,7 +101,7 @@ export default function DataDeletionForm() {
             Nuestro equipo de privacidad se va a comunicar a la dirección que indicaste para
             verificar tu identidad. Si necesitás apurar el trámite o agregar información,
             escribinos a{' '}
-            <a href="mailto:contacto@gesicomm.com" className="text-primary underline underline-offset-4">
+            <a href="mailto:contacto@gesicomm.com" className="text-primary-text underline underline-offset-4">
               contacto@gesicomm.com
             </a>{' '}
             citando tu código.
@@ -182,7 +182,7 @@ export default function DataDeletionForm() {
               irreversible</strong>, que perderé el acceso a mi cuenta y a todo su contenido
               —catálogo, pedidos, clientes e historial— y que Gesicom podrá conservar cierta
               información cuando una obligación legal lo exija, según se detalla en los{' '}
-              <Link to="/privacy" className="text-primary underline underline-offset-4">
+              <Link to="/privacy" className="text-primary-text underline underline-offset-4">
                 plazos de retención
               </Link>
               .
