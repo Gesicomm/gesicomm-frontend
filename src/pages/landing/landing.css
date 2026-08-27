@@ -69,7 +69,7 @@
 
 .land-card-link {
   display: flex; align-items: center; gap: 0.4rem;
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.4rem 0.6rem;
@@ -111,7 +111,7 @@
 .land-section input:not([type="checkbox"]):not([type="radio"]):not([type="color"]),
 .land-section input[type="color"]:not(.land-color-row input),
 .land-section textarea {
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;

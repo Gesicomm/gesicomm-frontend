@@ -131,7 +131,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.55rem 0.65rem;
@@ -152,7 +152,7 @@
 .tn-plan-row { display: flex; gap: 0.5rem; }
 .tn-plan-chip {
   display: inline-flex; align-items: center; gap: 0.35rem;
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 999px;
   padding: 0.45rem 0.9rem;
@@ -205,7 +205,7 @@
 }
 
 .tn-msg-textarea {
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 10px;
   padding: 0.65rem 0.75rem;
@@ -368,7 +368,7 @@
   font-size: 0.78rem; color: var(--vit-muted);
 }
 .dp-form input {
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.5rem 0.65rem;
@@ -383,7 +383,7 @@
 }
 
 .dp-txt-box {
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.75rem;
@@ -518,7 +518,7 @@
 }
 
 .tn-token-guide-box {
-  background: #0a0c10;
+  background: var(--vit-bg);
   border: 1px solid var(--vit-border);
   border-radius: 8px;
   padding: 0.75rem 0.9rem;
