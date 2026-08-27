@@ -26,6 +26,19 @@
   --transition-slow:   250ms ease;
 }
 
+:root[data-theme='light'] {
+  --vit-bg:            #f7f7f5;
+  --vit-card-bg:       #ffffff;
+  --vit-card-hover-bg: #eeeeea;
+  --vit-border:        #d8d8d0;
+  --vit-border-hover:  #c0c0b6;
+  --vit-text:          #0b1d3d;
+  --vit-muted:         #4b5568;
+  --vit-muted-2:       #6b7280;
+  --vit-surface:       #ffffff;
+  --vit-accent-soft:   rgba(61, 95, 163, 0.1);
+}
+
 /* ─── Layout global ───────────────────────────────────────────────────── */
 .user-layout {
   min-height: 100vh;
@@ -289,7 +302,7 @@
 }
 .vit-sort-select:hover { border-color: rgba(255,255,255,0.15); color: var(--vit-text); }
 .vit-sort-select:focus { border-color: rgba(61,95,163,0.4); }
-.vit-sort-select option { background: #0d1117; color: var(--vit-text); }
+.vit-sort-select option { background: var(--vit-card-bg); color: var(--vit-text); }
 
 /* ─── Empty state ─────────────────────────────────────────────────────── */
 .vit-empty {
@@ -487,7 +500,7 @@
 .vit-card-media {
   position: relative;
   height: 220px;
-  background: #080b10;
+  background: var(--vit-surface);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -512,7 +525,7 @@
   background: linear-gradient(
     to bottom,
     transparent 45%,
-    rgba(6, 7, 9, 0.72) 100%
+    var(--vit-card-bg) 100%
   );
   pointer-events: none;
   z-index: 1;

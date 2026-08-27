@@ -16,6 +16,16 @@
   --aca-amber: #f59e0b;
 }
 
+:root[data-theme='light'] {
+  --aca-bg: #f7f7f5;
+  --aca-card: rgba(255, 255, 255, 0.95);
+  --aca-card-border: #d8d8d0;
+  --aca-text-primary: #0b1d3d;
+  --aca-text-secondary: #4b5568;
+  --aca-text-muted: #6b7280;
+  --aca-purple: #3d5fa3;
+}
+
 .aca-container {
   min-height: 100vh;
   background-color: var(--aca-bg);
