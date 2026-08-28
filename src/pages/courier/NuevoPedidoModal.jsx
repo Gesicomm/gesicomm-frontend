@@ -800,9 +800,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
               <div className="np-add-item-bar">
                 <select
                   className="form-input"
-                  style={{ flex: 2 }}
+                  style={{ flex: 2, minWidth: '200px' }}
                   value={selectedProdId}
-                  onChange={e => setSelectedProdId(e.target.value)}
+                  onChange={e => {
+                    setSelectedProdId(e.target.value);
+                    if (errors.producto) setErrors(prev => ({ ...prev, producto: null }));
+                  }}
                 >
                   <option value="">-- Seleccionar Producto del sistema --</option>
                   {productosDisponibles.map(p => {
@@ -818,7 +821,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 {ofertasDelProducto.length > 0 && (
                   <select
                     className="form-input"
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, minWidth: '180px' }}
                     value={selectedOfertaId}
                     onChange={e => setSelectedOfertaId(e.target.value)}
                   >

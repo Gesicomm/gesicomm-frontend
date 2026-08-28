@@ -11,6 +11,7 @@ import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
 import ProductPagePublica from './ProductPagePublica';
 import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
+import TechProductPagePublica from '../landing-simple/templates/tech/TechProductPagePublica';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';

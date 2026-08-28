@@ -56,26 +56,30 @@ export const manychatApi = {
   accionesPendientes: () => AutomationAPI.get('/manychat/acciones-pendientes').then((r) => r.data),
 };
 
-// --- GoHighLevel (publicación social) ---
-export const ghlApi = {
-  estado: () => AutomationAPI.get('/ghl/conexion').then((r) => r.data),
-  conectar: (location_id, private_token) => AutomationAPI.post('/ghl/conexion', { location_id, private_token }).then((r) => r.data),
-  cuentas: () => AutomationAPI.get('/ghl/cuentas').then((r) => r.data),
-  subirMedia: (file) => {
-    const form = new FormData();
-    form.append('file', file);
-    return AutomationAPI.post('/ghl/media', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data);
-  },
-  publicar: (contentItemId, payload) => AutomationAPI.post(`/ghl/contenido/${contentItemId}/publicar`, payload).then((r) => r.data),
-  listarPosts: (contentItemId) => AutomationAPI.get(`/ghl/contenido/${contentItemId}/posts`).then((r) => r.data),
-  eliminarPost: (socialPostId) => AutomationAPI.delete(`/ghl/posts/${socialPostId}`).then((r) => r.data),
-};
+// URL pública (sin auth de sesión) que se pega en la acción "External
+// Request" del flow de ManyChat para que cada lead nuevo entre al CRM.
+export function getManychatWebhookUrl(webhookToken) {
+  if (!webhookToken) return '';
+  return `${automationApiURL}/public/manychat/leads/${webhookToken}`;
+}
 
-// --- Oportunidades (CRM vía GoHighLevel) ---
-export const opportunitiesApi = {
-  pipelines: () => AutomationAPI.get('/opportunities/pipelines').then((r) => r.data),
-  listar: (pipelineId, pipelineStageId) => AutomationAPI.get('/opportunities', { params: { pipelineId, pipelineStageId } }).then((r) => r.data),
-  moverEtapa: (id, pipelineId, pipelineStageId) => AutomationAPI.patch(`/opportunities/${id}/etapa`, { pipelineId, pipelineStageId }).then((r) => r.data),
+// URL pública (PATCH) para mover un lead ya existente de etapa y/o pipeline
+// (ej. de "Instagram" a "Ventas") — mismo endpoint para avisar un avance de
+// etapa o para registrar una venta (moverlo a la última etapa de Ventas).
+export function getManychatUpdateWebhookUrl(webhookToken) {
+  if (!webhookToken) return '';
+  return `${automationApiURL}/public/manychat/leads/${webhookToken}/etapa`;
+}
+
+// --- CRM nativo de Gesicomm (leads/pipelines propios, alimentados por
+// el webhook de ManyChat — reemplaza por completo al proxy de GoHighLevel) ---
+export const crmApi = {
+  pipelines: () => AutomationAPI.get('/crm/pipelines').then((r) => r.data),
+  leads: (pipelineId) => AutomationAPI.get('/crm/leads', { params: { pipelineId } }).then((r) => r.data),
+  crearLead: (payload) => AutomationAPI.post('/crm/leads', payload).then((r) => r.data),
+  moverEtapa: (leadId, stageId) => AutomationAPI.patch(`/crm/leads/${leadId}/etapa`, { stage_id: stageId }).then((r) => r.data),
+  actualizarLead: (leadId, payload) => AutomationAPI.put(`/crm/leads/${leadId}`, payload).then((r) => r.data),
+  eliminarLead: (leadId) => AutomationAPI.delete(`/crm/leads/${leadId}`).then((r) => r.data),
 };
 
 // --- Finanzas → Automatización ---
@@ -128,11 +132,5 @@ export const financeApi = {
 export const analyticsApi = {
   obtener: (params) => AutomationAPI.get('/analytics', { params }).then((r) => r.data),
 };
-
-export function getAutomationMediaUrl(url) {
-  if (!url) return url;
-  if (/^https?:\/\//.test(url)) return url;
-  return automationApiURL.replace(/\/api$/, '') + url;
-}
 
 export default AutomationAPI;

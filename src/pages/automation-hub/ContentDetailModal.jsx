@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { X, Copy, CheckCircle2, Share2 } from 'lucide-react';
+import { X, Copy, CheckCircle2 } from 'lucide-react';
 import { contentApi, manychatApi } from '../../services/automationHubApi';
-import SocialPublishModal from './SocialPublishModal';
 
 const FORMATO_LABEL = { R: 'Video / Reel', C: 'Carrusel', H: 'Historias' };
 
 export default function ContentDetailModal({ item, onClose, onCambio }) {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
-  const [publicarRedesAbierto, setPublicarRedesAbierto] = useState(false);
   const link = item.ManychatLink || null;
 
   const copiarCodigo = async () => {
@@ -64,13 +62,13 @@ export default function ContentDetailModal({ item, onClose, onCambio }) {
 
           <div className="rounded-lg border border-border bg-surface-2 p-3">
             <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Tema</div>
-            <div className="text-sm text-fg">{item.topic}</div>
+            <div className="text-sm text-fg break-words">{item.topic}</div>
           </div>
 
           {item.description && (
             <div className="rounded-lg border border-border bg-surface-2 p-3">
               <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Descripción</div>
-              <div className="whitespace-pre-wrap text-sm text-fg">{item.description}</div>
+              <div className="whitespace-pre-wrap break-words text-sm text-fg">{item.description}</div>
             </div>
           )}
 
@@ -94,10 +92,6 @@ export default function ContentDetailModal({ item, onClose, onCambio }) {
         </div>
 
         <div className="grid grid-cols-1 gap-2 border-t border-border p-4">
-          <button type="button" onClick={() => setPublicarRedesAbierto(true)}
-            className="flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-surface-2 text-sm font-semibold text-fg">
-            <Share2 size={14} /> Publicar en redes (GoHighLevel)
-          </button>
           {item.status !== 'published' && (
             <button type="button" disabled={procesando}
               onClick={() => ejecutar(() => contentApi.marcarPublicado(item.id).then(() => manychatApi.prepararTag(item.id).catch(() => {})))}
@@ -121,10 +115,6 @@ export default function ContentDetailModal({ item, onClose, onCambio }) {
           )}
         </div>
       </div>
-
-      {publicarRedesAbierto && (
-        <SocialPublishModal item={item} onClose={() => setPublicarRedesAbierto(false)} />
-      )}
     </div>
   );
 }

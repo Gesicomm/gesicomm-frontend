@@ -1,0 +1,690 @@
+/**
+ * Ficha de producto del template "Electrónica & Tecnología".
+ *
+ * Mismo principio que la ficha de Fitness: ni un color literal. Todo sale
+ * de las variables --tpp-* que TechProductPage.jsx deriva del tema de la
+ * landing (fondo/texto/acento, los tres que el comercio edita en la
+ * pestaña "Colores"). La estructura es fija; la paleta sigue siendo del
+ * comercio.
+ *
+ * Todo cuelga de .tpp-root para no tocar el resto de la landing.
+ */
+
+.tpp-root {
+  background: var(--tpp-bg);
+  color: var(--tpp-fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.tpp-root *,
+.tpp-root *::before,
+.tpp-root *::after { box-sizing: border-box; }
+
+.tpp-wrap { width: min(1180px, calc(100% - 44px)); margin-inline: auto; }
+.tpp-root button { font: inherit; cursor: pointer; }
+
+/* ── 1 · Barra superior ───────────────────────────────────────────── */
+
+.tpp-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 26px;
+  padding: 9px 4%;
+  background: var(--tpp-band);
+  color: var(--tpp-on-band);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.tpp-barra-item { display: inline-flex; align-items: center; gap: 6px; }
+.tpp-barra-item svg { opacity: .8; }
+
+.tpp-barra-cta {
+  border: 0;
+  border-radius: 5px;
+  padding: 9px 18px;
+  background: var(--tpp-accent);
+  color: var(--tpp-on-accent);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* ── Volver ───────────────────────────────────────────────────────── */
+
+.tpp-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 18px 0 -12px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--tpp-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.tpp-volver:hover { color: var(--tpp-fg); }
+
+/* ── 2 · Hero ─────────────────────────────────────────────────────── */
+
+.tpp-hero {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  align-items: start;
+  gap: 56px;
+  padding: 46px 0 38px;
+}
+
+/* La foto acompaña el scroll: la columna de texto casi siempre es más
+   alta (características + rating + botones) y si no dejaba un hueco. */
+.tpp-galeria { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 12px; }
+
+.tpp-escenario {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 50% 45%, var(--tpp-accent-halo) 0, transparent 62%),
+    var(--tpp-surface);
+}
+
+.tpp-escenario img { width: 100%; height: 100%; object-fit: cover; }
+.tpp-escenario.vacia { color: var(--tpp-muted); }
+
+.tpp-etiqueta-nueva {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 5px 11px;
+  border-radius: 4px;
+  background: var(--tpp-accent);
+  color: var(--tpp-on-accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.tpp-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tpp-miniatura {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--tpp-border);
+  border-radius: 9px;
+  background: var(--tpp-surface);
+}
+
+.tpp-miniatura.activa { border: 2px solid var(--tpp-accent); }
+.tpp-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+
+.tpp-eyebrow {
+  margin: 0;
+  color: var(--tpp-accent);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+/* Igual que en Fitness: el tamaño lo escalona el componente según el largo
+   real del nombre, porque el CSS no puede medir el texto y los nombres del
+   catálogo son descriptivos, no titulares cortos. */
+.tpp-hero h1 {
+  margin: 14px 0 14px;
+  font-size: clamp(30px, 3.3vw, 50px);
+  font-weight: 800;
+  line-height: 1.03;
+  letter-spacing: -.04em;
+}
+
+.tpp-hero-copy.es-largo h1 { font-size: clamp(26px, 2.6vw, 38px); letter-spacing: -.03em; }
+.tpp-hero-copy.es-muy-largo h1 { font-size: clamp(23px, 2.2vw, 31px); letter-spacing: -.02em; line-height: 1.08; }
+
+.tpp-hero h1 em { display: block; color: var(--tpp-accent); font-style: normal; }
+
+.tpp-lead { max-width: 520px; margin: 0; color: var(--tpp-muted); font-size: 15.5px; line-height: 1.55; }
+
+.tpp-caracteristicas {
+  display: grid;
+  gap: 9px;
+  margin: 20px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+
+.tpp-caracteristicas li { display: flex; align-items: center; gap: 9px; }
+.tpp-caracteristicas svg { flex-shrink: 0; color: var(--tpp-accent); }
+
+.tpp-rating {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 18px 0;
+  font-size: 11.5px;
+  color: var(--tpp-muted);
+}
+
+.tpp-rating b { color: var(--tpp-fg); font-size: 12.5px; }
+.tpp-estrellas { display: inline-flex; gap: 1px; color: var(--tpp-estrella); }
+
+/* ── Botones ──────────────────────────────────────────────────────── */
+
+.tpp-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 15px 24px;
+  background: var(--tpp-accent);
+  color: var(--tpp-on-accent);
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 var(--tpp-accent-sombra);
+  transition: transform .12s, box-shadow .12s;
+}
+
+.tpp-cta:hover { transform: translateY(1px); box-shadow: 0 2px 0 var(--tpp-accent-sombra); }
+.tpp-cta:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+
+.tpp-cta-oscuro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 14px 24px;
+  background: var(--tpp-band);
+  color: var(--tpp-on-band);
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+/* ── 4 · Banda de precio ──────────────────────────────────────────── */
+
+.tpp-precio-banda {
+  border-block: 1px solid var(--tpp-border);
+  background: var(--tpp-card);
+}
+
+.tpp-precio-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding-block: 20px;
+}
+
+.tpp-precio-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 7px;
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--tpp-muted);
+}
+
+.tpp-precio-badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--tpp-accent-suave);
+  color: var(--tpp-accent);
+}
+
+.tpp-precio-fila { display: flex; align-items: baseline; flex-wrap: wrap; gap: 11px; }
+.tpp-precio-fila strong { font-size: 27px; font-weight: 900; letter-spacing: -.02em; }
+.tpp-precio-fila del { color: var(--tpp-muted); font-size: 13px; }
+.tpp-precio-fila b { color: var(--tpp-accent); font-size: 11.5px; font-weight: 900; }
+.tpp-precio-cuotas { margin: 6px 0 0; color: var(--tpp-muted); font-size: 11px; }
+.tpp-precio-cuotas strong { color: var(--tpp-fg); }
+
+/* ── Contador ─────────────────────────────────────────────────────── */
+
+.tpp-contador {
+  text-align: center;
+  padding: 10px 18px;
+  border: 1px solid var(--tpp-border);
+  border-radius: 8px;
+}
+
+.tpp-contador-titulo { margin: 0 0 7px; font-size: 9px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--tpp-muted); }
+.tpp-contador-cajas { display: flex; gap: 8px; }
+
+.tpp-contador-caja {
+  min-width: 44px;
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: var(--tpp-surface);
+}
+
+.tpp-contador-caja b { display: block; font-size: 18px; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tpp-contador-caja small { display: block; margin-top: 2px; font-size: 7.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--tpp-muted); }
+
+/* ── 5 · Compra: variantes + acciones ─────────────────────────────── */
+
+.tpp-compra { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; padding: 28px 0; }
+
+.tpp-panel {
+  padding: 20px;
+  border: 1px solid var(--tpp-border);
+  border-radius: 10px;
+  background: var(--tpp-card);
+}
+
+.tpp-panel-label { margin: 0 0 9px; font-size: 11.5px; color: var(--tpp-muted); }
+.tpp-panel-label b { color: var(--tpp-fg); }
+
+.tpp-variantes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+
+.tpp-variante {
+  padding: 9px 15px;
+  border: 1px solid var(--tpp-border-fuerte);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.tpp-variante.activa { border-color: var(--tpp-accent); color: var(--tpp-accent); font-weight: 900; }
+.tpp-variante:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+.tpp-variante small { display: block; margin-top: 2px; font-size: 10px; opacity: .75; font-weight: 600; }
+
+.tpp-acciones { display: flex; flex-direction: column; gap: 9px; }
+
+.tpp-seguridad {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--tpp-muted);
+  font-size: 9.5px;
+}
+
+.tpp-seguridad span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ── Encabezado de sección numerado ───────────────────────────────── */
+
+.tpp-seccion { padding: 46px 0; }
+.tpp-seccion--fondo { background: var(--tpp-surface-suave); border-block: 1px solid var(--tpp-border); }
+
+.tpp-seccion-titulo { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; }
+
+.tpp-seccion-titulo h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+/* ── 6 · Beneficios ───────────────────────────────────────────────── */
+
+.tpp-beneficios { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+.tpp-beneficio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 14px;
+  border-right: 1px solid var(--tpp-border);
+  text-align: center;
+}
+
+.tpp-beneficio:last-child { border-right: 0; }
+.tpp-beneficio svg { color: var(--tpp-accent); }
+.tpp-beneficio b { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+.tpp-beneficio p { margin: 0; color: var(--tpp-muted); font-size: 10px; line-height: 1.5; }
+
+/* ── 7 · Especificaciones ─────────────────────────────────────────── */
+
+.tpp-specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+.tpp-caja {
+  padding: 18px;
+  border: 1px solid var(--tpp-border);
+  border-radius: 10px;
+  background: var(--tpp-card);
+}
+
+.tpp-caja > b { display: block; margin-bottom: 10px; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+
+.tpp-spec-fila {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--tpp-border);
+  font-size: 11.5px;
+}
+
+.tpp-spec-fila:last-child { border-bottom: 0; }
+.tpp-spec-fila b { font-weight: 700; }
+.tpp-spec-fila span { color: var(--tpp-muted); }
+
+.tpp-caja-item { display: flex; align-items: center; gap: 8px; padding: 6px 4px; font-size: 11.5px; color: var(--tpp-muted); }
+.tpp-caja-item svg { flex-shrink: 0; color: var(--tpp-accent); }
+
+/* ── 8 · Multimedia ───────────────────────────────────────────────── */
+
+.tpp-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+
+.tpp-media-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 150px;
+  overflow: hidden;
+  border-radius: 9px;
+  border: 1px solid var(--tpp-border);
+  background: var(--tpp-surface);
+  color: var(--tpp-fg);
+  padding: 0;
+}
+
+.tpp-media-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tpp-media-card span {
+  position: relative;
+  width: 100%;
+  padding: 9px;
+  background: var(--tpp-velo);
+  color: var(--tpp-on-velo);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ── 9 · Comparativa ──────────────────────────────────────────────── */
+
+.tpp-comparativa {
+  border: 1px solid var(--tpp-border);
+  border-radius: 10px;
+  background: var(--tpp-card);
+  overflow: hidden;
+}
+
+.tpp-comparativa-fila {
+  display: grid;
+  grid-template-columns: 1fr 110px 110px;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--tpp-border);
+  font-size: 12px;
+}
+
+.tpp-comparativa-fila:last-child { border-bottom: 0; }
+
+.tpp-comparativa-encabezado {
+  background: var(--tpp-surface);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.tpp-comparativa-encabezado span:nth-child(2) { color: var(--tpp-accent); }
+.tpp-comparativa-fila > span:nth-child(n+2) { text-align: center; }
+.tpp-comparativa-si { color: var(--tpp-ok); }
+.tpp-comparativa-no { color: var(--tpp-muted); opacity: .65; }
+
+/* ── 10 · Reseñas ─────────────────────────────────────────────────── */
+
+.tpp-resenas { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+
+.tpp-resena {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--tpp-border);
+  border-radius: 10px;
+  background: var(--tpp-card);
+}
+
+.tpp-resena-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tpp-accent-suave);
+  color: var(--tpp-accent);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.tpp-resena-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.tpp-resena b { font-size: 11.5px; }
+.tpp-resena p { margin: 6px 0; color: var(--tpp-muted); font-size: 11.5px; line-height: 1.5; }
+.tpp-resena small { font-size: 9px; color: var(--tpp-muted); }
+
+/* ── 11 · FAQ ─────────────────────────────────────────────────────── */
+
+.tpp-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.tpp-faq-item { border-top: 1px solid var(--tpp-border); }
+
+.tpp-faq-item button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 6px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; }
+.tpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--tpp-accent); }
+.tpp-faq-item p { margin: 0; padding: 0 6px 15px; color: var(--tpp-muted); font-size: 11.5px; line-height: 1.6; }
+
+/* ── 12 · Complementos ────────────────────────────────────────────── */
+
+.tpp-upsells { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+
+.tpp-upsell {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 16px;
+  border: 1px solid var(--tpp-border);
+  border-radius: 10px;
+  background: var(--tpp-card);
+}
+
+.tpp-upsell-img {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--tpp-surface);
+  color: var(--tpp-muted);
+}
+
+.tpp-upsell-img img { width: 100%; height: 100%; object-fit: cover; }
+.tpp-upsell-datos { flex: 1; min-width: 0; }
+.tpp-upsell-datos b { display: block; font-size: 12px; }
+.tpp-upsell-datos span { display: block; margin-top: 3px; font-size: 12px; font-weight: 900; }
+.tpp-upsell-datos del { margin-left: 6px; color: var(--tpp-muted); font-size: 10.5px; font-weight: 600; }
+
+.tpp-upsell-cta {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 5px;
+  padding: 9px 14px;
+  background: var(--tpp-accent);
+  color: var(--tpp-on-accent);
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* ── 13 · Garantías ───────────────────────────────────────────────── */
+
+.tpp-garantias { background: var(--tpp-surface-suave); border-block: 1px solid var(--tpp-border); }
+.tpp-garantias-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+.tpp-garantia {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  column-gap: 9px;
+  padding: 20px 14px;
+  border-right: 1px solid var(--tpp-border);
+}
+
+.tpp-garantia:last-child { border-right: 0; }
+.tpp-garantia svg { grid-row: span 2; color: var(--tpp-accent); }
+.tpp-garantia b { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.tpp-garantia small { color: var(--tpp-muted); font-size: 9.5px; }
+
+/* ── 14 · Cierre ──────────────────────────────────────────────────── */
+
+.tpp-cierre { background: var(--tpp-accent); color: var(--tpp-on-accent); }
+
+.tpp-cierre-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 22px;
+  padding: 24px 0;
+}
+
+.tpp-cierre-copy small { font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.tpp-cierre-copy p { margin: 6px 0 0; font-size: 12px; opacity: .9; }
+
+.tpp-cierre-timer { display: flex; gap: 8px; }
+
+.tpp-cierre-timer-caja {
+  min-width: 46px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--tpp-velo-claro);
+  text-align: center;
+}
+
+.tpp-cierre-timer-caja b { display: block; font-size: 19px; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.tpp-cierre-timer-caja small { display: block; margin-top: 2px; font-size: 7.5px; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+
+.tpp-cierre-cta {
+  min-width: 210px;
+  border: 0;
+  border-radius: 6px;
+  padding: 14px 26px;
+  background: var(--tpp-on-accent);
+  color: var(--tpp-accent);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tpp-cierre-cta small { display: block; margin-top: 3px; font-size: 8.5px; letter-spacing: .04em; text-transform: none; opacity: .8; }
+
+/* ── Barra fija de compra (móvil) ─────────────────────────────────── */
+
+.tpp-barra-movil {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--tpp-border);
+  background: var(--tpp-bg);
+}
+
+.tpp-barra-movil-precio { flex: 1; min-width: 0; }
+.tpp-barra-movil-precio b { display: block; font-size: 16px; font-weight: 900; }
+.tpp-barra-movil-precio small { color: var(--tpp-muted); font-size: 10px; }
+.tpp-barra-movil .tpp-cta { width: auto; padding: 12px 20px; font-size: 11.5px; box-shadow: none; }
+
+/* ── Vacíos del editor ────────────────────────────────────────────── */
+
+/* Solo en el preview: una sección activada pero sin contenido no puede
+   quedar invisible, porque el comercio la prendió y no entendería por qué
+   "no pasa nada". En la landing publicada simplemente no se dibuja. */
+.tpp-vacio {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--tpp-border-fuerte);
+  border-radius: 10px;
+  color: var(--tpp-muted);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+
+.tpp-root.es-movil .tpp-wrap { width: calc(100% - 28px); }
+.tpp-root.es-movil .tpp-hero { grid-template-columns: 1fr; gap: 24px; padding: 28px 0; }
+.tpp-root.es-movil .tpp-galeria { position: static; }
+.tpp-root.es-movil .tpp-compra,
+.tpp-root.es-movil .tpp-specs-grid,
+.tpp-root.es-movil .tpp-faq-grid { grid-template-columns: 1fr; }
+.tpp-root.es-movil .tpp-seccion { padding: 32px 0; }
+.tpp-root.es-movil .tpp-beneficio { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
+.tpp-root.es-movil .tpp-garantia { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
+.tpp-root.es-movil .tpp-comparativa-fila { grid-template-columns: 1fr 62px 62px; font-size: 11px; padding: 10px; }
+.tpp-root.es-movil .tpp-cierre-inner { flex-direction: column; align-items: flex-start; }
+.tpp-root.es-movil .tpp-cierre-cta { width: 100%; }
+.tpp-root.es-movil .tpp-barra-movil { display: flex; }
+
+@media (max-width: 880px) {
+  .tpp-wrap { width: calc(100% - 28px); }
+  .tpp-hero { grid-template-columns: 1fr; gap: 24px; padding: 28px 0; }
+  .tpp-galeria { position: static; }
+  .tpp-compra, .tpp-specs-grid, .tpp-faq-grid { grid-template-columns: 1fr; }
+  .tpp-seccion { padding: 32px 0; }
+  .tpp-beneficio { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
+  .tpp-garantia { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
+  .tpp-comparativa-fila { grid-template-columns: 1fr 62px 62px; font-size: 11px; padding: 10px; }
+  .tpp-cierre-inner { flex-direction: column; align-items: flex-start; }
+  .tpp-cierre-cta { width: 100%; }
+  .tpp-barra-movil { display: flex; }
+  .tpp-barra { font-size: 9px; gap: 8px 14px; }
+}

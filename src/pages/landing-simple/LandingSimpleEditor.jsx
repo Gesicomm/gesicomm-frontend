@@ -10,6 +10,9 @@ import { urlPublicaLanding } from './urlPublicaLanding';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
 import FitnessProductPage from './templates/fitness/FitnessProductPage';
+import TechProductPage from './templates/tech/TechProductPage';
+import { fichaTechDesdeProducto, resolverFichaTech } from './templates/tech/fichaTech';
+import { armarItemFicha as armarItemFichaComun } from './templates/fichaComun';
 import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
 } from './templates/fitness/fichaFitness';
@@ -29,6 +32,7 @@ import BeneficiosPanel from './panels/BeneficiosPanel';
 import ColoresPanel from './panels/ColoresPanel';
 import ProductoPanel from './panels/ProductoPanel';
 import FichaFitnessPanel from './panels/FichaFitnessPanel';
+import FichaTechPanel from './panels/FichaTechPanel';
 
 // El id de la sección apunta a la misma sección del template (ver los
 // `id="..."` en templates/*.jsx y templates/sections.jsx) — al cambiar de
@@ -43,6 +47,11 @@ import FichaFitnessPanel from './panels/FichaFitnessPanel';
 // editables, ver templates/fitness/). Los otros tres siguen con la ficha
 // genérica de siempre hasta que se adapten.
 const SLUG_FICHA_RICA = 'fitness-suplementos';
+
+// Electrónica & Tecnología tiene su propia ficha de producto (14 secciones,
+// ver templates/tech/). Pide otros campos que la de suplementos — specs,
+// "en la caja", comparativa — y por eso el producto tiene rubro.
+const SLUG_FICHA_TECH = 'tech-electronica';
 
 const TABS = [
   { key: 'marca', label: 'Marca', seccionId: 'header' },
@@ -314,6 +323,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // la capa "Marketing & Embudo". Ver fichaFitness.js.
   const [productoFicha, setProductoFicha] = useState(null);
   const [productoMarketing, setProductoMarketing] = useState(null);
+  // Override de la ficha de Tecnología para este producto en esta landing.
+  // Va aparte de `productoFicha` (la de Fitness) porque son secciones
+  // distintas: un producto puede venderse en las dos landings y cada ficha
+  // guarda lo suyo sin pisar la otra.
+  const [productoFichaTech, setProductoFichaTech] = useState(null);
 
   const catalogoFiltradoParaRelacionados = useMemo(() => {
     if (!catalogo || !items) return { productos: [], combos: [] };
@@ -397,6 +411,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoRelacionadosAutomatico(false);
     setProductoOfertas([]);
     setProductoFicha(null);
+    setProductoFichaTech(null);
     setProductoMarketing(null);
     setProductoImagenesEditables(true);
     if (p?.tipo !== 'producto') return;
@@ -436,6 +451,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setProductoFaq(propio?.faq ?? (faqEsplicito.length > 0 ? faqEsplicito : faqProducto));
       if (propio?.faq_titulo != null) setProductoFaqTitulo(propio.faq_titulo);
       setProductoFicha(propio?.ficha || null);
+      setProductoFichaTech(propio?.ficha_tech || null);
 
       setProductoRelacionadosTitulo(propio?.relacionados_titulo ?? (relacionados.titulo || ''));
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
@@ -581,6 +597,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         // guarda null y la ficha vuelve a heredar entera — no se congela
         // una copia de los defaults de la landing.
         ficha: productoFicha && Object.keys(productoFicha).length ? productoFicha : null,
+        ficha_tech: productoFichaTech && Object.keys(productoFichaTech).length ? productoFichaTech : null,
       };
 
       const contenidoNuevo = { ...contenido, productos: porProducto };
@@ -615,6 +632,18 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const fichaResuelta = fichaActiva
     ? resolverFichaFitness(productoFicha, fichaLanding, fichaMarketing)
     : null;
+
+  // Ídem para Electrónica & Tecnología. Los dos bloques son excluyentes:
+  // una landing usa un template y por lo tanto una sola ficha.
+  const fichaTechActiva = templateSlug === SLUG_FICHA_TECH;
+  const fichaTechLanding = draft?.content?.ficha_tech || null;
+  const fichaTechDelProducto = fichaTechDesdeProducto(productoMarketing);
+  const fichaTechResuelta = fichaTechActiva
+    ? resolverFichaTech(productoFichaTech, fichaTechLanding, fichaTechDelProducto)
+    : null;
+  // Una sola bandera para lo que es común a las dos: mostrar la pestaña
+  // "Ficha" en el panel del producto y la de defaults en el sidebar.
+  const algunaFichaActiva = fichaActiva || fichaTechActiva;
   const draftParaPreview = { ...draft, items, faq, beneficios };
   const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo);
   datosPreview.tienda = { subdominio: tienda?.subdominio };
@@ -750,6 +779,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               fichaLanding={fichaLanding}
               fichaMarketing={fichaMarketing}
               onFicha={setProductoFicha}
+              fichaTechActiva={fichaTechActiva}
+              fichaTech={productoFichaTech}
+              fichaTechResuelta={fichaTechResuelta}
+              fichaTechLanding={fichaTechLanding}
+              fichaTechDelProducto={fichaTechDelProducto}
+              onFichaTech={setProductoFichaTech}
               packs={productoOfertas.filter(o => o.estrategia === 'normal' && o.tipo_contenido === 'pack')}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
@@ -771,7 +806,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           ) : (
             <>
               <div className="grid grid-cols-4 gap-1 p-2 border-b border-fg/10">
-                {TABS.filter(t => !t.soloFicha || fichaActiva).map(t => (
+                {TABS.filter(t => !t.soloFicha || algunaFichaActiva).map(t => (
                   <button
                     key={t.key}
                     type="button"
@@ -832,6 +867,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                     onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_fitness: nueva })}
                   />
                 )}
+                {tab === 'ficha' && fichaTechActiva && (
+                  <FichaTechPanel
+                    ficha={fichaTechLanding}
+                    fichaResuelta={resolverFichaTech(null, fichaTechLanding, null)}
+                    modo="landing"
+                    onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_tech: nueva })}
+                  />
+                )}
               </div>
             </>
           )}
@@ -865,6 +908,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   templateSlug={templateSlug}
                   setCompraFunnel={setCompraFunnel}
                   fichaResuelta={fichaResuelta}
+                  fichaTechResuelta={fichaTechResuelta}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
                 />
@@ -909,6 +953,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   templateSlug={templateSlug}
                   setCompraFunnel={setCompraFunnel}
                   fichaResuelta={fichaResuelta}
+                  fichaTechResuelta={fichaTechResuelta}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
                 />
@@ -1003,7 +1048,8 @@ function PreviewContent({
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
-  fichaResuelta = null, onCerrarProducto = null, onAbrirRelacionado = null,
+  fichaResuelta = null, fichaTechResuelta = null,
+  onCerrarProducto = null, onAbrirRelacionado = null,
 }) {
   if (productoPreview) {
     const ofertasPublicas = productoOfertas.map(o => ofertaAFormaPublica(o, productoPreview?.id));

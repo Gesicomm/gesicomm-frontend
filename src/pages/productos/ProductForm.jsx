@@ -11,11 +11,12 @@ import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/combo
 import CurrencyInput from '../../components/CurrencyInput';
 import SelectorIcono from '../../components/SelectorIcono';
 import OfertasProductoTab from './OfertasProductoTab';
+import FichaRubroTab from './FichaRubroTab';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor,
-  Settings, Layers, HelpCircle, Megaphone, ShieldCheck, CheckSquare
+  Settings, Layers, HelpCircle, Megaphone, ShieldCheck, CheckSquare, Sparkles
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -34,6 +35,9 @@ const TABS = [
   { id: 'variantes', label: 'Variantes', icon: <Layers size={15} /> },
   { id: 'multimedia', label: 'Multimedia', icon: <ImageIcon size={15} /> },
   { id: 'marketing', label: 'Marketing & Embudo', icon: <Megaphone size={15} /> },
+  // Campos que dependen del rubro (specs de electrónica, ingredientes de
+  // suplementos). Ver FichaRubroTab.jsx para por qué van aparte.
+  { id: 'ficha', label: 'Ficha del rubro', icon: <Sparkles size={15} /> },
   { id: 'faq', label: 'Todo lo que necesitas saber', icon: <HelpCircle size={15} /> },
   { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
   { id: 'configuracion', label: 'Configuración', icon: <Settings size={15} /> },
@@ -112,6 +116,8 @@ export default function ProductForm() {
       beneficios: [],
       confianza: [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
       faq_titulo: '',
+      ficha_rubro: '',
+      ficha_datos: {},
       tags: '',
       precio_base: '',
       precio_costo: '',
@@ -215,6 +221,8 @@ export default function ProductForm() {
             confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
             preguntas_frecuentes: p.preguntas_frecuentes || [],
             sobre_este_producto: p.sobre_este_producto || '',
+            ficha_rubro: p.ficha_rubro || '',
+            ficha_datos: p.ficha_datos || {},
           });
           if (vars?.length > 0) setTieneVariantes(true);
           setImagenes(imgs || []);
@@ -327,6 +335,8 @@ export default function ProductForm() {
         sobre_este_producto: data.sobre_este_producto || null,
         beneficios: data.beneficios || [],
         confianza: data.confianza || [],
+        ficha_rubro: data.ficha_rubro || null,
+        ficha_datos: data.ficha_datos || {},
         variantes: data.variantes.map(v => ({
           ...v,
           stock: parseInt(v.stock) || 0,
@@ -1364,6 +1374,30 @@ export default function ProductForm() {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className={`tab-content ${tabActiva === 'ficha' ? 'active' : ''}`}>
+          {/* El rubro decide qué campos se piden: no son los mismos para un
+              suplemento que para un auricular. Lo genérico (propuesta de
+              valor, beneficios, confianza) sigue en Marketing & Embudo. */}
+          <Controller
+            control={control}
+            name="ficha_rubro"
+            render={({ field: campoRubro }) => (
+              <Controller
+                control={control}
+                name="ficha_datos"
+                render={({ field: campoDatos }) => (
+                  <FichaRubroTab
+                    rubro={campoRubro.value}
+                    datos={campoDatos.value}
+                    onRubro={(v) => campoRubro.onChange(v || '')}
+                    onDatos={campoDatos.onChange}
+                  />
+                )}
+              />
+            )}
+          />
         </div>
 
         <div className={`tab-content ${tabActiva === 'faq' ? 'active' : ''}`}>

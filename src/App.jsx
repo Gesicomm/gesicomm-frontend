@@ -53,6 +53,7 @@ const Contact = lazy(() => import('./pages/public/Contact'));
 // sirve para mirar el diseño y probar paletas sin cargar una landing real.
 // Se borra junto con templates/fitness/__DevFicha.jsx cuando ya no haga falta.
 const DevFicha = lazy(() => import('./pages/landing-simple/templates/fitness/__DevFicha'));
+const DevFichaTech = lazy(() => import('./pages/landing-simple/templates/tech/__DevFichaTech'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
@@ -172,6 +173,7 @@ function App() {
         <Route path="/data-deletion/estado/:codigo" element={<PaginaPublica><DataDeletionStatus /></PaginaPublica>} />
 
         <Route path="/dev/ficha-fitness" element={<DevFicha />} />
+        <Route path="/dev/ficha-tech" element={<DevFichaTech />} />
         <Route path="/login" element={<Login />} />
 
         {/* Rutas protegidas — panel admin */}

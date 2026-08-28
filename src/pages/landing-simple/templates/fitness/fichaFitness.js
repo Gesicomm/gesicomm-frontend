@@ -307,6 +307,27 @@ export function fichaDesdeMarketing(producto) {
     };
   }
 
+  // Propio del rubro "suplementos" (Producto.ficha_datos, cargado en Mis
+  // Productos → Ficha del rubro). Es del producto, así que sirve en todas
+  // sus landings sin volver a escribirlo en cada una.
+  const datos = (producto.ficha_datos && typeof producto.ficha_datos === 'object' && !Array.isArray(producto.ficha_datos))
+    ? producto.ficha_datos : {};
+  const ingredientes = (datos.ingredientes || []).filter(i => i?.nombre?.trim());
+  if (ingredientes.length) {
+    ficha.ingredientes = {
+      // Si el comercio se tomó el trabajo de cargarlos, la sección se
+      // muestra: viene apagada de fábrica justamente porque sin datos no
+      // hay nada que mostrar.
+      activo: true,
+      items: ingredientes.map(i => ({
+        icono: i.icono || 'leaf',
+        nombre: i.nombre.trim(),
+        dosis: (i.dosis || '').trim(),
+        texto: (i.texto || '').trim(),
+      })),
+    };
+  }
+
   return ficha;
 }
 

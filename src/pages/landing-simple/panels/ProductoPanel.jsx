@@ -5,6 +5,7 @@ import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
 import ProductCheckoutOfertas from '../../landing/ProductCheckoutOfertas';
 import FichaFitnessPanel from './FichaFitnessPanel';
+import FichaTechPanel from './FichaTechPanel';
 import '../../landing/landing.css';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
@@ -22,6 +23,10 @@ export default function ProductoPanel({
   // panel se comporta exactamente como antes.
   fichaActiva = false, ficha = null, fichaResuelta = null,
   fichaLanding = null, fichaMarketing = null, onFicha = null,
+  // Ídem para Electrónica & Tecnología. Solo una de las dos puede estar
+  // activa: la landing usa un template y ese decide qué ficha se edita.
+  fichaTechActiva = false, fichaTech = null, fichaTechResuelta = null,
+  fichaTechLanding = null, fichaTechDelProducto = null, onFichaTech = null,
   descripcion, onDescripcion,
   packs = [],
   imagenes, imagenesEditables = true, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
@@ -85,7 +90,7 @@ export default function ProductoPanel({
         <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Detalles</button>
         <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Relacionados</button>
         <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ofertas</button>
-        {fichaActiva && (
+        {(fichaActiva || fichaTechActiva) && (
           <button type="button" onClick={() => setTab('ficha')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ficha' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ficha</button>
         )}
       </div>
@@ -222,6 +227,24 @@ export default function ProductoPanel({
               <div className="flex flex-col gap-5">
               <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
               </div>
+            )}
+
+            {tab === 'ficha' && fichaTechActiva && fichaTechResuelta && (
+              <FichaTechPanel
+                ficha={fichaTech}
+                fichaResuelta={fichaTechResuelta}
+                fichaLanding={fichaTechLanding}
+                fichaDelProducto={fichaTechDelProducto}
+                respaldos={{
+                  titulo: producto?.nombre || '',
+                  eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
+                  lead: descripcion || '',
+                  faqTitulo: faqTitulo || 'Preguntas frecuentes',
+                  upsellsTitulo: relacionadosTitulo || '',
+                }}
+                modo="producto"
+                onChange={onFichaTech}
+              />
             )}
 
             {tab === 'ficha' && fichaActiva && fichaResuelta && (
