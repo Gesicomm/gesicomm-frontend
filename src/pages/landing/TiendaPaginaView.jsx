@@ -679,65 +679,9 @@ export default function TiendaPaginaView({ data, slug, productId }) {
   }
 
   const isProductView = Boolean(productId);
-  // En un funnel la landing ES la página del producto: no hay :productId en
-  // la URL, el único item que trae el DTO es su producto (ver
-  // landing.service.js#obtenerPublica). Sin esto el bloque product_detail
-  // recibía item=null y mostraba "Producto no encontrado".
-  // OJO: no alcanza con tipo_pagina==='funnel' — la landing rígida de la
-  // tienda también lo usa (ver landingSimple.service.js#crear). El
-  // discriminador real de un embudo es el kind de su template.
-  const esFunnel = false;          isMobile={typeof window !== 'undefined' && window.innerWidth < 768}
-          linkWhatsapp={itemSeleccionado && data.contacto?.whatsapp
-            ? armarLinkWhatsapp(data.contacto, itemSeleccionado)
-            : null}
-          onContactar={() => itemSeleccionado && contactar(itemSeleccionado)}
-          onComprarAhora={({ variante, precio }) => setCompraFunnel({ variante, precio })}
-          onAgregarCarrito={({ variante, precio }) => {
-            if (!itemSeleccionado) return;
-            agregarAlCarrito({ item: itemSeleccionado, variante, oferta: null, cantidad: 1, precio });
-            setCarritoAbierto(true);
-          }}
-        />
-
-        <FunnelCheckout
-          abierto={!!compraFunnel}
-          onCerrar={() => setCompraFunnel(null)}
-          tema={temaFunnel}
-          resumen={compraFunnel && itemSeleccionado ? {
-            nombre: itemSeleccionado.nombre,
-            variante: compraFunnel.variante?.nombre || null,
-            precio: compraFunnel.precio,
-            imagen: datosFunnel.producto?.imagenes?.[0] || null,
-          } : null}
-          ofertasLanding={data?.content?.ofertas_producto_vista || []}
-          itemOriginal={itemSeleccionado}
-          onConfirmar={(form, ofertasCheckout = []) => comprarAhora(
-            itemSeleccionado,
-            compraFunnel.variante,
-            null,
-            1,
-            compraFunnel.precio,
-            form,
-            ofertasCheckout,
-          )}
-        />
-
-        {/* El carrito sigue existiendo para quien use la acción secundaria,
-            pero nunca es parte del camino principal del embudo. */}
-        <CartDrawer
-          items={Array.from(carrito.values())}
-          sugerencias={[]}
-          onAgregarSugerencia={agregarSugerencia}
-          abierto={carritoAbierto}
-          onAbrir={() => setCarritoAbierto(true)}
-          onCerrar={() => setCarritoAbierto(false)}
-          onCantidad={cambiarCantidadCarrito}
-          onQuitar={quitarDelCarrito}
-          onConfirmarPedido={confirmarPedido}
-        />
-      </>
-    );
-  }
+  const itemSeleccionado = isProductView
+    ? data.items?.find(i => i.content_id === productId)
+    : null;
 
   // Landing de uno de los 3 templates rígidos (Fitness/Beauty/Tech/Básico)
   // — ver pages/landing-simple/. Estructura fija, pero SÍ comparte carrito/
