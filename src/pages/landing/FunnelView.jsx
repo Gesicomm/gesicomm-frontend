@@ -127,42 +127,7 @@ export default function FunnelView({ data, slug, productId }) {
   // de una pantalla está abierto (ver pages/funnel/FunnelCheckout.jsx).
   const [compraFunnel, setCompraFunnel] = useState(null);
 
-  useEffect(() => {
-    let activo = true;
-    setEstado('cargando');
-    // Con :productId se pide el endpoint por-producto (no solo el general
-    // de la landing): es el único que resuelve si ESE producto tiene
-    // diseño de página propio (ver LandingSeccion.producto_id /
-    // obtenerProductoPublico en el backend) — antes esto nunca se llamaba
-    // y secciones_producto quedaba siempre en la plantilla compartida,
-    // sin importar qué producto se estuviera mirando.
-    // En la raíz del hostname de una tienda (/:algo, sin "/l/") ese único
-    // segmento puede ser dos cosas distintas: el slug de una landing/funnel
-    // o el slug de un producto. Se prueba primero como landing —es la URL
-    // que se comparte en anuncios— y recién si no existe se cae al
-    // endpoint por-producto, que era el único comportamiento anterior.
-    const promesa = productId
-      ? (slug
-          ? obtenerProductoLanding(slug, productId)
-          : obtenerLandingPublica(productId)
-              .then(res => (res === null ? obtenerProductoLanding(null, productId) : res))
-              .catch(() => obtenerProductoLanding(null, productId)))
-      : obtenerLandingPublica(slug);
-    promesa
-      .then((res) => {
-        if (!activo) return;
-        if (res === null) return setEstado('no-encontrada');
-        if (!res.disponible) return setEstado('no-disponible');
-        setData(res);
-        setEstado('ok');
-        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id);
-        if (res.meta?.google_analytics_id) inicializarGA(res.meta.google_analytics_id);
-        if (res.meta?.tiktok_pixel_id) inicializarTikTokPixel(res.meta.tiktok_pixel_id);
-        if (res.diseno?.fuente) cargarFuenteGoogle(res.diseno.fuente);
-      })
-      .catch(() => { if (activo) setEstado('no-encontrada'); });
-    return () => { activo = false; };
-  }, [slug, productId]);
+
 
   
   // Un slug por carrito: si la tienda tiene varias landings, cada una guarda
