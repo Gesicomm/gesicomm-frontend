@@ -645,7 +645,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
 
   const isProductView = Boolean(productId);
   const itemSeleccionado = isProductView
-    ? data.items?.find(i => i.content_id === productId)
+    ? catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId))
     : null;
 
   // Landing de uno de los 3 templates rígidos (Fitness/Beauty/Tech/Básico)
@@ -695,8 +695,9 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     });
 
     if (isProductView) {
+      const itemSeleccionado = itemAbierto || catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId));
       if (!itemSeleccionado) {
-        return <div className="lp-status-page"><h1>Producto no encontrado</h1></div>;
+        return <div className="lp-status-page"><h1>El producto no existe o ya no está disponible</h1></div>;
       }
       // El tema crudo de la landing (dto.tema) suele venir con
       // fondo/texto/acento en null si el comercio nunca los personalizó —
