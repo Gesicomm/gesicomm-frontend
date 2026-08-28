@@ -95,7 +95,7 @@ const Settings = () => {
                         </div>
                         <div>
                             <h3 style={{ margin: 0, fontSize: '1rem' }}>Tiendas Conectadas (Meta Business)</h3>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
                                 {hayTiendas ? `${tiendas.length} tienda${tiendas.length > 1 ? 's' : ''} activa${tiendas.length > 1 ? 's' : ''}` : 'Ninguna tienda conectada'}
                             </p>
                         </div>
@@ -112,13 +112,13 @@ const Settings = () => {
 
                 {/* Lista de tiendas */}
                 {loadingTiendas ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#888', padding: '1rem 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--color-fg-muted)', padding: '1rem 0' }}>
                         <Loader size={16} className="spin" /> Cargando tiendas...
                     </div>
                 ) : !hayTiendas ? (
                     <div style={{ 
-                        border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px', 
-                        padding: '2.5rem', textAlign: 'center', color: '#666'
+                        border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '10px', 
+                        padding: '2.5rem', textAlign: 'center', color: 'var(--color-fg-subtle)'
                     }}>
                         <Store size={32} style={{ marginBottom: '0.75rem', opacity: 0.4 }} />
                         <p style={{ margin: '0 0 1rem' }}>No tenés ninguna tienda conectada todavía.</p>
@@ -134,8 +134,8 @@ const Settings = () => {
                                 style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                     padding: '0.85rem 1.1rem',
-                                    background: 'rgba(255,255,255,0.04)',
-                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)',
+                                    border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)',
                                     borderRadius: '10px',
                                     transition: 'border-color 0.2s'
                                 }}
@@ -152,7 +152,7 @@ const Settings = () => {
                                     )}
                                     <div>
                                         <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{tienda.nombre || tienda.business_name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.1rem' }}>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-subtle)', marginTop: '0.1rem' }}>
                                             BM ID: {tienda.business_id}
                                         </div>
                                     </div>

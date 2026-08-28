@@ -43,8 +43,8 @@ export function MarcarEntregadoModal({ open, envio, onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "420px", background: "#0a0a0b", border: "1px solid rgba(255,255,255,0.15)", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="modal-content" style={{ maxWidth: "420px", background: "#0a0a0b", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <PackageCheck size={18} color="#34d399" /> Marcar Entregado #{envio.id}
           </h2>

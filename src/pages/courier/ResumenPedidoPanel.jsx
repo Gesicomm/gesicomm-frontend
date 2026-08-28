@@ -56,10 +56,10 @@ export function ResumenPedidoPanel({ open, envio, onClose }) {
       onClick={onClose}
     >
       <div
-        style={{ width: "360px", maxWidth: "100%", height: "100%", background: "#0a0a0b", borderLeft: "1px solid rgba(255,255,255,0.12)", color: "#fff", display: "flex", flexDirection: "column" }}
+        style={{ width: "360px", maxWidth: "100%", height: "100%", background: "#0a0a0b", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "#fff", display: "flex", flexDirection: "column" }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem" }}>Resumen del pedido</h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>
@@ -70,7 +70,7 @@ export function ResumenPedidoPanel({ open, envio, onClose }) {
           </pre>
         </div>
 
-        <div style={{ padding: "1rem 1.25rem", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ padding: "1rem 1.25rem", borderTop: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <button type="button" className="btn-primary" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }} onClick={copiar}>
             {copiado ? <><Check size={16} /> Copiado</> : <><Copy size={16} /> Copiar</>}
           </button>

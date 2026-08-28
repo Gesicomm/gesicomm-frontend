@@ -30,9 +30,9 @@ export default function PoliticaReembolsoPublica() {
 
   useDocumentSeo(`Política de Devoluciones y Reembolsos - ${data?.titulo || ''}`, data?.seo_descripcion || '');
 
-  if (estado === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-[#050505]"><Loader className="animate-spin text-white/50" /></div>;
-  if (estado === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">Tienda no encontrada.</div>;
-  if (estado === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">Esta tienda no está disponible actualmente.</div>;
+  if (estado === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-canvas"><Loader className="animate-spin text-white/50" /></div>;
+  if (estado === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Tienda no encontrada.</div>;
+  if (estado === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Esta tienda no está disponible actualmente.</div>;
 
   const datosTemplate = mapPublicDtoToTemplateData(data);
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;

@@ -180,7 +180,7 @@ function GraficoTendencia({ serie }) {
                 y={0}
                 width={grupoAncho}
                 height={ALTO}
-                fill="rgba(255, 255, 255, 0.06)"
+                fill="color-mix(in srgb, var(--color-fg) 6%, transparent)"
                 rx={3}
                 style={{ pointerEvents: 'none' }}
               />

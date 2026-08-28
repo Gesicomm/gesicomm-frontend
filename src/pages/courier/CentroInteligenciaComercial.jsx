@@ -78,7 +78,7 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#fff' }}>Centro de Inteligencia Comercial & Analytics</h2>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-fg)' }}>Centro de Inteligencia Comercial & Analytics</h2>
                 <span className="cic-badge-live">
                   <span className="pulse-dot" /> En Vivo
                 </span>

@@ -43,7 +43,7 @@
 
 /* ─── Secciones del editor ───────────────────────────────────────────────── */
 .combo-section {
-  background: #0f1117;
+  background: var(--color-canvas);
   border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
   padding: 1.5rem;
@@ -231,7 +231,7 @@
 .combo-upsells-table td {
   padding: 0.75rem;
   border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 4%, transparent);
-  color: #cbd5e1;
+  color: var(--color-fg);
   vertical-align: middle;
 }
 
@@ -413,7 +413,7 @@
   padding: 0.65rem 0.75rem;
   border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 3%, transparent);
   text-align: right;
-  color: #cbd5e1;
+  color: var(--color-fg);
 }
 
 .combo-sensitivity-table td:first-child { text-align: left; font-weight: 600; }
@@ -430,7 +430,7 @@
 }
 
 .combo-list-card {
-  background: #0f1117;
+  background: var(--color-canvas);
   border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
   padding: 1.25rem;

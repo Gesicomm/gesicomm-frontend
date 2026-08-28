@@ -475,7 +475,7 @@ export default function VitrinaGrid() {
           <button className="btn-secondary" disabled={page === 1} onClick={() => { setPage(p => p - 1); window.scrollTo(0, 0); }}>
             Anterior
           </button>
-          <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
+          <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', color: 'var(--color-fg-subtle)' }}>
             Página {page} de {totalPages}
           </span>
           <button className="btn-secondary" disabled={page >= totalPages} onClick={() => { setPage(p => p + 1); window.scrollTo(0, 0); }}>

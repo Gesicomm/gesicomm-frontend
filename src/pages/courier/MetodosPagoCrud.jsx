@@ -85,11 +85,11 @@ export function MetodosPagoCrud() {
   }
 
   return (
-    <div style={{ background: '#0a0a0b', borderRadius: '0.85rem', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', color: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+    <div style={{ background: 'var(--color-canvas)', borderRadius: '0.85rem', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', overflow: 'hidden', color: 'var(--color-fg)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>Métodos de Pago</h2>
-          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#888888' }}>
+          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-fg)' }}>Métodos de Pago</h2>
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
             Configurá la comisión que cobra cada medio de pago — se usa en los reportes para calcular cuánto pagás de comisión vs. producto.
           </p>
         </div>
@@ -119,14 +119,14 @@ export function MetodosPagoCrud() {
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
                       <CreditCard size={15} />
                     </span>
-                    <span style={{ fontWeight: 600, color: '#ffffff' }}>{m.nombre}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{m.nombre}</span>
                   </div>
                 </td>
                 <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: '#60a5fa' }}>
                   {Number(m.comision_porcentaje).toLocaleString('es-PY', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#aaaaaa' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
                     {m.es_anticipado ? "Anticipado" : "Al recibir"}
                   </span>
                 </td>
@@ -138,9 +138,9 @@ export function MetodosPagoCrud() {
                 <td style={{ textAlign: 'center' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
-                    background: m.activo ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)',
+                    background: m.activo ? 'rgba(16, 185, 129, 0.15)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
                     color: m.activo ? '#34d399' : '#888888',
-                    border: m.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'
+                    border: m.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
                   }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.activo ? '#10b981' : '#64748b' }} />
                     {m.activo ? "Activo" : "Inactivo"}
@@ -160,14 +160,14 @@ export function MetodosPagoCrud() {
             ))}
             {!loading && metodos.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
                   No hay métodos de pago cargados todavía.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
                   Cargando métodos de pago...
                 </td>
               </tr>
@@ -182,24 +182,24 @@ export function MetodosPagoCrud() {
             onSubmit={submit}
             className="modal-content"
             style={{
-              background: '#0e0e11',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'var(--color-canvas)',
+              border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
               borderRadius: '1rem',
               boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-              color: '#fff',
+              color: 'var(--color-fg)',
               maxWidth: '480px',
               padding: '1.75rem'
             }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: 'var(--color-fg)', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
                 {editing ? "Editar método de pago" : "Nuevo método de pago"}
               </h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: '#888888', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: '0.375rem' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: '0.375rem' }}
               >
                 <X size={20} />
               </button>
@@ -213,11 +213,11 @@ export function MetodosPagoCrud() {
 
             <div className="form-grid" style={{ gap: '1.25rem' }}>
               <div className="form-group full">
-                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Nombre del Método de Pago
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <CreditCard size={16} style={{ position: 'absolute', left: '0.8rem', color: '#666' }} />
+                  <CreditCard size={16} style={{ position: 'absolute', left: '0.8rem', color: 'var(--color-fg-subtle)' }} />
                   <input
                     className="form-input"
                     style={{ paddingLeft: '2.5rem', width: '100%' }}
@@ -230,11 +230,11 @@ export function MetodosPagoCrud() {
               </div>
 
               <div className="form-group full">
-                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Comisión (%)
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Percent size={16} style={{ position: 'absolute', left: '0.8rem', color: '#666' }} />
+                  <Percent size={16} style={{ position: 'absolute', left: '0.8rem', color: 'var(--color-fg-subtle)' }} />
                   <input
                     type="number"
                     step="0.01"
@@ -247,13 +247,13 @@ export function MetodosPagoCrud() {
                     placeholder="Ej. 2.2"
                   />
                 </div>
-                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: '#666' }}>
+                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>
                   Porcentaje que se descuenta por cobrar con este método. Se usa en los reportes de rentabilidad.
                 </p>
               </div>
 
               <div className="form-group full">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid rgba(255,255,255,0.06)', color: '#999999', fontSize: '0.85rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
                   <input
                     type="checkbox"
                     style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
@@ -265,7 +265,7 @@ export function MetodosPagoCrud() {
               </div>
 
               <div className="form-group full">
-                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   ¿Dónde queda el dinero cobrado con este método?
                 </label>
                 <select
@@ -277,13 +277,13 @@ export function MetodosPagoCrud() {
                   <option value="negocio">El dinero ya está en la cuenta del negocio</option>
                   <option value="courier">El courier recibe el dinero</option>
                 </select>
-                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: '#666' }}>
+                <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>
                   Define el motor de rendición: si el courier recibe el dinero, tiene que rendirlo; si ya está en la cuenta del negocio, el negocio le debe el costo de entrega.
                 </p>
               </div>
 
               <div className="form-group full">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid rgba(255,255,255,0.06)', color: '#999999', fontSize: '0.85rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
                   <input
                     type="checkbox"
                     style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
@@ -295,14 +295,14 @@ export function MetodosPagoCrud() {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem', marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <div style={{ borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingTop: '1.25rem', marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: '#cccccc',
+                  background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)',
+                  color: 'var(--color-fg)',
                   padding: '0.65rem 1.4rem',
                   borderRadius: '0.6rem',
                   fontWeight: 600,

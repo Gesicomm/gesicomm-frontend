@@ -65,12 +65,12 @@ const PrivacidadDatosCard = () => {
                     <CheckCircle size={20} color="#10b981" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
                     <div>
                         <h3 style={{ margin: 0, fontSize: '1rem' }}>Solicitud de eliminación registrada</h3>
-                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: '#aaa', lineHeight: 1.6 }}>
+                        <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', color: 'var(--color-fg-muted)', lineHeight: 1.6 }}>
                             {resultado.message}
                         </p>
-                        <p style={{ margin: '0.9rem 0 0', fontSize: '0.85rem', color: '#aaa' }}>
+                        <p style={{ margin: '0.9rem 0 0', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
                             Código de seguimiento:{' '}
-                            <code style={{ color: '#fff', fontWeight: 600 }}>{resultado.solicitud.codigo}</code>
+                            <code style={{ color: 'var(--color-fg)', fontWeight: 600 }}>{resultado.solicitud.codigo}</code>
                         </p>
                         <a
                             href={`/data-deletion/estado/${resultado.solicitud.codigo}`}
@@ -98,13 +98,13 @@ const PrivacidadDatosCard = () => {
                 </div>
                 <div>
                     <h3 style={{ margin: 0, fontSize: '1rem' }}>Privacidad y datos</h3>
-                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#888' }}>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
                         Exportá o eliminá la información de tu cuenta
                     </p>
                 </div>
             </div>
 
-            <p style={{ margin: '0 0 1.25rem', fontSize: '0.85rem', color: '#aaa', lineHeight: 1.65 }}>
+            <p style={{ margin: '0 0 1.25rem', fontSize: '0.85rem', color: 'var(--color-fg-muted)', lineHeight: 1.65 }}>
                 Podés solicitar la eliminación de tus datos personales en cualquier momento y sin costo.
                 Procesamos cada pedido en un plazo máximo de 30 días. Antes de continuar, revisá qué se
                 elimina y qué se conserva por obligación legal en{' '}
@@ -140,8 +140,8 @@ const PrivacidadDatosCard = () => {
                                 style={{
                                     display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
                                     padding: '0.85rem 1rem', marginBottom: '0.6rem',
-                                    background: alcance === opcion.valor ? 'rgba(61,95,163,0.08)' : 'rgba(255,255,255,0.03)',
-                                    border: `1px solid ${alcance === opcion.valor ? 'rgba(61,95,163,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                                    background: alcance === opcion.valor ? 'rgba(61,95,163,0.08)' : 'color-mix(in srgb, var(--color-fg) 3%, transparent)',
+                                    border: `1px solid ${alcance === opcion.valor ? 'rgba(61,95,163,0.4)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)'}`,
                                     borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s'
                                 }}
                             >
@@ -157,7 +157,7 @@ const PrivacidadDatosCard = () => {
                                     <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 600 }}>
                                         {opcion.titulo}
                                     </span>
-                                    <span style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginTop: '0.25rem', lineHeight: 1.55 }}>
+                                    <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-fg-muted)', marginTop: '0.25rem', lineHeight: 1.55 }}>
                                         {opcion.descripcion}
                                     </span>
                                 </span>
@@ -167,7 +167,7 @@ const PrivacidadDatosCard = () => {
 
                     <div style={{ marginBottom: '1.1rem' }}>
                         <label htmlFor="motivo-eliminacion" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.4rem' }}>
-                            Motivo <span style={{ fontWeight: 400, color: '#888' }}>(opcional)</span>
+                            Motivo <span style={{ fontWeight: 400, color: 'var(--color-fg-muted)' }}>(opcional)</span>
                         </label>
                         <textarea
                             id="motivo-eliminacion"
@@ -178,8 +178,8 @@ const PrivacidadDatosCard = () => {
                             placeholder="Nos ayuda a mejorar, pero no es obligatorio."
                             style={{
                                 width: '100%', padding: '0.65rem 0.85rem', fontSize: '0.85rem',
-                                background: 'rgba(255,255,255,0.04)', color: '#fff',
-                                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', color: 'var(--color-fg)',
+                                border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px',
                                 fontFamily: 'inherit', resize: 'vertical'
                             }}
                         />
@@ -198,12 +198,12 @@ const PrivacidadDatosCard = () => {
                             autoComplete="current-password"
                             style={{
                                 width: '100%', padding: '0.65rem 0.85rem', fontSize: '0.85rem',
-                                background: 'rgba(255,255,255,0.04)', color: '#fff',
-                                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', color: 'var(--color-fg)',
+                                border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px',
                                 fontFamily: 'inherit'
                             }}
                         />
-                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem', color: '#666' }}>
+                        <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>
                             Te la pedimos de nuevo para que una sesión abierta y sin atender no alcance para
                             disparar el borrado.
                         </p>
@@ -215,7 +215,7 @@ const PrivacidadDatosCard = () => {
                         borderRadius: '8px', padding: '0.85rem 1rem', marginBottom: '1.25rem'
                     }}>
                         <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#aaa', lineHeight: 1.6 }}>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-fg-muted)', lineHeight: 1.6 }}>
                             La eliminación es permanente e irreversible. Exportá lo que necesites antes de
                             confirmar: una vez procesada, no podemos recuperar la información.
                         </p>
@@ -252,8 +252,8 @@ const PrivacidadDatosCard = () => {
                             type="button"
                             onClick={() => { setAbierto(false); setError(null); setPassword(''); }}
                             style={{
-                                background: 'transparent', border: '1px solid rgba(255,255,255,0.15)',
-                                color: '#aaa', padding: '0.65rem 1.2rem', borderRadius: '8px',
+                                background: 'transparent', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
+                                color: 'var(--color-fg-muted)', padding: '0.65rem 1.2rem', borderRadius: '8px',
                                 cursor: 'pointer', fontSize: '0.85rem'
                             }}
                         >

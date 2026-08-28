@@ -136,20 +136,20 @@ export function ReporteRentabilidad({ filters }) {
 
         {/* Gastos por categoría */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: '#fff' }}>Gastos por Categoría</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--color-fg)' }}>Gastos por Categoría</h3>
           {desglose?.gastos_por_categoria?.length > 0 ? desglose.gastos_por_categoria.slice(0, 8).map(c => (
-            <div key={c.categoria_id} style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div key={c.categoria_id} style={{ padding: '0.75rem 1rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.4rem' }}>
-                <span style={{ color: '#fff', fontWeight: 600 }}>{c.nombre}</span>
+                <span style={{ color: 'var(--color-fg)', fontWeight: 600 }}>{c.nombre}</span>
                 <span style={{ color: '#94a3b8' }}>{formatGs(c.total)}</span>
               </div>
-              <div style={{ height: '6px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+              <div style={{ height: '6px', borderRadius: '3px', background: 'color-mix(in srgb, var(--color-fg) 6%, transparent)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${c.pct}%`, background: '#2e4a85', borderRadius: '3px' }} />
               </div>
               <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>{GRUPO_LABELS[c.grupo] || c.grupo} · {c.pct}%</div>
             </div>
           )) : (
-            <div style={{ color: '#64748b', fontSize: '0.85rem', padding: '1rem', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', textAlign: 'center' }}>
+            <div style={{ color: '#64748b', fontSize: '0.85rem', padding: '1rem', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px', textAlign: 'center' }}>
               Todavía no registraste costos o gastos en este período.
             </div>
           )}

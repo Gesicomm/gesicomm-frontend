@@ -683,7 +683,7 @@ export default function ProductForm() {
 
         <div className={`tab-content ${tabActiva === 'precio' ? 'active' : ''}`}>
           {esAdmin && (
-            <div className="form-group" style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: 8 }}>
+            <div className="form-group" style={{ marginBottom: '1rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', padding: '0.75rem', borderRadius: 8 }}>
               <label htmlFor="prod-precio-dolar">
                 Precio de compra en USD <span className="hint">(costo del proveedor, solo admins)</span>
               </label>
@@ -966,7 +966,7 @@ export default function ProductForm() {
                 </div>
 
                 {/* 2. Simulador (Number Input) */}
-                <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ marginTop: '2rem', padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
                   <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>SIMULAR DESCUENTO SOBRE PRECIO BASE</div>
                   
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -975,7 +975,7 @@ export default function ProductForm() {
                       min="0" max="100"
                       value={descuentoSimulado}
                       onChange={(e) => setDescuentoSimulado(Number(e.target.value))}
-                      style={{ width: '80px', padding: '0.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      style={{ width: '80px', padding: '0.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}
                     />
                     <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--primary)' }}>%</span>
                   </div>

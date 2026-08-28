@@ -15,4 +15,18 @@ export const ofertaService = {
 
   eliminar: (id) =>
     API.delete(`/ofertas/${id}`).then(r => r.data),
+
+  // Imagen propia de la oferta — una sola (Oferta.imagen_url). Subir
+  // reemplaza la anterior y el backend borra el archivo viejo del disco.
+  // Quitarla no deja la tarjeta sin foto: vuelve a usarse la del producto.
+  subirImagen: (id, archivo) => {
+    const fd = new FormData();
+    fd.append('imagen', archivo);
+    return API.post(`/ofertas/${id}/imagen`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data);
+  },
+
+  quitarImagen: (id) =>
+    API.delete(`/ofertas/${id}/imagen`).then(r => r.data),
 };

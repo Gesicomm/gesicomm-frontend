@@ -115,10 +115,10 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
 
   return (
     <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-      <div className="modal-content" style={{ background: '#0a0a0b', width: '100%', maxWidth: '600px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
+      <div className="modal-content" style={{ background: 'var(--color-canvas)', width: '100%', maxWidth: '600px', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
         
         {/* HEADER */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ margin: 0, fontSize: '1.2rem' }}>{comboInicial ? 'Editar Combo' : 'Crear Combo'}</h2>
           <button type="button" className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
@@ -136,7 +136,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
           </div>
 
           <div style={{ marginTop: '2rem', marginBottom: '1rem' }}>
-            <label style={{ fontSize: '0.85rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
+            <label style={{ fontSize: '0.85rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold' }}>
               Productos incluidos
             </label>
             
@@ -154,11 +154,11 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
               
               {/* Resultados flotantes */}
               {search.length >= 2 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1a1c', border: '1px solid #333', borderRadius: '8px', marginTop: '4px', zIndex: 10, maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--color-canvas)', border: '1px solid #333', borderRadius: '8px', marginTop: '4px', zIndex: 10, maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
                   {searching ? (
-                    <div style={{ padding: '1rem', color: '#888', textAlign: 'center', fontSize: '0.85rem' }}>Buscando...</div>
+                    <div style={{ padding: '1rem', color: 'var(--color-fg-muted)', textAlign: 'center', fontSize: '0.85rem' }}>Buscando...</div>
                   ) : searchResults.length === 0 ? (
-                    <div style={{ padding: '1rem', color: '#888', textAlign: 'center', fontSize: '0.85rem' }}>No se encontraron productos.</div>
+                    <div style={{ padding: '1rem', color: 'var(--color-fg-muted)', textAlign: 'center', fontSize: '0.85rem' }}>No se encontraron productos.</div>
                   ) : (
                     searchResults.map(p => {
                       const yaAgregado = items.find(i => Number(i.id) === Number(p.id));
@@ -172,7 +172,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
                         >
                           <div>
                             <div style={{ fontWeight: '600', fontSize: '0.9rem' }}>{p.nombre}</div>
-                            <div style={{ fontSize: '0.75rem', color: '#888' }}>{parseFloat(p.precio_base).toLocaleString()} Gs</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>{parseFloat(p.precio_base).toLocaleString()} Gs</div>
                           </div>
                           {yaAgregado && <span style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px' }}>✓ En combo ({yaAgregado.cantidad})</span>}
                         </div>
@@ -184,19 +184,19 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
             </div>
 
             {/* Lista de Items */}
-            <div style={{ marginTop: '1rem', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', overflow: 'hidden' }}>
+            <div style={{ marginTop: '1rem', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', borderRadius: '8px', overflow: 'hidden' }}>
               {items.map(it => (
-                <div key={it.id} style={{ display: 'flex', alignItems: 'center', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', background: it.esPadre ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                <div key={it.id} style={{ display: 'flex', alignItems: 'center', padding: '1rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', background: it.esPadre ? 'color-mix(in srgb, var(--color-fg) 2%, transparent)' : 'transparent' }}>
                   
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       {it.nombre}
-                      {it.esPadre && <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '2px', color: '#888', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}><Lock size={10} /> Producto actual</span>}
+                      {it.esPadre && <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '2px', color: 'var(--color-fg-muted)', background: 'color-mix(in srgb, var(--color-fg) 10%, transparent)', padding: '2px 6px', borderRadius: '4px' }}><Lock size={10} /> Producto actual</span>}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#888' }}>{(parseFloat(it.precio_base) || 0).toLocaleString()} Gs c/u</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>{(parseFloat(it.precio_base) || 0).toLocaleString()} Gs c/u</div>
                   </div>
                   
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#000', borderRadius: '6px', padding: '2px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-canvas)', borderRadius: '6px', padding: '2px' }}>
                     <button type="button" className="btn-icon" onClick={() => updateCantidad(it.id, -1)} style={{ padding: '0.3rem' }}>-</button>
                     <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '0.9rem' }}>{it.cantidad}</span>
                     <button type="button" className="btn-icon" onClick={() => updateCantidad(it.id, 1)} style={{ padding: '0.3rem' }}>+</button>
@@ -214,9 +214,9 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
           </div>
 
           {/* PRECIOS Y AHORRO */}
-          <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+          <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: '12px', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <span style={{ color: '#888' }}>Precio individual (Suma)</span>
+              <span style={{ color: 'var(--color-fg-muted)' }}>Precio individual (Suma)</span>
               <span style={{ fontSize: '1.1rem', textDecoration: ahorro > 0 ? 'line-through' : 'none' }}>{normalTotal.toLocaleString()} Gs</span>
             </div>
             
@@ -232,7 +232,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
             </div>
 
             {finalTotal > 0 && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', textAlign: 'right' }}>
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', textAlign: 'right' }}>
                 {ahorro > 0 ? (
                   <span style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Ahorro: {ahorro.toLocaleString()} Gs ({((ahorro / normalTotal) * 100).toFixed(2)}%)</span>
                 ) : ahorro < 0 ? (
@@ -240,7 +240,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
                     ⚠️ El combo es {Math.abs(ahorro).toLocaleString()} Gs más caro
                   </span>
                 ) : (
-                  <span style={{ color: '#888' }}>Sin ahorro (Mismo precio)</span>
+                  <span style={{ color: 'var(--color-fg-muted)' }}>Sin ahorro (Mismo precio)</span>
                 )}
               </div>
             )}
@@ -248,7 +248,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
         </div>
 
         {/* FOOTER */}
-        <div style={{ padding: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+        <div style={{ padding: '1.25rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
           <button type="button" className="btn-primary" onClick={handleSave}>
             <Save size={16} /> Guardar Combo

@@ -127,7 +127,7 @@ function GraficoVisitas({ serie }) {
                 y={0}
                 width={anchoColumna}
                 height={ALTO}
-                fill="rgba(255, 255, 255, 0.06)"
+                fill="color-mix(in srgb, var(--color-fg) 6%, transparent)"
                 rx={3}
                 style={{ pointerEvents: 'none' }}
               />

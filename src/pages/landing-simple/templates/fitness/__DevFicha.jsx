@@ -3,7 +3,7 @@ import FitnessProductPage from './FitnessProductPage';
 import { armarItemFicha, resolverFichaFitness, fichaDesdeMarketing } from './fichaFitness';
 
 const PRODUCTO = {
-  nombre: 'Whey Protein Isolate',
+  nombre: 'AdelFit - Suplemento natural para bajar de peso y controlar el apetito',
   categoria: 'Proteínas',
   propuesta_valor: 'Proteína aislada de rápida absorción para recuperar mejor después de cada entrenamiento.',
   beneficios: [
@@ -72,7 +72,7 @@ export default function DevFicha() {
 
   const ficha = resolverFichaFitness(FICHA_PRODUCTO, {
     ofertas: { packs: { 1: { badge: 'Más vendido', subtitulo: '2 potes' }, 2: { badge: 'Mejor valor', subtitulo: '3 potes' } }, suscripcion: { activo: true, titulo: 'Suscribite y ahorrá 10%', detalle: 'Te llega cada 30 días. Cancelás cuando quieras.' } },
-    hero: { titulo_destacado: 'Recuperación real.', cta_texto: 'Comprar ahora con descuento' },
+    hero: { cta_texto: 'Comprar ahora con descuento' },
   }, fichaDesdeMarketing(PRODUCTO));
 
   const item = armarItemFicha({

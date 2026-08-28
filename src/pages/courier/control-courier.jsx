@@ -157,15 +157,15 @@ export function ControlCourier() {
   };
 
   return (
-    <div className="prod-page" style={{ background: '#050505', minHeight: '100vh', color: '#fff', maxWidth: '100%' }}>
+    <div className="prod-page" style={{ minHeight: '100vh', maxWidth: '100%' }}>
       <div className="courier-header">
         <div className="prod-header-left">
-          <div className="prod-icon-wrap" style={{ background: 'rgba(255, 0, 127, 0.1)', color: '#ff007f' }}>
+          <div className="prod-icon-wrap" style={{ background: 'var(--vit-accent-soft)', color: 'var(--color-primary-text)' }}>
             <PackageCheck size={22} />
           </div>
           <div>
-            <h1 className="prod-title" style={{ color: '#fff' }}>Control de Pedidos y Couriers</h1>
-            <p className="prod-subtitle" style={{ color: '#888' }}>Módulo logístico centralizado</p>
+            <h1 className="prod-title">Control de Pedidos y Couriers</h1>
+            <p className="prod-subtitle">Módulo logístico centralizado</p>
           </div>
         </div>
 
@@ -173,7 +173,7 @@ export function ControlCourier() {
           <button
             type="button"
             className="btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.06)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
             onClick={() => setOpenImprimir(true)}
           >
             <Printer size={16} />

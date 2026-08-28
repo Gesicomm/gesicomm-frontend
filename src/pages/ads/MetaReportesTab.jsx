@@ -211,8 +211,8 @@ export default function MetaReportesTab({ tiendas = [] }) {
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Campañas internas</h2>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#888' }}>
+            <h2 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-fg)' }}>Campañas internas</h2>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
               Generá un nombre para copiar en Meta Ads Manager, vinculado a tus productos y funnel.
             </p>
           </div>
@@ -224,7 +224,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
         {cargandoCampanas ? (
           <div className="skeleton-row" style={{ height: '60px' }} />
         ) : campanas.length === 0 ? (
-          <div style={{ border: '1px dashed rgba(255,255,255,0.15)', borderRadius: '8px', padding: '2rem', textAlign: 'center', color: '#888', fontSize: '0.85rem' }}>
+          <div style={{ border: '1px dashed color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '8px', padding: '2rem', textAlign: 'center', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
             Todavía no creaste ninguna campaña interna.
           </div>
         ) : (
@@ -249,13 +249,13 @@ export default function MetaReportesTab({ tiendas = [] }) {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             {c.tipo === 'whatsapp' ? <MessageCircle size={16} color="#10b981" title="WhatsApp" /> : <Globe size={16} color="#3b82f6" title="Web" />}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.88rem' }}>{c.nombre_display}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.88rem' }}>{c.nombre_display}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                              <code style={{ fontSize: '0.72rem', color: '#888' }}>{c.nombre_interno}</code>
+                              <code style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)' }}>{c.nombre_interno}</code>
                               <button
                                 type="button"
                                 onClick={() => copiarTexto(c.nombre_interno, c.id)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', padding: '2px' }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-fg-muted)', padding: '2px' }}
                                 title="Copiar nombre"
                               >
                                 {copiadoId === c.id ? <Check size={12} color="#34d399" /> : <Copy size={12} />}
@@ -264,10 +264,10 @@ export default function MetaReportesTab({ tiendas = [] }) {
                             </div>
                           </div>
                         </td>
-                        <td style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>
+                        <td style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
                           {(c.productos || []).map(p => p.nombre).join(', ') || '—'}
                         </td>
-                        <td style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>
+                        <td style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
                           {c.funnel?.titulo || c.funnel?.nombre || '—'}
                         </td>
                         <td>
@@ -325,14 +325,14 @@ export default function MetaReportesTab({ tiendas = [] }) {
 
       {/* ---- Subir reporte CSV ---- */}
       <section>
-        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: '#fff' }}>Subir reporte de Meta Ads</h2>
+        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1rem', color: 'var(--color-fg)' }}>Subir reporte de Meta Ads</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <button type="button" className="btn-secondary" onClick={() => fileInputRef.current?.click()} disabled={subiendo}>
             {subiendo ? <Loader2 size={16} className="animate-spin" style={{ marginRight: '0.35rem' }} /> : <Upload size={16} style={{ marginRight: '0.35rem' }} />}
             {subiendo ? 'Importando...' : 'Subir CSV exportado de Ads Manager'}
           </button>
           <input ref={fileInputRef} type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={handleArchivoSeleccionado} />
-          <span style={{ fontSize: '0.78rem', color: '#777' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--color-fg-muted)' }}>
             Export "Rendimiento de campaña" en formato .csv, con columna "Nombre de la campaña".
           </span>
         </div>
@@ -358,8 +358,8 @@ export default function MetaReportesTab({ tiendas = [] }) {
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Métricas por producto</h2>
-            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: '#888' }}>
+            <h2 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-fg)' }}>Métricas por producto</h2>
+            <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--color-fg-muted)' }}>
               Confirmados/Entregados son del producto completo en el período — no se acotan al filtrar por campaña, porque hoy no hay un vínculo confiable entre un pedido y la campaña puntual que lo originó.
             </p>
           </div>
@@ -411,7 +411,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
                     <tr key={`sk-m-${i}`}><td colSpan="16" style={{ padding: '1rem' }}><div className="skeleton-row" style={{ width: '100%' }} /></td></tr>
                   ))
                 ) : metricas.length === 0 ? (
-                  <tr><td colSpan="16" style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>No hay datos para estos filtros.</td></tr>
+                  <tr><td colSpan="16" style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)' }}>No hay datos para estos filtros.</td></tr>
                 ) : (
                   metricas.map((m) => {
                     let margenClass = 'text-neutral';
@@ -422,7 +422,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Package size={14} color="#3d5fa3" />
-                            <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>{m.producto?.nombre || `Producto #${m.producto_id}`}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.85rem' }}>{m.producto?.nombre || `Producto #${m.producto_id}`}</span>
                           </div>
                         </td>
                         <td className="text-right tabular-nums">{formatNum(m.pedidos)}</td>
@@ -452,7 +452,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
             <button onClick={() => cargarMetricas(paginaMetricas - 1)} disabled={paginaMetricas <= 1 || cargandoMetricas}>
               <ChevronLeft size={16} /> Anterior
             </button>
-            <span style={{ fontSize: '0.8rem', color: '#888', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', fontWeight: 600 }}>
               {cargandoMetricas ? 'Cargando...' : `Página ${paginaMetricas} de ${totalPaginasMetricas} (${totalMetricas} productos)`}
             </span>
             <button onClick={() => cargarMetricas(paginaMetricas + 1)} disabled={paginaMetricas >= totalPaginasMetricas || cargandoMetricas}>
@@ -465,7 +465,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
       {/* ---- Filas de reporte importadas ---- */}
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1rem', color: '#fff' }}>Filas del reporte</h2>
+          <h2 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-fg)' }}>Filas del reporte</h2>
           <select className="filter-input" style={{ maxWidth: '260px' }} value={filtroCampana} onChange={(e) => setFiltroCampana(e.target.value)}>
             <option value="ALL">Todas las campañas</option>
             <option value="UNLINKED">Sin vincular</option>
@@ -504,13 +504,13 @@ export default function MetaReportesTab({ tiendas = [] }) {
                     <tr key={`sk-${i}`}><td colSpan="16" style={{ padding: '1rem' }}><div className="skeleton-row" style={{ width: '100%' }} /></td></tr>
                   ))
                 ) : filas.length === 0 ? (
-                  <tr><td colSpan="16" style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>No hay filas de reporte todavía. Subí un CSV para empezar.</td></tr>
+                  <tr><td colSpan="16" style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)' }}>No hay filas de reporte todavía. Subí un CSV para empezar.</td></tr>
                 ) : (
                   filas.map((f) => (
                     <tr key={f.id}>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '220px' }}>
-                          <span style={{ fontSize: '0.82rem', color: '#fff' }}>{f.nombre_campana_meta}</span>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--color-fg)' }}>{f.nombre_campana_meta}</span>
                           {!f.meta_campana_interna_id && (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', color: '#f59e0b' }}>
                               <Link2 size={10} /> sin vincular
@@ -528,11 +528,11 @@ export default function MetaReportesTab({ tiendas = [] }) {
                           </select>
                         </div>
                       </td>
-                      <td style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>
+                      <td style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
                         {f.campana ? ((campanas.find(c => c.id === f.campana.id)?.productos || []).map(p => p.nombre).join(', ') || '—') : '—'}
                       </td>
-                      <td style={{ fontSize: '0.78rem', color: '#c4c4c8' }}>{formatFecha(f.fecha_inicio)}</td>
-                      <td style={{ fontSize: '0.78rem', color: '#c4c4c8' }}>{formatFecha(f.fecha_fin)}</td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--color-fg)' }}>{formatFecha(f.fecha_inicio)}</td>
+                      <td style={{ fontSize: '0.78rem', color: 'var(--color-fg)' }}>{formatFecha(f.fecha_fin)}</td>
                       <td className="text-right tabular-nums">{f.presupuesto != null ? formatPYG(f.presupuesto) : '—'}</td>
                       <td className="text-right tabular-nums">{formatPYG(f.importe_gastado)}</td>
                       <td className="text-right tabular-nums">{formatNum(f.resultados)}</td>
@@ -558,7 +558,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
             <button onClick={() => cargarFilas(pagina - 1)} disabled={pagina <= 1 || cargandoFilas}>
               <ChevronLeft size={16} /> Anterior
             </button>
-            <span style={{ fontSize: '0.8rem', color: '#888', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', fontWeight: 600 }}>
               {cargandoFilas ? 'Cargando...' : `Página ${pagina} de ${totalPaginas}`}
             </span>
             <button onClick={() => cargarFilas(pagina + 1)} disabled={pagina >= totalPaginas || cargandoFilas}>

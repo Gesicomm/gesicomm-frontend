@@ -57,9 +57,9 @@ export default function CatalogoPublico() {
 
   useDocumentSeo(data ? `Catálogo - ${data.titulo || data.tienda?.nombre}` : 'Catálogo', data?.seo_descripcion || '');
 
-  if (estadoCarga === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-[#050505]"><Loader className="animate-spin text-white/50" /></div>;
-  if (estadoCarga === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">Tienda no encontrada.</div>;
-  if (estadoCarga === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">Esta tienda no está disponible actualmente.</div>;
+  if (estadoCarga === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-canvas"><Loader className="animate-spin text-white/50" /></div>;
+  if (estadoCarga === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Tienda no encontrada.</div>;
+  if (estadoCarga === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Esta tienda no está disponible actualmente.</div>;
 
   const datosTemplate = mapPublicDtoToTemplateData(data);
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;

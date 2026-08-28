@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity, X } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
+import OfertaImagenPicker, { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
 import { getMediaUrl } from '../../services/api';
@@ -66,6 +67,9 @@ function emptyForm(productoId) {
     // Promocional, solo para estrategias de checkout. Vacío = se cobra el normal.
     precio_order_bump: '',
     imagen_url: '',
+    // Archivo elegido antes de que la oferta exista: se sube recién después
+    // de crearla, cuando ya hay un id al que colgársela.
+    imagen_archivo: null,
     fecha_inicio: '',
     fecha_fin: '',
     descripcion: '',
@@ -165,6 +169,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       precio: oferta.precio_normal ?? oferta.precio,
       precio_order_bump: oferta.precio_order_bump ?? '',
       imagen_url: oferta.imagen_url || '',
+      imagen_archivo: null,
       fecha_inicio: oferta.fecha_inicio ? String(oferta.fecha_inicio).slice(0, 10) : '',
       fecha_fin: oferta.fecha_fin ? String(oferta.fecha_fin).slice(0, 10) : '',
       descripcion: oferta.descripcion || '',
@@ -260,13 +265,19 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
           .filter(c => c.producto_id)
           .map(c => ({ producto_id: Number(c.producto_id), cantidad: Number(c.cantidad) || 1, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
       };
+      let avisoImagen = null;
       if (editando) {
+        // Editando, la imagen ya se subió sola al elegirla (había id).
         await ofertaService.actualizar(editando.id, payload);
       } else {
-        await ofertaService.crear(productoId, payload);
+        const creada = await ofertaService.crear(productoId, payload);
+        avisoImagen = await subirImagenPendiente(creada?.id, form.imagen_archivo);
       }
       setOpen(false);
       await cargar();
+      // La oferta se guardó igual; solo falló la foto. Se avisa sin
+      // deshacer nada ni cerrar en falso.
+      if (avisoImagen) setError(avisoImagen);
     } catch (err) {
       setError(err.response?.data?.message || 'Error al guardar la oferta.');
     } finally {
@@ -552,10 +563,10 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
           <form
             onSubmit={submit}
             className="modal-content"
-            style={{ background: '#0e0e11', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '1rem', width: '100%', maxWidth: '840px', color: '#fff', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+            style={{ background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '1rem', width: '100%', maxWidth: '840px', color: 'var(--color-fg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ padding: '1.75rem 1.75rem 1rem', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ padding: '1.75rem 1.75rem 1rem', flexShrink: 0, borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
               <div className="modal-header" style={{ margin: 0 }}>
                 <h3 style={{ margin: 0 }}>{editando ? 'Editar oferta' : 'Nueva oferta'}</h3>
                 <button type="button" className="btn-icon" onClick={() => setOpen(false)}><X size={18} /></button>
@@ -634,10 +645,20 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 <label>Descripción (opcional)</label>
                 <input value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder={esPack ? 'Ej: Llevá 2 y pagá menos' : 'Copy para mostrar en el checkout'} />
               </div>
+              {/* Antes acá se pedía pegar una URL a mano, que en la práctica
+                  nadie tenía. Ahora se sube el archivo, igual que las fotos
+                  del producto, y es el mismo componente que usa el armador de
+                  landing — la foto es de la Oferta, así que se carga una vez
+                  y se ve en los dos lados. */}
               <div className="form-group full">
                 <label>Imagen de la oferta <span className="hint">(opcional)</span></label>
-                <input value={form.imagen_url} onChange={e => setForm(f => ({ ...f, imagen_url: e.target.value }))} placeholder="URL de la imagen" />
-                <p className="field-hint">Si la dejás vacía se usa la imagen del producto.</p>
+                <OfertaImagenPicker
+                  ofertaId={editando?.id || null}
+                  imagenUrl={form.imagen_url || null}
+                  archivo={form.imagen_archivo}
+                  respaldoUrl={productoBase.imagen}
+                  onChange={({ imagen_url, archivo }) => setForm(f => ({ ...f, imagen_url: imagen_url || '', imagen_archivo: archivo }))}
+                />
               </div>
               {/* Vigencia. Vacío = sin límite por ese lado; fuera de la ventana
                   la oferta deja de mostrarse y de cobrarse sola, sin tener que
@@ -669,16 +690,16 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 {/* Contexto, no selector: el producto base ya lo definió la
                     ficha desde la que se entró. Para armar un pack de otro
                     producto hay que ir a ese producto. */}
-                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '0.85rem', marginBottom: '0.75rem' }}>
-                  <div style={{ width: 52, height: 52, borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', borderRadius: '8px', padding: '0.85rem', marginBottom: '0.75rem' }}>
+                  <div style={{ width: 52, height: 52, borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {productoBase.imagen
                       ? <img src={getMediaUrl(productoBase.imagen)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       : <Layers size={20} style={{ opacity: 0.4 }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, color: '#e2e8f0' }}>{productoBase.nombre}</div>
+                    <div style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{productoBase.nombre}</div>
                     <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
-                      Precio actual: <strong style={{ color: '#cbd5e1' }}>{formatMoney(productoBase.precio)}</strong>
+                      Precio actual: <strong style={{ color: 'var(--color-fg)' }}>{formatMoney(productoBase.precio)}</strong>
                     </div>
                     <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
                       Este paquete es de este producto: solo cambia la cantidad.
@@ -722,8 +743,8 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 )}
               </>
             ) : form.tipo_contenido === 'pack' ? (
-              <div className="form-group" style={{ flexDirection: 'row', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '6px', padding: '0.75rem' }}>
-                <div style={{ flex: 1, color: '#ccc', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
+              <div className="form-group" style={{ flexDirection: 'row', gap: '0.75rem', marginBottom: '1rem', alignItems: 'center', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', borderRadius: '6px', padding: '0.75rem' }}>
+                <div style={{ flex: 1, color: 'var(--color-fg)', fontWeight: 500, display: 'flex', alignItems: 'center' }}>
                   <Layers size={15} style={{ marginRight: '8px', opacity: 0.7 }} />
                   {productoNombre} 
                   <span style={{ opacity: 0.5, fontWeight: 'normal', fontSize: '0.8rem', marginLeft: '6px' }}>(producto ancla, fijo)</span>
@@ -807,7 +828,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
             )}
 
             {form.tipo_contenido === 'combo' && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', paddingTop: '1rem' }}>
                 <div className="form-section-title">
                   <Activity size={14} /> Rentabilidad y descuentos
                 </div>
@@ -926,7 +947,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                       </div>
 
                       {/* 2. Simulador (Slider) */}
-                      <div style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ marginTop: '2rem', padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
                         <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>SIMULAR DESCUENTO SOBRE EL PRECIO BASE</div>
                         
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -967,7 +988,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                         )}
 
                         {/* 4. Mini Gráfico CSS */}
-                        <div style={{ marginTop: '2rem', position: 'relative', height: '100px', borderBottom: '1px solid rgba(255,255,255,0.1)', borderLeft: '1px solid rgba(255,255,255,0.1)', margin: '1rem 1rem 2rem 2rem' }}>
+                        <div style={{ marginTop: '2rem', position: 'relative', height: '100px', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderLeft: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', margin: '1rem 1rem 2rem 2rem' }}>
                            <div style={{ position: 'absolute', top: '-20px', left: '-20px', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>Utilidad</div>
                            <div style={{ position: 'absolute', bottom: '-20px', right: '-10px', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>Desc.</div>
                            {[0, 5, 10, 15, 20, 25, 30, 35].map(d => {
@@ -1128,7 +1149,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               Oferta activa
             </label>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
               <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
               <button type="submit" className="btn-primary" disabled={guardando}>
                 {guardando ? 'Guardando...' : (editando ? 'Guardar cambios' : 'Crear oferta')}

@@ -87,15 +87,28 @@
 
 /* ── 2 · Hero ─────────────────────────────────────────────────────── */
 
+/* align-items: start, NO center. Con `center` la imagen se centraba contra
+   la columna de texto, que casi siempre es más alta (nombre largo +
+   descripción con viñetas): la foto arrancaba 150-200 px por debajo del
+   título y quedaba flotando. Arriba las dos columnas empiezan a la misma
+   altura pase lo que pase con el largo del texto. */
 .fpp-hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
+  align-items: start;
   gap: 56px;
   padding: 54px 0 52px;
 }
 
-.fpp-hero-galeria { display: flex; flex-direction: column; gap: 12px; }
+/* Y como la columna de texto sigue siendo más alta, la foto acompaña el
+   scroll en vez de dejar un hueco muerto abajo. */
+.fpp-hero-galeria {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 20px;
+}
 
 .fpp-hero-imagen {
   position: relative;
@@ -151,14 +164,24 @@
   text-transform: uppercase;
 }
 
+/* El diseño original suponía un título corto y golpeado ("ENFOQUE MENTAL.").
+   Los nombres reales del catálogo son descriptivos ("AdelFit - Suplemento
+   natural para bajar de peso y controlar el apetito") y a 58 px ocupaban
+   cinco renglones de mayúsculas. Con este tope entran en dos o tres sin
+   perder presencia, y `balance` reparte los renglones en vez de dejar una
+   última línea con una sola palabra. */
 .fpp-hero h1 {
   margin: 13px 0 16px;
-  font-size: clamp(34px, 4.4vw, 58px);
+  font-size: clamp(30px, 3.2vw, 48px);
   font-weight: 900;
-  line-height: .99;
-  letter-spacing: -.045em;
+  line-height: 1.02;
+  letter-spacing: -.035em;
   text-transform: uppercase;
+  text-wrap: balance;
 }
+
+.fpp-hero-copy.es-largo h1 { font-size: clamp(26px, 2.5vw, 36px); letter-spacing: -.025em; }
+.fpp-hero-copy.es-muy-largo h1 { font-size: clamp(23px, 2.1vw, 30px); letter-spacing: -.015em; line-height: 1.08; }
 
 .fpp-hero h1 em {
   display: block;
@@ -685,6 +708,7 @@
 
 .fpp-root.es-movil .fpp-wrap { width: calc(100% - 28px); }
 .fpp-root.es-movil .fpp-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 0; }
+.fpp-root.es-movil .fpp-hero-galeria { position: static; }
 .fpp-root.es-movil .fpp-hero h1 { font-size: 34px; }
 .fpp-root.es-movil .fpp-faq-grid { grid-template-columns: 1fr; }
 .fpp-root.es-movil .fpp-seccion { padding: 38px 0; }
@@ -698,6 +722,7 @@
 @media (max-width: 860px) {
   .fpp-wrap { width: calc(100% - 28px); }
   .fpp-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 0; }
+  .fpp-hero-galeria { position: static; }
   .fpp-hero h1 { font-size: 34px; }
   .fpp-faq-grid { grid-template-columns: 1fr; }
   .fpp-seccion { padding: 38px 0; }

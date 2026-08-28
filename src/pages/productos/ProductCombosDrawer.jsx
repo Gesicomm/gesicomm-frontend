@@ -95,18 +95,18 @@ export default function ProductCombosDrawer({ producto, onClose }) {
       
       <div style={{
         position: 'fixed', right: 0, top: 0, bottom: 0, width: '100%', maxWidth: '600px',
-        background: '#0a0a0b', zIndex: 901, display: 'flex', flexDirection: 'column',
-        boxShadow: '-5px 0 25px rgba(0,0,0,0.5)', borderLeft: '1px solid rgba(255,255,255,0.05)',
+        background: 'var(--color-canvas)', zIndex: 901, display: 'flex', flexDirection: 'column',
+        boxShadow: '-5px 0 25px rgba(0,0,0,0.5)', borderLeft: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)',
         transform: 'translateX(0)', transition: 'transform 0.3s ease-out'
       }}>
         
         {/* Header Drawer */}
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               Combos de {producto.nombre}
             </h2>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#888' }}>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
               Promociones que incluyen a {producto.nombre} como producto principal.
             </p>
           </div>
@@ -117,7 +117,7 @@ export default function ProductCombosDrawer({ producto, onClose }) {
         <div style={{ padding: '1.5rem 1.5rem 0 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             {combos.length > 0 && (
-              <span style={{ fontSize: '0.85rem', color: '#888' }}>{combos.length} combo(s) configurado(s)</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>{combos.length} combo(s) configurado(s)</span>
             )}
           </div>
           {combos.length > 0 && (
@@ -132,11 +132,11 @@ export default function ProductCombosDrawer({ producto, onClose }) {
           {errorBase && <div className="field-error" style={{ marginBottom: '1rem' }}>{errorBase}</div>}
 
           {cargando ? (
-            <div style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>Cargando combos...</div>
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)' }}>Cargando combos...</div>
           ) : combos.length === 0 ? (
-            <div className="empty-state" style={{ padding: '4rem 2rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#eee' }}>Este producto todavía no tiene combos.</h3>
-              <p style={{ color: '#888', marginBottom: '2rem', lineHeight: '1.5' }}>
+            <div className="empty-state" style={{ padding: '4rem 2rem', textAlign: 'center', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: '12px', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-fg)' }}>Este producto todavía no tiene combos.</h3>
+              <p style={{ color: 'var(--color-fg-muted)', marginBottom: '2rem', lineHeight: '1.5' }}>
                 Crea una promoción combinando <strong>{producto.nombre}</strong><br/>con otros productos de tu catálogo.
               </p>
               <button type="button" className="btn-primary" style={{ margin: '0 auto' }} onClick={() => { setComboEditando(null); setModalOpen(true); }}>
@@ -152,7 +152,7 @@ export default function ProductCombosDrawer({ producto, onClose }) {
                 const pct = normal > 0 ? ((ahorro / normal) * 100).toFixed(2) : 0;
 
                 return (
-                  <div key={combo.id} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', opacity: combo.activo ? 1 : 0.6, position: 'relative' }}>
+                  <div key={combo.id} style={{ background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column', opacity: combo.activo ? 1 : 0.6, position: 'relative' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                       <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{combo.nombre}</h3>
                       <span className={`badge ${combo.activo ? 'badge-active' : 'badge-archived'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -161,17 +161,17 @@ export default function ProductCombosDrawer({ producto, onClose }) {
                       </span>
                     </div>
                     
-                    <div style={{ marginBottom: '1.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ marginBottom: '1.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}>
                       {combo.items?.map((it, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: '#ccc', marginBottom: '0.5rem' }}>
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--color-fg)', marginBottom: '0.5rem' }}>
                           <span>{it.producto_incluido?.nombre}</span>
                           <span style={{ fontWeight: '600' }}>× {it.cantidad}</span>
                         </div>
                       ))}
                     </div>
 
-                    <div style={{ padding: '1rem', background: '#0a0a0b', borderRadius: '8px', marginBottom: '1.5rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#888', marginBottom: '0.4rem' }}>
+                    <div style={{ padding: '1rem', background: 'var(--color-canvas)', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--color-fg-muted)', marginBottom: '0.4rem' }}>
                         <span>Precio normal</span>
                         <span style={{ textDecoration: ahorro > 0 ? 'line-through' : 'none' }}>{normal.toLocaleString()} Gs</span>
                       </div>

@@ -796,7 +796,7 @@ export default function AdminEducacion() {
                 {/* STEP 1: INFORMACIÓN & BRANDING */}
                 {currentStep === 1 && (
                   <div>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: '#f8fafc' }}>
+                    <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', color: 'var(--color-fg)' }}>
                       Paso 1: Información General & Estilo
                     </h3>
 
@@ -871,7 +871,7 @@ export default function AdminEducacion() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                       <div>
-                        <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#f8fafc' }}>
+                        <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-fg)' }}>
                           Paso 2: Lecciones y Videos del Módulo
                         </h3>
                         <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
@@ -895,8 +895,8 @@ export default function AdminEducacion() {
                                   type="button"
                                   onClick={() => setPreviewLeccionIndex(idx)}
                                   style={{
-                                    background: isPreviewing ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                                    border: isPreviewing ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.1)',
+                                    background: isPreviewing ? 'rgba(59, 130, 246, 0.25)' : 'color-mix(in srgb, var(--color-fg) 5%, transparent)',
+                                    border: isPreviewing ? '1px solid #3b82f6' : '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
                                     color: isPreviewing ? '#60a5fa' : '#94a3b8',
                                     borderRadius: '6px',
                                     fontSize: '0.72rem',
@@ -1012,7 +1012,7 @@ export default function AdminEducacion() {
                 {/* STEP 3: DESBLOQUEOS DE ECOSISTEMA */}
                 {currentStep === 3 && (
                   <div>
-                    <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: '#f8fafc' }}>
+                    <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', color: 'var(--color-fg)' }}>
                       Paso 3: Desbloqueos del Ecosistema
                     </h3>
                     <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1.5rem' }}>
@@ -1050,7 +1050,7 @@ export default function AdminEducacion() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                       <div>
-                        <h3 style={{ fontSize: '1.2rem', margin: 0, color: '#f8fafc' }}>
+                        <h3 style={{ fontSize: '1.2rem', margin: 0, color: 'var(--color-fg)' }}>
                           Paso 4: Constructor de Examen
                         </h3>
                         <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: '0.25rem 0 0 0' }}>
@@ -1103,7 +1103,7 @@ export default function AdminEducacion() {
                             <span style={{ fontWeight: 'bold', color: '#60a5fa', fontSize: '0.92rem' }}>
                               Pregunta #{pIdx + 1}
                             </span>
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(255,255,255,0.06)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'color-mix(in srgb, var(--color-fg) 6%, transparent)', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
                               {String(preg.respuesta_correcta || '').includes(',') ? 'Múltiples correctas' : 'Opción simple'}
                             </span>
                           </div>
@@ -1223,7 +1223,7 @@ export default function AdminEducacion() {
                     {/* Simulator Course Card */}
                     <div
                       style={{
-                        background: 'rgba(255, 255, 255, 0.04)',
+                        background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)',
                         border: `1px solid ${formData.color_accent}`,
                         borderRadius: '12px',
                         padding: '1rem',
@@ -1274,7 +1274,7 @@ export default function AdminEducacion() {
                             <div
                               style={{
                                 aspectRatio: '16/9',
-                                background: '#090a0f',
+                                background: 'var(--color-canvas)',
                                 borderRadius: '10px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1284,7 +1284,7 @@ export default function AdminEducacion() {
                                 marginBottom: '1rem',
                                 textAlign: 'center',
                                 padding: '1rem',
-                                border: '1px dashed rgba(255, 255, 255, 0.1)',
+                                border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)',
                               }}
                             >
                               La Clase #{safePreviewIndex + 1} no tiene enlace de video aún.
@@ -1314,20 +1314,20 @@ export default function AdminEducacion() {
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
-                                    background: isCurrent ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                                    background: isCurrent ? 'rgba(59, 130, 246, 0.2)' : 'color-mix(in srgb, var(--color-fg) 3%, transparent)',
                                     padding: '0.55rem 0.75rem',
                                     borderRadius: '8px',
-                                    border: isCurrent ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.06)',
+                                    border: isCurrent ? '1px solid #3b82f6' : '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)',
                                     boxShadow: isCurrent ? '0 0 12px rgba(59, 130, 246, 0.25)' : 'none',
                                     fontSize: '0.8rem',
                                     cursor: 'pointer',
                                     transition: 'all 0.15s ease',
                                   }}
                                   onMouseEnter={(e) => {
-                                    if (!isCurrent) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
+                                    if (!isCurrent) e.currentTarget.style.background = 'color-mix(in srgb, var(--color-fg) 7%, transparent)';
                                   }}
                                   onMouseLeave={(e) => {
-                                    if (!isCurrent) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                                    if (!isCurrent) e.currentTarget.style.background = 'color-mix(in srgb, var(--color-fg) 3%, transparent)';
                                   }}
                                 >
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>

@@ -80,6 +80,16 @@ export default function FitnessProductPage({
 
   const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
 
+  // El diseño supone un título corto y golpeado, pero los nombres reales del
+  // catálogo son descriptivos ("AdelFit - Suplemento natural para bajar de
+  // peso y controlar el apetito"). A un tamaño fijo, esos ocupan cinco
+  // renglones de mayúsculas y aplastan todo lo de al lado. El CSS no puede
+  // medir el largo del texto, así que se decide acá y el tamaño lo baja una
+  // clase. Los umbrales están en caracteres porque es lo que se puede saber
+  // sin medir el render.
+  const tituloTexto = `${ficha.hero.titulo || item.nombre} ${ficha.hero.titulo_destacado || ''}`.trim();
+  const claseTitulo = tituloTexto.length > 88 ? 'es-muy-largo' : tituloTexto.length > 42 ? 'es-largo' : '';
+
   return (
     <div className={`fpp-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
       {/* 1 · Barra de anuncio ─────────────────────────────────────── */}
@@ -136,7 +146,7 @@ export default function FitnessProductPage({
           )}
         </div>
 
-        <div className="fpp-hero-copy">
+        <div className={`fpp-hero-copy ${claseTitulo}`}>
           {(ficha.hero.eyebrow || item.categoria) && (
             <p className="fpp-eyebrow">{ficha.hero.eyebrow || item.categoria}</p>
           )}
@@ -238,7 +248,7 @@ export default function FitnessProductPage({
                       badge={conf.badge}
                       nombre={pack.nombre}
                       subtitulo={conf.subtitulo || `${unidades} unidades`}
-                      imagen={conf.imagen || item.imagenes[0] || null}
+                      imagen={pack.imagen || conf.imagen || item.imagenes[0] || null}
                       precioUnitario={precioUnitarioDePack(pack)}
                       precioAntes={item.precio != null && unidades > 1 ? item.precio : null}
                       ahorro={ahorroDePack(pack, item.precio)}

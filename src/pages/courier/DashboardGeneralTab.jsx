@@ -20,7 +20,7 @@ function Stat({ label, value, color }) {
 
 function Bloque({ titulo, children }) {
   return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "0.75rem", padding: "1.1rem" }}>
+    <div style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", borderRadius: "0.75rem", padding: "1.1rem" }}>
       <h3 style={{ margin: "0 0 0.85rem 0", fontSize: "0.85rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.03em" }}>{titulo}</h3>
       {children}
     </div>

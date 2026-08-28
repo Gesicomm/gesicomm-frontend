@@ -162,7 +162,7 @@ export default function MarcaList() {
               <tbody>
                 {marcas.map(m => (
                   <tr key={m.id} className={!m.activo ? 'row-inactive' : ''}>
-                    <td><strong style={{ color: '#e2e8f0' }}>{m.nombre}</strong></td>
+                    <td><strong style={{ color: 'var(--color-fg)' }}>{m.nombre}</strong></td>
                     <td><span className="sku-tag">{m.slug}</span></td>
                     <td>
                       <span className={`stock-badge ${m.activo ? 'stock-ok' : 'stock-low'}`}>

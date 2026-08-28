@@ -1,73 +1,94 @@
 /**
- * Segunda pasada: colores de texto y fondos fijos del panel → tokens de tema.
+ * Migra colores fijos del panel a tokens de tema — POR LUMINANCIA.
  *
- * A diferencia de los velos (migrar-velos-css.mjs), acá NO se puede sustituir
- * a ciegas: `color:#fff` sobre un botón navy es correcto en los dos temas,
- * pero `color:#fff` sobre una superficie es invisible en claro. Por eso el
- * script parsea bloque por bloque y solo toca el texto claro cuando la regla
- * NO pinta un fondo de color propio.
+ * La primera versión de este script usaba una lista blanca de hex
+ * (#fff, #e0e0e0, …) y por eso se le escaparon #e5e5e5, #ddd, #bbb, #999,
+ * #111, #0f111a… — justo los que dejaban los nombres de cliente lavados
+ * sobre fondo blanco. Enumerar valores no escala: ahora se decide por la
+ * luminancia real del color, que es la propiedad que importa.
+ *
+ * Regla:
+ *   color:      claro  → --color-fg        (a menos que la regla pinte su
+ *               medio   → --color-fg-muted   propio fondo de color, donde
+ *               tenue   → --color-fg-subtle  el texto claro es correcto)
+ *   background: oscuro → --color-canvas / --color-surface / -2 / -3
  *
  *   node scripts/migrar-colores-css.mjs [--apply]
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 const APLICAR = process.argv.includes('--apply');
 
-const ARCHIVOS = [
-  'src/components/dashboard.css',
-  'src/pages/productos/productos.css',
-  'src/pages/combos/combos.css',
-  'src/pages/courier/courier.css',
-  'src/pages/courier/CentroInteligenciaComercial.css',
-  'src/pages/courier/analytics/analytics.css',
-  'src/pages/educacion/AdminEducacion.css',
-  'src/pages/educacion/EducacionView.css',
-  'src/pages/dashboard/MiDashboard.css',
-  'src/pages/tienda/tienda.css',
-  'src/pages/onboarding/onboarding.css',
-];
+// CSS del PANEL. Queda afuera la salida del comercio (landing pública,
+// page-builder, templates) y el CSS de impresión, que es papel blanco.
+const EXCLUIDOS = /landingPublica\.css|impresion-pedidos\.css|footer-builder|fitnessProductPage\.css/;
 
-// Texto: claro → tinta del tema; grises → los dos escalones atenuados.
-const TEXTO_CLARO = /^#(fff|ffffff|f8fafc|f1f5f9|f4f4f6|e2e8f0|e0e0e0|eee|eeeeee)$/i;
-const TEXTO_MEDIO = /^#(aaa|aaaaaa|ccc|cccccc|888|888888|94a3b8|9ca3af|a1a1aa|b0b0b0)$/i;
-const TEXTO_TENUE = /^#(64748b|6b7280|475569|555|555555|666|666666|71717a|7b8294)$/i;
+const archivos = execSync('grep -rl "" src --include="*.css"', { encoding: 'utf8' })
+  .trim().split('\n').filter(f => f && !EXCLUIDOS.test(f));
 
-// Fondos oscuros fijos → superficies del tema.
-const FONDOS = {
-  canvas: /^#(050505|060709|08080a|0a0a0a|0a0a0b|0a0c10|090909)$/i,
-  surface: /^#(0d1117|0e0e11|101219|0f1116|10152a|111318)$/i,
-  surface2: /^#(141416|16161a|12131a|171a23|111720|1a1a1c|161c36|151515)$/i,
-  surface3: /^#(1c1c21|1e2230|1c2444|202024|212121)$/i,
-};
+function rgb(hex) {
+  let h = hex.slice(1);
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  if (h.length === 8) h = h.slice(0, 6);
+  if (h.length !== 6) return null;
+  const n = parseInt(h, 16);
+  if (Number.isNaN(n)) return null;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
 
-// Si la regla pinta su propio fondo de color (marca, semántico, gradiente),
-// el texto claro que lleva adentro es intencional y no se toca.
-const FONDO_DE_COLOR = /background(-color)?:\s*(linear-gradient|radial-gradient|#(?!0[0-9a-f]{5}|1[0-9a-f]{5})[0-9a-f]{6}|rgba?\((?!\s*0\s*,\s*0\s*,\s*0)|var\(--(?:color-)?(?:primary|accent|bg-primary|vit-accent))/i;
+function luminancia(hex) {
+  const c = rgb(hex);
+  if (!c) return null;
+  const [r, g, b] = c.map(v => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** ¿Es un gris/neutro? Los colores con saturación son semánticos (verde de
+ *  éxito, rojo de error, azul de marca) y NO se tocan. */
+function esNeutro(hex) {
+  const c = rgb(hex);
+  if (!c) return false;
+  return Math.max(...c) - Math.min(...c) <= 22;
+}
+
+// La regla pinta su propio fondo de color de marca/semántico → el texto
+// claro de adentro es intencional en los dos temas.
+const FONDO_DE_COLOR = /background(-color)?:\s*(linear-gradient|radial-gradient|var\(--(?:color-)?(?:primary|accent|vit-accent))/i;
 
 let total = 0;
-for (const archivo of ARCHIVOS) {
+for (const archivo of archivos) {
   let css;
   try { css = readFileSync(archivo, 'utf8'); } catch { continue; }
   let n = 0;
 
-  // Recorre bloque a bloque: "{ ...declaraciones... }"
-  const salida = css.replace(/\{([^{}]*)\}/g, (bloqueCompleto, cuerpo) => {
-    const pintaColor = FONDO_DE_COLOR.test(cuerpo);
+  const salida = css.replace(/\{([^{}]*)\}/g, (_m, cuerpo) => {
+    let pintaColor = FONDO_DE_COLOR.test(cuerpo);
+    // También cuenta como fondo de color un hex saturado y no oscuro.
+    const bgHex = cuerpo.match(/background(?:-color)?:\s*(#[0-9a-fA-F]{3,8})/);
+    if (bgHex && !esNeutro(bgHex[1]) && (luminancia(bgHex[1]) ?? 0) > 0.06) pintaColor = true;
 
-    let nuevo = cuerpo.replace(
-      /(^|[\s;])(color|background|background-color|border-color|border-top-color|border-bottom-color)\s*:\s*(#[0-9a-fA-F]{3,8})/g,
+    const nuevo = cuerpo.replace(
+      /(^|[\s;])(color|background|background-color)\s*:\s*(#[0-9a-fA-F]{3,8})(?=\s*[;}]|\s*!)/g,
       (m, pre, prop, hex) => {
+        const L = luminancia(hex);
+        if (L === null || !esNeutro(hex)) return m;
         let token = null;
 
         if (prop === 'color') {
-          if (TEXTO_CLARO.test(hex)) token = pintaColor ? null : 'var(--color-fg)';
-          else if (TEXTO_MEDIO.test(hex)) token = 'var(--color-fg-muted)';
-          else if (TEXTO_TENUE.test(hex)) token = 'var(--color-fg-subtle)';
+          if (L > 0.55)      token = pintaColor ? null : 'var(--color-fg)';
+          else if (L > 0.18) token = 'var(--color-fg-muted)';
+          else if (L > 0.05) token = 'var(--color-fg-subtle)';
+          // Más oscuro que eso es casi negro: suele ser texto sobre una
+          // superficie clara puntual, se deja como está.
         } else {
-          if (FONDOS.canvas.test(hex)) token = 'var(--color-canvas)';
-          else if (FONDOS.surface.test(hex)) token = 'var(--color-surface)';
-          else if (FONDOS.surface2.test(hex)) token = 'var(--color-surface-2)';
-          else if (FONDOS.surface3.test(hex)) token = 'var(--color-surface-3)';
+          if (L < 0.012)      token = 'var(--color-canvas)';
+          else if (L < 0.022) token = 'var(--color-surface)';
+          else if (L < 0.040) token = 'var(--color-surface-2)';
+          else if (L < 0.060) token = 'var(--color-surface-3)';
         }
 
         if (!token) return m;
@@ -75,7 +96,6 @@ for (const archivo of ARCHIVOS) {
         return `${pre}${prop}: ${token}`;
       },
     );
-
     return `{${nuevo}}`;
   });
 
@@ -85,4 +105,4 @@ for (const archivo of ARCHIVOS) {
     total += n;
   }
 }
-console.log(`\n${APLICAR ? 'APLICADO' : 'SIMULACRO'}: ${total} colores fijos migrados a tokens.`);
+console.log(`\n${APLICAR ? 'APLICADO' : 'SIMULACRO'}: ${total} colores neutros fijos migrados a tokens.`);

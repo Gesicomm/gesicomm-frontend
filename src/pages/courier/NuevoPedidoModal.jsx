@@ -11,7 +11,7 @@ const selectStyles = {
   control: (base, state) => ({
     ...base,
     background: '#1a1a1c',
-    borderColor: state.isFocused ? '#2563eb' : 'rgba(255,255,255,0.08)',
+    borderColor: state.isFocused ? '#2563eb' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
     boxShadow: state.isFocused ? '0 0 0 1px #2563eb' : 'none',
     borderRadius: '0.375rem',
     minHeight: '38px',
@@ -23,12 +23,12 @@ const selectStyles = {
   menu: (base) => ({
     ...base,
     background: '#141416',
-    border: '1px solid rgba(255,255,255,0.12)',
+    border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
     zIndex: 999
   }),
   option: (base, state) => ({
     ...base,
-    background: state.isSelected ? '#2563eb' : state.isFocused ? 'rgba(255, 255, 255, 0.08)' : '#141416',
+    background: state.isSelected ? '#2563eb' : state.isFocused ? 'color-mix(in srgb, var(--color-fg) 8%, transparent)' : '#141416',
     color: '#fff',
     cursor: 'pointer',
     fontSize: '0.85rem',
@@ -674,7 +674,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
               </div>
 
               {/* Asignación de Courier y Precio de Delivery Automático */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)' }}>
                 <div className="np-row">
                   <label style={{ color: '#60a5fa' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier Asignado para el Envio</label>
                   <select
@@ -871,7 +871,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                     const sub = Number(it.subtotal) || (pUnit * cant);
                     return (
                       <tr key={idx}>
-                        <td style={{ color: '#fff', fontWeight: 600 }}>{it.nombre_producto}</td>
+                        <td style={{ color: 'var(--color-fg)', fontWeight: 600 }}>{it.nombre_producto}</td>
                         <td style={{ textAlign: 'center' }}>{cant}</td>
                         <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
                           Gs. {pUnit.toLocaleString('es-PY')}
@@ -899,7 +899,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
 
             {/* Resumen Total Desglosado */}
             <div className="np-total-row">
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: '#aaa' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
                 <span>Subtotal productos: Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</span>
                 <span>Costo Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
               </div>

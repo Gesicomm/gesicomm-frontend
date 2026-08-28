@@ -440,6 +440,8 @@ export function armarItemFicha({
     imagenes: (imagenes || []).filter(Boolean),
     // Solo paquetes del mismo producto. Los order bump son otra cosa y se
     // ofrecen dentro del checkout, no acá (ver ProductCheckoutOfertas.jsx).
+    // `imagen` es la de la Oferta: se carga una vez (desde Mis Productos o
+    // desde el armador) y manda sobre la foto del producto en esa tarjeta.
     packs: (ofertas || []).filter(o => o.estrategia === 'normal' && o.tipo_contenido !== 'combo'),
     faq: (faq || []).filter(f => f?.pregunta),
     faqTitulo: faqTitulo || '',

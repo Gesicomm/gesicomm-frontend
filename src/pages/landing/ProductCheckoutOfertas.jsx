@@ -4,6 +4,7 @@ import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import ProductPicker from './ProductPicker';
+import OfertaImagenPicker from '../../components/OfertaImagenPicker';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import './landing.css';
 
@@ -396,6 +397,30 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                   <button type="button" onClick={() => eliminarOferta(of.id)} className="shrink-0 text-[var(--vit-muted-2)] hover:text-red-400 p-1 rounded-md transition-colors">
                     <Trash2 size={14} />
                   </button>
+                </div>
+
+                {/* Imagen propia de la oferta. Es la MISMA que se carga desde
+                    Mis Productos → Ofertas comerciales (vive en la Oferta, no
+                    en la landing): se sube en cualquiera de los dos lados y se
+                    ve en los dos, y en la landing publicada. Sin imagen propia
+                    la tarjeta usa la del producto. */}
+                <div className="border-t border-[var(--vit-border)] pt-2.5 mt-2">
+                  <span className={ETIQUETA}>Imagen de la oferta</span>
+                  <OfertaImagenPicker
+                    compacto
+                    ofertaId={of.id}
+                    imagenUrl={of.imagen_url || null}
+                    respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
+                    onChange={({ imagen_url }) => {
+                      // Se avisa también hacia arriba: el preview de la ficha
+                      // dibuja las tarjetas con las ofertas que le pasa el
+                      // editor, así que sin esto la foto nueva no se vería
+                      // hasta recargar.
+                      const actualizadas = ofertas.map(x => (x.id === of.id ? { ...x, imagen_url } : x));
+                      setOfertas(actualizadas);
+                      onOfertasChange?.(actualizadas);
+                    }}
+                  />
                 </div>
 
                 {/* Un paquete siempre se muestra en la ficha del producto: no

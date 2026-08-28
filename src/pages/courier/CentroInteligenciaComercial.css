@@ -350,7 +350,7 @@
 
 .cic-insight-content p {
   font-size: 0.8rem;
-  color: #cbd5e1;
+  color: var(--color-fg);
   margin: 0;
   line-height: 1.4;
 }
@@ -483,7 +483,7 @@
 }
 
 .cic-table thead tr {
-  background: #13151f;
+  background: var(--color-canvas);
   border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
 }
 
@@ -545,7 +545,7 @@
   padding: 0.15rem 0.45rem;
   border-radius: 4px;
   background: color-mix(in srgb, var(--color-fg) 6%, transparent);
-  color: #cbd5e1;
+  color: var(--color-fg);
 }
 
 .tag-web { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
@@ -637,7 +637,7 @@
 }
 
 .cic-modal-box {
-  background: #141622;
+  background: var(--color-canvas);
   border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
   border-radius: 16px;
   padding: 1.75rem;
@@ -664,11 +664,11 @@
 .cic-input-group label {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #cbd5e1;
+  color: var(--color-fg);
 }
 
 .cic-input {
-  background: #0f1017;
+  background: var(--color-canvas);
   border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   color: var(--color-fg);
   padding: 0.6rem 0.8rem;

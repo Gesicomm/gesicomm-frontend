@@ -111,7 +111,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
               <input
                 type="text"
                 className="form-input"
-                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}
                 value={tituloEncabezado}
                 onChange={e => setTituloEncabezado(e.target.value)}
                 placeholder="Ej: GESICOM LOGÍSTICA"
@@ -128,7 +128,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
                   <input
                     type="date"
                     className="form-input"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', padding: '0.4rem' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', fontSize: '0.75rem', padding: '0.4rem' }}
                     value={fechaDesde || ""}
                     onChange={e => onChangeFechaDesde && onChangeFechaDesde(e.target.value)}
                   />
@@ -140,7 +140,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
                   <input
                     type="date"
                     className="form-input"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem', padding: '0.4rem' }}
+                    style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', fontSize: '0.75rem', padding: '0.4rem' }}
                     value={fechaHasta || ""}
                     onChange={e => onChangeFechaHasta && onChangeFechaHasta(e.target.value)}
                   />
@@ -156,14 +156,14 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
               <input
                 type="text"
                 className="form-input"
-                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '0.4rem' }}
+                style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', marginBottom: '0.4rem' }}
                 value={mensajePersonalizado}
                 onChange={e => setMensajePersonalizado(e.target.value)}
                 placeholder="Ej: ¡Gracias por su compra!"
               />
               <select
                 className="form-input"
-                style={{ background: '#1c1c1f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem' }}
+                style={{ background: 'var(--color-canvas)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', fontSize: '0.75rem' }}
                 value={mensajePosicion}
                 onChange={e => setMensajePosicion(e.target.value)}
               >
@@ -181,14 +181,14 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
               <input
                 type="text"
                 className="form-input"
-                style={{ background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '0.4rem' }}
+                style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', marginBottom: '0.4rem' }}
                 value={qrLink}
                 onChange={e => setQrLink(e.target.value)}
                 placeholder="https://tutienda.com/encuesta"
               />
               <select
                 className="form-input"
-                style={{ background: '#1c1c1f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem' }}
+                style={{ background: 'var(--color-canvas)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', fontSize: '0.75rem' }}
                 value={qrPosicion}
                 onChange={e => setQrPosicion(e.target.value)}
               >
@@ -224,7 +224,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
               </h4>
               <select
                 className="form-input"
-                style={{ background: '#1c1c1f', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'var(--color-canvas)', color: 'var(--color-fg)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}
                 value={presetTamano}
                 onChange={e => setPresetTamano(e.target.value)}
               >
@@ -237,21 +237,21 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
               {presetTamano === "custom" && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: '#aaa' }}>Ancho (mm)</label>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>Ancho (mm)</label>
                     <input
                       type="number"
                       className="form-input"
-                      style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)' }}
                       value={customAncho}
                       onChange={e => setCustomAncho(Number(e.target.value))}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: '#aaa' }}>Alto (mm)</label>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>Alto (mm)</label>
                     <input
                       type="number"
                       className="form-input"
-                      style={{ background: 'rgba(255,255,255,0.05)', color: '#fff' }}
+                      style={{ background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', color: 'var(--color-fg)' }}
                       value={customAlto}
                       onChange={e => setCustomAlto(Number(e.target.value))}
                     />
@@ -290,7 +290,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
                 ))}
 
                 {enviosFiltrados.length === 0 && (
-                  <div style={{ fontSize: '0.75rem', color: '#888', textAlign: 'center', padding: '1rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)', textAlign: 'center', padding: '1rem' }}>
                     No hay pedidos en los estados seleccionados.
                   </div>
                 )}
@@ -331,7 +331,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
             ))}
 
             {pedidosAImprimir.length === 0 && (
-              <div style={{ color: '#888', marginTop: '5rem', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-fg-muted)', marginTop: '5rem', textAlign: 'center' }}>
                 Selecciona al menos un pedido del panel izquierdo para visualizar la nota de pedido.
               </div>
             )}
@@ -477,7 +477,7 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, men
           <div className="etiqueta-firma-col">
             <div className="etiqueta-firma-linea"></div>
             <span className="etiqueta-firma-label">Firma del Cliente</span>
-            <span style={{ fontSize: '6.5pt', color: '#444' }}>(Aclaración / C.I.)</span>
+            <span style={{ fontSize: '6.5pt', color: 'var(--color-fg-subtle)' }}>(Aclaración / C.I.)</span>
           </div>
         </div>
       </div>

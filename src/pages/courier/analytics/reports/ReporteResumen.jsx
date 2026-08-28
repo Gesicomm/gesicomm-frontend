@@ -110,7 +110,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
               <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_confirmacion)}%`, background: '#10b981' }} /></div>
             </div>
             {/* Cancelados */}
-            <div className="cic-funnel-step step-returned" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
+            <div className="cic-funnel-step step-returned" style={{ borderColor: 'color-mix(in srgb, var(--color-fg) 6%, transparent)' }}>
               <div className="cic-step-head"><span style={{ color: '#94a3b8' }}>Cancelados/Rechaz.</span></div>
               <div className="cic-step-val" style={{ color: '#94a3b8' }}>{funnel.cancelados}</div>
               <div className="cic-step-rate-badge" style={{ background: 'rgba(148,163,184,0.1)', color: '#94a3b8' }}>{funnel.tasa_cancelacion}% de creados</div>
@@ -149,26 +149,26 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
 
         {/* INSIGHTS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: '#fff' }}>Insights Importantes</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--color-fg)' }}>Insights Importantes</h3>
           {data.insights && data.insights.slice(0, 4).map((ins, i) => {
             let iconClass = 'icon-info';
             if (ins.tipo === 'positivo') iconClass = 'icon-positivo';
             if (ins.tipo === 'alerta') iconClass = 'icon-alerta';
             if (ins.tipo === 'critico') iconClass = 'icon-critico';
             return (
-              <div key={i} className="cic-insight-card" style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '1rem' }}>
+              <div key={i} className="cic-insight-card" style={{ padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', display: 'flex', gap: '1rem' }}>
                 <div className={`cic-insight-icon ${iconClass}`} style={{ marginTop: '0.2rem' }}>
                   {ins.tipo === 'positivo' ? <Trophy size={18} /> : ins.tipo === 'critico' ? <AlertTriangle size={18} /> : <TrendingUp size={18} />}
                 </div>
                 <div>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: '0 0 0.3rem 0', color: '#fff' }}>{ins.titulo}</h4>
+                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: '0 0 0.3rem 0', color: 'var(--color-fg)' }}>{ins.titulo}</h4>
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, lineHeight: 1.4 }}>{ins.mensaje}</p>
                 </div>
               </div>
             );
           })}
           {(!data.insights || data.insights.length === 0) && (
-            <div style={{ color: '#64748b', fontSize: '0.85rem', padding: '1rem', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', textAlign: 'center' }}>
+            <div style={{ color: '#64748b', fontSize: '0.85rem', padding: '1rem', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px', textAlign: 'center' }}>
               No se detectaron alertas o insights relevantes en este período.
             </div>
           )}

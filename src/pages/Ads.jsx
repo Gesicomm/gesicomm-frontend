@@ -179,7 +179,7 @@ const Ads = () => {
     };
 
     const TabBar = () => (
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
             {[
                 { id: 'vivo', label: 'En vivo (Meta)', icon: <Globe size={15} /> },
                 { id: 'reportes', label: 'Reportes & Productos', icon: <Megaphone size={15} /> },
@@ -284,7 +284,7 @@ const Ads = () => {
                                         borderRadius: '20px',
                                         border: selectedStore?.id === t.id
                                             ? '1px solid var(--bg-primary, #ff007f)'
-                                            : '1px solid rgba(255,255,255,0.15)',
+                                            : '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
                                         background: selectedStore?.id === t.id
                                             ? 'var(--vit-accent-soft, rgba(255,0,127,0.15))'
                                             : 'transparent',
@@ -444,7 +444,7 @@ const Ads = () => {
                                             <td style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                                 {isWs ? <MessageCircle size={18} color="#10b981"/> : <Globe size={18} color="#3b82f6"/>}
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>{camp.name}</span>
+                                                    <span style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.9rem' }}>{camp.name}</span>
                                                     <div>
                                                         <span className={`badge ${badgeClass}`}>{camp.status}</span>
                                                     </div>
@@ -459,7 +459,7 @@ const Ads = () => {
                                             <td className="text-right tabular-nums">
                                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                                     <span className="cell-highlight">{isWs ? m.conversaciones : m.compras}</span>
-                                                    <span style={{ fontSize: '10px', color: '#888' }}>{isWs ? 'Mensajes' : 'Compras'}</span>
+                                                    <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>{isWs ? 'Mensajes' : 'Compras'}</span>
                                                 </div>
                                             </td>
                                             

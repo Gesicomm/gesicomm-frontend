@@ -34,8 +34,8 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "#0a0a0b", borderLeft: "1px solid rgba(255,255,255,0.12)", color: "#fff", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "#0a0a0b", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "#fff", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <History size={18} color="#7d9bd6" /> Historial · Pedido #{envio.id}
           </h2>
@@ -55,7 +55,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
                 <div key={h.id} style={{ display: "flex", gap: "0.75rem", position: "relative", paddingBottom: i === historial.length - 1 ? 0 : "1rem" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#7d9bd6", flexShrink: 0, marginTop: "0.3rem" }} />
-                    {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "rgba(255,255,255,0.1)", marginTop: "0.2rem" }} />}
+                    {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "color-mix(in srgb, var(--color-fg) 10%, transparent)", marginTop: "0.2rem" }} />}
                   </div>
                   <div style={{ paddingBottom: "0.2rem" }}>
                     <div style={{ fontSize: "0.72rem", color: "#666", fontFamily: "monospace" }}>{formatFechaHora(h.fecha)}</div>

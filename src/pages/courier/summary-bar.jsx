@@ -179,8 +179,8 @@ export function SummaryBar({ envios = [], couriers = [] }) {
 function StatusCard({ icon, title, count, amount }) {
   return (
     <div style={{
-      background: 'rgba(255, 255, 255, 0.02)',
-      border: '1px solid rgba(255, 255, 255, 0.06)',
+      background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)',
+      border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)',
       borderRadius: '12px',
       padding: '0.85rem 1.1rem',
       display: 'flex',
@@ -190,7 +190,7 @@ function StatusCard({ icon, title, count, amount }) {
     }}>
       <span style={{
         fontSize: '0.68rem',
-        color: '#64748b',
+        color: 'var(--color-fg-subtle)',
         fontWeight: 700,
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
@@ -201,14 +201,14 @@ function StatusCard({ icon, title, count, amount }) {
         <span>{icon}</span> {title}
       </span>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: '0.1rem' }}>
-        <span style={{ fontSize: '1.4rem', fontWeight: 850, color: '#fff' }}>{count}</span>
-        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>{formatGs(amount)}</span>
+        <span style={{ fontSize: '1.4rem', fontWeight: 850, color: 'var(--color-fg)' }}>{count}</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-fg-muted)', fontWeight: 600 }}>{formatGs(amount)}</span>
       </div>
     </div>
   );
 }
 
-function MetricCard({ title, value, bg = 'rgba(255, 255, 255, 0.02)', border = '1px solid rgba(255, 255, 255, 0.06)', textColor = '#fff', labelColor = '#64748b' }) {
+function MetricCard({ title, value, bg = 'color-mix(in srgb, var(--color-fg) 2%, transparent)', border = '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', textColor = 'var(--color-fg)', labelColor = 'var(--color-fg-subtle)' }) {
   return (
     <div style={{
       background: bg,

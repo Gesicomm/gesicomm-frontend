@@ -123,7 +123,7 @@ export default function ReporteProductos({ filters }) {
                       <td style={{ textAlign: 'center', color: '#f43f5e' }}>{row.devoluciones}</td>
                       <td style={{ textAlign: 'center', color: '#64748b' }}>{row.cancelados}</td>
                       <td style={{ textAlign: 'right', color: '#94a3b8' }}>{formatMoney(row.precio_costo_unitario)}</td>
-                      <td style={{ textAlign: 'right', color: '#cbd5e1' }}>{formatMoney(row.precio_venta_unitario)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-fg)' }}>{formatMoney(row.precio_venta_unitario)}</td>
                       <td style={{ textAlign: 'right' }}>{formatMoney(row.costo_total)}</td>
                       <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>{formatMoney(row.ingresos)}</td>
                       <td style={{ textAlign: 'right', color: returnRate > 15 ? '#f43f5e' : '#3b82f6' }}>{returnRate}%</td>
@@ -135,7 +135,7 @@ export default function ReporteProductos({ filters }) {
           </table>
         </div>
         {!loading && pagination.totalPages > 1 && (
-          <div className="cic-table-pagination" style={{ padding: '1rem', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="cic-table-pagination" style={{ padding: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
               Página {pagination.page} de {pagination.totalPages} <span style={{ opacity: 0.5 }}>• {pagination.total} registros</span>
             </span>

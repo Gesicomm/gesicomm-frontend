@@ -81,11 +81,11 @@ export function CouriersCrud({
   }
 
   return (
-    <div style={{ background: '#0a0a0b', borderRadius: '0.85rem', border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', color: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+    <div style={{ background: 'var(--color-canvas)', borderRadius: '0.85rem', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', overflow: 'hidden', color: 'var(--color-fg)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>Directorio de Couriers</h2>
-          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#888888' }}>Gestioná tu red de repartidores y sus tarifas dinámicas</p>
+          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-fg)' }}>Directorio de Couriers</h2>
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>Gestioná tu red de repartidores y sus tarifas dinámicas</p>
         </div>
         <button
           type="button"
@@ -117,17 +117,17 @@ export function CouriersCrud({
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', fontWeight: 'bold', fontSize: '12px' }}>
                       {c.nombre.slice(0, 2).toUpperCase()}
                     </span>
-                    <span style={{ fontWeight: 600, color: '#ffffff' }}>{c.nombre}</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{c.nombre}</span>
                   </div>
                 </td>
                 <td>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#aaaaaa' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-fg-muted)' }}>
                     <Phone size={14} />
                     {c.telefono || '-'}
                   </span>
                 </td>
                 <td>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.06)', padding: '0.25rem 0.6rem', borderRadius: '0.375rem', fontSize: '0.75rem', color: '#e0e0e0', fontWeight: 600, border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'color-mix(in srgb, var(--color-fg) 6%, transparent)', padding: '0.25rem 0.6rem', borderRadius: '0.375rem', fontSize: '0.75rem', color: 'var(--color-fg)', fontWeight: 600, border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
                     <VehiculoIcon v={c.vehiculo} />
                     {c.vehiculo}
                   </span>
@@ -138,9 +138,9 @@ export function CouriersCrud({
                 <td style={{ textAlign: 'center' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
-                    background: c.activo ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.06)', 
+                    background: c.activo ? 'rgba(16, 185, 129, 0.15)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)', 
                     color: c.activo ? '#34d399' : '#888888',
-                    border: c.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'
+                    border: c.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
                   }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.activo ? '#10b981' : '#64748b' }} />
                     {c.activo ? "Activo" : "Inactivo"}
@@ -160,7 +160,7 @@ export function CouriersCrud({
             ))}
             {couriers.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#888888', background: 'transparent' }}>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
                   No hay couriers cargados todavía. Haz clic en <strong>+ Nuevo courier</strong> para agregar uno.
                 </td>
               </tr>
@@ -175,25 +175,25 @@ export function CouriersCrud({
             onSubmit={submit}
             className="modal-content"
             style={{ 
-              background: '#0e0e11', 
-              border: '1px solid rgba(255,255,255,0.12)', 
+              background: 'var(--color-canvas)', 
+              border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', 
               borderRadius: '1rem',
               boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-              color: '#fff', 
+              color: 'var(--color-fg)', 
               maxWidth: '720px',
               padding: '1.75rem'
             }}
             onClick={e => e.stopPropagation()}
           >
             {/* Header con botón X minimalista */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: 'var(--color-fg)', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
                 {editing ? "Editar courier" : "Nuevo courier"}
               </h3>
               <button 
                 type="button" 
                 onClick={() => setOpen(false)} 
-                style={{ background: 'transparent', border: 'none', color: '#888888', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: '0.375rem', transition: 'color 0.2s' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: '0.375rem', transition: 'color 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#ffffff'}
                 onMouseLeave={e => e.currentTarget.style.color = '#888888'}
               >
@@ -204,11 +204,11 @@ export function CouriersCrud({
             {/* Inputs del formulario con iconos */}
             <div className="form-grid" style={{ gap: '1.25rem' }}>
               <div className="form-group full">
-                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Nombre del Courier o Empresa
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Building2 size={16} style={{ position: 'absolute', left: '0.8rem', color: '#666' }} />
+                  <Building2 size={16} style={{ position: 'absolute', left: '0.8rem', color: 'var(--color-fg-subtle)' }} />
                   <input
                     className="form-input"
                     style={{ paddingLeft: '2.5rem', width: '100%' }}
@@ -221,11 +221,11 @@ export function CouriersCrud({
               </div>
 
               <div className="form-group">
-                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Teléfono
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <Phone size={16} style={{ position: 'absolute', left: '0.8rem', color: '#666' }} />
+                  <Phone size={16} style={{ position: 'absolute', left: '0.8rem', color: 'var(--color-fg-subtle)' }} />
                   <input
                     className="form-input"
                     style={{ paddingLeft: '2.5rem', width: '100%' }}
@@ -237,11 +237,11 @@ export function CouriersCrud({
               </div>
 
               <div className="form-group">
-                <label style={{ color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
+                <label style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem', display: 'block' }}>
                   Vehículo Principal
                 </label>
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <div style={{ position: 'absolute', left: '0.8rem', color: '#666', pointerEvents: 'none' }}>
+                  <div style={{ position: 'absolute', left: '0.8rem', color: 'var(--color-fg-subtle)', pointerEvents: 'none' }}>
                     <VehiculoIcon v={form.vehiculo} />
                   </div>
                   <select
@@ -258,7 +258,7 @@ export function CouriersCrud({
               </div>
 
               <div className="form-group full">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'rgba(255,255,255,0.02)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid rgba(255,255,255,0.06)', color: '#999999', fontSize: '0.85rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
                   <input
                     type="checkbox"
                     style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
@@ -271,9 +271,9 @@ export function CouriersCrud({
             </div>
 
             {/* Sección Matriz de Tarifas */}
-            <div className="tarifas-section" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem', marginTop: '1.5rem' }}>
+            <div className="tarifas-section" style={{ borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingTop: '1.25rem', marginTop: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>Matriz de Tarifas</h4>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--color-fg)' }}>Matriz de Tarifas</h4>
                 <button 
                   type="button" 
                   onClick={addTarifa} 
@@ -282,7 +282,7 @@ export function CouriersCrud({
                   <Plus size={16} /> Agregar tarifa
                 </button>
               </div>
-              <p style={{ margin: '0 0 1rem 0', fontSize: '0.8rem', color: '#666666' }}>
+              <p style={{ margin: '0 0 1rem 0', fontSize: '0.8rem', color: 'var(--color-fg-subtle)' }}>
                 Configura los costos por ciudad, tipo de pago y cantidad de envíos.
               </p>
 
@@ -290,11 +290,11 @@ export function CouriersCrud({
                 <div style={{ 
                   padding: '2rem 1.5rem', 
                   textAlign: 'center', 
-                  color: '#666666', 
+                  color: 'var(--color-fg-subtle)', 
                   fontSize: '0.85rem',
-                  border: '1px dashed rgba(255,255,255,0.12)', 
+                  border: '1px dashed color-mix(in srgb, var(--color-fg) 12%, transparent)', 
                   borderRadius: '0.75rem',
-                  background: 'rgba(255,255,255,0.01)',
+                  background: 'color-mix(in srgb, var(--color-fg) 1%, transparent)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -388,14 +388,14 @@ export function CouriersCrud({
             </div>
 
             {/* Footer de Acciones bien espaciado */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.25rem', marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+            <div style={{ borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingTop: '1.25rem', marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 style={{ 
-                  background: 'rgba(255,255,255,0.04)', 
-                  border: '1px solid rgba(255,255,255,0.08)', 
-                  color: '#cccccc', 
+                  background: 'color-mix(in srgb, var(--color-fg) 4%, transparent)', 
+                  border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', 
+                  color: 'var(--color-fg)', 
                   padding: '0.65rem 1.4rem', 
                   borderRadius: '0.6rem', 
                   fontWeight: 600, 

@@ -101,7 +101,7 @@ function computeRecomendacion(ofertas, productoActivoId) {
 
 /* ─── Estilos compartidos (mismos tokens que CampanaInternaModal) ───────── */
 const s = {
-  card: { border: '1px solid rgba(255,255,255,0.12)', borderRadius: '10px', background: '#141416', padding: '1rem' },
+  card: { border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '10px', background: '#141416', padding: '1rem' },
   label: { fontSize: '0.82rem', color: '#aaa', display: 'block', marginBottom: '0.35rem' },
   input: { width: '100%' },
   btnPrimary: { display: 'inline-flex', alignItems: 'center', gap: '0.4rem' },
@@ -123,10 +123,10 @@ function SelectorProducto({ productos, productoIds, onElegir }) {
             onClick={() => onElegir(p.id)}
             style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', cursor: 'pointer', padding: '0.6rem' }}
           >
-            <div style={{ width: 40, height: 40, borderRadius: 6, overflow: 'hidden', background: '#1a1a1c', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 6, overflow: 'hidden', background: 'var(--color-canvas)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {p.imagenes?.[0]?.url ? <img src={getMediaUrl(p.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageOff size={16} color="#444" />}
             </div>
-            <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600 }}>{p.nombre}</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--color-fg)', fontWeight: 600 }}>{p.nombre}</span>
           </button>
         ))}
       </div>
@@ -139,13 +139,13 @@ function SelectorEstrategia({ recomendacion, landingActual, onElegir }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       <div>
-        <p style={{ margin: 0, fontSize: '0.95rem', color: '#fff', fontWeight: 600 }}>¿Cómo querés vender este producto?</p>
+        <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--color-fg)', fontWeight: 600 }}>¿Cómo querés vender este producto?</p>
         <p style={{ ...s.muted, margin: '2px 0 0' }}>Elegí el enfoque. Después podés cambiarlo sin perder lo que ya configuraste.</p>
       </div>
       {landingActual && (
         <div style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}>
           <Check size={15} color="#34d399" />
-          <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
             La página ya existe en tu landing — la estrategia solo cambia qué se ofrece durante la compra.
           </span>
         </div>
@@ -172,9 +172,9 @@ function SelectorEstrategia({ recomendacion, landingActual, onElegir }) {
                   </span>
                 )}
               </div>
-              <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.88rem' }}>{e.titulo}</div>
-              <div style={{ fontSize: '0.76rem', color: '#999', lineHeight: 1.4 }}>{e.desc}</div>
-              <div style={{ fontSize: '0.7rem', color: '#666' }}>{e.incluye}</div>
+              <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: '0.88rem' }}>{e.titulo}</div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--color-fg-muted)', lineHeight: 1.4 }}>{e.desc}</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-subtle)' }}>{e.incluye}</div>
               {recomendada && <div style={{ fontSize: '0.7rem', color: e.color, marginTop: '2px' }}>{recomendacion.razon}</div>}
             </button>
           );
@@ -198,16 +198,16 @@ function SelectorComplementario({ productos, excluirId, value, onChange }) {
       <label style={s.label}>Producto complementario</label>
       {elegido ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1px solid rgba(61, 95, 163,0.4)', background: 'rgba(61, 95, 163,0.08)', borderRadius: '8px', padding: '0.5rem 0.7rem' }}>
-          <div style={{ width: 28, height: 28, borderRadius: 5, overflow: 'hidden', background: '#1a1a1c', flexShrink: 0 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 5, overflow: 'hidden', background: 'var(--color-canvas)', flexShrink: 0 }}>
             {elegido.imagenes?.[0]?.url ? <img src={getMediaUrl(elegido.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
           </div>
-          <span style={{ fontSize: '0.82rem', color: '#fff', flex: 1 }}>{elegido.nombre}</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--color-fg)', flex: 1 }}>{elegido.nombre}</span>
           <button type="button" onClick={() => onChange('')} style={{ fontSize: '0.72rem', color: '#3d5fa3', background: 'none', border: 'none', cursor: 'pointer' }}>Cambiar</button>
         </div>
       ) : (
         <>
           <div style={{ position: 'relative' }}>
-            <Search size={13} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+            <Search size={13} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-subtle)' }} />
             <input
               type="text"
               className="filter-input"
@@ -226,13 +226,13 @@ function SelectorComplementario({ productos, excluirId, value, onChange }) {
                 type="button"
                 onClick={() => onChange(p.id)}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.35rem 0.4rem', borderRadius: '6px', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                onMouseEnter={e => e.currentTarget.style.background = 'color-mix(in srgb, var(--color-fg) 6%, transparent)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
               >
-                <div style={{ width: 24, height: 24, borderRadius: 4, overflow: 'hidden', background: '#1a1a1c', flexShrink: 0 }}>
+                <div style={{ width: 24, height: 24, borderRadius: 4, overflow: 'hidden', background: 'var(--color-canvas)', flexShrink: 0 }}>
                   {p.imagenes?.[0]?.url ? <img src={getMediaUrl(p.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
                 </div>
-                <span style={{ fontSize: '0.8rem', color: '#ddd' }}>{p.nombre}</span>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>{p.nombre}</span>
               </button>
             ))}
           </div>
@@ -308,7 +308,7 @@ function SugerenciaForm({ tipo, productoActivoId, productos, ofertaExistente, on
   return (
     <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.85rem' }}>{label}</span>
+        <span style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: '0.85rem' }}>{label}</span>
         <span style={s.muted}>Aparece en el carrito como {copyEnCarrito}</span>
       </div>
 
@@ -336,29 +336,29 @@ function SugerenciaForm({ tipo, productoActivoId, productos, ofertaExistente, on
 
 /* ─── Preview del recorrido (refleja el estado ya guardado) ────────────── */
 function PreviewRecorrido({ producto, bump, upsell }) {
-  const box = { border: '1px solid rgba(255,255,255,0.12)', borderRadius: '8px', background: '#0f0f10', padding: '0.7rem 0.9rem', width: '100%', maxWidth: '300px' };
+  const box = { border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '8px', background: '#0f0f10', padding: '0.7rem 0.9rem', width: '100%', maxWidth: '300px' };
   const arrow = { textAlign: 'center', color: '#555', fontSize: '0.9rem', padding: '2px 0' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, margin: '0.5rem 0' }}>
       <div style={box}>
-        <div style={{ fontSize: '0.65rem', color: '#777', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Producto</div>
-        <div style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 700 }}>{producto?.nombre || '—'}</div>
+        <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Producto</div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--color-fg)', fontWeight: 700 }}>{producto?.nombre || '—'}</div>
       </div>
       <div style={arrow}>↓</div>
       <div style={box}>
-        <div style={{ fontSize: '0.65rem', color: '#777', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Carrito</div>
+        <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Carrito</div>
         <div style={{ fontSize: '0.8rem', color: bump ? '#fff' : '#555', marginTop: '4px' }}>
           {bump ? `☑ ${nombreComplemento(bump, producto?.id)} — ${formatPrecio(bump.precio)}` : '☐ (sin order bump activo)'}
         </div>
-        {bump && <div style={{ fontSize: '0.65rem', color: '#666' }}>⭐ Complemento recomendado</div>}
+        {bump && <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-subtle)' }}>⭐ Complemento recomendado</div>}
         <div style={{ fontSize: '0.8rem', color: upsell ? '#fff' : '#555', marginTop: '6px' }}>
           {upsell ? `${nombreComplemento(upsell, producto?.id)} — ${formatPrecio(upsell.precio)}` : '(sin upsell activo)'}
         </div>
-        {upsell && <div style={{ fontSize: '0.65rem', color: '#666' }}>🚀 También te puede interesar</div>}
+        {upsell && <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-subtle)' }}>🚀 También te puede interesar</div>}
       </div>
       <div style={arrow}>↓</div>
       <div style={{ ...box, textAlign: 'center' }}>
-        <div style={{ fontSize: '0.8rem', color: '#ccc' }}>Checkout</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>Checkout</div>
       </div>
     </div>
   );
@@ -373,7 +373,7 @@ function EmbudoListo({ funnel, urlFunnel, etiqueta }) {
     <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(52,211,153,0.08)', borderColor: 'rgba(52,211,153,0.25)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
         <Check size={14} color="#34d399" />
-        <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Embudo de {etiqueta} listo para este producto.</span>
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>Embudo de {etiqueta} listo para este producto.</span>
       </div>
       {urlFunnel && (
         <code style={{ fontSize: '0.76rem', color: '#34d399', wordBreak: 'break-all' }}>{urlFunnel}</code>
@@ -737,10 +737,10 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ width: 30, height: 30, borderRadius: 6, overflow: 'hidden', background: '#1a1a1c', flexShrink: 0 }}>
+        <div style={{ width: 30, height: 30, borderRadius: 6, overflow: 'hidden', background: 'var(--color-canvas)', flexShrink: 0 }}>
           {producto?.imagenes?.[0]?.url ? <img src={getMediaUrl(producto.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
         </div>
-        <span style={{ fontSize: '0.85rem', color: '#fff', fontWeight: 600, flex: 1 }}>{producto?.nombre}</span>
+        <span style={{ fontSize: '0.85rem', color: 'var(--color-fg)', fontWeight: 600, flex: 1 }}>{producto?.nombre}</span>
 
         {publicada ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#34d399', fontWeight: 600 }}>
@@ -754,7 +754,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
       <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <Link2 size={13} color="#888" />
-          <span style={{ fontSize: '0.72rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Link para tus anuncios
           </span>
         </div>
@@ -794,7 +794,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
       {mensajeCombo && (
         <div style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(61, 95, 163,0.08)', borderColor: 'rgba(61, 95, 163,0.3)' }}>
           <ExternalLink size={15} color="#3d5fa3" />
-          <span style={{ fontSize: '0.8rem', color: '#c4c4c8' }}>Se abrió el editor de combos en una pestaña nueva. Cuando termines, podés volver acá y seguir con la campaña.</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>Se abrió el editor de combos en una pestaña nueva. Cuando termines, podés volver acá y seguir con la campaña.</span>
         </div>
       )}
 
@@ -840,7 +840,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
           {estrategiaAbierta === 'maximizar_ticket' && (
             <>
               <div style={s.card}>
-                <span style={{ fontSize: '0.8rem', color: '#ccc' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
                   <Sparkles size={13} style={{ marginRight: '4px', verticalAlign: '-2px' }} color="#f59e0b" />
                   Oferta principal (packs/combos "normales"): administralos desde la ficha del producto.
                 </span>
@@ -863,7 +863,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
               <SugerenciaForm tipo="upsell" productoActivoId={productoActivoId} productos={productos} ofertaExistente={upsellActivo} onGuardado={recargarOfertas} onError={onError} />
 
               <div>
-                <div style={{ fontSize: '0.72rem', color: '#777', textAlign: 'center', margin: '0.3rem 0' }}>Así se ve el recorrido hoy</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', textAlign: 'center', margin: '0.3rem 0' }}>Así se ve el recorrido hoy</div>
                 <PreviewRecorrido producto={producto} bump={bumpActivo} upsell={upsellActivo} />
               </div>
             </>

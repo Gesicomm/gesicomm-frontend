@@ -180,10 +180,10 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}
     >
       <div
-        style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#0a0a0b', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', color: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+        style={{ width: '100%', maxWidth: '680px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '10px', color: 'var(--color-fg)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.25rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
           <h2 style={{ margin: 0, fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Sparkles size={18} color="#3d5fa3" /> {esEdicion ? 'Editar campaña' : 'Nueva campaña interna'}
           </h2>
@@ -192,11 +192,11 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
 
         {resultado ? (
           <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <p style={{ margin: 0, fontSize: '0.9rem', color: '#c4c4c8' }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-fg)' }}>
               Campaña creada. Copiá este nombre <strong>tal cual</strong> como nombre de la campaña real en Meta Ads Manager —
               es lo que va a permitir mapear automáticamente el reporte que subas después.
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#141416', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)', borderRadius: '6px', padding: '0.75rem 1rem' }}>
               <code style={{ flex: 1, fontSize: '0.85rem', color: '#34d399', wordBreak: 'break-all' }}>{resultado.nombre_interno}</code>
               <button type="button" className="btn-icon" onClick={copiarNombre} title="Copiar">
                 {copiado ? <Check size={16} color="#34d399" /> : <Copy size={16} />}
@@ -210,7 +210,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
             <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
               {pasosActivos.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #3d5fa3)' : 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #3d5fa3)' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)' }} />
                   <span style={{ fontSize: '0.7rem', color: p.id === step ? '#fff' : '#777', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
                 </div>
               ))}
@@ -227,7 +227,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
               {step === 1 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                    <label style={{ fontSize: '0.82rem', color: '#aaa' }}>Nombre de la campaña <span style={{ color: '#f87171' }}>*</span></label>
+                    <label style={{ fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>Nombre de la campaña <span style={{ color: '#f87171' }}>*</span></label>
                     <input
                       type="text"
                       className="filter-input"
@@ -236,12 +236,12 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                       onChange={(e) => setNombreDisplay(e.target.value)}
                       autoFocus
                     />
-                    <span style={{ fontSize: '0.75rem', color: '#666' }}>Es solo para identificarla acá — el nombre final para Meta se genera al terminar.</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>Es solo para identificarla acá — el nombre final para Meta se genera al terminar.</span>
                   </div>
 
                   {tiendas.length > 1 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.82rem', color: '#aaa' }}>Cuenta de Meta (opcional)</label>
+                      <label style={{ fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>Cuenta de Meta (opcional)</label>
                       <select className="filter-input" value={metaIntegrationId || ''} onChange={(e) => setMetaIntegrationId(e.target.value || null)}>
                         <option value="">Sin especificar</option>
                         {tiendas.map(t => <option key={t.id} value={t.id}>{t.nombre || t.business_name}</option>)}
@@ -256,7 +256,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative', flex: '1 1 200px' }}>
-                      <Search size={14} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                      <Search size={14} style={{ position: 'absolute', left: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-subtle)' }} />
                       <input
                         type="text"
                         className="filter-input"
@@ -273,11 +273,11 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.78rem', color: '#777' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-fg-muted)' }}>
                       {productoIds.length} producto(s) elegido(s) • Total: {productosFiltrados.length}
                     </span>
                     {productosFiltrados.length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#aaa' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: 'var(--color-fg-muted)' }}>
                         <button
                           type="button"
                           disabled={paginaProducto <= 1}
@@ -285,8 +285,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             padding: '0.25rem 0.5rem', borderRadius: '6px',
-                            border: '1px solid rgba(255,255,255,0.12)',
-                            background: paginaProducto <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                            border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                            background: paginaProducto <= 1 ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
                             color: paginaProducto <= 1 ? '#555' : '#fff',
                             cursor: paginaProducto <= 1 ? 'not-allowed' : 'pointer',
                           }}
@@ -303,8 +303,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                           style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             padding: '0.25rem 0.5rem', borderRadius: '6px',
-                            border: '1px solid rgba(255,255,255,0.12)',
-                            background: paginaProducto >= totalPaginasProductos ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                            border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                            background: paginaProducto >= totalPaginasProductos ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
                             color: paginaProducto >= totalPaginasProductos ? '#555' : '#fff',
                             cursor: paginaProducto >= totalPaginasProductos ? 'not-allowed' : 'pointer',
                           }}
@@ -318,7 +318,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                   {cargandoOpciones ? (
                     <div className="skeleton-row" style={{ height: '120px' }} />
                   ) : productosFiltrados.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '2rem', color: '#888', fontSize: '0.85rem' }}>No se encontraron productos.</div>
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>No se encontraron productos.</div>
                   ) : (
                     <>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.6rem', maxHeight: '340px', overflowY: 'auto', paddingRight: '2px' }}>
@@ -332,11 +332,11 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                               onClick={() => toggleProducto(p.id)}
                               style={{
                                 display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer',
-                                border: seleccionado ? '2px solid #3d5fa3' : '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '8px', overflow: 'hidden', background: '#141416', padding: 0,
+                                border: seleccionado ? '2px solid #3d5fa3' : '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
+                                borderRadius: '8px', overflow: 'hidden', background: 'var(--color-canvas)', padding: 0,
                               }}
                             >
-                              <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: '#1a1a1c' }}>
+                              <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', background: 'var(--color-canvas)' }}>
                                 {img ? (
                                   <img src={getMediaUrl(img)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
@@ -351,7 +351,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                                 )}
                               </div>
                               <div style={{ padding: '0.5rem' }}>
-                                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#fff', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-fg)', lineHeight: 1.2, marginBottom: '2px' }}>{p.nombre}</div>
                                 {p.categoria_id && mapaCategorias.get(p.categoria_id) && (
                                   <span style={{ fontSize: '0.68rem', color: '#3d5fa3' }}>{mapaCategorias.get(p.categoria_id)}</span>
                                 )}
@@ -362,15 +362,15 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                       </div>
 
                       {totalPaginasProductos > 1 && (
-                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem', fontSize: '0.78rem', color: '#aaa' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem', fontSize: '0.78rem', color: 'var(--color-fg-muted)' }}>
                           <button
                             type="button"
                             disabled={paginaProducto <= 1}
                             onClick={() => setPaginaProducto(p => Math.max(1, p - 1))}
                             style={{
                               padding: '0.25rem 0.75rem', borderRadius: '6px',
-                              border: '1px solid rgba(255,255,255,0.12)',
-                              background: paginaProducto <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                              border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                              background: paginaProducto <= 1 ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
                               color: paginaProducto <= 1 ? '#555' : '#fff',
                               cursor: paginaProducto <= 1 ? 'not-allowed' : 'pointer',
                               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
@@ -385,8 +385,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                             onClick={() => setPaginaProducto(p => Math.min(totalPaginasProductos, p + 1))}
                             style={{
                               padding: '0.25rem 0.75rem', borderRadius: '6px',
-                              border: '1px solid rgba(255,255,255,0.12)',
-                              background: paginaProducto >= totalPaginasProductos ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                              border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
+                              background: paginaProducto >= totalPaginasProductos ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
                               color: paginaProducto >= totalPaginasProductos ? '#555' : '#fff',
                               cursor: paginaProducto >= totalPaginasProductos ? 'not-allowed' : 'pointer',
                               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
@@ -404,7 +404,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
               {/* Paso 3: Tipo */}
               {step === 3 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#aaa' }}>¿A qué canal apunta esta campaña?</p>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿A qué canal apunta esta campaña?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
                       { value: 'web', label: 'Web', desc: 'Landing / checkout propio', icon: <Globe size={22} color="#3b82f6" />, color: '#3b82f6' },
@@ -417,14 +417,14 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem',
                           padding: '1.25rem', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
-                          border: tipo === opt.value ? `2px solid ${opt.color}` : '1px solid rgba(255,255,255,0.12)',
+                          border: tipo === opt.value ? `2px solid ${opt.color}` : '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
                           background: tipo === opt.value ? `${opt.color}1a` : '#141416',
                         }}
                       >
                         {opt.icon}
                         <div>
-                          <div style={{ fontWeight: 600, color: '#fff', fontSize: '0.9rem' }}>{opt.label}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#888' }}>{opt.desc}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.9rem' }}>{opt.label}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>{opt.desc}</div>
                         </div>
                       </button>
                     ))}
@@ -444,7 +444,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
             </div>
 
             {/* Footer navegación */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 1.25rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
               <button type="button" className="btn-secondary" onClick={irAtras} disabled={step === 1 || guardando} style={{ visibility: step === 1 ? 'hidden' : 'visible' }}>
                 <ArrowLeft size={15} style={{ marginRight: '0.3rem' }} /> Atrás
               </button>

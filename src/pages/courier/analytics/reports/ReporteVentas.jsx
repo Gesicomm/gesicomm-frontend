@@ -62,24 +62,24 @@ export function ReporteVentas({ filters }) {
       {/* HEADER LOCAL & BUSCADOR */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-[#f1f5f9] flex items-center gap-2">
+          <h2 className="text-xl font-bold text-fg flex items-center gap-2">
             <ShoppingCart className="text-[#3b82f6]" size={20} />
             Desglose de Ventas y Pedidos
           </h2>
-          <p className="text-sm text-[#94a3b8]">
+          <p className="text-sm text-fg-muted">
             Análisis estructurado de ítems vendidos y operaciones.
           </p>
         </div>
 
-        <form onSubmit={aplicarFiltrosLocales} className="flex flex-wrap items-center gap-2 bg-[rgba(255,255,255,0.02)] p-2 rounded-xl border border-[rgba(255,255,255,0.08)] shadow-sm">
+        <form onSubmit={aplicarFiltrosLocales} className="flex flex-wrap items-center gap-2 bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] p-2 rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] shadow-sm">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748b]" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle" />
             <input 
               type="text" 
               placeholder="Buscar cliente, tel, #pedido..." 
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-[#12131a] border border-[rgba(255,255,255,0.1)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#3d5fa3] text-[#f1f5f9]"
+              className="pl-9 pr-3 py-2 bg-[#12131a] border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#3d5fa3] text-fg"
             />
           </div>
           
@@ -100,16 +100,16 @@ export function ReporteVentas({ filters }) {
       </div>
 
       {/* TABS & VIEWS */}
-      <div className="flex-1 flex flex-col min-h-0 bg-[rgba(255,255,255,0.02)] rounded-xl border border-[rgba(255,255,255,0.08)] shadow-sm overflow-hidden">
-        <div className="flex border-b border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.2)] shrink-0">
+      <div className="flex-1 flex flex-col min-h-0 bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] shadow-sm overflow-hidden">
+        <div className="flex border-b border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] bg-[rgba(0,0,0,0.2)] shrink-0">
           <button 
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'pedidos' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61, 95, 163,0.05)]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'pedidos' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61,95,163,0.05)]' : 'text-fg-muted hover:text-fg'}`}
             onClick={() => setActiveTab('pedidos')}
           >
             <LayoutList size={16} /> Vista Pedidos
           </button>
           <button 
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'items' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61, 95, 163,0.05)]' : 'text-[#94a3b8] hover:text-[#f1f5f9]'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'items' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61,95,163,0.05)]' : 'text-fg-muted hover:text-fg'}`}
             onClick={() => setActiveTab('items')}
           >
             <Table2 size={16} /> Vista Ítems Vendidos
@@ -130,12 +130,12 @@ export function ReporteVentas({ filters }) {
 
 function KpiCard({ icon, title, value, color }) {
   return (
-    <div className="bg-[rgba(255,255,255,0.02)] p-4 rounded-xl border border-[rgba(255,255,255,0.05)] shadow-sm flex flex-col gap-2 transition-all hover:bg-[rgba(255,255,255,0.04)]">
-      <div className="flex items-center gap-2 text-[#94a3b8]">
+    <div className="bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] p-4 rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_5%,_transparent)] shadow-sm flex flex-col gap-2 transition-all hover:bg-[color-mix(in_srgb,_var(--color-fg)_4%,_transparent)]">
+      <div className="flex items-center gap-2 text-fg-muted">
         <span className={color}>{icon}</span>
         <span className="text-xs font-semibold uppercase tracking-wider">{title}</span>
       </div>
-      <div className="text-xl font-bold text-[#f1f5f9]">
+      <div className="text-xl font-bold text-fg">
         {value}
       </div>
     </div>

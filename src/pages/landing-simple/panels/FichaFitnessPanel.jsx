@@ -32,6 +32,12 @@ export default function FichaFitnessPanel({
   fichaLanding = null,
   fichaMarketing = null,
   packs = [],
+  // Lo que la ficha muestra HOY en cada campo que puede quedar vacío: el
+  // nombre del producto, su categoría, su descripción. Se usan de
+  // placeholder para que el campo diga qué está mostrando en vez de una
+  // explicación abstracta ("Vacío = el nombre del producto"), que no deja
+  // ver de qué texto se está hablando.
+  respaldos = {},
   modo = 'producto',
   onChange,
 }) {
@@ -145,6 +151,7 @@ export default function FichaFitnessPanel({
                     mover: (campo, i, delta) => moverItem(sec.key, campo, i, delta),
                   },
                   packs,
+                  respaldos,
                 })}
 
                 {propia && (
@@ -167,14 +174,27 @@ export default function FichaFitnessPanel({
 
 /* ── Controles reutilizables ──────────────────────────────────────── */
 
-function Texto({ label, valor, onChange, placeholder, area = false }) {
+/**
+ * `respaldo` = el texto que la ficha muestra cuando este campo queda vacío
+ * (el nombre del producto, su categoría, su descripción). Va de placeholder
+ * y se aclara abajo, así el comercio ve de qué texto se trata sin tener que
+ * deducirlo. Nunca se precarga en `valor`: si se escribiera, el campo
+ * quedaría congelado con una copia y dejaría de seguir al producto.
+ */
+function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) {
+  const usaRespaldo = !valor && !!respaldo;
   return (
     <div>
       {label && <label className={ETIQUETA}>{label}</label>}
       {area ? (
-        <textarea rows={3} className={CAMPO} value={valor || ''} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
+        <textarea rows={3} className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
       ) : (
-        <input type="text" className={CAMPO} value={valor || ''} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
+        <input type="text" className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
+      )}
+      {usaRespaldo && (
+        <p className="text-[10px] text-white/30 mt-1 leading-relaxed">
+          Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
+        </p>
       )}
     </div>
   );
@@ -267,12 +287,12 @@ const CAMPOS = {
     </>
   ),
 
-  hero: ({ d, set }) => (
+  hero: ({ d, set, respaldos }) => (
     <>
-      <Texto label="Línea superior" valor={d.eyebrow} placeholder="Vacío = la categoría del producto" onChange={v => set({ eyebrow: v })} />
-      <Texto label="Título" valor={d.titulo} placeholder="Vacío = el nombre del producto" onChange={v => set({ titulo: v })} />
-      <Texto label="Segunda línea (en color de acento)" valor={d.titulo_destacado} placeholder="Energía natural." onChange={v => set({ titulo_destacado: v })} />
-      <Texto label="Promesa" area valor={d.lead} placeholder="Vacío = la descripción del producto" onChange={v => set({ lead: v })} />
+      <Texto label="Línea superior" valor={d.eyebrow} respaldo={respaldos.eyebrow} placeholder="Ej: Cápsulas" onChange={v => set({ eyebrow: v })} />
+      <Texto label="Título" valor={d.titulo} respaldo={respaldos.titulo} placeholder="Nombre del producto" onChange={v => set({ titulo: v })} />
+      <Texto label="Segunda línea (en color de acento)" valor={d.titulo_destacado} placeholder="Ej: Resultados reales." onChange={v => set({ titulo_destacado: v })} />
+      <Texto label="Promesa" area valor={d.lead} respaldo={respaldos.lead} placeholder="Contale al cliente para qué sirve" onChange={v => set({ lead: v })} />
       {/* La checklist es una lista de strings sueltos, no de objetos, así que
           no pasa por ListaEditable (que trabaja sobre {campo: valor}). */}
       <div>
@@ -497,9 +517,9 @@ const CAMPOS = {
     </ListaEditable>
   ),
 
-  faq: ({ d, set }) => (
+  faq: ({ d, set, respaldos }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.faqTitulo} onChange={v => set({ titulo: v })} />
       <p className="text-[11px] text-fg/35 leading-relaxed">
         Las preguntas se cargan en la pestaña <b className="text-fg/60">Detalles</b> de este producto, o en
         Marketing &amp; Embudo si querés que valgan para todas las landings.
@@ -507,9 +527,9 @@ const CAMPOS = {
     </>
   ),
 
-  upsells: ({ d, set }) => (
+  upsells: ({ d, set, respaldos }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.upsellsTitulo} onChange={v => set({ titulo: v })} />
       <Texto label="Texto del botón" valor={d.cta_texto} placeholder="Agregar" onChange={v => set({ cta_texto: v })} />
       <p className="text-[11px] text-fg/35 leading-relaxed">
         Los productos que aparecen acá se eligen en la pestaña <b className="text-fg/60">Relacionados</b>.

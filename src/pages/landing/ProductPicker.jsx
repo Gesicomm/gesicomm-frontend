@@ -300,7 +300,7 @@ export default function ProductPicker({
 
       {modalAbierto && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-[#1e1e1e] border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+          <div className="bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
               <h3 className="text-base font-semibold text-fg">Seleccionar productos</h3>
               <button type="button" onClick={() => setModalAbierto(false)} className="p-1.5 text-fg/40 hover:text-fg hover:bg-fg/10 rounded-lg transition-colors"><X size={18} /></button>
@@ -384,8 +384,8 @@ export default function ProductPicker({
                       disabled={pagina <= 1}
                       onClick={() => setPagina(p => Math.max(1, p - 1))}
                       style={{
-                        padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)',
-                        background: pagina <= 1 ? 'transparent' : 'rgba(255,255,255,0.1)',
+                        padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
+                        background: pagina <= 1 ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
                         color: pagina <= 1 ? '#555' : '#fff', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
                         display: 'inline-flex', alignItems: 'center'
                       }}
@@ -398,8 +398,8 @@ export default function ProductPicker({
                       disabled={pagina >= totalPaginas}
                       onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
                       style={{
-                        padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.15)',
-                        background: pagina >= totalPaginas ? 'transparent' : 'rgba(255,255,255,0.1)',
+                        padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
+                        background: pagina >= totalPaginas ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
                         color: pagina >= totalPaginas ? '#555' : '#fff', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
                         display: 'inline-flex', alignItems: 'center'
                       }}
@@ -433,8 +433,8 @@ export default function ProductPicker({
                     disabled={pagina <= 1}
                     onClick={() => setPagina(p => Math.max(1, p - 1))}
                     style={{
-                      padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
-                      background: pagina <= 1 ? 'transparent' : 'rgba(255,255,255,0.1)',
+                      padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
+                      background: pagina <= 1 ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
                       color: pagina <= 1 ? '#555' : '#fff', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
                       display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                     }}
@@ -447,8 +447,8 @@ export default function ProductPicker({
                     disabled={pagina >= totalPaginas}
                     onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
                     style={{
-                      padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)',
-                      background: pagina >= totalPaginas ? 'transparent' : 'rgba(255,255,255,0.1)',
+                      padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
+                      background: pagina >= totalPaginas ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
                       color: pagina >= totalPaginas ? '#555' : '#fff', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
                       display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                     }}

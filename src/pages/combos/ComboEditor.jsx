@@ -431,7 +431,7 @@ export default function ComboEditor() {
               value={nombre}
               onChange={e => setNombre(e.target.value)}
               placeholder="Ej: Pack Running Verano"
-              style={{ width: '100%', background: '#0a0a0b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.55rem 0.9rem', color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              style={{ width: '100%', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
             />
           </div>
           <div>
@@ -440,7 +440,7 @@ export default function ComboEditor() {
               value={descripcion}
               onChange={e => setDescripcion(e.target.value)}
               placeholder="Descripción breve del combo"
-              style={{ width: '100%', background: '#0a0a0b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '0.55rem 0.9rem', color: '#e2e8f0', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
+              style={{ width: '100%', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
             />
           </div>
         </div>
@@ -546,7 +546,7 @@ export default function ComboEditor() {
             </table>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: '#475569', fontSize: '0.83rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
+          <div style={{ textAlign: 'center', color: '#475569', fontSize: '0.83rem', padding: '1.25rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: 8 }}>
             Buscá productos para agregarlos al combo. Marcá uno como principal con la estrella ⭐ — es opcional, pero hace falta para calcular la rentabilidad del combo.
           </div>
         )}
@@ -581,7 +581,7 @@ export default function ComboEditor() {
               <CurrencyInput
                 value={precioTotal}
                 onChange={val => setPrecioTotal(val === '' ? '' : String(val))}
-                style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.55rem 0.9rem', color: '#e2e8f0', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
+                style={{ flex: 1, background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
               />
               {margenReal !== null && (
                 <div className={`combo-price-real-margin ${margenRealClass}`}>
@@ -598,7 +598,7 @@ export default function ComboEditor() {
                 value={precioMinimo}
                 onChange={val => setPrecioMinimo(val === '' ? '' : String(val))}
                 placeholder="Sin piso configurado"
-                style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.55rem 0.9rem', color: '#e2e8f0', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
+                style={{ flex: 1, background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
               />
             </div>
             <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>

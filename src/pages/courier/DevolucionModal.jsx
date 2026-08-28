@@ -66,8 +66,8 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "560px", background: "#0a0a0b", border: "1px solid rgba(255,255,255,0.15)", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div className="modal-content" style={{ maxWidth: "560px", background: "#0a0a0b", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <Undo2 size={18} color="#7d9bd6" /> Registrar devolución #{envio.id}
           </h2>
@@ -79,7 +79,7 @@ export function DevolucionModal({ open, envio, onClose, onSubmit }) {
             <p style={{ color: "#888" }}>Este pedido no tiene productos con stock en tránsito para devolver.</p>
           ) : (
             filas.map((f) => (
-              <div key={f.componente_id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "0.6rem", padding: "0.8rem" }}>
+              <div key={f.componente_id} style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 7%, transparent)", borderRadius: "0.6rem", padding: "0.8rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                   <strong>{f.nombre_producto}</strong>
                   <span style={{ fontSize: "0.78rem", color: "#888" }}>

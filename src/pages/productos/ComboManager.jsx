@@ -59,8 +59,8 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
       {errorBase && <div className="field-error" style={{ marginBottom: '1rem' }}>{errorBase}</div>}
 
       {combos.length === 0 ? (
-        <div className="empty-state" style={{ padding: '3rem', textAlign: 'center', background: '#0a0a0b', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          <p style={{ color: '#888', marginBottom: '1rem' }}>Este producto todavía no tiene combos.</p>
+        <div className="empty-state" style={{ padding: '3rem', textAlign: 'center', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
+          <p style={{ color: 'var(--color-fg-muted)', marginBottom: '1rem' }}>Este producto todavía no tiene combos.</p>
           <button type="button" className="btn-secondary" onClick={() => { setComboEditando(null); setModalOpen(true); }}>
             <Plus size={15} /> Crear promoción
           </button>
@@ -74,7 +74,7 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
             const pct = normal > 0 ? ((ahorro / normal) * 100).toFixed(2) : 0;
 
             return (
-              <div key={idx} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', opacity: combo.activo ? 1 : 0.6 }}>
+              <div key={idx} style={{ background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column', opacity: combo.activo ? 1 : 0.6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{combo.nombre}</h3>
                   <span className={`badge ${combo.activo ? 'badge-active' : 'badge-archived'}`}>
@@ -84,20 +84,20 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
                 
                 <div style={{ flex: 1, marginBottom: '1.5rem' }}>
                   {combo.items?.slice(0, 3).map((it, i) => (
-                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc', marginBottom: '0.4rem' }}>
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--color-fg)', marginBottom: '0.4rem' }}>
                       <span>• {it.producto_incluido?.nombre || it._nombre}</span>
                       <span>× {it.cantidad}</span>
                     </div>
                   ))}
                   {combo.items?.length > 3 && (
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.5rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)', marginTop: '0.5rem' }}>
                       + {combo.items.length - 3} productos más
                     </div>
                   )}
                 </div>
 
-                <div style={{ padding: '1rem', background: '#0a0a0b', borderRadius: '8px', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#888', marginBottom: '0.3rem' }}>
+                <div style={{ padding: '1rem', background: 'var(--color-canvas)', borderRadius: '8px', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--color-fg-muted)', marginBottom: '0.3rem' }}>
                     <span>Precio normal</span>
                     <span style={{ textDecoration: ahorro > 0 ? 'line-through' : 'none' }}>{normal.toLocaleString()} Gs</span>
                   </div>
@@ -114,7 +114,7 @@ export default function ComboManager({ combos = [], setCombos, productoPadre, er
                       ⚠️ El combo cuesta {Math.abs(ahorro).toLocaleString()} Gs más
                     </div>
                   ) : (
-                    <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: '600' }}>
+                    <div style={{ color: 'var(--color-fg-muted)', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: '600' }}>
                       Mismo precio individual
                     </div>
                   )}

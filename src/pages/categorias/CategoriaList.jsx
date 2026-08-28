@@ -208,7 +208,7 @@ export default function CategoriaList() {
                 {categorias.map(cat => (
                   <React.Fragment key={cat.id}>
                     <tr className={!cat.activo ? 'row-inactive' : ''}>
-                      <td><strong style={{ color: '#e2e8f0' }}>{cat.nombre}</strong></td>
+                      <td><strong style={{ color: 'var(--color-fg)' }}>{cat.nombre}</strong></td>
                       <td><span className="sku-tag">{cat.slug}</span></td>
                       <td>—</td>
                       <td>

@@ -17,7 +17,7 @@ export function ReporteFinanzas({ filters }) {
           </p>
         </div>
         
-        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.25rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', padding: '0.25rem', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
           <button 
             className={`cic-subnav-btn ${activeSubTab === 'comisiones' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('comisiones')}

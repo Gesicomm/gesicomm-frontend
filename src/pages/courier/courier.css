@@ -102,7 +102,7 @@
 
 .kanban-column.is-over {
   border-color: #3d5fa3;
-  background: #121216;
+  background: var(--color-canvas);
 }
 
 .kanban-col-header {
@@ -659,7 +659,7 @@
 
 /* FIX: Ensure options are visible in Windows native select */
 .pt-filter-select option {
-  background-color: #0f111a;
+  background-color: var(--color-canvas);
   color: var(--color-fg);
 }
 
@@ -694,7 +694,7 @@
   background: color-mix(in srgb, var(--color-fg) 4%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   border-radius: 7px;
-  color: #999;
+  color: var(--color-fg-muted);
   font-size: 0.82rem;
   padding: 0.45rem 0.75rem;
   cursor: pointer;
@@ -777,7 +777,7 @@
   top: calc(100% + 4px);
   left: 0;
   z-index: 200;
-  background: #111;
+  background: var(--color-canvas);
   border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
   border-radius: 10px;
   padding: 0.4rem;
@@ -853,7 +853,7 @@
 
 .pt-td {
   padding: 0.75rem 0.9rem;
-  color: #ddd;
+  color: var(--color-fg);
   vertical-align: middle;
 }
 .pt-td-id {
@@ -883,7 +883,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #bbb;
+  color: var(--color-fg-muted);
   font-size: 0.82rem;
 }
 .pt-td-num {
@@ -900,11 +900,11 @@
   margin-top: 2px;
 }
 .pt-cliente { display: flex; flex-direction: column; }
-.pt-cliente-nombre { font-weight: 500; color: #e5e5e5; }
+.pt-cliente-nombre { font-weight: 500; color: var(--color-fg); }
 .pt-cliente-tel { font-size: 0.75rem; color: var(--color-fg-subtle); margin-top: 2px; }
 .pt-pago { font-size: 0.8rem; color: var(--color-fg-muted); }
 .pt-courier { font-size: 0.82rem; color: #7d9bd6; font-weight: 500; }
-.pt-sin-courier { color: #444; }
+.pt-sin-courier { color: var(--color-fg-subtle); }
 
 .pt-empty {
   text-align: center;
@@ -973,7 +973,7 @@
   /* La pestaña activa conserva su fondo navy de marca en los dos temas, así
      que su texto sigue siendo blanco: oscurecerlo daba navy sobre navy
      (2,68:1). No heredar de .tab-btn. */
-  .tab-btn.active { color: #fff; }
+  .tab-btn.active { color: var(--color-fg); }
 
   /* Kanban */
   .kanban-column { background: var(--color-surface); border-color: var(--color-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); }

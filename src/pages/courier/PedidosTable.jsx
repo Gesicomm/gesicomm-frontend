@@ -43,7 +43,7 @@ const FILTROS_VACIOS = {
 function EstadoBadgeDropdown({ estado, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const s = STATUS[estado] || { chipBg: "rgba(255,255,255,0.08)", chipText: "#aaa" };
+  const s = STATUS[estado] || { chipBg: "color-mix(in srgb, var(--color-fg) 8%, transparent)", chipText: "#aaa" };
   const validas = TRANSICIONES_VALIDAS_FRONTEND[estado] || [];
 
   useEffect(() => {
@@ -99,7 +99,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
             right: 0,
             zIndex: 9999,
             background: "#18181b",
-            border: "1px solid rgba(255, 255, 255, 0.12)",
+            border: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)",
             borderRadius: "8px",
             padding: "4px",
             minWidth: "150px",
@@ -111,7 +111,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
           onClick={(e) => e.stopPropagation()}
         >
           {STATUS_ORDER.map((st) => {
-            const config = STATUS[st] || { chipBg: "rgba(255,255,255,0.05)", chipText: "#aaa" };
+            const config = STATUS[st] || { chipBg: "color-mix(in srgb, var(--color-fg) 5%, transparent)", chipText: "#aaa" };
             const isSelected = st === estado;
             const isValid = isSelected || validas.includes(st);
             
@@ -137,7 +137,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                   gap: "8px",
                   padding: "6px 10px",
                   borderRadius: "5px",
-                  background: isSelected ? "rgba(255, 255, 255, 0.1)" : "transparent",
+                  background: isSelected ? "color-mix(in srgb, var(--color-fg) 10%, transparent)" : "transparent",
                   color: isSelected ? "#fff" : "#ccc",
                   border: "none",
                   fontSize: "0.78rem",
@@ -149,7 +149,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                   opacity: isValid ? 1 : 0.4,
                 }}
                 onMouseEnter={(e) => {
-                  if (isValid && !isSelected) e.currentTarget.style.background = "rgba(255, 255, 255, 0.07)";
+                  if (isValid && !isSelected) e.currentTarget.style.background = "color-mix(in srgb, var(--color-fg) 7%, transparent)";
                 }}
                 onMouseLeave={(e) => {
                   if (isValid && !isSelected) e.currentTarget.style.background = "transparent";
@@ -450,8 +450,8 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
             marginTop: "0.75rem",
             padding: "0.7rem 1rem",
             borderRadius: "0.6rem",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: "color-mix(in srgb, var(--color-fg) 3%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
             display: "flex",
             flexWrap: "wrap",
             alignItems: "center",
@@ -477,7 +477,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
           <ResumenItem label="Pendientes de rendición" value={String(resumenEntregados.pendientes_rendicion)} />
 
           {resumenEntregados.desglose_metodo_pago.length > 0 && (
-            <div style={{ width: "100%", borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "0.3rem", paddingTop: "0.4rem", display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem", color: "#888" }}>
+            <div style={{ width: "100%", borderTop: "1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)", marginTop: "0.3rem", paddingTop: "0.4rem", display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem", color: "#888" }}>
               {resumenEntregados.desglose_metodo_pago.map((d) => (
                 <span key={d.metodo_pago}>{d.metodo_pago}: <strong style={{ color: "#ccc" }}>{formatGs(d.monto)}</strong></span>
               ))}

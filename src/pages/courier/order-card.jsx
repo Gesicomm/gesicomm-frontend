@@ -45,9 +45,9 @@ export function OrderCard({
             value={envio.estado}
             onChange={(e) => onChangeEstado(envio.id, e.target.value)}
             style={{ 
-              background: '#1a1a1c', 
-              color: '#aaa', 
-              border: '1px solid rgba(255,255,255,0.1)', 
+              background: 'var(--color-canvas)', 
+              color: 'var(--color-fg-muted)', 
+              border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', 
               borderRadius: '0.375rem', 
               fontSize: '0.7rem',
               padding: '0.15rem 0.3rem',
@@ -88,7 +88,7 @@ export function OrderCard({
 
       {/* Ítems del pedido preview */}
       {envio.items && envio.items.length > 0 && (
-        <div style={{ fontSize: '0.75rem', color: '#bbb', margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)', margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
           <ShoppingBag size={12} style={{ color: '#3b82f6' }} />
           <span>
             {envio.items.map(it => `${it.cantidad}x ${it.nombre_producto}`).join(', ')}

@@ -314,7 +314,7 @@ export default function EducacionView() {
               />
             </div>
           </div>
-          <div style={{ borderLeft: '1px solid rgba(255, 255, 255, 0.08)', paddingLeft: '1.25rem' }}>
+          <div style={{ borderLeft: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingLeft: '1.25rem' }}>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Nivel</span>
             <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'white' }}>
               {estadisticas.nivel_actual}
@@ -438,7 +438,7 @@ export default function EducacionView() {
                 <div
                   style={{
                     aspectRatio: '16/9',
-                    background: '#090a0f',
+                    background: 'var(--color-canvas)',
                     borderRadius: '16px',
                     display: 'flex',
                     alignItems: 'center',
@@ -619,7 +619,7 @@ export default function EducacionView() {
                     return (
                       <div key={preg.id || pIdx} className="aca-quiz-question-box examen-question-block">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <p style={{ fontWeight: 700, color: '#f8fafc', margin: 0, fontSize: '1rem' }}>
+                          <p style={{ fontWeight: 700, color: 'var(--color-fg)', margin: 0, fontSize: '1rem' }}>
                             {pIdx + 1}. {preg.pregunta}
                           </p>
                           {isMulti && (
@@ -676,7 +676,7 @@ export default function EducacionView() {
                       : '⚠️ No alcanzaste la nota mínima'}
                   </h3>
 
-                  <p style={{ color: '#cbd5e1', fontSize: '0.92rem', marginBottom: '1.25rem' }}>
+                  <p style={{ color: 'var(--color-fg)', fontSize: '0.92rem', marginBottom: '1.25rem' }}>
                     {resultadoExamen.aprobado
                       ? 'Has desbloqueado el siguiente módulo y las herramientas correspondientes en tu barra lateral.'
                       : `Obtuviste ${resultadoExamen.correctas} de ${resultadoExamen.total_preguntas} preguntas correctas. Se requiere un ${resultadoExamen.puntaje_minimo}% para aprobar.`}

@@ -160,7 +160,7 @@
 .prod-table td {
   padding: 0.875rem 1rem;
   border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);
-  color: #cbd5e1;
+  color: var(--color-fg);
   vertical-align: middle;
 }
 .prod-table tr:last-child td { border-bottom: none; }
@@ -287,7 +287,7 @@
 }
 .stock-badge.stock-ok  { background: rgba(16,185,129,0.15); color: #34d399; }
 .stock-badge.stock-low { background: rgba(239,68,68,0.15);  color: #f87171; }
-.stock-badge.stock-empty { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+.stock-badge.stock-empty { background: rgba(148,163,184,0.15); color: var(--color-fg); }
 
 .prod-indicators {
   display: flex;
@@ -429,27 +429,78 @@
 /* ─── Tabs ────────────────────────────────────────── */
 .prod-tabs {
   display: flex;
-  gap: 0.25rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 0;
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-fg) 12%, transparent) transparent;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1.5rem;
+}
+
+/* Custom scrollbar for tabs to avoid Windows' ugly thick default scrollbar */
+.prod-tabs::-webkit-scrollbar {
+  height: 5px;
+}
+.prod-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+.prod-tabs::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: 10px;
+}
+.prod-tabs::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-fg) 25%, transparent);
 }
 
 .prod-tab {
-  display: flex; align-items: center; gap: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--color-fg-subtle);
-  padding: 0.65rem 1rem;
-  font-size: 0.85rem; font-weight: 500;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   margin-bottom: -1px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
-.prod-tab:hover { color: var(--color-fg-muted); }
-.prod-tab.active { color: #3d5fa3; border-bottom-color: #3d5fa3; }
+
+.prod-tab:hover {
+  color: var(--color-fg);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+}
+
+.prod-tab.active {
+  color: var(--color-fg);
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-primary-text);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  text-shadow: 0 0 1px color-mix(in srgb, var(--color-primary-text) 40%, transparent);
+}
+
+.prod-tab svg {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.7;
+  color: currentColor;
+}
+
+.prod-tab:hover svg {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.prod-tab.active svg {
+  opacity: 1;
+  color: var(--color-primary-text);
+  transform: scale(1.05);
+}
 
 /* ─── Form ────────────────────────────────────────── */
 .prod-form { flex: 1; }
@@ -763,7 +814,7 @@
 .offer-strategy-card.active {
   border-color: rgba(61, 95, 163,0.4);
   background: rgba(61, 95, 163,0.1);
-  color: #e2e8f0;
+  color: var(--color-fg);
 }
 .offer-strategy-icon {
   width: 34px;
@@ -867,7 +918,7 @@
 .img-principal-badge {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: rgba(61, 95, 163,0.85);
-  color: #fff;
+  color: var(--color-fg);
   font-size: 0.7rem;
   font-weight: 700;
   text-align: center;
@@ -983,7 +1034,7 @@
   align-items: center;
   gap: 1.25rem;
   padding: 0.85rem 1.25rem;
-  background: #16161c;
+  background: var(--color-canvas);
   border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
   border-radius: 12px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.45);

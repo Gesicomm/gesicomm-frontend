@@ -358,6 +358,6 @@ html {
     a[href^="http"]::after {
         content: " (" attr(href) ")";
         font-size: 0.75em;
-        color: #555;
+        color: var(--color-fg-subtle);
     }
 }

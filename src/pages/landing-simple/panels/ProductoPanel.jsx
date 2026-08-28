@@ -231,6 +231,13 @@ export default function ProductoPanel({
                 fichaLanding={fichaLanding}
                 fichaMarketing={fichaMarketing}
                 packs={packs}
+                respaldos={{
+                  titulo: producto?.nombre || '',
+                  eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
+                  lead: descripcion || '',
+                  faqTitulo: faqTitulo || 'Preguntas frecuentes',
+                  upsellsTitulo: relacionadosTitulo || '',
+                }}
                 modo="producto"
                 onChange={onFicha}
               />
