@@ -523,24 +523,11 @@
   transform: scale(1.08);
 }
 
-/* Overlay gradiente sobre la imagen */
-.vit-card-media::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--vit-card-bg-transparent) 45%,
-    var(--vit-card-bg) 100%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
 /* El overlay de precio sobre la imagen se eliminó: repetía exactamente el
    mismo número que ya está en el cuerpo de la tarjeta, y encima quedaba
    ilegible sobre las fotos de producto claras (la mayoría, porque vienen
-   recortadas sobre blanco). */
+   recortadas sobre blanco). Por lo tanto, el gradiente oscuro/claro que 
+   hacía de fondo para ese texto también se eliminó. */
 
 /* Placeholder sin imagen */
 .vit-card-media-placeholder {

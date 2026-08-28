@@ -235,6 +235,7 @@ export default function FitnessProductPage({
                   precioUnitario={item.precio}
                   precioAntes={item.precioAntes}
                   ahorro={null}
+                  notaPrecioNormal="Precio normal"
                   nota={ficha.ofertas.nota_pack}
                   onElegir={() => setPackElegidoId(null)}
                 />
@@ -510,16 +511,6 @@ function TituloSeccion({ numero, texto, acento, onAccent }) {
   if (!texto) return null;
   return (
     <div className="fpp-seccion-titulo">
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'grid', placeItems: 'center', width: 27, height: 27,
-          borderRadius: '50%', background: acento, color: onAccent,
-          fontSize: 12, fontWeight: 900, flexShrink: 0,
-        }}
-      >
-        {numero}
-      </span>
       <h2>{texto}</h2>
     </div>
   );
@@ -572,7 +563,15 @@ function Contador({ desde }) {
   );
 }
 
-function TarjetaPack({ elegido, badge, nombre, subtitulo, imagen, precioUnitario, precioAntes, ahorro, nota, onElegir }) {
+/**
+ * Tarjeta de "Elegí tu oferta especial" — la MISMA para el paquete real y
+ * para "Individual" (1 unidad). Es deliberado: la referencia que dio el
+ * comercio muestra las tres opciones con exactamente el mismo tamaño y la
+ * misma foto, y solo se diferencian por el badge de arriba y el texto bajo
+ * el precio ("Ahorrás X%" en los paquetes, "Precio normal" en la unidad
+ * suelta vía `notaPrecioNormal`) — nunca por el tamaño de la tarjeta.
+ */
+function TarjetaPack({ elegido, badge, nombre, subtitulo, imagen, precioUnitario, precioAntes, ahorro, notaPrecioNormal, nota, onElegir }) {
   return (
     <button type="button" className={`fpp-pack ${elegido ? 'elegido' : ''}`} onClick={onElegir}>
       {badge && <span className="fpp-pack-badge">{badge}</span>}
@@ -585,7 +584,11 @@ function TarjetaPack({ elegido, badge, nombre, subtitulo, imagen, precioUnitario
         {formatPrecio(precioUnitario)} <small>c/u</small>
       </span>
       {precioAntes != null && precioAntes > precioUnitario && <del>{formatPrecio(precioAntes)}</del>}
-      {ahorro != null && <span className="fpp-pack-ahorro">Ahorrás {ahorro}%</span>}
+      {ahorro != null
+        ? <span className="fpp-pack-ahorro">Ahorrás {ahorro}%</span>
+        : notaPrecioNormal
+          ? <span className="fpp-pack-precio-normal">{notaPrecioNormal}</span>
+          : null}
       <span className="fpp-pack-elegir">{elegido ? 'Seleccionado' : 'Elegir'}</span>
       {nota && <span className="fpp-pack-sub">{nota}</span>}
     </button>

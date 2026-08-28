@@ -31,34 +31,24 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCa
   const useAlias = isLocalFallback || previewMode;
   const linkInicio = useAlias && slug ? `/l/${slug}` : '/';
   const linkCatalogo = useAlias && slug ? `/l/${slug}/catalogo` : '/catalogo';
-  const catalogoClickProps = onClickCatalogo ? { onClick: (e) => { e.preventDefault(); onClickCatalogo(); } } : {};
-  const contactoClickProps = onClickContacto ? { onClick: (e) => { e.preventDefault(); onClickContacto(); } } : {};
   const linkContacto = useAlias && slug ? `/l/${slug}/contacto` : '/contacto';
 
   return (
     <div className="w-full font-sans" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
-      {/* Header */}
-      <header id="header" className="flex items-center justify-between px-6 py-4 sticky top-0 backdrop-blur z-10" style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.fondo, 0.95) }}>
-        <div className="flex items-center gap-4 sm:gap-6">
-          <a href={linkInicio} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-            {logo ? (
-              <img src={logo} alt={nombreComercio} className="h-9 w-auto max-w-[120px] object-contain" />
-            ) : (
-              <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: tema.acento }}><Sparkles size={18} style={{ color: tema.fondo }} /></div>
-            )}
-            <span className="font-serif italic font-medium tracking-wide text-lg hidden sm:inline">{nombreComercio}</span>
-          </a>
-          
-          <nav className="flex gap-3 sm:gap-4 ml-2 sm:ml-0" style={{ borderLeft: `1px solid ${bordeSuave}`, paddingLeft: '1rem' }}>
-            <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="font-serif italic text-[14px] sm:text-[15px] hover:opacity-80 transition-opacity" {...catalogoClickProps}>Catálogo</a>
-            <a href={linkContacto} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="font-serif italic text-[14px] sm:text-[15px] hover:opacity-80 transition-opacity" {...contactoClickProps}>Contacto</a>
-          </nav>
-        </div>
-        <div className="flex items-center gap-2">
-          <CartButton cantidad={cantidadCarrito} acento={tema.acento} color={tema.texto} onClick={onAbrirCarrito} />
-          <a href={linkCatalogo} target={previewMode ? "_blank" : "_self"} rel="noreferrer" className="hidden sm:inline-block text-sm font-semibold px-4 py-2 rounded-full transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: '#fff' }} {...catalogoClickProps}>Ver catálogo</a>
-        </div>
-      </header>
+      <StoreHeader
+        templateSlug="beauty-cosmetics"
+        nombreComercio={nombreComercio}
+        logo={logo}
+        tema={tema}
+        cantidadCarrito={cantidadCarrito}
+        onAbrirCarrito={onAbrirCarrito}
+        linkInicio={linkInicio}
+        linkCatalogo={linkCatalogo}
+        linkContacto={linkContacto}
+        onClickCatalogo={onClickCatalogo}
+        onClickContacto={onClickContacto}
+        previewMode={previewMode}
+      />
 
       {/* Hero */}
       <section id="hero" className="relative overflow-hidden">

@@ -4,7 +4,7 @@ import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import ProductPicker from './ProductPicker';
-import OfertaImagenPicker from '../../components/OfertaImagenPicker';
+import OfertaImagenPicker, { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import './landing.css';
 
@@ -51,6 +51,10 @@ function formVacio() {
     bumpProductoId: null, // solo order bump
     precio_order_bump: '',
     descripcion: '',
+    // Archivo elegido antes de que la oferta exista: todavía no hay id al
+    // que subirlo, así que se guarda acá y se sube recién después de crear
+    // (ver crearOferta), igual que en OfertasProductoTab.
+    imagen_archivo: null,
   };
 }
 
@@ -132,7 +136,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   }
 
   function cambiarEstrategia(valor) {
-    setForm(prev => ({ ...formVacio(), estrategia: valor, nombre: prev.nombre, descripcion: prev.descripcion }));
+    setForm(prev => ({ ...formVacio(), estrategia: valor, nombre: prev.nombre, descripcion: prev.descripcion, imagen_archivo: prev.imagen_archivo }));
   }
 
   async function crearOferta(e) {
@@ -157,11 +161,11 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
         descripcion: form.descripcion || '',
       };
 
-      if (esPaquete) {
+      const creada = esPaquete
         // Paquete = el mismo producto, más unidades. Un solo componente: el
         // producto de esta ficha. El backend exige justamente eso para un
         // 'pack' (ver OfertaService.validarComponentesParaTipo).
-        await ofertaService.crear(producto.id, {
+        ? await ofertaService.crear(producto.id, {
           ...comun,
           estrategia: 'normal',
           tipo_contenido: 'pack',
@@ -169,9 +173,8 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
           precio_normal: Number(form.precio),
           precio_order_bump: null,
           componentes: [{ producto_id: producto.id, cantidad: Number(form.unidades) }],
-        });
-      } else {
-        await ofertaService.crear(producto.id, {
+        })
+        : await ofertaService.crear(producto.id, {
           ...comun,
           estrategia: 'order_bump',
           tipo_contenido: 'combo',
@@ -183,11 +186,17 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
             ? null : Number(form.precio_order_bump),
           componentes: [{ producto_id: Number(form.bumpProductoId), cantidad: 1 }],
         });
-      }
+
+      // La oferta recién se crea acá arriba, así que la imagen elegida antes
+      // (guardada como File en form.imagen_archivo, ver OfertaImagenPicker en
+      // modo "sin id") se sube recién ahora. Si falla, la oferta ya quedó
+      // creada igual — se avisa sin deshacer nada.
+      const avisoImagen = await subirImagenPendiente(creada?.id, form.imagen_archivo);
 
       await cargarOfertas();
       setCreando(false);
       setForm(formVacio());
+      if (avisoImagen) setErrorOferta(avisoImagen);
     } catch (err) {
       setErrorOferta(err.response?.data?.message || 'Error al crear la oferta.');
     } finally {
@@ -354,6 +363,18 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
               </div>
             </>
           )}
+
+          <div className="mb-3">
+            <label className={ETIQUETA}>Imagen de la oferta</label>
+            <OfertaImagenPicker
+              compacto
+              ofertaId={null}
+              imagenUrl={null}
+              archivo={form.imagen_archivo}
+              respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
+              onChange={({ archivo }) => setForm(f => ({ ...f, imagen_archivo: archivo }))}
+            />
+          </div>
 
           <button type="submit" disabled={guardandoOferta} className="w-full h-8 rounded-md bg-[var(--vit-accent)] text-fg text-xs font-semibold hover:bg-[var(--vit-accent-hover)] disabled:opacity-50 transition-colors flex items-center justify-center">
             {guardandoOferta ? <Loader className="animate-spin" size={14} /> : 'Guardar'}

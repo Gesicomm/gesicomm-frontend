@@ -9,6 +9,7 @@ import { proveedoresService } from '../../services/costosGastosService';
 import { verificarSesion } from '../../utils/auth';
 import { calcularPrincipal, simularDescuentosPrincipal } from '../../utils/comboPricingLocal';
 import CurrencyInput from '../../components/CurrencyInput';
+import SelectorIcono from '../../components/SelectorIcono';
 import OfertasProductoTab from './OfertasProductoTab';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import {
@@ -109,7 +110,7 @@ export default function ProductForm() {
       sobre_este_producto: '',
       propuesta_valor: '',
       beneficios: [],
-      confianza: [{ texto: 'Envío a todo el país', icono: 'ShieldCheck' }, { texto: 'Pago seguro', icono: 'ShieldCheck' }, { texto: 'Cambios y devoluciones', icono: 'ShieldCheck' }, { texto: 'Soporte 24/7', icono: 'ShieldCheck' }],
+      confianza: [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
       faq_titulo: '',
       tags: '',
       precio_base: '',
@@ -211,7 +212,7 @@ export default function ProductForm() {
             variantes: vars?.length ? vars : [],
             propuesta_valor: p.propuesta_valor || '',
             beneficios: p.beneficios || [],
-            confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'ShieldCheck' }, { texto: 'Pago seguro', icono: 'ShieldCheck' }, { texto: 'Cambios y devoluciones', icono: 'ShieldCheck' }, { texto: 'Soporte 24/7', icono: 'ShieldCheck' }],
+            confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
             preguntas_frecuentes: p.preguntas_frecuentes || [],
             sobre_este_producto: p.sobre_este_producto || '',
           });
@@ -322,6 +323,10 @@ export default function ProductForm() {
         activo: data.activo,
         estado_venta: data.estado_venta,
         destacado: data.destacado,
+        propuesta_valor: data.propuesta_valor || null,
+        sobre_este_producto: data.sobre_este_producto || null,
+        beneficios: data.beneficios || [],
+        confianza: data.confianza || [],
         variantes: data.variantes.map(v => ({
           ...v,
           stock: parseInt(v.stock) || 0,
@@ -746,95 +751,102 @@ export default function ProductForm() {
               </p>
             </div>
           )}
-          <div className={esAdmin ? 'form-grid-3' : 'form-grid-2'}>
-                        <div className="form-group">
-              <label htmlFor="prod-precio-costo">
-                Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
-                {esDolarVal && <span className="hint" style={{ color: 'var(--primary)', marginLeft: 8 }}>(Calculado según cotización del proveedor)</span>}
-              </label>
-              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
-                <Controller
-                  name="precio_costo"
-                  control={control}
-                  render={({ field }) => (
-                    <CurrencyInput
-                      id="prod-precio-costo"
-                      className="w-full"
-                      style={{ padding: '0.6rem' }}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      disabled={esDolarVal}
-                    />
-                  )}
-                />
+          <div className="pricing-grid-bg">
+            <div className={esAdmin ? 'form-grid-3' : 'form-grid-2'}>
+              <div className="form-group">
+                <label htmlFor="prod-precio-costo">
+                  Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
+                  {esDolarVal && <span className="hint" style={{ color: 'var(--primary)', marginLeft: 8 }}>(Calculado según cotización del proveedor)</span>}
+                </label>
+                <div className={`pricing-input-wrapper costo ${esDolarVal ? 'disabled' : ''}`}>
+                  <div className="pricing-badge-geom">
+                    <Package size={16} />
+                  </div>
+                  <Controller
+                    name="precio_costo"
+                    control={control}
+                    render={({ field }) => (
+                      <CurrencyInput
+                        id="prod-precio-costo"
+                        className="w-full"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        disabled={esDolarVal}
+                      />
+                    )}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="prod-precio-base">
-                {esAdmin ? 'Precio de Venta Para las Tiendas' : 'Precio de venta a las personas'} <span className="req">*</span>
-              </label>
-              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
-                <Controller
-                  name="precio_base"
-                  control={control}
-                  rules={{ required: 'El precio base es requerido.', min: { value: 0, message: 'El precio no puede ser negativo.' } }}
-                  render={({ field }) => (
-                    <CurrencyInput
-                      id="prod-precio-base"
-                      className="w-full"
-                      style={{ padding: '0.6rem' }}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                    />
-                  )}
-                />
+              <div className="form-group">
+                <label htmlFor="prod-precio-base">
+                  {esAdmin ? 'Precio de Venta Para las Tiendas' : 'Precio de venta a las personas'} <span className="req">*</span>
+                </label>
+                <div className="pricing-input-wrapper venta">
+                  <div className="pricing-badge-geom">
+                    <Tag size={16} />
+                  </div>
+                  <Controller
+                    name="precio_base"
+                    control={control}
+                    rules={{ required: 'El precio base es requerido.', min: { value: 0, message: 'El precio no puede ser negativo.' } }}
+                    render={({ field }) => (
+                      <CurrencyInput
+                        id="prod-precio-base"
+                        className="w-full"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                </div>
+                {errors.precio_base && <span className="field-error">{errors.precio_base.message}</span>}
               </div>
-              {errors.precio_base && <span className="field-error">{errors.precio_base.message}</span>}
+
+              {esAdmin && (
+              <div className="form-group">
+                <label htmlFor="prod-precio-minimo">Precio mínimo de Venta Para las Tiendas</label>
+                <div className="pricing-input-wrapper venta">
+                  <div className="pricing-badge-geom">
+                    <Tag size={16} style={{ opacity: 0.6 }} />
+                  </div>
+                  <Controller
+                    name="precio_minimo"
+                    control={control}
+                    render={({ field }) => (
+                      <CurrencyInput
+                        id="prod-precio-minimo"
+                        className="w-full"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
+                  />
+                </div>
+                <p className="field-hint">El precio con descuento no puede caer por debajo de este valor.</p>
+              </div>
+              )}
             </div>
 
-
-            {esAdmin && (
-            <div className="form-group">
-              <label htmlFor="prod-precio-minimo">Precio mínimo de Venta Para las Tiendas</label>
-              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
-                <Controller
-                  name="precio_minimo"
-                  control={control}
-                  render={({ field }) => (
-                    <CurrencyInput
-                      id="prod-precio-minimo"
-                      className="w-full"
-                      style={{ padding: '0.6rem' }}
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                    />
-                  )}
-                />
+            <div className="commercial-summary">
+              <div className="final">
+                <span>Precio final</span>
+                <strong>{fmtGs(precioFinalVal)}</strong>
               </div>
-              <p className="field-hint">El precio con descuento no puede caer por debajo de este valor.</p>
-            </div>
-            )}
-          </div>
-
-          <div className="commercial-summary">
-            <div>
-              <span>Precio final</span>
-              <strong>{fmtGs(precioFinalVal)}</strong>
-            </div>
-            <div>
-              <span>Costo</span>
-              <strong>{fmtGs(precioCostoVal)}</strong>
-            </div>
-            <div>
-              <span>Ganancia</span>
-              <strong className={gananciaSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtGs(gananciaSimpleVal)}</strong>
-            </div>
-            <div>
-              <span>Margen</span>
-              <strong className={margenSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtPct(margenSimpleVal)}</strong>
+              <div className="costo">
+                <span>Costo</span>
+                <strong>{fmtGs(precioCostoVal)}</strong>
+              </div>
+              <div className="ganancia">
+                <span>Ganancia</span>
+                <strong className={gananciaSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtGs(gananciaSimpleVal)}</strong>
+              </div>
+              <div className="margen">
+                <span>Margen</span>
+                <strong className={margenSimpleVal >= 0 ? 'positive' : 'negative'}>{fmtPct(margenSimpleVal)}</strong>
+              </div>
             </div>
           </div>
 
@@ -843,7 +855,10 @@ export default function ProductForm() {
               <label htmlFor="prod-precio-ancla">
                 Precio ancla <span className="hint">(referencia visible)</span>
               </label>
-              <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
+              <div className="pricing-input-wrapper costo">
+                <div className="pricing-badge-geom">
+                  <DollarSign size={16} />
+                </div>
                 <Controller
                   name="precio_ancla"
                   control={control}
@@ -851,7 +866,6 @@ export default function ProductForm() {
                     <CurrencyInput
                       id="prod-precio-ancla"
                       className="w-full"
-                      style={{ padding: '0.6rem' }}
                       value={field.value}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
@@ -1299,6 +1313,16 @@ export default function ProductForm() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {beneficiosFields.map((field, index) => (
                   <div key={field._rhfKey} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--bg-card)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <Controller
+                      control={control}
+                      name={`beneficios.${index}.icono`}
+                      render={({ field: controllerField }) => (
+                        <SelectorIcono
+                          valor={controllerField.value || 'star'}
+                          onChange={controllerField.onChange}
+                        />
+                      )}
+                    />
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <input {...register(`beneficios.${index}.titulo`)} placeholder="Título corto (ej: Fácil de usar)" />
                       <textarea {...register(`beneficios.${index}.texto`)} placeholder="Breve descripción del beneficio..." rows={2} />
@@ -1322,14 +1346,16 @@ export default function ProductForm() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {confianzaFields.map((field, index) => (
                 <div key={field._rhfKey} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <select {...register(`confianza.${index}.icono`)} style={{ width: '150px' }}>
-                    <option value="ShieldCheck">Escudo (Seguro)</option>
-                    <option value="Truck">Camión (Envío)</option>
-                    <option value="RotateCcw">Devolución</option>
-                    <option value="Headphones">Soporte</option>
-                    <option value="CheckCircle2">Check</option>
-                    <option value="Star">Estrella</option>
-                  </select>
+                  <Controller
+                    control={control}
+                    name={`confianza.${index}.icono`}
+                    render={({ field: controllerField }) => (
+                      <SelectorIcono
+                        valor={controllerField.value || 'shield-check'}
+                        onChange={controllerField.onChange}
+                      />
+                    )}
+                  />
                   <input {...register(`confianza.${index}.texto`)} placeholder="Ej: Envío gratis" style={{ flex: 1 }} />
                   <button type="button" className="btn-icon" onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
                     <Trash2 size={16} />

@@ -201,21 +201,45 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
 }
 
 function SelectorIcono({ valor, onChange }) {
-  const Icono = getIconoBeneficio(valor);
+  const [open, setOpen] = useState(false);
+  const IconoSeleccionado = getIconoBeneficio(valor);
+
   return (
-    <span className="inline-flex items-center gap-1.5 shrink-0">
-      <span className="grid place-items-center w-7 h-7 rounded-lg bg-fg/10 text-fg/70"><Icono size={14} /></span>
-      <select
-        value={valor || ''}
-        onChange={e => onChange(e.target.value || null)}
-        className="bg-fg/5 border border-fg/10 rounded-lg px-1.5 py-1 text-[11px] text-fg focus:outline-none w-[92px]"
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        className="grid place-items-center w-8 h-8 rounded-lg bg-fg/10 text-fg/70 hover:bg-fg/15 border border-fg/10 transition-colors"
+        onClick={() => setOpen(!open)}
+        title="Seleccionar ícono"
       >
-        <option value="">Ícono…</option>
-        {CATALOGO_ICONOS_BENEFICIOS.map(i => (
-          <option key={i.key} value={i.key} className="bg-neutral-900">{i.label}</option>
-        ))}
-      </select>
-    </span>
+        <IconoSeleccionado size={14} />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute top-9 left-0 z-50 p-2 bg-neutral-900 border border-fg/15 rounded-lg shadow-xl grid grid-cols-5 gap-1 w-48 max-h-56 overflow-y-auto">
+            {CATALOGO_ICONOS_BENEFICIOS.map(i => {
+              const Icon = i.Icon;
+              return (
+                <button
+                  key={i.key}
+                  type="button"
+                  className={`p-1.5 flex items-center justify-center rounded hover:bg-white/10 text-fg transition-colors ${valor === i.key ? 'bg-white/10 text-emerald-400 border border-fg/20' : ''}`}
+                  onClick={() => {
+                    onChange(i.key);
+                    setOpen(false);
+                  }}
+                  title={i.label}
+                >
+                  <Icon size={14} />
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -419,11 +443,11 @@ const CAMPOS = {
       >
         {(it, i) => (
           <>
+            <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título del beneficio (ej: Enfoque total)" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
             <div className="flex items-center gap-1.5">
               <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-              <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Enfoque total" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
             </div>
-            <textarea rows={2} className={MINI} value={it.texto || ''} placeholder="Elimina distracciones y mejora la atención." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Elimina distracciones y mejora la atención." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </>
         )}
       </ListaEditable>
@@ -439,12 +463,12 @@ const CAMPOS = {
       >
         {(it, i) => (
           <>
-            <div className="flex items-center gap-1.5">
+            <input className={`${MINI} w-full`} value={it.nombre || ''} placeholder="Nombre del ingrediente (ej: L-Teanina)" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
+            <div className="flex items-center gap-1.5 w-full">
               <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-              <input className={`${MINI} flex-1 min-w-0`} value={it.nombre || ''} placeholder="L-Teanina" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
-              <input className={`${MINI} w-[74px] shrink-0`} value={it.dosis || ''} placeholder="200mg" onChange={e => lista.editar('items', i, { dosis: e.target.value })} />
+              <input className={`${MINI} flex-1 min-w-0`} value={it.dosis || ''} placeholder="Dosis (ej: 200mg)" onChange={e => lista.editar('items', i, { dosis: e.target.value })} />
             </div>
-            <textarea rows={2} className={MINI} value={it.texto || ''} placeholder="Relaja la mente sin causar somnolencia." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Relaja la mente sin causar somnolencia." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </>
         )}
       </ListaEditable>
@@ -489,11 +513,11 @@ const CAMPOS = {
       >
         {(it, i) => (
           <>
+            <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título del paso (ej: Tomás)" onChange={e => lista.editar('pasos', i, { titulo: e.target.value })} />
             <div className="flex items-center gap-1.5">
               <SelectorIcono valor={it.icono} onChange={v => lista.editar('pasos', i, { icono: v })} />
-              <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Tomás" onChange={e => lista.editar('pasos', i, { titulo: e.target.value })} />
             </div>
-            <textarea rows={2} className={MINI} value={it.texto || ''} placeholder="Dos cápsulas con agua por la mañana." onChange={e => lista.editar('pasos', i, { texto: e.target.value })} />
+            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Dos cápsulas con agua por la mañana." onChange={e => lista.editar('pasos', i, { texto: e.target.value })} />
           </>
         )}
       </ListaEditable>
@@ -507,11 +531,11 @@ const CAMPOS = {
     >
       {(it, i) => (
         <>
-          <div className="flex items-center gap-1.5">
+          <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título (ej: Garantía de 60 días)" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
+          <div className="flex items-center gap-1.5 w-full">
             <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-            <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Garantía de 60 días" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
+            <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Subtítulo (ej: Devolución sin preguntas)" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </div>
-          <input className={MINI} value={it.texto || ''} placeholder="Devolución sin preguntas" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
         </>
       )}
     </ListaEditable>

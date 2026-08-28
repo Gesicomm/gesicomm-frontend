@@ -317,9 +317,15 @@
 
 /* ── 4 · Paquetes ─────────────────────────────────────────────────── */
 
+/* justify-content: center + max-width en .fpp-pack: con auto-fit puro, 2
+   tarjetas en un contenedor ancho se estiraban a la mitad del ancho cada
+   una — y como la foto escalaba con la tarjeta, terminaban gigantes. Con
+   el tope, las tarjetas nunca pasan de 300px pase lo que pase cuántas
+   entren, y si sobra espacio la fila queda centrada en vez de estirada. */
 .fpp-packs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
+  justify-content: center;
   gap: 16px;
   margin-top: 30px;
 }
@@ -332,6 +338,7 @@
   gap: 5px;
   padding: 26px 17px 17px;
   border: 1px solid var(--fpp-border-fuerte);
+  max-width: 300px;
   border-radius: 10px;
   background: var(--fpp-card);
   color: inherit;
@@ -368,19 +375,29 @@
 .fpp-pack-nombre { font-size: 14px; font-weight: 900; text-transform: uppercase; }
 .fpp-pack-sub { color: var(--fpp-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
 
+/* Alto FIJO (no aspect-ratio): con aspect-ratio la foto escalaba con el
+   ancho de la tarjeta y en pocas tarjetas se volvía gigante — ver la nota
+   de arriba en .fpp-packs. width/height explícitos + object-fit: cover en
+   el <img> (nunca max-width/max-height solos): sin una caja de tamaño
+   fijo contra la cual recortar, el navegador no tiene garantizado aplicar
+   bien `object-fit`, y con fotos reales (no renders de producto con fondo
+   transparente) el resultado podía verse estirado o mal recortado según
+   la relación de aspecto de cada imagen subida. */
 .fpp-pack-imagen {
   width: 100%;
-  height: 108px;
+  height: 130px;
   margin: 6px 0;
-  display: grid;
-  place-items: center;
   border-radius: 8px;
   background: var(--fpp-surface);
   overflow: hidden;
   color: var(--fpp-muted);
+  display: grid;
+  place-items: center;
 }
 
-.fpp-pack-imagen img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.fpp-pack-imagen img { width: 100%; height: 100%; object-fit: cover; }
+
+.fpp-pack-precio-normal { color: var(--fpp-muted); font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
 
 .fpp-pack-precio { font-size: 21px; font-weight: 900; letter-spacing: -.02em; }
 .fpp-pack-precio small { font-size: 11px; font-weight: 600; color: var(--fpp-muted); }

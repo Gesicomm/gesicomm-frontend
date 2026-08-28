@@ -3,8 +3,25 @@ import { test, expect } from '@playwright/test';
 test.describe('Products Form - Full flow and Tabs UI tests', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Enable browser console logs printing to terminal
-    page.on('console', msg => console.log('BROWSER LOG:', msg.text()));
+    // Network logs (API only)
+    page.on('request', request => {
+      const url = request.url();
+      if (url.includes('/api/') || url.includes('/auth/')) {
+        console.log('>> API REQUEST:', request.method(), url);
+      }
+    });
+    page.on('response', response => {
+      const url = response.url();
+      if (url.includes('/api/') || url.includes('/auth/')) {
+        console.log('<< API RESPONSE:', response.status(), url);
+      }
+    });
+    page.on('console', msg => {
+      const text = msg.text();
+      if (text.includes('Failed') || text.includes('error') || text.includes('Error')) {
+        console.log('BROWSER LOG:', text);
+      }
+    });
     page.on('pageerror', err => console.error('BROWSER ERROR:', err.message));
 
     // Mock user auth (flat object, exactly what verificarSesion expects)
@@ -134,6 +151,31 @@ test.describe('Products Form - Full flow and Tabs UI tests', () => {
         body: JSON.stringify([
           { id: 1, pregunta: '¿Tiene garantía?', respuesta: 'Sí, de 1 año' }
         ])
+      });
+    });
+
+    // Mock product offers (used by the Offers tab)
+    await page.route('**/api/productos/10/ofertas', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([])
+      });
+    });
+
+    // Mock products search (used by search / product list)
+    await page.route('**/api/productos/buscar', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          total: 1,
+          pagina: 1,
+          total_paginas: 1,
+          productos: [
+            { id: 10, nombre: 'Producto Existente', precio_base: 5000, estado_venta: 'en_venta', activo: true }
+          ]
+        })
       });
     });
 

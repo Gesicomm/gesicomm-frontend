@@ -11,6 +11,7 @@ import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../../lib/mensajeWhatsapp';
 import ProductPagePublica from './ProductPagePublica';
 import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
+import StoreHeader from '../landing-simple/templates/StoreHeader';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
 import LandingDropdown from './LandingDropdown';
@@ -839,9 +840,26 @@ export default function LandingPublica() {
       // armador, no una copia: ver FitnessProductPage.jsx. Los otros tres
       // templates rígidos siguen con la ficha genérica de abajo hasta que
       // se adapten.
+      const linkInicio = slug ? `/l/${slug}` : '/';
+      const linkCatalogo = slug ? `/l/${slug}/catalogo` : '/catalogo';
+      const linkContacto = slug ? `/l/${slug}/contacto` : '/contacto';
+      const headerProps = {
+        templateSlug: data?.template?.slug,
+        nombreComercio: datosProductoPublico.nombreComercio,
+        logo: datosProductoPublico.logo,
+        tema: temaResuelto,
+        cantidadCarrito: getItemsCount(),
+        onAbrirCarrito: () => setIsCartOpen(true),
+        linkInicio,
+        linkCatalogo,
+        linkContacto,
+        previewMode: false
+      };
+
       if (data.template.slug === 'fitness-suplementos') {
         return (
           <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
             <FitnessProductPagePublica
               item={itemSeleccionado}
               landingConfig={data.content || {}}
@@ -860,6 +878,7 @@ export default function LandingPublica() {
 
       return (
         <div style={cssVarsRigido}>
+          <StoreHeader {...headerProps} />
           <ProductPagePublica
             item={itemSeleccionado}
             onAgregar={agregarAlCarrito}
