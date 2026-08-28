@@ -848,7 +848,7 @@ export default function LandingPublica() {
         nombreComercio: datosProductoPublico.nombreComercio,
         logo: datosProductoPublico.logo,
         tema: temaResuelto,
-        cantidadCarrito: getItemsCount(),
+        cantidadCarrito: Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0),
         onAbrirCarrito: () => setIsCartOpen(true),
         linkInicio,
         linkCatalogo,
