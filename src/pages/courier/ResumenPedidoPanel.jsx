@@ -56,7 +56,7 @@ export function ResumenPedidoPanel({ open, envio, onClose }) {
       onClick={onClose}
     >
       <div
-        style={{ width: "360px", maxWidth: "100%", height: "100%", background: "#0a0a0b", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "#fff", display: "flex", flexDirection: "column" }}
+        style={{ width: "360px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
@@ -65,7 +65,7 @@ export function ResumenPedidoPanel({ open, envio, onClose }) {
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.88rem", lineHeight: 1.6, margin: 0, color: "#ddd" }}>
+          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: "0.88rem", lineHeight: 1.6, margin: 0, color: "var(--color-fg)" }}>
             {texto}
           </pre>
         </div>

@@ -98,7 +98,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
             top: "calc(100% + 4px)",
             right: 0,
             zIndex: 9999,
-            background: "#18181b",
+            background: "var(--color-canvas)",
             border: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)",
             borderRadius: "8px",
             padding: "4px",
@@ -160,7 +160,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    backgroundColor: config.chipText || "#aaa",
+                    backgroundColor: config.chipText || "var(--color-fg-muted)",
                     flexShrink: 0,
                   }}
                 />
@@ -203,8 +203,8 @@ function formatFechaYHora(fecha, hora, createdAt) {
 function ResumenItem({ label, value, color }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
-      <span style={{ color: "#888" }}>{label}:</span>
-      <strong style={{ color: color || "#fff" }}>{value}</strong>
+      <span style={{ color: "var(--color-fg-muted)" }}>{label}:</span>
+      <strong style={{ color: color || "var(--color-fg)" }}>{value}</strong>
     </span>
   );
 }
@@ -229,7 +229,7 @@ function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen }) {
   if (envio.estado === "Pendiente") {
     const tel = (envio.telefono || "").replace(/\D/g, "");
     const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
-    if (!tel) return <span style={{ color: "#555", fontSize: "0.75rem" }}>Sin teléfono</span>;
+    if (!tel) return <span style={{ color: "var(--color-fg-subtle)", fontSize: "0.75rem" }}>Sin teléfono</span>;
     const mensaje = `Hola ${nombre}, te escribimos por tu pedido #${envio.id}. ¿Confirmamos los datos de entrega?`;
     const link = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
     return (
@@ -477,9 +477,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
           <ResumenItem label="Pendientes de rendición" value={String(resumenEntregados.pendientes_rendicion)} />
 
           {resumenEntregados.desglose_metodo_pago.length > 0 && (
-            <div style={{ width: "100%", borderTop: "1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)", marginTop: "0.3rem", paddingTop: "0.4rem", display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem", color: "#888" }}>
+            <div style={{ width: "100%", borderTop: "1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)", marginTop: "0.3rem", paddingTop: "0.4rem", display: "flex", flexWrap: "wrap", gap: "0.3rem 1.2rem", color: "var(--color-fg-muted)" }}>
               {resumenEntregados.desglose_metodo_pago.map((d) => (
-                <span key={d.metodo_pago}>{d.metodo_pago}: <strong style={{ color: "#ccc" }}>{formatGs(d.monto)}</strong></span>
+                <span key={d.metodo_pago}>{d.metodo_pago}: <strong style={{ color: "var(--color-fg)" }}>{formatGs(d.monto)}</strong></span>
               ))}
             </div>
           )}
@@ -507,7 +507,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
 
         {/* Ciudad VISIBLE directamente */}
         <div className="pt-search-wrap" style={{ flex: "0 0 auto", minWidth: "140px" }}>
-          <MapPin size={14} className="pt-search-icon" style={{ color: "#666" }} />
+          <MapPin size={14} className="pt-search-icon" style={{ color: "var(--color-fg-subtle)" }} />
           <input
             type="text"
             className="pt-search"
@@ -524,7 +524,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
 
         {/* Fecha desde */}
         <label className="pt-date-label" title="Fecha desde">
-          <span style={{ fontSize: "0.72rem", color: "#666", whiteSpace: "nowrap" }}>Desde</span>
+          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)", whiteSpace: "nowrap" }}>Desde</span>
           <input
             type="date"
             className="pt-date-input"
@@ -535,7 +535,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
 
         {/* Fecha hasta */}
         <label className="pt-date-label" title="Fecha hasta">
-          <span style={{ fontSize: "0.72rem", color: "#666", whiteSpace: "nowrap" }}>Hasta</span>
+          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)", whiteSpace: "nowrap" }}>Hasta</span>
           <input
             type="date"
             className="pt-date-input"
@@ -703,9 +703,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                     <td className="pt-td pt-td-id">#{e.id}</td>
                     <td className="pt-td pt-td-fecha">
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ color: "#fff", fontWeight: 500 }}>{fechaVisual}</span>
+                        <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>{fechaVisual}</span>
                         {horaVisual && (
-                          <span style={{ fontSize: "0.72rem", color: "#9ca3af", fontFamily: "monospace" }}>
+                          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)", fontFamily: "monospace" }}>
                             {horaVisual}
                           </span>
                         )}
@@ -719,7 +719,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                       </span>
                     </td>
                     <td className="pt-td">
-                      <span style={{ color: "#aaa", fontSize: "0.82rem" }}>{e.telefono || "—"}</span>
+                      <span style={{ color: "var(--color-fg-muted)", fontSize: "0.82rem" }}>{e.telefono || "—"}</span>
                     </td>
                     <td className="pt-td pt-td-ciudad">
                       <span>{e.ciudad || "—"}</span>

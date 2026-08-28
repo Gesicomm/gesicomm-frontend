@@ -94,7 +94,7 @@ export function RendicionTab({ couriers = [] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", maxWidth: "820px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
         <HandCoins size={20} color="#facc15" />
-        <h2 style={{ margin: 0, color: "#fff", fontSize: "1.1rem" }}>Rendición de couriers</h2>
+        <h2 style={{ margin: 0, color: "var(--color-fg)", fontSize: "1.1rem" }}>Rendición de couriers</h2>
       </div>
 
       <div style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", borderRadius: "0.75rem", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -134,7 +134,7 @@ export function RendicionTab({ couriers = [] }) {
 
       {desglose && (
         <div style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", borderRadius: "0.75rem", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
-          <h3 style={{ margin: 0, fontSize: "0.95rem", color: "#fff" }}>Desglose ({desglose.cantidad_pedidos} pedido{desglose.cantidad_pedidos === 1 ? "" : "s"})</h3>
+          <h3 style={{ margin: 0, fontSize: "0.95rem", color: "var(--color-fg)" }}>Desglose ({desglose.cantidad_pedidos} pedido{desglose.cantidad_pedidos === 1 ? "" : "s"})</h3>
 
           <FilaDesglose label="Dinero en poder del courier" valor={desglose.total_dinero_courier} />
           <FilaDesglose label="− Costo de servicios" valor={-desglose.total_costo_servicios} />
@@ -152,10 +152,10 @@ export function RendicionTab({ couriers = [] }) {
 
           {desglose.detalle && desglose.detalle.length > 0 && (
             <details>
-              <summary style={{ cursor: "pointer", color: "#9ca3af", fontSize: "0.82rem" }}>Ver pedidos incluidos</summary>
+              <summary style={{ cursor: "pointer", color: "var(--color-fg-muted)", fontSize: "0.82rem" }}>Ver pedidos incluidos</summary>
               <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                 {desglose.detalle.map((d) => (
-                  <div key={d.envio_id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "#aaa", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.25rem 0" }}>
+                  <div key={d.envio_id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: "var(--color-fg-muted)", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.25rem 0" }}>
                     <span>#{d.envio_id} · {d.cliente} · {d.estado} · {d.metodo_pago || "—"}</span>
                     <span>{formatGs(d.dinero_courier)} / envío {formatGs(d.costo_envio)}{d.cargo_perdida_courier ? ` / pérdida ${formatGs(d.cargo_perdida_courier)}` : ""}</span>
                   </div>
@@ -177,10 +177,10 @@ export function RendicionTab({ couriers = [] }) {
 
       {historial.length > 0 && (
         <div style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", borderRadius: "0.75rem", padding: "1.25rem" }}>
-          <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.95rem", color: "#fff" }}>Historial</h3>
+          <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.95rem", color: "var(--color-fg)" }}>Historial</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {historial.map((l) => (
-              <div key={l.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "#ccc", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.4rem 0" }}>
+              <div key={l.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--color-fg)", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.4rem 0" }}>
                 <span>{l.fecha_desde} a {l.fecha_hasta} · {(l.envios_incluidos || []).length} pedidos · {l.observacion || "—"}</span>
                 <span style={{ fontWeight: 700, color: l.saldo_final > 0 ? "#34d399" : l.saldo_final < 0 ? "#f87171" : "#9ca3af" }}>{formatGs(l.saldo_final)}</span>
               </div>
@@ -194,7 +194,7 @@ export function RendicionTab({ couriers = [] }) {
 
 function FilaDesglose({ label, valor }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem", color: "#ccc" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.88rem", color: "var(--color-fg)" }}>
       <span>{label}</span>
       <span>{formatGs(valor)}</span>
     </div>

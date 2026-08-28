@@ -34,7 +34,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "#0a0a0b", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "#fff", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <History size={18} color="#7d9bd6" /> Historial · Pedido #{envio.id}
@@ -44,11 +44,11 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "1.25rem" }}>
           {cargando ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "#888" }}><Loader size={16} /> Cargando...</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-fg-muted)" }}><Loader size={16} /> Cargando...</div>
           ) : error ? (
             <p style={{ color: "#f87171" }}>{error}</p>
           ) : historial.length === 0 ? (
-            <p style={{ color: "#666" }}>Todavía no hay movimientos registrados para este pedido.</p>
+            <p style={{ color: "var(--color-fg-subtle)" }}>Todavía no hay movimientos registrados para este pedido.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
               {historial.map((h, i) => (
@@ -58,9 +58,9 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
                     {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "color-mix(in srgb, var(--color-fg) 10%, transparent)", marginTop: "0.2rem" }} />}
                   </div>
                   <div style={{ paddingBottom: "0.2rem" }}>
-                    <div style={{ fontSize: "0.72rem", color: "#666", fontFamily: "monospace" }}>{formatFechaHora(h.fecha)}</div>
-                    <div style={{ fontSize: "0.86rem", color: "#eee" }}>{h.detalle}</div>
-                    {h.usuario && <div style={{ fontSize: "0.72rem", color: "#666" }}>por {h.usuario}</div>}
+                    <div style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)", fontFamily: "monospace" }}>{formatFechaHora(h.fecha)}</div>
+                    <div style={{ fontSize: "0.86rem", color: "var(--color-fg)" }}>{h.detalle}</div>
+                    {h.usuario && <div style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)" }}>por {h.usuario}</div>}
                   </div>
                 </div>
               ))}

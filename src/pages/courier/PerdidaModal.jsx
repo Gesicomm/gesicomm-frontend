@@ -77,7 +77,7 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" style={{ maxWidth: "560px", background: "#0a0a0b", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "#fff" }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" style={{ maxWidth: "560px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <AlertTriangle size={18} color="#f87171" /> Registrar pérdida #{envio.id}
@@ -87,18 +87,18 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
 
         <form onSubmit={handleSubmit} style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "1rem", maxHeight: "70vh", overflowY: "auto" }}>
           {filas.length === 0 ? (
-            <p style={{ color: "#888" }}>Este pedido no tiene productos con stock en tránsito para marcar como perdidos.</p>
+            <p style={{ color: "var(--color-fg-muted)" }}>Este pedido no tiene productos con stock en tránsito para marcar como perdidos.</p>
           ) : (
             filas.map((f) => (
               <div key={f.componente_id} style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 7%, transparent)", borderRadius: "0.6rem", padding: "0.8rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
                   <strong>{f.nombre_producto}</strong>
-                  <span style={{ fontSize: "0.78rem", color: "#888" }}>
+                  <span style={{ fontSize: "0.78rem", color: "var(--color-fg-muted)" }}>
                     Pedido: {f.cantidad_pedida} · Gestionado: {f.ya_gestionado} · Disponible: {f.disponible}
                   </span>
                 </div>
                 {f.disponible <= 0 ? (
-                  <span style={{ fontSize: "0.78rem", color: "#666" }}>Sin cantidad disponible para marcar como perdida.</span>
+                  <span style={{ fontSize: "0.78rem", color: "var(--color-fg-subtle)" }}>Sin cantidad disponible para marcar como perdida.</span>
                 ) : (
                   <input
                     type="number"
@@ -129,13 +129,13 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
                 <span>= Cargo al courier (estimado)</span>
                 <span>{formatGs(cargoEstimado)}</span>
               </div>
-              <p style={{ margin: "0.4rem 0 0 0", color: "#999", fontSize: "0.72rem" }}>
+              <p style={{ margin: "0.4rem 0 0 0", color: "var(--color-fg-muted)", fontSize: "0.72rem" }}>
                 El backend recalcula este cargo antes de guardarlo — este valor es solo una previsualización.
               </p>
             </div>
           )}
 
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "#ccc" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.85rem", color: "var(--color-fg)" }}>
             <input type="checkbox" checked={marcarEstado} onChange={(e) => setMarcarEstado(e.target.checked)} />
             Marcar el pedido completo como "Perdido"
           </label>

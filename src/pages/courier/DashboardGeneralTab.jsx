@@ -12,8 +12,8 @@ const FILTROS_VACIOS = { courier_id: "TODOS", fecha_desde: "", fecha_hasta: "", 
 function Stat({ label, value, color }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem", minWidth: "110px" }}>
-      <span style={{ fontSize: "0.72rem", color: "#888" }}>{label}</span>
-      <span style={{ fontSize: "1.3rem", fontWeight: 700, color: color || "#fff" }}>{value}</span>
+      <span style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)" }}>{label}</span>
+      <span style={{ fontSize: "1.3rem", fontWeight: 700, color: color || "var(--color-fg)" }}>{value}</span>
     </div>
   );
 }
@@ -21,7 +21,7 @@ function Stat({ label, value, color }) {
 function Bloque({ titulo, children }) {
   return (
     <div style={{ background: "color-mix(in srgb, var(--color-fg) 3%, transparent)", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", borderRadius: "0.75rem", padding: "1.1rem" }}>
-      <h3 style={{ margin: "0 0 0.85rem 0", fontSize: "0.85rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.03em" }}>{titulo}</h3>
+      <h3 style={{ margin: "0 0 0.85rem 0", fontSize: "0.85rem", fontWeight: 700, color: "var(--color-fg-muted)", textTransform: "uppercase", letterSpacing: "0.03em" }}>{titulo}</h3>
       {children}
     </div>
   );
@@ -75,13 +75,13 @@ export function DashboardGeneralTab({ couriers = [] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "1100px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
         <LayoutDashboard size={20} color="#60a5fa" />
-        <h2 style={{ margin: 0, color: "#fff", fontSize: "1.1rem" }}>Dashboard</h2>
+        <h2 style={{ margin: 0, color: "var(--color-fg)", fontSize: "1.1rem" }}>Dashboard</h2>
       </div>
 
       {/* Filtros */}
       <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", alignItems: "flex-end" }}>
         <label className="pt-date-label" title="Courier">
-          <span style={{ fontSize: "0.72rem", color: "#666" }}>Courier</span>
+          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)" }}>Courier</span>
           <select className="pt-filter-select" value={filtros.courier_id} onChange={(e) => setFiltro("courier_id", e.target.value)}>
             <option value="TODOS">Todos</option>
             <option value="null">Sin courier</option>
@@ -89,15 +89,15 @@ export function DashboardGeneralTab({ couriers = [] }) {
           </select>
         </label>
         <label className="pt-date-label" title="Fecha desde">
-          <span style={{ fontSize: "0.72rem", color: "#666" }}>Desde</span>
+          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)" }}>Desde</span>
           <input type="date" className="pt-date-input" value={filtros.fecha_desde} onChange={(e) => setFiltro("fecha_desde", e.target.value)} />
         </label>
         <label className="pt-date-label" title="Fecha hasta">
-          <span style={{ fontSize: "0.72rem", color: "#666" }}>Hasta</span>
+          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)" }}>Hasta</span>
           <input type="date" className="pt-date-input" value={filtros.fecha_hasta} onChange={(e) => setFiltro("fecha_hasta", e.target.value)} />
         </label>
         <label className="pt-date-label" title="Producto">
-          <span style={{ fontSize: "0.72rem", color: "#666" }}>Producto</span>
+          <span style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)" }}>Producto</span>
           <select className="pt-filter-select" value={filtros.producto} onChange={(e) => setFiltro("producto", e.target.value)}>
             <option value="TODOS">Todos</option>
             {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
@@ -109,7 +109,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
       </div>
 
       {loading && !data ? (
-        <p style={{ color: "#888" }}>Cargando...</p>
+        <p style={{ color: "var(--color-fg-muted)" }}>Cargando...</p>
       ) : !data ? null : (
         <>
           {/* Bloque 1 — Trabajo pendiente */}
@@ -129,11 +129,11 @@ export function DashboardGeneralTab({ couriers = [] }) {
           <Bloque titulo="Resultado operativo">
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1.2rem", alignItems: "center" }}>
               <Stat label="Ingresados" value={ro.ingresados} />
-              <span style={{ color: "#444" }}>→</span>
+              <span style={{ color: "var(--color-fg-subtle)" }}>→</span>
               <Stat label="Confirmados" value={ro.confirmados} color="#2dd4bf" />
-              <span style={{ color: "#444" }}>→</span>
+              <span style={{ color: "var(--color-fg-subtle)" }}>→</span>
               <Stat label="Entregados" value={ro.entregados} color="#34d399" />
-              <span style={{ color: "#444", marginLeft: "0.5rem" }}>·</span>
+              <span style={{ color: "var(--color-fg-subtle)", marginLeft: "0.5rem" }}>·</span>
               <Stat label="Cancelados" value={ro.cancelados} color="#f87171" />
               <Stat label="Devueltos" value={ro.devueltos} color="#a8917a" />
               <Stat label="Perdidos" value={ro.perdidos} color="#f87171" />
@@ -143,7 +143,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
           {/* Bloque 3 — Desempeño de courier */}
           <Bloque titulo="Desempeño de courier">
             {dc.length === 0 ? (
-              <p style={{ color: "#666", fontSize: "0.82rem", margin: 0 }}>Todavía no hay pedidos despachados en este período.</p>
+              <p style={{ color: "var(--color-fg-subtle)", fontSize: "0.82rem", margin: 0 }}>Todavía no hay pedidos despachados en este período.</p>
             ) : (
               <div style={{ overflowX: "auto" }}>
                 <table className="prod-table" style={{ margin: 0, width: "100%" }}>
@@ -174,7 +174,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
                 </table>
               </div>
             )}
-            <p style={{ margin: "0.6rem 0 0 0", fontSize: "0.72rem", color: "#666" }}>
+            <p style={{ margin: "0.6rem 0 0 0", fontSize: "0.72rem", color: "var(--color-fg-subtle)" }}>
               % Entrega = Entregados ÷ (Entregados + Devueltos + Perdidos) × 100. Reprogramados no entran todavía porque no tienen resultado final.
             </p>
           </Bloque>
