@@ -49,7 +49,7 @@
   border: 1px solid var(--vit-border);
 }
 .onb-step.active { background: var(--vit-accent-soft); color: var(--vit-accent); border-color: rgba(61, 95, 163, 0.35); }
-.onb-step.done { background: var(--vit-accent); color: #fff; border-color: var(--vit-accent); }
+.onb-step.done { background: var(--vit-accent); color: var(--color-primary-fg); border-color: var(--vit-accent); }
 .onb-step-line { flex: 1; height: 1px; background: var(--vit-border); }
 
 .onb-step-content { display: flex; flex-direction: column; gap: 0.9rem; }

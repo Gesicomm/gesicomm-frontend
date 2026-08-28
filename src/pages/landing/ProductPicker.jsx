@@ -386,7 +386,7 @@ export default function ProductPicker({
                       style={{
                         padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
                         background: pagina <= 1 ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
-                        color: pagina <= 1 ? '#555' : '#fff', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
+                        color: pagina <= 1 ? 'var(--color-fg-subtle)' : 'var(--color-fg)', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
                         display: 'inline-flex', alignItems: 'center'
                       }}
                     >
@@ -400,7 +400,7 @@ export default function ProductPicker({
                       style={{
                         padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
                         background: pagina >= totalPaginas ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
-                        color: pagina >= totalPaginas ? '#555' : '#fff', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
+                        color: pagina >= totalPaginas ? 'var(--color-fg-subtle)' : 'var(--color-fg)', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
                         display: 'inline-flex', alignItems: 'center'
                       }}
                     >
@@ -435,7 +435,7 @@ export default function ProductPicker({
                     style={{
                       padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
                       background: pagina <= 1 ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
-                      color: pagina <= 1 ? '#555' : '#fff', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
+                      color: pagina <= 1 ? 'var(--color-fg-subtle)' : 'var(--color-fg)', cursor: pagina <= 1 ? 'not-allowed' : 'pointer',
                       display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                     }}
                   >
@@ -449,7 +449,7 @@ export default function ProductPicker({
                     style={{
                       padding: '0.25rem 0.6rem', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)',
                       background: pagina >= totalPaginas ? 'transparent' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)',
-                      color: pagina >= totalPaginas ? '#555' : '#fff', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
+                      color: pagina >= totalPaginas ? 'var(--color-fg-subtle)' : 'var(--color-fg)', cursor: pagina >= totalPaginas ? 'not-allowed' : 'pointer',
                       display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                     }}
                   >

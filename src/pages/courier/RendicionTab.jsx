@@ -182,7 +182,7 @@ export function RendicionTab({ couriers = [] }) {
             {historial.map((l) => (
               <div key={l.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.82rem", color: "var(--color-fg)", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)", padding: "0.4rem 0" }}>
                 <span>{l.fecha_desde} a {l.fecha_hasta} · {(l.envios_incluidos || []).length} pedidos · {l.observacion || "—"}</span>
-                <span style={{ fontWeight: 700, color: l.saldo_final > 0 ? "#34d399" : l.saldo_final < 0 ? "#f87171" : "#9ca3af" }}>{formatGs(l.saldo_final)}</span>
+                <span style={{ fontWeight: 700, color: l.saldo_final > 0 ? "#34d399" : l.saldo_final < 0 ? "#f87171" : "var(--color-fg-muted)" }}>{formatGs(l.saldo_final)}</span>
               </div>
             ))}
           </div>

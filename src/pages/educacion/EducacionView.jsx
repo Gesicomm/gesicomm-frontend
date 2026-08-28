@@ -650,7 +650,7 @@ export default function EducacionView() {
                                   onChange={() => {}}
                                   style={{ accentColor: '#3b82f6' }}
                                 />
-                                <span style={{ fontSize: '0.9rem', color: selected ? 'white' : '#cbd5e1', fontWeight: selected ? 600 : 400 }}>
+                                <span style={{ fontSize: '0.9rem', color: selected ? 'white' : 'var(--color-fg)', fontWeight: selected ? 600 : 400 }}>
                                   <strong style={{ color: '#93c5fd', marginRight: '0.4rem' }}>{opt.id}.</strong> {opt.texto}
                                 </span>
                               </label>

@@ -73,7 +73,7 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
       <div className="cic-top-bar">
         <div className="cic-header-row">
           <div className="cic-title-box">
-            <div style={{ background: 'linear-gradient(135deg, #3d5fa3, #3b82f6)', padding: '0.6rem', borderRadius: '12px', color: '#fff', display: 'flex' }}>
+            <div style={{ background: 'linear-gradient(135deg, #3d5fa3, #3b82f6)', padding: '0.6rem', borderRadius: '12px', color: 'var(--color-fg)', display: 'flex' }}>
               <TrendingUp size={22} />
             </div>
             <div>

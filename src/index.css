@@ -245,7 +245,9 @@ html {
     padding: 0.75rem 1.25rem;
     border-radius: var(--radius-md);
     background: var(--color-primary);
-    color: #fff;
+    /* Va SOBRE el primario, no sobre una superficie: su texto es el que
+       corresponde al primario en los dos temas, no la tinta del tema. */
+    color: var(--color-primary-fg);
     font-size: 0.875rem;
     font-weight: 600;
     transition: top 0.2s ease;

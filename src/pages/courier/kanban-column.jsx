@@ -52,7 +52,7 @@ export function KanbanColumn({
         {envios.length === 0 ? (
           <div
             className={`empty-state ${isOver ? 'is-over' : ''}`}
-            style={{ padding: '2rem', border: '1px dashed #cbd5e1', background: 'transparent' }}
+            style={{ padding: '2rem', border: '1px dashed var(--color-border-strong)', background: 'transparent' }}
           >
             {isOver ? "Soltar aquí" : "Sin envíos"}
           </div>

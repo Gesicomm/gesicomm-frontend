@@ -87,9 +87,9 @@ export default function TemplateThumbnails({ type, templateId }) {
     if (templateId === 'banner_oferta') return (
       <svg viewBox="0 0 100 60" className="w-full h-full text-[var(--vit-muted-2)]">
         <rect x="0" y="0" width="100" height="60" fill="currentColor" opacity="0.8" />
-        <rect x="35" y="15" width="30" height="5" rx="2" fill="#fff" opacity="0.5" />
-        <rect x="20" y="25" width="60" height="8" rx="2" fill="#fff" opacity="0.9" />
-        <rect x="40" y="40" width="20" height="6" rx="2" fill="#fff" opacity="0.9" />
+        <rect x="35" y="15" width="30" height="5" rx="2" fill="var(--color-fg)" opacity="0.5" />
+        <rect x="20" y="25" width="60" height="8" rx="2" fill="var(--color-fg)" opacity="0.9" />
+        <rect x="40" y="40" width="20" height="6" rx="2" fill="var(--color-fg)" opacity="0.9" />
       </svg>
     );
     return (
@@ -255,7 +255,7 @@ export default function TemplateThumbnails({ type, templateId }) {
   if (type === 'announcement_bar') return (
     <svg viewBox="0 0 100 60" className="w-full h-full text-[var(--vit-muted-2)]">
       <rect x="0" y="0" width="100" height="10" fill="currentColor" opacity="0.8" />
-      <rect x="30" y="3" width="40" height="4" rx="2" fill="#fff" opacity="0.9" />
+      <rect x="30" y="3" width="40" height="4" rx="2" fill="var(--color-fg)" opacity="0.9" />
     </svg>
   );
 

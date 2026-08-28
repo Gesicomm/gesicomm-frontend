@@ -101,11 +101,11 @@ function computeRecomendacion(ofertas, productoActivoId) {
 
 /* ─── Estilos compartidos (mismos tokens que CampanaInternaModal) ───────── */
 const s = {
-  card: { border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '10px', background: '#141416', padding: '1rem' },
-  label: { fontSize: '0.82rem', color: '#aaa', display: 'block', marginBottom: '0.35rem' },
+  card: { border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '10px', background: 'var(--color-canvas)', padding: '1rem' },
+  label: { fontSize: '0.82rem', color: 'var(--color-fg-muted)', display: 'block', marginBottom: '0.35rem' },
   input: { width: '100%' },
   btnPrimary: { display: 'inline-flex', alignItems: 'center', gap: '0.4rem' },
-  muted: { fontSize: '0.78rem', color: '#777' },
+  muted: { fontSize: '0.78rem', color: 'var(--color-fg-muted)' },
   err: { fontSize: '0.78rem', color: '#f87171', marginTop: '0.35rem' },
 };
 
@@ -124,7 +124,7 @@ function SelectorProducto({ productos, productoIds, onElegir }) {
             style={{ ...s.card, display: 'flex', alignItems: 'center', gap: '0.6rem', textAlign: 'left', cursor: 'pointer', padding: '0.6rem' }}
           >
             <div style={{ width: 40, height: 40, borderRadius: 6, overflow: 'hidden', background: 'var(--color-canvas)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {p.imagenes?.[0]?.url ? <img src={getMediaUrl(p.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageOff size={16} color="#444" />}
+              {p.imagenes?.[0]?.url ? <img src={getMediaUrl(p.imagenes[0].url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <ImageOff size={16} color="var(--color-fg-subtle)" />}
             </div>
             <span style={{ fontSize: '0.85rem', color: 'var(--color-fg)', fontWeight: 600 }}>{p.nombre}</span>
           </button>
@@ -336,8 +336,8 @@ function SugerenciaForm({ tipo, productoActivoId, productos, ofertaExistente, on
 
 /* ─── Preview del recorrido (refleja el estado ya guardado) ────────────── */
 function PreviewRecorrido({ producto, bump, upsell }) {
-  const box = { border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '8px', background: '#0f0f10', padding: '0.7rem 0.9rem', width: '100%', maxWidth: '300px' };
-  const arrow = { textAlign: 'center', color: '#555', fontSize: '0.9rem', padding: '2px 0' };
+  const box = { border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '8px', background: 'var(--color-canvas)', padding: '0.7rem 0.9rem', width: '100%', maxWidth: '300px' };
+  const arrow = { textAlign: 'center', color: 'var(--color-fg-subtle)', fontSize: '0.9rem', padding: '2px 0' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, margin: '0.5rem 0' }}>
       <div style={box}>
@@ -347,11 +347,11 @@ function PreviewRecorrido({ producto, bump, upsell }) {
       <div style={arrow}>↓</div>
       <div style={box}>
         <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Carrito</div>
-        <div style={{ fontSize: '0.8rem', color: bump ? '#fff' : '#555', marginTop: '4px' }}>
+        <div style={{ fontSize: '0.8rem', color: bump ? 'var(--color-fg)' : 'var(--color-fg-subtle)', marginTop: '4px' }}>
           {bump ? `☑ ${nombreComplemento(bump, producto?.id)} — ${formatPrecio(bump.precio)}` : '☐ (sin order bump activo)'}
         </div>
         {bump && <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-subtle)' }}>⭐ Complemento recomendado</div>}
-        <div style={{ fontSize: '0.8rem', color: upsell ? '#fff' : '#555', marginTop: '6px' }}>
+        <div style={{ fontSize: '0.8rem', color: upsell ? 'var(--color-fg)' : 'var(--color-fg-subtle)', marginTop: '6px' }}>
           {upsell ? `${nombreComplemento(upsell, producto?.id)} — ${formatPrecio(upsell.precio)}` : '(sin upsell activo)'}
         </div>
         {upsell && <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-subtle)' }}>🚀 También te puede interesar</div>}
@@ -753,7 +753,7 @@ export default function FunnelStrategyStep({ productos, productoIds, setLandingI
 
       <div style={{ ...s.card, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <Link2 size={13} color="#888" />
+          <Link2 size={13} color="var(--color-fg-muted)" />
           <span style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Link para tus anuncios
           </span>

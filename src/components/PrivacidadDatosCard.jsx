@@ -94,7 +94,7 @@ const PrivacidadDatosCard = () => {
                     background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                    <ShieldOff size={18} color="#fff" />
+                    <ShieldOff size={18} color="var(--color-fg)" />
                 </div>
                 <div>
                     <h3 style={{ margin: 0, fontSize: '1rem' }}>Privacidad y datos</h3>
@@ -236,7 +236,7 @@ const PrivacidadDatosCard = () => {
                             type="submit"
                             disabled={enviando || !password}
                             style={{
-                                background: '#ef4444', border: 'none', color: '#fff',
+                                background: '#ef4444', border: 'none', color: 'var(--color-fg)',
                                 padding: '0.65rem 1.2rem', borderRadius: '8px',
                                 cursor: enviando || !password ? 'not-allowed' : 'pointer',
                                 opacity: enviando || !password ? 0.55 : 1,

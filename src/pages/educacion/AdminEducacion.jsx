@@ -1336,7 +1336,7 @@ export default function AdminEducacion() {
                                     </span>
                                     <span
                                       style={{
-                                        color: isCurrent ? '#ffffff' : '#cbd5e1',
+                                        color: isCurrent ? 'var(--color-fg)' : 'var(--color-fg)',
                                         fontWeight: isCurrent ? 600 : 400,
                                         whiteSpace: 'nowrap',
                                         overflow: 'hidden',

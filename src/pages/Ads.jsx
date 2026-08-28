@@ -191,7 +191,7 @@ const Ads = () => {
                         display: 'flex', alignItems: 'center', gap: '0.4rem',
                         padding: '0.6rem 1rem', background: 'transparent', border: 'none',
                         borderBottom: activeTab === tab.id ? '2px solid var(--bg-primary, #ff007f)' : '2px solid transparent',
-                        color: activeTab === tab.id ? '#fff' : '#888',
+                        color: activeTab === tab.id ? 'var(--color-fg)' : 'var(--color-fg-muted)',
                         fontWeight: activeTab === tab.id ? 600 : 400,
                         fontSize: '0.88rem', cursor: 'pointer', transition: 'all 0.15s'
                     }}
@@ -288,7 +288,7 @@ const Ads = () => {
                                         background: selectedStore?.id === t.id
                                             ? 'var(--vit-accent-soft, rgba(255,0,127,0.15))'
                                             : 'transparent',
-                                        color: selectedStore?.id === t.id ? 'var(--bg-primary, #ff007f)' : '#aaa',
+                                        color: selectedStore?.id === t.id ? 'var(--bg-primary, #ff007f)' : 'var(--color-fg-muted)',
                                         fontSize: '0.82rem',
                                         fontWeight: selectedStore?.id === t.id ? 600 : 400,
                                         cursor: 'pointer',

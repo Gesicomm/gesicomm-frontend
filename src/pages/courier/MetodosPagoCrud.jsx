@@ -139,7 +139,7 @@ export function MetodosPagoCrud() {
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
                     background: m.activo ? 'rgba(16, 185, 129, 0.15)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
-                    color: m.activo ? '#34d399' : '#888888',
+                    color: m.activo ? '#34d399' : 'var(--color-fg-muted)',
                     border: m.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
                   }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.activo ? '#10b981' : '#64748b' }} />
@@ -316,7 +316,7 @@ export function MetodosPagoCrud() {
                 type="submit"
                 style={{
                   background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)',
-                  color: '#ffffff',
+                  color: 'var(--color-fg)',
                   border: 'none',
                   padding: '0.65rem 1.6rem',
                   borderRadius: '0.6rem',

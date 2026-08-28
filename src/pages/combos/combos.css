@@ -33,7 +33,7 @@
   border-radius: 10px;
   background: linear-gradient(135deg, #f59e0b, #d97706);
   display: flex; align-items: center; justify-content: center;
-  color: #fff;
+  color: var(--color-primary-fg);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
   flex-shrink: 0;
 }
@@ -534,7 +534,7 @@
 .btn-activate {
   display: flex; align-items: center; gap: 0.4rem;
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #fff;
+  color: var(--color-primary-fg);
   border: none; border-radius: 8px;
   padding: 0.55rem 1.1rem;
   font-size: 0.875rem; font-weight: 600;

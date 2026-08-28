@@ -302,7 +302,7 @@
   border-radius: 0 12px 12px 12px;
   padding: 0.65rem 0.85rem;
   padding-bottom: 1.1rem;
-  color: #e9edef;
+  color: var(--color-fg);
   font-size: 0.82rem;
   line-height: 1.55;
   max-width: 380px;

@@ -639,7 +639,7 @@ export default function ComboEditor() {
           <div className="combo-comparison-grid">
             <div className="combo-compare-card">
               <span className="combo-compare-label">Utilidad individual</span>
-              <span className="combo-compare-value" style={{ color: r.comparison.standaloneProfit >= 0 ? '#e2e8f0' : '#ef4444' }}>
+              <span className="combo-compare-value" style={{ color: r.comparison.standaloneProfit >= 0 ? 'var(--color-fg)' : '#ef4444' }}>
                 {fmtGs(r.comparison.standaloneProfit)}
               </span>
               <span style={{ fontSize: '0.75rem', color: '#475569' }}>Solo producto principal</span>

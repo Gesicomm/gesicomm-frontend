@@ -167,7 +167,7 @@ export default function ComboModal({ comboInicial, productoPadre, onClose, onSav
                           key={p.id} 
                           onClick={() => agregarProducto(p)}
                           style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #222', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#2a2a2c'}
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--color-surface-2)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <div>

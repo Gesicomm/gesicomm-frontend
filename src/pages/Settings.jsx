@@ -91,7 +91,7 @@ const Settings = () => {
                             background: 'linear-gradient(135deg, #1877F2, #00b2ff)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
-                            <Store size={18} color="#fff" />
+                            <Store size={18} color="var(--color-fg)" />
                         </div>
                         <div>
                             <h3 style={{ margin: 0, fontSize: '1rem' }}>Tiendas Conectadas (Meta Business)</h3>

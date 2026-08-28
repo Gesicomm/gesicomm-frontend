@@ -23,10 +23,10 @@ const formatFecha = (value) => {
 };
 
 const badgeEstado = {
-  borrador: { bg: 'rgba(156,163,175,0.1)', color: '#9ca3af' },
+  borrador: { bg: 'rgba(156,163,175,0.1)', color: 'var(--color-fg-muted)' },
   activa: { bg: 'rgba(16,185,129,0.1)', color: '#10b981' },
   pausada: { bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
-  archivada: { bg: 'rgba(156,163,175,0.1)', color: '#9ca3af' },
+  archivada: { bg: 'rgba(156,163,175,0.1)', color: 'var(--color-fg-muted)' },
 };
 
 /**

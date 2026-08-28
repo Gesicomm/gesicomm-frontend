@@ -43,7 +43,7 @@ const FILTROS_VACIOS = {
 function EstadoBadgeDropdown({ estado, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const s = STATUS[estado] || { chipBg: "color-mix(in srgb, var(--color-fg) 8%, transparent)", chipText: "#aaa" };
+  const s = STATUS[estado] || { chipBg: "color-mix(in srgb, var(--color-fg) 8%, transparent)", chipText: "var(--color-fg-muted)" };
   const validas = TRANSICIONES_VALIDAS_FRONTEND[estado] || [];
 
   useEffect(() => {
@@ -111,7 +111,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
           onClick={(e) => e.stopPropagation()}
         >
           {STATUS_ORDER.map((st) => {
-            const config = STATUS[st] || { chipBg: "color-mix(in srgb, var(--color-fg) 5%, transparent)", chipText: "#aaa" };
+            const config = STATUS[st] || { chipBg: "color-mix(in srgb, var(--color-fg) 5%, transparent)", chipText: "var(--color-fg-muted)" };
             const isSelected = st === estado;
             const isValid = isSelected || validas.includes(st);
             
@@ -138,7 +138,7 @@ function EstadoBadgeDropdown({ estado, onChange }) {
                   padding: "6px 10px",
                   borderRadius: "5px",
                   background: isSelected ? "color-mix(in srgb, var(--color-fg) 10%, transparent)" : "transparent",
-                  color: isSelected ? "#fff" : "#ccc",
+                  color: isSelected ? "var(--color-fg)" : "var(--color-fg)",
                   border: "none",
                   fontSize: "0.78rem",
                   fontWeight: isSelected ? 700 : 500,
@@ -472,7 +472,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                 ? `Tienda debe courier: ${formatGs(Math.abs(resumenEntregados.saldo_liquidacion))}`
                 : "Equilibrado"
             }
-            color={resumenEntregados.saldo_liquidacion > 0 ? "#34d399" : resumenEntregados.saldo_liquidacion < 0 ? "#f87171" : "#9ca3af"}
+            color={resumenEntregados.saldo_liquidacion > 0 ? "#34d399" : resumenEntregados.saldo_liquidacion < 0 ? "#f87171" : "var(--color-fg-muted)"}
           />
           <ResumenItem label="Pendientes de rendición" value={String(resumenEntregados.pendientes_rendicion)} />
 

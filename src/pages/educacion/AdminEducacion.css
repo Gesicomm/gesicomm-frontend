@@ -671,7 +671,7 @@
 .lms-select option:checked,
 .lms-select option:hover {
   background-color: #2563eb !important;
-  color: #ffffff !important;
+  color: var(--color-primary-fg) !important;
 }
 
 .lms-input-text:focus,

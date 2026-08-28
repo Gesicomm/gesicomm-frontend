@@ -79,7 +79,7 @@ export function ReporteVentas({ filters }) {
               placeholder="Buscar cliente, tel, #pedido..." 
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-[#12131a] border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#3d5fa3] text-fg"
+              className="pl-9 pr-3 py-2 bg-canvas border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#3d5fa3] text-fg"
             />
           </div>
           

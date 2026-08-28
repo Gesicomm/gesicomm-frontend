@@ -211,7 +211,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
               {pasosActivos.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #3d5fa3)' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)' }} />
-                  <span style={{ fontSize: '0.7rem', color: p.id === step ? '#fff' : '#777', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
+                  <span style={{ fontSize: '0.7rem', color: p.id === step ? 'var(--color-fg)' : 'var(--color-fg-muted)', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
                 </div>
               ))}
             </div>
@@ -287,7 +287,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                             padding: '0.25rem 0.5rem', borderRadius: '6px',
                             border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
                             background: paginaProducto <= 1 ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
-                            color: paginaProducto <= 1 ? '#555' : '#fff',
+                            color: paginaProducto <= 1 ? 'var(--color-fg-subtle)' : 'var(--color-fg)',
                             cursor: paginaProducto <= 1 ? 'not-allowed' : 'pointer',
                           }}
                         >
@@ -305,7 +305,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                             padding: '0.25rem 0.5rem', borderRadius: '6px',
                             border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
                             background: paginaProducto >= totalPaginasProductos ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
-                            color: paginaProducto >= totalPaginasProductos ? '#555' : '#fff',
+                            color: paginaProducto >= totalPaginasProductos ? 'var(--color-fg-subtle)' : 'var(--color-fg)',
                             cursor: paginaProducto >= totalPaginasProductos ? 'not-allowed' : 'pointer',
                           }}
                         >
@@ -341,7 +341,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                                   <img src={getMediaUrl(img)} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
                                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Package size={24} color="#444" />
+                                    <Package size={24} color="var(--color-fg-subtle)" />
                                   </div>
                                 )}
                                 {seleccionado && (
@@ -371,7 +371,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                               padding: '0.25rem 0.75rem', borderRadius: '6px',
                               border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
                               background: paginaProducto <= 1 ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
-                              color: paginaProducto <= 1 ? '#555' : '#fff',
+                              color: paginaProducto <= 1 ? 'var(--color-fg-subtle)' : 'var(--color-fg)',
                               cursor: paginaProducto <= 1 ? 'not-allowed' : 'pointer',
                               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                             }}
@@ -387,7 +387,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                               padding: '0.25rem 0.75rem', borderRadius: '6px',
                               border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
                               background: paginaProducto >= totalPaginasProductos ? 'color-mix(in srgb, var(--color-fg) 3%, transparent)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
-                              color: paginaProducto >= totalPaginasProductos ? '#555' : '#fff',
+                              color: paginaProducto >= totalPaginasProductos ? 'var(--color-fg-subtle)' : 'var(--color-fg)',
                               cursor: paginaProducto >= totalPaginasProductos ? 'not-allowed' : 'pointer',
                               display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                             }}
@@ -418,7 +418,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                           display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.5rem',
                           padding: '1.25rem', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',
                           border: tipo === opt.value ? `2px solid ${opt.color}` : '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
-                          background: tipo === opt.value ? `${opt.color}1a` : '#141416',
+                          background: tipo === opt.value ? `${opt.color}1a` : 'var(--color-canvas)',
                         }}
                       >
                         {opt.icon}

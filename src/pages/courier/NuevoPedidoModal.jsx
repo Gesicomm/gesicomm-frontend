@@ -10,26 +10,26 @@ import CreatableSelect from "react-select/creatable";
 const selectStyles = {
   control: (base, state) => ({
     ...base,
-    background: '#1a1a1c',
+    background: 'var(--color-canvas)',
     borderColor: state.isFocused ? '#2563eb' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
     boxShadow: state.isFocused ? '0 0 0 1px #2563eb' : 'none',
     borderRadius: '0.375rem',
     minHeight: '38px',
-    color: '#fff',
+    color: 'var(--color-fg)',
     '&:hover': {
       borderColor: '#2563eb'
     }
   }),
   menu: (base) => ({
     ...base,
-    background: '#141416',
+    background: 'var(--color-canvas)',
     border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)',
     zIndex: 999
   }),
   option: (base, state) => ({
     ...base,
-    background: state.isSelected ? '#2563eb' : state.isFocused ? 'color-mix(in srgb, var(--color-fg) 8%, transparent)' : '#141416',
-    color: '#fff',
+    background: state.isSelected ? '#2563eb' : state.isFocused ? 'color-mix(in srgb, var(--color-fg) 8%, transparent)' : 'var(--color-canvas)',
+    color: 'var(--color-fg)',
     cursor: 'pointer',
     fontSize: '0.85rem',
     '&:active': {
@@ -38,17 +38,17 @@ const selectStyles = {
   }),
   singleValue: (base) => ({
     ...base,
-    color: '#fff',
+    color: 'var(--color-fg)',
     fontSize: '0.85rem'
   }),
   input: (base) => ({
     ...base,
-    color: '#fff',
+    color: 'var(--color-fg)',
     fontSize: '0.85rem'
   }),
   placeholder: (base) => ({
     ...base,
-    color: '#666',
+    color: 'var(--color-fg-subtle)',
     fontSize: '0.85rem'
   })
 };
