@@ -14,6 +14,7 @@ import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
 } from './templates/fitness/fichaFitness';
 import FunnelCheckout from '../funnel/FunnelCheckout';
+import StoreHeader from './templates/StoreHeader';
 import CatalogoPreview from './templates/CatalogoPreview';
 import ContactoPreview from './templates/ContactoPreview';
 import { productService } from '../../services/productService';
@@ -1011,38 +1012,56 @@ function PreviewContent({
     // landing publicada (ver LandingPublica.jsx) alimentado con la misma
     // forma de datos — por eso el preview y lo publicado no pueden
     // desincronizarse como pasaba con ProductoPreview vs ProductPagePublica.
+    const headerProps = {
+      templateSlug,
+      nombreComercio: datosPreview.nombreComercio,
+      logo: datosPreview.logo,
+      tema: datosPreview.tema,
+      previewMode: true,
+      onClickCatalogo: onAbrirCatalogo,
+      onClickContacto: onAbrirContacto,
+      linkInicio: '#',
+      linkCatalogo: '#',
+      linkContacto: '#'
+    };
+
     if (fichaResuelta) {
       return (
-        <FitnessProductPage
-          item={armarItemFicha({
-            nombre: productoPreview.nombre,
-            categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
-            descripcion: productoDescripcion,
-            precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
-            precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
-            imagenes: (productoImagenes || []).map(i => i.url),
-            ofertas: ofertasPublicas,
-            faq: productoFaq,
-            faqTitulo: productoFaqTitulo,
-            relacionados: productoRelacionados,
-            relacionadosTitulo: productoRelacionadosTitulo,
-          })}
-          ficha={fichaResuelta}
-          tema={datosPreview.tema}
-          templateSlug={templateSlug}
-          contacto={datosPreview.contacto}
-          nombreComercio={datosPreview.nombreComercio}
-          isMobile={viewportMode === 'mobile'}
-          previewMode
-          onComprar={() => setCompraFunnel?.(ofertasPublicas)}
-          onVolver={onCerrarProducto}
-          onClickRelacionado={onAbrirRelacionado}
-        />
+        <div className="flex flex-col min-h-screen">
+          <StoreHeader {...headerProps} />
+          <FitnessProductPage
+            item={armarItemFicha({
+              nombre: productoPreview.nombre,
+              categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
+              descripcion: productoDescripcion,
+              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+              imagenes: (productoImagenes || []).map(i => i.url),
+              ofertas: ofertasPublicas,
+              faq: productoFaq,
+              faqTitulo: productoFaqTitulo,
+              relacionados: productoRelacionados,
+              relacionadosTitulo: productoRelacionadosTitulo,
+            })}
+            ficha={fichaResuelta}
+            tema={datosPreview.tema}
+            templateSlug={templateSlug}
+            contacto={datosPreview.contacto}
+            nombreComercio={datosPreview.nombreComercio}
+            isMobile={viewportMode === 'mobile'}
+            previewMode
+            onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+            onVolver={onCerrarProducto}
+            onClickRelacionado={onAbrirRelacionado}
+          />
+        </div>
       );
     }
 
     return (
-      <ProductoPreview
+      <div className="flex flex-col min-h-screen">
+        <StoreHeader {...headerProps} />
+        <ProductoPreview
         producto={productoPreview}
         ofertas={ofertasPublicas}
         imagenes={productoImagenes}
@@ -1059,6 +1078,7 @@ function PreviewContent({
         previewMode={true}
         onComprar={() => setCompraFunnel?.(ofertasPublicas)}
       />
+      </div>
     );
   }
   if (vistaCatalogo) {

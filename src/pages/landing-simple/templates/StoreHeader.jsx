@@ -67,7 +67,7 @@ export default function StoreHeader({
               <Icono size={18} style={{ color: tema.fondo }} />
             </div>
           )}
-          <span className={`text-lg hidden sm:inline truncate max-w-[150px] ${styles.titleClass}`}>{nombreComercio}</span>
+          <span className={`text-lg hidden sm:inline ${styles.titleClass}`}>{nombreComercio}</span>
         </a>
         
         <nav className="flex gap-3 sm:gap-4 ml-2 sm:ml-0" style={{ borderLeft: `1px solid ${bordeSuave}`, paddingLeft: '1rem' }}>
