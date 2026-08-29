@@ -64,8 +64,6 @@ export const DEFAULTS_BEAUTY = {
   precio: {
     activo: true,
     titulo: 'Elige tu oferta especial',
-    suscripcion_texto: 'Suscripción y ahorra 15% adicional',
-    suscripcion_activa: true,
   },
 
   beneficios: {

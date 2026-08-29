@@ -86,9 +86,6 @@ export default function BeautyProductPage({
         <section className="beauty-hero beauty-wrap">
           <div className="beauty-hero-visual">
             {sHero.etiqueta && <span className="beauty-badge" style={{ backgroundColor: acento }}>{sHero.etiqueta}</span>}
-            <div className="beauty-model">
-              BEAUTY<br/><i>glow</i>
-            </div>
             {mainImage ? (
               <img src={mainImage} alt={item.nombre} className="absolute inset-0 w-full h-full object-cover z-0 opacity-70" />
             ) : (
@@ -126,26 +123,21 @@ export default function BeautyProductPage({
       {sPrecio?.activo && (
         <section className="beauty-offers beauty-wrap" id="offers">
           <Title n={4}>{sPrecio.titulo}</Title>
-          {sPrecio.suscripcion_activa && (
-            <div className="beauty-subscribe">
-              {sPrecio.suscripcion_texto} 
-              <button className={sub ? 'beauty-toggle on' : 'beauty-toggle'} onClick={() => setSub(!sub)} style={{ backgroundColor: sub ? acento : '#ccc' }}>
-                <i />
-              </button>
-            </div>
-          )}
           <div className="beauty-offer-grid">
-            {(item.packs?.length > 0 ? item.packs : [{ nombre: '1 FRASCO', precio: item.precio, id: 1 }]).map((p, i) => (
+            {(item.ofertas?.length > 0 ? item.ofertas : [{ nombre: '1 FRASCO', precio: item.precio, id: 1 }]).map((p, i) => (
               <button key={p.id || i} className={`beauty-offer ${offer === i ? 'selected' : ''}`} onClick={() => setOffer(i)} style={offer === i ? { borderColor: acento } : {}}>
                 <span style={{ color: acento }}>{i === 1 ? 'MÁS VENDIDO' : (i === 2 ? 'MEJOR VALOR' : ' ')}</span>
                 <b>{p.nombre}</b>
                 <small>{p.unidades ? `${p.unidades} unidades` : '30 ml'}</small>
-                <Bottle small />
+                {p.imagen || mainImage ? (
+                  <img src={p.imagen ? getMediaUrl(p.imagen) : mainImage} alt={p.nombre} className="h-[100px] object-contain my-2" />
+                ) : (
+                  <Bottle small />
+                )}
                 <strong>Gs {Number(p.precio_efectivo || p.precio).toLocaleString('es-PY')}</strong>
                 {p.precio_ancla && <del>Gs {Number(p.precio_ancla).toLocaleString('es-PY')}</del>}
                 {i > 0 && <small>AHORRAS</small>}
                 <em style={{ backgroundColor: acento }} onClick={(e) => { e.stopPropagation(); handleComprarOferta(p.id); }}>AGREGAR AL CARRITO</em>
-                <label>{sub ? 'SUSCRIPCIÓN ACTIVA' : 'COMPRA ÚNICA'}</label>
               </button>
             ))}
           </div>

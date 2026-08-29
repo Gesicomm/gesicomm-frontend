@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Link2Off, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Link2Off, Plus, Trash2, GripVertical } from 'lucide-react';
 import {
   SECCIONES_BEAUTY, LIMITES, ETIQUETA_FUENTE,
   clonarFichaBeauty, fuenteDeSeccion, seccionEsPropia,
@@ -22,7 +22,7 @@ export default function FichaBeautyPanel({
   const [abierta, setAbierta] = useState(null);
   const esProducto = modo === 'producto';
 
-  const set = (key, update) => {
+  const editar = (key, update) => {
     let base = ficha[key];
     if (!seccionEsPropia(ficha, key)) {
       base = clonarFichaBeauty(fichaResuelta, key);
@@ -30,218 +30,126 @@ export default function FichaBeautyPanel({
     onChange({ ...ficha, [key]: { ...base, ...update } });
   };
 
+  const editarItem = (key, campo, index, cambios) => {
+    let base = ficha[key];
+    if (!seccionEsPropia(ficha, key)) base = clonarFichaBeauty(fichaResuelta, key);
+    const lista = [...(base[campo] || [])];
+    lista[index] = { ...lista[index], ...cambios };
+    onChange({ ...ficha, [key]: { ...base, [campo]: lista } });
+  };
+
+  const agregarItem = (key, campo, nuevo) => {
+    let base = ficha[key];
+    if (!seccionEsPropia(ficha, key)) base = clonarFichaBeauty(fichaResuelta, key);
+    onChange({ ...ficha, [key]: { ...base, [campo]: [...(base[campo] || []), nuevo] } });
+  };
+
+  const quitarItem = (key, campo, index) => {
+    let base = ficha[key];
+    if (!seccionEsPropia(ficha, key)) base = clonarFichaBeauty(fichaResuelta, key);
+    onChange({ ...ficha, [key]: { ...base, [campo]: (base[campo] || []).filter((_, i) => i !== index) } });
+  };
+
+  const moverItem = (key, campo, index, delta) => {
+    let base = ficha[key];
+    if (!seccionEsPropia(ficha, key)) base = clonarFichaBeauty(fichaResuelta, key);
+    const lista = [...(base[campo] || [])];
+    const target = index + delta;
+    if (target < 0 || target >= lista.length) return;
+    const temp = lista[index];
+    lista[index] = lista[target];
+    lista[target] = temp;
+    onChange({ ...ficha, [key]: { ...base, [campo]: lista } });
+  };
+
   const desvincular = (key) => {
     onChange({ ...ficha, [key]: clonarFichaBeauty(fichaResuelta, key) });
   };
 
-  const alternar = (key) => {
-    if (!seccionEsPropia(ficha, key)) {
-      const clon = clonarFichaBeauty(fichaResuelta, key);
-      onChange({ ...ficha, [key]: { ...clon, activo: !clon.activo } });
-    } else {
-      onChange({ ...ficha, [key]: { ...ficha[key], activo: !ficha[key].activo } });
-    }
-  };
-
-  const borrar = (key) => {
+  const volverAHeredar = (key) => {
     const { [key]: _, ...resto } = ficha;
     onChange(resto);
-  };
-
-  const RENDERERS = {
-    barra_superior: (s, k) => (
-      <div className="space-y-4">
-        <label>
-          <span className={ETIQUETA}>Botón de compra</span>
-          <input className={CAMPO} value={s.cta_texto || ''} onChange={e => set(k, { cta_texto: e.target.value })} placeholder="Ej: Comprar ahora" />
-        </label>
-        <div>
-          <span className={ETIQUETA}>Ventajas (Max {LIMITES.barra_superior_items})</span>
-          <div className="space-y-2 mt-1">
-            {(s.items || []).map((it, i) => (
-              <div key={i} className="flex gap-2">
-                <input className={`${CAMPO} flex-1`} value={it.texto || ''} onChange={e => { const list = [...s.items]; list[i].texto = e.target.value; set(k, { items: list }); }} />
-                <button type="button" className="p-2 text-white/30 hover:text-white/60 bg-white/5 rounded-lg border border-white/10" onClick={() => set(k, { items: s.items.filter((_, idx) => idx !== i) })}><Trash2 size={14} /></button>
-              </div>
-            ))}
-            {(s.items || []).length < LIMITES.barra_superior_items && (
-              <button type="button" className="w-full py-1.5 flex justify-center items-center gap-1.5 text-xs text-white/50 hover:text-white/80 bg-white/5 rounded border border-white/10" onClick={() => set(k, { items: [...(s.items || []), { icono: 'check', texto: '' }] })}><Plus size={12} /> Agregar ventaja</button>
-            )}
-          </div>
-        </div>
-      </div>
-    ),
-    hero: (s, k) => (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <label><span className={ETIQUETA}>Sobre-título</span><input className={CAMPO} value={s.eyebrow || ''} onChange={e => set(k, { eyebrow: e.target.value })} placeholder="Ej: NUEVA FÓRMULA" /></label>
-          <label><span className={ETIQUETA}>Etiqueta foto</span><input className={CAMPO} value={s.etiqueta || ''} onChange={e => set(k, { etiqueta: e.target.value })} placeholder="Ej: MÁS VENDIDO" /></label>
-        </div>
-        <label><span className={ETIQUETA}>Título principal</span><textarea className={CAMPO} rows={2} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} placeholder="Dejar vacío para usar nombre del producto" /></label>
-        <label><span className={ETIQUETA}>Descripción (Lead)</span><textarea className={CAMPO} rows={2} value={s.lead || ''} onChange={e => set(k, { lead: e.target.value })} placeholder="Dejar vacío para usar descripción general" /></label>
-        <label><span className={ETIQUETA}>Texto botón</span><input className={CAMPO} value={s.cta_texto || ''} onChange={e => set(k, { cta_texto: e.target.value })} placeholder="Ej: Comprar Ahora" /></label>
-        <label><span className={ETIQUETA}>Texto reseñas estrella</span><input className={CAMPO} value={s.calificacion_texto || ''} onChange={e => set(k, { calificacion_texto: e.target.value })} placeholder="Ej: 4.8/5 · +25,000 clientas satisfechas" /></label>
-        <div>
-          <span className={ETIQUETA}>Características cortas (Max {LIMITES.hero_caracteristicas})</span>
-          <div className="space-y-2 mt-1">
-            {(s.caracteristicas || []).map((c, i) => (
-              <div key={i} className="flex gap-2">
-                <input className={`${CAMPO} flex-1`} value={c || ''} onChange={e => { const list = [...s.caracteristicas]; list[i] = e.target.value; set(k, { caracteristicas: list }); }} />
-                <button type="button" className="p-2 text-white/30 hover:text-white/60 bg-white/5 rounded-lg border border-white/10" onClick={() => set(k, { caracteristicas: s.caracteristicas.filter((_, idx) => idx !== i) })}><Trash2 size={14} /></button>
-              </div>
-            ))}
-            {(s.caracteristicas || []).length < LIMITES.hero_caracteristicas && (
-              <button type="button" className="w-full py-1.5 flex justify-center items-center gap-1.5 text-xs text-white/50 hover:text-white/80 bg-white/5 rounded border border-white/10" onClick={() => set(k, { caracteristicas: [...(s.caracteristicas || []), ''] })}><Plus size={12} /> Agregar característica</button>
-            )}
-          </div>
-        </div>
-      </div>
-    ),
-    prueba_social: (s, k) => (
-      <div className="space-y-4">
-        <label><span className={ETIQUETA}>Puntaje estrellas (1-5)</span><input type="number" min="1" max="5" step="0.1" className={CAMPO} value={s.calificacion || ''} onChange={e => set(k, { calificacion: e.target.value })} /></label>
-        <label><span className={ETIQUETA}>Reseñas</span><input className={CAMPO} value={s.resenas_texto || ''} onChange={e => set(k, { resenas_texto: e.target.value })} placeholder="Ej: 12,847 reseñas verificadas" /></label>
-        <label><span className={ETIQUETA}>Clientes satisfechos</span><input className={CAMPO} value={s.clientes_texto || ''} onChange={e => set(k, { clientes_texto: e.target.value })} placeholder="Ej: +25,000 clientas" /></label>
-      </div>
-    ),
-    precio: (s, k) => (
-      <div className="space-y-4">
-        <label><span className={ETIQUETA}>Título opciones</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} placeholder="Ej: Elige tu oferta" /></label>
-        <label><span className={ETIQUETA}>Texto de suscripción</span><input className={CAMPO} value={s.suscripcion_texto || ''} onChange={e => set(k, { suscripcion_texto: e.target.value })} placeholder="Ej: Ahorra 15%" /></label>
-        <label className="flex items-center gap-2 cursor-pointer mt-2 text-sm text-white/80">
-          <input type="checkbox" className="w-4 h-4 rounded bg-white/10 border-white/20 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-900" checked={s.suscripcion_activa !== false} onChange={e => set(k, { suscripcion_activa: e.target.checked })} />
-          Mostrar toggle de suscripción
-        </label>
-      </div>
-    ),
-    beneficios: (s, k) => (
-      <div className="space-y-4">
-        <label><span className={ETIQUETA}>Título sección</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} /></label>
-        <div>
-          <span className={ETIQUETA}>Beneficios (Max {LIMITES.beneficios_items})</span>
-          <div className="space-y-3 mt-1">
-            {(s.items || []).map((b, i) => (
-              <div key={i} className="flex gap-2 items-start bg-white/5 p-2 rounded-lg border border-white/5">
-                <select className={`${MINI} w-[100px] shrink-0`} value={b.icono || ''} onChange={e => { const list = [...s.items]; list[i].icono = e.target.value; set(k, { items: list }); }}>
-                  {Object.entries(CATALOGO_ICONOS_BENEFICIOS).map(([clave, datos]) => (<option key={clave} value={clave} className="bg-gray-800">{datos.label}</option>))}
-                </select>
-                <div className="flex-1 space-y-2">
-                  <input className={CAMPO} value={b.titulo || ''} onChange={e => { const list = [...s.items]; list[i].titulo = e.target.value; set(k, { items: list }); }} placeholder="Título del beneficio" />
-                  <textarea className={CAMPO} rows={2} value={b.descripcion || ''} onChange={e => { const list = [...s.items]; list[i].descripcion = e.target.value; set(k, { items: list }); }} placeholder="Breve descripción..." />
-                </div>
-                <button type="button" className="p-1.5 text-white/30 hover:text-red-400 mt-1" onClick={() => set(k, { items: s.items.filter((_, idx) => idx !== i) })}><Trash2 size={14} /></button>
-              </div>
-            ))}
-            {(s.items || []).length < LIMITES.beneficios_items && (
-              <button type="button" className="w-full py-1.5 flex justify-center items-center gap-1.5 text-xs text-white/50 hover:text-white/80 bg-white/5 rounded border border-white/10" onClick={() => set(k, { items: [...(s.items || []), { icono: 'star', titulo: '', descripcion: '' }] })}><Plus size={12} /> Agregar beneficio</button>
-            )}
-          </div>
-        </div>
-      </div>
-    ),
-    ingredientes: (s, k) => <div className="space-y-4"><label><span className={ETIQUETA}>Título sección</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} /></label><p className="text-xs text-white/50 mt-2 px-1">Los ingredientes se cargan desde Mis Productos {'>'} Pestaña Rubro.</p></div>,
-    resultados: (s, k) => <div className="space-y-4"><label><span className={ETIQUETA}>Título sección</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} /></label><p className="text-xs text-white/50 mt-2 px-1">Los resultados se cargan desde Mis Productos {'>'} Pestaña Rubro.</p></div>,
-    como_funciona: (s, k) => <div className="space-y-4"><label><span className={ETIQUETA}>Título sección</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} /></label><p className="text-xs text-white/50 mt-2 px-1">Los pasos se cargan desde Mis Productos {'>'} Pestaña Rubro.</p></div>,
-    garantias: (s, k) => (
-      <div className="space-y-4">
-        <div>
-          <span className={ETIQUETA}>Garantías (Max {LIMITES.garantias_items})</span>
-          <div className="space-y-3 mt-1">
-            {(s.items || []).map((b, i) => (
-              <div key={i} className="flex gap-2 items-start bg-white/5 p-2 rounded-lg border border-white/5">
-                <div className="flex-1 space-y-2">
-                  <input className={CAMPO} value={b.icono || ''} onChange={e => { const list = [...s.items]; list[i].icono = e.target.value; set(k, { items: list }); }} placeholder="Icono/Emoji" />
-                  <input className={CAMPO} value={b.titulo || ''} onChange={e => { const list = [...s.items]; list[i].titulo = e.target.value; set(k, { items: list }); }} placeholder="Título" />
-                  <input className={CAMPO} value={b.descripcion || ''} onChange={e => { const list = [...s.items]; list[i].descripcion = e.target.value; set(k, { items: list }); }} placeholder="Descripción..." />
-                </div>
-                <button type="button" className="p-1.5 text-white/30 hover:text-red-400 mt-1" onClick={() => set(k, { items: s.items.filter((_, idx) => idx !== i) })}><Trash2 size={14} /></button>
-              </div>
-            ))}
-            {(s.items || []).length < LIMITES.garantias_items && (
-              <button type="button" className="w-full py-1.5 flex justify-center items-center gap-1.5 text-xs text-white/50 hover:text-white/80 bg-white/5 rounded border border-white/10" onClick={() => set(k, { items: [...(s.items || []), { icono: '✦', titulo: '', descripcion: '' }] })}><Plus size={12} /> Agregar garantía</button>
-            )}
-          </div>
-        </div>
-      </div>
-    ),
-    faq: (s, k) => <div className="space-y-4"><label><span className={ETIQUETA}>Título sección</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} /></label></div>,
-    upsells: (s, k) => <div className="space-y-4"><label><span className={ETIQUETA}>Título sección</span><input className={CAMPO} value={s.titulo || ''} onChange={e => set(k, { titulo: e.target.value })} /></label></div>,
-    cta_final: (s, k) => (
-      <div className="space-y-4">
-        <label><span className={ETIQUETA}>Etiqueta</span><input className={CAMPO} value={s.etiqueta || ''} onChange={e => set(k, { etiqueta: e.target.value })} /></label>
-        <label><span className={ETIQUETA}>Texto principal</span><input className={CAMPO} value={s.texto || ''} onChange={e => set(k, { texto: e.target.value })} /></label>
-        <label><span className={ETIQUETA}>Subtexto</span><input className={CAMPO} value={s.subtexto || ''} onChange={e => set(k, { subtexto: e.target.value })} /></label>
-        <label><span className={ETIQUETA}>Botón</span><input className={CAMPO} value={s.cta_texto || ''} onChange={e => set(k, { cta_texto: e.target.value })} /></label>
-        <label><span className={ETIQUETA}>Debajo del botón</span><input className={CAMPO} value={s.cta_nota || ''} onChange={e => set(k, { cta_nota: e.target.value })} /></label>
-      </div>
-    ),
   };
 
   return (
     <div className="p-4 space-y-3 pb-32">
       <p className="text-sm text-white/70 mb-5 leading-relaxed">
         {esProducto ? (
-          <>Configurá cómo se ve <strong>este producto</strong> en la plantilla de Beauty & Skin Care.</>
+          <>Configurá cómo se ve <strong>este producto</strong> en el template Beauty & Skin Care.</>
         ) : (
-          <>Configurá los textos por defecto para <strong>todos los productos</strong> de la plantilla Beauty.</>
+          <>Configurá los textos por defecto para <strong>todos los productos</strong> del template Beauty.</>
         )}
       </p>
 
       {SECCIONES_BEAUTY.map(sec => {
+        const desplegada = abierta === sec.key;
+        const propia = seccionEsPropia(ficha, sec.key);
         const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
-        const resuelta = fichaResuelta[sec.key] || {};
-        const isPropia = seccionEsPropia(ficha, sec.key);
-        const activa = resuelta.activo !== false;
+        const datos = fichaResuelta[sec.key] || {};
 
         return (
-          <div key={sec.key} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-colors hover:border-white/20">
-            <div className="flex items-center">
-              <button type="button" onClick={() => setAbierta(abierta === sec.key ? null : sec.key)} className="flex-1 flex items-center justify-between p-3.5 text-left bg-transparent border-0 text-white cursor-pointer hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${activa ? 'bg-[#7c5cff] text-white' : 'bg-white/10 text-white/40'}`}>{sec.numero}</div>
-                  <div>
-                    <span className={`block text-sm font-semibold ${activa ? '' : 'text-white/40 line-through'}`}>{sec.label}</span>
-                    <span className="block text-[10px] text-white/40 uppercase tracking-wide mt-0.5">{ETIQUETA_FUENTE[fuente]}</span>
-                  </div>
-                </div>
-                <ChevronDown size={18} className={`text-white/30 transition-transform ${abierta === sec.key ? 'rotate-180' : ''}`} />
+          <div key={sec.key} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+            <div className={`flex items-center gap-3 p-3.5 transition-colors ${desplegada ? 'bg-white/5' : ''}`}>
+              <button
+                type="button"
+                onClick={() => setAbierta(desplegada ? null : sec.key)}
+                className={`flex-1 flex items-center gap-3 text-left ${datos.activo ? 'text-white' : 'text-white/40 line-through'}`}
+              >
+                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-[#7c5cff] text-white' : 'bg-white/10 text-white/40'}`}>
+                  {sec.numero}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
+                  {esProducto && (
+                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-white/35'}`}>
+                      {ETIQUETA_FUENTE[fuente]}
+                    </span>
+                  )}
+                </span>
+              </button>
+
+              <label className="shrink-0 inline-flex items-center cursor-pointer" title={datos.activo ? 'Ocultar sección' : 'Mostrar sección'}>
+                <input
+                  type="checkbox"
+                  checked={datos.activo}
+                  onChange={e => editar(sec.key, { activo: e.target.checked })}
+                  className="w-4 h-4 accent-emerald-500"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setAbierta(desplegada ? null : sec.key)}
+                className="shrink-0 text-white/30 hover:text-white"
+              >
+                <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
               </button>
             </div>
 
-            {abierta === sec.key && (
-              <div className="p-4 pt-2 border-t border-white/5 bg-black/20">
-                <p className="text-xs text-white/50 mb-5 leading-relaxed">{sec.ayuda}</p>
+            {desplegada && (
+              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-white/10 pt-3">
+                <p className="text-[11px] text-white/35 leading-relaxed">{sec.ayuda}</p>
 
-                {esProducto && !isPropia ? (
-                  <div className="text-center py-6 bg-white/5 rounded-xl border border-white/10">
-                    <p className="text-[13px] text-white/70 mb-4 px-6 leading-relaxed">
-                      Esta sección está heredando el contenido de <strong className="text-white">"{sec.ambito === 'producto' ? 'Mis Productos' : 'La landing'}"</strong>.
-                    </p>
-                    <button type="button" onClick={() => desvincular(sec.key)} className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 text-white text-[13px] font-semibold rounded-lg transition-colors border border-white/10">
-                      <Link2Off size={14} /> Personalizar para este producto
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
-                      <span className="text-[13px] font-medium text-white/80">Mostrar sección</span>
-                      <button type="button" onClick={() => alternar(sec.key)} className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${activa ? 'bg-green-500' : 'bg-white/20'}`}>
-                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${activa ? 'translate-x-4' : 'translate-x-0'}`} />
-                      </button>
-                    </div>
+                {CAMPOS[sec.key]({
+                  d: datos,
+                  set: (cambios) => editar(sec.key, cambios),
+                  lista: {
+                    editar: (campo, i, c) => editarItem(sec.key, campo, i, c),
+                    agregar: (campo, nuevo) => agregarItem(sec.key, campo, nuevo),
+                    quitar: (campo, i) => quitarItem(sec.key, campo, i),
+                    mover: (campo, i, delta) => moverItem(sec.key, campo, i, delta),
+                  },
+                  respaldos,
+                })}
 
-                    <div className={activa ? 'opacity-100' : 'opacity-40 pointer-events-none'}>
-                      {RENDERERS[sec.key] ? RENDERERS[sec.key](resuelta, sec.key) : <p className="text-xs italic text-white/40">Sin opciones avanzadas.</p>}
-                    </div>
-
-                    {esProducto && isPropia && (
-                      <div className="pt-4 mt-2 border-t border-white/10 flex justify-end">
-                        <button type="button" onClick={() => borrar(sec.key)} className="text-[12px] font-medium text-red-400 hover:text-red-300 flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-red-400/10 transition-colors">
-                          <Trash2 size={13} /> Restaurar herencia
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                {propia && (
+                  <button
+                    type="button"
+                    onClick={() => volverAHeredar(sec.key)}
+                    className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-white/45 hover:text-white py-1.5"
+                  >
+                    <Link2Off size={12} /> Descartar y volver a heredar
+                  </button>
                 )}
               </div>
             )}
@@ -251,3 +159,264 @@ export default function FichaBeautyPanel({
     </div>
   );
 }
+
+/* ── Controles reutilizables ──────────────────────────────────────── */
+
+function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) {
+  const usaRespaldo = !valor && !!respaldo;
+  return (
+    <div>
+      {label && <label className={ETIQUETA}>{label}</label>}
+      {area ? (
+        <textarea rows={3} className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
+      ) : (
+        <input type="text" className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
+      )}
+      {usaRespaldo && (
+        <p className="text-[10px] text-white/30 mt-1 leading-relaxed">
+          Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SelectorIcono({ valor, onChange }) {
+  const Icono = getIconoBeneficio(valor);
+  return (
+    <span className="inline-flex items-center gap-1.5 shrink-0">
+      <span className="grid place-items-center w-7 h-7 rounded-lg bg-white/10 text-white/70"><Icono size={14} /></span>
+      <select
+        value={valor || ''}
+        onChange={e => onChange(e.target.value || null)}
+        className="w-5 opacity-0 absolute cursor-pointer"
+        title="Cambiar ícono"
+      >
+        <option value="">Quitar</option>
+        {Object.entries(CATALOGO_ICONOS_BENEFICIOS).map(([key, info]) => (
+          <option key={key} value={key} className="bg-neutral-900">{info.label}</option>
+        ))}
+      </select>
+    </span>
+  );
+}
+
+function ListaTextos({ valores = [], max, textoAgregar, placeholder, onCambio }) {
+  const add = () => onCambio([...valores, '']);
+  const edit = (i, v) => { const n = [...valores]; n[i] = v; onCambio(n); };
+  const del = (i) => onCambio(valores.filter((_, idx) => idx !== i));
+  const mv = (i, dir) => {
+    if (i + dir < 0 || i + dir >= valores.length) return;
+    const n = [...valores]; const t = n[i]; n[i] = n[i+dir]; n[i+dir] = t; onCambio(n);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 mt-1">
+      {valores.map((v, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <button type="button" onClick={() => mv(i, -1)} disabled={i === 0} className="text-white/20 hover:text-white disabled:opacity-30"><ChevronDown size={14} className="rotate-180" /></button>
+          <button type="button" onClick={() => mv(i, 1)} disabled={i === valores.length - 1} className="text-white/20 hover:text-white disabled:opacity-30"><ChevronDown size={14} /></button>
+          <input className={`${MINI} flex-1 min-w-0`} value={v || ''} placeholder={placeholder} onChange={e => edit(i, e.target.value)} />
+          <button type="button" onClick={() => del(i)} className="text-white/20 hover:text-red-400 p-1"><Trash2 size={13} /></button>
+        </div>
+      ))}
+      {valores.length < max && (
+        <button type="button" onClick={add} className="inline-flex items-center justify-center gap-1.5 py-1.5 mt-1 border border-dashed border-white/20 rounded-lg text-[11px] font-medium text-white/50 hover:text-white hover:border-white/40">
+          <Plus size={12} /> {textoAgregar} ({valores.length}/{max})
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ListaEditable({ items = [], max, campo, lista, textoAgregar, nuevo, children }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((it, i) => (
+        <div key={i} className="flex gap-2 items-start bg-black/20 p-2.5 rounded-lg border border-white/5 relative group">
+          <div className="flex flex-col gap-1.5 flex-1 min-w-0">{children(it, i)}</div>
+          <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button type="button" onClick={() => lista.mover(campo, i, -1)} disabled={i===0} className="text-white/30 hover:text-white disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
+            <button type="button" onClick={() => lista.quitar(campo, i)} className="text-white/30 hover:text-red-400 p-1"><Trash2 size={12} /></button>
+            <button type="button" onClick={() => lista.mover(campo, i, 1)} disabled={i===items.length-1} className="text-white/30 hover:text-white disabled:opacity-10"><ChevronDown size={12} /></button>
+          </div>
+        </div>
+      ))}
+      {items.length < max && (
+        <button type="button" onClick={() => lista.agregar(campo, nuevo())} className="inline-flex items-center justify-center gap-1.5 py-2 mt-1 border border-dashed border-white/20 rounded-lg text-[12px] font-medium text-white/50 hover:text-white hover:border-white/40">
+          <Plus size={14} /> {textoAgregar} ({items.length}/{max})
+        </button>
+      )}
+    </div>
+  );
+}
+
+function CamposContador({ d, set }) {
+  const c = d.contador || {};
+  const setC = (cambios) => set({ contador: { ...c, ...cambios } });
+  return (
+    <div className="mt-2 bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
+      <label className="flex items-center gap-2 text-[12px] text-white/90 font-semibold cursor-pointer">
+        <input type="checkbox" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} className="w-4 h-4 accent-emerald-500" />
+        Contador de tiempo limitado
+      </label>
+      {c.activo && (
+        <div className="grid grid-cols-4 gap-2">
+          <div><label className={ETIQUETA}>Días</label><input type="number" min="0" className={CAMPO} value={c.dias || 0} onChange={e => setC({ dias: Number(e.target.value) })} /></div>
+          <div><label className={ETIQUETA}>Horas</label><input type="number" min="0" max="23" className={CAMPO} value={c.horas || 0} onChange={e => setC({ horas: Number(e.target.value) })} /></div>
+          <div><label className={ETIQUETA}>Min</</label><input type="number" min="0" max="59" className={CAMPO} value={c.minutos || 0} onChange={e => setC({ minutos: Number(e.target.value) })} /></div>
+          <div><label className={ETIQUETA}>Seg</label><input type="number" min="0" max="59" className={CAMPO} value={c.segundos || 0} onChange={e => setC({ segundos: Number(e.target.value) })} /></div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const CAMPOS = {
+  barra_superior: ({ d, set, lista }) => (
+    <>
+      <Texto label="Botón de la barra" valor={d.cta_texto} placeholder="Comprar ahora" onChange={v => set({ cta_texto: v })} />
+      <ListaEditable
+        items={d.items} campo="items" lista={lista} max={LIMITES.barra_superior_items}
+        textoAgregar="Agregar ventaja" nuevo={() => ({ icono: 'check', texto: '' })}
+      >
+        {(it, i) => (
+          <div className="flex items-center gap-1.5 w-full">
+            <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Ej: Envío gratis" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+          </div>
+        )}
+      </ListaEditable>
+    </>
+  ),
+
+  hero: ({ d, set, respaldos }) => (
+    <>
+      <div className="grid grid-cols-2 gap-2">
+        <Texto label="Sobre-título" valor={d.eyebrow} respaldo={respaldos.eyebrow} onChange={v => set({ eyebrow: v })} />
+        <Texto label="Etiqueta foto" valor={d.etiqueta} placeholder="Más vendido" onChange={v => set({ etiqueta: v })} />
+      </div>
+      <Texto label="Título principal" valor={d.titulo} respaldo={respaldos.titulo} area onChange={v => set({ titulo: v })} />
+      <Texto label="Bajada (Lead)" valor={d.lead} respaldo={respaldos.lead} area onChange={v => set({ lead: v })} />
+      <Texto label="Botón principal" valor={d.cta_texto} placeholder="Comprar ahora" onChange={v => set({ cta_texto: v })} />
+      <Texto label="Texto reseñas" valor={d.calificacion_texto} placeholder="4.8/5 · +25,000 clientas" onChange={v => set({ calificacion_texto: v })} />
+      <div>
+        <label className={ETIQUETA}>Características cortas</label>
+        <ListaTextos
+          valores={d.caracteristicas} max={LIMITES.hero_caracteristicas}
+          textoAgregar="Agregar" placeholder="Apto para todo tipo de piel"
+          onCambio={l => set({ caracteristicas: l })}
+        />
+      </div>
+    </>
+  ),
+
+  prueba_social: ({ d, set }) => (
+    <>
+      <Texto label="Puntaje estrellas (1 a 5)" valor={d.calificacion} placeholder="4.8" onChange={v => set({ calificacion: v })} />
+      <Texto label="Texto de reseñas" valor={d.resenas_texto} placeholder="12,847 reseñas verificadas" onChange={v => set({ resenas_texto: v })} />
+      <Texto label="Texto de clientes" valor={d.clientes_texto} placeholder="+25,000 clientas satisfechas" onChange={v => set({ clientes_texto: v })} />
+    </>
+  ),
+
+  precio: ({ d, set }) => (
+    <>
+      <Texto label="Título de las ofertas" valor={d.titulo} placeholder="Elige tu oferta" onChange={v => set({ titulo: v })} />
+    </>
+  ),
+
+  beneficios: ({ d, set, lista }) => (
+    <>
+      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <ListaEditable
+        items={d.items} campo="items" lista={lista} max={LIMITES.beneficios_items}
+        textoAgregar="Agregar beneficio" nuevo={() => ({ icono: 'sparkles', titulo: '', descripcion: '' })}
+      >
+        {(it, i) => (
+          <>
+            <div className="flex items-center gap-1.5">
+              <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+              <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Piel más joven" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
+            </div>
+            <textarea rows={2} className={MINI} value={it.descripcion || ''} placeholder="Reduce arrugas y líneas finas." onChange={e => lista.editar('items', i, { descripcion: e.target.value })} />
+          </>
+        )}
+      </ListaEditable>
+    </>
+  ),
+
+  ingredientes: ({ d, set }) => (
+    <>
+      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <p className="text-[11px] text-white/35 leading-relaxed">
+        Los ingredientes se cargan en la pestaña <b className="text-white/60">Rubro</b> en la ventana principal de Mis Productos.
+      </p>
+    </>
+  ),
+
+  resultados: ({ d, set }) => (
+    <>
+      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <p className="text-[11px] text-white/35 leading-relaxed">
+        Los testimonios se cargan en la pestaña <b className="text-white/60">Rubro</b> en la ventana principal de Mis Productos.
+      </p>
+    </>
+  ),
+
+  como_funciona: ({ d, set }) => (
+    <>
+      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <p className="text-[11px] text-white/35 leading-relaxed">
+        Los pasos de uso se cargan en la pestaña <b className="text-white/60">Rubro</b> en la ventana principal de Mis Productos.
+      </p>
+    </>
+  ),
+
+  faq: ({ d, set, respaldos }) => (
+    <>
+      <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.faqTitulo} onChange={v => set({ titulo: v })} />
+      <p className="text-[11px] text-white/35 leading-relaxed">
+        Las preguntas se cargan en la pestaña <b className="text-white/60">Detalles</b> de este producto.
+      </p>
+    </>
+  ),
+
+  upsells: ({ d, set, respaldos }) => (
+    <>
+      <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.upsellsTitulo} onChange={v => set({ titulo: v })} />
+      <p className="text-[11px] text-white/35 leading-relaxed">
+        Los productos se eligen en la pestaña <b className="text-white/60">Relacionados</b>.
+      </p>
+    </>
+  ),
+
+  garantias: ({ d, lista }) => (
+    <ListaEditable
+      items={d.items} campo="items" lista={lista} max={LIMITES.garantias_items}
+      textoAgregar="Agregar garantía" nuevo={() => ({ icono: '✦', titulo: '', descripcion: '' })}
+    >
+      {(it, i) => (
+        <>
+          <div className="flex items-center gap-1.5">
+            <input className={`${MINI} w-10 shrink-0 text-center`} value={it.icono || ''} placeholder="✦" onChange={e => lista.editar('items', i, { icono: e.target.value })} />
+            <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Garantía 60 días" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
+          </div>
+          <input className={MINI} value={it.descripcion || ''} placeholder="Devoluciones sin preguntas" onChange={e => lista.editar('items', i, { descripcion: e.target.value })} />
+        </>
+      )}
+    </ListaEditable>
+  ),
+
+  cta_final: ({ d, set }) => (
+    <>
+      <Texto label="Etiqueta" valor={d.etiqueta} placeholder="¡Oferta por tiempo limitado!" onChange={v => set({ etiqueta: v })} />
+      <Texto label="Texto principal" valor={d.texto} placeholder="No te pierdas esta oferta" onChange={v => set({ texto: v })} />
+      <Texto label="Subtexto" valor={d.subtexto} placeholder="El descuento se aplica" onChange={v => set({ subtexto: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <Texto label="Botón" valor={d.cta_texto} placeholder="Comprar ahora" onChange={v => set({ cta_texto: v })} />
+        <Texto label="Nota del botón" valor={d.cta_nota} placeholder="Envío gratis" onChange={v => set({ cta_nota: v })} />
+      </div>
+      <CamposContador d={d} set={set} />
+    </>
+  ),
+};
