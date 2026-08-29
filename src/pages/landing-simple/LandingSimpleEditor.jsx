@@ -1172,6 +1172,8 @@ function PreviewContent({
         nombreComercio={datosPreview.nombreComercio}
         logo={datosPreview.logo}
         onClickProducto={(p) => abrirProducto(p)}
+        onClickCatalogo={onAbrirCatalogo}
+        onClickContacto={onAbrirContacto}
         onVolver={onCerrarCatalogo}
         isMobile={viewportMode === 'mobile'}
       />
@@ -1186,6 +1188,8 @@ function PreviewContent({
         nombreComercio={datosPreview.nombreComercio}
         logo={datosPreview.logo}
         onVolver={onCerrarContacto}
+        onClickCatalogo={onAbrirCatalogo}
+        onClickContacto={onAbrirContacto}
       />
     );
   }

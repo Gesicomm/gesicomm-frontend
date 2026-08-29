@@ -15,7 +15,7 @@ import StoreHeader from './StoreHeader';
  * componente solo evita que el comercio se vaya del editor al mirar cómo
  * queda la página.
  */
-export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, logo, onVolver }) {
+export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, logo, onClickCatalogo, onClickContacto, onVolver }) {
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
 
@@ -35,6 +35,8 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
         tema={t}
         cantidadCarrito={0}
         previewMode={true}
+        onClickCatalogo={onClickCatalogo}
+        onClickContacto={onClickContacto}
       />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-10">

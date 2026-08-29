@@ -30,3 +30,42 @@ export const ofertaService = {
   quitarImagen: (id) =>
     API.delete(`/ofertas/${id}/imagen`).then(r => r.data),
 };
+export function ofertaAFormaPublica(o, productoAnclaId) {
+  // Solo el order bump vive en el checkout (ver Oferta.js). Un paquete
+  // (estrategia 'normal') no pasa por acá: se elige en la ficha del
+  // producto, no como casilla del checkout.
+  const esCheckout = o.estrategia === 'order_bump';
+  const componentes = o.componentes || [];
+  const compPack = componentes.find(c => Number(c.producto_id) === Number(productoAnclaId)) || componentes[0];
+  const unidades = o.tipo_contenido === 'pack' ? (Number(o.unidades ?? compPack?.cantidad) || null) : null;
+  const comps = componentes.filter(c => Number(c.producto_id) !== Number(productoAnclaId));
+  const productos_incluidos = comps.map(c => {
+    const imgs = c.producto?.imagenes || [];
+    const principal = imgs.find(i => i.es_principal) || imgs[0];
+    return { nombre: c.producto?.nombre || null, imagen: principal?.url || null };
+  }).filter(x => x.nombre);
+
+  const precioNormal = Number(o.precio_normal ?? o.precio) || 0;
+  const bump = (o.precio_order_bump === null || o.precio_order_bump === undefined)
+    ? null : Number(o.precio_order_bump);
+
+  return {
+    id: o.id,
+    nombre: o.nombre,
+    estrategia: o.estrategia,
+    tipo_contenido: o.tipo_contenido,
+    descripcion: o.descripcion || null,
+    // Imagen propia de la oferta (Oferta.imagen_url). El DTO público la
+    // publica como `imagen` (ver landing.service.js), así que acá se traduce
+    // igual: si no, la tarjeta del paquete se veía con foto en la landing
+    // publicada y sin foto en el preview.
+    imagen: o.imagen_url || null,
+    precio: precioNormal,
+    precio_normal: precioNormal,
+    precio_order_bump: bump,
+    precio_efectivo: esCheckout ? (bump ?? precioNormal) : precioNormal,
+    unidades,
+    producto_complementario: productos_incluidos[0] || null,
+    productos_incluidos,
+  };
+}
