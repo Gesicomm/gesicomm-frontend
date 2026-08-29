@@ -12,6 +12,7 @@ import { formatPrecio, armarLinkWhatsapp, armarLinkWhatsappCarrito } from '../..
 import ProductPagePublica from './ProductPagePublica';
 import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
 import TechProductPagePublica from '../landing-simple/templates/tech/TechProductPagePublica';
+import BeautyProductPagePublica from '../landing-simple/templates/beauty/BeautyProductPagePublica';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
@@ -736,6 +737,46 @@ export default function TiendaPaginaView({ data, slug, productId }) {
           <div style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <FitnessProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={data.content || {}}
+              tema={temaResuelto}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              relacionados={data?.relacionados}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
+      if (data.template.slug === 'tech-electronica') {
+        return (
+          <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
+            <TechProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={data.content || {}}
+              tema={temaResuelto}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              relacionados={data?.relacionados}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
+      if (data.template.slug === 'beauty-skincare') {
+        return (
+          <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
+            <BeautyProductPagePublica
               item={itemSeleccionado}
               landingConfig={data.content || {}}
               tema={temaResuelto}

@@ -11,7 +11,9 @@ import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
 import FitnessProductPage from './templates/fitness/FitnessProductPage';
 import TechProductPage from './templates/tech/TechProductPage';
+import BeautyProductPage from './templates/beauty/BeautyProductPage';
 import { fichaTechDesdeProducto, resolverFichaTech } from './templates/tech/fichaTech';
+import { fichaBeautyDesdeProducto, resolverFichaBeauty } from './templates/beauty/fichaBeauty';
 import { armarItemFicha as armarItemFichaComun } from './templates/fichaComun';
 import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
@@ -33,6 +35,7 @@ import ColoresPanel from './panels/ColoresPanel';
 import ProductoPanel from './panels/ProductoPanel';
 import FichaFitnessPanel from './panels/FichaFitnessPanel';
 import FichaTechPanel from './panels/FichaTechPanel';
+import FichaBeautyPanel from './panels/FichaBeautyPanel';
 
 // El id de la sección apunta a la misma sección del template (ver los
 // `id="..."` en templates/*.jsx y templates/sections.jsx) — al cambiar de
@@ -52,6 +55,8 @@ const SLUG_FICHA_RICA = 'fitness-suplementos';
 // ver templates/tech/). Pide otros campos que la de suplementos — specs,
 // "en la caja", comparativa — y por eso el producto tiene rubro.
 const SLUG_FICHA_TECH = 'tech-electronica';
+
+const SLUG_FICHA_BEAUTY = 'beauty-skincare';
 
 const TABS = [
   { key: 'marca', label: 'Marca', seccionId: 'header' },
@@ -329,6 +334,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // guarda lo suyo sin pisar la otra.
   const [productoFichaTech, setProductoFichaTech] = useState(null);
 
+  const [productoFichaBeauty, setProductoFichaBeauty] = useState(null);
+
   const catalogoFiltradoParaRelacionados = useMemo(() => {
     if (!catalogo || !items) return { productos: [], combos: [] };
     const itemsIdsProductos = new Set(items.filter(i => i.tipo === 'producto').map(i => i.referencia_id));
@@ -452,6 +459,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       if (propio?.faq_titulo != null) setProductoFaqTitulo(propio.faq_titulo);
       setProductoFicha(propio?.ficha || null);
       setProductoFichaTech(propio?.ficha_tech || null);
+      setProductoFichaBeauty(propio?.ficha_beauty || null);
 
       setProductoRelacionadosTitulo(propio?.relacionados_titulo ?? (relacionados.titulo || ''));
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
@@ -598,6 +606,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         // una copia de los defaults de la landing.
         ficha: productoFicha && Object.keys(productoFicha).length ? productoFicha : null,
         ficha_tech: productoFichaTech && Object.keys(productoFichaTech).length ? productoFichaTech : null,
+        ficha_beauty: productoFichaBeauty && Object.keys(productoFichaBeauty).length ? productoFichaBeauty : null,
       };
 
       const contenidoNuevo = { ...contenido, productos: porProducto };
@@ -641,9 +650,17 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const fichaTechResuelta = fichaTechActiva
     ? resolverFichaTech(productoFichaTech, fichaTechLanding, fichaTechDelProducto)
     : null;
-  // Una sola bandera para lo que es común a las dos: mostrar la pestaña
+
+  const fichaBeautyActiva = templateSlug === SLUG_FICHA_BEAUTY;
+  const fichaBeautyLanding = draft?.content?.ficha_beauty || null;
+  const fichaBeautyDelProducto = fichaBeautyDesdeProducto(productoPreview || {});
+  const fichaBeautyResuelta = fichaBeautyActiva
+    ? resolverFichaBeauty(productoPreview?.content?.ficha_beauty || {}, fichaBeautyLanding, fichaBeautyDelProducto)
+    : null;
+    
+  // Una sola bandera para lo que es común a las tres: mostrar la pestaña
   // "Ficha" en el panel del producto y la de defaults en el sidebar.
-  const algunaFichaActiva = fichaActiva || fichaTechActiva;
+  const algunaFichaActiva = fichaActiva || fichaTechActiva || fichaBeautyActiva;
   const draftParaPreview = { ...draft, items, faq, beneficios };
   const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo);
   datosPreview.tienda = { subdominio: tienda?.subdominio };
@@ -785,6 +802,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               fichaTechLanding={fichaTechLanding}
               fichaTechDelProducto={fichaTechDelProducto}
               onFichaTech={setProductoFichaTech}
+              fichaBeautyActiva={fichaBeautyActiva}
+              fichaBeauty={productoFichaBeauty}
+              fichaBeautyResuelta={fichaBeautyResuelta}
+              fichaBeautyLanding={fichaBeautyLanding}
+              fichaBeautyDelProducto={fichaBeautyDelProducto}
+              onFichaBeauty={setProductoFichaBeauty}
               packs={productoOfertas.filter(o => o.estrategia === 'normal' && o.tipo_contenido === 'pack')}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
@@ -873,6 +896,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                     fichaResuelta={resolverFichaTech(null, fichaTechLanding, null)}
                     modo="landing"
                     onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_tech: nueva })}
+                  />
+                )}
+                {tab === 'ficha' && fichaBeautyActiva && (
+                  <FichaBeautyPanel
+                    ficha={fichaBeautyLanding}
+                    fichaResuelta={resolverFichaBeauty(null, fichaBeautyLanding, null)}
+                    modo="landing"
+                    onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_beauty: nueva })}
                   />
                 )}
               </div>
