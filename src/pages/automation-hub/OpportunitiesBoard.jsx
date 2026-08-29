@@ -2,10 +2,18 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { RefreshCcw, MessageCircle, Plus, X } from 'lucide-react';
 import { crmApi } from '../../services/automationHubApi';
+import LeadDetailModal from './LeadDetailModal';
+import { TICKET_OPTIONS, obtenerTicketTag, etiquetaTicket } from './ticketTags';
 
 function soloDigitos(v) {
   return String(v || '').replace(/\D/g, '');
 }
+
+const TICKET_BADGE_CLASS = {
+  'high-ticket': 'bg-danger/10 text-danger',
+  'mid-ticket': 'bg-warning/10 text-warning',
+  'low-ticket': 'bg-surface-2 text-fg-muted',
+};
 
 // Una tarjeta se marca "NUEVA" si entró en las últimas 24hs — reemplaza al
 // tracking de "vistas" que antes vivía en GoHighLevel/localStorage.
@@ -17,7 +25,7 @@ const inputClass = 'h-9 w-full rounded-md border border-border bg-surface-2 px-2
 
 function NuevoLeadModal({ pipelines, pipelineId, onClose, onCreado }) {
   const pipeline = pipelines.find((p) => p.id === pipelineId);
-  const [form, setForm] = useState({ name: '', phone: '', email: '', source: '', value: '', stage_id: pipeline?.Stages?.[0]?.id || '' });
+  const [form, setForm] = useState({ name: '', phone: '', email: '', source: '', value: '', ticket: '', stage_id: pipeline?.Stages?.[0]?.id || '' });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,7 +40,8 @@ function NuevoLeadModal({ pipelines, pipelineId, onClose, onCreado }) {
     setGuardando(true);
     setError('');
     try {
-      await crmApi.crearLead({ ...form, pipeline_id: pipelineId, value: form.value || null });
+      const { ticket, ...datos } = form;
+      await crmApi.crearLead({ ...datos, pipeline_id: pipelineId, value: form.value || null, tags: ticket ? [ticket] : [] });
       onCreado();
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo crear el lead.');
@@ -54,6 +63,10 @@ function NuevoLeadModal({ pipelines, pipelineId, onClose, onCreado }) {
           <input className={inputClass} placeholder="Email" value={form.email} onChange={set('email')} />
           <input className={inputClass} placeholder="Fuente (ej. Instagram, Referido)" value={form.source} onChange={set('source')} />
           <input type="number" step="0.01" className={inputClass} placeholder="Valor" value={form.value} onChange={set('value')} />
+          <select className={inputClass} value={form.ticket} onChange={set('ticket')}>
+            <option value="">Tipo de ticket (sin clasificar)</option>
+            {TICKET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
           <select className={inputClass} value={form.stage_id} onChange={set('stage_id')}>
             {(pipeline?.Stages || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
@@ -74,6 +87,7 @@ export default function OpportunitiesBoard() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [leadSeleccionado, setLeadSeleccionado] = useState(null);
 
   const pipeline = useMemo(() => pipelines.find((p) => p.id === pipelineId), [pipelines, pipelineId]);
 
@@ -170,15 +184,21 @@ export default function OpportunitiesBoard() {
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary-text">{tarjetas.length}</span>
                       </div>
                       <div className="flex min-h-[80px] flex-col gap-2">
-                        {tarjetas.map((lead, index) => (
+                        {tarjetas.map((lead, index) => {
+                          const ticketTag = obtenerTicketTag(lead.tags);
+                          return (
                           <Draggable draggableId={String(lead.id)} index={index} key={lead.id}>
                             {(providedCard) => (
                               <div ref={providedCard.innerRef} {...providedCard.draggableProps} {...providedCard.dragHandleProps}
-                                className="rounded-md border border-border bg-surface p-2.5 shadow-sm">
-                                <div className="flex items-center gap-1.5 text-xs font-semibold text-fg">
+                                onClick={() => setLeadSeleccionado(lead)}
+                                className="cursor-pointer rounded-md border border-border bg-surface p-2.5 shadow-sm">
+                                <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-fg">
                                   {lead.name}
                                   {esNueva(lead) && (
                                     <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[9px] font-bold text-success">NUEVA</span>
+                                  )}
+                                  {ticketTag && (
+                                    <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${TICKET_BADGE_CLASS[ticketTag]}`}>{etiquetaTicket(ticketTag)}</span>
                                   )}
                                 </div>
                                 {lead.email && <div className="mt-1 text-[10px] text-fg-muted">{lead.email}</div>}
@@ -199,7 +219,8 @@ export default function OpportunitiesBoard() {
                               </div>
                             )}
                           </Draggable>
-                        ))}
+                          );
+                        })}
                         {provided.placeholder}
                       </div>
                     </div>
@@ -217,6 +238,15 @@ export default function OpportunitiesBoard() {
           pipelineId={pipelineId}
           onClose={() => setModalAbierto(false)}
           onCreado={() => { setModalAbierto(false); cargarLeads(pipelineId); }}
+        />
+      )}
+
+      {leadSeleccionado && (
+        <LeadDetailModal
+          lead={leadSeleccionado}
+          pipeline={pipeline}
+          onClose={() => setLeadSeleccionado(null)}
+          onCambio={() => { setLeadSeleccionado(null); cargarLeads(pipelineId); }}
         />
       )}
     </div>

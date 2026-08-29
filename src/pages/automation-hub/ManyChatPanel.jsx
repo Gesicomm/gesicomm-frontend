@@ -6,7 +6,8 @@ const BODY_EJEMPLO = `{
   "name": "{{first_name}} {{last_name}}",
   "phone": "{{phone}}",
   "email": "{{email}}",
-  "subscriber_id": "{{id}}"
+  "subscriber_id": "{{id}}",
+  "ticket": "MD"
 }`;
 
 const BODY_ETAPA_EJEMPLO = `{
@@ -19,7 +20,8 @@ const BODY_VENTA_EJEMPLO = `{
   "subscriber_id": "{{id}}",
   "pipeline": "Ventas",
   "stage": "Seguimiento pago",
-  "value": 150000
+  "value": 150000,
+  "ticket": "HG"
 }`;
 
 export default function ManyChatPanel() {
@@ -112,7 +114,7 @@ export default function ManyChatPanel() {
                 </button>
               </div>
               <p className="m-0 mt-2 text-[11px] text-fg-subtle">
-                <code>name</code> es el único campo obligatorio. Cualquier otro dato que agregues al JSON (presupuesto, interés, etc.) se guarda igual, sin crear columnas nuevas en el tablero.
+                <code>name</code> es el único campo obligatorio. <code>ticket</code> es opcional y clasifica el lead: <code>HG</code> = high ticket, <code>MD</code> = mid ticket, <code>LT</code> = low ticket (se ve como badge en la tarjeta). Cualquier otro dato que agregues al JSON (presupuesto, interés, etc.) se guarda igual, sin crear columnas nuevas en el tablero.
               </p>
             </div>
 
@@ -157,7 +159,7 @@ export default function ManyChatPanel() {
                 <div><strong className="text-fg">Ventas:</strong> Agendado · Confirmado · Asistió · Canceló · Seguimiento pago</div>
               </div>
               <p className="m-0 mt-2 text-[11px] text-fg-subtle">
-                Si omitís <code>pipeline</code>, se usa el que ya tenía el lead. <code>value</code> es opcional.
+                Si omitís <code>pipeline</code>, se usa el que ya tenía el lead. <code>value</code> y <code>ticket</code> (mismos códigos <code>HG</code>/<code>MD</code>/<code>LT</code> de arriba) son opcionales.
               </p>
             </div>
           </>
