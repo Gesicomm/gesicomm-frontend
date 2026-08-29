@@ -279,9 +279,7 @@ export default function BeautyProductPage({
         {nombreComercio} <small>Fórmula avanzada para una piel que brilla.</small>
       </footer>
       
-      {!previewMode && (
-        <StoreFooterLegal tema={t} bordeSuave={hexToRgba(t.texto, 0.1)} nombreComercio={nombreComercio} isPreview={false} />
-      )}
+      <StoreFooterLegal tema={t} bordeSuave={hexToRgba(t.texto, 0.1)} nombreComercio={nombreComercio} isPreview={previewMode} />
     </main>
   );
 }
