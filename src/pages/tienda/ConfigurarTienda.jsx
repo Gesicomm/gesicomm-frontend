@@ -87,7 +87,7 @@ export default function ConfigurarTienda() {
   // (WhatsApp, anuncios) deja de funcionar. Se avisa en el formulario
   // antes de guardar.
   const subdominioDerivado = slugifyLigero(form.nombre);
-  const subdominioCambia = !!tienda && subdominioDerivado !== tienda.subdominio;
+  const subdominioCambia = !tienda || subdominioDerivado !== tienda.subdominio;
   const subdominioDebounced = useDebounce(subdominioDerivado, 500);
 
   const cargar = useCallback(async () => {
@@ -191,7 +191,12 @@ export default function ConfigurarTienda() {
         payload.meta_access_token = metaTokenNuevo.trim();
       }
 
-      const actualizada = await tiendaService.actualizar(payload);
+      let actualizada;
+      if (tienda) {
+        actualizada = await tiendaService.actualizar(payload);
+      } else {
+        actualizada = await tiendaService.crear(payload);
+      }
       setTienda(actualizada);
       setMetaTokenNuevo('');
       setEliminarMetaToken(false);
@@ -296,7 +301,7 @@ export default function ConfigurarTienda() {
                     </div>
                   )}
 
-                  {subdominioCambia && (
+                  {subdominioCambia && !!tienda && (
                     <p className="tn-warning">
                       <AlertCircle size={14} />
                       <span><strong>Atención:</strong> Cambiar el nombre va a modificar la URL pública de tu catálogo y de todas tus landings. Links que ya hayas compartido dejarán de funcionar.</span>
@@ -341,7 +346,11 @@ export default function ConfigurarTienda() {
                     <span className="tn-section-icon blue"><Globe size={14} /></span>
                     <h2>Dominio propio</h2>
                   </div>
-                  <DominioPropio tienda={tienda} onActualizado={cargar} />
+                  {tienda ? (
+                    <DominioPropio tienda={tienda} onActualizado={cargar} />
+                  ) : (
+                    <p className="tn-section-desc">Guardá tu tienda primero para poder configurar un dominio propio.</p>
+                  )}
                 </div>
               </div>
             </div>

@@ -263,7 +263,7 @@ function App() {
           <RequireTienda><UserLayout><ControlCourier /></UserLayout></RequireTienda>
         } />
         <Route path="/mi-tienda" element={
-          <RequireTienda><UserLayout><ConfigurarTienda /></UserLayout></RequireTienda>
+          <RequireTienda><DynamicLayout><ConfigurarTienda /></DynamicLayout></RequireTienda>
         } />
         {/* Cada tienda tiene 3 páginas fijas (Inicio/Catálogo/Contacto, ver
             landing.service.js asegurarPaginasFijas). /mi-landing garantiza
