@@ -36,6 +36,9 @@ export default function ContactoPublico() {
 
   useDocumentSeo(data?.seo_titulo || data?.titulo || 'Contacto', data?.seo_descripcion || '');
 
+  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
+  const cartState = useStoreCart(slug, data, catalogoCompleto);
+
   if (estado === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-canvas"><Loader className="animate-spin text-white/50" /></div>;
   if (estado === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Tienda no encontrada.</div>;
   if (estado === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Esta tienda no está disponible actualmente.</div>;
@@ -44,9 +47,6 @@ export default function ContactoPublico() {
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;
   const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
-
-  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
-  const cartState = useStoreCart(slug, data, catalogoCompleto);
 
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
   const linkInicio = isLocalFallback && slug ? `/l/${slug}` : '/';

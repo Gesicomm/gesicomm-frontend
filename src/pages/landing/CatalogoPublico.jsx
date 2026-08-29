@@ -42,10 +42,6 @@ export default function CatalogoPublico() {
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todas');
   
-  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
-  const cartState = useStoreCart(slug, data, catalogoCompleto);
-
-
   useEffect(() => {
     let activo = true;
     obtenerLandingPublica(slug)
@@ -63,6 +59,9 @@ export default function CatalogoPublico() {
   }, [slug]);
 
   useDocumentSeo(data ? `Catálogo - ${data.titulo || data.tienda?.nombre}` : 'Catálogo', data?.seo_descripcion || '');
+
+  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
+  const cartState = useStoreCart(slug, data, catalogoCompleto);
 
   if (estadoCarga === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-canvas"><Loader className="animate-spin text-white/50" /></div>;
   if (estadoCarga === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Tienda no encontrada.</div>;
