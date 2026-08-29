@@ -101,7 +101,7 @@ export default function BeautyProductPage({
                 <li key={i}><Check style={{ color: acento }} /> {c}</li>
               ))}
             </ul>
-            {sPrueba?.activo && (
+            {sHero.calificacion_texto && (
               <div className="beauty-rating">
                 <b>★★★★★</b> {sHero.calificacion_texto}
               </div>
@@ -122,7 +122,7 @@ export default function BeautyProductPage({
 
       {sPrecio?.activo && (
         <section className="beauty-offers beauty-wrap" id="offers">
-          <Title n={4}>{sPrecio.titulo}</Title>
+          {sPrecio.titulo && <Title n={4}>{sPrecio.titulo}</Title>}
           <div className="beauty-offer-grid">
             {(item.ofertas?.length > 0 ? item.ofertas : [{ nombre: '1 FRASCO', precio: item.precio, id: 1 }]).map((p, i) => (
               <button key={p.id || i} className={`beauty-offer ${offer === i ? 'selected' : ''}`} onClick={() => setOffer(i)} style={offer === i ? { borderColor: acento } : {}}>
@@ -147,7 +147,7 @@ export default function BeautyProductPage({
       {sBeneficios?.activo && sBeneficios.items?.length > 0 && (
         <section className="beauty-benefits">
           <div className="beauty-wrap">
-            <Title n={5}>{sBeneficios.titulo}</Title>
+            {sBeneficios.titulo && <Title n={5}>{sBeneficios.titulo}</Title>}
             <div className="beauty-benefit-grid">
               {sBeneficios.items.map((b, i) => (
                 <article key={i}>
@@ -166,7 +166,7 @@ export default function BeautyProductPage({
 
       {sIngredientes?.activo && item?.ficha_datos?.beauty_ingredientes?.length > 0 && (
         <section className="beauty-ingredients beauty-wrap">
-          <Title n={6}>{sIngredientes.titulo}</Title>
+          {sIngredientes.titulo && <Title n={6}>{sIngredientes.titulo}</Title>}
           <div className="beauty-ingredient-grid">
             {item.ficha_datos.beauty_ingredientes.map((ing, i) => (
               <article key={i}>
@@ -181,7 +181,7 @@ export default function BeautyProductPage({
 
       {sResultados?.activo && item?.ficha_datos?.beauty_resultados?.length > 0 && (
         <section className="beauty-results beauty-wrap">
-          <Title n={7}>{sResultados.titulo}</Title>
+          {sResultados.titulo && <Title n={7}>{sResultados.titulo}</Title>}
           <div className="beauty-result-grid">
             {item.ficha_datos.beauty_resultados.map((res, i) => (
               <article key={i}>
@@ -197,7 +197,7 @@ export default function BeautyProductPage({
 
       {sComoFunciona?.activo && item?.ficha_datos?.beauty_pasos?.length > 0 && (
         <section className="beauty-how beauty-wrap">
-          <Title n={8}>{sComoFunciona.titulo}</Title>
+          {sComoFunciona.titulo && <Title n={8}>{sComoFunciona.titulo}</Title>}
           <div className="beauty-steps">
             {item.ficha_datos.beauty_pasos.map((paso, i) => (
               <article key={i}>
@@ -226,7 +226,7 @@ export default function BeautyProductPage({
 
       {sFaq?.activo && item?.faq?.length > 0 && (
         <section className="beauty-faq beauty-wrap">
-          <Title n={10}>{sFaq.titulo}</Title>
+          {sFaq.titulo && <Title n={10}>{sFaq.titulo}</Title>}
           <div className="beauty-faq-grid">
             {item.faq.map((f, i) => (
               <div className="beauty-faq-item" key={i}>
@@ -242,7 +242,7 @@ export default function BeautyProductPage({
 
       {sUpsells?.activo && item?.relacionados?.length > 0 && (
         <section className="beauty-upsells beauty-wrap">
-          <Title n={11}>{sUpsells.titulo}</Title>
+          {sUpsells.titulo && <Title n={11}>{sUpsells.titulo}</Title>}
           <div className="beauty-upsell-grid">
             {item.relacionados.map((rel, i) => (
               <article key={i}>
@@ -266,7 +266,7 @@ export default function BeautyProductPage({
               <strong>{String(sCtaFinal.contador.horas).padStart(2, '0')} : {String(sCtaFinal.contador.minutos).padStart(2, '0')} : {String(sCtaFinal.contador.segundos).padStart(2, '0')}</strong>
               <span>HORAS　 MINUTOS　 SEGUNDOS</span>
             </div>
-            <p>{sCtaFinal.texto}<br/><small>{sCtaFinal.subtexto}</small></p>
+            { (sCtaFinal.texto || sCtaFinal.subtexto) && <p>{sCtaFinal.texto}{sCtaFinal.texto && sCtaFinal.subtexto && <br/>}<small>{sCtaFinal.subtexto}</small></p> }
             <button onClick={buy} style={{ color: acento }}>
               {added ? 'AÑADIDO AL CARRITO ✓' : sCtaFinal.cta_texto}
               <small>{sCtaFinal.cta_nota}</small>
