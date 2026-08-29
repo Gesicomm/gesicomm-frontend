@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Check, ChevronDown, ShieldCheck, Truck, LockKeyhole, RotateCcw, Sparkles, Droplets, Sun, Heart, Leaf } from 'lucide-react';
+import { Check, ChevronDown, ShieldCheck, Truck, LockKeyhole, RotateCcw, Sparkles, Droplets, Sun, Heart, Leaf, Package } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from '../themeUtils';
 import { getMediaUrl } from '../../../../services/api';
 import './beautyProductPage.css';
@@ -7,11 +7,8 @@ import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 
 function Bottle({ small = false }) {
   return (
-    <div className={`beauty-bottle ${small ? 'beauty-small' : ''}`}>
-      <div className="beauty-dropper" />
-      <div className="beauty-bottle-body">
-        <b>GLOW</b><span>RENEW</span><small>SERUM</small>
-      </div>
+    <div className={`beauty-bottle ${small ? 'beauty-small' : ''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.05)', color: 'rgba(0,0,0,0.1)', borderRadius: '8px' }}>
+      <Package size={small ? 24 : 48} />
     </div>
   );
 }
@@ -276,7 +273,7 @@ export default function BeautyProductPage({
       )}
 
       <footer className="beauty-footer">
-        {nombreComercio} <small>Fórmula avanzada para una piel que brilla.</small>
+        {nombreComercio} <small>{item?.categoria || 'Todos los derechos reservados.'}</small>
       </footer>
       
       <StoreFooterLegal tema={t} bordeSuave={hexToRgba(t.texto, 0.1)} nombreComercio={nombreComercio} isPreview={previewMode} />
