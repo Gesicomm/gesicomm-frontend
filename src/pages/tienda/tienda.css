@@ -255,7 +255,7 @@
   color: var(--vit-accent-fg);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: var(--font-mono);
   font-weight: 500;
   position: relative;
 }
