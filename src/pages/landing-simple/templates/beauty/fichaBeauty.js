@@ -166,16 +166,48 @@ export function clonarFichaBeauty(fichaResuelta, key) {
   return clonarComun(fichaResuelta, key, DEFAULTS_BEAUTY);
 }
 
-export function fichaBeautyDesdeProducto(datosProducto) {
-  const marketing = datosProducto?.marketing_y_embudo;
+export function fichaBeautyDesdeProducto(producto) {
+  if (!producto) return {};
+  const ficha = {};
 
-  const mapping = {};
+  const nombre = (producto.nombre || '').trim();
+  const descripcion = (producto.descripcion || '').trim();
+  const beneficios = (producto.beneficios || []).filter(b => b?.titulo?.trim());
+  const confianza = (producto.confianza || []).filter(c => c?.texto?.trim());
+  const promesa = (producto.propuesta_valor || '').trim();
+  const sobre = (producto.sobre_este_producto || '').trim();
 
-  if (esObjeto(marketing)) {
-    if (marketing.beneficios_activos === true && Array.isArray(marketing.beneficios)) {
-      mapping.beneficios = { items: lista(marketing.beneficios, LIMITES.beneficios_items).map(b => ({ titulo: b.titulo, descripcion: b.descripcion, icono: b.icono || 'sparkles' })) };
-    }
+  if (nombre || promesa || sobre || beneficios.length || descripcion) {
+    ficha.hero = {};
+    if (nombre) ficha.hero.eyebrow = nombre.toUpperCase();
+    if (promesa) ficha.hero.titulo = promesa;
+    else if (nombre) ficha.hero.titulo = nombre;
+    
+    if (sobre) ficha.hero.lead = sobre;
+    else if (descripcion) ficha.hero.lead = descripcion;
+
+    if (beneficios.length) ficha.hero.caracteristicas = beneficios.map(b => b.titulo.trim());
   }
 
-  return mapping;
+  if (beneficios.length) {
+    ficha.beneficios = {
+      items: beneficios.map(b => ({
+        icono: b.icono || 'sparkles',
+        titulo: b.titulo.trim(),
+        descripcion: (b.texto || '').trim(),
+      })),
+    };
+  }
+
+  if (confianza.length) {
+    ficha.garantias = {
+      items: confianza.map(c => ({
+        icono: '✦',
+        titulo: c.texto.trim(),
+        descripcion: '',
+      })),
+    };
+  }
+
+  return ficha;
 }
