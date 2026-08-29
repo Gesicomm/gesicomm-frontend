@@ -799,6 +799,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               fichaTechActiva={fichaTechActiva}
               fichaTech={productoFichaTech}
               fichaTechResuelta={fichaTechResuelta}
+                  fichaBeautyResuelta={fichaBeautyResuelta}
               fichaTechLanding={fichaTechLanding}
               fichaTechDelProducto={fichaTechDelProducto}
               onFichaTech={setProductoFichaTech}
@@ -940,6 +941,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   setCompraFunnel={setCompraFunnel}
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
+                  fichaBeautyResuelta={fichaBeautyResuelta}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
                 />
@@ -985,6 +987,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   setCompraFunnel={setCompraFunnel}
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
+                  fichaBeautyResuelta={fichaBeautyResuelta}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
                 />
@@ -1079,7 +1082,7 @@ function PreviewContent({
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
-  fichaResuelta = null, fichaTechResuelta = null,
+  fichaResuelta = null, fichaTechResuelta = null, fichaBeautyResuelta = null,
   onCerrarProducto = null, onAbrirRelacionado = null,
 }) {
   if (productoPreview) {
@@ -1107,7 +1110,7 @@ function PreviewContent({
         <div className="flex flex-col min-h-screen">
           <StoreHeader {...headerProps} />
           <FitnessProductPage
-            item={armarItemFicha({
+            item={armarItemFichaComun({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
@@ -1125,7 +1128,76 @@ function PreviewContent({
             templateSlug={templateSlug}
             contacto={datosPreview.contacto}
             nombreComercio={datosPreview.nombreComercio}
-        logo={datosPreview.logo}
+            logo={datosPreview.logo}
+            isMobile={viewportMode === 'mobile'}
+            previewMode
+            onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+            onVolver={onCerrarProducto}
+            onClickRelacionado={onAbrirRelacionado}
+          />
+        </div>
+      );
+    }
+
+    if (fichaTechResuelta) {
+      return (
+        <div className="flex flex-col min-h-screen">
+          <StoreHeader {...headerProps} />
+          <TechProductPage
+            item={armarItemFichaComun({
+              nombre: productoPreview.nombre,
+              categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
+              descripcion: productoDescripcion,
+              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+              imagenes: (productoImagenes || []).map(i => i.url),
+              ofertas: ofertasPublicas,
+              faq: productoFaq,
+              faqTitulo: productoFaqTitulo,
+              relacionados: productoRelacionados,
+              relacionadosTitulo: productoRelacionadosTitulo,
+            })}
+            ficha={fichaTechResuelta}
+            tema={datosPreview.tema}
+            templateSlug={templateSlug}
+            contacto={datosPreview.contacto}
+            nombreComercio={datosPreview.nombreComercio}
+            logo={datosPreview.logo}
+            isMobile={viewportMode === 'mobile'}
+            previewMode
+            onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+            onVolver={onCerrarProducto}
+            onClickRelacionado={onAbrirRelacionado}
+          />
+        </div>
+      );
+    }
+
+    if (fichaBeautyResuelta) {
+      return (
+        <div className="flex flex-col min-h-screen">
+          <StoreHeader {...headerProps} />
+          <BeautyProductPage
+            item={armarItemFichaComun({
+              ...productoPreview, // Para incluir ficha_datos para beauty
+              nombre: productoPreview.nombre,
+              categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
+              descripcion: productoDescripcion,
+              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+              imagenes: (productoImagenes || []).map(i => i.url),
+              ofertas: ofertasPublicas,
+              faq: productoFaq,
+              faqTitulo: productoFaqTitulo,
+              relacionados: productoRelacionados,
+              relacionadosTitulo: productoRelacionadosTitulo,
+            })}
+            ficha={fichaBeautyResuelta}
+            tema={datosPreview.tema}
+            templateSlug={templateSlug}
+            contacto={datosPreview.contacto}
+            nombreComercio={datosPreview.nombreComercio}
+            logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
             onComprar={() => setCompraFunnel?.(ofertasPublicas)}
