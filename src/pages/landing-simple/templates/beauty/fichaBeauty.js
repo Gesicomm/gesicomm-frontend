@@ -39,17 +39,11 @@ export const DEFAULTS_BEAUTY = {
 
   hero: {
     activo: true,
-    eyebrow: 'GLOW RENEW · FÓRMULA AVANZADA',
+    eyebrow: 'FÓRMULA AVANZADA',
     etiqueta: 'MÁS VENDIDO',
-    titulo: 'Piel radiante, hidratada <em>y joven en 7 días.</em>',
-    lead: 'Transforma tu piel desde la primera aplicación. Reduce arrugas, manchas y líneas de expresión para una piel visiblemente más luminosa.',
-    caracteristicas: [
-      'Hidrata en profundidad',
-      'Reduce arrugas y líneas finas',
-      'Unifica el tono y reduce manchas',
-      'Aporta luminosidad natural',
-      'Apto para todo tipo de piel'
-    ],
+    titulo: 'Descubre tu mejor versión',
+    lead: 'Conoce los beneficios de este producto y transforma tu rutina diaria con ingredientes de alta calidad.',
+    caracteristicas: [],
     cta_texto: 'COMPRAR AHORA — ENVÍO GRATIS',
     calificacion_texto: '4.8/5 · 12,847 reseñas verificadas · +25,000 clientas satisfechas'
   },
@@ -69,13 +63,7 @@ export const DEFAULTS_BEAUTY = {
   beneficios: {
     activo: true,
     titulo: 'Beneficios que amarás',
-    items: [
-      { icono: 'sparkles', titulo: 'PIEL MÁS JOVEN', descripcion: 'Reduce arrugas y líneas de expresión' },
-      { icono: 'droplets', titulo: 'HIDRATACIÓN PROFUNDA', descripcion: 'Mantiene tu piel hidratada todo el día' },
-      { icono: 'sun', titulo: 'REDUCE MANCHAS', descripcion: 'Unifica el tono y reduce decoloraciones' },
-      { icono: 'sparkles', titulo: 'MÁS LUMINOSIDAD', descripcion: 'Devuelve el brillo natural a tu piel' },
-      { icono: 'heart', titulo: 'SUAVE Y TERSA', descripcion: 'Textura suave y piel más tersa' },
-    ],
+    items: [],
   },
 
   ingredientes: {
@@ -90,18 +78,12 @@ export const DEFAULTS_BEAUTY = {
 
   como_funciona: {
     activo: true,
-    titulo: 'Cómo funciona Glow Renew Serum',
+    titulo: 'Cómo utilizar este producto',
   },
 
   garantias: {
     activo: true,
-    items: [
-      { icono: '◉', titulo: 'GARANTÍA 60 DÍAS', descripcion: 'Devuelve sin preguntas' },
-      { icono: '♢', titulo: 'DERMATOLÓGICAMENTE PROBADO', descripcion: 'Puro y aprobado' },
-      { icono: '♧', titulo: 'LIBRE DE CRUELDAD', descripcion: 'No testeado en animales' },
-      { icono: '✦', titulo: 'INGREDIENTES SEGUROS', descripcion: 'Fórmula natural' },
-      { icono: '▣', titulo: 'PAGO 100% SEGURO', descripcion: 'Encriptación SSL' },
-    ],
+    items: [],
   },
 
   faq: {
