@@ -281,10 +281,10 @@ function App() {
             el comercio solo edita contenido) o lienzo en blanco (escribe
             el HTML/CSS/JS a mano). EditorSegunModo elige el editor. */}
         <Route path="/landing" element={
-          <RequireTienda><UserLayout><LandingSimpleEntry /></UserLayout></RequireTienda>
+          <RequireTienda><DynamicLayout><LandingSimpleEntry /></DynamicLayout></RequireTienda>
         } />
         <Route path="/landing/:id" element={
-          <RequireTienda><UserLayout><EditorSegunModo /></UserLayout></RequireTienda>
+          <RequireTienda><DynamicLayout><EditorSegunModo /></DynamicLayout></RequireTienda>
         } />
         {/* EMBUDOS — módulo propio (pages/funnel/). Una página por producto,
             hecha para llevar al cliente al checkout. Nada que ver con

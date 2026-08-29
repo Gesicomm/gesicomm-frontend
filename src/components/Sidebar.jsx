@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck
+  GraduationCap, Receipt, Truck, Sparkles
 } from 'lucide-react';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
@@ -125,6 +125,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                 dentro de la ficha de cada producto — los combos viejos
                 siguen en la base, solo se sacó el link del menú. */}
 
+            {renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles /> })}
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
           </ul>
 
