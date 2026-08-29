@@ -4,6 +4,7 @@ import { getMediaUrl } from '../../../services/api';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import { RedesSocialesFooter } from './sections';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
+import StoreHeader from './StoreHeader';
 
 
 /**
@@ -20,7 +21,7 @@ import StoreFooterLegal from '../../landing/StoreFooterLegal';
  * home (productos_titulo) — son dos páginas distintas.
  */
 export default function CatalogoPreview({
-  productos, titulo, descripcion, tema, templateSlug, contacto, nombreComercio, onClickProducto, onVolver, isMobile = false,
+  productos, titulo, descripcion, tema, templateSlug, contacto, nombreComercio, logo, onClickProducto, onVolver, isMobile = false,
 }) {
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
@@ -40,6 +41,15 @@ export default function CatalogoPreview({
         </button>
         <span className="text-xs" style={{ color: hexToRgba(t.texto, 0.5) }}>Catálogo completo — clickeá un producto para editarlo</span>
       </div>
+      
+      <StoreHeader
+        templateSlug={templateSlug}
+        nombreComercio={nombreComercio}
+        logo={logo}
+        tema={t}
+        cantidadCarrito={0}
+        previewMode={true}
+      />
 
       <div className="max-w-5xl mx-auto px-6 py-8">
         <h1 className="text-2xl font-extrabold">{titulo || 'Catálogo de Productos'}</h1>

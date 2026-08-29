@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Cpu, Leaf, Package } from 'lucide-react';
+import { Plus, Trash2, Cpu, Leaf, Package, Sparkles } from 'lucide-react';
 
 /**
  * Pestaña "Ficha del rubro" de la carga de productos.
@@ -39,6 +39,12 @@ const RUBROS = [
     Icon: Cpu,
     ayuda: 'Especificaciones técnicas, qué trae la caja y comparativa.',
   },
+  {
+    value: 'beauty',
+    label: 'Beauty y Skin Care',
+    Icon: Sparkles,
+    ayuda: 'Ingredientes, cómo funciona y resultados (antes y después).',
+  },
 ];
 
 const LIMITES = {
@@ -46,6 +52,9 @@ const LIMITES = {
   especificaciones: 14,
   en_la_caja: 10,
   comparativa: 8,
+  beauty_ingredientes: 5,
+  beauty_pasos: 4,
+  beauty_resultados: 3,
 };
 
 export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
@@ -200,6 +209,56 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
               Compará con hechos verificables: afirmar algo falso sobre la competencia es publicidad engañosa.
             </p>
           </div>
+        </>
+      )}
+
+      {/* ── Beauty ─────────────────────────────────────────────── */}
+      {actual.value === 'beauty' && (
+        <>
+          <ListaObjetos
+            label="Ingredientes premium"
+            ayuda="Aparecen con su ícono y beneficio para la piel (ej: Hidratación)."
+            items={listaDe('beauty_ingredientes')}
+            max={LIMITES.beauty_ingredientes}
+            nuevo={() => ({ icono: '💧', nombre: '', descripcion: '' })}
+            onChange={l => set('beauty_ingredientes', l)}
+            textoAgregar="Agregar ingrediente"
+            campos={[
+              { clave: 'icono', placeholder: '💧', ancho: '50px' },
+              { clave: 'nombre', placeholder: 'Ácido hialurónico', ancho: '38%' },
+              { clave: 'descripcion', placeholder: 'Hidratación profunda y rellena arrugas', ancho: '1' },
+            ]}
+          />
+
+          <ListaObjetos
+            label="Resultados (Antes/Después)"
+            ayuda="Testimonios reales de clientas mostrando cómo mejoró su piel."
+            items={listaDe('beauty_resultados')}
+            max={LIMITES.beauty_resultados}
+            nuevo={() => ({ nombre: '', testimonio: '' })}
+            onChange={l => set('beauty_resultados', l)}
+            textoAgregar="Agregar testimonio"
+            campos={[
+              { clave: 'nombre', placeholder: 'Ana M.', ancho: '38%' },
+            ]}
+            areaClave="testimonio"
+            areaPlaceholder="Mi piel se ve más luminosa, hidratada y suave."
+          />
+
+          <ListaObjetos
+            label="Cómo funciona (Pasos)"
+            ayuda="Guía paso a paso de uso o cómo actúa el producto en la piel."
+            items={listaDe('beauty_pasos')}
+            max={LIMITES.beauty_pasos}
+            nuevo={() => ({ paso: '', titulo: '', descripcion: '' })}
+            onChange={l => set('beauty_pasos', l)}
+            textoAgregar="Agregar paso"
+            campos={[
+              { clave: 'paso', placeholder: '1', ancho: '50px' },
+              { clave: 'titulo', placeholder: 'LIMPIA', ancho: '38%' },
+              { clave: 'descripcion', placeholder: 'Limpia tu rostro completamente', ancho: '1' },
+            ]}
+          />
         </>
       )}
     </>

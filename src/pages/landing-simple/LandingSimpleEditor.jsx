@@ -1094,6 +1094,7 @@ function PreviewContent({
             templateSlug={templateSlug}
             contacto={datosPreview.contacto}
             nombreComercio={datosPreview.nombreComercio}
+        logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
             onComprar={() => setCompraFunnel?.(ofertasPublicas)}
@@ -1120,6 +1121,7 @@ function PreviewContent({
         templateSlug={templateSlug}
         contacto={datosPreview.contacto}
         nombreComercio={datosPreview.nombreComercio}
+        logo={datosPreview.logo}
         isMobile={viewportMode === 'mobile'}
         previewMode={true}
         onComprar={() => setCompraFunnel?.(ofertasPublicas)}
@@ -1137,6 +1139,7 @@ function PreviewContent({
         templateSlug={templateSlug}
         contacto={datosPreview.contacto}
         nombreComercio={datosPreview.nombreComercio}
+        logo={datosPreview.logo}
         onClickProducto={(p) => abrirProducto(p)}
         onVolver={onCerrarCatalogo}
         isMobile={viewportMode === 'mobile'}
@@ -1150,6 +1153,7 @@ function PreviewContent({
         tema={datosPreview.tema}
         templateSlug={templateSlug}
         nombreComercio={datosPreview.nombreComercio}
+        logo={datosPreview.logo}
         onVolver={onCerrarContacto}
       />
     );

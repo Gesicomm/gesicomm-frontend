@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import { ContactoSection, DatosContactoSection } from './sections';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
+import StoreHeader from './StoreHeader';
 
 
 /**
@@ -14,7 +15,7 @@ import StoreFooterLegal from '../../landing/StoreFooterLegal';
  * componente solo evita que el comercio se vaya del editor al mirar cómo
  * queda la página.
  */
-export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, onVolver }) {
+export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, logo, onVolver }) {
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
 
@@ -26,6 +27,15 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
         </button>
         <span className="text-xs" style={{ color: hexToRgba(t.texto, 0.5) }}>Página de Contacto</span>
       </div>
+      
+      <StoreHeader
+        templateSlug={templateSlug}
+        nombreComercio={nombreComercio}
+        logo={logo}
+        tema={t}
+        cantidadCarrito={0}
+        previewMode={true}
+      />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-10">
         <h1 className="text-3xl font-bold text-center mb-8">Contacto</h1>
