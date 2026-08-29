@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
 import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
+import StoreHeader from "./StoreHeader";
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
 const DEFAULT_TEMA = { fondo: '#FBEFEF', texto: '#3A2A2E', acento: '#E8A2B0' };
