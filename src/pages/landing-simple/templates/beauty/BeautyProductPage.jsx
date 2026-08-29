@@ -124,11 +124,11 @@ export default function BeautyProductPage({
         <section className="beauty-offers beauty-wrap" id="offers">
           {sPrecio.titulo && <Title n={4}>{sPrecio.titulo}</Title>}
           <div className="beauty-offer-grid">
-            {(item.ofertas?.length > 0 ? item.ofertas : [{ nombre: '1 FRASCO', precio: item.precio, id: 1 }]).map((p, i) => (
+            {(item.packs?.length > 0 ? item.packs : [{ nombre: '1 UNIDAD', precio: item.precio, id: 1 }]).map((p, i) => (
               <button key={p.id || i} className={`beauty-offer ${offer === i ? 'selected' : ''}`} onClick={() => setOffer(i)} style={offer === i ? { borderColor: acento } : {}}>
                 <span style={{ color: acento }}>{i === 1 ? 'MÁS VENDIDO' : (i === 2 ? 'MEJOR VALOR' : ' ')}</span>
                 <b>{p.nombre}</b>
-                <small>{p.unidades ? `${p.unidades} unidades` : '30 ml'}</small>
+                {p.unidades && <small>{p.unidades} unidades</small>}
                 {p.imagen || mainImage ? (
                   <img src={p.imagen ? getMediaUrl(p.imagen) : mainImage} alt={p.nombre} className="h-[100px] object-contain my-2" />
                 ) : (
