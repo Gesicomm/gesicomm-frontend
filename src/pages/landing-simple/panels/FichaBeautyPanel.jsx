@@ -264,7 +264,7 @@ function CamposContador({ d, set }) {
         <div className="grid grid-cols-4 gap-2">
           <div><label className={ETIQUETA}>Días</label><input type="number" min="0" className={CAMPO} value={c.dias || 0} onChange={e => setC({ dias: Number(e.target.value) })} /></div>
           <div><label className={ETIQUETA}>Horas</label><input type="number" min="0" max="23" className={CAMPO} value={c.horas || 0} onChange={e => setC({ horas: Number(e.target.value) })} /></div>
-          <div><label className={ETIQUETA}>Min</</label><input type="number" min="0" max="59" className={CAMPO} value={c.minutos || 0} onChange={e => setC({ minutos: Number(e.target.value) })} /></div>
+          <div><label className={ETIQUETA}>Min</label><input type="number" min="0" max="59" className={CAMPO} value={c.minutos || 0} onChange={e => setC({ minutos: Number(e.target.value) })} /></div>
           <div><label className={ETIQUETA}>Seg</label><input type="number" min="0" max="59" className={CAMPO} value={c.segundos || 0} onChange={e => setC({ segundos: Number(e.target.value) })} /></div>
         </div>
       )}
