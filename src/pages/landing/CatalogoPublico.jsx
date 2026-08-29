@@ -8,6 +8,9 @@ import { Store, Loader, ImageOff } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
 import { RedesSocialesFooter } from '../landing-simple/templates/sections';
 import StoreFooterLegal from './StoreFooterLegal';
+import StoreHeader from '../landing-simple/templates/StoreHeader';
+import CartDrawer from './CartDrawer';
+import { useStoreCart } from './useStoreCart';
 
 const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num || 0);
 
@@ -38,6 +41,10 @@ export default function CatalogoPublico() {
   const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
   const [filtroEtiqueta, setFiltroEtiqueta] = useState('todas');
+  
+  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
+  const cartState = useStoreCart(slug, data, catalogoCompleto);
+
 
   useEffect(() => {
     let activo = true;
@@ -129,19 +136,34 @@ export default function CatalogoPublico() {
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
-      <header className="flex items-center justify-between px-6 py-4 sticky top-0 backdrop-blur z-20" style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.fondo, 0.95) }}>
-        <a href={linkInicio} className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          {logo ? (
-            <img src={logo} alt={nombreComercio} className="h-9 w-auto max-w-[120px] object-contain" />
-          ) : (
-            <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: tema.acento }}><Store size={18} style={{ color: tema.fondo }} /></div>
-          )}
-          <span className="font-bold tracking-tight text-lg">{nombreComercio}</span>
-        </a>
-        <nav className="flex gap-4">
-          <a href={linkContacto} className="font-semibold text-sm hover:opacity-80 transition-opacity">Contacto</a>
-        </nav>
-      </header>
+      {data?.template?.kind === 'rigido' ? (
+        <StoreHeader
+          templateSlug={data.template.slug}
+          nombreComercio={nombreComercio}
+          logo={logo}
+          tema={resolverTemaPorSlug(temaData, data.template.slug)}
+          cantidadCarrito={Array.from(cartState.carrito.values()).reduce((s, it) => s + it.cantidad, 0)}
+          onAbrirCarrito={() => cartState.setCarritoAbierto(true)}
+          linkInicio={linkInicio}
+          linkCatalogo={isLocalFallback && slug ? `/l/${slug}/catalogo` : '/catalogo'}
+          linkContacto={linkContacto}
+          previewMode={false}
+        />
+      ) : (
+        <header className="flex items-center justify-between px-6 py-4 sticky top-0 backdrop-blur z-20" style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(temaData?.fondo || '#fff', 0.95) }}>
+          <a href={linkInicio} className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            {logo ? (
+              <img src={logo} alt={nombreComercio} className="h-9 w-auto max-w-[120px] object-contain" />
+            ) : (
+              <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: temaData?.acento }}><Store size={18} style={{ color: temaData?.fondo }} /></div>
+            )}
+            <span className="font-bold tracking-tight text-lg" style={{ color: temaData?.texto }}>{nombreComercio}</span>
+          </a>
+          <nav className="flex gap-4">
+            <a href={linkContacto} className="font-semibold text-sm hover:opacity-80 transition-opacity" style={{ color: temaData?.texto }}>Contacto</a>
+          </nav>
+        </header>
+      )}
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 pt-8 pb-20">
         <div className="mb-6">
@@ -273,6 +295,17 @@ export default function CatalogoPublico() {
           </div>
         )}
       </main>
+      <CartDrawer
+        items={Array.from(cartState.carrito.values())}
+        sugerencias={cartState.sugerenciasCarrito}
+        onAgregarSugerencia={cartState.agregarSugerencia}
+        abierto={cartState.carritoAbierto}
+        onAbrir={() => cartState.setCarritoAbierto(true)}
+        onCerrar={() => cartState.setCarritoAbierto(false)}
+        onCantidad={cartState.cambiarCantidadCarrito}
+        onQuitar={cartState.quitarDelCarrito}
+        onConfirmarPedido={cartState.confirmarPedido}
+      />
 
       {/* Mismo pie que el home (BasicTemplate.jsx y hermanos): primero las
           redes sociales, y el copyright al final de TODO — consistente en

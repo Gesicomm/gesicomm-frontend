@@ -7,6 +7,9 @@ import { ContactoSection, DatosContactoSection } from '../landing-simple/templat
 import { Store, Loader } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
 import StoreFooterLegal from './StoreFooterLegal';
+import StoreHeader from '../landing-simple/templates/StoreHeader';
+import CartDrawer from './CartDrawer';
+import { useStoreCart } from './useStoreCart';
 
 
 export default function ContactoPublico() {
@@ -42,25 +45,43 @@ export default function ContactoPublico() {
   const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
 
+  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
+  const cartState = useStoreCart(slug, data, catalogoCompleto);
+
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
   const linkInicio = isLocalFallback && slug ? `/l/${slug}` : '/';
   const linkCatalogo = isLocalFallback && slug ? `/l/${slug}/catalogo` : '/catalogo';
 
   return (
     <div className="min-h-screen font-sans flex flex-col" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
-      <header className="flex items-center justify-between px-6 py-4 sticky top-0 backdrop-blur z-10" style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(tema.fondo, 0.95) }}>
-        <a href={linkInicio} className="flex items-center gap-2 transition-opacity hover:opacity-80">
-          {logo ? (
-            <img src={logo} alt={nombreComercio} className="h-9 w-auto max-w-[120px] object-contain" />
-          ) : (
-            <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: tema.acento }}><Store size={18} style={{ color: tema.fondo }} /></div>
-          )}
-          <span className="font-bold tracking-tight text-lg">{nombreComercio}</span>
-        </a>
-        <nav className="flex gap-4">
-          <a href={linkCatalogo} className="font-semibold text-sm hover:opacity-80 transition-opacity">Catálogo</a>
-        </nav>
-      </header>
+      {data?.template?.kind === 'rigido' ? (
+        <StoreHeader
+          templateSlug={data.template.slug}
+          nombreComercio={nombreComercio}
+          logo={logo}
+          tema={resolverTemaPorSlug(temaData, data.template.slug)}
+          cantidadCarrito={Array.from(cartState.carrito.values()).reduce((s, it) => s + it.cantidad, 0)}
+          onAbrirCarrito={() => cartState.setCarritoAbierto(true)}
+          linkInicio={linkInicio}
+          linkCatalogo={isLocalFallback && slug ? `/l/${slug}/catalogo` : '/catalogo'}
+          linkContacto={isLocalFallback && slug ? `/l/${slug}/contacto` : '/contacto'}
+          previewMode={false}
+        />
+      ) : (
+        <header className="flex items-center justify-between px-6 py-4 sticky top-0 backdrop-blur z-10" style={{ borderBottom: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(temaData?.fondo || '#fff', 0.95) }}>
+          <a href={linkInicio} className="flex items-center gap-2 transition-opacity hover:opacity-80">
+            {logo ? (
+              <img src={logo} alt={nombreComercio} className="h-9 w-auto max-w-[120px] object-contain" />
+            ) : (
+              <div className="h-9 w-9 rounded-full flex items-center justify-center" style={{ backgroundColor: temaData?.acento }}><Store size={18} style={{ color: temaData?.fondo }} /></div>
+            )}
+            <span className="font-bold tracking-tight text-lg" style={{ color: temaData?.texto }}>{nombreComercio}</span>
+          </a>
+          <nav className="flex gap-4">
+            <a href={isLocalFallback && slug ? `/l/${slug}/catalogo` : '/catalogo'} className="font-semibold text-sm hover:opacity-80 transition-opacity" style={{ color: temaData?.texto }}>Catálogo</a>
+          </nav>
+        </header>
+      )}
 
       {/* Dos bloques distintos: los datos de contacto reales (dirección,
           ciudad, país, teléfono, email, horarios) y aparte las redes
@@ -83,6 +104,17 @@ export default function ContactoPublico() {
            <ContactoSection contacto={contacto} acento={tema.acento} tituloClase="font-bold" bordeSuave={bordeSuave} isMobile={false} />
         </div>
       </main>
+      <CartDrawer
+        items={Array.from(cartState.carrito.values())}
+        sugerencias={cartState.sugerenciasCarrito}
+        onAgregarSugerencia={cartState.agregarSugerencia}
+        abierto={cartState.carritoAbierto}
+        onAbrir={() => cartState.setCarritoAbierto(true)}
+        onCerrar={() => cartState.setCarritoAbierto(false)}
+        onCantidad={cartState.cambiarCantidadCarrito}
+        onQuitar={cartState.quitarDelCarrito}
+        onConfirmarPedido={cartState.confirmarPedido}
+      />
 
       {/* Mismo pie que el home y el catálogo — consistente en las 3 páginas. */}
       <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={false} />
