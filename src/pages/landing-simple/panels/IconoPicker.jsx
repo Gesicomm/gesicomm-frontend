@@ -58,7 +58,7 @@ export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
         title={nombreActual ? `${titulo}: ${nombreActual}` : `Elegir ${titulo.toLowerCase()}`}
         className={`grid place-items-center w-8 h-8 rounded-lg border transition-colors ${
           abierto
-            ? 'border-primary text-primary bg-fg/10'
+            ? 'border-primary text-primary-text bg-fg/10'
             : 'border-fg/15 text-fg/70 bg-fg/5 hover:text-fg hover:border-fg/30'
         }`}
       >
@@ -84,7 +84,9 @@ export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
                   title={label}
                   onClick={() => elegir(key)}
                   className={`grid place-items-center h-8 rounded-lg transition-colors ${
-                    elegido ? 'bg-primary text-primary-text' : 'text-fg/60 hover:bg-fg/10 hover:text-fg'
+                    elegido
+                      ? 'bg-primary/15 text-primary-text ring-1 ring-primary'
+                      : 'text-fg/60 hover:bg-fg/10 hover:text-fg'
                   }`}
                 >
                   <Icon size={15} />

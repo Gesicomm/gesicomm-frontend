@@ -27,6 +27,12 @@ export function analizarVideo(url) {
 
   const host = u.hostname.replace(/^www\./, '').toLowerCase();
 
+  // `new URL` acepta cualquier cosa como host: "sdfsdf" se vuelve
+  // "https://sdfsdf" sin fallar. Sin este corte, un título mal pegado en el
+  // campo de link se dibujaba como un enlace roto que no lleva a ningún
+  // lado. Un dominio de verdad tiene al menos un punto.
+  if (!host.includes('.')) return null;
+
   // ── YouTube ────────────────────────────────────────────────────────
   if (host === 'youtu.be') {
     const id = u.pathname.slice(1).split('/')[0];

@@ -102,9 +102,15 @@ export const DEFAULTS_TECH = {
   variantes: {
     activo: true,
     titulo: 'Elegí tu opción',
-    // Las variantes reales salen del producto (ProductoVariante). Acá solo
-    // se configura cómo se presentan.
+    // Las variantes reales salen del producto (ProductoVariante) y los
+    // paquetes de las Ofertas del producto ("Paquete — más unidades del
+    // mismo producto"). Acá solo se configura cómo se presentan: la guía de
+    // referencia pone en esta sección tanto las variantes como los paquetes.
     etiqueta_grupo: 'Versión',
+    packs_titulo: 'Cantidad',
+    etiqueta_individual: '1 unidad',
+    // { "<id de oferta>": { badge, subtitulo } }
+    packs: {},
   },
 
   beneficios: {
@@ -132,6 +138,11 @@ export const DEFAULTS_TECH = {
     titulo: '¿Por qué elegirnos?',
     nosotros: 'Nuestro producto',
     otros: 'Otras marcas',
+    // El duelo visual del diseño: nuestra foto vs la del otro.
+    // `imagen_nosotros` vacío = la foto principal del producto, que ya está
+    // cargada y es la correcta el 99% de las veces.
+    imagen_nosotros: '',
+    imagen_otros: '',
     items: [],              // [{caracteristica, nosotros: bool, otros: bool}]
   },
 
@@ -212,6 +223,8 @@ function normalizarSeccion(key, s) {
         ...base,
         caracteristicas: lista(base.caracteristicas, LIMITES.hero_caracteristicas).filter(t => typeof t === 'string'),
       };
+    case 'variantes':
+      return { ...base, packs: esObjeto(base.packs) ? base.packs : {} };
     case 'prueba_social':
       return { ...base, calificacion: numeroEntre(base.calificacion, 0, 5, 5) };
     case 'precio':

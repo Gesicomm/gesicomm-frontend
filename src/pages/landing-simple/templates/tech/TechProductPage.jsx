@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, Check, ChevronDown, ExternalLink, ImageOff, LockKeyhole, Play, Star, X } from 'lucide-react';
 import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio } from '../iconosBeneficios';
 import { hexToRgba, componer, contraste, resolverTemaPorSlug } from '../themeUtils';
-import { inicialesDe } from '../fichaComun';
+import { ahorroDePack, inicialesDe } from '../fichaComun';
 import { RedesSocialesFooter } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
@@ -46,6 +47,7 @@ export default function TechProductPage({
 }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [varianteId, setVarianteId] = useState(null);
+  const [packId, setPackId] = useState(null);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
   // Video abierto en el lightbox (solo los que se pueden incrustar).
   const [videoAbierto, setVideoAbierto] = useState(null);
@@ -56,13 +58,32 @@ export default function TechProductPage({
   const variantes = item?.variantes || [];
   const variante = variantes.find(v => String(v.id) === String(varianteId)) || null;
 
-  // El precio sigue a la variante elegida, igual que en el checkout.
-  const precio = variante?.precio_efectivo ?? item?.precio;
+  // Paquetes del mismo producto ("llevá 2 y pagá menos"). Son las Ofertas
+  // con estrategia 'normal' que el comercio carga en "Ofertas"; hasta ahora
+  // esta ficha las armaba y las tiraba, así que no aparecían en ningún lado.
+  const packs = item?.packs || [];
+  const pack = packs.find(p => String(p.id) === String(packId)) || null;
+
+  // El precio sigue a lo elegido. Un paquete ya trae su precio total y no se
+  // combina con la variante: son dos formas distintas de comprar lo mismo.
+  const precioUnitario = variante?.precio_efectivo ?? item?.precio;
+  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : precioUnitario;
 
   useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
+
+  useEffect(() => {
+    if (!videoAbierto) return undefined;
+    const alTeclear = (e) => { if (e.key === 'Escape') setVideoAbierto(null); };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  }, [videoAbierto]);
   useEffect(() => {
     if (varianteId && !variantes.some(v => String(v.id) === String(varianteId))) setVarianteId(null);
   }, [variantes, varianteId]);
+
+  useEffect(() => {
+    if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
+  }, [packs, packId]);
 
   if (!item) return null;
 
@@ -72,8 +93,12 @@ export default function TechProductPage({
     else comprar();
   };
 
-  const comprar = () => onComprar && onComprar(variante);
-  const agregar = () => (onAgregar ? onAgregar(variante) : comprar());
+  const comprar = () => onComprar && onComprar({ variante, pack, precio });
+  // Agregar al carrito NO puede caer a comprar() si falta el handler: son
+  // dos acciones distintas y abrir el formulario de compra cuando el
+  // cliente solo quiso guardar el producto es lo peor que puede hacer un
+  // botón. Sin handler, el botón directamente no se muestra.
+  const agregar = () => onAgregar && onAgregar({ variante, pack, precio });
 
   const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
 
@@ -229,10 +254,10 @@ export default function TechProductPage({
       <section className="tpp-compra tpp-wrap" id="tpp-compra">
         <div className="tpp-panel">
           <TituloSeccion numero={5} texto={ficha.variantes.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
-          {variantes.length === 0 ? (
+          {variantes.length === 0 && packs.length === 0 ? (
             <p className="tpp-panel-label">
               {previewMode
-                ? 'Este producto no tiene variantes cargadas. Se cargan en Mis Productos y aparecen acá como opciones.'
+                ? 'Sin variantes ni paquetes. Las variantes se cargan en Mis Productos; los paquetes, en la pestaña Ofertas de este producto.'
                 : 'Producto en su única presentación.'}
             </p>
           ) : (
@@ -265,13 +290,64 @@ export default function TechProductPage({
               </div>
             </>
           )}
+
+          {/* Paquetes: la misma sección, según la guía de referencia
+              ("variantes, versión o paquetes disponibles"). Van después de
+              las variantes porque primero se elige QUÉ y después CUÁNTO. */}
+          {packs.length > 0 && (
+            <>
+              <p className="tpp-panel-label tpp-packs-titulo">
+                {ficha.variantes.packs_titulo || 'Cantidad'}
+              </p>
+              <div className="tpp-packs">
+                <button
+                  type="button"
+                  className={`tpp-pack ${!pack ? 'activa' : ''}`}
+                  onClick={() => setPackId(null)}
+                >
+                  <span className="tpp-pack-nombre">{ficha.variantes.etiqueta_individual || '1 unidad'}</span>
+                  <span className="tpp-pack-precio">{formatPrecio(precioUnitario)}</span>
+                </button>
+
+                {packs.map(p => {
+                  const conf = ficha.variantes.packs?.[String(p.id)] || {};
+                  const unidades = Number(p.unidades) || 1;
+                  const ahorro = ahorroDePack(p, precioUnitario);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`tpp-pack ${String(packId) === String(p.id) ? 'activa' : ''}`}
+                      onClick={() => setPackId(p.id)}
+                    >
+                      {conf.badge && <span className="tpp-pack-badge">{conf.badge}</span>}
+                      <span className="tpp-pack-nombre">
+                        {p.nombre}
+                        <small>{conf.subtitulo || `${unidades} unidades`}</small>
+                      </span>
+                      <span className="tpp-pack-precio">
+                        {formatPrecio(p.precio_efectivo ?? p.precio)}
+                        {ahorro != null && <small>Ahorrás {ahorro}%</small>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="tpp-panel tpp-acciones">
-          <button type="button" className="tpp-cta" onClick={agregar}>
-            {ficha.hero.cta_texto || 'Añadir al carrito'}
-          </button>
-          <button type="button" className="tpp-cta-oscuro" onClick={comprar}>
+          {onAgregar && (
+            <button type="button" className="tpp-cta" onClick={agregar}>
+              {ficha.hero.cta_texto || 'Añadir al carrito'}
+            </button>
+          )}
+          <button
+            type="button"
+            className={onAgregar ? 'tpp-cta-oscuro' : 'tpp-cta'}
+            onClick={comprar}
+          >
             {ficha.hero.cta_secundario || 'Comprar ahora'}
           </button>
           <div className="tpp-seguridad">
@@ -363,8 +439,20 @@ export default function TechProductPage({
                   const contenido = (
                     <>
                       {portada
-                        ? <img src={portada} alt="" loading="lazy" />
-                        : <span className="tpp-media-sinportada" aria-hidden="true"><ImageOff size={22} /></span>}
+                        ? (
+                          <img
+                            src={portada}
+                            alt=""
+                            loading="lazy"
+                            // Una portada que no carga (ruta mal escrita, link
+                            // pegado en el campo equivocado) dejaba el ícono
+                            // de imagen rota del navegador. Se esconde y se
+                            // muestra el placeholder de la ficha.
+                            onError={e => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        )
+                        : null}
+                      <span className="tpp-media-sinportada" aria-hidden="true"><ImageOff size={22} /></span>
                       {esVideo && <span className="tpp-media-play" aria-hidden="true"><Play size={18} fill="currentColor" /></span>}
                       <span>
                         {m.titulo || (video ? NOMBRE_PLATAFORMA[video.plataforma] : '')}
@@ -422,6 +510,35 @@ export default function TechProductPage({
             </p>
           ) : (
             <div className="tpp-comparativa">
+              {/* El duelo de fotos: la del producto contra la del rival. Solo
+                  aparece si hay con qué compararla — sin la segunda imagen
+                  sería una foto suelta, no una comparación. */}
+              {(ficha.comparativa.imagen_otros || '').trim() && (
+                <div className="tpp-duelo">
+                  <figure>
+                    <span className="tpp-duelo-foto">
+                      <img
+                        src={getMediaUrl((ficha.comparativa.imagen_nosotros || '').trim() || item.imagenes[0] || '')}
+                        alt={ficha.comparativa.nosotros}
+                        onError={e => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    </span>
+                    <figcaption className="es-nuestro">{ficha.comparativa.nosotros}</figcaption>
+                  </figure>
+                  <span className="tpp-duelo-vs" aria-hidden="true">VS</span>
+                  <figure>
+                    <span className="tpp-duelo-foto">
+                      <img
+                        src={getMediaUrl(ficha.comparativa.imagen_otros.trim())}
+                        alt={ficha.comparativa.otros}
+                        onError={e => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    </span>
+                    <figcaption>{ficha.comparativa.otros}</figcaption>
+                  </figure>
+                </div>
+              )}
+
               <div className="tpp-comparativa-fila tpp-comparativa-encabezado">
                 <span>Característica</span>
                 <span>{ficha.comparativa.nosotros}</span>
@@ -568,9 +685,15 @@ export default function TechProductPage({
       {contacto && <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={vars['--tpp-border']} isMobile={isMobile} />}
       <StoreFooterLegal tema={t} bordeSuave={vars['--tpp-border']} nombreComercio={nombreComercio} isPreview={previewMode} />
 
-      {videoAbierto && (
+      {/* Va por portal a <body> a propósito: el preview del armador vive
+          dentro de un `transform: scale(...)`, y un `position: fixed` cuyo
+          ancestro tiene transform se ancla A ESE ANCESTRO, no a la pantalla
+          — el video quedaba escalado y fuera de vista. En móvil/tablet el
+          preview además recorta con overflow:hidden. */}
+      {videoAbierto && createPortal((
         <div
           className="tpp-lightbox"
+          style={vars}
           role="dialog"
           aria-modal="true"
           aria-label="Video del producto"
@@ -588,14 +711,14 @@ export default function TechProductPage({
             />
           </div>
         </div>
-      )}
+      ), document.body)}
 
       {/* Barra fija de compra en móvil: el CTA principal queda arriba del
           pliegue y se pierde al recorrer las 14 secciones. */}
       <div className="tpp-barra-movil">
         <div className="tpp-barra-movil-precio">
           <b>{precio != null ? formatPrecio(precio) : ''}</b>
-          {variante && <small>{variante.nombre}</small>}
+          {(pack || variante) && <small>{pack ? pack.nombre : variante.nombre}</small>}
         </div>
         <button type="button" className="tpp-cta" onClick={irACompra}>
           {ficha.hero.cta_texto || 'Añadir al carrito'}

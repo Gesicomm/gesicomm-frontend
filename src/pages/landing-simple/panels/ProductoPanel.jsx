@@ -252,6 +252,7 @@ export default function ProductoPanel({
 
             {tab === 'ficha' && fichaTechActiva && fichaTechResuelta && (
               <FichaTechPanel
+                packs={packs}
                 ficha={fichaTech}
                 fichaResuelta={fichaTechResuelta}
                 fichaLanding={fichaTechLanding}

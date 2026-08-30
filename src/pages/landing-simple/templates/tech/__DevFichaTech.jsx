@@ -58,14 +58,22 @@ const FICHA_PRODUCTO = {
       { nombre: 'Ana L.', calificacion: 4, comentario: 'Muy cómodos y ligeros. Los uso todo el día sin molestia.', verificada: false },
     ],
   },
-  comparativa: { activo: true, nosotros: 'ProSound Max', otros: 'Otras marcas' },
+  variantes: { activo: true, packs: { 10: { badge: 'Más vendido' }, 11: { badge: 'Mejor precio' } } },
+  comparativa: {
+    activo: true, nosotros: 'ProSound Max', otros: 'Otras marcas',
+    imagen_nosotros: 'https://picsum.photos/seed/alto/600/900',
+    imagen_otros: 'https://picsum.photos/seed/rival/900/500',
+  },
   multimedia: {
     activo: true,
     items: [
-      { titulo: 'Video demostrativo', video: true },
-      { titulo: 'Cancelación de ruido', video: true },
-      { titulo: '50 horas de batería' },
-      { titulo: 'Diseño plegable' },
+      { titulo: 'Video demostrativo', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+      { titulo: 'Short vertical', url: 'https://youtu.be/aqz-KE-bpKQ' },
+      { titulo: 'En Vimeo', url: 'https://vimeo.com/76979871' },
+      { titulo: 'Reel de Instagram', url: 'https://www.instagram.com/reel/Cабв123/' },
+      // Reproduce lo reportado: texto suelto y una portada que no existe.
+      { titulo: 'Portada rota', imagen: '/uploads/no-existe.jpg' },
+      { titulo: 'SDFSDFSDF', url: 'sdfsdf' },
     ],
   },
 };
@@ -92,10 +100,16 @@ export default function DevFichaTech() {
     descripcion: PRODUCTO.propuesta_valor,
     precio: 1099000,
     precioAntes: 1465000,
-    imagenes: [],
+    imagenes: ['https://picsum.photos/seed/a1/900/900', 'https://picsum.photos/seed/a2/900/900', 'https://picsum.photos/seed/a3/900/900', 'https://picsum.photos/seed/a4/900/900'],
     variantes: [
       { id: 1, nombre: 'Premium', precio_efectivo: 1319000, stock: 5 },
       { id: 2, nombre: 'Edición limitada', precio_efectivo: 1499000, stock: 0 },
+    ],
+    // Paquetes: Ofertas con estrategia 'normal' del producto.
+    ofertas: [
+      { id: 10, nombre: 'Llevá 2', estrategia: 'normal', tipo_contenido: 'pack', unidades: 2, precio: 1980000, precio_efectivo: 1980000 },
+      { id: 11, nombre: 'Llevá 3', estrategia: 'normal', tipo_contenido: 'pack', unidades: 3, precio: 2700000, precio_efectivo: 2700000 },
+      { id: 12, nombre: 'Funda extra', estrategia: 'order_bump', tipo_contenido: 'combo', precio: 99000 },
     ],
     faq: [
       { pregunta: '¿Cuánto dura la batería?', respuesta: 'Hasta 50 horas de reproducción y carga rápida por USB-C.' },

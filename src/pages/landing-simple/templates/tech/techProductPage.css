@@ -339,6 +339,52 @@
 .tpp-variante:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
 .tpp-variante small { display: block; margin-top: 2px; font-size: 10px; opacity: .75; font-weight: 600; }
 
+/* Paquetes: filas anchas, no pastillas. A diferencia de una variante
+   ("Negro", "Premium"), un paquete tiene que mostrar nombre, cantidad,
+   precio y ahorro — eso no entra en una pastilla y obliga a compararlos
+   uno debajo del otro. */
+.tpp-packs-titulo { margin-top: 16px; }
+
+.tpp-packs { display: flex; flex-direction: column; gap: 8px; }
+
+.tpp-pack {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border: 1px solid var(--tpp-border-fuerte);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: border-color .15s;
+}
+
+.tpp-pack:hover { border-color: var(--tpp-accent); }
+.tpp-pack.activa { border-color: var(--tpp-accent); box-shadow: inset 0 0 0 1px var(--tpp-accent); }
+
+.tpp-pack-nombre { font-size: 12.5px; font-weight: 700; }
+.tpp-pack-nombre small { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500; color: var(--tpp-muted); }
+
+.tpp-pack-precio { flex-shrink: 0; text-align: right; font-size: 13.5px; font-weight: 900; }
+.tpp-pack-precio small { display: block; margin-top: 2px; font-size: 10px; font-weight: 800; color: var(--tpp-accent); }
+
+.tpp-pack-badge {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tpp-accent);
+  color: var(--tpp-on-accent);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
 .tpp-acciones { display: flex; flex-direction: column; gap: 9px; }
 
 .tpp-seguridad {
@@ -441,10 +487,17 @@
 .tpp-media-sinportada {
   position: absolute;
   inset: 0;
+  z-index: 0;
   display: grid;
   place-items: center;
+  background: var(--tpp-surface);
   color: var(--tpp-muted);
 }
+
+/* La portada tapa el placeholder cuando carga; si falla, onError la esconde
+   y el placeholder queda a la vista sin dejar el ícono roto del navegador. */
+.tpp-media-card img { z-index: 1; }
+.tpp-media-play, .tpp-media-card span:last-child { z-index: 2; }
 
 /* El play va sobre la portada, centrado: es lo que dice "esto es un video"
    antes de leer el título. */
@@ -524,6 +577,68 @@
   border-radius: 10px;
   background: var(--tpp-card);
   overflow: hidden;
+}
+
+/* El duelo de fotos que encabeza la comparación. */
+.tpp-duelo {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 18px;
+  border-bottom: 1px solid var(--tpp-border);
+  background: var(--tpp-surface-suave);
+}
+
+.tpp-duelo figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Caja CUADRADA, no 4:3. Las fotos de producto son cuadradas o verticales
+   (una freidora, un auricular), así que en una caja apaisada quedaban
+   limitadas por el alto: entraban enteras pero chiquitas y con franjas a los
+   lados, que se lee como "no se ve completa". Cuadrada aprovechan todo. */
+/* display: block, NO grid con place-items:center. Con grid centrado, el
+   `height: 100%` de la imagen se resuelve contra la fila del grid, que a su
+   vez se dimensiona según la propia imagen: la referencia es circular y una
+   foto vertical terminaba midiendo 300px en una caja de 200, recortada por
+   el overflow. Con la caja en block la altura está definida por
+   aspect-ratio y el 100% resuelve bien. `contain` ya centra la imagen. */
+.tpp-duelo-foto {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--tpp-surface);
+}
+
+/* width/height al 100% + contain, NO max-height con width:auto. Con `auto`
+   el porcentaje de max-height no resuelve dentro de un grid con
+   aspect-ratio: una foto vertical se renderizaba a 200x300 en una caja de
+   220x220 y el overflow:hidden la cortaba arriba y abajo. Fijando la caja y
+   dejando que `contain` escale adentro, entra entera siempre.
+   Y contain, nunca cover: es una comparación, hay que ver el producto
+   completo — recortarlo para llenar la caja sería contraproducente. */
+.tpp-duelo-foto img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.tpp-duelo figcaption {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-align: center;
+  color: var(--tpp-muted);
+}
+
+/* Nuestro lado va en el color de la marca: es la mitad que tiene que ganar
+   la mirada. El rival queda en gris deliberadamente. */
+.tpp-duelo figcaption.es-nuestro { color: var(--tpp-accent); }
+
+.tpp-duelo-vs {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  color: var(--tpp-muted);
 }
 
 .tpp-comparativa-fila {
@@ -761,7 +876,69 @@
 .tpp-root.es-movil .tpp-seccion { padding: 32px 0; }
 .tpp-root.es-movil .tpp-beneficio { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
 .tpp-root.es-movil .tpp-garantia { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
-.tpp-root.es-movil .tpp-comparativa-fila { grid-template-columns: 1fr 62px 62px; font-size: 11px; padding: 10px; }
+.tpp-root.es-movil /* El duelo de fotos que encabeza la comparación. */
+.tpp-duelo {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 18px;
+  border-bottom: 1px solid var(--tpp-border);
+  background: var(--tpp-surface-suave);
+}
+
+.tpp-duelo figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Caja CUADRADA, no 4:3. Las fotos de producto son cuadradas o verticales
+   (una freidora, un auricular), así que en una caja apaisada quedaban
+   limitadas por el alto: entraban enteras pero chiquitas y con franjas a los
+   lados, que se lee como "no se ve completa". Cuadrada aprovechan todo. */
+/* display: block, NO grid con place-items:center. Con grid centrado, el
+   `height: 100%` de la imagen se resuelve contra la fila del grid, que a su
+   vez se dimensiona según la propia imagen: la referencia es circular y una
+   foto vertical terminaba midiendo 300px en una caja de 200, recortada por
+   el overflow. Con la caja en block la altura está definida por
+   aspect-ratio y el 100% resuelve bien. `contain` ya centra la imagen. */
+.tpp-duelo-foto {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--tpp-surface);
+}
+
+/* width/height al 100% + contain, NO max-height con width:auto. Con `auto`
+   el porcentaje de max-height no resuelve dentro de un grid con
+   aspect-ratio: una foto vertical se renderizaba a 200x300 en una caja de
+   220x220 y el overflow:hidden la cortaba arriba y abajo. Fijando la caja y
+   dejando que `contain` escale adentro, entra entera siempre.
+   Y contain, nunca cover: es una comparación, hay que ver el producto
+   completo — recortarlo para llenar la caja sería contraproducente. */
+.tpp-duelo-foto img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.tpp-duelo figcaption {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-align: center;
+  color: var(--tpp-muted);
+}
+
+/* Nuestro lado va en el color de la marca: es la mitad que tiene que ganar
+   la mirada. El rival queda en gris deliberadamente. */
+.tpp-duelo figcaption.es-nuestro { color: var(--tpp-accent); }
+
+.tpp-duelo-vs {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  color: var(--tpp-muted);
+}
+
+.tpp-comparativa-fila { grid-template-columns: 1fr 62px 62px; font-size: 11px; padding: 10px; }
 .tpp-root.es-movil .tpp-cierre-inner { flex-direction: column; align-items: flex-start; }
 .tpp-root.es-movil .tpp-cierre-cta { width: 100%; }
 .tpp-root.es-movil .tpp-barra-movil { display: flex; }
@@ -776,7 +953,69 @@
   .tpp-seccion { padding: 32px 0; }
   .tpp-beneficio { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
   .tpp-garantia { border-right: 0; border-bottom: 1px solid var(--tpp-border); }
-  .tpp-comparativa-fila { grid-template-columns: 1fr 62px 62px; font-size: 11px; padding: 10px; }
+  /* El duelo de fotos que encabeza la comparación. */
+.tpp-duelo {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 18px;
+  border-bottom: 1px solid var(--tpp-border);
+  background: var(--tpp-surface-suave);
+}
+
+.tpp-duelo figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+/* Caja CUADRADA, no 4:3. Las fotos de producto son cuadradas o verticales
+   (una freidora, un auricular), así que en una caja apaisada quedaban
+   limitadas por el alto: entraban enteras pero chiquitas y con franjas a los
+   lados, que se lee como "no se ve completa". Cuadrada aprovechan todo. */
+/* display: block, NO grid con place-items:center. Con grid centrado, el
+   `height: 100%` de la imagen se resuelve contra la fila del grid, que a su
+   vez se dimensiona según la propia imagen: la referencia es circular y una
+   foto vertical terminaba midiendo 300px en una caja de 200, recortada por
+   el overflow. Con la caja en block la altura está definida por
+   aspect-ratio y el 100% resuelve bien. `contain` ya centra la imagen. */
+.tpp-duelo-foto {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--tpp-surface);
+}
+
+/* width/height al 100% + contain, NO max-height con width:auto. Con `auto`
+   el porcentaje de max-height no resuelve dentro de un grid con
+   aspect-ratio: una foto vertical se renderizaba a 200x300 en una caja de
+   220x220 y el overflow:hidden la cortaba arriba y abajo. Fijando la caja y
+   dejando que `contain` escale adentro, entra entera siempre.
+   Y contain, nunca cover: es una comparación, hay que ver el producto
+   completo — recortarlo para llenar la caja sería contraproducente. */
+.tpp-duelo-foto img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.tpp-duelo figcaption {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-align: center;
+  color: var(--tpp-muted);
+}
+
+/* Nuestro lado va en el color de la marca: es la mitad que tiene que ganar
+   la mirada. El rival queda en gris deliberadamente. */
+.tpp-duelo figcaption.es-nuestro { color: var(--tpp-accent); }
+
+.tpp-duelo-vs {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  color: var(--tpp-muted);
+}
+
+.tpp-comparativa-fila { grid-template-columns: 1fr 62px 62px; font-size: 11px; padding: 10px; }
   .tpp-cierre-inner { flex-direction: column; align-items: flex-start; }
   .tpp-cierre-cta { width: 100%; }
   .tpp-barra-movil { display: flex; }

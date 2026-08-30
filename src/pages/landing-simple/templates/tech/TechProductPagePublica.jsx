@@ -30,7 +30,7 @@ export default function TechProductPagePublica({
   onClickRelacionado,
   onVolver,
 }) {
-  const [varianteEnCompra, setVarianteEnCompra] = useState(null);
+  const [enCompra, setEnCompra] = useState({ variante: null, pack: null });
   const [comprando, setComprando] = useState(false);
 
   const ficha = useMemo(
@@ -57,7 +57,11 @@ export default function TechProductPagePublica({
 
   if (!item) return null;
 
-  const precioDe = (variante) => variante?.precio_efectivo ?? item.precio;
+  // Un paquete trae su precio total y no se combina con la variante: son
+  // dos formas distintas de comprar el mismo producto.
+  const precioDe = ({ variante, pack } = {}) => (
+    pack ? (pack.precio_efectivo ?? pack.precio) : (variante?.precio_efectivo ?? item.precio)
+  );
 
   return (
     <>
@@ -69,10 +73,14 @@ export default function TechProductPagePublica({
         nombreComercio={nombreComercio}
         onVolver={onVolver}
         onClickRelacionado={onClickRelacionado}
-        onAgregar={(variante) => onAgregar && onAgregar({
-          item, variante, oferta: null, cantidad: 1, precio: precioDe(variante),
+        onAgregar={(eleccion) => onAgregar && onAgregar({
+          item,
+          variante: eleccion?.variante || null,
+          oferta: eleccion?.pack || null,
+          cantidad: 1,
+          precio: precioDe(eleccion),
         })}
-        onComprar={(variante) => { setVarianteEnCompra(variante); setComprando(true); }}
+        onComprar={(eleccion) => { setEnCompra(eleccion || { variante: null, pack: null }); setComprando(true); }}
       />
 
       <FunnelCheckout
@@ -80,9 +88,13 @@ export default function TechProductPagePublica({
         onCerrar={() => setComprando(false)}
         tema={tema || {}}
         resumen={{
-          nombre: varianteEnCompra ? `${item.nombre} (${varianteEnCompra.nombre})` : item.nombre,
-          variante: varianteEnCompra?.nombre || null,
-          precio: precioDe(varianteEnCompra),
+          nombre: [
+            item.nombre,
+            enCompra.pack ? `— ${enCompra.pack.nombre}` : '',
+            enCompra.variante ? `(${enCompra.variante.nombre})` : '',
+          ].filter(Boolean).join(' '),
+          variante: enCompra.variante?.nombre || null,
+          precio: precioDe(enCompra),
           imagen: item.imagenes?.[0] || null,
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}
@@ -92,7 +104,7 @@ export default function TechProductPagePublica({
           // La variante elegida y las ofertas del checkout (order bumps) son
           // cosas distintas y viajan por separado: el bump nunca pisa el
           // precio del producto principal.
-          return onComprarAhora(item, varianteEnCompra, null, 1, precioDe(varianteEnCompra), form, ofertasCheckout);
+          return onComprarAhora(item, enCompra.variante, enCompra.pack, 1, precioDe(enCompra), form, ofertasCheckout);
         }}
       />
     </>

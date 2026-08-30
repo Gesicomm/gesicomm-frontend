@@ -29,6 +29,9 @@ export default function FichaTechPanel({
   fichaLanding = null,
   fichaDelProducto = null,
   respaldos = {},
+  // Paquetes ya creados de este producto (Ofertas con estrategia 'normal').
+  // Acá solo se configura cómo se ven; se crean en la pestaña Ofertas.
+  packs = [],
   modo = 'producto',
   onChange,
 }) {
@@ -142,6 +145,7 @@ export default function FichaTechPanel({
                     mover: (campo, i, delta) => moverItem(sec.key, campo, i, delta),
                   },
                   respaldos,
+                  packs,
                 })}
 
                 {propia && (
@@ -437,7 +441,7 @@ const CAMPOS = {
     </>
   ),
 
-  variantes: ({ d, set }) => (
+  variantes: ({ d, set, packs }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <Texto label="Cómo se llama el grupo" valor={d.etiqueta_grupo} placeholder="Versión, Color, Capacidad…" onChange={v => set({ etiqueta_grupo: v })} />
@@ -445,6 +449,39 @@ const CAMPOS = {
         Las opciones salen de las <b className="text-fg/60">variantes del producto</b>, que se cargan en Mis Productos.
         Acá solo se configura cómo se presentan.
       </p>
+
+      <div className="border-t border-fg/10 pt-2.5">
+        <label className={ETIQUETA}>Paquetes</label>
+        {packs.length === 0 ? (
+          <p className="text-[11px] text-fg/35 leading-relaxed">
+            Todavía no hay paquetes. Se crean en la pestaña <b className="text-fg/60">Ofertas</b> de este producto,
+            como “Paquete — más unidades del mismo producto”, y aparecen acá abajo de las variantes.
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <Texto label="Título del grupo" valor={d.packs_titulo} placeholder="Cantidad" onChange={v => set({ packs_titulo: v })} />
+              <Texto label="Opción suelta" valor={d.etiqueta_individual} placeholder="1 unidad" onChange={v => set({ etiqueta_individual: v })} />
+            </div>
+            <div className="flex flex-col gap-2">
+              {packs.map(p => {
+                const conf = d.packs?.[String(p.id)] || {};
+                const guardar = (cambios) => set({ packs: { ...(d.packs || {}), [String(p.id)]: { ...conf, ...cambios } } });
+                return (
+                  <div key={p.id} className="bg-fg/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
+                    <p className="text-[11px] font-semibold text-fg/70 truncate">{p.nombre}</p>
+                    <input className={MINI} value={conf.badge || ''} placeholder="Cintillo (ej: Más vendido)" onChange={e => guardar({ badge: e.target.value })} />
+                    <input className={MINI} value={conf.subtitulo || ''} placeholder="Subtítulo (ej: 3 unidades)" onChange={e => guardar({ subtitulo: e.target.value })} />
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-fg/35 leading-relaxed mt-1.5">
+              El ahorro se calcula solo contra el precio unitario. No se escribe acá.
+            </p>
+          </>
+        )}
+      </div>
     </>
   ),
 
@@ -533,6 +570,26 @@ const CAMPOS = {
         <Texto label="Columna propia" valor={d.nosotros} placeholder="Nuestro producto" onChange={v => set({ nosotros: v })} />
         <Texto label="Columna rival" valor={d.otros} placeholder="Otras marcas" onChange={v => set({ otros: v })} />
       </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Texto
+          label="Foto propia"
+          valor={d.imagen_nosotros}
+          placeholder="La foto principal del producto"
+          onChange={v => set({ imagen_nosotros: v })}
+        />
+        <Texto
+          label="Foto del rival"
+          valor={d.imagen_otros}
+          placeholder="Pegá el link de una imagen"
+          onChange={v => set({ imagen_otros: v })}
+        />
+      </div>
+      <p className="text-[10px] text-fg/35 leading-relaxed">
+        {d.imagen_otros?.trim()
+          ? 'Las dos fotos se muestran enfrentadas arriba de la tabla.'
+          : 'Cargá la foto del rival para que aparezca el enfrentamiento de fotos. Sin ella se muestra solo la tabla.'}
+      </p>
       <ListaEditable
         items={d.items} campo="items" lista={lista} max={LIMITES.comparativa_items}
         textoAgregar="Agregar característica" nuevo={() => ({ caracteristica: '', nosotros: true, otros: false })}

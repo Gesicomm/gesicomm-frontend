@@ -77,7 +77,9 @@ export default function FitnessProductPage({
     else comprar();
   };
 
-  const comprar = () => onComprar && onComprar(packElegido);
+  // Firma única en las tres fichas: siempre un objeto con lo elegido. Así
+  // el editor y la landing publicada consumen lo mismo sin adivinar tipos.
+  const comprar = () => onComprar && onComprar({ variante: null, pack: packElegido, precio: precioMostrado });
 
   const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
 

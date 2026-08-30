@@ -1053,13 +1053,22 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           acento: datosPreview?.tema?.acento || '#111827',
         }}
         resumen={productoPreview ? {
-          nombre: productoPreview.nombre,
-          variante: null,
-          precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? 0,
+          // Lo que se eligió en la ficha (paquete y/o variante), no el
+          // producto suelto: antes el preview mostraba siempre el precio
+          // individual aunque el cliente hubiera elegido un paquete, así
+          // que no servía para comprobar justamente eso.
+          nombre: [
+            productoPreview.nombre,
+            compraFunnel?.pack ? `— ${compraFunnel.pack.nombre}` : '',
+            compraFunnel?.variante ? `(${compraFunnel.variante.nombre})` : '',
+          ].filter(Boolean).join(' '),
+          variante: compraFunnel?.variante?.nombre || null,
+          precio: compraFunnel?.precio
+            ?? productoPreview.precio_efectivo ?? productoPreview.precio_base ?? 0,
           imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
         } : null}
         ofertasLanding={draft?.content?.ofertas_producto_vista || []}
-        itemOriginal={{ id: productoPreview?.id, ofertas: compraFunnel || [] }}
+        itemOriginal={{ id: productoPreview?.id, ofertas: compraFunnel?.ofertas || [] }}
         onConfirmar={() => {
           throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
         }}
@@ -1176,7 +1185,7 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1210,7 +1219,12 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
+            // Agregar al carrito NO abre el checkout: son dos acciones
+            // distintas. Acá no hay carrito real, así que se avisa en vez de
+            // simular algo que no pasa (mismo criterio que el botón de
+            // carrito del header en el preview).
+            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1245,7 +1259,7 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1272,7 +1286,7 @@ function PreviewContent({
         logo={datosPreview.logo}
         isMobile={viewportMode === 'mobile'}
         previewMode={true}
-        onComprar={() => setCompraFunnel?.(ofertasPublicas)}
+        onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
       />
       </div>
     );
