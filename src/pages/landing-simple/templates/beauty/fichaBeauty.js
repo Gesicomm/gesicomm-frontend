@@ -39,46 +39,46 @@ export const DEFAULTS_BEAUTY = {
 
   hero: {
     activo: true,
-    eyebrow: 'FÓRMULA AVANZADA',
-    etiqueta: 'MÁS VENDIDO',
-    titulo: 'Descubre tu mejor versión',
-    lead: 'Conoce los beneficios de este producto y transforma tu rutina diaria con ingredientes de alta calidad.',
+    eyebrow: '',
+    etiqueta: '',
+    titulo: '',
+    lead: '',
     caracteristicas: [],
-    cta_texto: 'COMPRAR AHORA — ENVÍO GRATIS',
-    calificacion_texto: '4.8/5 · 12,847 reseñas verificadas · +25,000 clientas satisfechas'
+    cta_texto: 'COMPRAR AHORA',
+    calificacion_texto: ''
   },
 
   prueba_social: {
     activo: true,
-    calificacion: 4.8,
-    resenas_texto: '12,847 reseñas verificadas',
-    clientes_texto: '+25,000 clientas satisfechas',
+    calificacion: 5,
+    resenas_texto: '',
+    clientes_texto: '',
   },
 
   precio: {
     activo: true,
-    titulo: 'Elige tu oferta especial',
+    titulo: '',
   },
 
   beneficios: {
     activo: true,
-    titulo: 'Beneficios que amarás',
+    titulo: '',
     items: [],
   },
 
   ingredientes: {
     activo: true,
-    titulo: 'Ingredientes premium que marcan la diferencia',
+    titulo: '',
   },
 
   resultados: {
     activo: true,
-    titulo: 'Resultados reales de nuestras clientas',
+    titulo: '',
   },
 
   como_funciona: {
     activo: true,
-    titulo: 'Cómo utilizar este producto',
+    titulo: '',
   },
 
   garantias: {
@@ -88,22 +88,22 @@ export const DEFAULTS_BEAUTY = {
 
   faq: {
     activo: true,
-    titulo: 'Preguntas frecuentes',
+    titulo: '',
   },
 
   upsells: {
     activo: true,
-    titulo: 'Complementa tu rutina y potencia resultados',
+    titulo: '',
   },
 
   cta_final: {
     activo: true,
-    etiqueta: 'OFERTA POR TIEMPO LIMITADO',
-    texto: 'NO PIERDAS ESTA OFERTA ESPECIAL',
-    subtexto: 'El descuento se aplica automáticamente',
+    etiqueta: '',
+    texto: '',
+    subtexto: '',
     cta_texto: 'COMPRAR AHORA',
-    cta_nota: 'ENVÍO GRATIS',
-    contador: { activo: true, dias: 0, horas: 2, minutos: 47, segundos: 39 },
+    cta_nota: '',
+    contador: { activo: false, dias: 0, horas: 2, minutos: 47, segundos: 39 },
   },
 };
 
@@ -159,11 +159,9 @@ export function fichaBeautyDesdeProducto(producto) {
   const promesa = (producto.propuesta_valor || '').trim();
   const sobre = (producto.sobre_este_producto || '').trim();
 
-  if (nombre || promesa || sobre || beneficios.length || descripcion) {
+  if (promesa || sobre || beneficios.length || descripcion) {
     ficha.hero = {};
-    if (nombre) ficha.hero.eyebrow = nombre.toUpperCase();
     if (promesa) ficha.hero.titulo = promesa;
-    else if (nombre) ficha.hero.titulo = nombre;
     
     if (sobre) ficha.hero.lead = sobre;
     else if (descripcion) ficha.hero.lead = descripcion;
