@@ -790,6 +790,13 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
               relacionados={data?.relacionados}
+              onAgregar={(datos) => {
+                // Agregar al carrito es SOLO agregar: nunca abre el
+                // checkout. Se abre el carrito para que la clienta vea que
+                // pasó algo.
+                agregarAlCarrito(datos);
+                setCarritoAbierto(true);
+              }}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
               onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}

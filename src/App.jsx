@@ -54,6 +54,8 @@ const Contact = lazy(() => import('./pages/public/Contact'));
 // Se borra junto con templates/fitness/__DevFicha.jsx cuando ya no haga falta.
 const DevFicha = lazy(() => import('./pages/landing-simple/templates/fitness/__DevFicha'));
 const DevFichaTech = lazy(() => import('./pages/landing-simple/templates/tech/__DevFichaTech'));
+const DevFichaBeauty = lazy(() => import('./pages/landing-simple/templates/beauty/__DevFichaBeauty'));
+const DevProductoPanel = lazy(() => import('./pages/landing-simple/templates/beauty/__DevProductoPanel'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
@@ -174,6 +176,8 @@ function App() {
 
         <Route path="/dev/ficha-fitness" element={<DevFicha />} />
         <Route path="/dev/ficha-tech" element={<DevFichaTech />} />
+        <Route path="/dev/ficha-beauty" element={<DevFichaBeauty />} />
+        <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
         <Route path="/login" element={<Login />} />
 
         {/* Rutas protegidas — panel admin */}

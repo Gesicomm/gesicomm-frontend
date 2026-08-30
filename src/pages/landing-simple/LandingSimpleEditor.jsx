@@ -308,6 +308,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // "Catálogo"/"Contacto" DENTRO del preview (no desde el sidebar) —
   // sincronizan la pestaña activa del sidebar para que ambos lados nunca
   // queden mostrando cosas distintas.
+  function abrirInicio() { setVistaCatalogo(false); setVistaContacto(false); setProductoPreview(null); setTab('marca'); }
   function abrirCatalogo() { setVistaCatalogo(true); setVistaContacto(false); setProductoPreview(null); setTab('catalogo'); }
   function cerrarCatalogo() { setVistaCatalogo(false); setTab('marca'); }
   function abrirContacto() { setVistaContacto(true); setVistaCatalogo(false); setProductoPreview(null); setTab('contacto'); }
@@ -691,7 +692,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const fichaBeautyLanding = draft?.content?.ficha_beauty || null;
   const fichaBeautyDelProducto = fichaBeautyDesdeProducto(productoPreview || {});
   const fichaBeautyResuelta = fichaBeautyActiva
-    ? resolverFichaBeauty(productoPreview?.content?.ficha_beauty || {}, fichaBeautyLanding, fichaBeautyDelProducto)
+    ? resolverFichaBeauty(productoFichaBeauty, fichaBeautyLanding, fichaBeautyDelProducto)
     : null;
     
   // Una sola bandera para lo que es común a las tres: mostrar la pestaña
@@ -971,6 +972,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   catalogoPorIdMapeado={catalogoPorIdMapeado}
                   viewportMode={viewportMode}
                   vistaCatalogo={vistaCatalogo}
+                  onAbrirInicio={abrirInicio}
                   onAbrirCatalogo={abrirCatalogo}
                   onCerrarCatalogo={cerrarCatalogo}
                   vistaContacto={vistaContacto}
@@ -1018,6 +1020,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   catalogoPorIdMapeado={catalogoPorIdMapeado}
                   viewportMode={viewportMode}
                   vistaCatalogo={vistaCatalogo}
+                  onAbrirInicio={abrirInicio}
                   onAbrirCatalogo={abrirCatalogo}
                   onCerrarCatalogo={cerrarCatalogo}
                   vistaContacto={vistaContacto}
@@ -1130,7 +1133,7 @@ function PreviewContent({
   productoPreview, productoOfertas = [], productoImagenes, productoDescripcion, productoFaq, productoFaqTitulo,
   productoRelacionadosTitulo, productoRelacionados,
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
-  vistaCatalogo, onAbrirCatalogo, onCerrarCatalogo,
+  vistaCatalogo, onAbrirInicio, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
   fichaResuelta = null, fichaTechResuelta = null, fichaBeautyResuelta = null,
   onCerrarProducto = null, onAbrirRelacionado = null,
@@ -1152,6 +1155,7 @@ function PreviewContent({
       logo: datosPreview.logo,
       tema: datosPreview.tema,
       previewMode: true,
+      onClickInicio: onAbrirInicio,
       onClickCatalogo: onAbrirCatalogo,
       onClickContacto: onAbrirContacto,
       linkInicio: '#',
@@ -1238,7 +1242,6 @@ function PreviewContent({
           <StoreHeader {...headerProps} />
           <BeautyProductPage
             item={armarItemFichaComun({
-              ...productoPreview, // Para incluir ficha_datos para beauty
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
@@ -1260,6 +1263,9 @@ function PreviewContent({
             isMobile={viewportMode === 'mobile'}
             previewMode
             onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
+            // Agregar al carrito NO abre el checkout: son acciones
+            // distintas. Acá no hay carrito, así que se avisa.
+            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1303,6 +1309,7 @@ function PreviewContent({
         nombreComercio={datosPreview.nombreComercio}
         logo={datosPreview.logo}
         onClickProducto={(p) => abrirProducto(p)}
+        onClickInicio={onAbrirInicio}
         onClickCatalogo={onAbrirCatalogo}
         onClickContacto={onAbrirContacto}
         onVolver={onCerrarCatalogo}
@@ -1319,6 +1326,7 @@ function PreviewContent({
         nombreComercio={datosPreview.nombreComercio}
         logo={datosPreview.logo}
         onVolver={onCerrarContacto}
+        onClickInicio={onAbrirInicio}
         onClickCatalogo={onAbrirCatalogo}
         onClickContacto={onAbrirContacto}
       />
@@ -1329,6 +1337,7 @@ function PreviewContent({
       <Componente
         data={datosPreview}
         onClickProducto={(p) => abrirProducto(catalogoPorIdMapeado.get(p.id) || null)}
+        onClickInicio={onAbrirInicio}
         onClickCatalogo={onAbrirCatalogo}
         onClickContacto={onAbrirContacto}
         cantidadCarrito={0}

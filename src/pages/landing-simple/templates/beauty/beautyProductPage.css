@@ -1,575 +1,725 @@
-.beauty-product-page {
-  --bg: #fffaf9;
-  --ink: #181317;
-  --muted: #6f6469;
-  --pink: var(--tpp-accent, #e94b70);
-  --soft: #fde8ed;
-  --line: #eadde0;
-  background: var(--bg);
-  color: var(--ink);
-  font: 14px/1.5 Arial, sans-serif;
-}
+/**
+ * Ficha de producto del template "Beauty & Skin Care".
+ *
+ * Mismo principio que Fitness y Tecnología: ni un color literal. Todo sale
+ * de las variables --bpp-* que BeautyProductPage.jsx deriva del tema de la
+ * landing (fondo/texto/acento, los tres que el comercio edita en "Colores").
+ * La estructura es fija; la paleta sigue siendo del comercio.
+ *
+ * Todo cuelga de .bpp-root para no tocar el resto de la landing.
+ */
 
-.beauty-product-page * {
-  box-sizing: border-box;
-}
-
-.beauty-wrap {
-  max-width: 1120px;
-  margin: auto;
-  padding: 0 24px;
-}
-
-.beauty-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: #171216;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  gap: 28px;
-  align-items: center;
-  padding: 13px 5%;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.beauty-topbar span {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-}
-
-.beauty-topbar svg {
-  width: 16px;
-}
-
-.beauty-topbar button, .beauty-pink-btn, .beauty-final button {
-  background: var(--pink);
-  color: #fff;
-  border: 0;
-  padding: 12px 20px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.beauty-hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 480px;
-  align-items: center;
-  background: #fff;
-  border: 1px solid var(--line);
-}
-
-.beauty-hero-visual {
-  height: 430px;
-  background: linear-gradient(100deg, #f7d9df, #fff);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.beauty-badge {
-  position: absolute;
-  top: 26px;
-  right: 30px;
-  background: var(--pink);
-  color: white;
-  padding: 5px 12px;
-  font-size: 11px;
-  font-weight: bold;
-}
-
-.beauty-model {
-  font-size: 52px;
-  font-weight: 900;
-  line-height: .8;
-  color: #d9a7b1;
-  position: absolute;
-  left: 30px;
-  top: 105px;
-}
-
-.beauty-model i {
-  font-size: 40px;
-  color: #fff;
-}
-
-.beauty-bottle {
-  width: 100px;
-  height: 190px;
-  position: relative;
-  z-index: 1;
-}
-
-.beauty-dropper {
-  height: 55px;
-  width: 32px;
-  background: #f2efeb;
-  margin: auto;
-  border-radius: 8px 8px 2px 2px;
-}
-
-.beauty-bottle-body {
-  height: 140px;
-  background: linear-gradient(90deg, #c98579, #f2b8a9, #b86f67);
-  border-radius: 12px 12px 25px 25px;
+.bpp-root {
+  background: var(--bpp-bg);
+  color: var(--bpp-fg);
+  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   display: flex;
   flex-direction: column;
+  min-height: 100%;
+}
+
+.bpp-root *,
+.bpp-root *::before,
+.bpp-root *::after { box-sizing: border-box; }
+
+.bpp-wrap { width: min(1160px, calc(100% - 44px)); margin-inline: auto; }
+.bpp-root button { font: inherit; cursor: pointer; }
+
+/* ── 1 · Barra superior ───────────────────────────────────────────── */
+
+.bpp-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
-  align-items: center;
-  color: #fff;
-  box-shadow: 0 12px 22px #ba777744;
-}
-
-.beauty-bottle-body b {
-  font-size: 17px;
-}
-
-.beauty-bottle-body span {
-  font-size: 13px;
-}
-
-.beauty-bottle-body small {
-  font-size: 8px;
-}
-
-.beauty-hero-copy {
-  padding: 42px;
-}
-
-.beauty-eyebrow {
-  color: var(--pink);
+  gap: 10px 26px;
+  padding: 9px 4%;
+  background: var(--bpp-band);
+  color: var(--bpp-on-band);
+  font-size: 10.5px;
   font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
-.beauty-hero h1 {
-  font-size: 40px;
-  line-height: 1.04;
-  margin: 10px 0;
-}
-
-.beauty-hero h1 em {
-  color: var(--pink);
-  font-style: normal;
-}
-
-.beauty-lead {
-  color: var(--muted);
-  font-size: 16px;
-}
-
-.beauty-hero ul {
-  list-style: none;
-  padding: 0;
-}
-
-.beauty-hero li {
-  margin: 8px 0;
-  display: flex;
-  gap: 8px;
-}
-
-.beauty-hero li svg {
-  color: var(--pink);
-  width: 17px;
-}
-
-.beauty-rating {
-  font-size: 12px;
-  margin: 18px 0;
-  color: var(--muted);
-}
-
-.beauty-rating b, .beauty-social span {
-  color: #efa929;
-}
-
-.beauty-social {
-  display: flex;
-  gap: 20px;
-  justify-content: center;
-  align-items: center;
-  padding: 18px;
-  border-bottom: 1px solid var(--line);
-  font-size: 12px;
-}
-
-.beauty-section-title {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 22px;
-}
-
-.beauty-section-title span {
-  background: var(--pink);
-  color: white;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-}
-
-.beauty-section-title h2 {
-  font-size: 21px;
+  letter-spacing: .03em;
   text-transform: uppercase;
-  margin: 0;
 }
 
-.beauty-offers, .beauty-ingredients, .beauty-results, .beauty-how, .beauty-faq, .beauty-upsells {
-  padding-top: 42px;
-  padding-bottom: 42px;
-}
+.bpp-barra-item { display: inline-flex; align-items: center; gap: 6px; }
+.bpp-barra-item svg { opacity: .85; }
 
-.beauty-subscribe {
-  text-align: right;
-  color: var(--muted);
-  margin-bottom: 15px;
-}
-
-.beauty-toggle {
-  width: 42px;
-  height: 22px;
+.bpp-barra-cta {
   border: 0;
-  border-radius: 14px;
-  background: #ccc;
-  vertical-align: middle;
-}
-
-.beauty-toggle.on {
-  background: var(--pink);
-}
-
-.beauty-toggle i {
-  display: block;
-  background: #fff;
-  border-radius: 50%;
-  width: 16px;
-  height: 16px;
-  margin: 3px;
-}
-
-.beauty-toggle.on i {
-  margin-left: 23px;
-}
-
-.beauty-offer-grid, .beauty-benefit-grid, .beauty-ingredient-grid, .beauty-result-grid, .beauty-upsell-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.beauty-offer {
-  background: #fff;
-  border: 1px solid var(--line);
-  padding: 15px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--ink);
-}
-
-.beauty-offer.selected {
-  border: 2px solid var(--pink);
-  box-shadow: 0 8px 20px #e94b7022;
-}
-
-.beauty-offer > span {
-  height: 18px;
-  color: var(--pink);
+  border-radius: 999px;
+  padding: 8px 18px;
+  background: var(--bpp-accent);
+  color: var(--bpp-on-accent);
   font-size: 10px;
-  font-weight: bold;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
-.beauty-offer b {
-  font-size: 17px;
-}
+/* ── Volver ───────────────────────────────────────────────────────── */
 
-.beauty-offer small {
-  color: var(--muted);
-}
-
-.beauty-bottle.small {
-  transform: scale(.45);
-  height: 100px;
-  margin: -2px;
-}
-
-.beauty-offer strong {
-  font-size: 24px;
-}
-
-.beauty-offer em {
-  background: var(--pink);
-  color: white;
-  padding: 10px;
-  width: 100%;
-  font-style: normal;
-  font-weight: bold;
-  margin-top: 9px;
-  text-align: center;
-}
-
-.beauty-offer label {
-  font-size: 10px;
-}
-
-.beauty-benefits {
-  background: var(--soft);
-  padding: 35px 0;
-}
-
-.beauty-benefit-grid {
-  grid-template-columns: repeat(5, 1fr);
-}
-
-.beauty-benefit-grid article {
-  text-align: center;
-  border-right: 1px solid #e9cbd1;
-  padding: 10px;
-}
-
-.beauty-benefit-grid article:last-child {
-  border-right: none;
-}
-
-.beauty-benefit-grid svg {
-  color: var(--pink);
-  width: 28px;
-  height: 28px;
-}
-
-.beauty-benefit-grid b, .beauty-ingredient-grid b {
-  display: block;
-  font-size: 11px;
-}
-
-.beauty-benefit-grid p, .beauty-ingredient-grid p {
-  font-size: 11px;
-  color: var(--muted);
-  margin: 4px 0;
-}
-
-.beauty-ingredient-grid {
-  grid-template-columns: repeat(5, 1fr);
-}
-
-.beauty-ingredient-grid article {
-  text-align: center;
-}
-
-.beauty-ingredient-grid span {
-  font-size: 34px;
-  color: var(--pink);
-}
-
-.beauty-result-grid {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.beauty-result-grid article {
-  border: 1px solid var(--line);
-  padding: 12px;
-  text-align: center;
-}
-
-.beauty-before, .beauty-after {
-  height: 130px;
+.bpp-volver {
   display: inline-flex;
-  width: 48%;
-  align-items: end;
-  justify-content: center;
-  padding-bottom: 8px;
-  color: white;
-  background: #d9b9b5;
-  font-size: 10px;
-}
-
-.beauty-after {
-  background: #efaaa7;
-}
-
-.beauty-steps {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  text-align: center;
-}
-
-.beauty-steps span {
-  display: grid;
-  place-items: center;
-  margin: auto;
-  border: 2px solid var(--pink);
-  color: var(--pink);
-  border-radius: 50%;
-  width: 55px;
-  height: 55px;
-  font-size: 22px;
-}
-
-.beauty-steps b {
-  display: block;
-  margin-top: 10px;
-}
-
-.beauty-trust {
-  border-block: 1px solid var(--line);
-  padding: 20px 0;
-}
-
-.beauty-trust-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  text-align: center;
-  gap: 12px;
-}
-
-.beauty-trust-grid span {
-  display: block;
-  color: var(--pink);
-  font-size: 25px;
-}
-
-.beauty-trust-grid b, .beauty-trust-grid small {
-  display: block;
-  font-size: 10px;
-}
-
-.beauty-faq-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.beauty-faq-item {
-  border-bottom: 1px solid var(--line);
-}
-
-.beauty-faq-item button {
-  width: 100%;
+  align-items: center;
+  gap: 7px;
+  margin: 16px 0 -12px;
+  padding: 8px 0;
   border: 0;
   background: none;
-  padding: 14px 4px;
-  text-align: left;
-  font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  cursor: pointer;
+  color: var(--bpp-muted);
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
-.beauty-faq-item p {
-  padding: 0 4px;
-  color: var(--muted);
+.bpp-volver:hover { color: var(--bpp-fg); }
+
+/* ── 2 · Encabezado ───────────────────────────────────────────────── */
+
+.bpp-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 48px;
+  padding: 40px 0 34px;
 }
 
-.beauty-upsell-grid {
-  grid-template-columns: repeat(4, 1fr);
-}
+/* La foto acompaña el scroll: la columna de texto casi siempre es más alta
+   (checklist + CTA + nota de garantía) y si no dejaba un hueco. */
+.bpp-galeria { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 10px; }
 
-.beauty-upsell-grid article {
-  border: 1px solid var(--line);
-  padding: 12px;
-  text-align: center;
-}
-
-.beauty-mini-product {
-  height: 100px;
-  background: var(--soft);
+.bpp-foto {
+  position: relative;
   display: grid;
   place-items: center;
-  margin-bottom: 10px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 60% 35%, var(--bpp-accent-suave) 0, transparent 62%),
+    var(--bpp-surface);
 }
 
-.beauty-upsell-grid button {
-  border: 1px solid var(--pink);
-  background: white;
-  color: var(--pink);
-  padding: 6px 14px;
-  cursor: pointer;
-  margin-top: 10px;
+.bpp-foto img { width: 100%; height: 100%; object-fit: cover; }
+.bpp-foto.vacia { color: var(--bpp-muted); }
+
+.bpp-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.bpp-miniatura {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bpp-border);
+  border-radius: 12px;
+  background: var(--bpp-surface);
 }
 
-.beauty-final {
-  background: var(--pink);
-  color: white;
-  padding: 22px 0;
+.bpp-miniatura.activa { border: 2px solid var(--bpp-accent); }
+.bpp-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+
+.bpp-eyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  color: var(--bpp-accent);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 
-.beauty-final-inner {
+.bpp-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bpp-accent);
+  color: var(--bpp-on-accent);
+  letter-spacing: .06em;
+}
+
+/* El tamaño lo escalona el componente según el largo real del nombre: el
+   CSS no puede medir el texto y los nombres del catálogo son descriptivos,
+   no titulares cortos. */
+.bpp-hero h1 {
+  margin: 14px 0 8px;
+  font-size: clamp(28px, 3.4vw, 46px);
+  font-weight: 800;
+  line-height: 1.06;
+  letter-spacing: -.03em;
+  text-wrap: balance;
+}
+
+.bpp-hero-copy.es-largo h1 { font-size: clamp(25px, 2.7vw, 36px); }
+.bpp-hero-copy.es-muy-largo h1 { font-size: clamp(22px, 2.2vw, 30px); line-height: 1.12; }
+
+.bpp-subtitulo { margin: 0 0 12px; color: var(--bpp-fg); font-size: 15px; font-weight: 600; }
+.bpp-lead { max-width: 520px; margin: 0; color: var(--bpp-muted); font-size: 14.5px; line-height: 1.6; }
+
+.bpp-checklist {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+
+.bpp-checklist li { display: flex; align-items: center; gap: 10px; }
+
+.bpp-check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--bpp-accent-suave);
+  color: var(--bpp-accent);
+}
+
+.bpp-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 15px 26px;
+  background: var(--bpp-accent);
+  color: var(--bpp-on-accent);
+  font-size: 12.5px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  transition: filter .15s, transform .12s;
+}
+
+.bpp-cta:hover { filter: brightness(1.06); }
+.bpp-cta:active { transform: translateY(1px); }
+
+.bpp-garantia-nota { margin: 10px 0 0; color: var(--bpp-muted); font-size: 11.5px; text-align: center; }
+
+/* ── 3 · Prueba social ────────────────────────────────────────────── */
+
+.bpp-social { border-block: 1px solid var(--bpp-border); background: var(--bpp-surface-suave); }
+
+.bpp-social-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  padding-block: 16px;
+  font-size: 12.5px;
 }
 
-.beauty-final strong {
-  display: block;
-  font-size: 32px;
+.bpp-social-izq { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.bpp-social-izq b { text-transform: uppercase; letter-spacing: .07em; font-size: 11px; }
+.bpp-social-izq small { color: var(--bpp-muted); }
+.bpp-estrellas { display: inline-flex; gap: 1px; color: var(--bpp-estrella); }
+
+.bpp-avatares { display: flex; align-items: center; }
+
+.bpp-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -7px;
+  overflow: hidden;
+  border: 2px solid var(--bpp-bg);
+  border-radius: 50%;
+  background: var(--bpp-accent-suave);
+  color: var(--bpp-accent);
+  font-size: 9px;
+  font-weight: 800;
 }
 
-.beauty-final span, .beauty-final small {
-  display: block;
-  font-size: 10px;
+.bpp-avatar:first-child { margin-left: 0; }
+.bpp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.bpp-avatares b { margin-left: 10px; font-size: 11.5px; }
+
+/* ── Encabezado de sección numerado ───────────────────────────────── */
+
+.bpp-seccion { padding: 46px 0; }
+.bpp-seccion--fondo { background: var(--bpp-surface-suave); border-block: 1px solid var(--bpp-border); }
+
+.bpp-seccion-titulo { display: flex; align-items: center; gap: 10px; margin: 0 0 24px; }
+.bpp-seccion-titulo.es-centrado { justify-content: center; text-align: center; }
+
+.bpp-seccion-titulo h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
 }
 
-.beauty-final button {
-  background: #fff;
-  color: var(--pink);
-  min-width: 190px;
+/* ── 4 · Ofertas ──────────────────────────────────────────────────── */
+
+.bpp-ofertas-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.beauty-footer {
+.bpp-ofertas-encabezado .bpp-seccion-titulo { margin-bottom: 0; }
+
+/* Interruptor de suscripción, arriba a la derecha como en la referencia. */
+.bpp-suscripcion {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--bpp-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.bpp-suscripcion input { position: absolute; opacity: 0; pointer-events: none; }
+
+.bpp-suscripcion i {
+  position: relative;
+  width: 38px;
+  height: 21px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--bpp-border-fuerte);
+  transition: background .18s;
+}
+
+.bpp-suscripcion i::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--bpp-bg);
+  transition: transform .18s;
+}
+
+.bpp-suscripcion input:checked + i { background: var(--bpp-accent); }
+.bpp-suscripcion input:checked + i::after { transform: translateX(17px); }
+.bpp-suscripcion input:focus-visible + i { outline: 2px solid var(--bpp-accent); outline-offset: 2px; }
+
+.bpp-packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 300px));
+  justify-content: center;
+  gap: 16px;
+  margin-top: 26px;
+}
+
+.bpp-pack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: 300px;
+  padding: 22px 16px 16px;
+  border: 1px solid var(--bpp-border-fuerte);
+  border-radius: 16px;
+  background: var(--bpp-card);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+
+.bpp-pack:hover { border-color: var(--bpp-accent); }
+.bpp-pack.elegido {
+  border-color: var(--bpp-accent);
+  box-shadow: 0 0 0 1px var(--bpp-accent), 0 12px 24px var(--bpp-sombra);
+  transform: translateY(-4px);
+}
+
+.bpp-pack-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: var(--bpp-accent);
+  color: var(--bpp-on-accent);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+/* La tarjeta selecciona; el CTA de abajo agrega. Dos botones hermanos,
+   nunca uno adentro del otro (sería HTML inválido y un blanco de click
+   ambiguo). */
+.bpp-pack-elegir {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
   text-align: center;
-  padding: 30px;
+}
+
+.bpp-pack-nombre { font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; }
+.bpp-pack-sub { color: var(--bpp-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
+
+.bpp-pack-imagen {
+  display: block;
+  width: 100%;
+  height: 130px;
+  margin: 8px 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--bpp-surface);
+  color: var(--bpp-muted);
+}
+
+.bpp-pack-imagen img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.bpp-pack-imagen > svg { margin: 50px auto 0; display: block; }
+
+.bpp-pack-precio { font-size: 22px; font-weight: 900; letter-spacing: -.02em; }
+.bpp-pack del { color: var(--bpp-muted); font-size: 11px; }
+.bpp-pack-ahorro { color: var(--bpp-accent); font-size: 10.5px; font-weight: 900; text-transform: uppercase; }
+.bpp-pack-normal { color: var(--bpp-muted); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+
+.bpp-pack-cta {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid var(--bpp-accent);
+  border-radius: 999px;
+  padding: 11px;
+  background: transparent;
+  color: var(--bpp-accent);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.bpp-pack-cta small { display: block; margin-top: 3px; font-size: 8.5px; font-weight: 700; opacity: .75; }
+.bpp-pack.elegido .bpp-pack-cta { background: var(--bpp-accent); color: var(--bpp-on-accent); }
+
+.bpp-sellos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 28px;
+  margin-top: 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--bpp-border);
+  border-radius: 12px;
+  color: var(--bpp-muted);
+  font-size: 11.5px;
+}
+
+.bpp-sellos span { display: inline-flex; align-items: center; gap: 7px; }
+.bpp-sellos svg { color: var(--bpp-accent); }
+.bpp-ofertas-cta { margin-top: 20px; display: flex; justify-content: center; }
+.bpp-ofertas-cta .bpp-cta { width: auto; min-width: 280px; }
+
+/* ── 5 · Beneficios ───────────────────────────────────────────────── */
+
+.bpp-beneficios { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 22px; }
+
+.bpp-beneficio { display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; }
+
+.bpp-beneficio-icono {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--bpp-accent-suave);
+  color: var(--bpp-accent);
+}
+
+.bpp-beneficio b { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.bpp-beneficio p { margin: 0; color: var(--bpp-muted); font-size: 11px; line-height: 1.5; }
+
+/* ── 6 · Ingredientes ─────────────────────────────────────────────── */
+
+.bpp-ingredientes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 22px; }
+
+.bpp-ingrediente { display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; }
+
+.bpp-ingrediente-icono {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--bpp-accent-suave);
+  color: var(--bpp-accent);
+}
+
+.bpp-emoji { font-size: 22px; line-height: 1; }
+.bpp-ingrediente b { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.bpp-ingrediente p { margin: 0; color: var(--bpp-muted); font-size: 10.5px; line-height: 1.5; }
+
+/* ── 7 · Resultados ───────────────────────────────────────────────── */
+
+.bpp-resultados { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+
+.bpp-resultado {
+  padding: 16px;
+  border: 1px solid var(--bpp-border);
+  border-radius: 14px;
+  background: var(--bpp-card);
+}
+
+.bpp-antes-despues { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.bpp-antes-despues figure { margin: 0; }
+
+.bpp-antes-despues figure > img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--bpp-surface);
+}
+
+.bpp-antes-despues figcaption {
+  margin-top: 5px;
+  color: var(--bpp-muted);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.bpp-resultado p { margin: 8px 0; color: var(--bpp-muted); font-size: 11.5px; line-height: 1.55; }
+.bpp-resultado b { font-size: 10.5px; }
+
+/* ── 8 · Cómo funciona ────────────────────────────────────────────── */
+
+.bpp-pasos { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+
+.bpp-paso { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+
+.bpp-paso:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  top: 20px;
+  right: -10px;
+  color: var(--bpp-accent);
+  font-size: 18px;
+}
+
+.bpp-paso-numero {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--bpp-accent-borde);
+  border-radius: 50%;
+  color: var(--bpp-accent);
+  font-size: 16px;
   font-weight: 900;
 }
 
-.beauty-footer small {
-  display: block;
-  color: var(--muted);
-  font-weight: normal;
+.bpp-paso b { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.bpp-paso p { max-width: 170px; margin: 0; color: var(--bpp-muted); font-size: 10.5px; line-height: 1.5; }
+
+/* ── 9 · Garantías ────────────────────────────────────────────────── */
+
+.bpp-garantias { background: var(--bpp-surface-suave); border-block: 1px solid var(--bpp-border); }
+.bpp-garantias-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+.bpp-garantia {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  column-gap: 9px;
+  padding: 18px 12px;
+  border-right: 1px solid var(--bpp-border);
 }
 
-@media (max-width: 760px) {
-  .beauty-topbar span {
-    display: none;
-  }
-  .beauty-hero {
-    grid-template-columns: 1fr;
-  }
-  .beauty-hero-visual {
-    height: 300px;
-  }
-  .beauty-hero-copy {
-    padding: 25px;
-  }
-  .beauty-hero h1 {
-    font-size: 31px;
-  }
-  .beauty-offer-grid, .beauty-result-grid, .beauty-faq-grid, .beauty-upsell-grid {
-    grid-template-columns: 1fr;
-  }
-  .beauty-benefit-grid, .beauty-ingredient-grid, .beauty-trust-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .beauty-steps {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .beauty-social {
-    flex-wrap: wrap;
-  }
-  .beauty-final-inner {
-    flex-direction: column;
-    text-align: center;
-  }
+.bpp-garantia:last-child { border-right: 0; }
+.bpp-garantia svg { grid-row: span 2; color: var(--bpp-accent); }
+.bpp-garantia b { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.bpp-garantia small { color: var(--bpp-muted); font-size: 9.5px; }
+
+/* ── 10 · FAQ ─────────────────────────────────────────────────────── */
+
+.bpp-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+
+.bpp-faq-item {
+  border: 1px solid var(--bpp-border);
+  border-radius: 12px;
+  background: var(--bpp-card);
+  overflow: hidden;
+  height: fit-content;
+}
+
+.bpp-faq-item button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.bpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; color: var(--bpp-muted); }
+.bpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--bpp-accent); }
+.bpp-faq-item p { margin: 0; padding: 0 16px 14px; color: var(--bpp-muted); font-size: 11.5px; line-height: 1.6; }
+
+/* ── 11 · Complementos ────────────────────────────────────────────── */
+
+.bpp-upsells { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+
+.bpp-upsell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--bpp-border);
+  border-radius: 14px;
+  background: var(--bpp-card);
+  text-align: center;
+}
+
+.bpp-upsell-img {
+  display: block;
+  width: 100%;
+  height: 110px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bpp-surface);
+  color: var(--bpp-muted);
+}
+
+.bpp-upsell-img img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.bpp-upsell-img > svg { margin: 44px auto 0; display: block; }
+.bpp-upsell b { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.bpp-upsell p { margin: 0; color: var(--bpp-muted); font-size: 10.5px; line-height: 1.45; }
+.bpp-upsell-precio { display: flex; align-items: baseline; gap: 7px; font-size: 14px; font-weight: 900; }
+.bpp-upsell-precio del { color: var(--bpp-muted); font-size: 11px; font-weight: 600; }
+
+.bpp-upsell-cta {
+  width: 100%;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px;
+  background: var(--bpp-accent);
+  color: var(--bpp-on-accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+/* ── 12 · Cierre ──────────────────────────────────────────────────── */
+
+.bpp-cierre { background: var(--bpp-accent); color: var(--bpp-on-accent); }
+
+.bpp-cierre-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 22px;
+  padding: 24px 0;
+}
+
+.bpp-cierre-etiqueta { margin: 0 0 8px; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+
+.bpp-contador { display: flex; align-items: flex-start; gap: 8px; }
+.bpp-contador-sep { font-size: 26px; font-weight: 700; line-height: 1; }
+.bpp-contador-caja { text-align: center; }
+.bpp-contador-caja b { display: block; font-size: 30px; font-weight: 800; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1; }
+.bpp-contador-caja small { display: block; margin-top: 4px; font-size: 8px; letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+
+.bpp-cierre-copy h2 { margin: 0 0 5px; font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; }
+.bpp-cierre-copy p { margin: 0; font-size: 11.5px; opacity: .88; }
+
+.bpp-cierre-cta {
+  min-width: 220px;
+  border: 0;
+  border-radius: 999px;
+  padding: 15px 28px;
+  background: var(--bpp-on-accent);
+  color: var(--bpp-accent);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.bpp-cierre-cta small { display: block; margin-top: 3px; font-size: 8.5px; letter-spacing: .05em; text-transform: none; opacity: .8; }
+
+/* ── Barra fija de compra (móvil) ─────────────────────────────────── */
+
+.bpp-barra-movil {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--bpp-border);
+  background: var(--bpp-bg);
+}
+
+.bpp-barra-movil-precio { flex: 1; min-width: 0; }
+.bpp-barra-movil-precio b { display: block; font-size: 16px; font-weight: 900; }
+.bpp-barra-movil-precio small { color: var(--bpp-muted); font-size: 10px; }
+.bpp-barra-movil .bpp-cta { width: auto; padding: 12px 20px; font-size: 11.5px; }
+
+/* ── Vacíos del editor ────────────────────────────────────────────── */
+
+/* Solo en el preview: una sección activada pero sin contenido no puede
+   quedar invisible, porque el comercio la prendió y no entendería por qué
+   no pasa nada. En la landing publicada simplemente no se dibuja. */
+.bpp-vacio {
+  margin: 0;
+  padding: 20px;
+  border: 1px dashed var(--bpp-border-fuerte);
+  border-radius: 12px;
+  color: var(--bpp-muted);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+
+.bpp-root.es-movil .bpp-wrap { width: calc(100% - 28px); }
+.bpp-root.es-movil .bpp-hero { grid-template-columns: 1fr; gap: 24px; padding: 26px 0; }
+.bpp-root.es-movil .bpp-galeria { position: static; }
+.bpp-root.es-movil .bpp-faq-grid { grid-template-columns: 1fr; }
+.bpp-root.es-movil .bpp-seccion { padding: 32px 0; }
+.bpp-root.es-movil .bpp-garantia { border-right: 0; border-bottom: 1px solid var(--bpp-border); }
+.bpp-root.es-movil .bpp-paso::after { display: none; }
+.bpp-root.es-movil .bpp-cierre-inner { flex-direction: column; align-items: flex-start; }
+.bpp-root.es-movil .bpp-cierre-cta { width: 100%; }
+.bpp-root.es-movil .bpp-barra-movil { display: flex; }
+
+@media (max-width: 880px) {
+  .bpp-wrap { width: calc(100% - 28px); }
+  .bpp-hero { grid-template-columns: 1fr; gap: 24px; padding: 26px 0; }
+  .bpp-galeria { position: static; }
+  .bpp-faq-grid { grid-template-columns: 1fr; }
+  .bpp-seccion { padding: 32px 0; }
+  .bpp-garantia { border-right: 0; border-bottom: 1px solid var(--bpp-border); }
+  .bpp-paso::after { display: none; }
+  .bpp-cierre-inner { flex-direction: column; align-items: flex-start; }
+  .bpp-cierre-cta { width: 100%; }
+  .bpp-barra-movil { display: flex; }
+  .bpp-barra { font-size: 9px; gap: 8px 14px; }
 }

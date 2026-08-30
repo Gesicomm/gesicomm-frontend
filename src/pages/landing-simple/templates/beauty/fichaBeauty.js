@@ -41,6 +41,24 @@ export const SECCIONES_BEAUTY = [
 
 export const CLAVES_SECCIONES = SECCIONES_BEAUTY.map(s => s.key);
 
+/**
+ * Contenido inicial.
+ *
+ * ── La regla ───────────────────────────────────────────────────────────
+ * Hay dos cosas distintas acá y conviene no mezclarlas:
+ *
+ *  - El TÍTULO de una sección es estructura, no contenido del comercio:
+ *    es el rótulo que hace que la ficha se lea como la guía de referencia
+ *    (los encabezados numerados 1..12). Lleva default siempre. Sin él el
+ *    encabezado no se dibuja y la página pierde su forma.
+ *  - El CONTENIDO (beneficios, ingredientes, testimonios, pasos) sale del
+ *    PRODUCTO — de "Marketing & Embudo" y de `ficha_datos` en Mis
+ *    Productos. Va vacío acá: inventarlo sería poner en la landing de un
+ *    comercio afirmaciones sobre su producto que nadie escribió.
+ *
+ * Los textos que sí aparecen son indicadores de qué va en cada campo, y el
+ * comercio los reescribe enteros.
+ */
 export const DEFAULTS_BEAUTY = {
   barra_superior: {
     activo: true,
@@ -57,46 +75,64 @@ export const DEFAULTS_BEAUTY = {
 
   hero: {
     activo: true,
-    eyebrow: '',
-    etiqueta: '',
-    titulo: '',
-    lead: '',
-    caracteristicas: [],
-    cta_texto: 'COMPRAR AHORA',
-    calificacion_texto: ''
+    etiqueta: '',            // badge sobre la foto, ej. "Más vendido"
+    eyebrow: '',             // vacío = la categoría del producto
+    titulo: '',              // vacío = el nombre del producto
+    subtitulo: '',           // la línea fina bajo el título
+    lead: '',                // vacío = la descripción del producto
+    caracteristicas: [],     // vacío = los beneficios del producto
+    cta_texto: 'Comprar ahora — envío gratis',
+    garantia_texto: 'Garantía 60 días o te devolvemos tu dinero',
   },
 
   prueba_social: {
-    activo: true,
-    calificacion: 5,
+    activo: false,
+    etiqueta: 'Excelente',
+    calificacion: 4.8,
     resenas_texto: '',
     clientes_texto: '',
+    avatares: [],
   },
 
   precio: {
     activo: true,
-    titulo: '',
+    titulo: 'Elegí tu oferta especial',
+    etiqueta_individual: '1 unidad',
+    nota_pack: 'Compra única',
+    cta_pack: 'Agregar al carrito',
+    // { "<id de oferta>": { badge, subtitulo } }
+    packs: {},
+    suscripcion: { activo: false, titulo: '', detalle: '' },
+    // La franja de tres sellos debajo de las tarjetas.
+    confianza: [
+      { icono: 'truck',  texto: 'Envío gratis a todo el país' },
+      { icono: 'lock',   texto: 'Pagos seguros y protegidos' },
+      { icono: 'rotate', texto: 'Garantía de devolución 60 días' },
+    ],
   },
 
   beneficios: {
     activo: true,
-    titulo: '',
+    titulo: 'Beneficios que vas a amar',
     items: [],
   },
 
   ingredientes: {
     activo: true,
-    titulo: '',
+    titulo: 'Ingredientes premium que marcan la diferencia',
+    items: [],   // [{icono, nombre, descripcion}] — de Mis Productos
   },
 
   resultados: {
     activo: true,
-    titulo: '',
+    titulo: 'Resultados reales de nuestras clientas',
+    items: [],   // [{nombre, testimonio, calificacion, antes, despues}]
   },
 
   como_funciona: {
     activo: true,
-    titulo: '',
+    titulo: 'Cómo funciona',
+    pasos: [],   // [{paso, titulo, descripcion}] — de Mis Productos
   },
 
   garantias: {
@@ -112,22 +148,23 @@ export const DEFAULTS_BEAUTY = {
 
   faq: {
     activo: true,
-    titulo: '',
+    titulo: 'Preguntas frecuentes',
   },
 
   upsells: {
     activo: true,
-    titulo: '',
+    titulo: 'Complementá tu rutina y potenciá resultados',
+    cta_texto: 'Agregar',
   },
 
   cta_final: {
     activo: true,
-    etiqueta: '',
-    texto: '',
-    subtexto: '',
-    cta_texto: 'COMPRAR AHORA',
-    cta_nota: '',
-    contador: { activo: false, dias: 0, horas: 2, minutos: 47, segundos: 39 },
+    etiqueta: 'Oferta por tiempo limitado',
+    titulo: 'No pierdas esta oferta especial',
+    texto: 'El descuento se aplica automáticamente',
+    cta_texto: 'Comprar ahora',
+    cta_nota: 'Envío gratis',
+    contador: { activo: true, horas: 2, minutos: 47, segundos: 39 },
   },
 };
 
@@ -232,13 +269,14 @@ export function fichaBeautyDesdeProducto(producto) {
   const promesa = (producto.propuesta_valor || '').trim();
   const sobre = (producto.sobre_este_producto || '').trim();
 
-  if (promesa || sobre || beneficios.length || descripcion) {
+  if (promesa || sobre || beneficios.length) {
     ficha.hero = {};
-    if (promesa) ficha.hero.titulo = promesa;
-    
-    if (sobre) ficha.hero.lead = sobre;
-    else if (descripcion) ficha.hero.lead = descripcion;
-
+    // La propuesta de valor es el LEAD, no el título: el título es el
+    // nombre del producto (o lo que el comercio escriba). Pisarlo con la
+    // promesa dejaba la ficha sin decir qué producto es.
+    if (promesa || sobre) ficha.hero.lead = promesa || sobre;
+    // El diseño repite los beneficios como checklist del encabezado: es la
+    // misma información, no se pide cargarla dos veces.
     if (beneficios.length) ficha.hero.caracteristicas = beneficios.map(b => b.titulo.trim());
   }
 

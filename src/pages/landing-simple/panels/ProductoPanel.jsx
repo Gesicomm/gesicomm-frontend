@@ -271,6 +271,7 @@ export default function ProductoPanel({
 
             {tab === 'ficha' && fichaBeautyActiva && fichaBeautyResuelta && (
               <FichaBeautyPanel
+                packs={packs}
                 ficha={fichaBeauty}
                 fichaResuelta={fichaBeautyResuelta}
                 fichaLanding={fichaBeautyLanding}

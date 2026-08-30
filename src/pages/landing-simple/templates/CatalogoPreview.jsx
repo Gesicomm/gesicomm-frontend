@@ -21,7 +21,7 @@ import StoreHeader from './StoreHeader';
  * home (productos_titulo) — son dos páginas distintas.
  */
 export default function CatalogoPreview({
-  productos, titulo, descripcion, tema, templateSlug, contacto, nombreComercio, logo, onClickProducto, onClickCatalogo, onClickContacto, onVolver, isMobile = false,
+  productos, titulo, descripcion, tema, templateSlug, contacto, nombreComercio, logo, onClickProducto, onClickInicio, onClickCatalogo, onClickContacto, onVolver, isMobile = false,
 }) {
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
@@ -49,6 +49,7 @@ export default function CatalogoPreview({
         tema={t}
         cantidadCarrito={0}
         previewMode={true}
+        onClickInicio={onClickInicio}
         onClickCatalogo={onClickCatalogo}
         onClickContacto={onClickContacto}
       />
