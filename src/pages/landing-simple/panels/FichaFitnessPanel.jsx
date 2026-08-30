@@ -4,7 +4,7 @@ import {
   SECCIONES_FICHA, LIMITES, ETIQUETA_FUENTE,
   clonarSeccionResuelta, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/fitness/fichaFitness';
-import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
+import IconoPicker from './IconoPicker';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
 const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
@@ -112,7 +112,7 @@ export default function FichaFitnessPanel({
                 <span className="min-w-0">
                   <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
                   {esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-fg/35'}`}>
+                    <span className={`block text-[10px] truncate ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
                       {ETIQUETA_FUENTE[fuente]}
                     </span>
                   )}
@@ -124,7 +124,7 @@ export default function FichaFitnessPanel({
                   type="checkbox"
                   checked={datos.activo}
                   onChange={e => editar(sec.key, { activo: e.target.checked })}
-                  className="w-4 h-4 accent-emerald-500"
+                  className="w-4 h-4 accent-[var(--color-accent)]"
                 />
               </label>
 
@@ -200,49 +200,6 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
   );
 }
 
-function SelectorIcono({ valor, onChange }) {
-  const [open, setOpen] = useState(false);
-  const IconoSeleccionado = getIconoBeneficio(valor);
-
-  return (
-    <div className="relative shrink-0">
-      <button
-        type="button"
-        className="grid place-items-center w-8 h-8 rounded-lg bg-fg/10 text-fg/70 hover:bg-fg/15 border border-fg/10 transition-colors"
-        onClick={() => setOpen(!open)}
-        title="Seleccionar ícono"
-      >
-        <IconoSeleccionado size={14} />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-9 left-0 z-50 p-2 bg-neutral-900 border border-fg/15 rounded-lg shadow-xl grid grid-cols-5 gap-1 w-48 max-h-56 overflow-y-auto">
-            {CATALOGO_ICONOS_BENEFICIOS.map(i => {
-              const Icon = i.Icon;
-              return (
-                <button
-                  key={i.key}
-                  type="button"
-                  className={`p-1.5 flex items-center justify-center rounded hover:bg-white/10 text-fg transition-colors ${valor === i.key ? 'bg-fg/10 text-emerald-400 border border-fg/20' : ''}`}
-                  onClick={() => {
-                    onChange(i.key);
-                    setOpen(false);
-                  }}
-                  title={i.label}
-                >
-                  <Icon size={14} />
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 /** Fila de una lista repetible: mover, contenido y borrar. */
 function Fila({ children, onSubir, onBajar, onQuitar }) {
   return (
@@ -302,7 +259,7 @@ const CAMPOS = {
       >
         {(it, i) => (
           <div className="flex items-center gap-1.5">
-            <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
             <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Envío gratis en todos los pedidos" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </div>
         )}
@@ -311,7 +268,7 @@ const CAMPOS = {
       <div className="border-t border-fg/10 pt-2.5">
         <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
           <input
-            type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+            type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
             checked={d.animado !== false}
             onChange={e => set({ animado: e.target.checked })}
           />
@@ -444,7 +401,7 @@ const CAMPOS = {
       <div className="border-t border-fg/10 pt-2.5">
         <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
           <input
-            type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+            type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
             checked={!!d.suscripcion.activo}
             onChange={e => set({ suscripcion: { ...d.suscripcion, activo: e.target.checked } })}
           />
@@ -474,7 +431,7 @@ const CAMPOS = {
           <>
             <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título del beneficio (ej: Enfoque total)" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
             <div className="flex items-center gap-1.5">
-              <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
             </div>
             <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Elimina distracciones y mejora la atención." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </>
@@ -494,7 +451,7 @@ const CAMPOS = {
           <>
             <input className={`${MINI} w-full`} value={it.nombre || ''} placeholder="Nombre del ingrediente (ej: L-Teanina)" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
             <div className="flex items-center gap-1.5 w-full">
-              <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
               <input className={`${MINI} flex-1 min-w-0`} value={it.dosis || ''} placeholder="Dosis (ej: 200mg)" onChange={e => lista.editar('items', i, { dosis: e.target.value })} />
             </div>
             <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Relaja la mente sin causar somnolencia." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
@@ -544,7 +501,7 @@ const CAMPOS = {
           <>
             <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título del paso (ej: Tomás)" onChange={e => lista.editar('pasos', i, { titulo: e.target.value })} />
             <div className="flex items-center gap-1.5">
-              <SelectorIcono valor={it.icono} onChange={v => lista.editar('pasos', i, { icono: v })} />
+              <IconoPicker valor={it.icono} onChange={v => lista.editar('pasos', i, { icono: v })} />
             </div>
             <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Dos cápsulas con agua por la mañana." onChange={e => lista.editar('pasos', i, { texto: e.target.value })} />
           </>
@@ -562,7 +519,7 @@ const CAMPOS = {
         <>
           <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título (ej: Garantía de 60 días)" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
           <div className="flex items-center gap-1.5 w-full">
-            <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
             <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Subtítulo (ej: Devolución sin preguntas)" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </div>
         </>
@@ -602,7 +559,7 @@ const CAMPOS = {
       <div className="border-t border-fg/10 pt-2.5">
         <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
           <input
-            type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+            type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
             checked={!!d.contador.activo}
             onChange={e => set({ contador: { ...d.contador, activo: e.target.checked } })}
           />

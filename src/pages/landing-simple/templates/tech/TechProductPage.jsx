@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronDown, ImageOff, LockKeyhole, Play, Star, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ExternalLink, ImageOff, LockKeyhole, Play, Star, X } from 'lucide-react';
 import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio } from '../iconosBeneficios';
@@ -9,6 +9,7 @@ import { RedesSocialesFooter } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
+import { analizarVideo, NOMBRE_PLATAFORMA } from '../video';
 import './techProductPage.css';
 
 /**
@@ -46,6 +47,8 @@ export default function TechProductPage({
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [varianteId, setVarianteId] = useState(null);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
+  // Video abierto en el lightbox (solo los que se pueden incrustar).
+  const [videoAbierto, setVideoAbierto] = useState(null);
 
   const t = resolverTemaPorSlug(tema, templateSlug);
   const vars = useMemo(() => calcularVariables(t), [t.fondo, t.texto, t.acento]);
@@ -78,6 +81,13 @@ export default function TechProductPage({
   // y los nombres del catálogo son descriptivos, no titulares cortos.
   const tituloTexto = `${ficha.hero.titulo || item.nombre} ${ficha.hero.titulo_destacado || ''}`.trim();
   const claseTitulo = tituloTexto.length > 88 ? 'es-muy-largo' : tituloTexto.length > 42 ? 'es-largo' : '';
+
+  // Lo que está a medio cargar no se publica, pero se conserva en el
+  // editor: por eso el filtro vive acá y no en el normalizador.
+  const specs = (ficha.especificaciones.items || []).filter(e => e?.clave?.trim());
+  const enLaCaja = (ficha.especificaciones.en_la_caja || []).filter(t => t?.trim());
+  const comparativa = (ficha.comparativa.items || []).filter(c => c?.caracteristica?.trim());
+  const multimedia = (ficha.multimedia.items || []).filter(m => m?.titulo?.trim() || m?.url?.trim() || m?.imagen?.trim());
 
   const hayRating = ficha.prueba_social.activo
     && (ficha.prueba_social.resenas_texto || ficha.prueba_social.clientes_texto || ficha.prueba_social.calificacion);
@@ -114,27 +124,35 @@ export default function TechProductPage({
 
       {/* 2 · Hero ─────────────────────────────────────────────────── */}
       <section className="tpp-hero tpp-wrap" id="tpp-hero">
+        {/* Miniaturas en columna a la izquierda de la foto grande, como en
+            la referencia: en una ficha de electrónica las fotos son el
+            argumento de venta y así se ven todas de una, sin empujar el
+            precio y el botón más abajo del pliegue. En pantallas angostas
+            vuelven a una fila horizontal debajo (ver el CSS). */}
         <div className="tpp-galeria">
+          {item.imagenes.length > 1 && (
+            <div className="tpp-miniaturas" role="tablist" aria-label="Fotos del producto">
+              {item.imagenes.map((url, i) => (
+                <button
+                  type="button"
+                  key={url + i}
+                  role="tab"
+                  aria-selected={i === indiceImagen}
+                  aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
+                  className={`tpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
+                  onClick={() => setIndiceImagen(i)}
+                >
+                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
           <div className={`tpp-escenario ${imagenActual ? '' : 'vacia'}`}>
             {imagenActual
               ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
               : <ImageOff size={44} />}
             {ficha.hero.etiqueta && <span className="tpp-etiqueta-nueva">{ficha.hero.etiqueta}</span>}
           </div>
-          {item.imagenes.length > 1 && (
-            <div className="tpp-miniaturas">
-              {item.imagenes.map((url, i) => (
-                <button
-                  type="button"
-                  key={url + i}
-                  className={`tpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
-                  onClick={() => setIndiceImagen(i)}
-                >
-                  <img src={getMediaUrl(url)} alt="" />
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className={`tpp-hero-copy ${claseTitulo}`}>
@@ -293,19 +311,19 @@ export default function TechProductPage({
 
       {/* 7 · Especificaciones técnicas ────────────────────────────── */}
       {ficha.especificaciones.activo
-        && (ficha.especificaciones.items.length > 0 || ficha.especificaciones.en_la_caja.length > 0 || previewMode) && (
+        && (specs.length > 0 || enLaCaja.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-wrap" id="tpp-specs">
           <TituloSeccion numero={7} texto={ficha.especificaciones.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
-          {ficha.especificaciones.items.length === 0 && ficha.especificaciones.en_la_caja.length === 0 ? (
+          {specs.length === 0 && enLaCaja.length === 0 ? (
             <p className="tpp-vacio">
               Las especificaciones y el "en la caja" se cargan en <b>Mis Productos</b>, en la pestaña del rubro
               Tecnología, y sirven en todas tus landings.
             </p>
           ) : (
             <div className="tpp-specs-grid">
-              {ficha.especificaciones.items.length > 0 && (
+              {specs.length > 0 && (
                 <div className="tpp-caja">
-                  {ficha.especificaciones.items.map((e, i) => (
+                  {specs.map((e, i) => (
                     <div className="tpp-spec-fila" key={i}>
                       <b>{e.clave}</b>
                       <span>{e.valor}</span>
@@ -313,10 +331,10 @@ export default function TechProductPage({
                   ))}
                 </div>
               )}
-              {ficha.especificaciones.en_la_caja.length > 0 && (
+              {enLaCaja.length > 0 && (
                 <div className="tpp-caja">
                   <b>{ficha.especificaciones.caja_titulo || 'En la caja'}</b>
-                  {ficha.especificaciones.en_la_caja.map((linea, i) => (
+                  {enLaCaja.map((linea, i) => (
                     <p className="tpp-caja-item" key={i}><Check size={14} /> {linea}</p>
                   ))}
                 </div>
@@ -327,22 +345,67 @@ export default function TechProductPage({
       )}
 
       {/* 8 · Contenido visual ─────────────────────────────────────── */}
-      {ficha.multimedia.activo && (ficha.multimedia.items.length > 0 || previewMode) && (
+      {ficha.multimedia.activo && (multimedia.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-seccion--fondo">
           <div className="tpp-wrap">
             <TituloSeccion numero={8} texto={ficha.multimedia.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
-            {ficha.multimedia.items.length === 0 ? (
+            {multimedia.length === 0 ? (
               <p className="tpp-vacio">Agregá imágenes o videos adicionales desde la pestaña <b>Ficha</b>.</p>
             ) : (
               <div className="tpp-media">
-                {ficha.multimedia.items.map((m, i) => (
-                  <div className="tpp-media-card" key={i}>
-                    {m.imagen
-                      ? <img src={getMediaUrl(m.imagen)} alt={m.titulo || ''} />
-                      : null}
-                    <span>{m.video && <Play size={12} fill="currentColor" />} {m.titulo}</span>
-                  </div>
-                ))}
+                {multimedia.map((m, i) => {
+                  const video = analizarVideo(m.url);
+                  // La portada: la que subió el comercio, o la que YouTube
+                  // ya tiene del video. Vimeo no expone una por URL.
+                  const portada = m.imagen ? getMediaUrl(m.imagen) : video?.miniatura || null;
+                  const esVideo = !!video;
+
+                  const contenido = (
+                    <>
+                      {portada
+                        ? <img src={portada} alt="" loading="lazy" />
+                        : <span className="tpp-media-sinportada" aria-hidden="true"><ImageOff size={22} /></span>}
+                      {esVideo && <span className="tpp-media-play" aria-hidden="true"><Play size={18} fill="currentColor" /></span>}
+                      <span>
+                        {m.titulo || (video ? NOMBRE_PLATAFORMA[video.plataforma] : '')}
+                        {video && !video.incrustable && <ExternalLink size={11} />}
+                      </span>
+                    </>
+                  );
+
+                  // Lo que se puede incrustar se abre acá mismo; el resto
+                  // (Instagram, TikTok, X) solo permite incrustar con su
+                  // script de rastreo, así que se abre en otra pestaña.
+                  if (video?.incrustable) {
+                    return (
+                      <button
+                        type="button"
+                        className="tpp-media-card"
+                        key={i}
+                        onClick={() => setVideoAbierto(video)}
+                        aria-label={`Reproducir ${m.titulo || NOMBRE_PLATAFORMA[video.plataforma]}`}
+                      >
+                        {contenido}
+                      </button>
+                    );
+                  }
+
+                  if (video) {
+                    return (
+                      <a
+                        className="tpp-media-card"
+                        key={i}
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {contenido}
+                      </a>
+                    );
+                  }
+
+                  return <div className="tpp-media-card" key={i}>{contenido}</div>;
+                })}
               </div>
             )}
           </div>
@@ -350,10 +413,10 @@ export default function TechProductPage({
       )}
 
       {/* 9 · Comparación ──────────────────────────────────────────── */}
-      {ficha.comparativa.activo && (ficha.comparativa.items.length > 0 || previewMode) && (
+      {ficha.comparativa.activo && (comparativa.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-wrap">
           <TituloSeccion numero={9} texto={ficha.comparativa.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
-          {ficha.comparativa.items.length === 0 ? (
+          {comparativa.length === 0 ? (
             <p className="tpp-vacio">
               La comparativa se carga en <b>Mis Productos</b> (rubro Tecnología) o acá desde la pestaña <b>Ficha</b>.
             </p>
@@ -364,7 +427,7 @@ export default function TechProductPage({
                 <span>{ficha.comparativa.nosotros}</span>
                 <span>{ficha.comparativa.otros}</span>
               </div>
-              {ficha.comparativa.items.map((c, i) => (
+              {comparativa.map((c, i) => (
                 <div className="tpp-comparativa-fila" key={i}>
                   <span>{c.caracteristica}</span>
                   <span className={c.nosotros ? 'tpp-comparativa-si' : 'tpp-comparativa-no'}>
@@ -504,6 +567,28 @@ export default function TechProductPage({
 
       {contacto && <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={vars['--tpp-border']} isMobile={isMobile} />}
       <StoreFooterLegal tema={t} bordeSuave={vars['--tpp-border']} nombreComercio={nombreComercio} isPreview={previewMode} />
+
+      {videoAbierto && (
+        <div
+          className="tpp-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Video del producto"
+          onClick={() => setVideoAbierto(null)}
+        >
+          <button type="button" className="tpp-lightbox-cerrar" onClick={() => setVideoAbierto(null)} aria-label="Cerrar video">
+            <X size={20} />
+          </button>
+          <div className="tpp-lightbox-marco" onClick={e => e.stopPropagation()}>
+            <iframe
+              src={videoAbierto.embed}
+              title="Video del producto"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
 
       {/* Barra fija de compra en móvil: el CTA principal queda arriba del
           pliegue y se pierde al recorrer las 14 secciones. */}

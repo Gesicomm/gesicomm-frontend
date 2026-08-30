@@ -4,7 +4,7 @@ import {
   SECCIONES_BEAUTY, LIMITES, ETIQUETA_FUENTE,
   clonarFichaBeauty, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/beauty/fichaBeauty';
-import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
+import IconoPicker from './IconoPicker';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
 const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
@@ -101,7 +101,7 @@ export default function FichaBeautyPanel({
                 <span className="min-w-0">
                   <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
                   {esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-fg/35'}`}>
+                    <span className={`block text-[10px] truncate ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
                       {ETIQUETA_FUENTE[fuente]}
                     </span>
                   )}
@@ -113,7 +113,7 @@ export default function FichaBeautyPanel({
                   type="checkbox"
                   checked={datos.activo}
                   onChange={e => editar(sec.key, { activo: e.target.checked })}
-                  className="w-4 h-4 accent-emerald-500"
+                  className="w-4 h-4 accent-[var(--color-accent)]"
                 />
               </label>
 
@@ -181,26 +181,6 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
   );
 }
 
-function SelectorIcono({ valor, onChange }) {
-  const Icono = getIconoBeneficio(valor);
-  return (
-    <span className="inline-flex items-center gap-1.5 shrink-0">
-      <span className="grid place-items-center w-7 h-7 rounded-lg bg-fg/10 text-fg/70"><Icono size={14} /></span>
-      <select
-        value={valor || ''}
-        onChange={e => onChange(e.target.value || null)}
-        className="w-5 opacity-0 absolute cursor-pointer"
-        title="Cambiar ícono"
-      >
-        <option value="">Quitar</option>
-        {Object.entries(CATALOGO_ICONOS_BENEFICIOS).map(([key, info]) => (
-          <option key={key} value={key} className="bg-neutral-900">{info.label}</option>
-        ))}
-      </select>
-    </span>
-  );
-}
-
 function ListaTextos({ valores = [], max, textoAgregar, placeholder, onCambio }) {
   const add = () => onCambio([...valores, '']);
   const edit = (i, v) => { const n = [...valores]; n[i] = v; onCambio(n); };
@@ -257,7 +237,7 @@ function CamposContador({ d, set }) {
   return (
     <div className="mt-2 bg-black/20 p-3 rounded-xl border border-fg/5 space-y-3">
       <label className="flex items-center gap-2 text-[12px] text-fg/90 font-semibold cursor-pointer">
-        <input type="checkbox" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} className="w-4 h-4 accent-emerald-500" />
+        <input type="checkbox" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} className="w-4 h-4 accent-[var(--color-accent)]" />
         Contador de tiempo limitado
       </label>
       {c.activo && (
@@ -282,7 +262,7 @@ const CAMPOS = {
       >
         {(it, i) => (
           <div className="flex items-center gap-1.5 w-full">
-            <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
             <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Ej: Envío gratis" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </div>
         )}
@@ -335,7 +315,7 @@ const CAMPOS = {
         {(it, i) => (
           <>
             <div className="flex items-center gap-1.5">
-              <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
               <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Piel más joven" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
             </div>
             <textarea rows={2} className={MINI} value={it.descripcion || ''} placeholder="Reduce arrugas y líneas finas." onChange={e => lista.editar('items', i, { descripcion: e.target.value })} />

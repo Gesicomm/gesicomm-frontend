@@ -84,9 +84,21 @@
   padding: 46px 0 38px;
 }
 
-/* La foto acompaña el scroll: la columna de texto casi siempre es más
-   alta (características + rating + botones) y si no dejaba un hueco. */
-.tpp-galeria { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 12px; }
+/* Miniaturas en columna a la izquierda + foto grande a la derecha. La foto
+   acompaña el scroll porque la columna de texto casi siempre es más alta
+   (características + rating + botones) y si no quedaba un hueco. */
+.tpp-galeria {
+  position: sticky;
+  top: 20px;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+/* Sin miniaturas la foto ocupa las dos columnas, en vez de dejar una
+   franja vacía a la izquierda. */
+.tpp-galeria > .tpp-escenario:only-child { grid-column: 1 / -1; }
 
 .tpp-escenario {
   position: relative;
@@ -117,11 +129,20 @@
   text-transform: uppercase;
 }
 
-.tpp-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
+.tpp-miniaturas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Con muchas fotos la columna scrollea sola en vez de estirar el hero. */
+  max-height: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
 
 .tpp-miniatura {
-  width: 58px;
-  height: 58px;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--tpp-border);
@@ -413,7 +434,76 @@
   padding: 0;
 }
 
+.tpp-media-card { border: 1px solid var(--tpp-border); cursor: pointer; text-decoration: none; }
+.tpp-media-card:hover { border-color: var(--tpp-accent); }
 .tpp-media-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.tpp-media-sinportada {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--tpp-muted);
+}
+
+/* El play va sobre la portada, centrado: es lo que dice "esto es un video"
+   antes de leer el título. */
+.tpp-media-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--tpp-accent);
+  color: var(--tpp-on-accent);
+  padding-left: 3px;
+  transition: transform .15s;
+}
+
+.tpp-media-card:hover .tpp-media-play { transform: translate(-50%, -50%) scale(1.08); }
+.tpp-media-card span:last-child { display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+/* ── Lightbox de video ────────────────────────────────────────────── */
+
+.tpp-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, .82);
+}
+
+.tpp-lightbox-marco {
+  width: min(980px, 100%);
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+}
+
+.tpp-lightbox-marco iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+.tpp-lightbox-cerrar {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+}
+
+.tpp-lightbox-cerrar:hover { background: rgba(255, 255, 255, .26); }
 .tpp-media-card span {
   position: relative;
   width: 100%;
@@ -662,7 +752,9 @@
 
 .tpp-root.es-movil .tpp-wrap { width: calc(100% - 28px); }
 .tpp-root.es-movil .tpp-hero { grid-template-columns: 1fr; gap: 24px; padding: 28px 0; }
-.tpp-root.es-movil .tpp-galeria { position: static; }
+.tpp-root.es-movil .tpp-galeria { position: static; display: flex; flex-direction: column; }
+.tpp-root.es-movil .tpp-miniaturas { flex-direction: row; flex-wrap: wrap; order: 2; overflow-y: visible; }
+.tpp-root.es-movil .tpp-escenario { order: 1; }
 .tpp-root.es-movil .tpp-compra,
 .tpp-root.es-movil .tpp-specs-grid,
 .tpp-root.es-movil .tpp-faq-grid { grid-template-columns: 1fr; }
@@ -677,7 +769,9 @@
 @media (max-width: 880px) {
   .tpp-wrap { width: calc(100% - 28px); }
   .tpp-hero { grid-template-columns: 1fr; gap: 24px; padding: 28px 0; }
-  .tpp-galeria { position: static; }
+  .tpp-galeria { position: static; display: flex; flex-direction: column; }
+  .tpp-miniaturas { flex-direction: row; flex-wrap: wrap; order: 2; overflow-y: visible; }
+  .tpp-escenario { order: 1; }
   .tpp-compra, .tpp-specs-grid, .tpp-faq-grid { grid-template-columns: 1fr; }
   .tpp-seccion { padding: 32px 0; }
   .tpp-beneficio { border-right: 0; border-bottom: 1px solid var(--tpp-border); }

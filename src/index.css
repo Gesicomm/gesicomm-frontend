@@ -29,6 +29,18 @@
     --color-accent: #ffc107;
     --color-accent-hover: #ffcf4d;
 
+    /* El dorado es SIEMPRE claro, en los dos temas — así que lo que va
+       ENCIMA de un fondo dorado sólido (un ícono, un check) necesita
+       tinta siempre oscura, sin invertirse con el tema. --color-accent-fg
+       no vive en los bloques de tema por eso: es una sola constante. */
+    --color-accent-fg: #0b1d3d;
+
+    /* Distinto problema: el dorado usado como COLOR DE TEXTO sobre el
+       fondo de la página. Sobre canvas oscuro rinde ~11,5:1 y anda bien
+       tal cual; sobre canvas claro cae a ~1,5:1 — casi invisible. Este es
+       su par legible para claro, igual que --color-primary-text. */
+    --color-accent-text: #ffc107;
+
     --color-success: #10b981;
     --color-warning: #f59e0b;
     --color-danger: #ef4444;
@@ -87,6 +99,13 @@
     --color-primary-hover: #15295a;
     --color-primary-active: #081527;
     --color-primary-text: #0b1d3d;
+
+    /* El dorado tal cual (#ffc107) da ~1,5:1 sobre el lienzo marfil —
+       casi invisible como texto. Este es el mismo dorado oscurecido lo
+       justo para leerse (~5,2:1) sin dejar de reconocerse como el acento
+       de marca. --color-accent-fg no cambia acá: sigue siendo #0b1d3d
+       porque el dorado de FONDO no se oscurece, solo el de texto. */
+    --color-accent-text: #8a6100;
 
     --color-success: #047857;
     --color-warning: #b45309;

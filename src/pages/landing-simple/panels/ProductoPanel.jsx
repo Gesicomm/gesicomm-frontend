@@ -157,6 +157,20 @@ export default function ProductoPanel({
               )}
             </div>
 
+            {/* ─── Precio tachado ───────────────────────────────────── */}
+            {onPrecioAncla && (
+              <div>
+                <label className="block text-xs font-semibold text-fg/60 mb-1.5">Precio tachado</label>
+                <CurrencyInput
+                  value={precioAncla ?? ''}
+                  onChange={onPrecioAncla}
+                  placeholder="Sin precio tachado"
+                  className={CAMPO}
+                />
+                <ResumenAncla ancla={precioAncla} actual={precioActual} />
+              </div>
+            )}
+
             {/* ─── Descripción ──────────────────────────────────────── */}
             <div>
               <label className="block text-xs font-semibold text-fg/60 mb-1.5">Descripción</label>

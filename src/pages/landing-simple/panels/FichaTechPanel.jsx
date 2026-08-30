@@ -4,7 +4,8 @@ import {
   SECCIONES_TECH, LIMITES, ETIQUETA_FUENTE,
   clonarSeccionResuelta, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/tech/fichaTech';
-import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
+import IconoPicker from './IconoPicker';
+import { analizarVideo, NOMBRE_PLATAFORMA } from '../templates/video';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
 const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
@@ -102,7 +103,7 @@ export default function FichaTechPanel({
                 <span className="min-w-0">
                   <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
                   {esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-fg/35'}`}>
+                    <span className={`block text-[10px] truncate ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
                       {ETIQUETA_FUENTE[fuente]}
                     </span>
                   )}
@@ -114,7 +115,7 @@ export default function FichaTechPanel({
                   type="checkbox"
                   checked={datos.activo}
                   onChange={e => editar(sec.key, { activo: e.target.checked })}
-                  className="w-4 h-4 accent-emerald-500"
+                  className="w-4 h-4 accent-[var(--color-accent)]"
                 />
               </label>
 
@@ -187,25 +188,6 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
         </p>
       )}
     </div>
-  );
-}
-
-function SelectorIcono({ valor, onChange }) {
-  const Icono = getIconoBeneficio(valor);
-  return (
-    <span className="inline-flex items-center gap-1.5 shrink-0">
-      <span className="grid place-items-center w-7 h-7 rounded-lg bg-fg/10 text-fg/70"><Icono size={14} /></span>
-      <select
-        value={valor || ''}
-        onChange={e => onChange(e.target.value || null)}
-        className="bg-fg/5 border border-fg/10 rounded-lg px-1.5 py-1 text-[11px] text-fg focus:outline-none w-[92px]"
-      >
-        <option value="">Ícono…</option>
-        {CATALOGO_ICONOS_BENEFICIOS.map(i => (
-          <option key={i.key} value={i.key} className="bg-neutral-900">{i.label}</option>
-        ))}
-      </select>
-    </span>
   );
 }
 
@@ -288,7 +270,7 @@ function CamposContador({ d, set }) {
     <div className="border-t border-fg/10 pt-2.5">
       <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
         <input
-          type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+          type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
           checked={!!d.contador.activo}
           onChange={e => set({ contador: { ...d.contador, activo: e.target.checked } })}
         />
@@ -318,6 +300,43 @@ function CamposContador({ d, set }) {
   );
 }
 
+/**
+ * Qué va a pasar con el link que se acaba de pegar. Sin esto el comercio
+ * pega una URL, no ve nada distinto y no sabe si la tomó o no.
+ */
+function AvisoVideo({ url, tieneImagen }) {
+  if (!url?.trim()) {
+    return (
+      <p className="text-[10px] text-fg/35 leading-relaxed">
+        Con link se muestra como video; sin link, como imagen suelta.
+      </p>
+    );
+  }
+
+  const video = analizarVideo(url);
+  if (!video) {
+    return <p className="text-[10px] text-amber-400/90 leading-relaxed">No parece un link válido.</p>;
+  }
+
+  const nombre = NOMBRE_PLATAFORMA[video.plataforma];
+
+  if (video.incrustable) {
+    return (
+      <p className="text-[10px] text-emerald-400/90 leading-relaxed">
+        {nombre}: se reproduce en la misma página.
+        {!video.miniatura && !tieneImagen && ' Agregale una portada abajo, o se ve un recuadro vacío.'}
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-[10px] text-fg/45 leading-relaxed">
+      {nombre} no permite reproducir dentro de otra web, así que se abre en otra pestaña.
+      {!tieneImagen && ' Agregale una portada abajo para que se vea algo.'}
+    </p>
+  );
+}
+
 /* ── Campos por sección ───────────────────────────────────────────── */
 
 const CAMPOS = {
@@ -329,7 +348,7 @@ const CAMPOS = {
       >
         {(it, i) => (
           <div className="flex items-center gap-1.5">
-            <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
             <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Envío gratis en todos los pedidos" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
           </div>
         )}
@@ -338,7 +357,7 @@ const CAMPOS = {
       <div className="border-t border-fg/10 pt-2.5">
         <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
           <input
-            type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+            type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
             checked={d.animado !== false}
             onChange={e => set({ animado: e.target.checked })}
           />
@@ -439,7 +458,7 @@ const CAMPOS = {
         {(it, i) => (
           <>
             <div className="flex items-center gap-1.5">
-              <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
               <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Sonido premium" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
             </div>
             <textarea rows={2} className={MINI} value={it.texto || ''} placeholder="Audio Hi-Fi con bajos de alta definición." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
@@ -495,7 +514,7 @@ const CAMPOS = {
             <input className={MINI} value={it.imagen || ''} placeholder="/uploads/… (ruta de una imagen ya subida)" onChange={e => lista.editar('items', i, { imagen: e.target.value })} />
             <label className="flex items-center gap-2 text-[11px] text-fg/60 cursor-pointer">
               <input
-                type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+                type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
                 checked={!!it.video}
                 onChange={e => lista.editar('items', i, { video: e.target.checked })}
               />
@@ -523,11 +542,11 @@ const CAMPOS = {
             <input className={MINI} value={it.caracteristica || ''} placeholder="Cancelación de ruido ANC" onChange={e => lista.editar('items', i, { caracteristica: e.target.value })} />
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-1.5 text-[11px] text-fg/60 cursor-pointer">
-                <input type="checkbox" className="w-3.5 h-3.5 accent-emerald-500" checked={it.nosotros !== false} onChange={e => lista.editar('items', i, { nosotros: e.target.checked })} />
+                <input type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]" checked={it.nosotros !== false} onChange={e => lista.editar('items', i, { nosotros: e.target.checked })} />
                 {d.nosotros || 'Nosotros'}
               </label>
               <label className="flex items-center gap-1.5 text-[11px] text-fg/60 cursor-pointer">
-                <input type="checkbox" className="w-3.5 h-3.5 accent-emerald-500" checked={it.otros === true} onChange={e => lista.editar('items', i, { otros: e.target.checked })} />
+                <input type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]" checked={it.otros === true} onChange={e => lista.editar('items', i, { otros: e.target.checked })} />
                 {d.otros || 'Otras marcas'}
               </label>
             </div>
@@ -562,7 +581,7 @@ const CAMPOS = {
             <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="La calidad de sonido es increíble." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />
             <label className="flex items-center gap-2 text-[11px] text-fg/60 cursor-pointer">
               <input
-                type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+                type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
                 checked={!!it.verificada}
                 onChange={e => lista.editar('items', i, { verificada: e.target.checked })}
               />
@@ -604,7 +623,7 @@ const CAMPOS = {
       {(it, i) => (
         <>
           <div className="flex items-center gap-1.5">
-            <SelectorIcono valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
             <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Garantía 2 años" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
           </div>
           <input className={MINI} value={it.texto || ''} placeholder="Cobertura completa" onChange={e => lista.editar('items', i, { texto: e.target.value })} />

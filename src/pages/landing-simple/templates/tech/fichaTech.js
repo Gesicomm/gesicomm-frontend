@@ -219,17 +219,23 @@ function normalizarSeccion(key, s) {
     case 'beneficios':
       return { ...base, items: lista(base.items, LIMITES.beneficios_items) };
     case 'especificaciones':
+      // Se normaliza el TIPO, nunca el contenido: filtrar acá las filas sin
+      // clave o los textos vacíos hacía que la fila recién agregada
+      // desapareciera en el mismo instante — el panel agrega {clave:'',
+      // valor:''} y esto la borraba antes de que se pudiera escribir nada.
+      // Lo que no se completó se descarta al DIBUJAR (ver TechProductPage),
+      // que es donde importa.
       return {
         ...base,
-        items: lista(base.items, LIMITES.especificaciones_items).filter(i => esObjeto(i) && i.clave),
-        en_la_caja: lista(base.en_la_caja, LIMITES.en_la_caja).filter(t => typeof t === 'string' && t.trim()),
+        items: lista(base.items, LIMITES.especificaciones_items).filter(esObjeto),
+        en_la_caja: lista(base.en_la_caja, LIMITES.en_la_caja).filter(t => typeof t === 'string'),
       };
     case 'multimedia':
       return { ...base, items: lista(base.items, LIMITES.multimedia_items) };
     case 'comparativa':
       return {
         ...base,
-        items: lista(base.items, LIMITES.comparativa_items).map(i => ({
+        items: lista(base.items, LIMITES.comparativa_items).filter(esObjeto).map(i => ({
           caracteristica: i?.caracteristica || '',
           // Por defecto: nosotros sí, los otros no. Es el sentido de la
           // sección; si fuera al revés no habría comparativa que mostrar.
