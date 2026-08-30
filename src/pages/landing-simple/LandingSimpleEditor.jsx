@@ -839,7 +839,6 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               fichaTechActiva={fichaTechActiva}
               fichaTech={productoFichaTech}
               fichaTechResuelta={fichaTechResuelta}
-                  fichaBeautyResuelta={fichaBeautyResuelta}
               fichaTechLanding={fichaTechLanding}
               fichaTechDelProducto={fichaTechDelProducto}
               onFichaTech={setProductoFichaTech}
