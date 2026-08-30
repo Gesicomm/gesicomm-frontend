@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check } from 'lucide-react';
+import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -62,6 +62,25 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   const [ofertas, setOfertas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [creando, setCreando] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
+
+  function openEditar(oferta) {
+    setCreando(false);
+    setEditandoId(oferta.id);
+    const esPaq = oferta.estrategia === 'normal';
+    const c = oferta.componentes?.[0];
+    setForm({
+      estrategia: oferta.estrategia || 'normal',
+      nombre: oferta.nombre || '',
+      unidades: esPaq && c ? c.cantidad : 2,
+      precio: esPaq ? oferta.precio_normal || oferta.precio || '' : '',
+      bumpProductoId: !esPaq && c ? c.producto_id : null,
+      precio_order_bump: !esPaq ? oferta.precio_order_bump || '' : '',
+      descripcion: oferta.descripcion || '',
+      imagen_archivo: null,
+    });
+    setErrorOferta('');
+  }
 
   // Dónde se muestran los order bumps de esta landing. Un paquete no se
   // configura acá: siempre va en la ficha del producto.
@@ -139,7 +158,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setForm(prev => ({ ...formVacio(), estrategia: valor, nombre: prev.nombre, descripcion: prev.descripcion, imagen_archivo: prev.imagen_archivo }));
   }
 
-  async function crearOferta(e) {
+  async function guardarOferta(e) {
     e.preventDefault();
     setErrorOferta('');
 
@@ -161,11 +180,11 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
         descripcion: form.descripcion || '',
       };
 
-      const creada = esPaquete
+      const payload = esPaquete
         // Paquete = el mismo producto, más unidades. Un solo componente: el
         // producto de esta ficha. El backend exige justamente eso para un
         // 'pack' (ver OfertaService.validarComponentesParaTipo).
-        ? await ofertaService.crear(producto.id, {
+        ? {
           ...comun,
           estrategia: 'normal',
           tipo_contenido: 'pack',
@@ -173,8 +192,8 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
           precio_normal: Number(form.precio),
           precio_order_bump: null,
           componentes: [{ producto_id: producto.id, cantidad: Number(form.unidades) }],
-        })
-        : await ofertaService.crear(producto.id, {
+        }
+        : {
           ...comun,
           estrategia: 'order_bump',
           tipo_contenido: 'combo',
@@ -185,16 +204,21 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
           precio_order_bump: form.precio_order_bump === '' || form.precio_order_bump === null
             ? null : Number(form.precio_order_bump),
           componentes: [{ producto_id: Number(form.bumpProductoId), cantidad: 1 }],
-        });
+        };
 
-      // La oferta recién se crea acá arriba, así que la imagen elegida antes
+      const guardada = editandoId
+        ? await ofertaService.actualizar(editandoId, payload)
+        : await ofertaService.crear(producto.id, payload);
+
+      // La oferta recién se guarda acá arriba, así que la imagen elegida antes
       // (guardada como File en form.imagen_archivo, ver OfertaImagenPicker en
       // modo "sin id") se sube recién ahora. Si falla, la oferta ya quedó
-      // creada igual — se avisa sin deshacer nada.
-      const avisoImagen = await subirImagenPendiente(creada?.id, form.imagen_archivo);
+      // guardada igual — se avisa sin deshacer nada.
+      const avisoImagen = await subirImagenPendiente(guardada?.id, form.imagen_archivo);
 
       await cargarOfertas();
       setCreando(false);
+      setEditandoId(null);
       setForm(formVacio());
       if (avisoImagen) setErrorOferta(avisoImagen);
     } catch (err) {
@@ -238,18 +262,18 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
           <h3 className="text-sm font-semibold text-[var(--vit-text)]">Ofertas</h3>
           <p className="text-xs text-[var(--vit-muted-2)]">Paquetes en la ficha y Order Bumps en el checkout de {producto.nombre || producto.etiqueta}.</p>
         </div>
-        {!creando && (
+        {!creando && !editandoId && (
           <button type="button" onClick={() => setCreando(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--vit-text)] bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md hover:border-[var(--vit-accent)] transition-colors">
             <Plus size={14} /> Nueva
           </button>
         )}
       </div>
 
-      {creando && (
-        <form onSubmit={crearOferta} className="bg-[var(--vit-surface)] border border-[var(--vit-border)] rounded-lg p-3">
+      {(creando || editandoId) && (
+        <form onSubmit={guardarOferta} className="bg-[var(--vit-surface)] border border-[var(--vit-border)] rounded-lg p-3">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[var(--vit-text)]">Nueva Oferta</span>
-            <button type="button" onClick={() => { setCreando(false); setForm(formVacio()); setErrorOferta(''); }} className="text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
+            <span className="text-xs font-semibold text-[var(--vit-text)]">{editandoId ? 'Editar Oferta' : 'Nueva Oferta'}</span>
+            <button type="button" onClick={() => { setCreando(false); setEditandoId(null); setForm(formVacio()); setErrorOferta(''); }} className="text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
           </div>
 
           {errorOferta && <div className="text-xs text-red-500 mb-2">{errorOferta}</div>}
@@ -415,9 +439,14 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                       </div>
                     )}
                   </div>
-                  <button type="button" onClick={() => eliminarOferta(of.id)} className="shrink-0 text-[var(--vit-muted-2)] hover:text-red-400 p-1 rounded-md transition-colors">
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <button type="button" onClick={() => eliminarOferta(of.id)} className="text-[var(--vit-muted-2)] hover:text-red-400 p-1 rounded-md transition-colors" title="Eliminar oferta">
+                      <Trash2 size={14} />
+                    </button>
+                    <button type="button" onClick={() => openEditar(of)} className="text-[var(--vit-muted-2)] hover:text-[var(--vit-accent)] p-1 rounded-md transition-colors" title="Editar oferta">
+                      <Edit size={14} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Imagen propia de la oferta. Es la MISMA que se carga desde
