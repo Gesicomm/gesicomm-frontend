@@ -66,6 +66,11 @@ export const CLAVES_SECCIONES = SECCIONES_FICHA.map(s => s.key);
 export const DEFAULTS_FICHA = {
   anuncio: {
     activo: true,
+    // La cinta se desplaza de derecha a izquierda. Se puede apagar y queda
+    // la barra centrada de siempre (ver BarraMarquee.jsx).
+    animado: true,
+    velocidad: 28,
+    separador: '✦',
     items: [
       { icono: 'truck',  texto: 'Envío gratis en todos los pedidos' },
       { icono: 'shield', texto: 'Garantía de 60 días' },
@@ -198,7 +203,13 @@ function normalizarSeccion(key, s) {
   const base = { ...s, activo: s.activo !== false };
   switch (key) {
     case 'anuncio':
-      return { ...base, items: lista(base.items, LIMITES.anuncio_items), cta_texto: base.cta_texto || '' };
+      return {
+        ...base,
+        items: lista(base.items, LIMITES.anuncio_items),
+        cta_texto: base.cta_texto || '',
+        // Fuera de rango no se lee o parece trabada; ver BarraMarquee.
+        velocidad: numeroEntre(base.velocidad, 8, 120, 28),
+      };
     case 'hero':
       return { ...base, checklist: lista(base.checklist, LIMITES.hero_checklist).filter(t => typeof t === 'string') };
     case 'prueba_social':

@@ -559,6 +559,38 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
    * `tipo` — abrirProducto necesita el registro del catálogo para traer
    * detalle/imágenes/FAQ, así que se resuelve por id antes de abrirlo.
    */
+  /**
+   * Precio ancla (el precio tachado) del producto abierto. Vive en el
+   * LandingItem, no en el Producto: es de ESTA landing, así que el mismo
+   * producto puede tener un ancla distinto en cada una. Hasta ahora solo se
+   * podía tocar desde la pestaña Catálogo, dentro del picker — había que
+   * salir de la ficha, buscar el producto en la lista y volver.
+   *
+   * `null` = sin ancla propio; la ficha cae al precio_tachado del producto
+   * global, igual que antes.
+   */
+  function itemDeLanding(producto) {
+    if (!producto) return null;
+    return items.find(i => (
+      Number(i.referencia_id) === Number(producto.id) && i.tipo === (producto.tipo || 'producto')
+    )) || null;
+  }
+
+  function precioAnclaDe(producto) {
+    return itemDeLanding(producto)?.precio_ancla ?? null;
+  }
+
+  function cambiarPrecioAncla(valor) {
+    if (!productoPreview) return;
+    const limpio = valor === '' || valor === null || valor === undefined ? null : Number(valor);
+    setItems(prev => prev.map(i => (
+      Number(i.referencia_id) === Number(productoPreview.id) && i.tipo === (productoPreview.tipo || 'producto')
+        ? { ...i, precio_ancla: Number.isFinite(limpio) ? limpio : null }
+        : i
+    )));
+    setProductoAviso('');
+  }
+
   function abrirRelacionado(rel) {
     const delCatalogo = (catalogo.productos || []).find(p => Number(p.id) === Number(rel?.id));
     if (delCatalogo) abrirProducto(delCatalogo);
@@ -610,7 +642,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       };
 
       const contenidoNuevo = { ...contenido, productos: porProducto };
-      await landingSimpleService.actualizar(id, { content: contenidoNuevo });
+      // `items` va en el mismo guardado porque el precio ancla vive ahí (en
+      // el LandingItem) y ahora se edita desde este panel: sin esto, el
+      // comercio lo escribe, aprieta "Guardar cambios" y se pierde sin que
+      // nada se lo diga.
+      await landingSimpleService.actualizar(id, { content: contenidoNuevo, items });
       setDraft(prev => ({ ...prev, content: contenidoNuevo }));
 
       setProductoAviso('Cambios guardados en esta landing.');
@@ -790,6 +826,9 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               config={draft?.content || {}}
               onChange={(k, v) => campo(k, v)}
               onOfertasChange={setProductoOfertas}
+              precioAncla={precioAnclaDe(productoPreview)}
+              onPrecioAncla={itemDeLanding(productoPreview) ? cambiarPrecioAncla : null}
+              precioActual={productoPreview?.precio_efectivo ?? productoPreview?.precio_base ?? productoPreview?.precio ?? null}
               fichaActiva={fichaActiva}
               ficha={productoFicha}
               fichaResuelta={fichaResuelta}
@@ -942,6 +981,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
+                  precioAnclaEnVivo={precioAnclaDe(productoPreview)}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
                 />
@@ -988,6 +1028,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
+                  precioAnclaEnVivo={precioAnclaDe(productoPreview)}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
                 />
@@ -1084,6 +1125,10 @@ function PreviewContent({
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
   fichaResuelta = null, fichaTechResuelta = null, fichaBeautyResuelta = null,
   onCerrarProducto = null, onAbrirRelacionado = null,
+  // El precio ancla se edita en el panel del producto y vive en `items`;
+  // `productoPreview` es una foto del catálogo del momento en que se abrió,
+  // así que sin esto el preview no reflejaría el cambio hasta reabrirlo.
+  precioAnclaEnVivo = null,
 }) {
   if (productoPreview) {
     const ofertasPublicas = productoOfertas.map(o => ofertaAFormaPublica(o, productoPreview?.id));
@@ -1115,7 +1160,7 @@ function PreviewContent({
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
-              precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+              precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
               faq: productoFaq,
@@ -1149,7 +1194,7 @@ function PreviewContent({
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
-              precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+              precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
               faq: productoFaq,
@@ -1184,7 +1229,7 @@ function PreviewContent({
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
-              precioAntes: productoPreview.precio_ancla ?? productoPreview.precio_tachado ?? null,
+              precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
               faq: productoFaq,

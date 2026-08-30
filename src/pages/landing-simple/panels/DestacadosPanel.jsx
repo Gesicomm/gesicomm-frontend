@@ -116,7 +116,7 @@ export default function DestacadosPanel({ items, catalogo, onChange, draft, onCa
             return (
               <div
                 key={`${item.tipo}:${item.referencia_id}`}
-                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-primary' : activo ? 'border-primary/40 bg-primary/[0.07]' : 'border-fg/10 bg-white/[0.02]'}`}
+                className={`rounded-lg p-2.5 flex flex-col gap-2.5 transition-colors border ${arrastrando === idx ? 'opacity-40' : ''} ${encima === idx && arrastrando !== idx ? 'border-primary' : activo ? 'border-primary/40 bg-primary/[0.07]' : 'border-fg/10 bg-fg/[0.02]'}`}
                 draggable={habilitada === idx}
                 onDragStart={() => setArrastrando(idx)}
                 onDragOver={(e) => { e.preventDefault(); setEncima(idx); }}

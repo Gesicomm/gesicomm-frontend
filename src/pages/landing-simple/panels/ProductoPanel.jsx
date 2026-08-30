@@ -6,6 +6,8 @@ import ProductPicker from '../../landing/ProductPicker';
 import ProductCheckoutOfertas from '../../landing/ProductCheckoutOfertas';
 import FichaFitnessPanel from './FichaFitnessPanel';
 import FichaTechPanel from './FichaTechPanel';
+import CurrencyInput from '../../../components/CurrencyInput';
+import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import FichaBeautyPanel from './FichaBeautyPanel';
 import '../../landing/landing.css';
 
@@ -30,6 +32,9 @@ export default function ProductoPanel({
   fichaTechLanding = null, fichaTechDelProducto = null, onFichaTech = null,
   fichaBeautyActiva = false, fichaBeauty = null, fichaBeautyResuelta = null, fichaBeautyLanding = null, fichaBeautyDelProducto = null, onFichaBeauty = null,
   descripcion, onDescripcion,
+  // Precio tachado de ESTE producto en ESTA landing (LandingItem.precio_ancla).
+  // `precioActual` es solo para calcular el descuento que se muestra al lado.
+  precioAncla = null, onPrecioAncla = null, precioActual = null,
   packs = [],
   imagenes, imagenesEditables = true, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
   faqTitulo, onFaqTitulo,
@@ -118,15 +123,15 @@ export default function ProductoPanel({
                 {imagenes.map(img => (
                   <div key={img.id} className="relative w-14 h-14 rounded-lg overflow-hidden border border-fg/10 group">
                     <img src={getMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                    {img.es_principal && <span className="absolute top-0.5 left-0.5 bg-white rounded-full p-0.5"><Star size={9} className="text-black" fill="black" /></span>}
+                    {img.es_principal && <span className="absolute top-0.5 left-0.5 bg-fg rounded-full p-0.5"><Star size={9} className="text-canvas" fill="var(--color-canvas)" /></span>}
                     {imagenesEditables && (
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                         {!img.es_principal && (
-                          <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-white hover:bg-white/80">
+                          <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-fg hover:bg-fg/80">
                             <Star size={11} />
                           </button>
                         )}
-                        <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-white hover:bg-white/80">
+                        <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-fg hover:bg-fg/80">
                           <Trash2 size={11} />
                         </button>
                       </div>
@@ -301,5 +306,42 @@ export default function ProductoPanel({
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Qué va a ver el cliente con el ancla que se acaba de escribir. Un ancla
+ * por debajo del precio real no muestra nada (sería un "descuento" negativo)
+ * y sin este aviso el comercio lo escribe, no ve cambios en el preview y no
+ * entiende por qué.
+ */
+function ResumenAncla({ ancla, actual }) {
+  const a = Number(ancla);
+  const p = Number(actual);
+
+  if (!ancla) {
+    return (
+      <p className="text-[11px] text-fg/30 mt-1.5 leading-relaxed">
+        Vale solo para esta landing. Vacío = se usa el precio tachado del producto, si tiene.
+      </p>
+    );
+  }
+
+  if (!Number.isFinite(a) || !Number.isFinite(p) || p <= 0) return null;
+
+  if (a <= p) {
+    return (
+      <p className="text-[11px] text-amber-400/90 mt-1.5 leading-relaxed">
+        Tiene que ser mayor que el precio de venta ({formatPrecio(p)}) para que se vea tachado. Así como está,
+        la ficha no muestra ni el tachado ni el descuento.
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-[11px] text-emerald-400/90 mt-1.5 leading-relaxed">
+      Se muestra <s className="opacity-70">{formatPrecio(a)}</s> junto a {formatPrecio(p)} — descuento del{' '}
+      {Math.round((1 - p / a) * 100)}%.
+    </p>
   );
 }

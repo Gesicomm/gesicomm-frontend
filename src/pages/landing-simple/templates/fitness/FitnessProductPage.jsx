@@ -10,6 +10,7 @@ import { ahorroDePack, precioUnitarioDePack, inicialesDe } from './fichaFitness'
 import { RedesSocialesFooter } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
+import BarraMarquee from '../BarraMarquee';
 import './fitnessProductPage.css';
 
 /**
@@ -94,21 +95,26 @@ export default function FitnessProductPage({
     <div className={`fpp-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
       {/* 1 · Barra de anuncio ─────────────────────────────────────── */}
       {ficha.anuncio.activo && ficha.anuncio.items.length > 0 && (
-        <div className="fpp-anuncio">
-          {ficha.anuncio.items.map((a, i) => {
+        <BarraMarquee
+          className="fpp-anuncio"
+          items={ficha.anuncio.items}
+          animado={ficha.anuncio.animado !== false}
+          velocidad={ficha.anuncio.velocidad}
+          separador={ficha.anuncio.separador}
+          renderItem={(a, i) => {
             const Icono = getIconoBeneficio(a.icono);
             return (
               <span className="fpp-anuncio-item" key={i}>
                 <Icono size={14} /> {a.texto}
               </span>
             );
-          })}
-          {ficha.anuncio.cta_texto && (
+          }}
+          cta={ficha.anuncio.cta_texto ? (
             <button type="button" className="fpp-anuncio-cta" onClick={irAOfertas}>
               {ficha.anuncio.cta_texto}
             </button>
-          )}
-        </div>
+          ) : null}
+        />
       )}
 
       <div className="fpp-wrap">

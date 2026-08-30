@@ -64,7 +64,7 @@ export default function FunnelSelector() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 pb-20">
       {/* Navbar/Header */}
-      <header className="sticky top-0 z-20 border-b border-gray-200 bg-white shadow-sm">
+      <header className="sticky top-0 z-20 border-b border-gray-200 bg-fg shadow-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <button
@@ -114,7 +114,7 @@ export default function FunnelSelector() {
             return (
               <div 
                 key={tpl.id}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-fg shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
                 {/* Image Placeholder or Preview */}
                 <div className="aspect-[4/3] w-full bg-gray-100 relative overflow-hidden border-b border-gray-100">

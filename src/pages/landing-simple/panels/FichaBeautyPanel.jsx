@@ -6,9 +6,9 @@ import {
 } from '../templates/beauty/fichaBeauty';
 import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/25 focus:outline-none focus:border-white/30';
-const MINI = 'bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[13px] text-white placeholder:text-white/25 focus:outline-none focus:border-white/30';
-const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-white/40 mb-1';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
+const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
+const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-fg/40 mb-1';
 
 export default function FichaBeautyPanel({
   ficha,
@@ -73,7 +73,7 @@ export default function FichaBeautyPanel({
 
   return (
     <div className="p-4 space-y-3 pb-32">
-      <p className="text-sm text-white/70 mb-5 leading-relaxed">
+      <p className="text-sm text-fg/70 mb-5 leading-relaxed">
         {esProducto ? (
           <>Configurá cómo se ve <strong>este producto</strong> en el template Beauty & Skin Care.</>
         ) : (
@@ -88,20 +88,20 @@ export default function FichaBeautyPanel({
         const datos = fichaResuelta[sec.key] || {};
 
         return (
-          <div key={sec.key} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-            <div className={`flex items-center gap-3 p-3.5 transition-colors ${desplegada ? 'bg-white/5' : ''}`}>
+          <div key={sec.key} className="bg-fg/5 border border-fg/10 rounded-xl overflow-hidden">
+            <div className={`flex items-center gap-3 p-3.5 transition-colors ${desplegada ? 'bg-fg/5' : ''}`}>
               <button
                 type="button"
                 onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className={`flex-1 flex items-center gap-3 text-left ${datos.activo ? 'text-white' : 'text-white/40 line-through'}`}
+                className={`flex-1 flex items-center gap-3 text-left ${datos.activo ? 'text-fg' : 'text-fg/40 line-through'}`}
               >
-                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-[#7c5cff] text-white' : 'bg-white/10 text-white/40'}`}>
+                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
                   {sec.numero}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
                   {esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-white/35'}`}>
+                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-fg/35'}`}>
                       {ETIQUETA_FUENTE[fuente]}
                     </span>
                   )}
@@ -120,15 +120,15 @@ export default function FichaBeautyPanel({
               <button
                 type="button"
                 onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className="shrink-0 text-white/30 hover:text-white"
+                className="shrink-0 text-fg/30 hover:text-fg"
               >
                 <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
               </button>
             </div>
 
             {desplegada && (
-              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-white/10 pt-3">
-                <p className="text-[11px] text-white/35 leading-relaxed">{sec.ayuda}</p>
+              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-fg/10 pt-3">
+                <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
 
                 {CAMPOS[sec.key]({
                   d: datos,
@@ -146,7 +146,7 @@ export default function FichaBeautyPanel({
                   <button
                     type="button"
                     onClick={() => volverAHeredar(sec.key)}
-                    className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-white/45 hover:text-white py-1.5"
+                    className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5"
                   >
                     <Link2Off size={12} /> Descartar y volver a heredar
                   </button>
@@ -173,7 +173,7 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
         <input type="text" className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
       )}
       {usaRespaldo && (
-        <p className="text-[10px] text-white/30 mt-1 leading-relaxed">
+        <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">
           Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
         </p>
       )}
@@ -185,7 +185,7 @@ function SelectorIcono({ valor, onChange }) {
   const Icono = getIconoBeneficio(valor);
   return (
     <span className="inline-flex items-center gap-1.5 shrink-0">
-      <span className="grid place-items-center w-7 h-7 rounded-lg bg-white/10 text-white/70"><Icono size={14} /></span>
+      <span className="grid place-items-center w-7 h-7 rounded-lg bg-fg/10 text-fg/70"><Icono size={14} /></span>
       <select
         value={valor || ''}
         onChange={e => onChange(e.target.value || null)}
@@ -214,14 +214,14 @@ function ListaTextos({ valores = [], max, textoAgregar, placeholder, onCambio })
     <div className="flex flex-col gap-2 mt-1">
       {valores.map((v, i) => (
         <div key={i} className="flex items-center gap-1.5">
-          <button type="button" onClick={() => mv(i, -1)} disabled={i === 0} className="text-white/20 hover:text-white disabled:opacity-30"><ChevronDown size={14} className="rotate-180" /></button>
-          <button type="button" onClick={() => mv(i, 1)} disabled={i === valores.length - 1} className="text-white/20 hover:text-white disabled:opacity-30"><ChevronDown size={14} /></button>
+          <button type="button" onClick={() => mv(i, -1)} disabled={i === 0} className="text-fg/20 hover:text-fg disabled:opacity-30"><ChevronDown size={14} className="rotate-180" /></button>
+          <button type="button" onClick={() => mv(i, 1)} disabled={i === valores.length - 1} className="text-fg/20 hover:text-fg disabled:opacity-30"><ChevronDown size={14} /></button>
           <input className={`${MINI} flex-1 min-w-0`} value={v || ''} placeholder={placeholder} onChange={e => edit(i, e.target.value)} />
-          <button type="button" onClick={() => del(i)} className="text-white/20 hover:text-red-400 p-1"><Trash2 size={13} /></button>
+          <button type="button" onClick={() => del(i)} className="text-fg/20 hover:text-red-400 p-1"><Trash2 size={13} /></button>
         </div>
       ))}
       {valores.length < max && (
-        <button type="button" onClick={add} className="inline-flex items-center justify-center gap-1.5 py-1.5 mt-1 border border-dashed border-white/20 rounded-lg text-[11px] font-medium text-white/50 hover:text-white hover:border-white/40">
+        <button type="button" onClick={add} className="inline-flex items-center justify-center gap-1.5 py-1.5 mt-1 border border-dashed border-fg/20 rounded-lg text-[11px] font-medium text-fg/50 hover:text-fg hover:border-fg/40">
           <Plus size={12} /> {textoAgregar} ({valores.length}/{max})
         </button>
       )}
@@ -233,17 +233,17 @@ function ListaEditable({ items = [], max, campo, lista, textoAgregar, nuevo, chi
   return (
     <div className="flex flex-col gap-3">
       {items.map((it, i) => (
-        <div key={i} className="flex gap-2 items-start bg-black/20 p-2.5 rounded-lg border border-white/5 relative group">
+        <div key={i} className="flex gap-2 items-start bg-black/20 p-2.5 rounded-lg border border-fg/5 relative group">
           <div className="flex flex-col gap-1.5 flex-1 min-w-0">{children(it, i)}</div>
           <div className="flex flex-col items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button type="button" onClick={() => lista.mover(campo, i, -1)} disabled={i===0} className="text-white/30 hover:text-white disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
-            <button type="button" onClick={() => lista.quitar(campo, i)} className="text-white/30 hover:text-red-400 p-1"><Trash2 size={12} /></button>
-            <button type="button" onClick={() => lista.mover(campo, i, 1)} disabled={i===items.length-1} className="text-white/30 hover:text-white disabled:opacity-10"><ChevronDown size={12} /></button>
+            <button type="button" onClick={() => lista.mover(campo, i, -1)} disabled={i===0} className="text-fg/30 hover:text-fg disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
+            <button type="button" onClick={() => lista.quitar(campo, i)} className="text-fg/30 hover:text-red-400 p-1"><Trash2 size={12} /></button>
+            <button type="button" onClick={() => lista.mover(campo, i, 1)} disabled={i===items.length-1} className="text-fg/30 hover:text-fg disabled:opacity-10"><ChevronDown size={12} /></button>
           </div>
         </div>
       ))}
       {items.length < max && (
-        <button type="button" onClick={() => lista.agregar(campo, nuevo())} className="inline-flex items-center justify-center gap-1.5 py-2 mt-1 border border-dashed border-white/20 rounded-lg text-[12px] font-medium text-white/50 hover:text-white hover:border-white/40">
+        <button type="button" onClick={() => lista.agregar(campo, nuevo())} className="inline-flex items-center justify-center gap-1.5 py-2 mt-1 border border-dashed border-fg/20 rounded-lg text-[12px] font-medium text-fg/50 hover:text-fg hover:border-fg/40">
           <Plus size={14} /> {textoAgregar} ({items.length}/{max})
         </button>
       )}
@@ -255,8 +255,8 @@ function CamposContador({ d, set }) {
   const c = d.contador || {};
   const setC = (cambios) => set({ contador: { ...c, ...cambios } });
   return (
-    <div className="mt-2 bg-black/20 p-3 rounded-xl border border-white/5 space-y-3">
-      <label className="flex items-center gap-2 text-[12px] text-white/90 font-semibold cursor-pointer">
+    <div className="mt-2 bg-black/20 p-3 rounded-xl border border-fg/5 space-y-3">
+      <label className="flex items-center gap-2 text-[12px] text-fg/90 font-semibold cursor-pointer">
         <input type="checkbox" checked={!!c.activo} onChange={e => setC({ activo: e.target.checked })} className="w-4 h-4 accent-emerald-500" />
         Contador de tiempo limitado
       </label>
@@ -348,8 +348,8 @@ const CAMPOS = {
   ingredientes: ({ d, set }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Los ingredientes se cargan en la pestaña <b className="text-white/60">Rubro</b> en la ventana principal de Mis Productos.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Los ingredientes se cargan en la pestaña <b className="text-fg/60">Rubro</b> en la ventana principal de Mis Productos.
       </p>
     </>
   ),
@@ -357,8 +357,8 @@ const CAMPOS = {
   resultados: ({ d, set }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Los testimonios se cargan en la pestaña <b className="text-white/60">Rubro</b> en la ventana principal de Mis Productos.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Los testimonios se cargan en la pestaña <b className="text-fg/60">Rubro</b> en la ventana principal de Mis Productos.
       </p>
     </>
   ),
@@ -366,8 +366,8 @@ const CAMPOS = {
   como_funciona: ({ d, set }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Los pasos de uso se cargan en la pestaña <b className="text-white/60">Rubro</b> en la ventana principal de Mis Productos.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Los pasos de uso se cargan en la pestaña <b className="text-fg/60">Rubro</b> en la ventana principal de Mis Productos.
       </p>
     </>
   ),
@@ -375,8 +375,8 @@ const CAMPOS = {
   faq: ({ d, set, respaldos }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.faqTitulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Las preguntas se cargan en la pestaña <b className="text-white/60">Detalles</b> de este producto.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Las preguntas se cargan en la pestaña <b className="text-fg/60">Detalles</b> de este producto.
       </p>
     </>
   ),
@@ -384,8 +384,8 @@ const CAMPOS = {
   upsells: ({ d, set, respaldos }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.upsellsTitulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Los productos se eligen en la pestaña <b className="text-white/60">Relacionados</b>.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Los productos se eligen en la pestaña <b className="text-fg/60">Relacionados</b>.
       </p>
     </>
   ),

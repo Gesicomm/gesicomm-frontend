@@ -6,9 +6,9 @@ import {
 } from '../templates/tech/fichaTech';
 import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
 
-const CAMPO = 'w-full bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-[13px] text-white placeholder:text-white/25 focus:outline-none focus:border-white/30';
-const MINI = 'bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[13px] text-white placeholder:text-white/25 focus:outline-none focus:border-white/30';
-const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-white/40 mb-1';
+const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
+const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
+const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-fg/40 mb-1';
 
 /**
  * Editor de la ficha de producto del template Electrónica & Tecnología —
@@ -74,7 +74,7 @@ export default function FichaTechPanel({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-[11px] text-white/40 leading-relaxed">
+      <p className="text-[11px] text-fg/40 leading-relaxed">
         {esProducto
           ? 'La ficha toma lo que ya cargaste en el producto (Marketing & Embudo y la pestaña del rubro Tecnología). Lo que escribas acá vale solo para este producto en esta landing.'
           : 'Estos valores los heredan todas las fichas de producto de esta landing. Cada producto puede pisarlos desde su propia pestaña Ficha.'}
@@ -89,20 +89,20 @@ export default function FichaTechPanel({
         const desplegada = abierta === sec.key;
 
         return (
-          <div key={sec.key} className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+          <div key={sec.key} className="border border-fg/10 rounded-xl overflow-hidden bg-fg/[0.02]">
             <div className="flex items-center gap-2 px-3 py-2.5">
               <button
                 type="button"
                 onClick={() => setAbierta(desplegada ? null : sec.key)}
                 className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
               >
-                <span className={`grid place-items-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-white text-black' : 'bg-white/10 text-white/40'}`}>
+                <span className={`grid place-items-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
                   {sec.numero}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
                   {esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-white/35'}`}>
+                    <span className={`block text-[10px] truncate ${propia ? 'text-emerald-400/80' : 'text-fg/35'}`}>
                       {ETIQUETA_FUENTE[fuente]}
                     </span>
                   )}
@@ -121,15 +121,15 @@ export default function FichaTechPanel({
               <button
                 type="button"
                 onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className="shrink-0 text-white/30 hover:text-white"
+                className="shrink-0 text-fg/30 hover:text-fg"
               >
                 <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
               </button>
             </div>
 
             {desplegada && (
-              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-white/10 pt-3">
-                <p className="text-[11px] text-white/35 leading-relaxed">{sec.ayuda}</p>
+              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-fg/10 pt-3">
+                <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
 
                 {CAMPOS[sec.key]({
                   d: datos,
@@ -147,7 +147,7 @@ export default function FichaTechPanel({
                   <button
                     type="button"
                     onClick={() => volverAHeredar(sec.key)}
-                    className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-white/45 hover:text-white py-1.5"
+                    className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5"
                   >
                     <Link2Off size={12} /> Descartar y volver a heredar
                   </button>
@@ -182,7 +182,7 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
         <input type="text" className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
       )}
       {usaRespaldo && (
-        <p className="text-[10px] text-white/30 mt-1 leading-relaxed">
+        <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">
           Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
         </p>
       )}
@@ -194,11 +194,11 @@ function SelectorIcono({ valor, onChange }) {
   const Icono = getIconoBeneficio(valor);
   return (
     <span className="inline-flex items-center gap-1.5 shrink-0">
-      <span className="grid place-items-center w-7 h-7 rounded-lg bg-white/10 text-white/70"><Icono size={14} /></span>
+      <span className="grid place-items-center w-7 h-7 rounded-lg bg-fg/10 text-fg/70"><Icono size={14} /></span>
       <select
         value={valor || ''}
         onChange={e => onChange(e.target.value || null)}
-        className="bg-white/5 border border-white/10 rounded-lg px-1.5 py-1 text-[11px] text-white focus:outline-none w-[92px]"
+        className="bg-fg/5 border border-fg/10 rounded-lg px-1.5 py-1 text-[11px] text-fg focus:outline-none w-[92px]"
       >
         <option value="">Ícono…</option>
         {CATALOGO_ICONOS_BENEFICIOS.map(i => (
@@ -211,13 +211,13 @@ function SelectorIcono({ valor, onChange }) {
 
 function Fila({ children, onSubir, onBajar, onQuitar }) {
   return (
-    <div className="flex items-start gap-1.5 bg-white/[0.03] border border-white/10 rounded-lg p-2">
-      <div className="flex flex-col text-white/25 pt-0.5">
-        <button type="button" onClick={onSubir} className="hover:text-white leading-none text-[10px]">▲</button>
-        <button type="button" onClick={onBajar} className="hover:text-white leading-none text-[10px]">▼</button>
+    <div className="flex items-start gap-1.5 bg-fg/[0.03] border border-fg/10 rounded-lg p-2">
+      <div className="flex flex-col text-fg/25 pt-0.5">
+        <button type="button" onClick={onSubir} className="hover:text-fg leading-none text-[10px]">▲</button>
+        <button type="button" onClick={onBajar} className="hover:text-fg leading-none text-[10px]">▼</button>
       </div>
       <div className="flex-1 min-w-0 flex flex-col gap-1.5">{children}</div>
-      <button type="button" onClick={onQuitar} className="text-white/25 hover:text-red-400 pt-0.5"><Trash2 size={13} /></button>
+      <button type="button" onClick={onQuitar} className="text-fg/25 hover:text-red-400 pt-0.5"><Trash2 size={13} /></button>
     </div>
   );
 }
@@ -228,7 +228,7 @@ function BotonAgregar({ onClick, disabled, children }) {
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-white disabled:opacity-35 disabled:cursor-not-allowed w-fit"
+      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg disabled:opacity-35 disabled:cursor-not-allowed w-fit"
     >
       <Plus size={12} /> {children}
     </button>
@@ -285,7 +285,7 @@ function ListaTextos({ valores, max, textoAgregar, placeholder, onCambio }) {
 
 function CamposContador({ d, set }) {
   return (
-    <div className="border-t border-white/10 pt-2.5">
+    <div className="border-t border-fg/10 pt-2.5">
       <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
         <input
           type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
@@ -308,7 +308,7 @@ function CamposContador({ d, set }) {
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-white/35 leading-relaxed mt-1.5">
+          <p className="text-[10px] text-fg/35 leading-relaxed mt-1.5">
             Arranca en este tiempo cada vez que alguien abre la página y baja hasta cero. No hay una fecha
             límite real detrás.
           </p>
@@ -335,6 +335,35 @@ const CAMPOS = {
         )}
       </ListaEditable>
       <Texto label="Texto del botón" valor={d.cta_texto} placeholder="Comprar ahora — vacío = sin botón" onChange={v => set({ cta_texto: v })} />
+      <div className="border-t border-fg/10 pt-2.5">
+        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
+          <input
+            type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+            checked={d.animado !== false}
+            onChange={e => set({ animado: e.target.checked })}
+          />
+          Desplazar los mensajes
+        </label>
+        {d.animado !== false && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={ETIQUETA}>Segundos por vuelta</label>
+                <input
+                  type="number" min="8" max="120" className={CAMPO}
+                  value={d.velocidad}
+                  onChange={e => set({ velocidad: e.target.value })}
+                />
+              </div>
+              <Texto label="Separador" valor={d.separador} placeholder="✦" onChange={v => set({ separador: v })} />
+            </div>
+            <p className="text-[10px] text-fg/35 leading-relaxed mt-1.5">
+              Más segundos = más lento. Se pausa cuando el visitante pasa el mouse, y no se mueve para
+              quien pidió menos animaciones en su sistema.
+            </p>
+          </>
+        )}
+      </div>
     </>
   ),
 
@@ -372,7 +401,7 @@ const CAMPOS = {
       </div>
       <Texto label="Cantidad de reseñas" valor={d.resenas_texto} placeholder="1.248 reseñas" onChange={v => set({ resenas_texto: v })} />
       <Texto label="Clientes satisfechos" valor={d.clientes_texto} placeholder="+5.000 clientes satisfechos" onChange={v => set({ clientes_texto: v })} />
-      <p className="text-[10px] text-white/35 leading-relaxed">
+      <p className="text-[10px] text-fg/35 leading-relaxed">
         Se muestra en el encabezado, al lado del precio. Publicá números reales.
       </p>
     </>
@@ -393,8 +422,8 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <Texto label="Cómo se llama el grupo" valor={d.etiqueta_grupo} placeholder="Versión, Color, Capacidad…" onChange={v => set({ etiqueta_grupo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Las opciones salen de las <b className="text-white/60">variantes del producto</b>, que se cargan en Mis Productos.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Las opciones salen de las <b className="text-fg/60">variantes del producto</b>, que se cargan en Mis Productos.
         Acá solo se configura cómo se presentan.
       </p>
     </>
@@ -464,7 +493,7 @@ const CAMPOS = {
           <>
             <input className={MINI} value={it.titulo || ''} placeholder="Video demostrativo" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
             <input className={MINI} value={it.imagen || ''} placeholder="/uploads/… (ruta de una imagen ya subida)" onChange={e => lista.editar('items', i, { imagen: e.target.value })} />
-            <label className="flex items-center gap-2 text-[11px] text-white/60 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] text-fg/60 cursor-pointer">
               <input
                 type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
                 checked={!!it.video}
@@ -493,11 +522,11 @@ const CAMPOS = {
           <>
             <input className={MINI} value={it.caracteristica || ''} placeholder="Cancelación de ruido ANC" onChange={e => lista.editar('items', i, { caracteristica: e.target.value })} />
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-1.5 text-[11px] text-white/60 cursor-pointer">
+              <label className="flex items-center gap-1.5 text-[11px] text-fg/60 cursor-pointer">
                 <input type="checkbox" className="w-3.5 h-3.5 accent-emerald-500" checked={it.nosotros !== false} onChange={e => lista.editar('items', i, { nosotros: e.target.checked })} />
                 {d.nosotros || 'Nosotros'}
               </label>
-              <label className="flex items-center gap-1.5 text-[11px] text-white/60 cursor-pointer">
+              <label className="flex items-center gap-1.5 text-[11px] text-fg/60 cursor-pointer">
                 <input type="checkbox" className="w-3.5 h-3.5 accent-emerald-500" checked={it.otros === true} onChange={e => lista.editar('items', i, { otros: e.target.checked })} />
                 {d.otros || 'Otras marcas'}
               </label>
@@ -505,7 +534,7 @@ const CAMPOS = {
           </>
         )}
       </ListaEditable>
-      <p className="text-[10px] text-white/35 leading-relaxed">
+      <p className="text-[10px] text-fg/35 leading-relaxed">
         Compará con hechos verificables. Afirmar algo falso sobre la competencia es publicidad engañosa.
       </p>
     </>
@@ -531,7 +560,7 @@ const CAMPOS = {
               </select>
             </div>
             <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="La calidad de sonido es increíble." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />
-            <label className="flex items-center gap-2 text-[11px] text-white/60 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] text-fg/60 cursor-pointer">
               <input
                 type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
                 checked={!!it.verificada}
@@ -542,7 +571,7 @@ const CAMPOS = {
           </>
         )}
       </ListaEditable>
-      <p className="text-[10px] text-white/35 leading-relaxed">
+      <p className="text-[10px] text-fg/35 leading-relaxed">
         Publicá solo opiniones reales de clientes, y marcá "compra verificada" únicamente si lo es.
       </p>
     </>
@@ -551,8 +580,8 @@ const CAMPOS = {
   faq: ({ d, set, respaldos }) => (
     <>
       <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.faqTitulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Las preguntas se cargan en la pestaña <b className="text-white/60">Detalles</b> de este producto.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Las preguntas se cargan en la pestaña <b className="text-fg/60">Detalles</b> de este producto.
       </p>
     </>
   ),
@@ -561,8 +590,8 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.upsellsTitulo} onChange={v => set({ titulo: v })} />
       <Texto label="Texto del botón" valor={d.cta_texto} placeholder="Añadir" onChange={v => set({ cta_texto: v })} />
-      <p className="text-[11px] text-white/35 leading-relaxed">
-        Los productos se eligen en la pestaña <b className="text-white/60">Relacionados</b>.
+      <p className="text-[11px] text-fg/35 leading-relaxed">
+        Los productos se eligen en la pestaña <b className="text-fg/60">Relacionados</b>.
       </p>
     </>
   ),

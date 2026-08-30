@@ -232,7 +232,7 @@ export default function MerchantEditor() {
   if (!landing) {
     return (
       <div className="flex h-screen items-center justify-center bg-[var(--vit-bg)]">
-        <div className="text-center p-8 bg-white rounded-lg shadow-sm border border-red-100 max-w-md">
+        <div className="text-center p-8 bg-fg rounded-lg shadow-sm border border-red-100 max-w-md">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 text-gray-800">Embudo no encontrado</h2>
           <p className="text-gray-600 mb-6">No pudimos cargar la configuración. Asegurate de haber seleccionado una estrategia primero.</p>
@@ -292,14 +292,14 @@ export default function MerchantEditor() {
           <div className="flex bg-[var(--vit-surface)] rounded-md p-1 border border-[var(--vit-border)]">
             <button
               onClick={() => setDispositivo('desktop')}
-              className={`p-1.5 rounded-sm transition-colors ${dispositivo === 'desktop' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`p-1.5 rounded-sm transition-colors ${dispositivo === 'desktop' ? 'bg-fg shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
               title="Vista de Computadora"
             >
               <Monitor size={16} />
             </button>
             <button
               onClick={() => setDispositivo('mobile')}
-              className={`p-1.5 rounded-sm transition-colors ${dispositivo === 'mobile' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`p-1.5 rounded-sm transition-colors ${dispositivo === 'mobile' ? 'bg-fg shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
               title="Vista de Celular"
             >
               <Smartphone size={16} />
@@ -457,7 +457,7 @@ export default function MerchantEditor() {
                     <button
                       key={s.id}
                       onClick={() => setSeccionSeleccionadaId(s.id)}
-                      className="group flex items-center gap-3 w-full p-3 text-left bg-white border border-[var(--vit-border)] rounded-xl hover:border-[var(--vit-primary)] hover:shadow-sm transition-all"
+                      className="group flex items-center gap-3 w-full p-3 text-left bg-fg border border-[var(--vit-border)] rounded-xl hover:border-[var(--vit-primary)] hover:shadow-sm transition-all"
                     >
                       <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${configurado ? 'bg-[var(--vit-primary)] text-fg' : 'bg-[var(--vit-surface)] text-[var(--vit-muted)] group-hover:text-[var(--vit-primary)]'}`}>
                         <Icono size={16} />

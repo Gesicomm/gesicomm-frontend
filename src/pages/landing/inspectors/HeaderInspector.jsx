@@ -104,12 +104,12 @@ export default function HeaderInspector({ seccion, onUpdate, onUploadImagen, cat
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-[var(--vit-text)]">Imagen del logo (reemplaza al texto)</span>
           {config.logo_imagen ? (
-            <div className="relative group bg-white border border-[var(--vit-border)] rounded-md p-2 flex justify-center">
+            <div className="relative group bg-fg border border-[var(--vit-border)] rounded-md p-2 flex justify-center">
               <img src={getMediaUrl(config.logo_imagen)} alt="Logo" className="h-12 object-contain" />
               <button
                 type="button"
                 onClick={() => updateConfig({ logo_imagen: null })}
-                className="absolute top-1 right-1 rounded-md bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute top-1 right-1 rounded-md bg-black/60 p-1.5 text-fg opacity-0 transition-opacity group-hover:opacity-100"
               >
                 <Trash2 size={14} />
               </button>

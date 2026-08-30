@@ -1,0 +1,83 @@
+/**
+ * Cinta de anuncios que se desplaza (ver BarraMarquee.jsx).
+ *
+ * Solo layout y movimiento: ni un color. Los colores los pone la clase de
+ * la barra de cada ficha (.tpp-barra, .fpp-anuncio), que ya los deriva del
+ * tema de la landing. Así este archivo sirve para cualquier template sin
+ * arrastrar una paleta propia.
+ */
+
+/* La clase va repetida a propósito. `.bm-barra` y las clases de cada ficha
+   (.fpp-anuncio, .tpp-barra) tienen la misma especificidad, así que ganaba
+   la que el bundler pusiera última — y como cada ficha importa su CSS
+   después de este, ganaban ellas: la cinta heredaba `flex-wrap: wrap` y
+   `justify-content: center`, que son de la versión estática. Repetir la
+   clase sube la especificidad sin recurrir a !important. */
+.bm-barra.bm-barra {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.bm-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  /* Los bordes se desvanecen en vez de cortar el texto de golpe: sin esto
+     las palabras aparecen y desaparecen recortadas contra el borde. */
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+}
+
+.bm-track {
+  display: flex;
+  width: max-content;
+  animation-name: bm-desplazar;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Pausa al pasar el mouse: el visitante que quiere leer un mensaje puede
+   detenerlo en vez de perseguirlo. */
+.bm-barra:hover .bm-track { animation-play-state: paused; }
+
+.bm-grupo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.bm-separador {
+  padding-inline: 16px;
+  opacity: .45;
+  font-size: .8em;
+}
+
+/* La versión sin animación: la barra centrada de toda la vida. */
+.bm-barra.bm-estatica { justify-content: center; }
+
+.bm-estatica-contenido {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  overflow: visible;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+@keyframes bm-desplazar {
+  from { transform: translateX(0); }
+  /* La mitad exacta de la cinta: como las dos mitades son idénticas, al
+     reiniciar el salto no se ve. */
+  to   { transform: translateX(-50%); }
+}
+
+/* Una animación infinita puede marear o dificultar la lectura a quien pidió
+   menos movimiento en su sistema. En ese caso no se mueve nada. */
+@media (prefers-reduced-motion: reduce) {
+  .bm-track { animation: none; transform: none; }
+  .bm-viewport { -webkit-mask-image: none; mask-image: none; }
+}

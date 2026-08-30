@@ -319,7 +319,7 @@ export default function ComplementoConfig({
             cantidad: cantidadNumero,
           })}
           disabled={!puedeConfirmar}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-fg px-4 py-3 text-sm font-bold text-canvas transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {guardando
             ? <><Loader size={16} className="animate-spin" /> Guardando...</>

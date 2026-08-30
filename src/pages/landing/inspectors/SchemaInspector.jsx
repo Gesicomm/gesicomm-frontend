@@ -80,7 +80,7 @@ function CampoImagen({ valor, onChange, onUpload }) {
           <button
             type="button"
             onClick={() => onChange('')}
-            className="absolute top-2 right-2 rounded-md bg-black/60 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100"
+            className="absolute top-2 right-2 rounded-md bg-black/60 p-1.5 text-fg opacity-0 transition-opacity group-hover:opacity-100"
             title="Quitar imagen"
           >
             <Trash2 size={14} />

@@ -8,6 +8,7 @@ import { inicialesDe } from '../fichaComun';
 import { RedesSocialesFooter } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
+import BarraMarquee from '../BarraMarquee';
 import './techProductPage.css';
 
 /**
@@ -85,17 +86,22 @@ export default function TechProductPage({
     <div className={`tpp-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
       {/* 1 · Barra superior ───────────────────────────────────────── */}
       {ficha.barra_superior.activo && ficha.barra_superior.items.length > 0 && (
-        <div className="tpp-barra">
-          {ficha.barra_superior.items.map((a, i) => {
+        <BarraMarquee
+          className="tpp-barra"
+          items={ficha.barra_superior.items}
+          animado={ficha.barra_superior.animado !== false}
+          velocidad={ficha.barra_superior.velocidad}
+          separador={ficha.barra_superior.separador}
+          renderItem={(a, i) => {
             const Icono = getIconoBeneficio(a.icono);
             return <span className="tpp-barra-item" key={i}><Icono size={14} /> {a.texto}</span>;
-          })}
-          {ficha.barra_superior.cta_texto && (
+          }}
+          cta={ficha.barra_superior.cta_texto ? (
             <button type="button" className="tpp-barra-cta" onClick={irACompra}>
               {ficha.barra_superior.cta_texto}
             </button>
-          )}
-        </div>
+          ) : null}
+        />
       )}
 
       <div className="tpp-wrap">

@@ -277,7 +277,7 @@ export default function FunnelEntry() {
                   type="button"
                   onClick={() => elegir(tpl)}
                   disabled={creandoId !== null}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-fg px-4 py-3 text-sm font-bold text-canvas transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {creando
                     ? <><Loader size={16} className="animate-spin" /> Creando...</>

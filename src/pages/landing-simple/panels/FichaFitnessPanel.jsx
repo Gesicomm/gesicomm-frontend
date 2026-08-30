@@ -99,7 +99,7 @@ export default function FichaFitnessPanel({
         const desplegada = abierta === sec.key;
 
         return (
-          <div key={sec.key} className="border border-fg/10 rounded-xl overflow-hidden bg-white/[0.02]">
+          <div key={sec.key} className="border border-fg/10 rounded-xl overflow-hidden bg-fg/[0.02]">
             <div className="flex items-center gap-2 px-3 py-2.5">
               <button
                 type="button"
@@ -192,7 +192,7 @@ function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) 
         <input type="text" className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
       )}
       {usaRespaldo && (
-        <p className="text-[10px] text-white/30 mt-1 leading-relaxed">
+        <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">
           Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
         </p>
       )}
@@ -225,7 +225,7 @@ function SelectorIcono({ valor, onChange }) {
                 <button
                   key={i.key}
                   type="button"
-                  className={`p-1.5 flex items-center justify-center rounded hover:bg-white/10 text-fg transition-colors ${valor === i.key ? 'bg-white/10 text-emerald-400 border border-fg/20' : ''}`}
+                  className={`p-1.5 flex items-center justify-center rounded hover:bg-white/10 text-fg transition-colors ${valor === i.key ? 'bg-fg/10 text-emerald-400 border border-fg/20' : ''}`}
                   onClick={() => {
                     onChange(i.key);
                     setOpen(false);
@@ -246,7 +246,7 @@ function SelectorIcono({ valor, onChange }) {
 /** Fila de una lista repetible: mover, contenido y borrar. */
 function Fila({ children, onSubir, onBajar, onQuitar }) {
   return (
-    <div className="flex items-start gap-1.5 bg-white/[0.03] border border-fg/10 rounded-lg p-2">
+    <div className="flex items-start gap-1.5 bg-fg/[0.03] border border-fg/10 rounded-lg p-2">
       <div className="flex flex-col text-fg/25 pt-0.5">
         <button type="button" onClick={onSubir} className="hover:text-fg leading-none text-[10px]">▲</button>
         <button type="button" onClick={onBajar} className="hover:text-fg leading-none text-[10px]">▼</button>
@@ -308,6 +308,35 @@ const CAMPOS = {
         )}
       </ListaEditable>
       <Texto label="Texto del botón" valor={d.cta_texto} placeholder="Comprar ahora — vacío = sin botón" onChange={v => set({ cta_texto: v })} />
+      <div className="border-t border-fg/10 pt-2.5">
+        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
+          <input
+            type="checkbox" className="w-3.5 h-3.5 accent-emerald-500"
+            checked={d.animado !== false}
+            onChange={e => set({ animado: e.target.checked })}
+          />
+          Desplazar los mensajes
+        </label>
+        {d.animado !== false && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className={ETIQUETA}>Segundos por vuelta</label>
+                <input
+                  type="number" min="8" max="120" className={CAMPO}
+                  value={d.velocidad}
+                  onChange={e => set({ velocidad: e.target.value })}
+                />
+              </div>
+              <Texto label="Separador" valor={d.separador} placeholder="✦" onChange={v => set({ separador: v })} />
+            </div>
+            <p className="text-[10px] text-fg/35 leading-relaxed mt-1.5">
+              Más segundos = más lento. Se pausa cuando el visitante pasa el mouse, y no se mueve para
+              quien pidió menos animaciones en su sistema.
+            </p>
+          </>
+        )}
+      </div>
     </>
   ),
 
@@ -401,7 +430,7 @@ const CAMPOS = {
               const conf = d.packs?.[String(p.id)] || {};
               const guardar = (cambios) => set({ packs: { ...(d.packs || {}), [String(p.id)]: { ...conf, ...cambios } } });
               return (
-                <div key={p.id} className="bg-white/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
+                <div key={p.id} className="bg-fg/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
                   <p className="text-[11px] font-semibold text-fg/70 truncate">{p.nombre}</p>
                   <input className={MINI} value={conf.badge || ''} placeholder="Más vendido" onChange={e => guardar({ badge: e.target.value })} />
                   <input className={MINI} value={conf.subtitulo || ''} placeholder="Subtítulo (ej: 90 días)" onChange={e => guardar({ subtitulo: e.target.value })} />
