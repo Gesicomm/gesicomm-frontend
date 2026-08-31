@@ -529,8 +529,8 @@ export default function FunnelView({ data, slug, productId }) {
     });
   }
 
-  const categorias = useMemo(() => data ? [...new Set(data.items.map(i => i.categoria).filter(Boolean))] : [], [data]);
-  const marcas = useMemo(() => data ? [...new Set(data.items.map(i => i.marca).filter(Boolean))] : [], [data]);
+  const categorias = useMemo(() => data ? [...new Set((data?.items || []).map(i => i.categoria).filter(Boolean))] : [], [data]);
+  const marcas = useMemo(() => data ? [...new Set((data?.items || []).map(i => i.marca).filter(Boolean))] : [], [data]);
 
   // Imagen de cada categoría para LandingCategoryStrip: la primera foto
   // disponible entre los items curados de ESTA landing en esa categoría —
