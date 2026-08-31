@@ -114,6 +114,7 @@ export default function ContactoPublico() {
         onCantidad={cartState.cambiarCantidadCarrito}
         onQuitar={cartState.quitarDelCarrito}
         onConfirmarPedido={cartState.confirmarPedido}
+        pasarelas={data?.checkout?.pasarelas || []}
       />
 
       {/* Mismo pie que el home y el catálogo — consistente en las 3 páginas. */}

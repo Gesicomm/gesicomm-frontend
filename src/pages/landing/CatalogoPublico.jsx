@@ -304,6 +304,7 @@ export default function CatalogoPublico() {
         onCantidad={cartState.cambiarCantidadCarrito}
         onQuitar={cartState.quitarDelCarrito}
         onConfirmarPedido={cartState.confirmarPedido}
+        pasarelas={data?.checkout?.pasarelas || []}
       />
 
       {/* Mismo pie que el home (BasicTemplate.jsx y hermanos): primero las

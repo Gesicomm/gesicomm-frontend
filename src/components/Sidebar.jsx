@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2
 } from 'lucide-react';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
@@ -126,6 +126,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                 siguen en la base, solo se sacó el link del menú. */}
 
             {renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles /> })}
+            {renderLink({ path: '/page-builder', label: 'Page Builder', icon: <Code2 /> })}
             {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store /> })}
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
           </ul>

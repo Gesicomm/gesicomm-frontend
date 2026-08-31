@@ -107,6 +107,13 @@ import PoliticaReembolsoPublica from './pages/landing/PoliticaReembolsoPublica';
 import TerminosServicioPublica from './pages/landing/TerminosServicioPublica';
 import PoliticaEnvioPublica from './pages/landing/PoliticaEnvioPublica';
 import AvisoLegalPublico from './pages/landing/AvisoLegalPublico';
+import PaginaBuilderPublica from './pages/page-builder/publico/PaginaBuilderPublica';
+import PageBuilderHome from './pages/page-builder/PageBuilderHome';
+import ProyectoDetalle from './pages/page-builder/ProyectoDetalle';
+import FunnelBuilder from './pages/page-builder/funnel/FunnelBuilder';
+// El editor va diferido: es la pantalla más pesada del módulo (y la que
+// va a cargar Monaco), no tiene por qué entrar al bundle del dashboard.
+const PageEditor = lazy(() => import('./pages/page-builder/editor/PageEditor'));
 
 function RaizSegunHostname() {
   return esHostnameDeTienda() ? <LandingPublica /> : <PublicLayout><Landing /></PublicLayout>;
@@ -214,6 +221,29 @@ function App() {
         <Route path="/ads" element={
           <AdminRoute><DashboardLayout><Ads /></DashboardLayout></AdminRoute>
         } />
+        {/* Page Builder (privado). El editor va a pantalla completa, sin
+            DashboardLayout: necesita todo el alto para el código y el preview. */}
+        <Route path="/page-builder" element={
+          <AdminRoute><DashboardLayout><PageBuilderHome /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/page-builder/p/:proyectoId" element={
+          <AdminRoute><DashboardLayout><ProyectoDetalle /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/page-builder/funnels/:id" element={
+          <AdminRoute><DashboardLayout><FunnelBuilder /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/page-builder/paginas/:id" element={
+          <AdminRoute>
+            <Suspense fallback={
+              <div className="flex h-screen items-center justify-center bg-canvas">
+                <span className="loader" />
+              </div>
+            }>
+              <PageEditor />
+            </Suspense>
+          </AdminRoute>
+        } />
+
         <Route path="/settings" element={
           <AdminRoute><DashboardLayout><Settings /></DashboardLayout></AdminRoute>
         } />
@@ -338,6 +368,15 @@ function App() {
         <Route path="/l/:slug/terminos-servicio" element={<TerminosServicioPublica />} />
         <Route path="/l/:slug/politica-envio" element={<PoliticaEnvioPublica />} />
         <Route path="/l/:slug/aviso-legal" element={<AvisoLegalPublico />} />
+
+        {/* Page Builder público. Van ANTES de "/:productId", que es un
+            comodín de un solo segmento: sin esto, "/p" y "/f" caerían ahí.
+            Son las rutas de fallback — cuando la página tiene hostname
+            propio (calcula.gesicomm.com) el backend resuelve por Host y
+            esta misma vista se monta en la raíz. */}
+        <Route path="/p/:pageSlug" element={<PaginaBuilderPublica />} />
+        <Route path="/f/:funnelSlug" element={<PaginaBuilderPublica />} />
+        <Route path="/f/:funnelSlug/:pageSlug" element={<PaginaBuilderPublica />} />
 
         {/* Producto publico */}
         <Route path="/:productId" element={<ProductoSegunHostname />} />

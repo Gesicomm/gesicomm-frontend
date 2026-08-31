@@ -5,7 +5,7 @@ import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
 
 const FORM_VACIO = {
-  nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '',
+  nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
 };
 
 /**
@@ -29,7 +29,7 @@ function precioEnCheckout(oferta) {
   return oferta?.precio_normal ?? oferta?.precio ?? 0;
 }
 
-export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null }) {
+export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null, pasarelas = [] }) {
   const [form, setForm] = useState(FORM_VACIO);
   const [acepta, setAcepta] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -37,6 +37,8 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   const [confirmado, setConfirmado] = useState(null);
   // Varias ofertas a la vez: son casillas independientes, no un radio.
   const [seleccionadas, setSeleccionadas] = useState(() => new Set());
+
+  const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
 
   const ofertasCheckout = useMemo(() => {
     if (!itemOriginal?.ofertas?.length || !ofertasLanding?.length) return [];
@@ -52,8 +54,11 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     () => ofertasCheckout.filter(o => seleccionadas.has(o.id)),
     [ofertasCheckout, seleccionadas]
   );
-  const totalOfertas = ofertasElegidas.reduce((s, o) => s + precioEnCheckout(o), 0);
-  const total = (resumen?.precio || 0) + totalOfertas;
+  
+  const total = (resumen?.precio || 0) + Array.from(seleccionadas).reduce((sum, id) => {
+    const o = ofertasCheckout.find(x => x.id === id);
+    return sum + (o ? precioEnCheckout(o) : 0);
+  }, 0);
 
   function alternarOferta(ofertaId, elegida) {
     setSeleccionadas(prev => {
@@ -96,6 +101,10 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
       // Antes se mandaba la oferta del bump EN LUGAR de la del producto, así
       // que el backend cobraba todo el pedido al precio promocional del bump.
       const res = await onConfirmar(form, ofertasElegidas);
+      if (res?.payment_data?.payment_url) {
+        window.location.href = res.payment_data.payment_url;
+        return;
+      }
       setConfirmado(res || {});
     } catch (err) {
       setError(err?.message || 'No se pudo enviar el pedido. Probá de nuevo.');
@@ -314,6 +323,36 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               <label style={labelStyle}>RUC (factura)</label>
               <input value={form.ruc} onChange={e => campo('ruc', e.target.value)} placeholder="Opcional" style={inputStyle} />
             </div>
+
+            {hasPagoPar && (
+              <div style={{ marginTop: '0.5rem', padding: '1rem', backgroundColor: hexToRgba(tema.texto, 0.03), borderRadius: '8px' }}>
+                <p style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.75rem', color: tema.texto }}>Medio de pago</p>
+                
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', cursor: 'pointer', color: tema.texto }}>
+                  <input 
+                    type="radio" 
+                    name="payment_method" 
+                    value="efectivo"
+                    checked={form.payment_method === 'efectivo'}
+                    onChange={() => campo('payment_method', 'efectivo')}
+                    style={{ margin: 0, cursor: 'pointer', accentColor: tema.acento }}
+                  />
+                  <span style={{ fontSize: '0.85rem' }}>Pagar en efectivo al recibir</span>
+                </label>
+                
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: tema.texto }}>
+                  <input 
+                    type="radio" 
+                    name="payment_method" 
+                    value="pagopar"
+                    checked={form.payment_method === 'pagopar'}
+                    onChange={() => campo('payment_method', 'pagopar')}
+                    style={{ margin: 0, cursor: 'pointer', accentColor: tema.acento }}
+                  />
+                  <span style={{ fontSize: '0.85rem' }}>Pago online (Tarjetas, QR, Tigo Money)</span>
+                </label>
+              </div>
+            )}
 
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8rem', color: hexToRgba(tema.texto, 0.7), cursor: 'pointer' }}>
               <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)} style={{ marginTop: '0.15rem' }} />

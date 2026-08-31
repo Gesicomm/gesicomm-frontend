@@ -8,6 +8,7 @@ import { cargarFuenteGoogle } from '../../lib/landingDiseno';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import FunnelView from './FunnelView';
 import TiendaPaginaView from './TiendaPaginaView';
+import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
 import './landingPublica.css';
 
 export default function LandingPublica() {
@@ -31,6 +32,14 @@ export default function LandingPublica() {
       .then((res) => {
         if (!activo) return;
         if (res === null) return setEstado('no-encontrada');
+        // El hostname no es de una tienda sino de una página del Page
+        // Builder (calcula.gesicomm.com). El backend lo resuelve en esta
+        // misma respuesta para no agregarle una vuelta de red a las
+        // visitas de tienda, que son las que hoy tienen tráfico.
+        if (res.tipo === 'builder') {
+          setData(res);
+          return setEstado('builder');
+        }
         if (!res.disponible) return setEstado('no-disponible');
         setData(res);
         setEstado('ok');
@@ -47,6 +56,17 @@ export default function LandingPublica() {
 
   if (estado === 'cargando') {
     return <div className="lp-status-page"><div className="lp-spinner" /></div>;
+  }
+
+  // Página del Page Builder: se pinta con el MISMO iframe sandbox que usa
+  // el preview del editor (ver CodigoPreview / construirDocumentoCodigo).
+  if (estado === 'builder') {
+    return (
+      <LandingCodigoPublica
+        codigo={data.codigo}
+        titulo={data.seo?.titulo || data.pagina?.nombre || ''}
+      />
+    );
   }
 
   if (estado === 'no-encontrada' || estado === 'no-disponible') {

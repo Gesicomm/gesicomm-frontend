@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+
 import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, Key, CheckCircle2,
-  Store, MessageCircle, BarChart3, Phone, Palette, MousePointerClick,
+  Store, MessageCircle, BarChart3, Phone, Palette, MousePointerClick, CreditCard,
 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
+import PagoParConfig from './PagoParConfig';
 import DominioPropio from './DominioPropio';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
@@ -46,6 +48,7 @@ const TABS = [
   { id: 'tienda', label: 'Tu Tienda', icono: Store },
   { id: 'contacto', label: 'Contacto', icono: MessageCircle },
   { id: 'analitica', label: 'Analítica', icono: BarChart3 },
+  { id: 'pasarelas', label: 'Pagos', icono: CreditCard },
 ];
 
 const VARIABLES_MENSAJE = [
@@ -593,6 +596,26 @@ export default function ConfigurarTienda() {
                       placeholder="Pegá el Pixel ID de TikTok Ads Manager"
                     />
                   </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ════════════════════ TAB: PASARELAS DE PAGO ═════════════════════════ */}
+          {tab === 'pasarelas' && (
+            <div className="tn-tab-content" key="pasarelas">
+              <div className="land-editor-grid">
+                <div className="land-section">
+                  <div className="tn-section-header">
+                    <span className="tn-section-icon"><CreditCard size={14} /></span>
+                    <h2>Pasarelas de Pago</h2>
+                  </div>
+                  <p className="tn-section-desc">Conectá medios de pago para permitir que tus clientes abonen directo desde tu Landing.</p>
+                  
+                  {/* Aquí va el componente importado */}
+                  <div className="mt-4">
+                    <PagoParConfig />
+                  </div>
                 </div>
               </div>
             </div>

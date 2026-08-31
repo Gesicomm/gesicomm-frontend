@@ -4,7 +4,7 @@ import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 
 const FORM_VACIO = {
-  nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '',
+  nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
 };
 
 /**
@@ -15,7 +15,7 @@ const FORM_VACIO = {
  * opcional que decide la propia landing (ver checkout.redirigir_whatsapp
  * en LandingPublica.jsx).
  */
-export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido }) {
+export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, pasarelas = [] }) {
   const [paso, setPaso] = useState('carrito'); // 'carrito' | 'formulario' | 'confirmado'
   const [form, setForm] = useState(FORM_VACIO);
   const [acepta, setAcepta] = useState(false);
@@ -27,6 +27,8 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
   const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
   const formularioValido = form.nombre_cliente.trim() && form.telefono.trim()
     && form.ciudad.trim() && form.direccion.trim() && acepta;
+
+  const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
 
   function reiniciar() {
     setPaso('carrito');
@@ -54,6 +56,10 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
     setEnviando(true);
     try {
       const res = await onConfirmarPedido(form);
+      if (res?.payment_data?.payment_url) {
+        window.location.href = res.payment_data.payment_url;
+        return;
+      }
       setResultado(res);
       setPaso('confirmado');
     } catch (err) {
@@ -249,6 +255,36 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                     <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)} />
                     <span>Acepto que mis datos se usen para procesar este pedido.</span>
                   </label>
+
+                  {hasPagoPar && (
+                    <div className="lp-checkout-payment-methods" style={{ margin: '1rem 0', padding: '1rem', backgroundColor: 'rgba(0,0,0,0.03)', borderRadius: '8px' }}>
+                      <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: '#111' }}>Medio de pago</p>
+                      
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', cursor: 'pointer', color: '#333' }}>
+                        <input 
+                          type="radio" 
+                          name="payment_method" 
+                          value="efectivo"
+                          checked={form.payment_method === 'efectivo'}
+                          onChange={() => actualizarCampo('payment_method', 'efectivo')}
+                          style={{ margin: 0, cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '0.875rem' }}>Pagar en efectivo al recibir</span>
+                      </label>
+                      
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#333' }}>
+                        <input 
+                          type="radio" 
+                          name="payment_method" 
+                          value="pagopar"
+                          checked={form.payment_method === 'pagopar'}
+                          onChange={() => actualizarCampo('payment_method', 'pagopar')}
+                          style={{ margin: 0, cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '0.875rem' }}>Pago online (Tarjetas, QR, Tigo Money)</span>
+                      </label>
+                    </div>
+                  )}
 
                   <div className="lp-cart-subtotal">
                     <span>Total</span>

@@ -436,7 +436,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     registrarEventoLanding(slug, { ...basePayload, event_name: 'Contact', event_id: eventId + '-contact' });
 
     let redirigido = false;
-    if (resultado.redirigir_whatsapp && contacto?.whatsapp) {
+    // No redirigir a WhatsApp si hay una pasarela de pago (pago online) seleccionada.
+    if (!resultado.payment_data?.payment_url && resultado.redirigir_whatsapp && contacto?.whatsapp) {
       const link = armarLinkWhatsappCarrito(contacto, items);
       if (link) {
         window.open(link, '_blank', 'noopener');
@@ -445,7 +446,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     }
 
     if (!itemsOverride) setCarrito(new Map());
-    return { redirigido, pedido_id: resultado.pedido_id };
+    return { redirigido, pedido_id: resultado.pedido_id, payment_data: resultado.payment_data };
   }
 
   /**
@@ -666,6 +667,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       onCantidad: cambiarCantidadCarrito,
       onQuitar: quitarDelCarrito,
       onConfirmarPedido: confirmarPedido,
+      pasarelas: data?.checkout?.pasarelas || [],
     };
 
     // Armar el objeto `tema` compatible con calcularEstiloLanding a partir
