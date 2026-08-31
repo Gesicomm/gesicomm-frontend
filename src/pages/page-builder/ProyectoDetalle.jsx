@@ -66,6 +66,19 @@ export default function ProyectoDetalle() {
     }
   }
 
+  async function eliminarFunnel(funnel) {
+    if (!window.confirm(`Se va a borrar "${funnel.nombre}" y todos sus pasos. ¿Seguir?`)) return;
+    setOcupado(true);
+    try {
+      await pageBuilderService.eliminarFunnel(funnel.id);
+      await cargar();
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo borrar el funnel.'));
+    } finally {
+      setOcupado(false);
+    }
+  }
+
   async function eliminarPagina(pagina) {
     if (!window.confirm(`Se va a borrar «${pagina.nombre}» y todas sus versiones. ¿Seguir?`)) return;
     setOcupado(true);
@@ -177,6 +190,12 @@ export default function ProyectoDetalle() {
                     onClick={() => setHostnameTarget({ funnel_id: f.id, nombre: f.nombre })}
                   >
                     <Globe size={14} />
+                  </button>
+                  <button
+                    type="button" className="btn-ghost" title="Borrar"
+                    onClick={() => eliminarFunnel(f)} disabled={ocupado}
+                  >
+                    <Trash2 size={14} />
                   </button>
                 </div>
                 <p className="mt-2 truncate text-xs text-fg-muted">

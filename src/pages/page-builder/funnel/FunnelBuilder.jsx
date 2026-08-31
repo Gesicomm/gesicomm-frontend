@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
-  ArrowLeft, Plus, Loader, GripVertical, Flag, Pencil, LogOut, Rocket, EyeOff, Globe, ArrowDown,
+  ArrowLeft, Plus, Loader, GripVertical, Flag, Pencil, LogOut, Rocket, EyeOff, Globe, ArrowDown, Trash2,
 } from 'lucide-react';
 import { pageBuilderService, mensajeDeError } from '../../../services/pageBuilderService';
 import EstadoBadge from '../EstadoBadge';
@@ -47,6 +47,18 @@ export default function FunnelBuilder() {
   }, [id]);
 
   useEffect(() => { cargar(); }, [cargar]);
+  async function eliminarPagina(pagina) {
+    if (!window.confirm(`Se va a borrar «${pagina.nombre}» y todas sus versiones. ¿Seguir?`)) return;
+    setOcupado(true);
+    try {
+      await pageBuilderService.eliminarPagina(pagina.id);
+      await cargar();
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo borrar la página.'));
+      setOcupado(false);
+    }
+  }
+
 
   async function alSoltar(resultado) {
     if (!resultado.destination || resultado.destination.index === resultado.source.index) return;
@@ -243,6 +255,14 @@ export default function FunnelBuilder() {
                             }}
                           >
                             <LogOut size={14} />
+                          </button>
+
+                          <button
+                            type="button" className="btn-ghost" title="Borrar página por completo"
+                            disabled={ocupado}
+                            onClick={() => eliminarPagina(p)}
+                          >
+                            <Trash2 size={14} />
                           </button>
                         </div>
 
