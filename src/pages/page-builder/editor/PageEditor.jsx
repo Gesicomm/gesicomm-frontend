@@ -225,7 +225,13 @@ export default function PageEditor() {
         guardando={guardando}
         publicando={publicando}
         urlPublica={urlPublica}
-        onVolver={() => navigate(`/page-builder/p/${pagina.proyecto_id}`)}
+        onVolver={() => {
+          if (pagina.funnel_id) {
+            navigate(`/page-builder/funnels/${pagina.funnel_id}`);
+          } else {
+            navigate(`/page-builder/p/${pagina.proyecto_id}`);
+          }
+        }}
         onImportar={() => setMostrarImportar(true)}
         onVersiones={() => setMostrarVersiones(true)}
         onGuardar={guardar}
