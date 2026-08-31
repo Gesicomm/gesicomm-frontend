@@ -6,6 +6,7 @@ import {
 import { pageBuilderService, mensajeDeError } from '../../services/pageBuilderService';
 import EstadoBadge from './EstadoBadge';
 import HostnamesModal from './HostnamesModal';
+import CrearTargetModal from './CrearTargetModal';
 
 /**
  * Un proyecto por dentro: sus páginas sueltas y sus funnels.
@@ -27,6 +28,7 @@ export default function ProyectoDetalle() {
   const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [hostnameTarget, setHostnameTarget] = useState(null);
+  const [creandoTarget, setCreandoTarget] = useState(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -40,29 +42,12 @@ export default function ProyectoDetalle() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  async function crearPagina() {
-    const nombre = window.prompt('Nombre de la página nueva:');
-    if (!nombre?.trim()) return;
-    setOcupado(true);
-    try {
-      const p = await pageBuilderService.crearPagina(proyectoId, { nombre: nombre.trim() });
-      navigate(`/page-builder/paginas/${p.id}`);
-    } catch (err) {
-      setError(mensajeDeError(err, 'No se pudo crear la página.'));
-      setOcupado(false);
-    }
-  }
-
-  async function crearFunnel() {
-    const nombre = window.prompt('Nombre del funnel nuevo:');
-    if (!nombre?.trim()) return;
-    setOcupado(true);
-    try {
-      const f = await pageBuilderService.crearFunnel(proyectoId, { nombre: nombre.trim() });
-      navigate(`/page-builder/funnels/${f.id}`);
-    } catch (err) {
-      setError(mensajeDeError(err, 'No se pudo crear el funnel.'));
-      setOcupado(false);
+  function alCrearTarget(target) {
+    setCreandoTarget(null);
+    if (creandoTarget === 'funnel') {
+      navigate(`/page-builder/funnels/${target.id}`);
+    } else {
+      navigate(`/page-builder/paginas/${target.id}`);
     }
   }
 
@@ -121,7 +106,7 @@ export default function ProyectoDetalle() {
           <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
             <FileText size={16} /> Páginas
           </h2>
-          <button type="button" className="btn-secondary" onClick={crearPagina} disabled={ocupado}>
+          <button type="button" className="btn-secondary" onClick={() => setCreandoTarget('pagina')} disabled={ocupado}>
             <Plus size={14} /> Nueva página
           </button>
         </div>
@@ -168,7 +153,7 @@ export default function ProyectoDetalle() {
           <h2 className="flex items-center gap-2 text-sm font-semibold text-fg">
             <GitBranch size={16} /> Funnels
           </h2>
-          <button type="button" className="btn-secondary" onClick={crearFunnel} disabled={ocupado}>
+          <button type="button" className="btn-secondary" onClick={() => setCreandoTarget('funnel')} disabled={ocupado}>
             <Plus size={14} /> Nuevo funnel
           </button>
         </div>
@@ -215,6 +200,15 @@ export default function ProyectoDetalle() {
 
       {hostnameTarget && (
         <HostnamesModal target={hostnameTarget} onCerrar={() => setHostnameTarget(null)} />
+      )}
+
+      {creandoTarget && (
+        <CrearTargetModal
+          tipo={creandoTarget}
+          proyectoId={proyectoId}
+          onCerrar={() => setCreandoTarget(null)}
+          onCreado={alCrearTarget}
+        />
       )}
     </div>
   );
