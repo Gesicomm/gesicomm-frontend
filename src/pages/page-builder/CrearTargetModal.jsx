@@ -7,6 +7,7 @@ const INPUT = 'w-full rounded-lg border border-border bg-canvas px-3 py-2 text-s
 export default function CrearTargetModal({ tipo, proyectoId, onCerrar, onCreado }) {
   const [nombre, setNombre] = useState('');
   const [subdominio, setSubdominio] = useState('');
+  const [dominio, setDominio] = useState('');
   const [error, setError] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
@@ -26,15 +27,25 @@ export default function CrearTargetModal({ tipo, proyectoId, onCerrar, onCreado 
         target = await pageBuilderService.crearPagina(proyectoId, { nombre: nom });
       }
 
+      const idReq = { [tipo === 'funnel' ? 'funnel_id' : 'pagina_id']: target.id };
+      let huboErrorDominio = false;
+
       if (subdominio.trim()) {
         try {
-          await pageBuilderService.crearSubdominio({
-            [tipo === 'funnel' ? 'funnel_id' : 'pagina_id']: target.id,
-            subdominio: subdominio.trim(),
-          });
+          await pageBuilderService.crearSubdominio({ ...idReq, subdominio: subdominio.trim() });
         } catch (subErr) {
           console.error("Error asignando subdominio:", subErr);
-          window.alert(mensajeDeError(subErr, 'El funnel se creó pero el subdominio no pudo asignarse.'));
+          window.alert(mensajeDeError(subErr, 'Se creó pero el subdominio no pudo asignarse. Podés intentar de nuevo desde el botón de Dirección pública.'));
+          huboErrorDominio = true;
+        }
+      }
+
+      if (dominio.trim() && !huboErrorDominio) {
+        try {
+          await pageBuilderService.crearDominioPropio({ ...idReq, dominio: dominio.trim() });
+        } catch (domErr) {
+          console.error("Error asignando dominio:", domErr);
+          window.alert(mensajeDeError(domErr, 'Se creó pero el dominio propio no pudo asignarse. Podés intentar de nuevo desde el botón de Dirección pública.'));
         }
       }
 
@@ -74,7 +85,7 @@ export default function CrearTargetModal({ tipo, proyectoId, onCerrar, onCreado 
               />
             </div>
 
-            <div>
+            <div className="border-t border-border pt-4">
               <label className="mb-1 block text-sm font-medium text-fg">
                 Subdominio de Gesicomm <span className="font-normal" style={{ color: 'var(--color-fg-muted)' }}>(opcional)</span>
               </label>
@@ -91,7 +102,24 @@ export default function CrearTargetModal({ tipo, proyectoId, onCerrar, onCreado 
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end gap-3">
+            <div className="border-t border-border pt-4">
+              <label className="mb-1 block text-sm font-medium text-fg">
+                Dominio propio <span className="font-normal" style={{ color: 'var(--color-fg-muted)' }}>(opcional)</span>
+              </label>
+              <input
+                type="text"
+                className={INPUT + ' font-mono'}
+                value={dominio}
+                onChange={(e) => setDominio(e.target.value.toLowerCase())}
+                placeholder="mipagina.com.py"
+                spellCheck={false}
+              />
+              <p className="mt-1 text-xs" style={{ color: 'var(--color-fg-muted)' }}>
+                Solo el dominio, sin https:// ni barras.
+              </p>
+            </div>
+
+            <div className="border-t border-border pt-4 flex justify-end gap-3">
               <button type="button" className="btn-ghost" onClick={onCerrar} disabled={ocupado}>
                 Cancelar
               </button>
