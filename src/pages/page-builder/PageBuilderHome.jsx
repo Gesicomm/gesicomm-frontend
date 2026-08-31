@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Loader, Code2, FileText, GitBranch } from 'lucide-react';
+import { Plus, Loader, Code2, FileText, GitBranch, Trash2 } from 'lucide-react';
 import { pageBuilderService, mensajeDeError } from '../../services/pageBuilderService';
 import EstadoBadge from './EstadoBadge';
 
@@ -55,6 +55,17 @@ export default function PageBuilderHome() {
       setError(mensajeDeError(err, 'No se pudo crear el proyecto.'));
     } finally {
       setCreando(false);
+    }
+  }
+
+  async function eliminarProyecto(e, proyecto) {
+    e.preventDefault();
+    if (!window.confirm(`Se va a borrar "${proyecto.nombre}" con todas sus páginas y funnels. ¿Estás seguro?`)) return;
+    try {
+      await pageBuilderService.eliminarProyecto(proyecto.id);
+      await cargar();
+    } catch (err) {
+      setError(mensajeDeError(err, 'No se pudo borrar el proyecto.'));
     }
   }
 
@@ -115,7 +126,17 @@ export default function PageBuilderHome() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="truncate font-medium text-fg">{p.nombre}</h2>
-                  <EstadoBadge estado={p.estado} />
+                  <div className="flex items-center gap-2">
+                    <EstadoBadge estado={p.estado} />
+                    <button
+                      type="button"
+                      className="btn-ghost -mr-2"
+                      title="Borrar proyecto"
+                      onClick={(e) => eliminarProyecto(e, p)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-3 flex items-center gap-4 text-xs text-fg-muted">
                   <span className="flex items-center gap-1">
