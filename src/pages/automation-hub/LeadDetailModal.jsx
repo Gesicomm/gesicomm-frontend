@@ -96,8 +96,15 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
           <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Fuente</label>
           <input className={inputClass} value={form.source} onChange={set('source')} />
 
-          <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Valor</label>
-          <input type="number" step="0.01" className={inputClass} value={form.value} onChange={set('value')} />
+          <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Monto de venta ($)</label>
+          <input type="number" step="0.01" className={inputClass} placeholder="Ej: 500" value={form.value} onChange={set('value')} />
+
+          {lead.tracking_code && (
+            <>
+              <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Código de Tracking (Reel/Post)</label>
+              <input className={`${inputClass} bg-surface-2 text-fg-muted cursor-not-allowed`} value={lead.tracking_code} disabled />
+            </>
+          )}
 
           {otrosTags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
