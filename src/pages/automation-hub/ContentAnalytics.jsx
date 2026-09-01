@@ -35,28 +35,87 @@ function RankingList({ titulo, items }) {
 }
 
 export default function ContentAnalytics() {
-  const [datos, setDatos] = useState(null);
+  const [datosVentas, setDatosVentas] = useState(null);
+  const [datosEditorial, setDatosEditorial] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    analyticsApi.obtener()
-      .then(setDatos)
+    Promise.all([
+      analyticsApi.obtener(),
+      analyticsApi.obtenerEditorial()
+    ])
+      .then(([ventas, editorial]) => {
+        setDatosVentas(ventas);
+        setDatosEditorial(editorial);
+      })
       .catch((err) => setError(err.response?.data?.message || 'No se pudo cargar el analizador.'))
       .finally(() => setCargando(false));
   }, []);
 
   if (cargando) return <div className="p-8 text-center text-sm text-fg-muted">Cargando...</div>;
   if (error) return <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>;
-  if (!datos) return null;
+  if (!datosVentas || !datosEditorial) return null;
 
-  const { summary, pareto, topTopics, topAngles, topCtas } = datos;
+  const { summary, pareto, topTopics, topAngles, topCtas } = datosVentas;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
-        Esta atribución se arma solo con datos reales de Gesicomm (ventas vinculadas por código de tracking). No incluye views/alcance de Instagram porque esa integración no existe hoy.
+    <div className="flex flex-col gap-6">
+      
+      {/* SECCIÓN: Productividad Editorial */}
+      <div className="flex flex-col gap-4 border-b border-border pb-6">
+        <h2 className="m-0 text-lg font-bold text-fg">Productividad Editorial</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Kpi label="Piezas Programadas" value={datosEditorial.total} />
+          <Kpi label="Piezas Publicadas" value={datosEditorial.published} />
+          <Kpi label="Cumplimiento" value={`${Math.round(datosEditorial.fulfillment * 100)}%`} hint="Basado en fechas pasadas/hoy" />
+          <Kpi label="Pendientes" value={datosEditorial.scheduled} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Gráfico de tendencia */}
+          <div className="rounded-lg border border-border bg-surface p-4">
+            <div className="mb-3 text-xs font-semibold text-fg">Tendencia Publicaciones (Últimos 6 meses)</div>
+            <div style={{ width: '100%', height: 200 }}>
+              <ResponsiveContainer>
+                <BarChart data={datosEditorial.history.slice().reverse()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} />
+                  <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Publicaciones" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Formatos */}
+          <div className="rounded-lg border border-border bg-surface p-4 flex flex-col justify-center">
+            <div className="mb-3 text-xs font-semibold text-fg">Distribución por Formato</div>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <span className="text-sm font-semibold text-fg-muted">Videos/Reels</span>
+                <span className="text-sm font-bold text-fg">{datosEditorial.formats.R}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <span className="text-sm font-semibold text-fg-muted">Carruseles</span>
+                <span className="text-sm font-bold text-fg">{datosEditorial.formats.C}</span>
+              </div>
+              <div className="flex items-center justify-between pb-2">
+                <span className="text-sm font-semibold text-fg-muted">Historias</span>
+                <span className="text-sm font-bold text-fg">{datosEditorial.formats.H}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* SECCIÓN: Atribución de Ventas */}
+      <div className="flex flex-col gap-4">
+        <h2 className="m-0 text-lg font-bold text-fg">Atribución de Ventas</h2>
+        <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+          Esta atribución se arma solo con datos reales de Gesicomm (ventas vinculadas por código de tracking). No incluye views/alcance de Instagram porque esa integración no existe hoy. Las piezas de prueba han sido excluidas.
+        </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi label="Ventas totales" value={summary.totalSales} />
@@ -96,7 +155,7 @@ export default function ContentAnalytics() {
           <table className="w-full min-w-[600px] text-left text-xs">
             <thead>
               <tr className="text-fg-subtle">
-                <th className="pb-2">Código</th>
+                <th className="pb-2">Cdigo</th>
                 <th className="pb-2">Formato</th>
                 <th className="pb-2">Tema</th>
                 <th className="pb-2">Ventas</th>
@@ -104,7 +163,7 @@ export default function ContentAnalytics() {
               </tr>
             </thead>
             <tbody>
-              {datos.contents.filter((c) => c.sales > 0).map((c) => (
+              {datosVentas.contents.filter((c) => c.sales > 0).map((c) => (
                 <tr key={c.id} className="border-t border-border">
                   <td className="py-1.5 font-semibold text-primary-text">{c.trackingCode}</td>
                   <td className="py-1.5 text-fg-muted">{FORMATO_LABEL[c.format] || c.format}</td>
@@ -113,13 +172,14 @@ export default function ContentAnalytics() {
                   <td className="py-1.5 font-semibold text-success">{c.revenue.toLocaleString('es-PY')}</td>
                 </tr>
               ))}
-              {!datos.contents.some((c) => c.sales > 0) && (
-                <tr><td colSpan={5} className="py-4 text-center text-fg-muted">Sin ventas atribuidas todavía.</td></tr>
+              {!datosVentas.contents.some((c) => c.sales > 0) && (
+                <tr><td colSpan={5} className="py-4 text-center text-fg-muted">Sin ventas atribuidas todava.</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+    </div>
     </div>
   );
 }

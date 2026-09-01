@@ -102,11 +102,11 @@ export default function ContentCalendar({ items, onDayClick, onItemClick, onRepr
                       onDragEnd={() => setArrastrandoId(null)}
                       onClick={(e) => { e.stopPropagation(); onItemClick(item); }}
                       title={item.status === 'published' ? 'Publicado — no se puede arrastrar' : 'Arrastrá para reprogramar'}
-                      className={`truncate rounded-r-md border-l-2 px-1.5 py-1 text-[10px] font-semibold ${FORMATO_CLASE[item.format] || ''} ${
+                      className={`truncate rounded-r-md border-l-2 px-1.5 py-1 text-[10px] font-semibold ${item.is_test ? 'border-l-warning bg-warning/20 text-warning line-through' : FORMATO_CLASE[item.format] || ''} ${
                         item.status === 'published' ? 'cursor-default opacity-70' : 'cursor-grab'
                       }`}
                     >
-                      {String(item.publish_time).slice(0, 5)} · {item.tracking_code}
+                      {String(item.publish_time).slice(0, 5)} · {item.is_test ? '[TEST] ' : ''}{item.tracking_code}
                     </div>
                   ))}
                 </div>

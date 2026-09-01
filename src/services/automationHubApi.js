@@ -44,6 +44,7 @@ export const contentApi = {
   reprogramar: (id, publish_date) => AutomationAPI.patch(`/content/${id}/fecha`, { publish_date }).then((r) => r.data),
   marcarPublicado: (id) => AutomationAPI.patch(`/content/${id}/publicar`).then((r) => r.data),
   eliminar: (id) => AutomationAPI.delete(`/content/${id}`).then((r) => r.data),
+  eliminarPruebas: () => AutomationAPI.delete('/content/test-items/clear').then((r) => r.data),
 };
 
 // --- ManyChat ---
@@ -131,6 +132,7 @@ export const financeApi = {
 // --- Analizador de contenido / atribución ---
 export const analyticsApi = {
   obtener: (params) => AutomationAPI.get('/analytics', { params }).then((r) => r.data),
+  obtenerEditorial: () => AutomationAPI.get('/analytics/editorial').then((r) => r.data),
 };
 
 export default AutomationAPI;

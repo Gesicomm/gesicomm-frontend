@@ -119,13 +119,26 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-fg-muted">Fecha *</label>
+                <label className="mb-1 block text-xs font-semibold text-fg-muted">Fecha de produccion del video</label>
                 <input type="date" className={inputClass} value={datos.publish_date} onChange={set('publish_date')} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-fg-muted">Hora *</label>
+                <label className="mb-1 block text-xs font-semibold text-fg-muted">Hora de produccion del video</label>
                 <input type="time" className={inputClass} value={datos.publish_time} onChange={set('publish_time')} />
               </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
+              <input 
+                type="checkbox" 
+                id="isTestCheck" 
+                checked={datos.is_test || false} 
+                onChange={(e) => setDatos(d => ({ ...d, is_test: e.target.checked }))} 
+                className="h-4 w-4 rounded border-border"
+              />
+              <label htmlFor="isTestCheck" className="text-xs font-semibold text-warning">
+                Marcar como contenido de prueba (No se contar en las analticas)
+              </label>
             </div>
 
             {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}

@@ -8,6 +8,7 @@ import ManyChatPanel from './ManyChatPanel';
 import DailyActionsPanel from './DailyActionsPanel';
 import OpportunitiesBoard from './OpportunitiesBoard';
 import ContentAnalytics from './ContentAnalytics';
+import ManyChatFloatingAssistant from './ManyChatFloatingAssistant';
 
 const TABS = [
   { id: 'calendario', label: 'Calendario', icon: CalendarDays },
@@ -24,6 +25,7 @@ export default function AutomationHub() {
   const [errorCarga, setErrorCarga] = useState('');
   const [modalNuevo, setModalNuevo] = useState(null); // fecha inicial o null
   const [itemSeleccionado, setItemSeleccionado] = useState(null);
+  const [floatingAssistantItem, setFloatingAssistantItem] = useState(null);
 
   const cargarContenido = useCallback(async () => {
     setCargando(true);
@@ -61,13 +63,29 @@ export default function AutomationHub() {
           </p>
         </div>
         {tab === 'calendario' && (
-          <button
-            type="button"
-            onClick={() => setModalNuevo(new Date().toISOString().slice(0, 10))}
-            className="flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg"
-          >
-            <Plus size={16} /> Nuevo contenido
-          </button>
+          <div className="flex items-center gap-2">
+            {items.some(it => it.is_test) && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if(confirm('Se eliminarán todos los contenidos de prueba. Continuar?')) {
+                    await contentApi.eliminarPruebas();
+                    cargarContenido();
+                  }
+                }}
+                className="flex h-10 items-center gap-2 rounded-md bg-danger/10 px-4 text-sm font-semibold text-danger border border-danger/20 hover:bg-danger/20"
+              >
+                Limpiar pruebas
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setModalNuevo(new Date().toISOString().slice(0, 10))}
+              className="flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg"
+            >
+              <Plus size={16} /> Nuevo contenido
+            </button>
+          </div>
         )}
       </div>
 
@@ -123,6 +141,14 @@ export default function AutomationHub() {
           item={itemSeleccionado}
           onClose={() => setItemSeleccionado(null)}
           onCambio={() => { setItemSeleccionado(null); cargarContenido(); }}
+          setFloatingAssistantItem={setFloatingAssistantItem}
+        />
+      )}
+
+      {floatingAssistantItem && (
+        <ManyChatFloatingAssistant
+          item={floatingAssistantItem.item}
+          manychatLink={floatingAssistantItem.manychatLink}
         />
       )}
     </div>
