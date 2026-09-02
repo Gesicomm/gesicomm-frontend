@@ -657,11 +657,8 @@ function TabAlumnos({ programas, equipo, onRefrescar }) {
     </div>
   );
 }
-    </div>
-  );
-}
 
-function TabGastos({ dash, onRefrescar }) {
+function TabGastos({ onRefrescar }) {
   const [desc, setDesc] = useState('');
   const [monto, setMonto] = useState('');
   const [fecha, setFecha] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
