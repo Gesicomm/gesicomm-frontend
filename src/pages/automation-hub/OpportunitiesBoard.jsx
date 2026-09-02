@@ -4,6 +4,7 @@ import { RefreshCcw, MessageCircle, Plus, X } from 'lucide-react';
 import { crmApi } from '../../services/automationHubApi';
 import LeadDetailModal from './LeadDetailModal';
 import { TICKET_OPTIONS, obtenerTicketTag, etiquetaTicket } from './ticketTags';
+import CurrencyInput from '../../components/CurrencyInput';
 
 function soloDigitos(v) {
   return String(v || '').replace(/\D/g, '');
@@ -62,7 +63,8 @@ function NuevoLeadModal({ pipelines, pipelineId, onClose, onCreado }) {
           <input className={inputClass} placeholder="Teléfono" value={form.phone} onChange={set('phone')} />
           <input className={inputClass} placeholder="Email" value={form.email} onChange={set('email')} />
           <input className={inputClass} placeholder="Fuente (ej. Instagram, Referido)" value={form.source} onChange={set('source')} />
-          <input type="number" step="0.01" className={inputClass} placeholder="Valor" value={form.value} onChange={set('value')} />
+          <CurrencyInput className={inputClass} placeholder="Valor" value={form.value === '' ? '' : Number(form.value)}
+            onChange={(v) => setForm((f) => ({ ...f, value: v === '' ? '' : v }))} />
           <select className={inputClass} value={form.ticket} onChange={set('ticket')}>
             <option value="">Tipo de ticket (sin clasificar)</option>
             {TICKET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -207,9 +209,9 @@ export default function OpportunitiesBoard() {
                                     href={`https://wa.me/${soloDigitos(lead.phone)}`}
                                     target="_blank" rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-success"
+                                    className="mt-1.5 flex h-7 items-center justify-center gap-1.5 rounded-md bg-success/15 text-[11px] font-semibold text-success hover:bg-success/25"
                                   >
-                                    <MessageCircle size={11} /> {lead.phone}
+                                    <MessageCircle size={13} /> Escribir al WhatsApp
                                   </a>
                                 )}
                                 <div className="mt-1 flex items-center justify-between">

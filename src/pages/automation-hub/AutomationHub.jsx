@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { CalendarDays, Plus, MessageCircle, ListChecks, Sparkles, Kanban, LineChart } from 'lucide-react';
+import { CalendarDays, Plus, MessageCircle, ListChecks, Sparkles, Kanban, LineChart, Wallet } from 'lucide-react';
 import { contentApi } from '../../services/automationHubApi';
 import ContentCalendar from './ContentCalendar';
 import ContentFormModal from './ContentFormModal';
@@ -7,6 +7,7 @@ import ContentDetailModal from './ContentDetailModal';
 import ManyChatPanel from './ManyChatPanel';
 import DailyActionsPanel from './DailyActionsPanel';
 import OpportunitiesBoard from './OpportunitiesBoard';
+import CollectionsBoard from './CollectionsBoard';
 import ContentAnalytics from './ContentAnalytics';
 import ManyChatFloatingAssistant from './ManyChatFloatingAssistant';
 
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'calendario', label: 'Calendario', icon: CalendarDays },
   { id: 'manychat', label: 'ManyChat', icon: MessageCircle },
   { id: 'oportunidades', label: 'Oportunidades', icon: Kanban },
+  { id: 'cobranzas', label: 'Cobranzas', icon: Wallet },
   { id: 'analizador', label: 'Analizador', icon: LineChart },
   { id: 'acciones', label: 'Acciones pendientes', icon: ListChecks },
 ];
@@ -125,6 +127,7 @@ export default function AutomationHub() {
 
       {tab === 'manychat' && <ManyChatPanel />}
       {tab === 'oportunidades' && <OpportunitiesBoard />}
+      {tab === 'cobranzas' && <CollectionsBoard />}
       {tab === 'analizador' && <ContentAnalytics />}
       {tab === 'acciones' && <DailyActionsPanel />}
 

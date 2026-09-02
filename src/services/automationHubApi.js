@@ -76,11 +76,20 @@ export function getManychatUpdateWebhookUrl(webhookToken) {
 // el webhook de ManyChat — reemplaza por completo al proxy de GoHighLevel) ---
 export const crmApi = {
   pipelines: () => AutomationAPI.get('/crm/pipelines').then((r) => r.data),
+  estados: () => AutomationAPI.get('/crm/lead-statuses').then((r) => r.data),
   leads: (pipelineId) => AutomationAPI.get('/crm/leads', { params: { pipelineId } }).then((r) => r.data),
   crearLead: (payload) => AutomationAPI.post('/crm/leads', payload).then((r) => r.data),
   moverEtapa: (leadId, stageId) => AutomationAPI.patch(`/crm/leads/${leadId}/etapa`, { stage_id: stageId }).then((r) => r.data),
   actualizarLead: (leadId, payload) => AutomationAPI.put(`/crm/leads/${leadId}`, payload).then((r) => r.data),
   eliminarLead: (leadId) => AutomationAPI.delete(`/crm/leads/${leadId}`).then((r) => r.data),
+  planesDeLead: (leadId) => AutomationAPI.get(`/crm/leads/${leadId}/payment-plans`).then((r) => r.data),
+  crearPlanDePagos: (leadId, payload) => AutomationAPI.post(`/crm/leads/${leadId}/payment-plan`, payload).then((r) => r.data),
+};
+
+// --- Cobranzas (tablero de planes de pago) ---
+export const collectionsApi = {
+  listar: () => AutomationAPI.get('/crm/collections').then((r) => r.data),
+  registrarCobro: (paymentId, payload) => AutomationAPI.patch(`/crm/collections/${paymentId}/pay`, payload).then((r) => r.data),
 };
 
 // --- Finanzas → Automatización ---

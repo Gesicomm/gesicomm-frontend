@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, AlertCircle, Copy } from 'lucide-react';
 import { manychatApi, getManychatWebhookUrl, getManychatUpdateWebhookUrl } from '../../services/automationHubApi';
 
-const BODY_EJEMPLO = `{
+const BODY_CREAR_EJEMPLO = `{
   "name": "{{first_name}} {{last_name}}",
   "phone": "{{phone}}",
   "email": "{{email}}",
   "subscriber_id": "{{id}}",
-  "ticket": "MD"
+  "ticket": "MD",
+  "tracking_code": "R-123"
 }`;
 
 const BODY_ETAPA_EJEMPLO = `{
@@ -107,14 +108,14 @@ export default function ManyChatPanel() {
                 </button>
               </div>
               <div className="mt-2 flex items-start gap-2">
-                <pre className="m-0 flex-1 overflow-x-auto rounded-md border border-border bg-surface px-2 py-2 text-[11px] text-fg"><code>{BODY_EJEMPLO}</code></pre>
-                <button type="button" onClick={() => copiar('body-crear', BODY_EJEMPLO)}
+                <pre className="m-0 flex-1 overflow-x-auto rounded-md border border-border bg-surface px-2 py-2 text-[11px] text-fg"><code>{BODY_CREAR_EJEMPLO}</code></pre>
+                <button type="button" onClick={() => copiar('body-crear', BODY_CREAR_EJEMPLO)}
                   className="flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-surface px-3 text-xs font-semibold text-fg">
                   <Copy size={13} /> {copiadoKey === 'body-crear' ? 'Copiado' : 'Copiar'}
                 </button>
               </div>
               <p className="m-0 mt-2 text-[11px] text-fg-subtle">
-                <code>name</code> es el único campo obligatorio. <code>ticket</code> es opcional y clasifica el lead: <code>HG</code> = high ticket, <code>MD</code> = mid ticket, <code>LT</code> = low ticket (se ve como badge en la tarjeta). Cualquier otro dato que agregues al JSON (presupuesto, interés, etc.) se guarda igual, sin crear columnas nuevas en el tablero.
+                <code>name</code> es el único campo obligatorio. <code>ticket</code> clasifica el lead (HG, MD, LT). <code>tracking_code</code> vincula la venta con la pieza de contenido original (ej: R-001). Cualquier otro dato (presupuesto, interés) se guarda en la metadata de la tarjeta.
               </p>
             </div>
 
