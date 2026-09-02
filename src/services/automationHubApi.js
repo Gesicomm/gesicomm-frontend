@@ -110,18 +110,21 @@ export const financeApi = {
   },
   students: {
     listar: (params) => AutomationAPI.get('/finance/students', { params }).then((r) => r.data),
+    buscar: (filtros) => AutomationAPI.post('/finance/students/search', filtros).then((r) => r.data),
     crear: (d) => AutomationAPI.post('/finance/students', d).then((r) => r.data),
     actualizar: (id, d) => AutomationAPI.put(`/finance/students/${id}`, d).then((r) => r.data),
     eliminar: (id) => AutomationAPI.delete(`/finance/students/${id}`).then((r) => r.data),
   },
   payments: {
     listar: () => AutomationAPI.get('/finance/payments').then((r) => r.data),
+    buscar: (filtros) => AutomationAPI.post('/finance/payments/search', filtros).then((r) => r.data),
     crear: (d) => AutomationAPI.post('/finance/payments', d).then((r) => r.data),
     actualizar: (id, d) => AutomationAPI.put(`/finance/payments/${id}`, d).then((r) => r.data),
     eliminar: (id) => AutomationAPI.delete(`/finance/payments/${id}`).then((r) => r.data),
   },
   expenses: {
     listar: () => AutomationAPI.get('/finance/expenses').then((r) => r.data),
+    buscar: (filtros) => AutomationAPI.post('/finance/expenses/search', filtros).then((r) => r.data),
     crear: (d) => AutomationAPI.post('/finance/expenses', d).then((r) => r.data),
     actualizar: (id, d) => AutomationAPI.put(`/finance/expenses/${id}`, d).then((r) => r.data),
     eliminar: (id) => AutomationAPI.delete(`/finance/expenses/${id}`).then((r) => r.data),
@@ -134,6 +137,7 @@ export const financeApi = {
   },
   teamPayments: {
     listar: () => AutomationAPI.get('/finance/team-payments').then((r) => r.data),
+    buscar: (filtros) => AutomationAPI.post('/finance/team-payments/search', filtros).then((r) => r.data),
     crear: (d) => AutomationAPI.post('/finance/team-payments', d).then((r) => r.data),
     eliminar: (id) => AutomationAPI.delete(`/finance/team-payments/${id}`).then((r) => r.data),
   },

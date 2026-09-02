@@ -205,18 +205,47 @@ export default function FinanzasAutomatizacion() {
         </div>
         
         <div className="p-4">
-          {tab === 'ALUMNOS' && <TabAlumnos dash={dash} programas={programas} equipo={equipo} onRefrescar={cargar} />}
-          {tab === 'PAGOS' && <TabPagos dash={dash} />}
-          {tab === 'GASTOS' && <TabGastos dash={dash} onRefrescar={cargar} />}
+          {tab === 'ALUMNOS' && <TabAlumnos programas={programas} equipo={equipo} onRefrescar={cargar} />}
+          {tab === 'PAGOS' && <TabPagos />}
+          {tab === 'GASTOS' && <TabGastos onRefrescar={cargar} />}
           {tab === 'PROGRAMAS' && <TabProgramas programas={programas} onRefrescar={cargar} />}
           {tab === 'EQUIPO' && <TabEquipo equipo={equipo} onRefrescar={cargar} />}
-          {tab === 'COMISIONES' && <TabComisiones dash={dash} equipo={equipo} onRefrescar={cargar} />}
+          {tab === 'COMISIONES' && <TabComisiones equipo={equipo} onRefrescar={cargar} />}
           {tab === 'ALERTAS' && <TabAlertas dash={dash} />}
         </div>
       </div>
     </div>
   );
 }
+
+const MoneyInput = ({ value, onChange, placeholder = "0", required = false }) => {
+  const [displayValue, setDisplayValue] = useState(value ? fmt(value) : '');
+
+  useEffect(() => {
+    if (value !== undefined && value !== null) {
+      if (document.activeElement !== document.getElementById(`money-${value}`)) {
+        setDisplayValue(fmt(value));
+      }
+    }
+  }, [value]);
+
+  const handleChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setDisplayValue(raw ? fmt(raw) : '');
+    onChange(raw);
+  };
+
+  return (
+    <input
+      type="text"
+      required={required}
+      placeholder={placeholder}
+      className="h-9 w-full rounded-md border border-border bg-surface-2 px-3 text-xs text-fg"
+      value={displayValue}
+      onChange={handleChange}
+    />
+  );
+};
 
 function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
@@ -337,7 +366,7 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={lbl}>Precio Negociado</label>
-              <input type="number" step="0.01" className={inp} value={form.negotiated_price} onChange={e => setF('negotiated_price', e.target.value)} />
+              <MoneyInput value={form.negotiated_price} onChange={val => setF('negotiated_price', val)} />
             </div>
             <div>
               <label className={lbl}>Setter</label>
@@ -389,7 +418,7 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
               </div>
               <div>
                 <label className={lbl}>Entrega Inicial</label>
-                <input type="number" step="0.01" className={inp} placeholder="0" value={entregaInicial} onChange={e => setEntregaInicial(e.target.value)} />
+                <MoneyInput value={entregaInicial} onChange={val => setEntregaInicial(val)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -397,7 +426,7 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
                 <React.Fragment key={i}>
                   <div>
                     <label className={lbl}>Cuota {i + 1} - Monto</label>
-                    <input type="number" step="0.01" className={inp} value={c.monto} onChange={e => setCuota(i, 'monto', e.target.value)} />
+                    <MoneyInput value={c.monto} onChange={val => setCuota(i, 'monto', val)} />
                   </div>
                   <div>
                     <label className={lbl}>Cuota {i + 1} - Fecha</label>
@@ -422,17 +451,31 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
   );
 }
 
-function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
+function TabAlumnos({ programas, equipo, onRefrescar }) {
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [buscar, setBuscar] = useState('');
+  const [alumnos, setAlumnos] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [filtros, setFiltros] = useState({ page: 1, limit: 10, buscar: '', programId: '' });
+  const [cargando, setCargando] = useState(false);
 
-  if (!dash) return null;
+  const cargarAlumnos = useCallback(async () => {
+    setCargando(true);
+    try {
+      const res = await financeApi.students.buscar(filtros);
+      setAlumnos(res.data || []);
+      setTotal(res.total || 0);
+      setPages(res.pages || 1);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCargando(false);
+    }
+  }, [filtros]);
 
-  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
+  useEffect(() => { cargarAlumnos(); }, [cargarAlumnos]);
 
-  const alumnos = dash.students.filter(s =>
-    !buscar || s.name?.toLowerCase().includes(buscar.toLowerCase()) || s.email?.toLowerCase().includes(buscar.toLowerCase())
-  );
+  const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
 
   return (
     <div>
@@ -441,18 +484,25 @@ function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
           programas={programas}
           equipo={equipo}
           onClose={() => setModalAbierto(false)}
-          onGuardado={() => { setModalAbierto(false); onRefrescar(); }}
+          onGuardado={() => { setModalAbierto(false); cargarAlumnos(); onRefrescar(); }}
         />
       )}
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <input type="text" placeholder="Buscar alumno..." value={buscar} onChange={e => setBuscar(e.target.value)}
-          className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-48" />
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2">
+          <input type="text" placeholder="Buscar alumno..." value={filtros.buscar} onChange={e => setF('buscar', e.target.value)}
+            className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-48" />
+          <select className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-40" value={filtros.programId} onChange={e => setF('programId', e.target.value)}>
+            <option value="">Todos los programas</option>
+            {programas.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
         <button onClick={() => setModalAbierto(true)}
           className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg hover:bg-primary-hover">
           + Nuevo Acuerdo
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative min-h-[300px]">
+        {cargando && <div className="absolute inset-0 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="text-xs font-bold text-fg-muted animate-pulse">Cargando...</span></div>}
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
             <tr>
@@ -468,7 +518,7 @@ function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {alumnos.length === 0 && (
+            {alumnos.length === 0 && !cargando && (
               <tr><td colSpan={9} className="py-6 text-center text-fg-muted">No hay registros para mostrar</td></tr>
             )}
             {alumnos.map(s => {
@@ -497,37 +547,116 @@ function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
             })}
           </tbody>
         </table>
-        <div className="mt-2 text-right text-[10px] text-fg-subtle">{alumnos.length} registros</div>
       </div>
+      
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <div className="text-[10px] text-fg-muted">Mostrando {alumnos.length} de {total}</div>
+          <div className="flex gap-1">
+            <button disabled={filtros.page <= 1} onClick={() => setFiltros(f => ({ ...f, page: f.page - 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Anterior</button>
+            <span className="flex items-center px-2 text-xs font-bold">{filtros.page} / {pages}</span>
+            <button disabled={filtros.page >= pages} onClick={() => setFiltros(f => ({ ...f, page: f.page + 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Siguiente</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+ function TabPagos() {
+  const [pagos, setPagos] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [filtros, setFiltros] = useState({ page: 1, limit: 10, status: '', due_date_from: '', due_date_to: '', paid_date_from: '', paid_date_to: '' });
+  const [cargando, setCargando] = useState(false);
 
-function TabPagos({ dash }) {
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      const res = await financeApi.payments.buscar(filtros);
+      setPagos(res.data || []);
+      setTotal(res.total || 0);
+      setPages(res.pages || 1);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCargando(false);
+    }
+  }, [filtros]);
 
-  if (!dash) return null;
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-xs">
-        <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
-          <tr><th className="py-2">Cuota</th><th className="py-2">Vencimiento</th><th className="py-2">Monto</th><th className="py-2">Estado</th><th className="py-2">Fecha Pago</th></tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {dash.payments.map(p => (
-            <tr key={p.id} className="hover:bg-surface-2">
-              <td className="py-2 font-semibold text-fg">{p.label || `Cuota ${p.installment_number}`}</td>
-              <td className="py-2 text-fg-muted">{p.due_date}</td>
-              <td className="py-2 font-bold text-fg">Gs {fmt(p.amount)}</td>
-              <td className="py-2">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${p.status === 'Pagado' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}>
-                  {p.status}
-                </span>
-              </td>
-              <td className="py-2 text-fg-muted">{p.paid_date || '-'}</td>
+    <div>
+      <div className="mb-3 flex flex-wrap gap-2 items-center">
+        <select className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-32" value={filtros.status} onChange={e => setF('status', e.target.value)}>
+          <option value="">Estado (Todos)</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="Pagado">Pagado</option>
+        </select>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-fg-muted">Venc.</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.due_date_from} onChange={e => setF('due_date_from', e.target.value)} />
+          <span className="text-[10px] text-fg-muted">-</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.due_date_to} onChange={e => setF('due_date_to', e.target.value)} />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-fg-muted">Pago</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.paid_date_from} onChange={e => setF('paid_date_from', e.target.value)} />
+          <span className="text-[10px] text-fg-muted">-</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.paid_date_to} onChange={e => setF('paid_date_to', e.target.value)} />
+        </div>
+      </div>
+
+      <div className="overflow-x-auto relative min-h-[300px]">
+        {cargando && <div className="absolute inset-0 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="text-xs font-bold text-fg-muted animate-pulse">Cargando...</span></div>}
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
+            <tr>
+              <th className="py-2 pr-3">Cuota</th>
+              <th className="py-2 pr-3">Alumno</th>
+              <th className="py-2 pr-3">Vencimiento</th>
+              <th className="py-2 pr-3">Monto</th>
+              <th className="py-2 pr-3">Estado</th>
+              <th className="py-2 pr-3">Fecha Pago</th>
+              <th className="py-2 pr-3">Método</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {pagos.length === 0 && !cargando && <tr><td colSpan={7} className="py-6 text-center text-fg-muted">No hay registros</td></tr>}
+            {pagos.map(p => (
+              <tr key={p.id} className="hover:bg-surface-2">
+                <td className="py-2 pr-3 font-semibold text-fg">{p.label || `Cuota ${p.installment_number}`}</td>
+                <td className="py-2 pr-3 text-fg-muted">{p.Student?.name || '—'}</td>
+                <td className="py-2 pr-3 text-fg-muted">{p.due_date || '—'}</td>
+                <td className="py-2 pr-3 font-bold text-fg">Gs {fmt(p.amount)}</td>
+                <td className="py-2 pr-3">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${p.status === 'Pagado' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}>
+                    {p.status}
+                  </span>
+                </td>
+                <td className="py-2 pr-3 text-fg-muted">{p.paid_date || '—'}</td>
+                <td className="py-2 pr-3 text-fg-muted">{p.payment_method || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <div className="text-[10px] text-fg-muted">Mostrando {pagos.length} de {total}</div>
+          <div className="flex gap-1">
+            <button disabled={filtros.page <= 1} onClick={() => setFiltros(f => ({ ...f, page: f.page - 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Anterior</button>
+            <span className="flex items-center px-2 text-xs font-bold">{filtros.page} / {pages}</span>
+            <button disabled={filtros.page >= pages} onClick={() => setFiltros(f => ({ ...f, page: f.page + 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Siguiente</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
     </div>
   );
 }
@@ -537,11 +666,36 @@ function TabGastos({ dash, onRefrescar }) {
   const [monto, setMonto] = useState('');
   const [fecha, setFecha] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
 
+  const [gastos, setGastos] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [filtros, setFiltros] = useState({ page: 1, limit: 10, date_from: '', date_to: '' });
+  const [cargando, setCargando] = useState(false);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      const res = await financeApi.expenses.buscar(filtros);
+      setGastos(res.data || []);
+      setTotal(res.total || 0);
+      setPages(res.pages || 1);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCargando(false);
+    }
+  }, [filtros]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
+
   const crear = async (e) => {
     e.preventDefault();
     if (!desc || !monto) return;
     await financeApi.expenses.crear({ description: desc, amount: monto, expense_date: fecha });
     setDesc(''); setMonto('');
+    cargar();
     onRefrescar();
   };
 
@@ -549,17 +703,27 @@ function TabGastos({ dash, onRefrescar }) {
     <div>
       <form onSubmit={crear} className="mb-4 flex gap-2 max-w-2xl">
         <input className={inputClass} placeholder="Descripción..." value={desc} onChange={e => setDesc(e.target.value)} />
-        <input type="number" className={inputClass} placeholder="Monto" value={monto} onChange={e => setMonto(e.target.value)} />
+        <div className="w-32"><MoneyInput placeholder="Monto" value={monto} onChange={setMonto} /></div>
         <input type="date" className={inputClass} value={fecha} onChange={e => setFecha(e.target.value)} />
         <button type="submit" className="shrink-0 h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg">+ Gasto</button>
       </form>
-      <div className="overflow-x-auto">
+
+      <div className="mb-3 flex items-center gap-1">
+        <span className="text-[10px] text-fg-muted">Fecha</span>
+        <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_from} onChange={e => setF('date_from', e.target.value)} />
+        <span className="text-[10px] text-fg-muted">-</span>
+        <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_to} onChange={e => setF('date_to', e.target.value)} />
+      </div>
+
+      <div className="overflow-x-auto relative min-h-[300px]">
+        {cargando && <div className="absolute inset-0 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="text-xs font-bold text-fg-muted animate-pulse">Cargando...</span></div>}
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
             <tr><th className="py-2">Fecha</th><th className="py-2">Descripción</th><th className="py-2">Monto</th></tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {dash?.expenses.map(g => (
+            {gastos.length === 0 && !cargando && <tr><td colSpan={3} className="py-6 text-center text-fg-muted">No hay gastos</td></tr>}
+            {gastos.map(g => (
               <tr key={g.id} className="hover:bg-surface-2">
                 <td className="py-2 text-fg-muted">{g.expense_date}</td>
                 <td className="py-2 font-semibold text-fg">{g.description}</td>
@@ -569,6 +733,17 @@ function TabGastos({ dash, onRefrescar }) {
           </tbody>
         </table>
       </div>
+
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <div className="text-[10px] text-fg-muted">Mostrando {gastos.length} de {total}</div>
+          <div className="flex gap-1">
+            <button disabled={filtros.page <= 1} onClick={() => setFiltros(f => ({ ...f, page: f.page - 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Anterior</button>
+            <span className="flex items-center px-2 text-xs font-bold">{filtros.page} / {pages}</span>
+            <button disabled={filtros.page >= pages} onClick={() => setFiltros(f => ({ ...f, page: f.page + 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Siguiente</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -643,16 +818,41 @@ function TabEquipo({ equipo, onRefrescar }) {
   );
 }
 
-function TabComisiones({ dash, equipo, onRefrescar }) {
+function TabComisiones({ equipo, onRefrescar }) {
   const [miembro, setMiembro] = useState('');
   const [monto, setMonto] = useState('');
   const [fecha, setFecha] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
+
+  const [pagos, setPagos] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [filtros, setFiltros] = useState({ page: 1, limit: 10, team_member_id: '', date_from: '', date_to: '' });
+  const [cargando, setCargando] = useState(false);
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      const res = await financeApi.teamPayments.buscar(filtros);
+      setPagos(res.data || []);
+      setTotal(res.total || 0);
+      setPages(res.pages || 1);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCargando(false);
+    }
+  }, [filtros]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
 
   const crear = async (e) => {
     e.preventDefault();
     if (!miembro || !monto) return;
     await financeApi.teamPayments.crear({ team_member_id: miembro, amount: monto, paid_date: fecha });
     setMiembro(''); setMonto('');
+    cargar();
     onRefrescar();
   };
 
@@ -660,29 +860,56 @@ function TabComisiones({ dash, equipo, onRefrescar }) {
     <div>
       <form onSubmit={crear} className="mb-4 flex gap-2 max-w-3xl">
         <select className={inputClass} value={miembro} onChange={e => setMiembro(e.target.value)}>
-          <option value="">Seleccionar closer...</option>
+          <option value="">Seleccionar miembro...</option>
           {equipo.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
         </select>
-        <input type="number" className={inputClass} placeholder="Monto a pagar" value={monto} onChange={e => setMonto(e.target.value)} />
+        <div className="w-40"><MoneyInput placeholder="Monto a pagar" value={monto} onChange={setMonto} /></div>
         <input type="date" className={inputClass} value={fecha} onChange={e => setFecha(e.target.value)} />
         <button type="submit" className="shrink-0 h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg">+ Registrar Pago</button>
       </form>
-      <div className="overflow-x-auto">
+
+      <div className="mb-3 flex flex-wrap gap-2 items-center">
+        <select className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-40" value={filtros.team_member_id} onChange={e => setF('team_member_id', e.target.value)}>
+          <option value="">Todos los miembros</option>
+          {equipo.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
+        </select>
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-fg-muted">Fecha</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_from} onChange={e => setF('date_from', e.target.value)} />
+          <span className="text-[10px] text-fg-muted">-</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_to} onChange={e => setF('date_to', e.target.value)} />
+        </div>
+      </div>
+
+      <div className="overflow-x-auto relative min-h-[300px]">
+        {cargando && <div className="absolute inset-0 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="text-xs font-bold text-fg-muted animate-pulse">Cargando...</span></div>}
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
-            <tr><th className="py-2">Fecha</th><th className="py-2">Closer</th><th className="py-2">Monto</th></tr>
+            <tr><th className="py-2">Fecha</th><th className="py-2">Miembro</th><th className="py-2">Monto</th></tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {dash?.teamPayments.map(p => (
+            {pagos.length === 0 && !cargando && <tr><td colSpan={3} className="py-6 text-center text-fg-muted">No hay pagos registrados</td></tr>}
+            {pagos.map(p => (
               <tr key={p.id} className="hover:bg-surface-2">
                 <td className="py-2 text-fg-muted">{p.paid_date}</td>
-                <td className="py-2 font-semibold text-fg">{equipo.find(m => m.id === p.team_member_id)?.name || 'Desconocido'}</td>
-                <td className="py-2 font-bold text-primary">Gs {fmt(p.amount)}</td>
+                <td className="py-2 font-semibold text-fg">{p.TeamMember?.name || '—'}</td>
+                <td className="py-2 font-bold text-success">Gs {fmt(p.amount)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <div className="text-[10px] text-fg-muted">Mostrando {pagos.length} de {total}</div>
+          <div className="flex gap-1">
+            <button disabled={filtros.page <= 1} onClick={() => setFiltros(f => ({ ...f, page: f.page - 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Anterior</button>
+            <span className="flex items-center px-2 text-xs font-bold">{filtros.page} / {pages}</span>
+            <button disabled={filtros.page >= pages} onClick={() => setFiltros(f => ({ ...f, page: f.page + 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Siguiente</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
