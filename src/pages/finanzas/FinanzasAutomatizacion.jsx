@@ -60,7 +60,7 @@ export default function FinanzasAutomatizacion() {
       ]);
       setDash(d);
       setProgramas(p);
-      setEquipo(e.filter(m => m.role === 'Closer')); // Solo Closers
+      setEquipo(e);
     } catch (err) {
       setError('Error al cargar datos financieros.');
     } finally {
@@ -205,7 +205,7 @@ export default function FinanzasAutomatizacion() {
         </div>
         
         <div className="p-4">
-          {tab === 'ALUMNOS' && <TabAlumnos dash={dash} />}
+          {tab === 'ALUMNOS' && <TabAlumnos dash={dash} programas={programas} equipo={equipo} onRefrescar={cargar} />}
           {tab === 'PAGOS' && <TabPagos dash={dash} />}
           {tab === 'GASTOS' && <TabGastos dash={dash} onRefrescar={cargar} />}
           {tab === 'PROGRAMAS' && <TabProgramas programas={programas} onRefrescar={cargar} />}
@@ -218,30 +218,293 @@ export default function FinanzasAutomatizacion() {
   );
 }
 
-function TabAlumnos({ dash }) {
-  if (!dash) return null;
+function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
+  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
+  const [form, setForm] = useState({
+    name: '', email: '', phone: '',
+    program_id: '', sale_date: hoy, start_date: hoy,
+    duration_months: 6, negotiated_price: '',
+    setter_id: '', closer_id: '', student_status: 'Activo',
+    renewal_status: 'Sin gestionar', commercial_notes: '',
+  });
+  const [cantCuotas, setCantCuotas] = useState(3);
+  const [entregaInicial, setEntregaInicial] = useState('');
+  const [cuotas, setCuotas] = useState(
+    Array.from({ length: 3 }, (_, i) => ({ monto: '', fecha: '' }))
+  );
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+
+  const setF = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  const handleCantCuotas = (n) => {
+    const num = Math.max(1, Math.min(12, Number(n)));
+    setCantCuotas(num);
+    setCuotas(Array.from({ length: num }, (_, i) => cuotas[i] || { monto: '', fecha: '' }));
+  };
+
+  const setCuota = (i, key, val) => {
+    setCuotas(prev => prev.map((c, idx) => idx === i ? { ...c, [key]: val } : c));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setGuardando(true);
+    setError('');
+    try {
+      const installments = cuotas
+        .filter(c => c.monto || c.fecha)
+        .map((c, i) => ({
+          label: `Cuota ${i + 1}`,
+          amount: parseFloat(c.monto) || 0,
+          due_date: c.fecha || null,
+        }));
+      const student = {
+        name: form.name,
+        email: form.email || null,
+        phone: form.phone || null,
+        program_id: form.program_id || null,
+        sale_date: form.sale_date,
+        start_date: form.start_date || null,
+        duration_months: form.duration_months || null,
+        negotiated_price: parseFloat(form.negotiated_price) || 0,
+        setter_id: form.setter_id || null,
+        closer_id: form.closer_id || null,
+        student_status: form.student_status,
+        renewal_status: form.renewal_status,
+        commercial_notes: form.commercial_notes || null,
+      };
+      await financeApi.students.crear({ student, installments });
+      onGuardado();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al guardar el acuerdo.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  const inp = 'h-9 w-full rounded-md border border-border bg-surface-2 px-3 text-xs text-fg';
+  const lbl = 'text-[10px] font-bold uppercase text-fg-subtle mb-0.5 block';
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-xs">
-        <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
-          <tr><th className="py-2">Nombre</th><th className="py-2">Venta</th><th className="py-2">Precio</th><th className="py-2">Estado</th></tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {dash.students.map(s => (
-            <tr key={s.id} className="hover:bg-surface-2">
-              <td className="py-2 font-semibold text-fg">{s.name}</td>
-              <td className="py-2 text-fg-muted">{s.sale_date}</td>
-              <td className="py-2 font-bold text-fg">Gs {fmt(s.negotiated_price)}</td>
-              <td className="py-2"><span className="rounded-full bg-surface-3 px-2 py-0.5 text-[10px] text-fg-muted">{s.student_status}</span></td>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="border-b border-border p-5">
+          <h3 className="m-0 text-base font-bold text-fg">Nuevo acuerdo comercial</h3>
+          <p className="mt-0.5 text-[11px] text-fg-muted">Crea alumno + acuerdo + cuotas automáticamente.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5">
+          {/* Datos personales */}
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <label className={lbl}>Nombre *</label>
+              <input required className={inp} value={form.name} onChange={e => setF('name', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Email</label>
+              <input type="email" className={inp} value={form.email} onChange={e => setF('email', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Teléfono</label>
+              <input className={inp} value={form.phone} onChange={e => setF('phone', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Programa</label>
+              <select className={inp} value={form.program_id} onChange={e => setF('program_id', e.target.value)}>
+                <option value="">Seleccionar programa...</option>
+                {programas.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Fecha de Venta</label>
+              <input type="date" className={inp} value={form.sale_date} onChange={e => setF('sale_date', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Inicio del Programa</label>
+              <input type="date" className={inp} value={form.start_date} onChange={e => setF('start_date', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Duración Negociada (Meses)</label>
+              <input type="number" min="1" className={inp} value={form.duration_months} onChange={e => setF('duration_months', e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Precio Negociado</label>
+              <input type="number" step="0.01" className={inp} value={form.negotiated_price} onChange={e => setF('negotiated_price', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Setter</label>
+              <select className={inp} value={form.setter_id} onChange={e => setF('setter_id', e.target.value)}>
+                <option value="">Sin asignar</option>
+                {equipo.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Closer</label>
+              <select className={inp} value={form.closer_id} onChange={e => setF('closer_id', e.target.value)}>
+                <option value="">Sin asignar</option>
+                {equipo.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Estado Alumno</label>
+              <select className={inp} value={form.student_status} onChange={e => setF('student_status', e.target.value)}>
+                <option>Activo</option>
+                <option>Inactivo</option>
+                <option>Finalizado</option>
+                <option>Cancelado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Renovación</label>
+            <select className={`${inp} max-w-xs`} value={form.renewal_status} onChange={e => setF('renewal_status', e.target.value)}>
+              <option>Sin gestionar</option>
+              <option>En proceso</option>
+              <option>Renovado</option>
+              <option>No renueva</option>
+            </select>
+          </div>
+          <div>
+            <label className={lbl}>Notas Comerciales</label>
+            <textarea className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-fg h-20 resize-none" value={form.commercial_notes} onChange={e => setF('commercial_notes', e.target.value)} />
+          </div>
+
+          {/* Plan de pagos */}
+          <div className="border-t border-border pt-4">
+            <div className="mb-3 text-xs font-bold uppercase text-primary">Plan de Pagos</div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className={lbl}>Cantidad de Cuotas</label>
+                <input type="number" min="1" max="12" className={inp} value={cantCuotas} onChange={e => handleCantCuotas(e.target.value)} />
+              </div>
+              <div>
+                <label className={lbl}>Entrega Inicial</label>
+                <input type="number" step="0.01" className={inp} placeholder="0" value={entregaInicial} onChange={e => setEntregaInicial(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {cuotas.map((c, i) => (
+                <React.Fragment key={i}>
+                  <div>
+                    <label className={lbl}>Cuota {i + 1} - Monto</label>
+                    <input type="number" step="0.01" className={inp} value={c.monto} onChange={e => setCuota(i, 'monto', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className={lbl}>Cuota {i + 1} - Fecha</label>
+                    <input type="date" className={inp} value={c.fecha} onChange={e => setCuota(i, 'fecha', e.target.value)} />
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <button type="button" onClick={onClose} className="h-10 rounded-md border border-border px-5 text-xs font-semibold text-fg hover:bg-surface-2">Cancelar</button>
+            <button type="submit" disabled={guardando} className="h-10 rounded-md bg-primary px-6 text-xs font-semibold text-primary-fg disabled:opacity-60">
+              {guardando ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [buscar, setBuscar] = useState('');
+
+  if (!dash) return null;
+
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
+
+  const alumnos = dash.students.filter(s =>
+    !buscar || s.name?.toLowerCase().includes(buscar.toLowerCase()) || s.email?.toLowerCase().includes(buscar.toLowerCase())
+  );
+
+  return (
+    <div>
+      {modalAbierto && (
+        <NuevoAcuerdoModal
+          programas={programas}
+          equipo={equipo}
+          onClose={() => setModalAbierto(false)}
+          onGuardado={() => { setModalAbierto(false); onRefrescar(); }}
+        />
+      )}
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <input type="text" placeholder="Buscar alumno..." value={buscar} onChange={e => setBuscar(e.target.value)}
+          className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-48" />
+        <button onClick={() => setModalAbierto(true)}
+          className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg hover:bg-primary-hover">
+          + Nuevo Acuerdo
+        </button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
+            <tr>
+              <th className="py-2 pr-3 whitespace-nowrap">Venta</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Alumno</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Programa</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Duración</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Fin</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Vendido</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Cobrado</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Saldo</th>
+              <th className="py-2 pr-3 whitespace-nowrap">Estado</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {alumnos.length === 0 && (
+              <tr><td colSpan={9} className="py-6 text-center text-fg-muted">No hay registros para mostrar</td></tr>
+            )}
+            {alumnos.map(s => {
+              const cobrado = (s.Payments || []).filter(p => p.status === 'Pagado').reduce((a, p) => a + Number(p.amount || 0), 0);
+              const saldo = Number(s.negotiated_price || 0) - cobrado;
+              const fin = s.start_date && s.duration_months
+                ? (() => { const d = new Date(s.start_date); d.setMonth(d.getMonth() + Number(s.duration_months)); return d.toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }); })()
+                : s.end_date || '—';
+              return (
+                <tr key={s.id} className="hover:bg-surface-2">
+                  <td className="py-2 pr-3 text-fg-muted whitespace-nowrap">{s.sale_date}</td>
+                  <td className="py-2 pr-3 font-semibold text-fg whitespace-nowrap">{s.name}</td>
+                  <td className="py-2 pr-3 text-fg-muted whitespace-nowrap">{programas.find(p => p.id === s.program_id)?.name || '—'}</td>
+                  <td className="py-2 pr-3 text-fg-muted whitespace-nowrap">{s.duration_months ? `${s.duration_months}m` : '—'}</td>
+                  <td className="py-2 pr-3 text-fg-muted whitespace-nowrap">{fin}</td>
+                  <td className="py-2 pr-3 font-bold text-fg whitespace-nowrap">Gs {fmt(s.negotiated_price)}</td>
+                  <td className="py-2 pr-3 font-bold text-success whitespace-nowrap">Gs {fmt(cobrado)}</td>
+                  <td className="py-2 pr-3 font-bold text-warning whitespace-nowrap">Gs {fmt(saldo)}</td>
+                  <td className="py-2 pr-3 whitespace-nowrap">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${s.student_status === 'Activo' ? 'bg-success/15 text-success' : 'bg-surface-3 text-fg-muted'}`}>
+                      {s.student_status}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="mt-2 text-right text-[10px] text-fg-subtle">{alumnos.length} registros</div>
+      </div>
     </div>
   );
 }
 
 function TabPagos({ dash }) {
+
   if (!dash) return null;
   return (
     <div className="overflow-x-auto">
