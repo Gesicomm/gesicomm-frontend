@@ -128,7 +128,7 @@ function TabResumen({ dash }) {
 }
 
 function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
-  const [form, setForm] = useState({ name: '', program_id: '', sale_date: new Date().toISOString().slice(0, 10), negotiated_price: '', closer_id: '', tracking_code: '' });
+  const [form, setForm] = useState({ name: '', program_id: '', sale_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }), negotiated_price: '', closer_id: '', tracking_code: '' });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
@@ -148,7 +148,7 @@ function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
         student: { ...form, negotiated_price: precio, program_id: form.program_id || null, closer_id: form.closer_id || null, tracking_code: form.tracking_code || null },
         installments: [{ label: 'Pago único', amount: precio, due_date: form.sale_date }],
       });
-      setForm({ name: '', program_id: '', sale_date: new Date().toISOString().slice(0, 10), negotiated_price: '', closer_id: '', tracking_code: '' });
+      setForm({ name: '', program_id: '', sale_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }), negotiated_price: '', closer_id: '', tracking_code: '' });
       onRefrescar();
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo crear el alumno.');
@@ -221,8 +221,8 @@ function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
 }
 
 function TabCostos({ dash, equipo, onRefrescar }) {
-  const [gasto, setGasto] = useState({ expense_date: new Date().toISOString().slice(0, 10), category: '', description: '', expense_type: 'Fijo', amount: '' });
-  const [comision, setComision] = useState({ team_member_id: '', amount: '', paid_date: new Date().toISOString().slice(0, 10), notes: '' });
+  const [gasto, setGasto] = useState({ expense_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }), category: '', description: '', expense_type: 'Fijo', amount: '' });
+  const [comision, setComision] = useState({ team_member_id: '', amount: '', paid_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }), notes: '' });
   const [error, setError] = useState('');
 
   const crearGasto = async (e) => {
@@ -230,7 +230,7 @@ function TabCostos({ dash, equipo, onRefrescar }) {
     if (!gasto.amount) return;
     try {
       await financeApi.expenses.crear({ ...gasto, amount: Number(gasto.amount) });
-      setGasto({ expense_date: new Date().toISOString().slice(0, 10), category: '', description: '', expense_type: 'Fijo', amount: '' });
+      setGasto({ expense_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }), category: '', description: '', expense_type: 'Fijo', amount: '' });
       onRefrescar();
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo registrar el gasto.');
@@ -242,7 +242,7 @@ function TabCostos({ dash, equipo, onRefrescar }) {
     if (!comision.team_member_id || !comision.amount) return;
     try {
       await financeApi.teamPayments.crear({ ...comision, amount: Number(comision.amount) });
-      setComision({ team_member_id: '', amount: '', paid_date: new Date().toISOString().slice(0, 10), notes: '' });
+      setComision({ team_member_id: '', amount: '', paid_date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }), notes: '' });
       onRefrescar();
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo registrar la comisión.');

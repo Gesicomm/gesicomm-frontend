@@ -24,7 +24,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
     objective: '',
     script: '',
     description: '',
-    publish_date: fechaInicial || new Date().toISOString().slice(0, 10),
+    publish_date: fechaInicial || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }),
     publish_time: '10:00',
   });
   const [guardando, setGuardando] = useState(false);

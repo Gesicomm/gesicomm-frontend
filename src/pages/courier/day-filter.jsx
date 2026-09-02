@@ -3,7 +3,7 @@ import { Calendar, ChevronLeft, ChevronRight } from "lucide-react"
 function shiftDate(iso, days) {
   const d = new Date(iso + "T00:00:00")
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return d.toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' })
 }
 
 export function DayFilter({ date, onChange, count }) {

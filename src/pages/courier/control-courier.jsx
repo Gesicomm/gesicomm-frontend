@@ -34,8 +34,8 @@ export function ControlCourier() {
   const [searchParams] = useSearchParams();
   const tabInicial = searchParams.get("tab");
   const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
-  const [fechaDesde, setFechaDesde] = useState(() => new Date().toISOString().slice(0, 10));
-  const [fechaHasta, setFechaHasta] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fechaDesde, setFechaDesde] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
+  const [fechaHasta, setFechaHasta] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [couriers, setCouriers] = useState([]);
   const [envios, setEnvios] = useState([]);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);

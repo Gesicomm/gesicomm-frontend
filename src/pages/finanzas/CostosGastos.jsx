@@ -40,7 +40,7 @@ const ESTADO_BADGE = {
 
 const ESTADO_LABEL = { pendiente: 'Pendiente', pagado: 'Pagado', cancelado: 'Cancelado' };
 
-function iso(d) { return d.toISOString().slice(0, 10); }
+function iso(d) { return d.toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }); }
 
 function calcularRangoPeriodo(preset, personalizado) {
   const hoy = new Date();

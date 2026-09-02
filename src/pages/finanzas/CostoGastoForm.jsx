@@ -17,7 +17,7 @@ const FRECUENCIAS = [
   { id: 'semestral', label: 'Semestral' }, { id: 'anual', label: 'Anual' },
 ];
 
-function hoyISO() { return new Date().toISOString().slice(0, 10); }
+function hoyISO() { return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }); }
 
 function estadoInicial(registro) {
   if (registro) {

@@ -4,7 +4,7 @@ import { getDashboardGeneralPedidos } from "../../services/courierApi";
 import { productService } from "../../services/productService";
 
 function hoy() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
 }
 
 const FILTROS_VACIOS = { courier_id: "TODOS", fecha_desde: "", fecha_hasta: "", producto: "TODOS" };

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { RefreshCcw, MessageCircle, X } from 'lucide-react';
 import { collectionsApi } from '../../services/automationHubApi';
+import { getMetodosPago } from '../../services/courierApi';
 
 function soloDigitos(v) {
   return String(v || '').replace(/\D/g, '');
@@ -18,11 +19,18 @@ function columnaSiguiente(tarjeta) {
 }
 
 function RegistrarCobroModal({ tarjeta, onClose, onGuardado }) {
-  const [paidDate, setPaidDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paidDate, setPaidDate] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [metodo, setMetodo] = useState('');
+  const [metodosPago, setMetodosPago] = useState([]);
   const [notas, setNotas] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    getMetodosPago()
+      .then((data) => setMetodosPago((data || []).filter((m) => m.activo)))
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,7 +60,10 @@ function RegistrarCobroModal({ tarjeta, onClose, onGuardado }) {
           <label className="text-[10px] font-semibold uppercase text-fg-subtle">Fecha de pago</label>
           <input type="date" className={inputClass} value={paidDate} onChange={(e) => setPaidDate(e.target.value)} />
           <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Método de pago</label>
-          <input className={inputClass} placeholder="Ej: Transferencia, Efectivo" value={metodo} onChange={(e) => setMetodo(e.target.value)} />
+          <select className={inputClass} value={metodo} onChange={(e) => setMetodo(e.target.value)}>
+            <option value="">Sin especificar</option>
+            {metodosPago.map((m) => <option key={m.id} value={m.nombre}>{m.nombre}</option>)}
+          </select>
           <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Notas</label>
           <input className={inputClass} value={notas} onChange={(e) => setNotas(e.target.value)} />
           {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1.5 text-[11px] text-danger">{error}</div>}

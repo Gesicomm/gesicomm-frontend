@@ -17,7 +17,7 @@ const COLOR_CLASS = {
 function sumarMeses(fechaBase, n) {
   const d = new Date(fechaBase);
   d.setMonth(d.getMonth() + n);
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
 }
 
 /** Reparte el monto entre N cuotas en partes iguales — el resto de la
@@ -31,10 +31,10 @@ function distribuirAutomatico(monto, cantidad) {
 
 function PlanPagosForm({ leadId, montoNegociado, hayPlanActivo, onCancelar, onCreado }) {
   const [cantidad, setCantidad] = useState(3);
-  const [auto, setAuto] = useState(true);
-  const hoy = new Date().toISOString().slice(0, 10);
+  const [auto, setAuto] = useState(false);
+  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
   const [cuotas, setCuotas] = useState(
-    distribuirAutomatico(montoNegociado, 3).map((amount, i) => ({ amount: String(amount || ''), due_date: sumarMeses(hoy, i + 1) }))
+    Array.from({ length: 3 }, (_, i) => ({ amount: '', due_date: sumarMeses(hoy, i + 1) }))
   );
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
@@ -55,7 +55,16 @@ function PlanPagosForm({ leadId, montoNegociado, hayPlanActivo, onCancelar, onCr
   useEffect(() => { if (auto) regenerar(cantidad, true); }, [montoNegociado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cambiarCantidad = (n) => { const c = Math.max(1, Number(n) || 1); setCantidad(c); regenerar(c, auto); };
-  const cambiarAuto = (v) => { setAuto(v); regenerar(cantidad, v); };
+  const cambiarAuto = (v) => {
+    setAuto(v);
+    if (v) {
+      regenerar(cantidad, true);
+    } else {
+      // Al desactivar, se borra lo que se había distribuido — no queda
+      // como "manual" con los números automáticos todavía puestos.
+      setCuotas((prev) => prev.map((c) => ({ ...c, amount: '' })));
+    }
+  };
   const cambiarCuota = (i, campo, valor) => setCuotas((prev) => prev.map((c, idx) => (idx === i ? { ...c, [campo]: valor } : c)));
 
   const suma = cuotas.reduce((a, c) => a + (Number(c.amount) || 0), 0);

@@ -82,7 +82,7 @@ export default function AutomationHub() {
             )}
             <button
               type="button"
-              onClick={() => setModalNuevo(new Date().toISOString().slice(0, 10))}
+              onClick={() => setModalNuevo(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }))}
               className="flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg"
             >
               <Plus size={16} /> Nuevo contenido

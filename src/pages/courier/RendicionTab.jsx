@@ -4,7 +4,7 @@ import { formatGs } from "../../lib/courier";
 import { previsualizarLiquidacion, confirmarLiquidacion, getLiquidacionesPorCourier } from "../../services/courierApi";
 
 function hoy() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
 }
 function inicioDeMes() {
   const d = new Date();
