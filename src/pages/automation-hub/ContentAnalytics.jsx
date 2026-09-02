@@ -1,8 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { analyticsApi } from '../../services/automationHubApi';
 
-const FORMATO_LABEL = { R: 'Video/Reel', C: 'Carrusel', H: 'Historias' };
+const FORMATO_LABEL = { R: 'Video/Reel', C: 'Carrusel', H: 'Historia' };
+const FORMATO_COLOR = { R: '#7d9bd6', C: '#10b981', H: '#f59e0b' };
+
+// Paleta de colores para las barras del ranking por pieza
+const BAR_COLORS = ['#7d9bd6', '#10b981', '#f59e0b', '#ef4444', '#a78bfa', '#f97316'];
+
+const TOOLTIP_STYLE = {
+  contentStyle: {
+    backgroundColor: 'var(--color-surface)',
+    borderColor: 'var(--color-border)',
+    borderRadius: '8px',
+    color: 'var(--color-fg)',
+    fontSize: '12px',
+    boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
+  },
+  itemStyle: { color: 'var(--color-fg)', fontWeight: 600 },
+  labelStyle: { color: 'var(--color-fg-muted)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' },
+  cursor: { fill: 'var(--color-surface-2)', opacity: 0.4 },
+};
 
 function Kpi({ label, value, hint }) {
   return (
@@ -15,17 +33,26 @@ function Kpi({ label, value, hint }) {
 }
 
 function RankingList({ titulo, items }) {
+  const max = items[0]?.revenue || 1;
   return (
     <div className="rounded-lg border border-border bg-surface p-4">
-      <div className="mb-2 text-xs font-semibold text-fg">{titulo}</div>
+      <div className="mb-3 text-xs font-semibold text-fg">{titulo}</div>
       {!items.length ? (
-        <div className="text-xs text-fg-muted">Todavía no hay ventas atribuidas suficientes.</div>
+        <div className="text-xs text-fg-muted">Sin datos suficientes todavía.</div>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          {items.map((it) => (
-            <div key={it.label} className="flex items-center justify-between text-xs">
-              <span className="truncate text-fg-muted">{it.label}</span>
-              <span className="font-semibold text-fg">{it.revenue.toLocaleString('es-PY')}</span>
+        <div className="flex flex-col gap-2.5">
+          {items.map((it, i) => (
+            <div key={it.label}>
+              <div className="mb-1 flex items-center justify-between text-xs">
+                <span className="truncate text-fg-muted max-w-[70%]">{it.label}</span>
+                <span className="font-semibold text-fg">{it.revenue.toLocaleString('es-PY')} Gs</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-surface-2">
+                <div
+                  className="h-1.5 rounded-full"
+                  style={{ width: `${Math.round((it.revenue / max) * 100)}%`, backgroundColor: BAR_COLORS[i % BAR_COLORS.length] }}
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -41,14 +68,8 @@ export default function ContentAnalytics() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([
-      analyticsApi.obtener(),
-      analyticsApi.obtenerEditorial()
-    ])
-      .then(([ventas, editorial]) => {
-        setDatosVentas(ventas);
-        setDatosEditorial(editorial);
-      })
+    Promise.all([analyticsApi.obtener(), analyticsApi.obtenerEditorial()])
+      .then(([ventas, editorial]) => { setDatosVentas(ventas); setDatosEditorial(editorial); })
       .catch((err) => setError(err.response?.data?.message || 'No se pudo cargar el analizador.'))
       .finally(() => setCargando(false));
   }, []);
@@ -59,10 +80,16 @@ export default function ContentAnalytics() {
 
   const { summary, pareto, topTopics, topAngles, topCtas } = datosVentas;
 
+  const paretoData = pareto.map((c, i) => ({
+    name: c.trackingCode,
+    revenue: c.revenue,
+    fill: BAR_COLORS[i % BAR_COLORS.length],
+  }));
+
   return (
     <div className="flex flex-col gap-6">
-      
-      {/* SECCIÓN: Productividad Editorial */}
+
+      {/* ── Productividad Editorial ────────────────────────────────── */}
       <div className="flex flex-col gap-4 border-b border-border pb-6">
         <h2 className="m-0 text-lg font-bold text-fg">Productividad Editorial</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -73,138 +100,128 @@ export default function ContentAnalytics() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* Gráfico de tendencia */}
+          {/* Tendencia */}
           <div className="rounded-lg border border-border bg-surface p-4">
-            <div className="mb-3 text-xs font-semibold text-fg">Tendencia Publicaciones (Últimos 6 meses)</div>
-            <div style={{ width: '100%', height: 220 }}>
+            <div className="mb-3 text-xs font-semibold text-fg">Publicaciones — últimos 6 meses</div>
+            <div style={{ width: '100%', height: 200 }}>
               <ResponsiveContainer>
-                <BarChart data={datosEditorial.history.slice().reverse()} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
+                <BarChart data={datosEditorial.history.slice().reverse()} margin={{ top: 8, right: 8, left: 0, bottom: 8 }} barSize={28}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" />
-                  <YAxis tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" />
-                  <Tooltip
-                    cursor={{ fill: 'var(--color-surface-2)', opacity: 0.4 }}
-                    contentStyle={{
-                      backgroundColor: 'var(--color-surface)',
-                      borderColor: 'var(--color-border)',
-                      borderRadius: '8px',
-                      color: 'var(--color-fg)',
-                      fontSize: '12px',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
-                    }}
-                    itemStyle={{ color: 'var(--color-fg)', fontWeight: 600 }}
-                    labelStyle={{ color: 'var(--color-fg-muted)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
-                  />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" />
+                  <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [v, 'Publicaciones']} />
                   <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Publicaciones" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Formatos */}
-          <div className="rounded-lg border border-border bg-surface p-4 flex flex-col justify-center">
-            <div className="mb-3 text-xs font-semibold text-fg">Distribución por Formato</div>
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <span className="text-sm font-semibold text-fg-muted">Videos/Reels</span>
-                <span className="text-sm font-bold text-fg">{datosEditorial.formats.R}</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-border pb-2">
-                <span className="text-sm font-semibold text-fg-muted">Carruseles</span>
-                <span className="text-sm font-bold text-fg">{datosEditorial.formats.C}</span>
-              </div>
-              <div className="flex items-center justify-between pb-2">
-                <span className="text-sm font-semibold text-fg-muted">Historias</span>
-                <span className="text-sm font-bold text-fg">{datosEditorial.formats.H}</span>
-              </div>
-            </div>
+          {/* Distribución por formato con barra visual */}
+          <div className="rounded-lg border border-border bg-surface p-4 flex flex-col justify-center gap-4">
+            <div className="text-xs font-semibold text-fg">Distribución por Formato</div>
+            {[
+              { key: 'R', label: 'Videos/Reels' },
+              { key: 'C', label: 'Carruseles' },
+              { key: 'H', label: 'Historias' },
+            ].map(({ key, label }) => {
+              const total = (datosEditorial.formats.R || 0) + (datosEditorial.formats.C || 0) + (datosEditorial.formats.H || 0);
+              const val = datosEditorial.formats[key] || 0;
+              const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+              return (
+                <div key={key}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="font-medium text-fg-muted">{label}</span>
+                    <span className="font-bold text-fg">{val} <span className="text-fg-subtle font-normal">({pct}%)</span></span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-surface-2">
+                    <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: FORMATO_COLOR[key] }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* SECCIÓN: Atribución de Ventas */}
+      {/* ── Atribución de Ventas ───────────────────────────────────── */}
       <div className="flex flex-col gap-4">
         <h2 className="m-0 text-lg font-bold text-fg">Atribución de Ventas</h2>
-        <div className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
-          Esta atribución se arma solo con datos reales de Gesicomm (ventas vinculadas por código de tracking). No incluye views/alcance de Instagram porque esa integración no existe hoy. Las piezas de prueba han sido excluidas.
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Kpi label="Ventas totales" value={summary.totalSales} />
+          <Kpi label="Ingreso total" value={summary.totalRevenue.toLocaleString('es-PY') + ' Gs'} />
+          <Kpi label="Ventas con tracking" value={summary.attributedSales} hint={`${Math.round(summary.attributionRate * 100)}% del total`} />
+          <Kpi label="Ingreso atribuido" value={summary.attributedRevenue.toLocaleString('es-PY') + ' Gs'} />
         </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Kpi label="Ventas totales" value={summary.totalSales} />
-        <Kpi label="Ingreso total" value={summary.totalRevenue.toLocaleString('es-PY')} />
-        <Kpi label="Ventas atribuidas" value={summary.attributedSales} hint={`${Math.round(summary.attributionRate * 100)}% con código de tracking`} />
-        <Kpi label="Ingreso atribuido" value={summary.attributedRevenue.toLocaleString('es-PY')} />
-      </div>
+        {/* Gráfico: ingresos por pieza */}
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <div className="mb-1 text-xs font-semibold text-fg">Ingresos generados por pieza de contenido</div>
+          <div className="mb-3 text-[11px] text-fg-muted">Cada barra representa cuánto dinero generó esa pieza (en Gs) a partir de los leads que llegaron con ese código de tracking.</div>
+          {!paretoData.length ? (
+            <div className="text-xs text-fg-muted">Todavía no hay ventas con código de tracking asignado.</div>
+          ) : (
+            <div style={{ width: '100%', height: 220 }}>
+              <ResponsiveContainer>
+                <BarChart data={paretoData} margin={{ top: 8, right: 16, left: 8, bottom: 16 }} barSize={40}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--color-fg-muted)', fontWeight: 600 }} stroke="var(--color-border)" />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" tickFormatter={(v) => `${(v / 1000000).toFixed(1)}M`} />
+                  <Tooltip
+                    {...TOOLTIP_STYLE}
+                    formatter={(value) => [`${Number(value || 0).toLocaleString('es-PY')} Gs`, 'Ingreso']}
+                  />
+                  <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                    {paretoData.map((entry, i) => (
+                      <Cell key={`cell-${i}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
 
-      <div className="rounded-lg border border-border bg-surface p-4">
-        <div className="mb-3 text-xs font-semibold text-fg">Pareto 80/20 — piezas que más venden</div>
-        {!pareto.length ? (
-          <div className="text-xs text-fg-muted">Todavía no hay ventas atribuidas.</div>
-        ) : (
-          <div style={{ width: '100%', height: 240 }}>
-            <ResponsiveContainer>
-              <BarChart data={pareto.map((c) => ({ name: c.trackingCode, revenue: c.revenue }))} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" interval={0} angle={-20} textAnchor="end" height={40} />
-                <YAxis tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" tickFormatter={(v) => Number(v).toLocaleString('es-PY')} />
-                <Tooltip
-                  cursor={{ fill: 'var(--color-surface-2)', opacity: 0.4 }}
-                  contentStyle={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    borderRadius: '8px',
-                    color: 'var(--color-fg)',
-                    fontSize: '12px',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
-                  }}
-                  itemStyle={{ color: 'var(--color-fg)', fontWeight: 600 }}
-                  labelStyle={{ color: 'var(--color-fg-muted)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
-                  formatter={(value) => [`${Number(value || 0).toLocaleString('es-PY')} Gs`, 'Ingreso']}
-                />
-                <Bar dataKey="revenue" fill="var(--color-primary-text)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </div>
+        {/* Rankings */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <RankingList titulo="Temas que más venden" items={topTopics} />
+          <RankingList titulo="Ángulos que más venden" items={topAngles} />
+          <RankingList titulo="CTAs que más venden" items={topCtas} />
+        </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <RankingList titulo="Temas que más venden" items={topTopics} />
-        <RankingList titulo="Ángulos que más venden" items={topAngles} />
-        <RankingList titulo="CTA que más venden" items={topCtas} />
-      </div>
-
-      <div className="rounded-lg border border-border bg-surface p-4">
-        <div className="mb-2 text-xs font-semibold text-fg">Contenidos con venta atribuida</div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] text-left text-xs">
-            <thead>
-              <tr className="text-fg-subtle">
-                <th className="pb-2">Código</th>
-                <th className="pb-2">Formato</th>
-                <th className="pb-2">Tema</th>
-                <th className="pb-2">Ventas</th>
-                <th className="pb-2">Ingreso</th>
-              </tr>
-            </thead>
-            <tbody>
-              {datosVentas.contents.filter((c) => c.sales > 0).map((c) => (
-                <tr key={c.id} className="border-t border-border">
-                  <td className="py-1.5 font-semibold text-primary-text">{c.trackingCode}</td>
-                  <td className="py-1.5 text-fg-muted">{FORMATO_LABEL[c.format] || c.format}</td>
-                  <td className="py-1.5 text-fg">{c.topic}</td>
-                  <td className="py-1.5 text-fg">{c.sales}</td>
-                  <td className="py-1.5 font-semibold text-success">{c.revenue.toLocaleString('es-PY')}</td>
+        {/* Tabla de contenidos */}
+        <div className="rounded-lg border border-border bg-surface p-4">
+          <div className="mb-3 text-xs font-semibold text-fg">Detalle por pieza</div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px] text-left text-xs">
+              <thead>
+                <tr className="border-b border-border text-fg-subtle">
+                  <th className="pb-2 font-semibold">Código</th>
+                  <th className="pb-2 font-semibold">Formato</th>
+                  <th className="pb-2 font-semibold">Tema</th>
+                  <th className="pb-2 font-semibold text-right">Ventas</th>
+                  <th className="pb-2 font-semibold text-right">Ingreso</th>
                 </tr>
-              ))}
-              {!datosVentas.contents.some((c) => c.sales > 0) && (
-                <tr><td colSpan={5} className="py-4 text-center text-fg-muted">Sin ventas atribuidas todava.</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {datosVentas.contents.filter((c) => c.sales > 0).map((c, i) => (
+                  <tr key={c.id} className="border-b border-border last:border-0 hover:bg-surface-2 transition-colors">
+                    <td className="py-2 font-bold" style={{ color: BAR_COLORS[i % BAR_COLORS.length] }}>{c.trackingCode}</td>
+                    <td className="py-2 text-fg-muted">{FORMATO_LABEL[c.format] || c.format}</td>
+                    <td className="py-2 text-fg max-w-[200px] truncate">{c.topic}</td>
+                    <td className="py-2 text-right text-fg">{c.sales}</td>
+                    <td className="py-2 text-right font-semibold text-success">{c.revenue.toLocaleString('es-PY')} Gs</td>
+                  </tr>
+                ))}
+                {!datosVentas.contents.some((c) => c.sales > 0) && (
+                  <tr><td colSpan={5} className="py-6 text-center text-fg-muted">Sin ventas atribuidas todavía.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
       </div>
-    </div>
     </div>
   );
 }
