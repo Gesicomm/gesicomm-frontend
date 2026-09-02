@@ -203,8 +203,10 @@ export default function OpportunitiesBoard() {
                                     <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${TICKET_BADGE_CLASS[ticketTag]}`}>{etiquetaTicket(ticketTag)}</span>
                                   )}
                                 </div>
-                                {lead.email && <div className="mt-1 text-[10px] text-fg-muted">{lead.email}</div>}
-                                {lead.phone && (
+                                <div className="mt-1 text-[10px] text-fg-muted">
+                                    {(!lead.email || lead.email.includes('{{')) ? '-' : lead.email}
+                                </div>
+                                {lead.phone && !lead.phone.includes('{{') && (
                                   <a
                                     href={`https://wa.me/${soloDigitos(lead.phone)}`}
                                     target="_blank" rel="noopener noreferrer"
