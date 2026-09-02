@@ -157,8 +157,8 @@ export default function FinanzasAutomatizacion() {
               ]}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(val) => \`\${val / 1000}k\`} tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [\`Gs \${fmt(val)}\`, 'Monto']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
+                <YAxis tickFormatter={(val) => `${val / 1000}k`} tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [`Gs ${fmt(val)}`, 'Monto']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
                 <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
                   { [0,1,2,3].map((i) => <Cell key={i} fill={['#6366f1', '#10b981', '#f59e0b', metrics.profit >= 0 ? '#10b981' : '#ef4444'][i]} />) }
                 </Bar>
@@ -178,7 +178,7 @@ export default function FinanzasAutomatizacion() {
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
                   <XAxis type="number" hide />
                   <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 9, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [\`Gs \${fmt(val)}\`, 'Ventas']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
+                  <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [`Gs ${fmt(val)}`, 'Ventas']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
                   <Bar dataKey="ventas" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
