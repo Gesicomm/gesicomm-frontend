@@ -84,6 +84,7 @@ export const crmApi = {
   eliminarLead: (leadId) => AutomationAPI.delete(`/crm/leads/${leadId}`).then((r) => r.data),
   planesDeLead: (leadId) => AutomationAPI.get(`/crm/leads/${leadId}/payment-plans`).then((r) => r.data),
   crearPlanDePagos: (leadId, payload) => AutomationAPI.post(`/crm/leads/${leadId}/payment-plan`, payload).then((r) => r.data),
+  editarPlanDePagos: (studentId, payload) => AutomationAPI.put(`/crm/payment-plans/${studentId}`, payload).then((r) => r.data),
 };
 
 // --- Cobranzas (tablero de planes de pago) ---
@@ -94,7 +95,7 @@ export const collectionsApi = {
 
 // --- Finanzas → Automatización ---
 export const financeApi = {
-  dashboard: (params) => AutomationAPI.get('/finance/dashboard', { params }).then((r) => r.data),
+  dashboard: (filtros) => AutomationAPI.post('/finance/dashboard', filtros).then((r) => r.data),
   programs: {
     listar: () => AutomationAPI.get('/finance/programs').then((r) => r.data),
     crear: (d) => AutomationAPI.post('/finance/programs', d).then((r) => r.data),

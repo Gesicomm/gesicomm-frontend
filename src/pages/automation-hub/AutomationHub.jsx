@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { CalendarDays, Plus, MessageCircle, ListChecks, Sparkles, Kanban, LineChart, Wallet } from 'lucide-react';
+import { CalendarDays, Plus, MessageCircle, ListChecks, Sparkles, Kanban, LineChart, Wallet, DollarSign } from 'lucide-react';
 import { contentApi } from '../../services/automationHubApi';
 import ContentCalendar from './ContentCalendar';
 import ContentFormModal from './ContentFormModal';
@@ -9,6 +9,7 @@ import DailyActionsPanel from './DailyActionsPanel';
 import OpportunitiesBoard from './OpportunitiesBoard';
 import CollectionsBoard from './CollectionsBoard';
 import ContentAnalytics from './ContentAnalytics';
+import FinanzasAutomatizacion from '../finanzas/FinanzasAutomatizacion';
 import ManyChatFloatingAssistant from './ManyChatFloatingAssistant';
 
 const TABS = [
@@ -18,7 +19,7 @@ const TABS = [
   { id: 'cobranzas', label: 'Cobranzas', icon: Wallet },
   { id: 'analizador', label: 'Analizador', icon: LineChart },
   { id: 'acciones', label: 'Acciones pendientes', icon: ListChecks },
-];
+  { id: 'finanzas', label: 'Finanzas', icon: DollarSign },
 
 export default function AutomationHub() {
   const [tab, setTab] = useState('calendario');
@@ -129,6 +130,7 @@ export default function AutomationHub() {
       {tab === 'oportunidades' && <OpportunitiesBoard />}
       {tab === 'cobranzas' && <CollectionsBoard />}
       {tab === 'analizador' && <ContentAnalytics />}
+      {tab === 'finanzas' && <FinanzasAutomatizacion />}
       {tab === 'acciones' && <DailyActionsPanel />}
 
       {modalNuevo && (

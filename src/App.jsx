@@ -55,6 +55,7 @@ const Contact = lazy(() => import('./pages/public/Contact'));
 const DevFicha = lazy(() => import('./pages/landing-simple/templates/fitness/__DevFicha'));
 const DevFichaTech = lazy(() => import('./pages/landing-simple/templates/tech/__DevFichaTech'));
 const DevFichaBeauty = lazy(() => import('./pages/landing-simple/templates/beauty/__DevFichaBeauty'));
+const DevFichaBasico = lazy(() => import('./pages/landing-simple/templates/basico/__DevFichaBasico'));
 const DevProductoPanel = lazy(() => import('./pages/landing-simple/templates/beauty/__DevProductoPanel'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
@@ -184,6 +185,7 @@ function App() {
         <Route path="/dev/ficha-fitness" element={<DevFicha />} />
         <Route path="/dev/ficha-tech" element={<DevFichaTech />} />
         <Route path="/dev/ficha-beauty" element={<DevFichaBeauty />} />
+        <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
         <Route path="/login" element={<Login />} />
 
@@ -269,9 +271,7 @@ function App() {
         <Route path="/finanzas/proveedores" element={
           <AdminRoute><DynamicLayout><ProveedoresView /></DynamicLayout></AdminRoute>
         } />
-        <Route path="/finanzas/automatizacion" element={
-          <RequireTienda><DynamicLayout><FinanzasAutomatizacion /></DynamicLayout></RequireTienda>
-        } />
+
 
         {/* Automatización de contenido — Gesicomm Automation Hub (backend independiente) */}
         <Route path="/automatizacion" element={
