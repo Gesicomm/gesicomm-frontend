@@ -20,6 +20,7 @@ const TABS = [
   { id: 'alumnos', label: 'Métricas (alumnos)' },
   { id: 'costos', label: 'Costos' },
   { id: 'roi', label: 'ROI' },
+  { id: 'config', label: '⚙ Configuración' },
 ];
 
 export default function FinanzasAutomatizacion() {
@@ -84,6 +85,7 @@ export default function FinanzasAutomatizacion() {
       {dash && tab === 'alumnos' && <TabAlumnos dash={dash} programas={programas} equipo={equipo} onRefrescar={cargar} />}
       {dash && tab === 'costos' && <TabCostos dash={dash} equipo={equipo} onRefrescar={cargar} />}
       {dash && tab === 'roi' && <TabRoi dash={dash} />}
+      {tab === 'config' && <TabConfig programas={programas} equipo={equipo} onRefrescar={cargar} />}
     </div>
   );
 }
@@ -328,6 +330,126 @@ function TabRoi({ dash }) {
           ROI = (cobrado − gastos − comisiones) / (gastos + comisiones). Con costos en cero no se puede calcular un porcentaje (división por cero) — cargá gastos o comisiones para verlo.
         </p>
       </div>
+    </div>
+  );
+}
+
+function TabConfig({ programas, equipo, onRefrescar }) {
+  const [nombreProg, setNombreProg] = useState('');
+  const [nombreEquipo, setNombreEquipo] = useState('');
+  const [rolEquipo, setRolEquipo] = useState('Closer');
+  const [guardandoProg, setGuardandoProg] = useState(false);
+  const [guardandoEquipo, setGuardandoEquipo] = useState(false);
+
+  const crearPrograma = async (e) => {
+    e.preventDefault();
+    if (!nombreProg.trim()) return;
+    setGuardandoProg(true);
+    try {
+      await financeApi.programs.crear({ name: nombreProg.trim() });
+      setNombreProg('');
+      onRefrescar();
+    } finally {
+      setGuardandoProg(false);
+    }
+  };
+
+  const eliminarPrograma = async (id) => {
+    if (!confirm('¿Eliminar este programa?')) return;
+    await financeApi.programs.eliminar(id);
+    onRefrescar();
+  };
+
+  const crearEquipo = async (e) => {
+    e.preventDefault();
+    if (!nombreEquipo.trim()) return;
+    setGuardandoEquipo(true);
+    try {
+      await financeApi.teamMembers.crear({ name: nombreEquipo.trim(), role: rolEquipo });
+      setNombreEquipo('');
+      onRefrescar();
+    } finally {
+      setGuardandoEquipo(false);
+    }
+  };
+
+  const eliminarEquipo = async (id) => {
+    if (!confirm('¿Eliminar este miembro del equipo?')) return;
+    await financeApi.teamMembers.eliminar(id);
+    onRefrescar();
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+      {/* Programas */}
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <div className="mb-1 text-sm font-bold text-fg">Programas / Productos</div>
+        <p className="mb-4 text-[11px] text-fg-muted">
+          Etiquetas para clasificar tus ventas. Ej: "Mentoring 1:1", "Curso de Contenido", "Pack Consultoría". Aparecen como opción al registrar un alumno.
+        </p>
+        <form onSubmit={crearPrograma} className="mb-4 flex gap-2">
+          <input
+            className={`${inputClass} flex-1`}
+            placeholder="Nombre del programa *"
+            value={nombreProg}
+            onChange={(e) => setNombreProg(e.target.value)}
+          />
+          <button type="submit" disabled={guardandoProg} className="h-9 shrink-0 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg disabled:opacity-60">
+            + Agregar
+          </button>
+        </form>
+        <div className="flex flex-col gap-1.5">
+          {programas.map((p) => (
+            <div key={p.id} className="flex items-center justify-between rounded-md border border-border bg-surface-2 px-3 py-2 text-xs">
+              <span className="font-semibold text-fg">{p.name}</span>
+              <button type="button" onClick={() => eliminarPrograma(p.id)} className="text-danger hover:text-danger/70">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+          {!programas.length && <div className="text-[11px] text-fg-muted">Ningún programa creado todavía.</div>}
+        </div>
+      </div>
+
+      {/* Equipo */}
+      <div className="rounded-lg border border-border bg-surface p-5">
+        <div className="mb-1 text-sm font-bold text-fg">Equipo de ventas</div>
+        <p className="mb-4 text-[11px] text-fg-muted">
+          Las personas de tu equipo (setters, closers). Aparecen al registrar un alumno para atribuirle la venta y calcular comisiones.
+        </p>
+        <form onSubmit={crearEquipo} className="mb-4 flex gap-2">
+          <input
+            className={`${inputClass} flex-1`}
+            placeholder="Nombre *"
+            value={nombreEquipo}
+            onChange={(e) => setNombreEquipo(e.target.value)}
+          />
+          <select className="h-9 rounded-md border border-border bg-surface-2 px-2 text-xs text-fg" value={rolEquipo} onChange={(e) => setRolEquipo(e.target.value)}>
+            <option>Closer</option>
+            <option>Setter</option>
+            <option>Admin</option>
+          </select>
+          <button type="submit" disabled={guardandoEquipo} className="h-9 shrink-0 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg disabled:opacity-60">
+            + Agregar
+          </button>
+        </form>
+        <div className="flex flex-col gap-1.5">
+          {equipo.map((m) => (
+            <div key={m.id} className="flex items-center justify-between rounded-md border border-border bg-surface-2 px-3 py-2 text-xs">
+              <div>
+                <span className="font-semibold text-fg">{m.name}</span>
+                <span className="ml-2 rounded-full bg-surface-3 px-2 py-0.5 text-[10px] text-fg-muted">{m.role}</span>
+              </div>
+              <button type="button" onClick={() => eliminarEquipo(m.id)} className="text-danger hover:text-danger/70">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+          {!equipo.length && <div className="text-[11px] text-fg-muted">Ningún miembro del equipo creado todavía.</div>}
+        </div>
+      </div>
+
     </div>
   );
 }
