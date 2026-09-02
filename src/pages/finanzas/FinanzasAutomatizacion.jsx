@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Bot, Plus, Trash2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { financeApi } from '../../services/automationHubApi';
 
 const inputClass = 'h-9 w-full rounded-md border border-border bg-surface-2 px-2 text-xs text-fg';
@@ -72,7 +72,7 @@ export default function FinanzasAutomatizacion() {
       <div className="mb-6 flex gap-2 overflow-x-auto">
         {TABS.map((t) => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)}
-            className={`shrink-0 rounded-md border px-4 py-2 text-xs font-semibold ${tab === t.id ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface text-fg-muted'}`}>
+            className={`shrink-0 rounded-md border px-4 py-2 text-xs font-semibold transition-colors ${tab === t.id ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface text-fg-muted hover:bg-surface-2'}`}>
             {t.label}
           </button>
         ))}
@@ -91,11 +91,11 @@ export default function FinanzasAutomatizacion() {
 function TabResumen({ dash }) {
   const { metrics } = dash;
   const chartData = [
-    { name: 'Vendido', valor: metrics.totalSold },
-    { name: 'Cobrado', valor: metrics.totalPaid },
-    { name: 'Gastos', valor: metrics.totalExpenses },
-    { name: 'Comisiones', valor: metrics.totalTeamPayments },
-    { name: 'Beneficio', valor: metrics.profit },
+    { name: 'Vendido', valor: metrics.totalSold, fill: 'var(--color-primary)' },
+    { name: 'Cobrado', valor: metrics.totalPaid, fill: 'var(--color-success)' },
+    { name: 'Gastos', valor: metrics.totalExpenses, fill: 'var(--color-warning)' },
+    { name: 'Comisiones', valor: metrics.totalTeamPayments, fill: 'var(--color-danger)' },
+    { name: 'Beneficio', valor: metrics.profit, fill: metrics.profit >= 0 ? 'var(--color-success)' : 'var(--color-danger)' },
   ];
   return (
     <div className="flex flex-col gap-4">
@@ -111,14 +111,31 @@ function TabResumen({ dash }) {
       </div>
       <div className="rounded-lg border border-border bg-surface p-4">
         <div className="mb-3 text-xs font-semibold text-fg">Ingresos, costos y beneficio</div>
-        <div style={{ width: '100%', height: 240 }}>
+        <div style={{ width: '100%', height: 260 }}>
           <ResponsiveContainer>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Bar dataKey="valor" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" tickFormatter={(v) => fmt(v)} />
+              <Tooltip
+                cursor={{ fill: 'var(--color-surface-2)', opacity: 0.4 }}
+                contentStyle={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  borderRadius: '8px',
+                  color: 'var(--color-fg)',
+                  fontSize: '12px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                }}
+                itemStyle={{ color: 'var(--color-fg)', fontWeight: 600 }}
+                labelStyle={{ color: 'var(--color-fg-muted)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
+                formatter={(value) => [`${fmt(value)} Gs`, 'Monto']}
+              />
+              <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
+                {chartData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -76,13 +76,25 @@ export default function ContentAnalytics() {
           {/* Gráfico de tendencia */}
           <div className="rounded-lg border border-border bg-surface p-4">
             <div className="mb-3 text-xs font-semibold text-fg">Tendencia Publicaciones (Últimos 6 meses)</div>
-            <div style={{ width: '100%', height: 200 }}>
+            <div style={{ width: '100%', height: 220 }}>
               <ResponsiveContainer>
-                <BarChart data={datosEditorial.history.slice().reverse()}>
+                <BarChart data={datosEditorial.history.slice().reverse()} margin={{ top: 10, right: 10, left: 0, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" />
+                  <Tooltip
+                    cursor={{ fill: 'var(--color-surface-2)', opacity: 0.4 }}
+                    contentStyle={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '8px',
+                      color: 'var(--color-fg)',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                    }}
+                    itemStyle={{ color: 'var(--color-fg)', fontWeight: 600 }}
+                    labelStyle={{ color: 'var(--color-fg-muted)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
+                  />
                   <Bar dataKey="count" fill="var(--color-primary)" radius={[4, 4, 0, 0]} name="Publicaciones" />
                 </BarChart>
               </ResponsiveContainer>
@@ -129,14 +141,27 @@ export default function ContentAnalytics() {
         {!pareto.length ? (
           <div className="text-xs text-fg-muted">Todavía no hay ventas atribuidas.</div>
         ) : (
-          <div style={{ width: '100%', height: 220 }}>
+          <div style={{ width: '100%', height: 240 }}>
             <ResponsiveContainer>
-              <BarChart data={pareto.map((c) => ({ name: c.trackingCode, revenue: c.revenue }))}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} angle={-20} textAnchor="end" height={50} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Bar dataKey="revenue" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+              <BarChart data={pareto.map((c) => ({ name: c.trackingCode, revenue: c.revenue }))} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" interval={0} angle={-20} textAnchor="end" height={40} />
+                <YAxis tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} stroke="var(--color-border)" tickFormatter={(v) => Number(v).toLocaleString('es-PY')} />
+                <Tooltip
+                  cursor={{ fill: 'var(--color-surface-2)', opacity: 0.4 }}
+                  contentStyle={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    borderRadius: '8px',
+                    color: 'var(--color-fg)',
+                    fontSize: '12px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)'
+                  }}
+                  itemStyle={{ color: 'var(--color-fg)', fontWeight: 600 }}
+                  labelStyle={{ color: 'var(--color-fg-muted)', fontSize: '11px', fontWeight: 600, marginBottom: '2px' }}
+                  formatter={(value) => [`${Number(value || 0).toLocaleString('es-PY')} Gs`, 'Ingreso']}
+                />
+                <Bar dataKey="revenue" fill="var(--color-primary-text)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -155,7 +180,7 @@ export default function ContentAnalytics() {
           <table className="w-full min-w-[600px] text-left text-xs">
             <thead>
               <tr className="text-fg-subtle">
-                <th className="pb-2">Cdigo</th>
+                <th className="pb-2">Código</th>
                 <th className="pb-2">Formato</th>
                 <th className="pb-2">Tema</th>
                 <th className="pb-2">Ventas</th>
