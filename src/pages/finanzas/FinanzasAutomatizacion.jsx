@@ -659,11 +659,83 @@ function TabAlumnos({ programas, equipo, onRefrescar }) {
   );
 }
 
-function TabGastos({ onRefrescar }) {
-  const [desc, setDesc] = useState('');
-  const [monto, setMonto] = useState('');
-  const [fecha, setFecha] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
+function NuevoGastoModal({ onClose, onGuardado }) {
+  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
+  const [form, setForm] = useState({ expense_date: hoy, category: '', description: '', expense_type: 'Fijo', amount: '' });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const inp = 'h-9 w-full rounded-md border border-border bg-surface-2 px-3 text-xs text-fg';
+  const lbl = 'text-[10px] font-bold uppercase text-fg-subtle mb-0.5 block';
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.expense_date || !form.amount) return;
+    setGuardando(true); setError('');
+    try {
+      await financeApi.expenses.crear({ ...form, amount: parseFloat(form.amount) || 0 });
+      onGuardado();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al guardar el gasto.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="border-b border-border p-5 flex items-start justify-between">
+          <div>
+            <h3 className="m-0 text-base font-bold text-fg">Nuevo gasto</h3>
+            <p className="mt-0.5 text-[11px] text-fg-muted">Este gasto impactará automáticamente en el beneficio neto.</p>
+          </div>
+          <button onClick={onClose} className="text-fg-muted hover:text-fg text-lg leading-none">×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Fecha *</label>
+              <input required type="date" className={inp} value={form.expense_date} onChange={e => setF('expense_date', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Categoría</label>
+              <input className={inp} placeholder="Ej: Marketing, Infraestructura..." value={form.category} onChange={e => setF('category', e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Descripción</label>
+            <input className={inp} placeholder="Detalle del gasto..." value={form.description} onChange={e => setF('description', e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Tipo</label>
+              <select className={inp} value={form.expense_type} onChange={e => setF('expense_type', e.target.value)}>
+                <option value="Fijo">Fijo</option>
+                <option value="Variable">Variable</option>
+                <option value="Extraordinario">Extraordinario</option>
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Monto</label>
+              <MoneyInput value={form.amount} onChange={val => setF('amount', val)} />
+            </div>
+          </div>
+          {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <button type="button" onClick={onClose} className="h-10 rounded-md border border-border px-5 text-xs font-semibold text-fg hover:bg-surface-2">Cancelar</button>
+            <button type="submit" disabled={guardando} className="h-10 rounded-md bg-primary px-6 text-xs font-semibold text-primary-fg disabled:opacity-60">
+              {guardando ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function TabGastos({ onRefrescar }) {
+  const [modalAbierto, setModalAbierto] = useState(false);
   const [gastos, setGastos] = useState([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -688,48 +760,62 @@ function TabGastos({ onRefrescar }) {
 
   const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
 
-  const crear = async (e) => {
-    e.preventDefault();
-    if (!desc || !monto) return;
-    await financeApi.expenses.crear({ description: desc, amount: monto, expense_date: fecha });
-    setDesc(''); setMonto('');
-    cargar();
-    onRefrescar();
+  const eliminar = async (id) => {
+    if (!confirm('¿Eliminar este gasto?')) return;
+    await financeApi.expenses.eliminar(id);
+    cargar(); onRefrescar();
   };
 
   return (
     <div>
-      <form onSubmit={crear} className="mb-4 flex gap-2 max-w-2xl">
-        <input className={inputClass} placeholder="Descripción..." value={desc} onChange={e => setDesc(e.target.value)} />
-        <div className="w-32"><MoneyInput placeholder="Monto" value={monto} onChange={setMonto} /></div>
-        <input type="date" className={inputClass} value={fecha} onChange={e => setFecha(e.target.value)} />
-        <button type="submit" className="shrink-0 h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg">+ Gasto</button>
-      </form>
+      {modalAbierto && <NuevoGastoModal onClose={() => setModalAbierto(false)} onGuardado={() => { setModalAbierto(false); cargar(); onRefrescar(); }} />}
 
-      <div className="mb-3 flex items-center gap-1">
-        <span className="text-[10px] text-fg-muted">Fecha</span>
-        <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_from} onChange={e => setF('date_from', e.target.value)} />
-        <span className="text-[10px] text-fg-muted">-</span>
-        <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_to} onChange={e => setF('date_to', e.target.value)} />
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-fg-muted">Fecha</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_from} onChange={e => setF('date_from', e.target.value)} />
+          <span className="text-[10px] text-fg-muted">-</span>
+          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_to} onChange={e => setF('date_to', e.target.value)} />
+        </div>
+        <button onClick={() => setModalAbierto(true)} className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg hover:bg-primary-hover">
+          + Registrar Gasto
+        </button>
       </div>
 
       <div className="overflow-x-auto relative min-h-[300px]">
         {cargando && <div className="absolute inset-0 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="text-xs font-bold text-fg-muted animate-pulse">Cargando...</span></div>}
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
-            <tr><th className="py-2">Fecha</th><th className="py-2">Descripción</th><th className="py-2">Monto</th></tr>
+            <tr>
+              <th className="py-2 pr-4">Fecha</th>
+              <th className="py-2 pr-4">Categoría</th>
+              <th className="py-2 pr-4">Descripción</th>
+              <th className="py-2 pr-4">Tipo</th>
+              <th className="py-2 pr-4">Monto</th>
+              <th className="py-2">Acciones</th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {gastos.length === 0 && !cargando && <tr><td colSpan={3} className="py-6 text-center text-fg-muted">No hay gastos</td></tr>}
+            {gastos.length === 0 && !cargando && <tr><td colSpan={6} className="py-6 text-center text-fg-muted">No hay registros para mostrar</td></tr>}
             {gastos.map(g => (
               <tr key={g.id} className="hover:bg-surface-2">
-                <td className="py-2 text-fg-muted">{g.expense_date}</td>
-                <td className="py-2 font-semibold text-fg">{g.description}</td>
-                <td className="py-2 font-bold text-danger">Gs {fmt(g.amount)}</td>
+                <td className="py-2 pr-4 text-fg-muted whitespace-nowrap">{g.expense_date}</td>
+                <td className="py-2 pr-4 font-semibold text-fg">{g.category || '—'}</td>
+                <td className="py-2 pr-4 text-fg-muted">{g.description || '—'}</td>
+                <td className="py-2 pr-4">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${g.expense_type === 'Fijo' ? 'bg-primary/15 text-primary' : g.expense_type === 'Variable' ? 'bg-warning/15 text-warning' : 'bg-danger/15 text-danger'}`}>
+                    {g.expense_type || 'Fijo'}
+                  </span>
+                </td>
+                <td className="py-2 pr-4 font-bold text-danger whitespace-nowrap">Gs {fmt(g.amount)}</td>
+                <td className="py-2">
+                  <button onClick={() => eliminar(g.id)} className="text-danger hover:opacity-70 p-1"><Trash2 size={13} /></button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <div className="mt-2 text-right text-[10px] text-fg-subtle">{total} registros</div>
       </div>
 
       {pages > 1 && (
