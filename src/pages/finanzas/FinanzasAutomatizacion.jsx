@@ -832,34 +832,140 @@ function TabGastos({ onRefrescar }) {
   );
 }
 
-function TabProgramas({ programas, onRefrescar }) {
-  const [nombre, setNombre] = useState('');
-  const crear = async (e) => {
+function NuevoProgramaModal({ onClose, onGuardado }) {
+  const [form, setForm] = useState({ name: '', code: '', default_price: '', default_duration_months: 6, active: true, description: '' });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const inp = 'h-9 w-full rounded-md border border-border bg-surface-2 px-3 text-xs text-fg';
+  const lbl = 'text-[10px] font-bold uppercase text-fg-subtle mb-0.5 block';
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!nombre) return;
-    await financeApi.programs.crear({ name: nombre });
-    setNombre('');
-    onRefrescar();
+    if (!form.name) return;
+    setGuardando(true); setError('');
+    try {
+      await financeApi.programs.crear({
+        ...form,
+        default_price: parseFloat(form.default_price) || null,
+        default_duration_months: parseInt(form.default_duration_months) || null,
+        active: form.active === true || form.active === 'true',
+      });
+      onGuardado();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al guardar el programa.');
+    } finally {
+      setGuardando(false);
+    }
   };
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="border-b border-border p-5 flex items-start justify-between">
+          <div>
+            <h3 className="m-0 text-base font-bold text-fg">Nuevo programa</h3>
+            <p className="mt-0.5 text-[11px] text-fg-muted">Definí precio y duración predeterminada en meses.</p>
+          </div>
+          <button onClick={onClose} className="text-fg-muted hover:text-fg text-lg leading-none">×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          <div>
+            <label className={lbl}>Nombre *</label>
+            <input required className={inp} value={form.name} onChange={e => setF('name', e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Código</label>
+              <input className={inp} placeholder="Ej: PRG-001" value={form.code} onChange={e => setF('code', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Precio Base</label>
+              <MoneyInput value={form.default_price} onChange={val => setF('default_price', val)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Duración Base (Meses)</label>
+              <input type="number" min="1" className={inp} value={form.default_duration_months} onChange={e => setF('default_duration_months', e.target.value)} />
+            </div>
+            <div>
+              <label className={lbl}>Activo</label>
+              <select className={inp} value={form.active} onChange={e => setF('active', e.target.value)}>
+                <option value={true}>Sí</option>
+                <option value={false}>No</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Descripción</label>
+            <textarea className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-fg h-24 resize-none" value={form.description} onChange={e => setF('description', e.target.value)} />
+          </div>
+          {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <button type="button" onClick={onClose} className="h-10 rounded-md border border-border px-5 text-xs font-semibold text-fg hover:bg-surface-2">Cancelar</button>
+            <button type="submit" disabled={guardando} className="h-10 rounded-md bg-primary px-6 text-xs font-semibold text-primary-fg disabled:opacity-60">
+              {guardando ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function TabProgramas({ programas, onRefrescar }) {
+  const [modalAbierto, setModalAbierto] = useState(false);
+
   const eliminar = async (id) => {
-    if(!confirm('¿Eliminar programa?')) return;
+    if (!confirm('¿Eliminar programa?')) return;
     await financeApi.programs.eliminar(id);
     onRefrescar();
   };
 
   return (
     <div>
-      <form onSubmit={crear} className="mb-4 flex gap-2 max-w-sm">
-        <input className={inputClass} placeholder="Nombre del programa" value={nombre} onChange={e => setNombre(e.target.value)} />
-        <button type="submit" className="shrink-0 h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg">+ Programa</button>
-      </form>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-        {programas.map(p => (
-          <div key={p.id} className="flex justify-between items-center border border-border rounded-md p-3">
-            <span className="font-semibold text-sm">{p.name}</span>
-            <button onClick={() => eliminar(p.id)} className="text-danger hover:opacity-70"><Trash2 size={14}/></button>
-          </div>
-        ))}
+      {modalAbierto && <NuevoProgramaModal onClose={() => setModalAbierto(false)} onGuardado={() => { setModalAbierto(false); onRefrescar(); }} />}
+
+      <div className="mb-3 flex justify-end">
+        <button onClick={() => setModalAbierto(true)} className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg hover:bg-primary-hover">
+          + Nuevo Programa
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
+            <tr>
+              <th className="py-2 pr-4">Programa</th>
+              <th className="py-2 pr-4">Código</th>
+              <th className="py-2 pr-4">Precio Base</th>
+              <th className="py-2 pr-4">Duración</th>
+              <th className="py-2 pr-4">Activo</th>
+              <th className="py-2">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {programas.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-fg-muted">No hay registros para mostrar</td></tr>}
+            {programas.map(p => (
+              <tr key={p.id} className="hover:bg-surface-2">
+                <td className="py-2 pr-4 font-semibold text-fg">{p.name}</td>
+                <td className="py-2 pr-4 text-fg-muted">{p.code || '—'}</td>
+                <td className="py-2 pr-4 font-bold text-fg">{p.default_price ? `Gs ${fmt(p.default_price)}` : '—'}</td>
+                <td className="py-2 pr-4 text-fg-muted">{p.default_duration_months ? `${p.default_duration_months} meses` : '—'}</td>
+                <td className="py-2 pr-4">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${p.active ? 'bg-success/15 text-success' : 'bg-surface-3 text-fg-muted'}`}>
+                    {p.active ? 'Sí' : 'No'}
+                  </span>
+                </td>
+                <td className="py-2">
+                  <button onClick={() => eliminar(p.id)} className="text-danger hover:opacity-70 p-1"><Trash2 size={13} /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="mt-2 text-right text-[10px] text-fg-subtle">{programas.length} registros</div>
       </div>
     </div>
   );
