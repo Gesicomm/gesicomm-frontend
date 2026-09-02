@@ -566,7 +566,7 @@ function TabAlumnos({ programas, equipo, onRefrescar }) {
   const [pagos, setPagos] = useState([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
-  const [filtros, setFiltros] = useState({ page: 1, limit: 10, status: '', due_date_from: '', due_date_to: '', paid_date_from: '', paid_date_to: '' });
+  const [filtros, setFiltros] = useState({ page: 1, limit: 10, buscar: '', status: '', due_date_from: '', due_date_to: '', paid_date_from: '', paid_date_to: '' });
   const [cargando, setCargando] = useState(false);
 
   const cargar = useCallback(async () => {
@@ -590,6 +590,7 @@ function TabAlumnos({ programas, equipo, onRefrescar }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap gap-2 items-center">
+        <input type="text" placeholder="Buscar alumno..." className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-44" value={filtros.buscar} onChange={e => setF('buscar', e.target.value)} />
         <select className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-32" value={filtros.status} onChange={e => setF('status', e.target.value)}>
           <option value="">Estado (Todos)</option>
           <option value="Pendiente">Pendiente</option>
