@@ -146,12 +146,46 @@ export default function FinanzasAutomatizacion() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-80">
         <div className="md:col-span-2 rounded-lg border border-border bg-surface p-4 flex flex-col">
-          <div className="text-xs font-bold mb-4">Ingresos, gastos y resultado por mes</div>
-          <div className="flex-1 flex items-center justify-center text-xs text-fg-muted">Gráfico en desarrollo...</div>
+          <div className="text-xs font-bold mb-4">Ingresos, gastos y resultado</div>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: 'Vendido', valor: metrics.totalSold, fill: '#8884d8' },
+                { name: 'Cobrado', valor: metrics.totalPaid, fill: '#82ca9d' },
+                { name: 'Gastos Tot.', valor: metrics.totalExpenses + metrics.totalTeamPayments, fill: '#ffc658' },
+                { name: 'Beneficio', valor: metrics.profit, fill: metrics.profit >= 0 ? '#82ca9d' : '#ff8042' }
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(val) => \`\${val / 1000}k\`} tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [\`Gs \${fmt(val)}\`, 'Monto']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
+                <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+                  { [0,1,2,3].map((i) => <Cell key={i} fill={['#6366f1', '#10b981', '#f59e0b', metrics.profit >= 0 ? '#10b981' : '#ef4444'][i]} />) }
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
         <div className="rounded-lg border border-border bg-surface p-4 flex flex-col">
           <div className="text-xs font-bold mb-4">Ventas por programa</div>
-          <div className="flex-1 flex items-center justify-center text-xs text-fg-muted">Gráfico en desarrollo...</div>
+          <div className="flex-1 min-h-0">
+            {dash?.students.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={programas.map(p => ({
+                  name: p.name,
+                  ventas: dash.students.filter(s => s.program_id === p.id).reduce((acc, s) => acc + Number(s.negotiated_price || 0), 0)
+                })).filter(d => d.ventas > 0)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--color-border)" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 9, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'var(--color-surface-2)' }} formatter={(val) => [\`Gs \${fmt(val)}\`, 'Ventas']} contentStyle={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', borderRadius: '8px', fontSize: '12px' }} />
+                  <Bar dataKey="ventas" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-fg-muted">Sin datos por programa.</div>
+            )}
+          </div>
         </div>
       </div>
 
