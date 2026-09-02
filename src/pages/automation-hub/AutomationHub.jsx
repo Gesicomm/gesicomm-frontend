@@ -20,6 +20,7 @@ const TABS = [
   { id: 'analizador', label: 'Analizador', icon: LineChart },
   { id: 'acciones', label: 'Acciones pendientes', icon: ListChecks },
   { id: 'finanzas', label: 'Finanzas', icon: DollarSign },
+];
 
 export default function AutomationHub() {
   const [tab, setTab] = useState('calendario');
