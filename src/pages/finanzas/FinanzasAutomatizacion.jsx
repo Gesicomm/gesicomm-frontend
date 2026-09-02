@@ -210,7 +210,7 @@ export default function FinanzasAutomatizacion() {
           {tab === 'GASTOS' && <TabGastos onRefrescar={cargar} />}
           {tab === 'PROGRAMAS' && <TabProgramas programas={programas} onRefrescar={cargar} />}
           {tab === 'EQUIPO' && <TabEquipo equipo={equipo} onRefrescar={cargar} />}
-          {tab === 'COMISIONES' && <TabComisiones equipo={equipo} onRefrescar={cargar} />}
+          {tab === 'COMISIONES' && <TabComisiones equipo={equipo} programas={programas} onRefrescar={cargar} />}
           {tab === 'ALERTAS' && <TabAlertas dash={dash} />}
         </div>
       </div>
@@ -1115,98 +1115,202 @@ function TabEquipo({ equipo, onRefrescar }) {
   );
 }
 
-function TabComisiones({ equipo, onRefrescar }) {
-  const [miembro, setMiembro] = useState('');
-  const [monto, setMonto] = useState('');
-  const [fecha, setFecha] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
+function NuevaReglaModal({ equipo, programas, onClose, onGuardado }) {
+  const [form, setForm] = useState({
+    team_member_id: '', program_id: '', commission_role: 'Closer',
+    commission_type: 'percentage', commission_value: '', calculation_base: 'collected',
+    active: true, notes: '',
+  });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const inp = 'h-9 w-full rounded-md border border-border bg-surface-2 px-3 text-xs text-fg';
+  const lbl = 'text-[10px] font-bold uppercase text-fg-subtle mb-0.5 block';
 
-  const [pagos, setPagos] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [pages, setPages] = useState(1);
-  const [filtros, setFiltros] = useState({ page: 1, limit: 10, team_member_id: '', date_from: '', date_to: '' });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.team_member_id || !form.commission_value) return;
+    setGuardando(true); setError('');
+    try {
+      await financeApi.commissionRules.crear({
+        ...form,
+        program_id: form.program_id || null,
+        commission_value: parseFloat(form.commission_value) || 0,
+        active: form.active === true || form.active === 'true',
+      });
+      onGuardado();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al guardar la regla.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl rounded-xl bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="border-b border-border p-5 flex items-start justify-between">
+          <div>
+            <h3 className="m-0 text-base font-bold text-fg">Nueva regla de comisión</h3>
+            <p className="mt-0.5 text-[11px] text-fg-muted">La regla puede aplicar a todos los programas o a uno específico.</p>
+          </div>
+          <button onClick={onClose} className="text-fg-muted hover:text-fg text-lg leading-none">×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+          <div>
+            <label className={lbl}>Persona *</label>
+            <select required className={inp} value={form.team_member_id} onChange={e => setF('team_member_id', e.target.value)}>
+              <option value="">Seleccionar persona...</option>
+              {equipo.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Programa</label>
+              <select className={inp} value={form.program_id} onChange={e => setF('program_id', e.target.value)}>
+                <option value="">Todos los programas</option>
+                {programas.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Rol de Comisión</label>
+              <select className={inp} value={form.commission_role} onChange={e => setF('commission_role', e.target.value)}>
+                <option value="Setter">Setter</option>
+                <option value="Closer">Closer</option>
+                <option value="Setter / Closer">Setter / Closer</option>
+                <option value="Mentor">Mentor</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Tipo</label>
+              <select className={inp} value={form.commission_type} onChange={e => setF('commission_type', e.target.value)}>
+                <option value="percentage">Porcentaje</option>
+                <option value="fixed">Monto Fijo</option>
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Valor</label>
+              {form.commission_type === 'percentage'
+                ? <input type="number" step="0.01" min="0" max="100" className={inp} placeholder="Ej: 10 (= 10%)" value={form.commission_value} onChange={e => setF('commission_value', e.target.value)} />
+                : <MoneyInput value={form.commission_value} onChange={val => setF('commission_value', val)} />
+              }
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Base de Cálculo</label>
+              <select className={inp} value={form.calculation_base} onChange={e => setF('calculation_base', e.target.value)}>
+                <option value="collected">Cobrado</option>
+                <option value="sold">Vendido</option>
+              </select>
+            </div>
+            <div>
+              <label className={lbl}>Activa</label>
+              <select className={inp} value={form.active} onChange={e => setF('active', e.target.value)}>
+                <option value={true}>Sí</option>
+                <option value={false}>No</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className={lbl}>Notas</label>
+            <textarea className="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-fg h-20 resize-none" value={form.notes} onChange={e => setF('notes', e.target.value)} />
+          </div>
+          {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <button type="button" onClick={onClose} className="h-10 rounded-md border border-border px-5 text-xs font-semibold text-fg hover:bg-surface-2">Cancelar</button>
+            <button type="submit" disabled={guardando} className="h-10 rounded-md bg-primary px-6 text-xs font-semibold text-primary-fg disabled:opacity-60">
+              {guardando ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function TabComisiones({ equipo, programas, onRefrescar }) {
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [reglas, setReglas] = useState([]);
   const [cargando, setCargando] = useState(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const res = await financeApi.teamPayments.buscar(filtros);
-      setPagos(res.data || []);
-      setTotal(res.total || 0);
-      setPages(res.pages || 1);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCargando(false);
-    }
-  }, [filtros]);
+      const data = await financeApi.commissionRules.listar();
+      setReglas(Array.isArray(data) ? data : []);
+    } catch (e) { console.error(e); }
+    finally { setCargando(false); }
+  }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
 
-  const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
-
-  const crear = async (e) => {
-    e.preventDefault();
-    if (!miembro || !monto) return;
-    await financeApi.teamPayments.crear({ team_member_id: miembro, amount: monto, paid_date: fecha });
-    setMiembro(''); setMonto('');
+  const eliminar = async (id) => {
+    if (!confirm('¿Eliminar esta regla de comisión?')) return;
+    await financeApi.commissionRules.eliminar(id);
     cargar();
-    onRefrescar();
   };
+
+  const fmtTipo = (type, value) => {
+    if (type === 'percentage') return `${value}%`;
+    return `Gs ${fmt(value)}`;
+  };
+
+  const fmtBase = (base) => base === 'collected' ? 'Cobrado' : 'Vendido';
 
   return (
     <div>
-      <form onSubmit={crear} className="mb-4 flex gap-2 max-w-3xl">
-        <select className={inputClass} value={miembro} onChange={e => setMiembro(e.target.value)}>
-          <option value="">Seleccionar miembro...</option>
-          {equipo.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-        </select>
-        <div className="w-40"><MoneyInput placeholder="Monto a pagar" value={monto} onChange={setMonto} /></div>
-        <input type="date" className={inputClass} value={fecha} onChange={e => setFecha(e.target.value)} />
-        <button type="submit" className="shrink-0 h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg">+ Registrar Pago</button>
-      </form>
+      {modalAbierto && (
+        <NuevaReglaModal
+          equipo={equipo}
+          programas={programas}
+          onClose={() => setModalAbierto(false)}
+          onGuardado={() => { setModalAbierto(false); cargar(); }}
+        />
+      )}
 
-      <div className="mb-3 flex flex-wrap gap-2 items-center">
-        <select className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs w-40" value={filtros.team_member_id} onChange={e => setF('team_member_id', e.target.value)}>
-          <option value="">Todos los miembros</option>
-          {equipo.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-        </select>
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-fg-muted">Fecha</span>
-          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_from} onChange={e => setF('date_from', e.target.value)} />
-          <span className="text-[10px] text-fg-muted">-</span>
-          <input type="date" className="h-8 rounded-md border border-border bg-surface-2 px-2 text-xs" value={filtros.date_to} onChange={e => setF('date_to', e.target.value)} />
-        </div>
+      <div className="mb-3 flex justify-end">
+        <button onClick={() => setModalAbierto(true)} className="h-9 rounded-md bg-primary px-4 text-xs font-semibold text-primary-fg hover:bg-primary-hover">
+          + Nueva Regla
+        </button>
       </div>
 
-      <div className="overflow-x-auto relative min-h-[300px]">
+      <div className="overflow-x-auto relative min-h-[200px]">
         {cargando && <div className="absolute inset-0 bg-surface/50 backdrop-blur-[1px] flex items-center justify-center z-10"><span className="text-xs font-bold text-fg-muted animate-pulse">Cargando...</span></div>}
         <table className="w-full text-left text-xs">
           <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
-            <tr><th className="py-2">Fecha</th><th className="py-2">Miembro</th><th className="py-2">Monto</th></tr>
+            <tr>
+              <th className="py-2 pr-4">Persona</th>
+              <th className="py-2 pr-4">Programa</th>
+              <th className="py-2 pr-4" style={{color:'var(--color-primary)'}}>Rol</th>
+              <th className="py-2 pr-4">Tipo</th>
+              <th className="py-2 pr-4">Valor</th>
+              <th className="py-2 pr-4">Base</th>
+              <th className="py-2">Acciones</th>
+            </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {pagos.length === 0 && !cargando && <tr><td colSpan={3} className="py-6 text-center text-fg-muted">No hay pagos registrados</td></tr>}
-            {pagos.map(p => (
-              <tr key={p.id} className="hover:bg-surface-2">
-                <td className="py-2 text-fg-muted">{p.paid_date}</td>
-                <td className="py-2 font-semibold text-fg">{p.TeamMember?.name || '—'}</td>
-                <td className="py-2 font-bold text-success">Gs {fmt(p.amount)}</td>
+            {reglas.length === 0 && !cargando && <tr><td colSpan={7} className="py-6 text-center text-fg-muted">No hay registros para mostrar</td></tr>}
+            {reglas.map(r => (
+              <tr key={r.id} className={`hover:bg-surface-2 ${r.active === false ? 'opacity-50' : ''}`}>
+                <td className="py-2 pr-4 font-semibold text-fg">{r.TeamMember?.name || '—'}</td>
+                <td className="py-2 pr-4 text-fg-muted">{r.Program?.name || 'Todos'}</td>
+                <td className="py-2 pr-4 text-fg-muted">{r.commission_role}</td>
+                <td className="py-2 pr-4 text-fg-muted capitalize">{r.commission_type === 'percentage' ? 'Porcentaje' : 'Fijo'}</td>
+                <td className="py-2 pr-4 font-bold text-fg">{fmtTipo(r.commission_type, r.commission_value)}</td>
+                <td className="py-2 pr-4 text-fg-muted">{fmtBase(r.calculation_base)}</td>
+                <td className="py-2">
+                  <button onClick={() => eliminar(r.id)} className="text-danger hover:opacity-70 p-1"><Trash2 size={13} /></button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <div className="mt-2 text-right text-[10px] text-fg-subtle">{reglas.length} registros</div>
       </div>
-
-      {pages > 1 && (
-        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-          <div className="text-[10px] text-fg-muted">Mostrando {pagos.length} de {total}</div>
-          <div className="flex gap-1">
-            <button disabled={filtros.page <= 1} onClick={() => setFiltros(f => ({ ...f, page: f.page - 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Anterior</button>
-            <span className="flex items-center px-2 text-xs font-bold">{filtros.page} / {pages}</span>
-            <button disabled={filtros.page >= pages} onClick={() => setFiltros(f => ({ ...f, page: f.page + 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Siguiente</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
