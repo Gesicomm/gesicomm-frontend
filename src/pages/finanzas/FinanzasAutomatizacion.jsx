@@ -187,10 +187,6 @@ function TabAlumnos({ dash, programas, equipo, onRefrescar }) {
       <form onSubmit={handleCrear} className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 lg:col-span-1">
         <div className="mb-1 text-xs font-semibold text-fg">Nuevo alumno / venta</div>
         <input className={inputClass} placeholder="Nombre *" value={form.name} onChange={set('name')} />
-        <select className={inputClass} value={form.program_id} onChange={set('program_id')}>
-          <option value="">Sin programa</option>
-          {programas.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
         <input type="date" className={inputClass} value={form.sale_date} onChange={set('sale_date')} />
         <input type="number" step="0.01" className={inputClass} placeholder="Precio negociado *" value={form.negotiated_price} onChange={set('negotiated_price')} />
         <select className={inputClass} value={form.closer_id} onChange={set('closer_id')}>
