@@ -1,0 +1,7147 @@
+<USER_REQUEST>
+<style>
+    /* ============================================================
+       T2E · CONTENT COMMAND CENTER
+       LIGHT / MINIMAL / RESPONSIVE
+    ============================================================ */
+
+    html,body{
+      margin:0!important;
+      padding:0!important;
+      width:100%!important;
+      min-height:100%!important;
+      overflow-x:hidden!important;
+      background:#f7f7f9!important;
+    }
+
+    #t2e-app,
+    #t2e-app *{
+      box-sizing:border-box;
+    }
+
+    #t2e-app{
+      --purple:#6b2ba4;
+      --purple-soft:#f4ecfa;
+      --red:#ff3940;
+      --red-soft:#fff0f1;
+      --yellow:#f7dc38;
+      --yellow-soft:#fffbe3;
+      --black:#111111;
+      --white:#ffffff;
+      --bg:#f7f7f9;
+      --text:#202124;
+      --muted:#757575;
+      --line:#e8e8ed;
+      --green:#22a06b;
+
+      width:100vw!important;
+      min-height:100vh;
+
+      margin-left:calc(50% - 50vw)!important;
+      margin-right:calc(50% - 50vw)!important;
+
+      background:
+        radial-gradient(circle at 10% 0%,rgba(107,43,164,.055),transparent 25%),
+        radial-gradient(circle at 95% 5%,rgba(255,57,64,.045),transparent 25%),
+        #f7f7f9;
+
+      color:var(--text);
+
+      font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+    }
+
+
+    /* ============================================================
+       LOGIN
+    ============================================================ */
+
+    #t2e-login{
+      min-height:100vh;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      padding:24px;
+    }
+
+    .t2e-login-card{
+      width:min(430px,100%);
+
+      padding:36px;
+
+      background:#fff;
+
+      border:1px solid var(--line);
+      border-radius:22px;
+
+      box-shadow:
+        0 18px 60px rgba(30,20,40,.08);
+    }
+
+    .t2e-logo{
+      width:52px;
+      height:52px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      margin-bottom:22px;
+
+      border-radius:15px;
+
+      background:var(--purple);
+      color:#fff;
+
+      font-size:18px;
+      font-weight:950;
+    }
+
+    .t2e-login-card h1{
+      margin:0 0 7px;
+
+      color:#111;
+
+      font-size:27px;
+      line-height:1.05;
+
+      font-weight:900;
+    }
+
+    .t2e-login-card p{
+      margin:0 0 25px;
+
+      color:var(--muted);
+
+      font-size:13px;
+      line-height:1.55;
+    }
+
+
+    /* ============================================================
+       GENERAL FORM
+    ============================================================ */
+
+    .t2e-field{
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+
+      margin-bottom:15px;
+    }
+
+    .t2e-field label{
+      color:#555;
+
+      font-size:10px;
+      font-weight:800;
+
+      text-transform:uppercase;
+      letter-spacing:.55px;
+    }
+
+    .t2e-input,
+    .t2e-select,
+    .t2e-textarea{
+      width:100%;
+
+      border:1px solid #dedee5;
+      border-radius:11px;
+
+      outline:none;
+
+      background:#fff;
+      color:#181818;
+
+      font-family:inherit;
+      font-size:13px;
+
+      transition:.18s ease;
+    }
+
+    .t2e-input,
+    .t2e-select{
+      min-height:46px;
+      padding:0 13px;
+    }
+
+    .t2e-textarea{
+      min-height:125px;
+      padding:12px 13px;
+      resize:vertical;
+      line-height:1.55;
+    }
+
+    .t2e-input:focus,
+    .t2e-select:focus,
+    .t2e-textarea:focus{
+      border-color:rgba(107,43,164,.6);
+
+      box-shadow:
+        0 0 0 3px rgba(107,43,164,.07);
+    }
+
+
+    /* ============================================================
+       BUTTONS
+    ============================================================ */
+
+    .t2e-btn{
+      min-height:43px;
+
+      padding:9px 16px;
+
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+
+      gap:7px;
+
+      border:1px solid #ddddE4;
+      border-radius:10px;
+
+      background:#fff;
+      color:#262626;
+
+      font-size:10px;
+      font-weight:850;
+
+      cursor:pointer;
+
+      transition:.18s ease;
+    }
+
+    .t2e-btn:hover{
+      transform:translateY(-1px);
+
+      box-shadow:
+        0 7px 20px rgba(0,0,0,.06);
+    }
+
+    .t2e-btn-purple{
+      border-color:var(--purple);
+      background:var(--purple);
+      color:white;
+    }
+
+    .t2e-btn-publish-yellow{
+      background:#f4b400 !important;
+      border-color:#f4b400 !important;
+      color:#201600 !important;
+      box-shadow:0 8px 20px rgba(244,180,0,.18);
+    }
+    .t2e-btn-publish-yellow:hover{
+      background:#dca200 !important;
+      border-color:#dca200 !important;
+      color:#201600 !important;
+    }
+
+    .t2e-btn-red{
+      border-color:var(--red);
+      background:var(--red);
+      color:white;
+    }
+
+    .t2e-btn-soft-purple{
+      border-color:#e0cbed;
+      background:var(--purple-soft);
+      color:var(--purple);
+    }
+
+    .t2e-btn-full{
+      width:100%;
+    }
+
+
+    /* ============================================================
+       MAIN
+    ============================================================ */
+
+    #t2e-main{
+      display:none;
+    }
+
+    .t2e-shell{
+      width:min(1500px,100%);
+      margin:0 auto;
+
+      padding:
+        clamp(17px,2vw,28px)
+        clamp(14px,3vw,38px)
+        45px;
+    }
+
+
+    /* ============================================================
+       HEADER
+    ============================================================ */
+
+    .t2e-topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+
+      gap:15px;
+
+      margin-bottom:26px;
+    }
+
+    .t2e-brand{
+      display:flex;
+      align-items:center;
+      gap:11px;
+    }
+
+    .t2e-brand-logo{
+      width:42px;
+      height:42px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      border-radius:12px;
+
+      background:var(--purple);
+      color:#fff;
+
+      font-size:14px;
+      font-weight:950;
+    }
+
+    .t2e-brand strong{
+      display:block;
+      color:#151515;
+      font-size:13px;
+    }
+
+    .t2e-brand span{
+      color:#888;
+      font-size:9px;
+    }
+
+    .t2e-user{
+      display:flex;
+      align-items:center;
+      gap:9px;
+
+      color:#777;
+
+      font-size:10px;
+    }
+
+
+    /* ============================================================
+       HERO
+    ============================================================ */
+
+    .t2e-hero{
+      margin-bottom:27px;
+    }
+
+    .t2e-eyebrow{
+      margin-bottom:7px;
+
+      color:var(--purple);
+
+      font-size:10px;
+      font-weight:900;
+
+      letter-spacing:1.3px;
+      text-transform:uppercase;
+    }
+
+    .t2e-hero h1{
+      max-width:800px;
+
+      margin:0;
+
+      color:#161616;
+
+      font-size:
+        clamp(30px,4vw,54px);
+
+      line-height:1.02;
+      letter-spacing:-1.7px;
+
+      font-weight:900;
+    }
+
+    .t2e-hero p{
+      max-width:750px;
+
+      margin:11px 0 0;
+
+      color:#717171;
+
+      font-size:13px;
+      line-height:1.6;
+    }
+
+
+    /* ============================================================
+       MAIN NAVIGATION
+    ============================================================ */
+
+    .t2e-nav{
+      display:flex;
+      gap:8px;
+
+      margin-bottom:22px;
+
+      overflow-x:auto;
+    }
+
+    .t2e-nav-button{
+      flex:0 0 auto;
+
+      min-height:43px;
+
+      padding:9px 16px;
+
+      border:1px solid var(--line);
+      border-radius:11px;
+
+      background:white;
+      color:#777;
+
+      font-size:10px;
+      font-weight:850;
+
+      cursor:pointer;
+    }
+
+    .t2e-nav-button.active{
+      border-color:var(--purple);
+      background:var(--purple);
+      color:white;
+    }
+
+
+    /* ============================================================
+       PAGES
+    ============================================================ */
+
+    .t2e-page{
+      display:none;
+    }
+
+    .t2e-page.active{
+      display:block;
+    }
+
+
+    /* ============================================================
+       CARD
+    ============================================================ */
+
+    .t2e-card{
+      background:#fff;
+
+      border:1px solid var(--line);
+      border-radius:18px;
+
+      box-shadow:
+        0 8px 28px rgba(32,25,42,.035);
+
+      overflow:hidden;
+    }
+
+    .t2e-card-head{
+      padding:19px 21px;
+
+      border-bottom:1px solid #ededf1;
+    }
+
+    .t2e-card-head h2{
+      margin:0;
+
+      color:#191919;
+
+      font-size:16px;
+      font-weight:900;
+    }
+
+    .t2e-card-head p{
+      margin:5px 0 0;
+
+      color:#858585;
+
+      font-size:11px;
+      line-height:1.45;
+    }
+
+    .t2e-card-body{
+      padding:22px;
+    }
+
+
+    /* ============================================================
+       PROCESS
+    ============================================================ */
+
+    .t2e-process{
+      display:grid;
+
+      grid-template-columns:
+        repeat(4,1fr);
+
+      gap:10px;
+
+      margin-bottom:18px;
+    }
+
+    .t2e-process-step{
+      position:relative;
+
+      padding:14px;
+
+      border:1px solid var(--line);
+      border-radius:13px;
+
+      background:#fff;
+    }
+
+    .t2e-process-step.active{
+      border-color:rgba(107,43,164,.45);
+      background:var(--purple-soft);
+    }
+
+    .t2e-process-step.done{
+      border-color:rgba(34,160,107,.25);
+      background:#edf9f4;
+    }
+
+    .t2e-step-number{
+      width:26px;
+      height:26px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      margin-bottom:8px;
+
+      border-radius:8px;
+
+      background:#efeff3;
+      color:#777;
+
+      font-size:10px;
+      font-weight:900;
+    }
+
+    .t2e-process-step.active
+    .t2e-step-number{
+      background:var(--purple);
+      color:white;
+    }
+
+    .t2e-process-step.done
+    .t2e-step-number{
+      background:var(--green);
+      color:white;
+    }
+
+    .t2e-process-step strong{
+      display:block;
+
+      color:#333;
+
+      font-size:10px;
+    }
+
+    .t2e-process-step span{
+      display:block;
+
+      margin-top:3px;
+
+      color:#999;
+
+      font-size:8px;
+      line-height:1.35;
+    }
+
+
+    /* ============================================================
+       WIZARD
+    ============================================================ */
+
+    .t2e-stage{
+      display:none;
+    }
+
+    .t2e-stage.active{
+      display:block;
+    }
+
+    .t2e-stage-title{
+      display:flex;
+      align-items:center;
+
+      gap:11px;
+
+      margin-bottom:20px;
+    }
+
+    .t2e-stage-icon{
+      width:38px;
+      height:38px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      border-radius:11px;
+
+      background:var(--purple-soft);
+      color:var(--purple);
+
+      font-size:15px;
+      font-weight:900;
+    }
+
+    .t2e-stage-title h3{
+      margin:0;
+
+      color:#222;
+
+      font-size:16px;
+      font-weight:900;
+    }
+
+    .t2e-stage-title p{
+      margin:3px 0 0;
+
+      color:#888;
+
+      font-size:10px;
+    }
+
+
+    /* ============================================================
+       FORM GRID
+    ============================================================ */
+
+    .t2e-form-grid{
+      display:grid;
+
+      grid-template-columns:
+        repeat(2,minmax(0,1fr));
+
+      gap:14px;
+    }
+
+    .t2e-span-2{
+      grid-column:1/-1;
+    }
+
+
+    /* ============================================================
+       FORMAT SELECT
+    ============================================================ */
+
+    .t2e-format-grid{
+      display:grid;
+
+      grid-template-columns:
+        repeat(3,1fr);
+
+      gap:10px;
+    }
+
+    .t2e-format{
+      min-height:105px;
+
+      padding:14px;
+
+      display:flex;
+      flex-direction:column;
+
+      justify-content:center;
+      align-items:center;
+
+      gap:8px;
+
+      border:1px solid #e4e4e9;
+      border-radius:13px;
+
+      background:#fff;
+      color:#666;
+
+      cursor:pointer;
+
+      transition:.18s ease;
+    }
+
+    .t2e-format:hover{
+      border-color:#cbb1dc;
+    }
+
+    .t2e-format.active{
+      border-color:var(--purple);
+      background:var(--purple-soft);
+      color:var(--purple);
+
+      box-shadow:
+        inset 0 0 0 1px rgba(107,43,164,.08);
+    }
+
+    .t2e-format-icon{
+      font-size:22px;
+    }
+
+    .t2e-format-name{
+      font-size:9px;
+      font-weight:900;
+    }
+
+
+    /* ============================================================
+       SLIDES
+    ============================================================ */
+
+    #t2e-slides-section{
+      display:none;
+    }
+
+    .t2e-slides{
+      display:flex;
+      flex-direction:column;
+      gap:9px;
+    }
+
+    .t2e-slide-row{
+      display:grid;
+
+      grid-template-columns:48px 1fr;
+
+      gap:9px;
+    }
+
+    .t2e-slide-number{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      min-height:75px;
+
+      border-radius:10px;
+
+      background:var(--yellow-soft);
+      color:#725f00;
+
+      font-size:10px;
+      font-weight:900;
+    }
+
+
+    /* ============================================================
+       NAV WIZARD
+    ============================================================ */
+
+    .t2e-stage-actions{
+      display:flex;
+
+      justify-content:space-between;
+
+      gap:10px;
+
+      margin-top:22px;
+    }
+
+    .t2e-stage-actions-right{
+      margin-left:auto;
+    }
+
+
+    /* ============================================================
+       TRACKING BOX
+    ============================================================ */
+
+    .t2e-tracking-box{
+      padding:18px;
+
+      border:1px dashed #cab4dc;
+      border-radius:13px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #fbf8fd,
+          #fff
+        );
+    }
+
+    .t2e-tracking-label{
+      margin-bottom:6px;
+
+      color:#8a6ba3;
+
+      font-size:9px;
+      font-weight:900;
+
+      text-transform:uppercase;
+      letter-spacing:.8px;
+    }
+
+    #t2e-code-preview{
+      color:var(--purple);
+
+      font-size:
+        clamp(13px,2vw,19px);
+
+      font-weight:950;
+
+      word-break:break-word;
+    }
+
+
+    /* ============================================================
+       CALENDAR TOOLBAR
+    ============================================================ */
+
+    .t2e-calendar-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+
+      gap:12px;
+
+      flex-wrap:wrap;
+
+      margin-bottom:14px;
+    }
+
+    .t2e-calendar-nav{
+      display:flex;
+      align-items:center;
+
+      gap:7px;
+    }
+
+    #t2e-calendar-title{
+      min-width:190px;
+
+      color:#1b1b1b;
+
+      font-size:15px;
+      font-weight:900;
+
+      text-align:center;
+      text-transform:capitalize;
+    }
+
+    .t2e-calendar-view{
+      display:flex;
+      gap:5px;
+    }
+
+    .t2e-view-button{
+      padding:8px 11px;
+
+      border:1px solid var(--line);
+      border-radius:9px;
+
+      background:#fff;
+      color:#777;
+
+      font-size:9px;
+      font-weight:850;
+
+      cursor:pointer;
+    }
+
+    .t2e-view-button.active{
+      border-color:var(--purple);
+      background:var(--purple-soft);
+      color:var(--purple);
+    }
+
+
+    /* ============================================================
+       FILTER
+    ============================================================ */
+
+    .t2e-filter{
+      display:grid;
+
+      grid-template-columns:
+        1fr 180px 180px;
+
+      gap:8px;
+
+      margin-bottom:14px;
+    }
+
+
+    /* ============================================================
+       MONTH
+    ============================================================ */
+
+    .t2e-calendar-scroll{
+      overflow-x:auto;
+    }
+
+    .t2e-month{
+      min-width:900px;
+
+      display:grid;
+
+      grid-template-columns:
+        repeat(7,1fr);
+
+      border-top:1px solid var(--line);
+      border-left:1px solid var(--line);
+    }
+
+    .t2e-weekday{
+      min-height:40px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      border-right:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+
+      background:#fafafa;
+      color:#777;
+
+      font-size:8px;
+      font-weight:900;
+
+      letter-spacing:.6px;
+    }
+
+    .t2e-day{
+      min-height:145px;
+
+      padding:8px;
+
+      border-right:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+
+      background:#fff;
+    }
+
+    .t2e-day.other{
+      background:#fafafa;
+      opacity:.55;
+    }
+
+    .t2e-day.today{
+      background:#fbf7fe;
+    }
+
+    .t2e-day-number{
+      margin-bottom:8px;
+
+      color:#777;
+
+      font-size:9px;
+      font-weight:850;
+    }
+
+    .t2e-day.today
+    .t2e-day-number{
+      width:25px;
+      height:25px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      border-radius:50%;
+
+      background:var(--purple);
+      color:#fff;
+    }
+
+
+    /* ============================================================
+       EVENTS
+    ============================================================ */
+
+    .t2e-event{
+      width:100%;
+
+      margin-bottom:5px;
+
+      padding:7px;
+
+      border-radius:8px;
+
+      cursor:pointer;
+
+      overflow:hidden;
+    }
+
+    .t2e-event-time{
+      margin-bottom:3px;
+
+      font-size:7px;
+      font-weight:850;
+
+      opacity:.75;
+    }
+
+    .t2e-event-code{
+      overflow:hidden;
+
+      white-space:nowrap;
+      text-overflow:ellipsis;
+
+      font-size:7px;
+      font-weight:950;
+    }
+
+    .t2e-event-R{
+      background:#f1e8f7;
+      color:#6b2ba4;
+    }
+
+    .t2e-event-C{
+      background:#fff8cf;
+      color:#705e00;
+    }
+
+    .t2e-event-H{
+      background:#fff0f1;
+      color:#c8242a;
+    }
+
+    .t2e-event-YTS{
+      background:#ffe7e8;
+      color:#ba151b;
+    }
+
+    .t2e-event-TT{
+      background:#eaf8f1;
+      color:#177349;
+    }
+
+    /* ============================================================
+       CALENDAR STATUS / DRAG & DROP
+    ============================================================ */
+    .t2e-event-published{
+      background:#e8f7ef!important;
+      color:#177349!important;
+      border:1px solid #bfe6d2!important;
+      cursor:default!important;
+    }
+
+    .t2e-event-published:hover,
+    .t2e-event-published:focus,
+    .t2e-event-published:active{
+      transform:none!important;
+      box-shadow:none!important;
+    }
+
+    .t2e-event[draggable="true"]{
+      cursor:grab;
+    }
+
+    .t2e-event[draggable="true"]:active{
+      cursor:grabbing;
+    }
+
+    .t2e-event.t2e-dragging{
+      opacity:.45;
+      transform:scale(.98)!important;
+    }
+
+    .t2e-day.t2e-drop-target,
+    .t2e-week-col.t2e-drop-target{
+      outline:2px dashed rgba(107,43,164,.55);
+      outline-offset:-4px;
+      background:#fbf7fe!important;
+    }
+
+    .t2e-calendar-state{
+      margin-top:4px;
+      font-size:7px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      opacity:.78;
+    }
+
+
+    /* ============================================================
+       WEEK
+    ============================================================ */
+
+    .t2e-week{
+      min-width:850px;
+
+      display:grid;
+
+      grid-template-columns:
+        repeat(7,1fr);
+
+      gap:8px;
+    }
+
+    .t2e-week-col{
+      min-height:500px;
+
+      padding:10px;
+
+      border:1px solid var(--line);
+      border-radius:11px;
+
+      background:#fff;
+    }
+
+    .t2e-week-title{
+      margin-bottom:10px;
+      padding-bottom:8px;
+
+      border-bottom:1px solid var(--line);
+
+      color:#444;
+
+      font-size:9px;
+      font-weight:900;
+    }
+
+
+    /* ============================================================
+       DAY VIEW
+    ============================================================ */
+
+    .t2e-day-view{
+      display:flex;
+      flex-direction:column;
+    }
+
+    .t2e-hour{
+      display:grid;
+
+      grid-template-columns:
+        65px 1fr;
+
+      min-height:60px;
+
+      border-bottom:1px solid var(--line);
+    }
+
+    .t2e-hour-label{
+      padding:8px;
+
+      border-right:1px solid var(--line);
+
+      color:#888;
+
+      font-size:8px;
+      font-weight:850;
+    }
+
+    .t2e-hour-content{
+      padding:5px 9px;
+    }
+
+
+    /* ============================================================
+       MODAL
+    ============================================================ */
+
+    .t2e-modal{
+      position:fixed;
+
+      inset:0;
+
+      z-index:2147483000;
+
+      display:none;
+      align-items:center;
+      justify-content:center;
+
+      padding:18px;
+
+      background:
+        rgba(12,8,16,.42);
+
+      backdrop-filter:blur(7px);
+    }
+
+    .t2e-modal.open{
+      display:flex;
+    }
+
+    .t2e-modal-card{
+      width:min(820px,100%);
+      height:min(86vh,820px);
+      max-height:calc(100vh - 28px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border-radius:18px;
+      background:#fff;
+      box-shadow:0 30px 90px rgba(0,0,0,.2);
+    }
+
+    .t2e-modal-head{
+      display:flex;
+      flex:0 0 auto;
+      justify-content:space-between;
+      align-items:center;
+      padding:14px 18px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+
+    .t2e-modal-head h3{
+      margin:0;
+
+      font-size:15px;
+      font-weight:900;
+    }
+
+    .t2e-modal-close{
+      width:32px;
+      height:32px;
+
+      border:1px solid var(--line);
+      border-radius:9px;
+
+      background:white;
+
+      cursor:pointer;
+    }
+
+    .t2e-modal-body{
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      padding:16px 18px 0;
+      overscroll-behavior:contain;
+    }
+
+    .t2e-modal-actions{
+      position:sticky;
+      bottom:0;
+      z-index:5;
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:8px;
+      margin:14px -18px 0;
+      padding:12px 18px 16px;
+      border-top:1px solid var(--line);
+      background:rgba(255,255,255,.97);
+      backdrop-filter:blur(8px);
+      box-shadow:0 -10px 24px rgba(0,0,0,.05);
+    }
+
+    .t2e-picker-tools{display:flex;gap:9px;align-items:center;margin-bottom:12px}
+    .t2e-picker-tools .t2e-input{flex:1}
+    .t2e-picker-list{display:grid;gap:8px;padding-bottom:18px}
+    .t2e-picker-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:.16s ease}
+    .t2e-picker-item:hover{border-color:#cdb5df;background:#fcfaff;transform:translateY(-1px)}
+    .t2e-picker-code{color:var(--purple);font-size:10px;font-weight:950;word-break:break-word}
+    .t2e-picker-meta{margin-top:3px;color:#777;font-size:9px;line-height:1.45}
+    .t2e-picker-date{color:#555;font-size:9px;font-weight:850;white-space:nowrap}
+    .t2e-picker-empty{padding:26px;text-align:center;color:#888;font-size:10px;border:1px dashed var(--line);border-radius:12px}
+
+    @media(max-width:620px){
+      .t2e-modal{padding:8px;align-items:stretch}
+      .t2e-modal-card{width:100%;height:calc(100vh - 16px);max-height:none;border-radius:14px}
+      .t2e-detail-grid{grid-template-columns:1fr}
+      .t2e-detail.full{grid-column:auto}
+      .t2e-modal-actions{grid-template-columns:1fr}
+      .t2e-picker-item{grid-template-columns:1fr}
+    }
+
+    .t2e-detail-grid{
+      display:grid;
+
+      grid-template-columns:
+        1fr 1fr;
+
+      gap:9px;
+    }
+
+    .t2e-detail{
+      padding:12px;
+
+      border:1px solid #ededf0;
+      border-radius:10px;
+
+      background:#fafafa;
+    }
+
+    .t2e-detail.full{
+      grid-column:1/-1;
+    }
+
+    .t2e-detail span{
+      display:block;
+
+      margin-bottom:5px;
+
+      color:#999;
+
+      font-size:8px;
+      font-weight:850;
+
+      text-transform:uppercase;
+    }
+
+    .t2e-detail strong,
+    .t2e-detail div{
+      color:#262626;
+
+      font-size:11px;
+      line-height:1.5;
+
+      white-space:pre-wrap;
+    }
+
+
+    /* ============================================================
+       TOAST
+    ============================================================ */
+
+    #t2e-toast{
+      position:fixed;
+
+      right:20px;
+      bottom:20px;
+
+      z-index:2147483600;
+
+      display:none;
+
+      max-width:350px;
+
+      padding:12px 15px;
+
+      border:1px solid #d4eadf;
+      border-radius:11px;
+
+      background:#f0faf5;
+      color:#17734b;
+
+      font-size:10px;
+      font-weight:800;
+
+      box-shadow:
+        0 12px 35px rgba(0,0,0,.1);
+    }
+
+
+    /* ============================================================
+       FONT SIZE CONTROL
+    ============================================================ */
+
+    .t2e-font-control{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border:1px solid var(--line);
+      border-radius:11px;
+      background:#fff;
+    }
+
+    .t2e-font-control span{
+      color:#777;
+      font-size:10px;
+      font-weight:850;
+      white-space:nowrap;
+    }
+
+    #t2e-font-size{
+      width:110px;
+      accent-color:var(--purple);
+      cursor:pointer;
+    }
+
+    #t2e-font-value{
+      min-width:42px;
+      color:var(--purple);
+      font-size:10px;
+      font-weight:900;
+      text-align:right;
+    }
+
+    @media(max-width:620px){
+      .t2e-topbar{
+        align-items:flex-start;
+        flex-wrap:wrap;
+      }
+      .t2e-font-control{
+        order:3;
+        width:100%;
+      }
+      #t2e-font-size{
+        flex:1;
+        width:auto;
+      }
+    }
+
+
+
+    /* ============================================================
+       CALENDAR EVENT ZOOM + CONTENT SUMMARY
+    ============================================================ */
+    .t2e-event{
+      position:relative;
+      z-index:1;
+      transform-origin:left center;
+      transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+    }
+    .t2e-event:hover,
+    .t2e-event:focus,
+    .t2e-event:active{
+      z-index:9999;
+      transform:scale(1.65);
+      box-shadow:0 12px 34px rgba(25,18,35,.22);
+      filter:saturate(1.05);
+      outline:none;
+    }
+    .t2e-event:hover .t2e-event-code,
+    .t2e-event:focus .t2e-event-code,
+    .t2e-event:active .t2e-event-code{
+      white-space:normal;
+      overflow:visible;
+      text-overflow:clip;
+    }
+
+    .t2e-summary-toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+    .t2e-summary-range{
+      display:flex;
+      gap:7px;
+      flex-wrap:wrap;
+    }
+    .t2e-summary-range button.active{
+      border-color:var(--purple);
+      background:var(--purple);
+      color:#fff;
+    }
+    .t2e-summary-period{
+      color:#777;
+      font-size:11px;
+      font-weight:800;
+    }
+    .t2e-kpi-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:11px;
+      margin-bottom:18px;
+    }
+    .t2e-kpi{
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:15px;
+      background:#fff;
+    }
+    .t2e-kpi-label{
+      color:#888;
+      font-size:9px;
+      font-weight:900;
+      letter-spacing:.55px;
+      text-transform:uppercase;
+    }
+    .t2e-kpi-value{
+      margin-top:7px;
+      color:#181818;
+      font-size:28px;
+      line-height:1;
+      font-weight:950;
+    }
+    .t2e-kpi-note{
+      margin-top:7px;
+      color:#999;
+      font-size:9px;
+      line-height:1.4;
+    }
+    .t2e-summary-grid{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:14px;
+      margin-bottom:14px;
+    }
+    .t2e-summary-panel{
+      padding:19px;
+      border:1px solid var(--line);
+      border-radius:15px;
+      background:#fff;
+    }
+    .t2e-summary-panel h3{
+      margin:0 0 4px;
+      color:#222;
+      font-size:14px;
+      font-weight:900;
+    }
+    .t2e-summary-panel>p{
+      margin:0 0 16px;
+      color:#8a8a8a;
+      font-size:10px;
+      line-height:1.5;
+    }
+    .t2e-format-metric{
+      display:grid;
+      grid-template-columns:120px 1fr 52px;
+      align-items:center;
+      gap:10px;
+      margin:11px 0;
+    }
+    .t2e-format-metric-name{
+      color:#555;
+      font-size:10px;
+      font-weight:850;
+    }
+    .t2e-metric-track{
+      height:9px;
+      overflow:hidden;
+      border-radius:99px;
+      background:#f0f0f3;
+    }
+    .t2e-metric-fill{
+      height:100%;
+      border-radius:99px;
+      background:var(--purple);
+    }
+    .t2e-format-metric-value{
+      color:#333;
+      font-size:10px;
+      font-weight:900;
+      text-align:right;
+    }
+    .t2e-analysis-list{
+      display:flex;
+      flex-direction:column;
+      gap:9px;
+    }
+    .t2e-analysis-item{
+      padding:11px 12px;
+      border-radius:11px;
+      background:#faf9fb;
+      color:#555;
+      font-size:10px;
+      line-height:1.5;
+    }
+    .t2e-analysis-item strong{color:#222;}
+    .t2e-trend{
+      display:grid;
+      grid-template-columns:repeat(6,minmax(80px,1fr));
+      gap:10px;
+      align-items:end;
+      min-height:220px;
+      padding-top:12px;
+    }
+    .t2e-trend-col{
+      min-height:190px;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      align-items:center;
+      gap:7px;
+    }
+    .t2e-trend-number{
+      color:#555;
+      font-size:10px;
+      font-weight:900;
+    }
+    .t2e-trend-bar-wrap{
+      width:100%;
+      height:145px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      border-radius:10px;
+      background:#fafafa;
+    }
+    .t2e-trend-bar{
+      width:min(44px,55%);
+      min-height:3px;
+      border-radius:8px 8px 3px 3px;
+      background:linear-gradient(180deg,var(--purple),#8e52bc);
+    }
+    .t2e-trend-label{
+      color:#888;
+      font-size:8px;
+      font-weight:850;
+      text-transform:uppercase;
+    }
+    @media(max-width:980px){
+      .t2e-kpi-grid{grid-template-columns:repeat(2,1fr);}
+      .t2e-summary-grid{grid-template-columns:1fr;}
+    }
+    @media(max-width:620px){
+      .t2e-event:hover,.t2e-event:focus,.t2e-event:active{transform:scale(1.35);}
+      .t2e-kpi-grid{grid-template-columns:1fr 1fr;gap:8px;}
+      .t2e-kpi{padding:14px;}
+      .t2e-kpi-value{font-size:24px;}
+      .t2e-format-metric{grid-template-columns:92px 1fr 42px;}
+      .t2e-trend{overflow-x:auto;grid-template-columns:repeat(6,90px);}
+    }
+
+    /* ============================================================
+       TABLET
+    ============================================================ */
+
+    @media(max-width:980px){
+
+      .t2e-process{
+        grid-template-columns:
+          repeat(2,1fr);
+      }
+
+      .t2e-format-grid{
+        grid-template-columns:
+          repeat(3,1fr);
+      }
+
+      .t2e-filter{
+        grid-template-columns:
+          1fr 1fr;
+      }
+
+      .t2e-search{
+        grid-column:1/-1;
+      }
+
+    }
+
+
+    /* ============================================================
+       MOBILE
+    ============================================================ */
+
+    @media(max-width:620px){
+
+      .t2e-shell{
+        padding:
+          13px 10px 35px;
+      }
+
+      .t2e-user-name{
+        display:none;
+      }
+
+      .t2e-hero{
+        margin-top:8px;
+      }
+
+      .t2e-hero h1{
+        font-size:33px;
+      }
+
+      .t2e-process{
+        display:flex;
+
+        overflow-x:auto;
+
+        padding-bottom:4px;
+      }
+
+      .t2e-process-step{
+        min-width:180px;
+      }
+
+      .t2e-card-body{
+        padding:15px;
+      }
+
+      .t2e-form-grid{
+        grid-template-columns:1fr;
+      }
+
+      .t2e-span-2{
+        grid-column:auto;
+      }
+
+      .t2e-format-grid{
+        grid-template-columns:
+          1fr 1fr;
+      }
+
+      .t2e-format{
+        min-height:90px;
+      }
+
+      .t2e-filter{
+        grid-template-columns:1fr;
+      }
+
+      .t2e-search{
+        grid-column:auto;
+      }
+
+      .t2e-calendar-toolbar{
+        align-items:stretch;
+      }
+
+      .t2e-calendar-nav{
+        width:100%;
+      }
+
+      #t2e-calendar-title{
+        min-width:0;
+        flex:1;
+      }
+
+      .t2e-calendar-view{
+        width:100%;
+      }
+
+      .t2e-view-button{
+        flex:1;
+      }
+
+      .t2e-detail-grid{
+        grid-template-columns:1fr;
+      }
+
+      .t2e-detail.full{
+        grid-column:auto;
+      }
+
+    }
+
+
+    /* ============================================================
+       SOCIAL PUBLISHING
+    ============================================================ */
+    .t2e-publish-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);gap:16px}
+    .t2e-publish-source{padding:16px;border:1px solid var(--line);border-radius:14px;background:#fafafa;margin-bottom:16px;cursor:pointer;transition:.18s ease;position:relative}
+    .t2e-publish-source:hover{border-color:#cdb5df;background:#fcfaff;box-shadow:0 7px 22px rgba(107,43,164,.08)}
+    .t2e-publish-source:after{content:"CAMBIAR / SELECCIONAR PIEZA →";display:block;margin-top:10px;color:var(--purple);font-size:8px;font-weight:950;letter-spacing:.04em}
+    .t2e-publish-code{font-weight:950;color:var(--purple);word-break:break-word}
+    .t2e-platform-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+    .t2e-platform{position:relative;display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:.18s ease}
+    .t2e-platform:hover{border-color:#cdb5df;transform:translateY(-1px)}
+    .t2e-platform input{width:18px;height:18px;accent-color:var(--purple)}
+    .t2e-platform strong{font-size:11px;color:#2b2b2b}.t2e-platform span{display:block;font-size:8px;color:#999;margin-top:2px}
+    .t2e-upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:190px;padding:18px;border:1.5px dashed #cdb5df;border-radius:14px;background:#fbf8fd;text-align:center;cursor:pointer}
+    .t2e-upload-zone strong{font-size:12px;color:#333}.t2e-upload-zone span{font-size:9px;color:#888;margin-top:5px;line-height:1.5}.t2e-upload-zone input{display:none}
+    .t2e-file-pill{display:none;margin-top:10px;padding:9px 11px;border-radius:9px;background:#edf9f4;color:#177349;font-size:9px;font-weight:850;word-break:break-all}
+    .t2e-publish-preview{position:sticky;top:15px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 8px 28px rgba(32,25,42,.035)}
+    .t2e-publish-preview h3{margin:0 0 13px;font-size:14px}.t2e-preview-screen{aspect-ratio:9/16;max-height:420px;margin:0 auto 14px;border-radius:16px;background:linear-gradient(145deg,#17121d,#6b2ba4);display:flex;align-items:center;justify-content:center;color:#fff;padding:20px;text-align:center;overflow:hidden}.t2e-preview-screen video,.t2e-preview-screen img{width:100%;height:100%;object-fit:contain;border-radius:10px}.t2e-preview-copy{font-size:9px;line-height:1.55;color:#666;white-space:pre-wrap;max-height:150px;overflow:auto}
+    .t2e-publish-status{margin-top:12px;padding:11px 12px;border-radius:10px;background:var(--yellow-soft);color:#6c5a00;font-size:9px;line-height:1.5}
+    .t2e-publish-status.ok{background:#edf9f4;color:#177349}.t2e-publish-status.error{background:var(--red-soft);color:#b52026}
+    @media(max-width:900px){.t2e-publish-layout{grid-template-columns:1fr}.t2e-publish-preview{position:static}.t2e-preview-screen{max-height:360px}}
+    @media(max-width:620px){.t2e-platform-grid{grid-template-columns:1fr}.t2e-publish-layout{gap:10px}}
+
+    .t2e-platform.is-disabled{
+      opacity:.42;
+      cursor:not-allowed;
+      background:#f6f6f7;
+    }
+    .t2e-carousel-upload-list{
+      display:none;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    .t2e-carousel-slot{
+      position:relative;
+      min-height:155px;
+      border:1.5px dashed #cdb5df;
+      border-radius:13px;
+      background:#fbf8fd;
+      overflow:hidden;
+    }
+    .t2e-carousel-slot label{
+      min-height:155px;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:5px;
+      cursor:pointer;
+      text-align:center;
+    }
+    .t2e-carousel-slot input{display:none}
+    .t2e-carousel-slot strong{
+      color:var(--purple);
+      font-size:10px;
+      font-weight:950;
+    }
+    .t2e-carousel-slot span{
+      color:#888;
+      font-size:8px;
+    }
+    .t2e-carousel-thumb{
+      width:100%;
+      aspect-ratio:1/1;
+      object-fit:contain;
+      background:#fff;
+      display:block;
+    }
+    .t2e-story-thumb{
+      width:100%;
+      aspect-ratio:9/16;
+      object-fit:contain;
+      background:#111;
+      display:block;
+    }
+    .t2e-story-mode .t2e-carousel-slot{
+      min-height:210px;
+    }
+    .t2e-story-mode .t2e-carousel-slot label{
+      min-height:210px;
+    }
+
+    .t2e-carousel-file-name{
+      padding:7px 8px;
+      color:#555;
+      font-size:8px;
+      text-align:center;
+      word-break:break-word;
+    }
+    .t2e-carousel-preview-grid{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .t2e-carousel-preview-item{
+      position:relative;
+      overflow:hidden;
+      border-radius:10px;
+      background:#fff;
+    }
+    .t2e-carousel-preview-item img{
+      width:100%;
+      aspect-ratio:1/1;
+      object-fit:contain;
+      display:block;
+    }
+    .t2e-carousel-preview-number{
+      position:absolute;
+      top:6px;
+      left:6px;
+      min-width:22px;
+      height:22px;
+      padding:0 6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:99px;
+      background:rgba(0,0,0,.72);
+      color:#fff;
+      font-size:8px;
+      font-weight:900;
+    }
+    @media(max-width:620px){
+      .t2e-carousel-upload-list,
+      .t2e-carousel-preview-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+
+    /* ============================================================
+       MANYCHAT · VINCULACIÓN MANUAL ASISTIDA
+    ============================================================ */
+    .t2e-manychat-box{
+      margin-top:14px;
+      padding:16px;
+      border:1px solid #e0cbed;
+      border-radius:14px;
+      background:#fbf8fd;
+    }
+    .t2e-manychat-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .t2e-manychat-head strong{font-size:11px;color:#2b2b2b}
+    .t2e-manychat-badge{
+      padding:6px 9px;
+      border-radius:99px;
+      background:#fff0f1;
+      color:#c8242a;
+      font-size:8px;
+      font-weight:950;
+    }
+    .t2e-manychat-badge.ok{background:#edf9f4;color:#177349}
+    .t2e-manychat-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+    }
+    .t2e-manychat-data{
+      padding:10px;
+      border:1px solid #ebe2f1;
+      border-radius:10px;
+      background:#fff;
+    }
+    .t2e-manychat-data span{
+      display:block;
+      margin-bottom:4px;
+      color:#999;
+      font-size:8px;
+      font-weight:850;
+      text-transform:uppercase;
+    }
+    .t2e-manychat-data strong{
+      display:block;
+      color:#333;
+      font-size:10px;
+      word-break:break-word;
+    }
+    .t2e-manychat-actions{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      margin-top:10px;
+    }
+    .t2e-cta-slide-wrap{display:none}
+    @media(max-width:620px){
+      .t2e-manychat-grid,.t2e-manychat-actions{grid-template-columns:1fr}
+    }
+
+    
+/* ============================================================
+   ACCIONES DEL DÍA · MANYCHAT
+============================================================ */
+.t2e-btn-green{
+  border-color:var(--green)!important;
+  background:var(--green)!important;
+  color:#fff!important;
+}
+
+.t2e-actions-alert{
+  display:none;
+  margin-bottom:16px;
+  padding:14px 16px;
+  border:1px solid #ffc8cb;
+  border-radius:13px;
+  background:var(--red-soft);
+  color:#b52026;
+  font-size:10px;
+  font-weight:850;
+  line-height:1.5;
+}
+
+.t2e-actions-alert.show{display:block}
+
+.t2e-action-list{
+  display:grid;
+  gap:10px;
+}
+
+.t2e-action-item{
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:#fff;
+}
+
+.t2e-action-item.due{
+  border-color:#ffc4c7;
+  background:#fff8f8;
+}
+
+.t2e-action-item.overdue{
+  border-color:var(--red);
+  background:var(--red-soft);
+}
+
+.t2e-action-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.t2e-action-code{
+  color:var(--purple);
+  font-size:10px;
+  font-weight:950;
+  word-break:break-word;
+}
+
+.t2e-action-status{
+  flex:0 0 auto;
+  padding:5px 8px;
+  border-radius:99px;
+  background:var(--yellow-soft);
+  color:#705e00;
+  font-size:8px;
+  font-weight:950;
+}
+
+.t2e-action-status.red{
+  background:#ffe7e8;
+  color:#b52026;
+}
+
+.t2e-action-meta{
+  margin-top:7px;
+  color:#666;
+  font-size:9px;
+  line-height:1.55;
+}
+
+.t2e-action-buttons{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:11px;
+}
+
+.t2e-action-empty{
+  padding:28px;
+  border:1px dashed var(--line);
+  border-radius:13px;
+  color:#888;
+  font-size:10px;
+  text-align:center;
+}
+
+.t2e-nav-count{
+  display:none;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  align-items:center;
+  justify-content:center;
+  border-radius:99px;
+  background:var(--red);
+  color:#fff;
+  font-size:8px;
+  font-weight:950;
+}
+
+.t2e-nav-count.show{
+  display:inline-flex;
+}
+
+@media(max-width:620px){
+  .t2e-action-top{flex-direction:column}
+  .t2e-action-buttons{
+    display:grid;
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* MANYCHAT · ASISTENTE FLOTANTE PERSISTENTE */
+.t2e-mc-float{display:none;position:fixed;top:18px;right:18px;z-index:999999;width:min(390px,calc(100vw - 28px));max-height:calc(100vh - 36px);overflow:auto;padding:16px;border:1px solid #dfc9ee;border-radius:16px;background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+.t2e-mc-float.show{display:block}.t2e-mc-float-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.t2e-mc-float-head h3{margin:0;font-size:12px;color:#222}.t2e-mc-float-head p{margin:4px 0 0;font-size:8px;color:#888}
+.t2e-mc-float-close{width:30px;height:30px;border:0;border-radius:9px;background:#f5f5f5;color:#444;font-size:18px;font-weight:900;cursor:pointer}
+.t2e-mc-float-row{margin-top:9px;padding:11px;border:1px solid #ece5f1;border-radius:11px;background:#fbf9fc}
+.t2e-mc-float-label{display:block;margin-bottom:5px;color:#999;font-size:8px;font-weight:900;text-transform:uppercase}
+.t2e-mc-float-value{display:flex;align-items:center;justify-content:space-between;gap:8px}.t2e-mc-float-value strong{flex:1;color:#2d2d2d;font-size:10px;line-height:1.4;word-break:break-word}
+.t2e-mc-copy{flex:0 0 auto;width:31px;height:31px;border:1px solid #dfd5e6;border-radius:8px;background:#fff;cursor:pointer;font-size:14px}
+.t2e-mc-float-note{margin-top:11px;padding:10px;border-radius:10px;background:#fff8df;color:#665300;font-size:8px;font-weight:800;line-height:1.5}
+@media(max-width:620px){.t2e-mc-float{top:10px;right:10px;width:calc(100vw - 20px);max-height:calc(100vh - 20px)}}
+
+
+
+/* ============================================================
+   T2E EXTENSION MODULE · OPPORTUNITIES CRM
+   ADITIVO: NO MODIFICA EL CORE ESTABLE
+============================================================ */
+.t2e-opp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.t2e-opp-pipelines{display:flex;gap:7px;flex-wrap:wrap}
+.t2e-opp-search{width:min(360px,100%)}
+.t2e-opp-state{padding:13px;border:1px dashed var(--line);border-radius:12px;color:#777;font-size:10px;background:#fafafa;margin-bottom:12px}
+.t2e-opp-board-wrap{overflow-x:auto;padding-bottom:8px}
+.t2e-opp-board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,290px);gap:11px;align-items:start;min-height:520px}
+.t2e-opp-col{border:1px solid var(--line);border-radius:14px;background:#f8f8fa;min-height:500px;overflow:hidden}
+.t2e-opp-col-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px;border-bottom:1px solid var(--line);background:#fff}
+.t2e-opp-col-head strong{font-size:10px;color:#333}.t2e-opp-count{min-width:23px;height:23px;padding:0 6px;display:flex;align-items:center;justify-content:center;border-radius:99px;background:var(--purple-soft);color:var(--purple);font-size:8px;font-weight:950}
+.t2e-opp-drop{min-height:445px;padding:9px}.t2e-opp-drop.is-over{background:#f4ecfa;outline:2px dashed rgba(107,43,164,.35);outline-offset:-5px}
+.t2e-opp-card{padding:12px;margin-bottom:8px;border:1px solid #e5e5ea;border-radius:11px;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.035);cursor:grab;transition:.16s ease}
+.t2e-opp-card:hover{border-color:#ccb3df;transform:translateY(-1px);box-shadow:0 7px 18px rgba(107,43,164,.08)}.t2e-opp-card.dragging{opacity:.45}
+.t2e-opp-name{font-size:10px;font-weight:950;color:#222;line-height:1.35}.t2e-opp-meta{margin-top:6px;color:#777;font-size:8px;line-height:1.5}.t2e-opp-source{margin-top:7px;display:inline-flex;padding:4px 7px;border-radius:99px;background:#f3f3f5;color:#666;font-size:7px;font-weight:850}
+.t2e-opp-modal{position:fixed;inset:0;z-index:2147483500;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(12,8,16,.42);backdrop-filter:blur(7px)}.t2e-opp-modal.open{display:flex}.t2e-opp-modal-card{width:min(620px,100%);max-height:86vh;overflow:auto;border-radius:18px;background:#fff;box-shadow:0 30px 90px rgba(0,0,0,.2)}
+.t2e-opp-modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)}.t2e-opp-modal-head h3{margin:0;font-size:15px}.t2e-opp-modal-body{padding:18px}.t2e-opp-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.t2e-opp-detail{padding:12px;border:1px solid #ededf0;border-radius:10px;background:#fafafa}.t2e-opp-detail.full{grid-column:1/-1}.t2e-opp-detail span{display:block;margin-bottom:5px;color:#999;font-size:8px;font-weight:850;text-transform:uppercase}.t2e-opp-detail strong{font-size:11px;color:#262626;word-break:break-word}
+@media(max-width:620px){.t2e-opp-toolbar{align-items:stretch}.t2e-opp-search{width:100%}.t2e-opp-detail-grid{grid-template-columns:1fr}.t2e-opp-detail.full{grid-column:auto}}
+
+</style>
+
+
+    <div id="t2e-app">
+
+    <!-- ==========================================================
+         LOGIN
+    ========================================================== -->
+
+    <div id="t2e-login">
+
+      <div class="t2e-login-card">
+
+        <div class="t2e-logo">
+          T2E
+        </div>
+
+        <h1>
+          Content Command Center
+        </h1>
+
+        <p>
+          Sistema interno para planificación, producción
+          y seguimiento de contenido de Tu Segunda Empresa.
+        </p>
+
+        <div class="t2e-field">
+          <label>Correo</label>
+
+          <input
+            class="t2e-input"
+            id="t2e-email"
+            type="email"
+            placeholder="nombre@t2e.com"
+          >
+        </div>
+
+        <div class="t2e-field">
+          <label>Contraseña</label>
+
+          <input
+            class="t2e-input"
+            id="t2e-password"
+            type="password"
+            placeholder="••••••••"
+          >
+        </div>
+
+        <button
+          class="t2e-btn t2e-btn-purple t2e-btn-full"
+          id="t2e-login-btn"
+          type="button"
+        >
+          INGRESAR AL SISTEMA
+        </button>
+
+        <div
+          id="t2e-login-error"
+          style="
+            margin-top:10px;
+            min-height:18px;
+            color:#ff3940;
+            font-size:10px;
+            text-align:center;
+          "
+        ></div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ==========================================================
+         MAIN APP
+    ========================================================== -->
+
+    <div id="t2e-main">
+
+    <div class="t2e-shell">
+
+
+    <!-- TOP -->
+
+    <div class="t2e-topbar">
+
+      <div class="t2e-brand">
+
+        <div class="t2e-brand-logo">
+          T2E
+        </div>
+
+        <div>
+          <strong>
+            Content Command Center
+          </strong>
+
+          <span>
+            TU SEGUNDA EMPRESA
+          </span>
+        </div>
+
+      </div>
+
+
+      <div class="t2e-font-control" title="Ajustar tamaño de letra">
+        <span>TAMAÑO DE LETRA</span>
+        <input id="t2e-font-size" type="range" min="75" max="175" step="5" value="100">
+        <span id="t2e-font-value">100%</span>
+      </div>
+
+
+      <div class="t2e-user">
+
+        <span
+          id="t2e-user-name"
+          class="t2e-user-name"
+        ></span>
+
+        <button
+          class="t2e-btn"
+          id="t2e-logout"
+          type="button"
+        >
+          SALIR
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- HERO -->
+
+    <div class="t2e-hero">
+
+      <div class="t2e-eyebrow">
+        CAPA 01 · CONTENIDO
+      </div>
+
+      <h1>
+        Programación de contenido
+      </h1>
+
+      <p>
+        Planificá cada pieza de forma ordenada, generá
+        automáticamente su código único de tracking y
+        llevá toda la operación al calendario editorial.
+      </p>
+
+    </div>
+
+
+    <!-- NAV -->
+
+    <div class="t2e-nav">
+
+      <button
+        class="t2e-nav-button active"
+        data-page="create"
+      >
+        ＋ CREAR CONTENIDO
+      </button>
+
+      <button
+        class="t2e-nav-button"
+        data-page="calendar"
+      >
+        ▦ CALENDARIO EDITORIAL
+      </button>
+
+
+      <button
+        class="t2e-nav-button"
+        data-page="publish"
+      >
+        ↑ PUBLICACIÓN EN REDES
+      </button>
+
+      <button
+        class="t2e-nav-button"
+        data-page="actions"
+      >
+        ⚠ ACCIONES DEL DÍA
+        <span class="t2e-nav-count" id="t2e-actions-count">0</span>
+      </button>
+
+
+      <button
+        class="t2e-nav-button"
+        data-page="opportunities"
+      >
+        ◈ OPORTUNIDADES
+      </button>
+
+
+      <button
+        class="t2e-nav-button"
+        data-page="finance"
+      >
+        $ FINANZAS
+      </button>
+
+      <button
+        class="t2e-nav-button"
+        data-page="summary"
+      >
+        ◫ RESUMEN DE CONTENIDO
+      </button>
+
+    </div>
+
+
+    <!-- ==========================================================
+         CREATE
+    ========================================================== -->
+
+    <div
+      class="t2e-page active"
+      id="t2e-page-create"
+    >
+
+
+    <!-- PROCESS -->
+
+    <div class="t2e-process">
+
+      <div
+        class="t2e-process-step active"
+        data-progress="1"
+      >
+        <div class="t2e-step-number">1</div>
+
+        <strong>
+          Formato
+        </strong>
+
+        <span>
+          Qué pieza vamos a producir.
+        </span>
+      </div>
+
+
+      <div
+        class="t2e-process-step"
+        data-progress="2"
+      >
+        <div class="t2e-step-number">2</div>
+
+        <strong>
+          Estrategia
+        </strong>
+
+        <span>
+          Tema, CTA, ángulo y objetivo.
+        </span>
+      </div>
+
+
+      <div
+        class="t2e-process-step"
+        data-progress="3"
+      >
+        <div class="t2e-step-number">3</div>
+
+        <strong>
+          Desarrollo
+        </strong>
+
+        <span>
+          Guión, slides y descripción.
+        </span>
+      </div>
+
+
+      <div
+        class="t2e-process-step"
+        data-progress="4"
+      >
+        <div class="t2e-step-number">4</div>
+
+        <strong>
+          Programación
+        </strong>
+
+        <span>
+          Fecha, hora y tracking.
+        </span>
+      </div>
+
+    </div>
+
+
+    <div class="t2e-card">
+
+    <div class="t2e-card-body">
+
+
+    <!-- ETAPA 1 -->
+
+    <div
+      class="t2e-stage active"
+      data-stage="1"
+    >
+
+      <div class="t2e-stage-title">
+
+        <div class="t2e-stage-icon">
+          1
+        </div>
+
+        <div>
+          <h3>
+            Elegí el formato
+          </h3>
+
+          <p>
+            Definí qué tipo de contenido vamos a producir.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="t2e-format-grid">
+
+        <button
+          class="t2e-format active"
+          data-format="R"
+        >
+          <span class="t2e-format-icon">▶</span>
+          <span class="t2e-format-name">VIDEO</span>
+        </button>
+
+        <button
+          class="t2e-format"
+          data-format="C"
+        >
+          <span class="t2e-format-icon">▦</span>
+          <span class="t2e-format-name">CARRUSEL</span>
+        </button>
+
+        <button
+          class="t2e-format"
+          data-format="H"
+        >
+          <span class="t2e-format-icon">◫</span>
+          <span class="t2e-format-name">HISTORIAS</span>
+        </button>
+
+      </div>
+
+
+      <div class="t2e-stage-actions">
+
+        <div></div>
+
+        <button
+          class="t2e-btn t2e-btn-purple"
+          data-next="2"
+        >
+          CONTINUAR →
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ETAPA 2 -->
+
+    <div
+      class="t2e-stage"
+      data-stage="2"
+    >
+
+      <div class="t2e-stage-title">
+
+        <div class="t2e-stage-icon">
+          2
+        </div>
+
+        <div>
+          <h3>
+            Definí la estrategia
+          </h3>
+
+          <p>
+            Qué queremos comunicar y qué acción buscamos.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="t2e-form-grid">
+
+        <div class="t2e-field">
+
+          <label>
+            Tema
+          </label>
+
+          <input
+            class="t2e-input"
+            id="t2e-topic"
+            placeholder="Ej.: Cómo elegir un producto rentable"
+          >
+
+        </div>
+
+
+        <div class="t2e-field">
+
+          <label>
+            Palabra clave / CTA
+          </label>
+
+          <input
+            class="t2e-input"
+            id="t2e-keyword"
+            placeholder="Ej.: PRODUCTO"
+          >
+
+        </div>
+
+
+        <div class="t2e-field">
+
+          <label>
+            Ángulo
+          </label>
+
+          <input
+            class="t2e-input"
+            id="t2e-angle"
+            placeholder="Ej.: Error común / Caso real"
+          >
+
+        </div>
+
+
+        <div class="t2e-field">
+
+          <label>
+            Objetivo
+          </label>
+
+          <select
+            class="t2e-select"
+            id="t2e-objective"
+          >
+
+            <option value="">
+              Seleccionar...
+            </option>
+
+            <option>Alcance</option>
+            <option>Educación</option>
+            <option>Autoridad</option>
+            <option>Leads</option>
+            <option>Conversación</option>
+            <option>Venta Low Ticket</option>
+            <option>Venta High Ticket</option>
+            <option>Nutrición</option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div class="t2e-stage-actions">
+
+        <button
+          class="t2e-btn"
+          data-prev="1"
+        >
+          ← ATRÁS
+        </button>
+
+        <button
+          class="t2e-btn t2e-btn-purple"
+          id="t2e-strategy-next"
+        >
+          CONTINUAR →
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ETAPA 3 -->
+
+    <div
+      class="t2e-stage"
+      data-stage="3"
+    >
+
+      <div class="t2e-stage-title">
+
+        <div class="t2e-stage-icon">
+          3
+        </div>
+
+        <div>
+          <h3>
+            Desarrollá la pieza
+          </h3>
+
+          <p>
+            Escribí el contenido que finalmente se producirá.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="t2e-field">
+
+        <label id="t2e-script-label">
+          Guión / Copy
+        </label>
+
+        <textarea
+          class="t2e-textarea"
+          id="t2e-script"
+          placeholder="Escribí acá el contenido..."
+        ></textarea>
+
+      </div>
+
+
+      <div
+        id="t2e-slides-section"
+        class="t2e-field"
+      >
+
+        <label>
+          Cantidad de slides
+        </label>
+
+        <input
+          class="t2e-input"
+          id="t2e-slide-count"
+          type="number"
+          min="1"
+          max="30"
+          value="6"
+          style="max-width:150px;"
+        >
+
+        <div
+          id="t2e-slides"
+          class="t2e-slides"
+        ></div>
+
+      </div>
+
+
+      <div class="t2e-field" id="t2e-description-field">
+
+        <label>
+          Descripción / Caption
+        </label>
+
+        <textarea
+          class="t2e-textarea"
+          id="t2e-description"
+          placeholder="Descripción para publicar..."
+        ></textarea>
+
+      </div>
+
+
+      <div class="t2e-stage-actions">
+
+        <button
+          class="t2e-btn"
+          data-prev="2"
+        >
+          ← ATRÁS
+        </button>
+
+        <button
+          class="t2e-btn t2e-btn-purple"
+          data-next="4"
+        >
+          CONTINUAR →
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ETAPA 4 -->
+
+    <div
+      class="t2e-stage"
+      data-stage="4"
+    >
+
+      <div class="t2e-stage-title">
+
+        <div class="t2e-stage-icon">
+          4
+        </div>
+
+        <div>
+          <h3>
+            Programá la publicación
+          </h3>
+
+          <p>
+            Definí cuándo debe publicarse la pieza.
+          </p>
+        </div>
+
+      </div>
+
+
+      <div class="t2e-form-grid">
+
+        <div class="t2e-field">
+
+          <label>
+            Fecha
+          </label>
+
+          <input
+            class="t2e-input"
+            id="t2e-date"
+            type="date"
+          >
+
+        </div>
+
+
+        <div class="t2e-field">
+
+          <label>
+            Hora
+          </label>
+
+          <input
+            class="t2e-input"
+            id="t2e-time"
+            type="time"
+            value="10:00"
+          >
+
+        </div>
+
+
+        <div class="t2e-tracking-box t2e-span-2">
+
+          <div class="t2e-tracking-label">
+            Código único de tracking
+          </div>
+
+          <div id="t2e-code-preview">
+            R-PALABRA-AAAAMMDD-XXXXXX
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="t2e-stage-actions">
+
+        <button
+          class="t2e-btn"
+          data-prev="3"
+        >
+          ← ATRÁS
+        </button>
+
+        <button
+          class="t2e-btn t2e-btn-red"
+          id="t2e-save"
+        >
+          ✓ PROGRAMAR CONTENIDO
+        </button>
+
+      </div>
+
+    </div>
+
+
+    </div>
+    </div>
+
+    </div>
+
+
+    <!-- ==========================================================
+         CALENDAR
+    ========================================================== -->
+
+    <div
+      class="t2e-page"
+      id="t2e-page-calendar"
+    >
+
+    <div class="t2e-card">
+
+      <div class="t2e-card-head">
+
+        <h2>
+          Calendario editorial
+        </h2>
+
+        <p>
+          Visualizá cada pieza según su fecha, hora y código único.
+        </p>
+
+      </div>
+
+
+      <div class="t2e-card-body">
+
+
+        <div class="t2e-calendar-toolbar">
+
+          <div class="t2e-calendar-nav">
+
+            <button
+              class="t2e-btn"
+              id="t2e-prev-calendar"
+            >
+              ‹
+            </button>
+
+            <div id="t2e-calendar-title"></div>
+
+            <button
+              class="t2e-btn"
+              id="t2e-next-calendar"
+            >
+              ›
+            </button>
+
+            <button
+              class="t2e-btn t2e-btn-soft-purple"
+              id="t2e-today"
+            >
+              HOY
+            </button>
+
+          </div>
+
+
+          <div class="t2e-calendar-view">
+
+            <button
+              class="t2e-view-button active"
+              data-view="month"
+            >
+              MES
+            </button>
+
+            <button
+              class="t2e-view-button"
+              data-view="week"
+            >
+              SEMANA
+            </button>
+
+            <button
+              class="t2e-view-button"
+              data-view="day"
+            >
+              DÍA
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <div class="t2e-filter">
+
+          <input
+            class="t2e-input t2e-search"
+            id="t2e-search"
+            placeholder="Buscar código, tema o CTA..."
+          >
+
+          <select
+            class="t2e-select"
+            id="t2e-filter-format"
+          >
+
+            <option value="">
+              Todos los formatos
+            </option>
+
+            <option value="R">Video</option>
+            <option value="C">Carrusel</option>
+            <option value="H">Historias</option>
+
+          </select>
+
+
+          <select
+            class="t2e-select"
+            id="t2e-filter-status"
+          >
+
+            <option value="">
+              Todos
+            </option>
+
+            <option value="scheduled">
+              Planificados
+            </option>
+
+            <option value="published">
+              En GoHighLevel
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="t2e-calendar-scroll">
+
+          <div id="t2e-calendar"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    </div>
+
+
+
+
+    <!-- ==========================================================
+         SOCIAL PUBLISHING
+    ========================================================== -->
+    <div class="t2e-page" id="t2e-page-publish">
+      <div class="t2e-card">
+        <div class="t2e-card-head">
+          <h2>Publicación en redes sociales</h2>
+          <p>Tomá una pieza del calendario, cargá el archivo final y prepará su publicación en Social Planner.</p>
+        </div>
+        <div class="t2e-card-body">
+          <div class="t2e-publish-layout">
+            <div>
+              <div class="t2e-publish-source">
+                <div class="t2e-tracking-label">PIEZA SELECCIONADA</div>
+                <div class="t2e-publish-code" id="t2e-publish-code">Seleccioná una pieza desde el calendario.</div>
+                <div id="t2e-publish-topic" style="margin-top:5px;color:#777;font-size:9px;">—</div>
+              </div>
+
+              <div class="t2e-field">
+                <label id="t2e-publish-file-label">Archivo final</label>
+
+                <div id="t2e-single-upload-wrap">
+                  <label class="t2e-upload-zone" for="t2e-publish-file">
+                    <strong>SUBIR VIDEO / IMAGEN</strong>
+                    <span>Seleccioná el archivo editado. Para Instagram y TikTok usá MP4 (H.264 + AAC).</span>
+                    <input id="t2e-publish-file" type="file" accept="video/*,image/*">
+                    <div class="t2e-file-pill" id="t2e-file-pill"></div>
+                  </label>
+                </div>
+
+                <div class="t2e-carousel-upload-list" id="t2e-carousel-upload-list"></div>
+              </div>
+
+              <div class="t2e-field">
+                <label>Redes donde se publicará</label>
+                <div class="t2e-platform-grid">
+                  <label class="t2e-platform"><input type="checkbox" class="t2e-publish-platform" value="instagram"><div><strong>Instagram</strong><span>Feed / Reel / Historia</span></div></label>
+                  <label class="t2e-platform"><input type="checkbox" class="t2e-publish-platform" value="facebook"><div><strong>Facebook</strong><span>Página conectada</span></div></label>
+                  <label class="t2e-platform"><input type="checkbox" class="t2e-publish-platform" value="tiktok"><div><strong>TikTok</strong><span>Cuenta conectada</span></div></label>
+                  <label class="t2e-platform"><input type="checkbox" class="t2e-publish-platform" value="youtube"><div><strong>YouTube</strong><span>Short / Video</span></div></label>
+                </div>
+              </div>
+
+              <div class="t2e-field">
+                <label>Tipo de publicación</label>
+                <div class="t2e-platform-grid">
+                  <label class="t2e-platform">
+                    <input type="radio" name="t2e-publish-mode" value="real" checked>
+                    <div>
+                      <strong>Contenido real</strong>
+                      <span>Publicación normal. No se incluirá en el borrado de pruebas.</span>
+                    </div>
+                  </label>
+                  <label class="t2e-platform">
+                    <input type="radio" name="t2e-publish-mode" value="test">
+                    <div>
+                      <strong>Contenido de prueba</strong>
+                      <span>Se publica normalmente, pero queda registrado para poder borrarlo después.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="t2e-form-grid">
+                <div class="t2e-field"><label>Fecha de publicación</label><input class="t2e-input" id="t2e-publish-date" type="date"></div>
+                <div class="t2e-field"><label>Hora</label><input class="t2e-input" id="t2e-publish-time" type="time"></div>
+              </div>
+
+              <div class="t2e-field" id="t2e-publish-caption-field">
+                <label>Copy / Caption</label>
+                <textarea class="t2e-textarea" id="t2e-publish-caption" placeholder="Texto de la publicación..."></textarea>
+              </div>
+
+              <div class="t2e-field" id="t2e-youtube-title-field">
+                <label>Título para YouTube (opcional)</label>
+                <input class="t2e-input" id="t2e-publish-title" placeholder="Título del video / Short">
+              </div>
+
+              <div class="t2e-field t2e-cta-slide-wrap" id="t2e-cta-slide-wrap">
+                <label>Historia CTA</label>
+                <select class="t2e-select" id="t2e-cta-slide"></select>
+              </div>
+
+              <button class="t2e-btn t2e-btn-green t2e-btn-full" id="t2e-send-social" type="button">PROGRAMAR EN SOCIAL PLANNER →</button>
+
+              <div class="t2e-manychat-box" id="t2e-manychat-box" style="display:none;">
+                <div class="t2e-manychat-head">
+                  <strong>AUTOMATIZACIÓN MANYCHAT · INSTAGRAM</strong>
+                  <span class="t2e-manychat-badge" id="t2e-manychat-badge">PENDIENTE</span>
+                </div>
+                <div class="t2e-manychat-grid">
+                  <div class="t2e-manychat-data"><span>Plantilla</span><strong id="t2e-manychat-template">—</strong></div>
+                  <div class="t2e-manychat-data"><span>Palabra CTA</span><strong id="t2e-manychat-keyword">—</strong></div>
+                  <div class="t2e-manychat-data"><span>Código / etiqueta</span><strong id="t2e-manychat-code">—</strong></div>
+                  <div class="t2e-manychat-data"><span>Historia CTA</span><strong id="t2e-manychat-cta-slide">—</strong></div>
+                </div>
+                <div class="t2e-manychat-actions">
+                  <button class="t2e-btn t2e-btn-soft-purple" id="t2e-copy-manychat-data" type="button">COPIAR DATOS</button>
+                  <button class="t2e-btn t2e-btn-purple" id="t2e-open-manychat" type="button">ABRIR MANYCHAT →</button>
+                  <button class="t2e-btn t2e-btn-full" id="t2e-confirm-manychat" type="button" style="grid-column:1/-1;">✓ AUTOMATIZACIÓN PREPARADA</button>
+                </div>
+              </div>
+              <div class="t2e-publish-status" id="t2e-publish-status">La interfaz está lista. Elegí si la publicación es REAL o DE PRUEBA antes de programarla.</div>
+              <button class="t2e-btn t2e-btn-soft-purple t2e-btn-full" id="t2e-finish-social" type="button" style="display:none;margin-top:10px;">FINALIZAR →</button>
+              <button class="t2e-btn t2e-btn-full" id="t2e-delete-test-posts" type="button" style="margin-top:10px;border-color:#ff3940;color:#c8242a;">
+                BORRAR CONTENIDO DE PRUEBA (0)
+              </button>
+            </div>
+
+            <div class="t2e-publish-preview">
+              <h3>Vista previa</h3>
+              <div class="t2e-preview-screen" id="t2e-media-preview"><span>Vista previa del archivo</span></div>
+              <div class="t2e-tracking-label">COPY</div>
+              <div class="t2e-preview-copy" id="t2e-caption-preview">El copy aparecerá aquí.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==========================================================
+         ACCIONES DEL DÍA
+    ========================================================== -->
+
+    <div class="t2e-page" id="t2e-page-actions">
+
+      <div class="t2e-card">
+
+        <div class="t2e-card-head">
+          <h2>Acciones del día</h2>
+          <p>Vinculaciones de ManyChat que requieren intervención.</p>
+        </div>
+
+        <div class="t2e-card-body">
+
+          <div class="t2e-actions-alert" id="t2e-actions-alert">
+            🔴 HAY CONTENIDO PUBLICADO PENDIENTE DE VINCULAR EN MANYCHAT.
+          </div>
+
+          <div class="t2e-action-list" id="t2e-action-list"></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+
+    <!-- ==========================================================
+         T2E EXTENSION MODULE · OPPORTUNITIES CRM
+         ADITIVO: NO MODIFICA EL CORE ESTABLE
+    ========================================================== -->
+    <div class="t2e-page" id="t2e-page-opportunities">
+      <div class="t2e-card">
+        <div class="t2e-card-head">
+          <h2>Gestión de oportunidades</h2>
+          <p>Pipeline comercial conectado con GoHighLevel.</p>
+        </div>
+        <div class="t2e-card-body">
+          <div class="t2e-opp-toolbar">
+            <div class="t2e-opp-pipelines" id="t2e-opp-pipelines"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <input class="t2e-input t2e-opp-search" id="t2e-opp-search" placeholder="Buscar nombre, teléfono o email...">
+              <button class="t2e-btn t2e-btn-purple" id="t2e-opp-refresh" type="button">ACTUALIZAR</button>
+            </div>
+          </div>
+          <div class="t2e-opp-state" id="t2e-opp-state">Abrí esta pestaña para cargar las oportunidades.</div>
+          <div class="t2e-opp-board-wrap"><div class="t2e-opp-board" id="t2e-opp-board"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="t2e-opp-modal" id="t2e-opp-modal">
+      <div class="t2e-opp-modal-card">
+        <div class="t2e-opp-modal-head">
+          <h3>Detalle de oportunidad</h3>
+          <button class="t2e-modal-close" id="t2e-opp-close" type="button">×</button>
+        </div>
+        <div class="t2e-opp-modal-body" id="t2e-opp-modal-body"></div>
+      </div>
+    </div>
+
+
+    <!-- ==========================================================
+         CONTENT SUMMARY
+    ========================================================== -->
+
+
+
+    <!-- ==========================================================
+         FINANZAS V2 · OPERACIÓN COMPLETA
+    ========================================================== -->
+    <div class="t2e-page" id="t2e-page-finance">
+      <div class="t2e-card">
+        <div class="t2e-card-head t2e-fin-head">
+          <div>
+            <h2>Finanzas</h2>
+            <p>Ventas, cobros, gastos, programas, equipo, comisiones y alertas.</p>
+          </div>
+          <button class="t2e-btn" id="t2e-fin-refresh" type="button">↻ ACTUALIZAR</button>
+        </div>
+        <div class="t2e-card-body">
+          <div id="t2e-fin-state" class="t2e-fin-state">Abrí Finanzas para cargar la información.</div>
+
+          <div class="t2e-fin-filters">
+            <div><label>PROGRAMA</label><select class="t2e-select" id="t2e-fin-filter-program"><option value="">Todos</option></select></div>
+            <div><label>MES</label><input class="t2e-input" type="month" id="t2e-fin-filter-month"></div>
+            <div><label>DESDE</label><input class="t2e-input" type="date" id="t2e-fin-filter-from"></div>
+            <div><label>HASTA</label><input class="t2e-input" type="date" id="t2e-fin-filter-to"></div>
+            <button class="t2e-btn t2e-btn-purple" id="t2e-fin-apply-filters" type="button">APLICAR</button>
+            <button class="t2e-btn" id="t2e-fin-clear-filters" type="button">LIMPIAR</button>
+          </div>
+
+          <div class="t2e-fin-kpis">
+            <div class="t2e-fin-kpi"><span>VENTAS TOTALES</span><strong id="t2e-fin-sold">—</strong><small>Valor vendido</small></div>
+            <div class="t2e-fin-kpi"><span>COBRADO</span><strong id="t2e-fin-paid">—</strong><small>Cobros efectivos</small></div>
+            <div class="t2e-fin-kpi"><span>PENDIENTE</span><strong id="t2e-fin-pending">—</strong><small>Cartera por cobrar</small></div>
+            <div class="t2e-fin-kpi"><span>GASTOS</span><strong id="t2e-fin-expenses">—</strong><small>Gastos registrados</small></div>
+            <div class="t2e-fin-kpi"><span>PAGOS EQUIPO</span><strong id="t2e-fin-team-payments">—</strong><small>Comisiones/pagos realizados</small></div>
+            <div class="t2e-fin-kpi t2e-fin-profit"><span>BENEFICIO NETO</span><strong id="t2e-fin-profit">—</strong><small>Cobrado - gastos - equipo</small></div>
+            <div class="t2e-fin-kpi"><span>ALUMNOS</span><strong id="t2e-fin-students-count">—</strong><small>Registros del período</small></div>
+            <div class="t2e-fin-kpi"><span>ACTIVOS</span><strong id="t2e-fin-active-count">—</strong><small>Alumnos activos</small></div>
+          </div>
+
+          <div class="t2e-fin-alert-summary" id="t2e-fin-alert-summary"></div>
+
+          <div class="t2e-fin-charts">
+            <div class="t2e-fin-chart-card">
+              <h3>Ingresos, gastos y resultado por mes</h3>
+              <div id="t2e-fin-chart-time" class="t2e-fin-bars"></div>
+            </div>
+            <div class="t2e-fin-chart-card">
+              <h3>Ventas por programa</h3>
+              <div id="t2e-fin-chart-program" class="t2e-fin-donut-wrap"></div>
+            </div>
+          </div>
+
+          <div class="t2e-fin-toolbar">
+            <div class="t2e-fin-tabs">
+              <button class="t2e-btn t2e-btn-purple" type="button" data-fin-tab="students">ALUMNOS</button>
+              <button class="t2e-btn" type="button" data-fin-tab="payments">PAGOS</button>
+              <button class="t2e-btn" type="button" data-fin-tab="expenses">GASTOS</button>
+              <button class="t2e-btn" type="button" data-fin-tab="programs">PROGRAMAS</button>
+              <button class="t2e-btn" type="button" data-fin-tab="team">EQUIPO</button>
+              <button class="t2e-btn" type="button" data-fin-tab="commissions">COMISIONES</button>
+              <button class="t2e-btn" type="button" data-fin-tab="alerts">ALERTAS</button>
+            </div>
+            <div class="t2e-fin-toolbar-actions">
+              <input class="t2e-input t2e-fin-search" id="t2e-fin-search" placeholder="Buscar...">
+              <button class="t2e-btn t2e-btn-purple" id="t2e-fin-new" type="button">+ NUEVO ALUMNO</button>
+            </div>
+          </div>
+
+          <div class="t2e-fin-table-wrap">
+            <table class="t2e-fin-table">
+              <thead id="t2e-fin-thead"></thead>
+              <tbody id="t2e-fin-tbody"></tbody>
+            </table>
+          </div>
+          <div class="t2e-fin-foot" id="t2e-fin-foot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="t2e-fin-modal" id="t2e-fin-modal">
+      <div class="t2e-fin-modal-card">
+        <div class="t2e-fin-modal-head">
+          <div>
+            <h3 id="t2e-fin-modal-title">Nuevo registro</h3>
+            <p id="t2e-fin-modal-subtitle">Completá la información y guardá los cambios.</p>
+          </div>
+          <button class="t2e-modal-close" id="t2e-fin-modal-close" type="button">×</button>
+        </div>
+        <form id="t2e-fin-form">
+          <div class="t2e-fin-modal-body" id="t2e-fin-form-body"></div>
+          <div class="t2e-fin-modal-actions">
+            <button class="t2e-btn" id="t2e-fin-cancel" type="button">CANCELAR</button>
+            <button class="t2e-btn t2e-btn-purple" id="t2e-fin-save" type="submit">GUARDAR</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="t2e-page" id="t2e-page-summary">
+      <div class="t2e-card">
+        <div class="t2e-card-head">
+          <h2>Resumen de contenido</h2>
+          <p>Analizá volumen, frecuencia, formatos y cumplimiento de publicación.</p>
+        </div>
+        <div class="t2e-card-body">
+          <div class="t2e-summary-toolbar">
+            <div class="t2e-summary-range">
+              <button class="t2e-btn active" data-summary-range="month">ESTE MES</button>
+              <button class="t2e-btn" data-summary-range="3m">3 MESES</button>
+              <button class="t2e-btn" data-summary-range="6m">6 MESES</button>
+              <button class="t2e-btn" data-summary-range="year">ESTE AÑO</button>
+              <button class="t2e-btn" data-summary-range="all">TODO</button>
+            </div>
+            <div class="t2e-summary-period" id="t2e-summary-period"></div>
+          </div>
+
+          <div class="t2e-kpi-grid" id="t2e-summary-kpis"></div>
+
+          <div class="t2e-summary-grid">
+            <div class="t2e-summary-panel">
+              <h3>Publicaciones por formato</h3>
+              <p>Distribución de las piezas marcadas como publicadas en el período.</p>
+              <div id="t2e-format-metrics"></div>
+            </div>
+            <div class="t2e-summary-panel">
+              <h3>Análisis del período</h3>
+              <p>Lectura automática del ritmo y cumplimiento editorial.</p>
+              <div class="t2e-analysis-list" id="t2e-analysis-list"></div>
+            </div>
+          </div>
+
+          <div class="t2e-summary-panel">
+            <h3>Evolución mensual</h3>
+            <p>Piezas publicadas durante los últimos seis meses.</p>
+            <div class="t2e-trend" id="t2e-summary-trend"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    </div>
+
+
+    <!-- MODAL -->
+
+    <div
+      class="t2e-modal"
+      id="t2e-modal"
+    >
+
+    <div class="t2e-modal-card">
+
+      <div class="t2e-modal-head">
+
+        <h3>
+          Detalle de contenido
+        </h3>
+
+        <button
+          class="t2e-modal-close"
+          id="t2e-modal-close"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <div
+        class="t2e-modal-body"
+        id="t2e-modal-body"
+      ></div>
+
+    </div>
+
+    </div>
+
+
+    <div class="t2e-mc-float" id="t2e-mc-float">
+      <div class="t2e-mc-float-head">
+        <div><h3>CONFIGURACIÓN MANYCHAT</h3><p>Dejá esta ventana abierta mientras configurás la automatización.</p></div>
+        <button class="t2e-mc-float-close" id="t2e-mc-float-close" type="button">×</button>
+      </div>
+      <div class="t2e-mc-float-row"><span class="t2e-mc-float-label">Nombre de la automatización</span><div class="t2e-mc-float-value"><strong id="t2e-mc-float-name">—</strong><button class="t2e-mc-copy" type="button" data-mc-copy-target="t2e-mc-float-name">📄</button></div></div>
+      <div class="t2e-mc-float-row"><span class="t2e-mc-float-label">Plantilla a duplicar</span><div class="t2e-mc-float-value"><strong id="t2e-mc-float-template">—</strong><button class="t2e-mc-copy" type="button" data-mc-copy-target="t2e-mc-float-template">📄</button></div></div>
+      <div class="t2e-mc-float-row"><span class="t2e-mc-float-label">Palabra CTA</span><div class="t2e-mc-float-value"><strong id="t2e-mc-float-keyword">—</strong><button class="t2e-mc-copy" type="button" data-mc-copy-target="t2e-mc-float-keyword">📄</button></div></div>
+      <div class="t2e-mc-float-row"><span class="t2e-mc-float-label">Código / etiqueta</span><div class="t2e-mc-float-value"><strong id="t2e-mc-float-code">—</strong><button class="t2e-mc-copy" type="button" data-mc-copy-target="t2e-mc-float-code">📄</button></div></div>
+      <div class="t2e-mc-float-row" id="t2e-mc-float-slide-row" style="display:none;"><span class="t2e-mc-float-label">Historia CTA</span><div class="t2e-mc-float-value"><strong id="t2e-mc-float-slide">—</strong><button class="t2e-mc-copy" type="button" data-mc-copy-target="t2e-mc-float-slide">📄</button></div></div>
+      <div class="t2e-mc-float-note">Duplicá la plantilla indicada, pegá el nombre, configurá la palabra CTA y usá la etiqueta mostrada. Cerrá esta ventana únicamente cuando termines.</div>
+    </div>
+
+    <div id="t2e-toast"></div>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+    /* T2E Social Planner v16 · Story type principal corregido */
+    (function(){
+
+    /* ==========================================================
+       SUPABASE
+    ========================================================== */
+
+    const SUPABASE_URL =
+    "https://xxreasyeloedrjaafevi.supabase.co";
+
+    const SUPABASE_KEY =
+    "sb_publishable_YUvpyT_FK3I47L0GJr7eYw_GxrWizVO";
+
+    const sb =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY,
+      {
+        auth:{
+          persistSession:true,
+          autoRefreshToken:true
+        }
+      }
+    );
+
+
+    /* ==========================================================
+       STATE
+    ========================================================== */
+
+    let user = null;
+    let profile = null;
+    let contents = [];
+
+    let format = "R";
+    let stage = 1;
+
+    let calendarView = "month";
+    let calendarDate = new Date();
+
+
+    /* ==========================================================
+       DOM
+    ========================================================== */
+
+    const $ = id =>
+    document.getElementById(id);
+
+    const login = $("t2e-login");
+    const main = $("t2e-main");
+
+    const email = $("t2e-email");
+    const password = $("t2e-password");
+
+    const topic = $("t2e-topic");
+    const keyword = $("t2e-keyword");
+    const angle = $("t2e-angle");
+    const objective = $("t2e-objective");
+
+    const scriptField = $("t2e-script");
+    const description = $("t2e-description");
+
+    const dateInput = $("t2e-date");
+    const timeInput = $("t2e-time");
+
+    const slideCount = $("t2e-slide-count");
+    const slidesBox = $("t2e-slides");
+
+    /* ==========================================================
+       FONT SIZE CONTROL
+    ========================================================== */
+
+    const fontSizeControl = $("t2e-font-size");
+    const fontSizeValue = $("t2e-font-value");
+
+    function applyFontSize(percent){
+      const value = Math.max(75,Math.min(175,Number(percent) || 100));
+      $("t2e-app").style.fontSize = value + "%";
+      $("t2e-app").style.setProperty("--t2e-font-scale",value / 100);
+      fontSizeControl.value = value;
+      fontSizeValue.textContent = value + "%";
+
+      /* Escala toda la tipografía existente sin alterar tamaños de cajas. */
+      $("t2e-app").style.setProperty("zoom",value / 100);
+      $("t2e-app").style.width = (10000 / value) + "vw";
+      $("t2e-app").style.minHeight = (10000 / value) + "vh";
+      $("t2e-app").style.marginLeft = "calc(50% - " + (5000 / value) + "vw)";
+      $("t2e-app").style.marginRight = "calc(50% - " + (5000 / value) + "vw)";
+
+      localStorage.setItem("t2e_font_size",String(value));
+    }
+
+    fontSizeControl.addEventListener("input",function(){
+      applyFontSize(this.value);
+    });
+
+    applyFontSize(localStorage.getItem("t2e_font_size") || 100);
+
+
+    /* ==========================================================
+       UTILS
+    ========================================================== */
+
+    function pad(n){
+      return String(n).padStart(2,"0");
+    }
+
+    function dateString(d){
+      return (
+        d.getFullYear()
+        + "-"
+        + pad(d.getMonth()+1)
+        + "-"
+        + pad(d.getDate())
+      );
+    }
+
+    function cleanSlug(v){
+
+      return String(v || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g,"-")
+        .replace(/^-|-$/g,"")
+        .slice(0,18)
+        ||
+        "CONTENIDO";
+    }
+
+    function randomCode(){
+
+      const chars =
+      "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+      const array =
+      new Uint32Array(6);
+
+      crypto.getRandomValues(array);
+
+      return Array.from(
+        array,
+        n =>
+        chars[n % chars.length]
+      ).join("");
+    }
+
+    function escapeHTML(v){
+
+      return String(v || "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;");
+    }
+
+    function generateCode(){
+
+      return (
+        format
+        + "-"
+        + cleanSlug(keyword.value || topic.value)
+        + "-"
+        + dateInput.value.replace(/-/g,"")
+        + "-"
+        + randomCode()
+      );
+    }
+
+
+    /* ==========================================================
+       TRACKING PREVIEW
+    ========================================================== */
+
+    function updatePreview(){
+
+      $("t2e-code-preview").textContent =
+        format
+        + "-"
+        + cleanSlug(keyword.value || topic.value || "PALABRA")
+        + "-"
+        + (
+          dateInput.value
+          ?
+          dateInput.value.replace(/-/g,"")
+          :
+          "AAAAMMDD"
+        )
+        + "-XXXXXX";
+    }
+
+
+    /* ==========================================================
+       TOAST
+    ========================================================== */
+
+    function toast(msg){
+
+      const box = $("t2e-toast");
+
+      box.textContent = msg;
+      box.style.display = "block";
+
+      clearTimeout(box._timer);
+
+      box._timer =
+      setTimeout(
+        () => {
+          box.style.display = "none";
+        },
+        2600
+      );
+    }
+
+
+    /* ==========================================================
+       LOGIN
+    ========================================================== */
+
+    $("t2e-login-btn")
+    .addEventListener(
+    "click",
+    async function(){
+
+      $("t2e-login-error").textContent = "";
+
+      const {data,error} =
+      await sb.auth.signInWithPassword({
+        email:email.value.trim(),
+        password:password.value
+      });
+
+      if(error){
+
+        $("t2e-login-error").textContent =
+        "Correo o contraseña incorrectos.";
+
+        return;
+      }
+
+      await loadUser(data.user);
+    });
+
+
+    password.addEventListener(
+    "keydown",
+    e => {
+
+      if(e.key === "Enter"){
+        $("t2e-login-btn").click();
+      }
+
+    });
+
+
+    async function loadUser(authUser){
+
+      user = authUser;
+
+      const {data,error} =
+      await sb
+        .from("t2e_profiles")
+        .select("*")
+        .eq("id",user.id)
+        .single();
+
+      if(error){
+
+        console.error(error);
+
+        $("t2e-login-error").textContent =
+        "No fue posible cargar el perfil.";
+
+        return;
+      }
+
+      profile = data;
+
+      if(
+        !["admin","content"]
+        .includes(profile.role)
+      ){
+
+        $("t2e-login-error").textContent =
+        "Este usuario no tiene permiso para contenido.";
+
+        await sb.auth.signOut();
+
+        return;
+      }
+
+      $("t2e-user-name").textContent =
+        (profile.full_name || user.email)
+        +
+        " · "
+        +
+        profile.role.toUpperCase();
+
+      login.style.display = "none";
+      main.style.display = "block";
+
+      await loadContents();
+    }
+
+
+    /* ==========================================================
+       SESSION
+    ========================================================== */
+
+    (async function(){
+
+      const {data} =
+      await sb.auth.getSession();
+
+      if(data.session){
+        await loadUser(data.session.user);
+      }
+
+    })();
+
+
+    /* ==========================================================
+       LOGOUT
+    ========================================================== */
+
+    $("t2e-logout")
+    .addEventListener(
+    "click",
+    async function(){
+
+      await sb.auth.signOut();
+
+      location.reload();
+
+    });
+
+
+    /* ==========================================================
+       WIZARD
+    ========================================================== */
+
+    function showStage(number){
+
+      stage = number;
+
+      document
+      .querySelectorAll(".t2e-stage")
+      .forEach(el => {
+
+        el.classList.toggle(
+          "active",
+          Number(el.dataset.stage) === stage
+        );
+
+      });
+
+      document
+      .querySelectorAll(".t2e-process-step")
+      .forEach(el => {
+
+        const n =
+        Number(el.dataset.progress);
+
+        el.classList.toggle(
+          "active",
+          n === stage
+        );
+
+        el.classList.toggle(
+          "done",
+          n < stage
+        );
+
+      });
+
+      updatePreview();
+    }
+
+
+    document
+    .querySelectorAll("[data-next]")
+    .forEach(btn => {
+
+      btn.addEventListener(
+      "click",
+      () => {
+
+        showStage(
+          Number(btn.dataset.next)
+        );
+
+      });
+
+    });
+
+
+    document
+    .querySelectorAll("[data-prev]")
+    .forEach(btn => {
+
+      btn.addEventListener(
+      "click",
+      () => {
+
+        showStage(
+          Number(btn.dataset.prev)
+        );
+
+      });
+
+    });
+
+
+    $("t2e-strategy-next")
+    .addEventListener(
+    "click",
+    function(){
+
+      if(!topic.value.trim()){
+
+        alert("Escribí el tema.");
+
+        return;
+      }
+
+      if(!keyword.value.trim()){
+
+        alert(
+          "Definí la palabra clave / CTA."
+        );
+
+        return;
+      }
+
+      showStage(3);
+
+    });
+
+
+    /* ==========================================================
+       FORMAT
+    ========================================================== */
+
+    document
+    .querySelectorAll(".t2e-format")
+    .forEach(btn => {
+
+      btn.addEventListener(
+      "click",
+      function(){
+
+        format =
+        btn.dataset.format;
+
+        document
+        .querySelectorAll(".t2e-format")
+        .forEach(
+          b =>
+          b.classList.remove("active")
+        );
+
+        btn.classList.add("active");
+
+        updateFormatUI();
+        updatePreview();
+
+      });
+
+    });
+
+
+    function updateFormatUI(){
+
+      const slides =
+      ["C","H"].includes(format);
+
+      $("t2e-slides-section").style.display =
+      slides
+      ?
+      "flex"
+      :
+      "none";
+
+      $("t2e-script-label").textContent =
+      format === "H"
+      ?
+      "Idea general de la secuencia"
+      :
+      format === "C"
+      ?
+      "Idea general del carrusel"
+      :
+      "Guión / Copy";
+
+      const descriptionField = $("t2e-description-field");
+      if(descriptionField){
+        descriptionField.style.display = format === "H" ? "none" : "flex";
+      }
+
+      if(format === "H" && description){
+        description.value = "";
+      }
+
+      if(slides){
+        renderSlides();
+      }
+
+    }
+
+
+    /* ==========================================================
+       SLIDES
+    ========================================================== */
+
+    function renderSlides(){
+
+      const count =
+      Math.max(
+        1,
+        Math.min(
+          30,
+          Number(slideCount.value) || 1
+        )
+      );
+
+      const existing =
+      Array.from(
+        document.querySelectorAll(
+          ".t2e-slide-copy"
+        )
+      )
+      .map(el => el.value);
+
+      slidesBox.innerHTML = "";
+
+      for(
+        let i=0;
+        i<count;
+        i++
+      ){
+
+        const row =
+        document.createElement("div");
+
+        row.className =
+        "t2e-slide-row";
+
+        row.innerHTML = `
+
+          <div class="t2e-slide-number">
+            ${i+1}
+          </div>
+
+          <textarea
+            class="t2e-textarea t2e-slide-copy"
+            placeholder="Copy del slide ${i+1}..."
+          >${escapeHTML(existing[i] || "")}</textarea>
+
+        `;
+
+        slidesBox.appendChild(row);
+
+      }
+
+    }
+
+    slideCount.addEventListener(
+    "input",
+    renderSlides
+    );
+
+
+    function getSlides(){
+
+      if(
+        !["C","H"].includes(format)
+      ){
+        return [];
+      }
+
+      return Array.from(
+        document.querySelectorAll(
+          ".t2e-slide-copy"
+        )
+      )
+      .map(
+        (el,i) => ({
+          slide:i+1,
+          copy:el.value.trim()
+        })
+      );
+    }
+
+
+    /* ==========================================================
+       PREVIEW EVENTS
+    ========================================================== */
+
+    [
+      topic,
+      keyword,
+      dateInput
+    ]
+    .forEach(
+    el =>
+    el.addEventListener(
+      "input",
+      updatePreview
+    )
+    );
+
+
+    /* ==========================================================
+       SAVE CONTENT
+    ========================================================== */
+
+    $("t2e-save")
+    .addEventListener(
+    "click",
+    saveContent
+    );
+
+
+    async function saveContent(){
+
+      if(!dateInput.value){
+
+        alert(
+          "Seleccioná la fecha."
+        );
+
+        return;
+      }
+
+      if(!timeInput.value){
+
+        alert(
+          "Seleccioná la hora."
+        );
+
+        return;
+      }
+
+      const button =
+      $("t2e-save");
+
+      button.disabled = true;
+      button.textContent =
+      "GUARDANDO...";
+
+      let inserted = null;
+      let finalError = null;
+
+      for(
+        let i=0;
+        i<4;
+        i++
+      ){
+
+        const code =
+        generateCode();
+
+        const payload = {
+
+          tracking_code:code,
+          format:format,
+
+          topic:
+          topic.value.trim(),
+
+          keyword:
+          keyword.value.trim(),
+
+          angle:
+          angle.value.trim(),
+
+          objective:
+          objective.value,
+
+          script:
+          scriptField.value.trim(),
+
+          description:
+          description.value.trim(),
+
+          publish_date:
+          dateInput.value,
+
+          publish_time:
+          timeInput.value,
+
+          slides:
+          getSlides(),
+
+          asset_url:
+          "",
+
+          status:
+          "scheduled",
+
+          created_by:
+          user.id
+
+        };
+
+
+        const {data,error} =
+        await sb
+          .from("t2e_content")
+          .insert(payload)
+          .select()
+          .single();
+
+
+        if(!error){
+
+          inserted = data;
+
+          break;
+        }
+
+        finalError = error;
+
+        if(error.code !== "23505"){
+          break;
+        }
+
+      }
+
+
+      button.disabled = false;
+
+      button.textContent =
+      "✓ PROGRAMAR CONTENIDO";
+
+
+      if(!inserted){
+
+        console.error(finalError);
+
+        alert(
+          "No fue posible guardar el contenido."
+        );
+
+        return;
+      }
+
+
+      try{
+
+        await navigator
+          .clipboard
+          .writeText(
+            inserted.tracking_code
+          );
+
+      }catch(e){}
+
+
+      toast(
+        "Contenido programado: "
+        +
+        inserted.tracking_code
+      );
+
+
+      calendarDate =
+      new Date(
+        inserted.publish_date
+        +
+        "T12:00:00"
+      );
+
+
+      clearForm();
+
+      await loadContents();
+
+      openPage("calendar");
+
+    }
+
+
+    /* ==========================================================
+       CLEAR
+    ========================================================== */
+
+    function clearForm(){
+
+      topic.value = "";
+      keyword.value = "";
+      angle.value = "";
+      objective.value = "";
+
+      scriptField.value = "";
+      description.value = "";
+
+      dateInput.value =
+      dateString(new Date());
+
+      timeInput.value =
+      "10:00";
+
+      slideCount.value =
+      "6";
+
+      renderSlides();
+
+      showStage(1);
+
+    }
+
+
+    /* ==========================================================
+       LOAD CONTENTS
+    ========================================================== */
+
+    async function loadContents(){
+
+      const {data,error} =
+      await sb
+        .from("t2e_content")
+        .select("*")
+        .order(
+          "publish_date",
+          {ascending:true}
+        )
+        .order(
+          "publish_time",
+          {ascending:true}
+        );
+
+      if(error){
+
+        console.error(error);
+
+        return;
+      }
+
+      contents = data || [];
+
+      renderCalendar();
+      renderSummary();
+
+      if(
+        typeof renderDailyActions
+        ===
+        "function"
+      ){
+        renderDailyActions();
+      }
+
+    }
+
+
+    /* ==========================================================
+       MAIN NAV
+    ========================================================== */
+
+    function openPage(page){
+
+      document
+      .querySelectorAll(
+        ".t2e-nav-button"
+      )
+      .forEach(btn => {
+
+        btn.classList.toggle(
+          "active",
+          btn.dataset.page === page
+        );
+
+      });
+
+      document
+      .querySelectorAll(
+        ".t2e-page"
+      )
+      .forEach(el => {
+
+        el.classList.remove(
+          "active"
+        );
+
+      });
+
+      $("t2e-page-" + page)
+      .classList.add("active");
+
+      if(page === "calendar"){
+        renderCalendar();
+      }
+
+      if(page === "summary"){
+        renderSummary();
+      }
+
+      if(page === "actions"){
+        renderDailyActions();
+        checkManyChatAlerts();
+      }
+
+      if(page === "publish"){
+        refreshPublishPreview();
+      }
+
+    }
+
+
+    document
+    .querySelectorAll(
+      ".t2e-nav-button"
+    )
+    .forEach(btn => {
+
+      btn.addEventListener(
+        "click",
+        () =>
+        openPage(
+          btn.dataset.page
+        )
+      );
+
+    });
+
+
+
+    /* ==========================================================
+       CONTENT SUMMARY / ANALYTICS
+    ========================================================== */
+    let summaryRange = "month";
+
+    function parseLocalDate(value){
+      if(!value) return null;
+      const p = String(value).slice(0,10).split("-").map(Number);
+      return new Date(p[0],p[1]-1,p[2]);
+    }
+
+    function summaryBounds(range){
+      const now = new Date();
+      let start = null;
+      let end = new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59,999);
+
+      if(range === "month") start = new Date(now.getFullYear(),now.getMonth(),1);
+      if(range === "3m") start = new Date(now.getFullYear(),now.getMonth()-2,1);
+      if(range === "6m") start = new Date(now.getFullYear(),now.getMonth()-5,1);
+      if(range === "year") start = new Date(now.getFullYear(),0,1);
+      if(range === "all"){
+        const dates = contents.map(x=>parseLocalDate(x.publish_date)).filter(Boolean).sort((a,b)=>a-b);
+        start = dates.length ? dates[0] : new Date(now.getFullYear(),now.getMonth(),1);
+      }
+      return {start,end};
+    }
+
+    function inSummaryRange(item,bounds){
+      const d = parseLocalDate(item.publish_date);
+      return d && d >= bounds.start && d <= bounds.end;
+    }
+
+    function daysInclusive(a,b){
+      const ms = 86400000;
+      const x = new Date(a.getFullYear(),a.getMonth(),a.getDate());
+      const y = new Date(b.getFullYear(),b.getMonth(),b.getDate());
+      return Math.max(1,Math.floor((y-x)/ms)+1);
+    }
+
+    function formatLabel(code){
+      return ({R:"Videos",C:"Carruseles",H:"Historias",YTS:"YouTube Shorts",TT:"TikToks"})[code] || code;
+    }
+
+    function renderSummary(){
+      const kpiBox = $("t2e-summary-kpis");
+      if(!kpiBox) return;
+
+      const bounds = summaryBounds(summaryRange);
+      const data = contents.filter(x=>inSummaryRange(x,bounds));
+      const published = data.filter(x=>x.status === "published");
+      const scheduled = data.filter(x=>x.status !== "published");
+      const total = data.length;
+      const completion = total ? Math.round((published.length/total)*100) : 0;
+      const days = daysInclusive(bounds.start,bounds.end);
+      const avg = published.length/days;
+
+      $("t2e-summary-period").textContent =
+        new Intl.DateTimeFormat("es-PY",{day:"2-digit",month:"short",year:"numeric"}).format(bounds.start)
+        + " — " +
+        new Intl.DateTimeFormat("es-PY",{day:"2-digit",month:"short",year:"numeric"}).format(bounds.end);
+
+      kpiBox.innerHTML = `
+        <div class="t2e-kpi"><div class="t2e-kpi-label">Publicadas</div><div class="t2e-kpi-value">${published.length}</div><div class="t2e-kpi-note">Piezas completadas en el período</div></div>
+        <div class="t2e-kpi"><div class="t2e-kpi-label">Programadas pendientes</div><div class="t2e-kpi-value">${scheduled.length}</div><div class="t2e-kpi-note">Piezas aún no marcadas como publicadas</div></div>
+        <div class="t2e-kpi"><div class="t2e-kpi-label">Cumplimiento</div><div class="t2e-kpi-value">${completion}%</div><div class="t2e-kpi-note">Publicadas sobre el total registrado</div></div>
+        <div class="t2e-kpi"><div class="t2e-kpi-label">Promedio por día</div><div class="t2e-kpi-value">${avg.toFixed(2)}</div><div class="t2e-kpi-note">Publicaciones por día calendario</div></div>
+      `;
+
+      const codes = ["R","H","C","YTS","TT"];
+      const counts = Object.fromEntries(codes.map(c=>[c,published.filter(x=>x.format===c).length]));
+      const max = Math.max(1,...Object.values(counts));
+      $("t2e-format-metrics").innerHTML = codes.map(c=>{
+        const n=counts[c];
+        const pct=published.length ? Math.round(n/published.length*100) : 0;
+        const width=Math.round(n/max*100);
+        return `<div class="t2e-format-metric"><div class="t2e-format-metric-name">${formatLabel(c)}</div><div class="t2e-metric-track"><div class="t2e-metric-fill" style="width:${width}%"></div></div><div class="t2e-format-metric-value">${n} · ${pct}%</div></div>`;
+      }).join("");
+
+      const activeDays = new Set(published.map(x=>x.publish_date)).size;
+      const activeAvg = activeDays ? published.length/activeDays : 0;
+      const topCode = codes.slice().sort((a,b)=>counts[b]-counts[a])[0];
+      const topCount = counts[topCode] || 0;
+      const reels = counts.R || 0;
+      const stories = counts.H || 0;
+      const carousels = counts.C || 0;
+      $("t2e-analysis-list").innerHTML = `
+        <div class="t2e-analysis-item"><strong>${reels} reels</strong> publicados · promedio ${(reels/days).toFixed(2)} por día.</div>
+        <div class="t2e-analysis-item"><strong>${stories} secuencias de historias</strong> y <strong>${carousels} carruseles</strong> publicados.</div>
+        <div class="t2e-analysis-item">Publicaste contenido en <strong>${activeDays} días</strong>. En los días activos, el promedio fue de <strong>${activeAvg.toFixed(2)} piezas</strong>.</div>
+        <div class="t2e-analysis-item">El formato con mayor volumen fue <strong>${topCount ? formatLabel(topCode) : "—"}</strong>${topCount ? ` con ${topCount} publicaciones` : ""}.</div>
+        <div class="t2e-analysis-item">Cumplimiento editorial del período: <strong>${completion}%</strong> (${published.length} publicadas de ${total} registradas).</div>
+      `;
+
+      const now = new Date();
+      const months=[];
+      for(let i=5;i>=0;i--){
+        const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+        const y=d.getFullYear(),m=d.getMonth();
+        const n=contents.filter(x=>{
+          const pd=parseLocalDate(x.publish_date);
+          return x.status==="published" && pd && pd.getFullYear()===y && pd.getMonth()===m;
+        }).length;
+        months.push({d,n});
+      }
+      const trendMax=Math.max(1,...months.map(x=>x.n));
+      $("t2e-summary-trend").innerHTML=months.map(x=>{
+        const h=Math.max(3,Math.round(x.n/trendMax*100));
+        const label=new Intl.DateTimeFormat("es-PY",{month:"short"}).format(x.d).replace(".","");
+        return `<div class="t2e-trend-col"><div class="t2e-trend-number">${x.n}</div><div class="t2e-trend-bar-wrap"><div class="t2e-trend-bar" style="height:${h}%"></div></div><div class="t2e-trend-label">${label}</div></div>`;
+      }).join("");
+    }
+
+    document.querySelectorAll("[data-summary-range]").forEach(btn=>{
+      btn.addEventListener("click",function(){
+        summaryRange=this.dataset.summaryRange;
+        document.querySelectorAll("[data-summary-range]").forEach(b=>b.classList.toggle("active",b===this));
+        renderSummary();
+      });
+    });
+
+    /* ==========================================================
+       FILTER
+    ========================================================== */
+
+    function filtered(){
+
+      const search =
+      $("t2e-search")
+      .value
+      .trim()
+      .toLowerCase();
+
+      const formatFilter =
+      $("t2e-filter-format").value;
+
+      const statusFilter =
+      $("t2e-filter-status").value;
+
+      return contents.filter(item => {
+
+        if(
+          formatFilter
+          &&
+          item.format !== formatFilter
+        ){
+          return false;
+        }
+
+        if(
+          statusFilter
+          &&
+          item.status !== statusFilter
+        ){
+          return false;
+        }
+
+        if(search){
+
+          const haystack =
+          (
+            item.tracking_code
+            +
+            " "
+            +
+            item.topic
+            +
+            " "
+            +
+            item.keyword
+            +
+            " "
+            +
+            (item.angle || "")
+          )
+          .toLowerCase();
+
+          if(
+            !haystack.includes(search)
+          ){
+            return false;
+          }
+
+        }
+
+        return true;
+
+      });
+
+    }
+
+
+    /* ==========================================================
+       EVENT HTML
+    ========================================================== */
+
+    function eventHTML(item){
+
+      const isPublished = item.status === "published";
+
+      return `
+
+      <div
+        class="t2e-event t2e-event-${item.format} ${isPublished ? "t2e-event-published" : ""}"
+        data-id="${item.id}"
+        tabindex="0"
+        draggable="${isPublished ? "false" : "true"}"
+        title="${isPublished ? "Publicado en GoHighLevel · bloqueado" : "Arrastrá para cambiar la fecha o tocá para abrir"}"
+      >
+
+        <div class="t2e-event-time">
+          ${String(item.publish_time).slice(0,5)}
+        </div>
+
+        <div class="t2e-event-code">
+          ${escapeHTML(item.tracking_code)}
+        </div>
+
+        <div class="t2e-calendar-state">
+          ${isPublished ? "✓ EN GHL" : "PLANIFICADO"}
+        </div>
+
+      </div>
+
+      `;
+    }
+
+
+    /* ==========================================================
+       CALENDAR
+    ========================================================== */
+
+    function renderCalendar(){
+
+      if(calendarView === "month"){
+        renderMonth();
+      }
+
+      else if(calendarView === "week"){
+        renderWeek();
+      }
+
+      else{
+        renderDay();
+      }
+
+      attachEvents();
+    }
+
+
+    /* ==========================================================
+       MONTH
+    ========================================================== */
+
+    function renderMonth(){
+
+      const year =
+      calendarDate.getFullYear();
+
+      const month =
+      calendarDate.getMonth();
+
+      $("t2e-calendar-title").textContent =
+      new Intl.DateTimeFormat(
+        "es-PY",
+        {
+          month:"long",
+          year:"numeric"
+        }
+      )
+      .format(calendarDate);
+
+
+      const first =
+      new Date(
+        year,
+        month,
+        1
+      );
+
+
+      let startIndex =
+      first.getDay()-1;
+
+      if(startIndex < 0){
+        startIndex = 6;
+      }
+
+
+      const start =
+      new Date(
+        year,
+        month,
+        1-startIndex
+      );
+
+
+      const data =
+      filtered();
+
+      const today =
+      dateString(new Date());
+
+
+      let html =
+      '<div class="t2e-month">';
+
+
+      [
+        "LUN",
+        "MAR",
+        "MIÉ",
+        "JUE",
+        "VIE",
+        "SÁB",
+        "DOM"
+      ]
+      .forEach(day => {
+
+        html +=
+        `<div class="t2e-weekday">${day}</div>`;
+
+      });
+
+
+      for(
+        let i=0;
+        i<42;
+        i++
+      ){
+
+        const d =
+        new Date(start);
+
+        d.setDate(
+          start.getDate()+i
+        );
+
+        const key =
+        dateString(d);
+
+        const dayEvents =
+        data.filter(
+          item =>
+          item.publish_date === key
+        );
+
+        html += `
+
+          <div
+            class="
+              t2e-day
+              ${d.getMonth() !== month ? "other" : ""}
+              ${key === today ? "today" : ""}
+            "
+            data-drop-date="${key}"
+          >
+
+            <div class="t2e-day-number">
+              ${d.getDate()}
+            </div>
+
+            ${
+              dayEvents
+              .map(eventHTML)
+              .join("")
+            }
+
+          </div>
+
+        `;
+
+      }
+
+
+      html += "</div>";
+
+      $("t2e-calendar")
+      .innerHTML = html;
+
+    }
+
+
+    /* ==========================================================
+       WEEK
+    ========================================================== */
+
+    function weekStart(date){
+
+      const d =
+      new Date(date);
+
+      let day =
+      d.getDay();
+
+      if(day === 0){
+        day = 7;
+      }
+
+      d.setDate(
+        d.getDate() - day + 1
+      );
+
+      d.setHours(0,0,0,0);
+
+      return d;
+
+    }
+
+
+    function renderWeek(){
+
+      const start =
+      weekStart(calendarDate);
+
+      const end =
+      new Date(start);
+
+      end.setDate(
+        start.getDate()+6
+      );
+
+
+      $("t2e-calendar-title").textContent =
+      new Intl.DateTimeFormat(
+        "es-PY",
+        {
+          day:"numeric",
+          month:"short"
+        }
+      ).format(start)
+      +
+      " — "
+      +
+      new Intl.DateTimeFormat(
+        "es-PY",
+        {
+          day:"numeric",
+          month:"short",
+          year:"numeric"
+        }
+      ).format(end);
+
+
+      let html =
+      '<div class="t2e-week">';
+
+      const data =
+      filtered();
+
+
+      for(
+        let i=0;
+        i<7;
+        i++
+      ){
+
+        const d =
+        new Date(start);
+
+        d.setDate(
+          start.getDate()+i
+        );
+
+        const key =
+        dateString(d);
+
+        const events =
+        data.filter(
+          item =>
+          item.publish_date === key
+        );
+
+
+        html += `
+
+          <div class="t2e-week-col" data-drop-date="${key}">
+
+            <div class="t2e-week-title">
+
+              ${
+                new Intl.DateTimeFormat(
+                  "es-PY",
+                  {
+                    weekday:"short",
+                    day:"numeric",
+                    month:"short"
+                  }
+                ).format(d)
+              }
+
+            </div>
+
+            ${
+              events
+              .map(eventHTML)
+              .join("")
+            }
+
+          </div>
+
+        `;
+
+      }
+
+
+      html += "</div>";
+
+      $("t2e-calendar")
+      .innerHTML = html;
+
+    }
+
+
+    /* ==========================================================
+       DAY
+    ========================================================== */
+
+    function renderDay(){
+
+      $("t2e-calendar-title").textContent =
+      new Intl.DateTimeFormat(
+        "es-PY",
+        {
+          weekday:"long",
+          day:"numeric",
+          month:"long",
+          year:"numeric"
+        }
+      )
+      .format(calendarDate);
+
+
+      const key =
+      dateString(calendarDate);
+
+      const data =
+      filtered()
+      .filter(
+        item =>
+        item.publish_date === key
+      );
+
+
+      let html =
+      '<div class="t2e-day-view">';
+
+
+      for(
+        let hour=0;
+        hour<24;
+        hour++
+      ){
+
+        const prefix =
+        pad(hour)+":";
+
+        const events =
+        data.filter(
+          item =>
+          String(item.publish_time)
+          .startsWith(prefix)
+        );
+
+
+        html += `
+
+          <div class="t2e-hour">
+
+            <div class="t2e-hour-label">
+              ${pad(hour)}:00
+            </div>
+
+            <div class="t2e-hour-content">
+
+              ${
+                events
+                .map(eventHTML)
+                .join("")
+              }
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+
+      html += "</div>";
+
+      $("t2e-calendar")
+      .innerHTML = html;
+
+    }
+
+
+    /* ==========================================================
+       CAL NAV
+    ========================================================== */
+
+    $("t2e-prev-calendar")
+    .addEventListener(
+    "click",
+    function(){
+
+      if(calendarView === "month"){
+
+        calendarDate.setMonth(
+          calendarDate.getMonth()-1
+        );
+
+      }
+
+      else if(calendarView === "week"){
+
+        calendarDate.setDate(
+          calendarDate.getDate()-7
+        );
+
+      }
+
+      else{
+
+        calendarDate.setDate(
+          calendarDate.getDate()-1
+        );
+
+      }
+
+      renderCalendar();
+
+    });
+
+
+    $("t2e-next-calendar")
+    .addEventListener(
+    "click",
+    function(){
+
+      if(calendarView === "month"){
+
+        calendarDate.setMonth(
+          calendarDate.getMonth()+1
+        );
+
+      }
+
+      else if(calendarView === "week"){
+
+        calendarDate.setDate(
+          calendarDate.getDate()+7
+        );
+
+      }
+
+      else{
+
+        calendarDate.setDate(
+          calendarDate.getDate()+1
+        );
+
+      }
+
+      renderCalendar();
+
+    });
+
+
+    $("t2e-today")
+    .addEventListener(
+    "click",
+    function(){
+
+      calendarDate = new Date();
+
+      renderCalendar();
+
+    });
+
+
+    document
+    .querySelectorAll(
+      ".t2e-view-button"
+    )
+    .forEach(btn => {
+
+      btn.addEventListener(
+      "click",
+      function(){
+
+        calendarView =
+        btn.dataset.view;
+
+        document
+        .querySelectorAll(
+          ".t2e-view-button"
+        )
+        .forEach(
+          b =>
+          b.classList.remove("active")
+        );
+
+        btn.classList.add("active");
+
+        renderCalendar();
+
+      });
+
+    });
+
+
+    [
+      $("t2e-search"),
+      $("t2e-filter-format"),
+      $("t2e-filter-status")
+    ]
+    .forEach(el => {
+
+      el.addEventListener(
+        "input",
+        renderCalendar
+      );
+
+    });
+
+
+
+    /* ==========================================================
+       SOCIAL PUBLISHING
+    ========================================================== */
+    let publishItem = null;
+    let publishObjectURL = null;
+
+    const MANYCHAT_APP_URL = "https://app.manychat.com/";
+    const MANYCHAT_STATE_KEY = "t2e_manychat_links_v1";
+
+    function getManyChatState(){
+      try{
+        return JSON.parse(localStorage.getItem(MANYCHAT_STATE_KEY) || "{}") || {};
+      }catch(e){
+        return {};
+      }
+    }
+
+    function saveManyChatState(state){
+      localStorage.setItem(MANYCHAT_STATE_KEY,JSON.stringify(state || {}));
+    }
+
+    function manyChatRecord(item){
+      if(!item || !item.id) return {};
+      return getManyChatState()[String(item.id)] || {};
+    }
+
+    function setManyChatRecord(item,patch){
+      if(!item || !item.id) return;
+      const state = getManyChatState();
+      const key = String(item.id);
+      state[key] = {...(state[key] || {}),...(patch || {})};
+      saveManyChatState(state);
+    }
+
+    function instagramSelected(){
+      const input = document.querySelector('.t2e-publish-platform[value="instagram"]');
+      return !!(input && input.checked);
+    }
+
+    function manyChatTemplateFor(item){
+      return item && item.format === "H"
+        ? "PLANTILLA - TRACKING HISTORIAS"
+        : "PLANTILLA - TRACKING REEL";
+    }
+
+    function manyChatAutomationName(item){
+      if(!item) return "—";
+      const type=item.format==="H"?"HISTORIA":item.format==="C"?"CARRUSEL":"REEL";
+      const topic=String(item.topic||"SIN TEMA").trim().replace(/\s+/g," ");
+      const tracking=String(item.tracking_code||"SIN-CODIGO").trim();
+      return `${type} | ${topic} | ${tracking}`;
+    }
+
+    function showManyChatFloatingHelper(item){
+      if(!item) return;
+      const box=$("t2e-mc-float"); if(!box) return;
+      $("t2e-mc-float-name").textContent=manyChatAutomationName(item);
+      $("t2e-mc-float-template").textContent=manyChatTemplateFor(item);
+      $("t2e-mc-float-keyword").textContent=item.keyword||"—";
+      $("t2e-mc-float-code").textContent=item.tracking_code||"—";
+      const slideRow=$("t2e-mc-float-slide-row");
+      if(item.format==="H"){
+        slideRow.style.display="block";
+        $("t2e-mc-float-slide").textContent=`Slide ${selectedCtaSlide()||manyChatRecord(item).ctaSlide||"—"}`;
+      }else{
+        slideRow.style.display="none";
+      }
+      box.classList.add("show");
+    }
+
+    function hideManyChatFloatingHelper(){
+      const box=$("t2e-mc-float");
+      if(box) box.classList.remove("show");
+    }
+
+    async function copyManyChatField(targetId){
+      const el=$(targetId); if(!el) return;
+      try{await navigator.clipboard.writeText(el.textContent.trim());toast("Copiado.");}
+      catch(e){console.error(e);toast("No se pudo copiar.");}
+    }
+
+    function selectedCtaSlide(){
+      const el = $("t2e-cta-slide");
+      return el && el.value ? Number(el.value) : null;
+    }
+
+    function configureCtaSlide(item){
+      const wrap = $("t2e-cta-slide-wrap");
+      const select = $("t2e-cta-slide");
+      if(!wrap || !select) return;
+
+      if(!item || item.format !== "H"){
+        wrap.style.display = "none";
+        select.innerHTML = "";
+        return;
+      }
+
+      const count =
+        Array.isArray(item.slides) && item.slides.length
+          ? item.slides.length
+          : 1;
+
+      const saved = manyChatRecord(item);
+      const preferred = Number(saved.ctaSlide) || count;
+
+      select.innerHTML = Array.from({length:count},(_,i)=>{
+        const n=i+1;
+        return `<option value="${n}" ${n===preferred ? "selected" : ""}>Slide ${n}</option>`;
+      }).join("");
+
+      wrap.style.display = "flex";
+    }
+
+    function renderManyChatBox(){
+      const box = $("t2e-manychat-box");
+      if(!box) return;
+
+      if(!publishItem || !instagramSelected()){
+        box.style.display = "none";
+        return;
+      }
+
+      box.style.display = "block";
+
+      const record = manyChatRecord(publishItem);
+      const linked = !!record.linked;
+      const manuallyPrepared = !!record.manuallyPrepared;
+      const ctaSlide =
+        publishItem.format === "H"
+          ? (selectedCtaSlide() || record.ctaSlide || "—")
+          : "No aplica";
+
+      $("t2e-manychat-template").textContent = manyChatTemplateFor(publishItem);
+      $("t2e-manychat-keyword").textContent = publishItem.keyword || "—";
+      $("t2e-manychat-code").textContent = publishItem.tracking_code || "—";
+      $("t2e-manychat-cta-slide").textContent =
+        publishItem.format === "H" ? `Slide ${ctaSlide}` : "No aplica";
+
+      const badge = $("t2e-manychat-badge");
+
+      badge.textContent =
+        linked
+          ? "VINCULADO"
+          : manuallyPrepared
+            ? "PREPARADA · PENDIENTE DE VINCULAR"
+            : record.prepared
+              ? "ETIQUETA LISTA · PREPARAR AUTOMATIZACIÓN"
+              : "PENDIENTE";
+
+      badge.classList.toggle("ok",linked);
+
+      const confirmBtn = $("t2e-confirm-manychat");
+
+      if(confirmBtn){
+        confirmBtn.textContent =
+          linked
+            ? "✓ MANYCHAT VINCULADO"
+            : manuallyPrepared
+              ? "✓ AUTOMATIZACIÓN PREPARADA"
+              : "✓ MARCAR AUTOMATIZACIÓN COMO PREPARADA";
+      }
+    }
+
+    async function prepareManyChatForPublishedItem(item){
+      if(!item || !item.id || !instagramSelected()) return null;
+
+      const ctaSlide = item.format === "H" ? selectedCtaSlide() : null;
+
+      const body = {
+        action:"prepare_content",
+        contentType:
+          item.format === "H"
+            ? "story"
+            : item.format === "C"
+              ? "carousel"
+              : "video",
+        trackingCode:item.tracking_code,
+        platform:"instagram"
+      };
+
+      if(item.format === "H" && ctaSlide){
+        body.ctaSlide = ctaSlide;
+      }
+
+      const {data,error} = await sb.functions.invoke(
+        "manychat-content-manager",
+        {body}
+      );
+
+      if(error) throw error;
+      if(!data || data.ok === false){
+        throw new Error((data && data.error) || "ManyChat no confirmó la preparación.");
+      }
+
+      setManyChatRecord(item,{
+        prepared:true,
+        linked:false,
+        ctaSlide,
+        keyword:item.keyword || "",
+        trackingCode:item.tracking_code || "",
+        template:manyChatTemplateFor(item),
+        preparedAt:new Date().toISOString()
+      });
+
+      renderManyChatBox();
+      return data;
+    }
+
+    async function prepareManyChatSafely(item){
+      try{
+        await prepareManyChatForPublishedItem(item);
+        toast("Etiqueta de ManyChat preparada.");
+      }catch(err){
+        console.error("T2E MANYCHAT:",err);
+        toast("La publicación quedó en GHL, pero ManyChat quedó pendiente.");
+      }
+    }
+
+    function renderPublishPicker(query=""){
+      const q = String(query || "").trim().toLowerCase();
+      const list = contents
+        .filter(item => {
+          if(!q) return true;
+          return [item.tracking_code,item.topic,item.keyword,item.publish_date,formatName(item.format)]
+            .some(v => String(v || "").toLowerCase().includes(q));
+        })
+        .sort((a,b) => {
+          const da = String(a.publish_date || "") + " " + String(a.publish_time || "");
+          const db = String(b.publish_date || "") + " " + String(b.publish_time || "");
+          return da.localeCompare(db);
+        });
+
+      const box = $("t2e-picker-list");
+      if(!box) return;
+
+      if(!list.length){
+        box.innerHTML = '<div class="t2e-picker-empty">No encontré piezas con ese criterio.</div>';
+        return;
+      }
+
+      box.innerHTML = list.map(item => `
+        <div class="t2e-picker-item" data-publish-pick="${item.id}">
+          <div>
+            <div class="t2e-picker-code">${escapeHTML(item.tracking_code || "Sin código")}</div>
+            <div class="t2e-picker-meta">${escapeHTML(formatName(item.format))} · ${escapeHTML(item.topic || "Sin tema")}</div>
+          </div>
+          <div class="t2e-picker-date">${escapeHTML(item.publish_date || "—")} · ${escapeHTML(String(item.publish_time || "").slice(0,5) || "—")}</div>
+        </div>
+      `).join("");
+
+      box.querySelectorAll("[data-publish-pick]").forEach(el => {
+        el.addEventListener("click",() => {
+          const item = contents.find(c => String(c.id) === String(el.dataset.publishPick));
+          if(item) preparePublish(item);
+        });
+      });
+    }
+
+    function openPublishSelector(){
+      const modalTitle = document.querySelector("#t2e-modal .t2e-modal-head h3");
+      if(modalTitle) modalTitle.textContent = "Seleccionar pieza de contenido";
+
+      $("t2e-modal-body").innerHTML = `
+        <div class="t2e-picker-tools">
+          <input class="t2e-input" id="t2e-picker-search" placeholder="Buscar por código, tema, CTA o fecha...">
+        </div>
+        <div class="t2e-picker-list" id="t2e-picker-list"></div>
+      `;
+
+      $("t2e-modal").classList.add("open");
+      renderPublishPicker();
+
+      const search = $("t2e-picker-search");
+      if(search){
+        search.addEventListener("input",() => renderPublishPicker(search.value));
+        setTimeout(() => search.focus(),50);
+      }
+    }
+
+    function resetPublishPlatformAvailability(){
+      document.querySelectorAll(".t2e-publish-platform").forEach(input=>{
+        input.disabled = false;
+        const card = input.closest(".t2e-platform");
+        if(card) card.classList.remove("is-disabled");
+      });
+    }
+
+    function configurePlatformsForPublishItem(item){
+      resetPublishPlatformAvailability();
+
+      const instagramOnly =
+        item && ["C","H"].includes(item.format);
+
+      document.querySelectorAll(".t2e-publish-platform").forEach(input=>{
+        const card = input.closest(".t2e-platform");
+
+        if(instagramOnly){
+          if(input.value === "instagram"){
+            input.checked = true;
+            input.disabled = false;
+            if(card) card.classList.remove("is-disabled");
+          }else{
+            input.checked = false;
+            input.disabled = true;
+            if(card) card.classList.add("is-disabled");
+          }
+        }
+      });
+    }
+
+    function clearCarouselObjectURLs(){
+      document.querySelectorAll("[data-carousel-object-url]").forEach(el=>{
+        const url = el.dataset.carouselObjectUrl;
+        if(url){
+          try{ URL.revokeObjectURL(url); }catch(e){}
+        }
+      });
+    }
+
+    function renderCarouselUploadSlots(item){
+      const list = $("t2e-carousel-upload-list");
+      const singleWrap = $("t2e-single-upload-wrap");
+      const label = $("t2e-publish-file-label");
+      const youtubeField = $("t2e-youtube-title-field");
+
+      if(!list || !singleWrap) return;
+
+      clearCarouselObjectURLs();
+      list.innerHTML = "";
+      list.classList.remove("t2e-story-mode");
+
+      const isCarousel = item && item.format === "C";
+      const isStory = item && item.format === "H";
+      const isMultiSlide = isCarousel || isStory;
+
+      if(!isMultiSlide){
+        list.style.display = "none";
+        singleWrap.style.display = "block";
+        if(label) label.textContent = "Archivo final";
+        if(youtubeField) youtubeField.style.display = "";
+        return;
+      }
+
+      singleWrap.style.display = "none";
+      list.style.display = "grid";
+      if(isStory) list.classList.add("t2e-story-mode");
+
+      if(label){
+        label.textContent =
+          isStory
+            ? "Slides de la historia"
+            : "Slides del carrusel";
+      }
+
+      if(youtubeField) youtubeField.style.display = "none";
+
+      const plannedSlides =
+        Array.isArray(item.slides) && item.slides.length
+          ? item.slides.length
+          : 1;
+
+      for(let i=0;i<plannedSlides;i++){
+        const slot = document.createElement("div");
+        slot.className = "t2e-carousel-slot";
+
+        const accept =
+          isStory
+            ? "image/jpeg,image/png,image/webp,video/mp4"
+            : "image/jpeg,image/png,image/webp";
+
+        const helper =
+          isStory
+            ? `Imagen o video MP4 del slide ${i+1}`
+            : `Subir imagen del slide ${i+1}`;
+
+        slot.innerHTML = `
+          <label for="t2e-carousel-file-${i}">
+            <strong>SLIDE ${i+1}</strong>
+            <span>${helper}</span>
+            <input
+              id="t2e-carousel-file-${i}"
+              class="t2e-carousel-file"
+              data-slide-index="${i}"
+              type="file"
+              accept="${accept}"
+            >
+            <div class="t2e-carousel-slot-content" id="t2e-carousel-slot-content-${i}"></div>
+          </label>
+        `;
+        list.appendChild(slot);
+      }
+
+      list.querySelectorAll(".t2e-carousel-file").forEach(input=>{
+        input.addEventListener("change",function(){
+          const idx = Number(this.dataset.slideIndex);
+          const file = this.files && this.files[0];
+          const content = $(`t2e-carousel-slot-content-${idx}`);
+
+          if(!content) return;
+
+          const oldUrl = content.dataset.carouselObjectUrl;
+          if(oldUrl){
+            try{ URL.revokeObjectURL(oldUrl); }catch(e){}
+            delete content.dataset.carouselObjectUrl;
+          }
+
+          if(!file){
+            content.innerHTML = "";
+            refreshCarouselPreview();
+            return;
+          }
+
+          const lowerName = String(file.name || "").toLowerCase();
+          const isImage = String(file.type || "").startsWith("image/");
+          const isVideo = String(file.type || "").startsWith("video/") || lowerName.endsWith(".mp4");
+
+          if(isCarousel && !isImage){
+            this.value = "";
+            content.innerHTML = "";
+            $("t2e-publish-status").className = "t2e-publish-status error";
+            $("t2e-publish-status").textContent = `El slide ${idx+1} del carrusel debe ser una imagen.`;
+            refreshCarouselPreview();
+            return;
+          }
+
+          if(isStory && !isImage && !isVideo){
+            this.value = "";
+            content.innerHTML = "";
+            $("t2e-publish-status").className = "t2e-publish-status error";
+            $("t2e-publish-status").textContent =
+              `El slide ${idx+1} de la historia debe ser una imagen o un video MP4.`;
+            refreshCarouselPreview();
+            return;
+          }
+
+          if(isStory && isVideo && !lowerName.endsWith(".mp4")){
+            this.value = "";
+            content.innerHTML = "";
+            $("t2e-publish-status").className = "t2e-publish-status error";
+            $("t2e-publish-status").textContent =
+              `El video del slide ${idx+1} debe estar en MP4.`;
+            refreshCarouselPreview();
+            return;
+          }
+
+          const url = URL.createObjectURL(file);
+          content.dataset.carouselObjectUrl = url;
+
+          if(isVideo){
+            content.innerHTML = `
+              <video class="t2e-story-thumb" src="${url}" controls playsinline muted></video>
+              <div class="t2e-carousel-file-name">${escapeHTML(file.name)}</div>
+            `;
+          }else{
+            content.innerHTML = `
+              <img class="${isStory ? "t2e-story-thumb" : "t2e-carousel-thumb"}" src="${url}" alt="Slide ${idx+1}">
+              <div class="t2e-carousel-file-name">${escapeHTML(file.name)}</div>
+            `;
+          }
+
+          refreshCarouselPreview();
+        });
+      });
+
+      refreshCarouselPreview();
+    }
+    function getCarouselFiles(){
+      return Array.from(
+        document.querySelectorAll(".t2e-carousel-file")
+      ).map(input=>input.files && input.files[0] ? input.files[0] : null);
+    }
+
+    function refreshCarouselPreview(){
+      if(!publishItem || !["C","H"].includes(publishItem.format)) return;
+
+      const preview = $("t2e-media-preview");
+      if(!preview) return;
+
+      const isStory = publishItem.format === "H";
+
+      const inputs = Array.from(document.querySelectorAll(".t2e-carousel-file"));
+      const filled = inputs
+        .map((input,index)=>({
+          file:input.files && input.files[0],
+          index
+        }))
+        .filter(x=>x.file);
+
+      if(!filled.length){
+        preview.innerHTML =
+          isStory
+            ? "<span>Vista previa de las historias</span>"
+            : "<span>Vista previa de los slides</span>";
+        return;
+      }
+
+      const cards = filled.map(({file,index})=>{
+        const content = $(`t2e-carousel-slot-content-${index}`);
+        const url = content && content.dataset.carouselObjectUrl
+          ? content.dataset.carouselObjectUrl
+          : "";
+
+        const lowerName = String(file.name || "").toLowerCase();
+        const isVideo =
+          String(file.type || "").startsWith("video/") ||
+          lowerName.endsWith(".mp4");
+
+        return `
+          <div class="t2e-carousel-preview-item">
+            ${
+              url
+                ? isVideo
+                  ? `<video src="${url}" controls playsinline muted style="width:100%;aspect-ratio:9/16;object-fit:contain;background:#111;display:block;"></video>`
+                  : `<img src="${url}" alt="Slide ${index+1}" style="${isStory ? "aspect-ratio:9/16;" : ""}">`
+                : ""
+            }
+            <div class="t2e-carousel-preview-number">${index+1}</div>
+          </div>
+        `;
+      }).join("");
+
+      preview.innerHTML = `<div class="t2e-carousel-preview-grid">${cards}</div>`;
+    }
+
+    const T2E_TEST_POSTS_KEY = "t2e_test_ghl_posts_v1";
+
+    function isTestPublish(){
+      const selected = document.querySelector('input[name="t2e-publish-mode"]:checked');
+      return !!selected && selected.value === "test";
+    }
+
+    function getTestPosts(){
+      try{
+        const parsed = JSON.parse(localStorage.getItem(T2E_TEST_POSTS_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      }catch(e){
+        return [];
+      }
+    }
+
+    function saveTestPosts(items){
+      localStorage.setItem(T2E_TEST_POSTS_KEY,JSON.stringify(items || []));
+      updateDeleteTestButton();
+    }
+
+    function extractCreatedPost(data){
+      if(
+        data &&
+        data.data &&
+        data.data.results &&
+        data.data.results.post
+      ){
+        return data.data.results.post;
+      }
+
+      if(
+        data &&
+        data.results &&
+        data.results.post
+      ){
+        return data.results.post;
+      }
+
+      return null;
+    }
+
+    function registerTestPost(data,platform){
+      if(!isTestPublish()) return;
+
+      const post = extractCreatedPost(data);
+      const postId = post && (post._id || post.postId);
+
+      if(!postId) return;
+
+      const current = getTestPosts();
+
+      if(current.some(x=>String(x.postId) === String(postId))){
+        return;
+      }
+
+      current.push({
+        postId:String(postId),
+        platform:String(platform || ""),
+        contentId:publishItem && publishItem.id
+          ? String(publishItem.id)
+          : "",
+        trackingCode:publishItem && publishItem.tracking_code
+          ? String(publishItem.tracking_code)
+          : "",
+        scheduleDate:post.scheduleDate || post.displayDate || "",
+        createdAt:new Date().toISOString()
+      });
+
+      saveTestPosts(current);
+    }
+
+    function updateDeleteTestButton(){
+      const btn = $("t2e-delete-test-posts");
+      if(!btn) return;
+
+      const count = getTestPosts().length;
+      btn.textContent = `BORRAR CONTENIDO DE PRUEBA (${count})`;
+      btn.disabled = count === 0;
+      btn.style.opacity = count === 0 ? ".55" : "1";
+    }
+
+    function t2eSafeFutureSchedule(dateStr,timeStr,minLeadMinutes=10){
+      /*
+        T2E · HORARIO DE PUBLICACIÓN
+        La fecha/hora del formulario es la hora local elegida por el usuario.
+        Se convierte a ISO una sola vez, sin sumar/restar horas manualmente.
+      */
+      const selected = new Date(`${dateStr}T${timeStr || "10:00"}:00`);
+
+      if(Number.isNaN(selected.getTime())){
+        throw new Error("La fecha u hora de publicación no es válida.");
+      }
+
+      const leadMs = Math.max(1,Number(minLeadMinutes)||10) * 60 * 1000;
+      const minimum = new Date(Date.now() + leadMs);
+
+      if(selected.getTime() <= minimum.getTime()){
+        const suggested = minimum.toLocaleTimeString("es-PY",{hour:"2-digit",minute:"2-digit"});
+        throw new Error(
+          `La hora elegida está demasiado cerca o ya pasó. Programá al menos ${Math.round(leadMs/60000)} minutos hacia adelante. Hora mínima sugerida: ${suggested}.`
+        );
+      }
+
+      return selected.toISOString();
+    }
+
+
+    async function publishInstagramCarousel(){
+      const status = $("t2e-publish-status");
+      const finishBtn = $("t2e-finish-social");
+      const btn = $("t2e-send-social");
+
+      const files = getCarouselFiles();
+      const expected = files.length;
+
+      if(!expected || files.some(file=>!file)){
+        status.className = "t2e-publish-status error";
+        status.textContent =
+          "Subí todos los slides del carrusel antes de programar la publicación.";
+        return;
+      }
+
+      const GHL_LOCATION_ID = "vPbsaMxZv8Q6kYFqQH4y";
+      const STORAGE_BUCKET = "t2e-content-media";
+      const FALLBACK_GHL_USER_ID = "5PG7Qm7bd9bQY06ztDMv6";
+
+      btn.disabled = true;
+      btn.textContent = "PROGRAMANDO CARRUSEL...";
+      if(finishBtn) finishBtn.style.display = "none";
+
+      try{
+        const media = [];
+
+        for(let i=0;i<files.length;i++){
+          const file = files[i];
+          const lower = String(file.name || "").toLowerCase();
+
+          let mimeType = String(file.type || "").toLowerCase();
+          if(lower.endsWith(".jpg") || lower.endsWith(".jpeg")) mimeType = "image/jpeg";
+          else if(lower.endsWith(".png")) mimeType = "image/png";
+          else if(lower.endsWith(".webp")) mimeType = "image/webp";
+
+          if(!["image/jpeg","image/png","image/webp"].includes(mimeType)){
+            throw new Error(`El slide ${i+1} debe ser JPG, PNG o WEBP.`);
+          }
+
+          status.className = "t2e-publish-status";
+          status.textContent = `Subiendo slide ${i+1} de ${files.length}...`;
+
+          const ext =
+            mimeType === "image/png" ? "png" :
+            mimeType === "image/webp" ? "webp" : "jpg";
+
+          const storagePath =
+            `social-planner/carousels/${Date.now()}-${Math.random().toString(36).slice(2,8)}-slide-${i+1}.${ext}`;
+
+          // Subimos el File original sin recrearlo como Blob. Así preservamos
+          // íntegramente los metadatos internos del video (incluida duración).
+          const {error:uploadError} = await sb.storage
+            .from(STORAGE_BUCKET)
+            .upload(storagePath,file,{
+              cacheControl:"3600",
+              upsert:false,
+              contentType:mimeType
+            });
+
+          if(uploadError){
+            throw new Error(`No se pudo subir el slide ${i+1}: ${uploadError.message}`);
+          }
+
+          const {data:publicData} = sb.storage
+            .from(STORAGE_BUCKET)
+            .getPublicUrl(storagePath);
+
+          if(!publicData || !publicData.publicUrl){
+            throw new Error(`No se pudo obtener la URL del slide ${i+1}.`);
+          }
+
+          media.push({
+            url:publicData.publicUrl,
+            type:mimeType
+          });
+        }
+
+        await new Promise(resolve=>setTimeout(resolve,1500));
+
+        status.textContent = "Leyendo cuenta de Instagram...";
+
+        const {data:accountsResponse,error:accountsError} =
+          await sb.functions.invoke(
+            "ghl-social-planner",
+            {body:{action:"accounts",locationId:GHL_LOCATION_ID}}
+          );
+
+        if(accountsError) throw accountsError;
+
+        const accounts =
+          accountsResponse &&
+          accountsResponse.data &&
+          accountsResponse.data.results &&
+          Array.isArray(accountsResponse.data.results.accounts)
+            ? accountsResponse.data.results.accounts
+            : [];
+
+        const instagramAccount = accounts.find(a=>
+          String(a.platform || "").toLowerCase() === "instagram"
+        );
+
+        if(!instagramAccount || !instagramAccount.id){
+          throw new Error("No encontré la cuenta de Instagram conectada.");
+        }
+
+        let ghlUserId = FALLBACK_GHL_USER_ID;
+
+        try{
+          const {data:postsResponse} = await sb.functions.invoke(
+            "ghl-social-planner",
+            {body:{action:"posts",locationId:GHL_LOCATION_ID,filters:{}}}
+          );
+
+          function findUserId(value){
+            if(Array.isArray(value)){
+              for(const v of value){
+                const found = findUserId(v);
+                if(found) return found;
+              }
+              return "";
+            }
+            if(value && typeof value === "object"){
+              const candidate =
+                value.userId ||
+                value.createdBy ||
+                (value.user && (value.user.id || value.user._id));
+              if(typeof candidate === "string" && candidate.trim()){
+                return candidate.trim();
+              }
+              for(const v of Object.values(value)){
+                if(v && (Array.isArray(v) || typeof v === "object")){
+                  const found = findUserId(v);
+                  if(found) return found;
+                }
+              }
+            }
+            return "";
+          }
+
+          const found = findUserId(postsResponse);
+          if(found) ghlUserId = found;
+        }catch(e){}
+
+        const publishDate = $("t2e-publish-date").value;
+        const publishTime = $("t2e-publish-time").value || "10:00";
+
+        if(!publishDate){
+          throw new Error("Seleccioná una fecha de publicación.");
+        }
+
+        const localSchedule = new Date(`${publishDate}T${publishTime}:00`);
+        if(Number.isNaN(localSchedule.getTime())){
+          throw new Error("La fecha u hora no es válida.");
+        }
+
+        const scheduleDate =
+        t2eSafeFutureSchedule(
+          publishDate,
+          publishTime
+        );
+
+        const post = {
+          accountIds:[instagramAccount.id],
+          summary:$("t2e-publish-caption").value || "",
+          media,
+          status:"scheduled",
+          scheduleDate,
+          selectedBestTime:scheduleDate,
+          type:"post",
+          userId:ghlUserId,
+          createdBy:ghlUserId,
+          instagramPostDetails:{
+            type:"post",
+            showOnFeed:true
+          }
+        };
+
+        status.textContent = "Programando carrusel en Instagram...";
+
+        const {data,error} = await sb.functions.invoke(
+          "ghl-social-planner",
+          {
+            body:{
+              action:"create-post",
+              locationId:GHL_LOCATION_ID,
+              post
+            }
+          }
+        );
+
+        if(error){
+          let message = error.message || "No se pudo programar el carrusel.";
+          try{
+            if(error.context){
+              const body = await error.context.clone().json();
+              const ghl = body && body.ghl ? body.ghl : body;
+              if(ghl){
+                if(Array.isArray(ghl.message)) message = ghl.message.join(" · ");
+                else if(typeof ghl.message === "string") message = ghl.message;
+              }
+            }
+          }catch(e){}
+          throw new Error(message);
+        }
+
+        if(!data || data.success === false){
+          throw new Error("GoHighLevel rechazó el carrusel.");
+        }
+
+        registerTestPost(data,"instagram");
+
+        if(publishItem && publishItem.id){
+          const {error:statusError} = await sb
+            .from("t2e_content")
+            .update({status:"published"})
+            .eq("id",publishItem.id);
+
+          if(!statusError){
+            publishItem.status = "published";
+            await loadContents();
+          }else{
+            console.error("No se pudo bloquear el contenido local:",statusError);
+          }
+        }
+
+        await prepareManyChatSafely(publishItem);
+
+        status.className = "t2e-publish-status ok";
+        status.textContent =
+          `Carrusel de ${media.length} slides programado correctamente en Instagram. ManyChat quedó preparado para la vinculación manual.`;
+
+        toast("Carrusel programado en Instagram.");
+
+        if(finishBtn) finishBtn.style.display = "flex";
+
+      }catch(err){
+        console.error(err);
+        status.className = "t2e-publish-status error";
+        status.textContent =
+          err && err.message
+            ? err.message
+            : "No se pudo programar el carrusel.";
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "PROGRAMAR EN SOCIAL PLANNER →";
+      }
+    }
+
+    async function t2eReadVideoDuration(source, timeoutMs=15000){
+      return await new Promise((resolve,reject)=>{
+        const video=document.createElement("video");
+        let objectUrl="";
+        let settled=false;
+        const cleanup=()=>{
+          clearTimeout(timer);
+          try{video.pause();}catch(e){}
+          try{video.removeAttribute("src");video.load();}catch(e){}
+          if(objectUrl){try{URL.revokeObjectURL(objectUrl);}catch(e){}}
+        };
+        const done=(fn,value)=>{
+          if(settled)return;
+          settled=true;
+          cleanup();
+          fn(value);
+        };
+        const timer=setTimeout(()=>done(reject,new Error("No se pudo leer la duración del video a tiempo.")),timeoutMs);
+        video.preload="metadata";
+        video.muted=true;
+        video.playsInline=true;
+        video.onloadedmetadata=()=>{
+          const duration=Number(video.duration);
+          if(Number.isFinite(duration) && duration>0){
+            done(resolve,duration);
+          }else{
+            done(reject,new Error("El video informa una duración inválida (0 segundos)."));
+          }
+        };
+        video.onerror=()=>done(reject,new Error("El navegador no pudo leer los metadatos del video."));
+        if(source instanceof File || source instanceof Blob){
+          objectUrl=URL.createObjectURL(source);
+          video.src=objectUrl;
+        }else{
+          video.crossOrigin="anonymous";
+          video.src=String(source||"");
+        }
+        try{video.load();}catch(e){}
+      });
+    }
+
+    function t2eValidateStoryDuration(duration, slideNumber){
+      const d=Number(duration);
+      if(!Number.isFinite(d) || d<=0){
+        throw new Error(`La historia ${slideNumber} no tiene una duración de video válida.`);
+      }
+      if(d<3){
+        throw new Error(`La historia ${slideNumber} dura ${d.toFixed(1)} s. Instagram exige un mínimo de 3 segundos.`);
+      }
+      if(d>60){
+        throw new Error(`La historia ${slideNumber} dura ${d.toFixed(1)} s. Instagram admite un máximo de 60 segundos.`);
+      }
+      return d;
+    }
+
+    async function publishInstagramStories(){
+      const status = $("t2e-publish-status");
+      const finishBtn = $("t2e-finish-social");
+      const btn = $("t2e-send-social");
+
+      const files = getCarouselFiles();
+
+      if(!files.length || files.some(file=>!file)){
+        status.className = "t2e-publish-status error";
+        status.textContent =
+          "Subí todos los slides de la historia antes de programar.";
+        return;
+      }
+
+      const GHL_LOCATION_ID = "vPbsaMxZv8Q6kYFqQH4y";
+      const STORAGE_BUCKET = "t2e-content-media";
+      const FALLBACK_GHL_USER_ID = "5PG7Qm7bd9bQY06ztDMv6";
+
+      btn.disabled = true;
+      btn.textContent = "PROGRAMANDO HISTORIAS...";
+      if(finishBtn) finishBtn.style.display = "none";
+
+      try{
+        const uploadedMedia = [];
+
+        for(let i=0;i<files.length;i++){
+          const file = files[i];
+          const lower = String(file.name || "").toLowerCase();
+
+          let mimeType = String(file.type || "").toLowerCase();
+
+          if(lower.endsWith(".mp4")) mimeType = "video/mp4";
+          else if(lower.endsWith(".mov")) mimeType = "video/mov";
+          else if(lower.endsWith(".jpg") || lower.endsWith(".jpeg")) mimeType = "image/jpeg";
+          else if(lower.endsWith(".png")) mimeType = "image/png";
+          else if(lower.endsWith(".webp")) mimeType = "image/webp";
+
+          const isVideo = ["video/mp4","video/quicktime","video/mov"].includes(mimeType);
+          const isImage = ["image/jpeg","image/png","image/webp"].includes(mimeType);
+
+          if(!isVideo && !isImage){
+            throw new Error(
+              `El slide ${i+1} debe ser JPG, PNG, WEBP, MP4 o MOV.`
+            );
+          }
+
+          if(isVideo && file.size > 100 * 1024 * 1024){
+            throw new Error(`La historia ${i+1} supera el máximo de 100 MB permitido para video en Instagram Story.`);
+          }
+
+          if(isVideo){
+            status.className = "t2e-publish-status";
+            status.textContent = `Validando duración del video ${i+1}...`;
+            const localDuration = await t2eReadVideoDuration(file);
+            t2eValidateStoryDuration(localDuration,i+1);
+          }
+
+          status.className = "t2e-publish-status";
+          status.textContent = `Subiendo historia ${i+1} de ${files.length}...`;
+
+          const ext =
+            mimeType === "video/mp4" ? "mp4" :
+            (mimeType === "video/mov" || mimeType === "video/quicktime") ? "mov" :
+            mimeType === "image/png" ? "png" :
+            mimeType === "image/webp" ? "webp" : "jpg";
+
+          const storagePath =
+            `social-planner/stories/${Date.now()}-${Math.random().toString(36).slice(2,8)}-story-${i+1}.${ext}`;
+
+          /*
+            FIX VIDEO STORY:
+            Subimos el File ORIGINAL. Reconstruirlo como Blob puede perder
+            metadata del contenedor MP4/MOV (moov atom/duración) y GHL lo
+            interpreta como 00:00:00 aunque el video tenga duración real.
+          */
+          const {error:uploadError} = await sb.storage
+            .from(STORAGE_BUCKET)
+            .upload(storagePath,file,{
+              cacheControl:"3600",
+              upsert:false,
+              contentType:mimeType
+            });
+
+          if(uploadError){
+            throw new Error(
+              `No se pudo subir el slide ${i+1}: ${uploadError.message}`
+            );
+          }
+
+          const {data:publicData} = sb.storage
+            .from(STORAGE_BUCKET)
+            .getPublicUrl(storagePath);
+
+          if(!publicData || !publicData.publicUrl){
+            throw new Error(
+              `No se pudo obtener la URL del slide ${i+1}.`
+            );
+          }
+
+          let verifiedDuration = null;
+          if(isVideo){
+            status.textContent = `Verificando video ${i+1} ya subido...`;
+            // Volvemos a leer la duración desde la URL pública real que recibirá GHL.
+            // Si allí aparece 0 s, detenemos el proceso en vez de crear una Story dañada.
+            verifiedDuration = await t2eReadVideoDuration(publicData.publicUrl);
+            t2eValidateStoryDuration(verifiedDuration,i+1);
+          }
+
+          uploadedMedia.push({
+            url:publicData.publicUrl,
+            type:mimeType,
+            duration:verifiedDuration
+          });
+        }
+
+        await new Promise(resolve=>setTimeout(resolve,1800));
+
+        status.textContent = "Leyendo cuenta de Instagram...";
+
+        const {data:accountsResponse,error:accountsError} =
+          await sb.functions.invoke(
+            "ghl-social-planner",
+            {body:{action:"accounts",locationId:GHL_LOCATION_ID}}
+          );
+
+        if(accountsError) throw accountsError;
+
+        const accounts =
+          accountsResponse &&
+          accountsResponse.data &&
+          accountsResponse.data.results &&
+          Array.isArray(accountsResponse.data.results.accounts)
+            ? accountsResponse.data.results.accounts
+            : [];
+
+        const instagramAccount = accounts.find(a=>
+          String(a.platform || "").toLowerCase() === "instagram"
+        );
+
+        if(!instagramAccount || !instagramAccount.id){
+          throw new Error("No encontré la cuenta de Instagram conectada.");
+        }
+
+        let ghlUserId = FALLBACK_GHL_USER_ID;
+
+        try{
+          const {data:postsResponse} = await sb.functions.invoke(
+            "ghl-social-planner",
+            {body:{action:"posts",locationId:GHL_LOCATION_ID,filters:{}}}
+          );
+
+          function findUserId(value){
+            if(Array.isArray(value)){
+              for(const v of value){
+                const found = findUserId(v);
+                if(found) return found;
+              }
+              return "";
+            }
+
+            if(value && typeof value === "object"){
+              const candidate =
+                value.userId ||
+                value.createdBy ||
+                (value.user && (value.user.id || value.user._id));
+
+              if(typeof candidate === "string" && candidate.trim()){
+                return candidate.trim();
+              }
+
+              for(const v of Object.values(value)){
+                if(v && (Array.isArray(v) || typeof v === "object")){
+                  const found = findUserId(v);
+                  if(found) return found;
+                }
+              }
+            }
+
+            return "";
+          }
+
+          const found = findUserId(postsResponse);
+          if(found) ghlUserId = found;
+        }catch(e){}
+
+        const publishDate = $("t2e-publish-date").value;
+        const publishTime = $("t2e-publish-time").value || "10:00";
+
+        if(!publishDate){
+          throw new Error("Seleccioná una fecha de publicación.");
+        }
+
+        const localSchedule = new Date(`${publishDate}T${publishTime}:00`);
+
+        if(Number.isNaN(localSchedule.getTime())){
+          throw new Error("La fecha u hora no es válida.");
+        }
+
+        /*
+          Horario único y consistente para Stories.
+          La prueba T2E → GoHighLevel confirmó que GHL muestra exactamente
+          la hora seleccionada; no aplicamos compensaciones manuales.
+        */
+        const scheduleDate = t2eSafeFutureSchedule(
+          publishDate,
+          publishTime
+        );
+
+        /*
+          Cada slide se programa como una Story independiente.
+          Todas usan la misma fecha/hora para conservar la secuencia.
+        */
+        for(let i=0;i<uploadedMedia.length;i++){
+          status.textContent =
+            `Programando historia ${i+1} de ${uploadedMedia.length} en Instagram...`;
+
+          const internalLabel = [
+            publishItem && publishItem.topic ? publishItem.topic : "Historia",
+            publishItem && publishItem.tracking_code ? publishItem.tracking_code : ""
+          ].filter(Boolean).join(" · ");
+
+          // Para Instagram Story enviamos únicamente los campos documentados
+          // para media. Las captions no están soportadas en Stories directas.
+          const storyMedia = {
+            url:uploadedMedia[i].url,
+            type:uploadedMedia[i].type
+          };
+
+          const post = {
+            accountIds:[instagramAccount.id],
+            summary:"",
+            media:[storyMedia],
+            status:"scheduled",
+            scheduleDate,
+            selectedBestTime:scheduleDate,
+            type:"story",
+            userId:ghlUserId,
+            createdBy:ghlUserId,
+            instagramPostDetails:{
+              type:"story",
+              publishViaPushNotification:false
+            }
+          };
+
+          const {data,error} = await sb.functions.invoke(
+            "ghl-social-planner",
+            {
+              body:{
+                action:"create-post",
+                locationId:GHL_LOCATION_ID,
+                post
+              }
+            }
+          );
+
+          if(error){
+            let message =
+              error.message ||
+              `No se pudo programar la historia ${i+1}.`;
+
+            try{
+              if(error.context){
+                const body = await error.context.clone().json();
+                const ghl = body && body.ghl ? body.ghl : body;
+
+                if(ghl){
+                  if(Array.isArray(ghl.message)){
+                    message = ghl.message.join(" · ");
+                  }else if(typeof ghl.message === "string"){
+                    message = ghl.message;
+                  }
+                }
+              }
+            }catch(e){}
+
+            throw new Error(
+              `Historia ${i+1}: ${message}`
+            );
+          }
+
+          if(!data || data.success === false){
+            throw new Error(
+              `GoHighLevel rechazó la historia ${i+1}.`
+            );
+          }
+
+          registerTestPost(data,"instagram");
+
+          const createdPost =
+            data &&
+            data.data &&
+            data.data.results &&
+            data.data.results.post
+              ? data.data.results.post
+              : null;
+
+          console.log("T2E STORY OK",{
+            slide:i+1,
+            postId:createdPost && (createdPost._id || createdPost.postId),
+            type:createdPost && createdPost.type,
+            scheduleDate:createdPost && createdPost.scheduleDate,
+            media:createdPost && createdPost.media
+          });
+
+          await new Promise(resolve=>setTimeout(resolve,500));
+        }
+
+        if(publishItem && publishItem.id){
+          const {error:statusError} = await sb
+            .from("t2e_content")
+            .update({status:"published"})
+            .eq("id",publishItem.id);
+
+          if(!statusError){
+            publishItem.status = "published";
+            await loadContents();
+          }else{
+            console.error("No se pudo bloquear el contenido local:",statusError);
+          }
+        }
+
+        await prepareManyChatSafely(publishItem);
+
+        status.className = "t2e-publish-status ok";
+        status.textContent =
+          `${uploadedMedia.length} historias programadas correctamente en Instagram. ManyChat quedó preparado para la vinculación manual.`;
+
+        toast("Historias programadas en Instagram.");
+
+        if(finishBtn) finishBtn.style.display = "flex";
+
+      }catch(err){
+        console.error(err);
+
+        status.className = "t2e-publish-status error";
+        status.textContent =
+          err && err.message
+            ? err.message
+            : "No se pudieron programar las historias.";
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "PROGRAMAR EN SOCIAL PLANNER →";
+      }
+    }
+
+    function preparePublish(item){
+      publishItem = item;
+      $("t2e-publish-code").textContent = item.tracking_code || "—";
+      $("t2e-publish-topic").textContent = formatName(item.format) + " · " + (item.topic || "Sin tema");
+      $("t2e-publish-date").value = item.publish_date || dateString(new Date());
+      $("t2e-publish-time").value = String(item.publish_time || "10:00").slice(0,5);
+      $("t2e-publish-caption").value =
+        item.format === "H"
+          ? ""
+          : (item.description || "");
+
+      $("t2e-publish-title").value = item.topic || "";
+
+      const publishCaptionField = $("t2e-publish-caption-field");
+      if(publishCaptionField){
+        publishCaptionField.style.display = item.format === "H" ? "none" : "flex";
+      }
+
+      const youtubeTitleField = $("t2e-youtube-title-field");
+      if(youtubeTitleField && item.format === "H"){
+        youtubeTitleField.style.display = "none";
+      }
+
+      configurePlatformsForPublishItem(item);
+      renderCarouselUploadSlots(item);
+      configureCtaSlide(item);
+      renderManyChatBox();
+
+      $("t2e-publish-status").className = "t2e-publish-status";
+      $("t2e-publish-status").textContent =
+        item.format === "C"
+          ? "Carrusel cargado. Subí cada slide en orden; se publicará únicamente en Instagram."
+          : item.format === "H"
+            ? `Historias cargadas. Tema: ${item.topic || "Sin tema"} · Código: ${item.tracking_code || "—"}. Subí cada slide en orden; Instagram no admite caption en publicación directa de Stories.`
+            : "Pieza cargada desde el calendario. Subí el archivo final, elegí las redes y programá la publicación.";
+
+      $("t2e-modal").classList.remove("open");
+      openPage("publish");
+      refreshPublishPreview();
+
+      if(["C","H"].includes(item.format)){
+        refreshCarouselPreview();
+      }
+
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function refreshPublishPreview(){
+      const cap = $("t2e-publish-caption");
+      if(cap) $("t2e-caption-preview").textContent = cap.value || "El copy aparecerá aquí.";
+    }
+
+    $("t2e-publish-caption").addEventListener("input",refreshPublishPreview);
+
+    $("t2e-publish-code").closest(".t2e-publish-source").addEventListener("click",openPublishSelector);
+
+    $("t2e-publish-file").addEventListener("change",function(){
+      const file = this.files && this.files[0];
+      const pill = $("t2e-file-pill");
+      const preview = $("t2e-media-preview");
+      if(publishObjectURL){ URL.revokeObjectURL(publishObjectURL); publishObjectURL=null; }
+      if(!file){ pill.style.display="none"; preview.innerHTML="<span>Vista previa del archivo</span>"; return; }
+      pill.style.display="block";
+      const lowerName = String(file.name || "").toLowerCase();
+      const compatibility =
+        lowerName.endsWith(".mp4")
+          ? " · compatible IG/TikTok"
+          : (lowerName.endsWith(".mov") || lowerName.endsWith(".webm"))
+            ? " · convertí a MP4 para IG/TikTok"
+            : "";
+      pill.textContent =
+        file.name +
+        " · " +
+        (file.size/1024/1024).toFixed(1) +
+        " MB" +
+        compatibility;
+      publishObjectURL = URL.createObjectURL(file);
+      if(file.type.startsWith("video/")){
+        preview.innerHTML = `<video src="${publishObjectURL}" controls playsinline></video>`;
+      }else if(file.type.startsWith("image/")){
+        preview.innerHTML = `<img src="${publishObjectURL}" alt="Vista previa">`;
+      }else{
+        preview.innerHTML = "<span>Archivo seleccionado</span>";
+      }
+    });
+
+    $("t2e-send-social").addEventListener("click",async function(){
+      const status = $("t2e-publish-status");
+      const finishBtn = $("t2e-finish-social");
+
+      if(finishBtn) finishBtn.style.display="none";
+
+      if(!publishItem){
+        status.className="t2e-publish-status error";
+        status.textContent="Primero seleccioná una pieza desde el calendario.";
+        return;
+      }
+
+      if(publishItem.format === "C"){
+        await publishInstagramCarousel();
+        return;
+      }
+
+      if(publishItem.format === "H"){
+        await publishInstagramStories();
+        return;
+      }
+
+      const file = $("t2e-publish-file").files && $("t2e-publish-file").files[0];
+
+      if(!file){
+        status.className="t2e-publish-status error";
+        status.textContent="Seleccioná el archivo final que querés publicar.";
+        return;
+      }
+
+      const platforms = Array.from(
+        document.querySelectorAll(".t2e-publish-platform:checked")
+      ).map(x=>x.value);
+
+      if(!platforms.length){
+        status.className="t2e-publish-status error";
+        status.textContent="Seleccioná al menos una red social.";
+        return;
+      }
+
+      /*
+        VALIDACIÓN PREVIA:
+        En este flujo T2E, Instagram y TikTok se publican únicamente con MP4.
+        Evitamos MOV/WEBM porque algunos archivos pueden tener codecs internos
+        que HighLevel rechaza aunque la extensión sea válida.
+      */
+      const selectedName = String(file.name || "").toLowerCase();
+      const needsStrictMp4 =
+        platforms.includes("instagram") ||
+        platforms.includes("tiktok");
+
+      if(needsStrictMp4 && !selectedName.endsWith(".mp4")){
+        status.className="t2e-publish-status error";
+        status.textContent =
+          "Instagram y TikTok requieren en este sistema un video MP4 compatible. " +
+          "Convertí el archivo a MP4 con códec H.264 y audio AAC, y volvé a subirlo.";
+        return;
+      }
+
+      const btn = $("t2e-send-social");
+      btn.disabled=true;
+      btn.textContent="ENVIANDO A SOCIAL PLANNER...";
+      status.className="t2e-publish-status";
+      status.textContent="Preparando publicación segura...";
+
+      try{
+        const GHL_LOCATION_ID = "vPbsaMxZv8Q6kYFqQH4y";
+        const STORAGE_BUCKET = "t2e-content-media";
+        const FALLBACK_GHL_USER_ID = "5PG7Qm7bd9bQY06ztDMv6";
+
+        /* 1) Normalizar MIME ANTES de subir el archivo. */
+        const fileNameLower = String(file.name || "").toLowerCase();
+
+        let normalizedMime = String(file.type || "").toLowerCase();
+
+        if(fileNameLower.endsWith(".mp4")) normalizedMime = "video/mp4";
+        else if(fileNameLower.endsWith(".mov")) normalizedMime = "video/quicktime";
+        else if(fileNameLower.endsWith(".webm")) normalizedMime = "video/webm";
+        else if(fileNameLower.endsWith(".jpg") || fileNameLower.endsWith(".jpeg")) normalizedMime = "image/jpeg";
+        else if(fileNameLower.endsWith(".png")) normalizedMime = "image/png";
+
+        if(!normalizedMime){
+          normalizedMime = ["R","YTS","TT"].includes(publishItem.format || "")
+            ? "video/mp4"
+            : "image/jpeg";
+        }
+
+        /* Subir UNA sola vez el archivo al storage temporal.
+           IMPORTANTE: usamos un nombre CANÓNICO con extensión explícita.
+           Instagram/TikTok validan también el formato a partir de la URL. */
+        status.textContent="Subiendo archivo final...";
+
+        const extensionByMime = {
+          "video/mp4":"mp4",
+          "video/quicktime":"mov",
+          "video/webm":"webm",
+          "image/jpeg":"jpg",
+          "image/png":"png"
+        };
+
+        const canonicalExtension =
+          extensionByMime[normalizedMime] ||
+          (String(file.name || "").split(".").pop() || "bin").toLowerCase();
+
+        const canonicalBaseName =
+          String(file.name || "media")
+            .replace(/\.[^.]+$/,"")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g,"")
+            .replace(/[^a-zA-Z0-9_-]+/g,"-")
+            .replace(/^-+|-+$/g,"")
+            .slice(0,80)
+          || "media";
+
+        const canonicalFileName =
+          `${canonicalBaseName}.${canonicalExtension}`;
+
+        const storagePath =
+          `social-planner/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${canonicalFileName}`;
+
+        /*
+          VIDEO/MEDIA FIX T2E:
+          Subimos el File ORIGINAL. No lo reconstruimos como Blob porque
+          algunos MP4/MOV pueden perder metadata del contenedor y GHL puede
+          interpretarlos como 00:00:00. El contentType sigue siendo explícito.
+        */
+        if(String(normalizedMime).startsWith("video/")){
+          status.textContent="Validando metadatos del video...";
+          const localDuration = await t2eReadVideoDuration(file);
+          if(!Number.isFinite(Number(localDuration)) || Number(localDuration) <= 0){
+            throw new Error("El video no informa una duración válida.");
+          }
+        }
+
+        const {error:uploadError} = await sb.storage
+          .from(STORAGE_BUCKET)
+          .upload(storagePath,file,{
+            cacheControl:"3600",
+            upsert:false,
+            contentType:normalizedMime
+          });
+
+        if(uploadError){
+          throw new Error("No se pudo subir el archivo: " + uploadError.message);
+        }
+
+        const {data:publicData} = sb.storage
+          .from(STORAGE_BUCKET)
+          .getPublicUrl(storagePath);
+
+        const mediaUrl = publicData && publicData.publicUrl;
+
+        if(!mediaUrl){
+          throw new Error("No se pudo obtener la URL pública del archivo.");
+        }
+
+        if(String(normalizedMime).startsWith("video/")){
+          status.textContent="Verificando duración del video ya subido...";
+          const remoteDuration = await t2eReadVideoDuration(mediaUrl,20000);
+          if(!Number.isFinite(Number(remoteDuration)) || Number(remoteDuration) <= 0){
+            throw new Error("El video subido quedó con duración inválida. No se enviará a las redes.");
+          }
+        }
+
+        /*
+          Esperar hasta que el archivo público responda antes de entregarlo
+          a Instagram/TikTok, que suelen validar el media más estrictamente.
+        */
+        status.textContent="Verificando disponibilidad del archivo...";
+
+        async function waitForMediaReady(url){
+          let lastError = null;
+
+          for(let attempt=1; attempt<=6; attempt++){
+            try{
+              const response = await fetch(
+                url + (url.includes("?") ? "&" : "?") + "t2e_check=" + Date.now(),
+                {
+                  method:"GET",
+                  headers:{Range:"bytes=0-1"},
+                  cache:"no-store"
+                }
+              );
+
+              if(response.ok || response.status === 206){
+                const returnedType = String(
+                  response.headers.get("content-type") || ""
+                ).toLowerCase();
+
+                if(
+                  !normalizedMime ||
+                  !returnedType ||
+                  returnedType.includes(normalizedMime.split(";")[0])
+                ){
+                  return true;
+                }
+
+                lastError = new Error(
+                  "Content-Type publicado: " + returnedType +
+                  " · esperado: " + normalizedMime
+                );
+              }else{
+                lastError = new Error("HTTP " + response.status);
+              }
+            }catch(e){
+              lastError = e;
+            }
+
+            await new Promise(resolve=>setTimeout(resolve,900));
+          }
+
+          throw new Error(
+            "El archivo se subió, pero todavía no está disponible públicamente. " +
+            (lastError && lastError.message ? lastError.message : "")
+          );
+        }
+
+        await waitForMediaReady(mediaUrl);
+
+        /*
+          Instagram y TikTok hacen una validación remota más estricta del video.
+          El archivo puede responder 200 en Supabase antes de que todos los nodos/CDN
+          tengan disponible el metadata completo del MP4. Damos un margen real.
+        */
+        if(platforms.includes("instagram") || platforms.includes("tiktok")){
+          status.textContent="Preparando video para Instagram / TikTok...";
+          await new Promise(resolve=>setTimeout(resolve,12000));
+        }else{
+          await new Promise(resolve=>setTimeout(resolve,1500));
+        }
+
+        /* 2) Leer cuentas conectadas. */
+        status.textContent="Leyendo cuentas conectadas de Social Planner...";
+
+        const {data:accountsResponse,error:accountsError} =
+          await sb.functions.invoke(
+            "ghl-social-planner",
+            {body:{action:"accounts",locationId:GHL_LOCATION_ID}}
+          );
+
+        if(accountsError) throw accountsError;
+
+        if(!accountsResponse || accountsResponse.success === false){
+          throw new Error("No se pudieron obtener las cuentas conectadas de Social Planner.");
+        }
+
+        function collectAccounts(value,out=[]){
+          if(Array.isArray(value)){
+            value.forEach(v=>collectAccounts(v,out));
+            return out;
+          }
+
+          if(value && typeof value === "object"){
+            const id = value.id || value._id || value.accountId;
+            const platform = String(
+              value.platform ||
+              value.type ||
+              value.provider ||
+              value.channel ||
+              value.network ||
+              ""
+            ).toLowerCase();
+
+            if(id && platform){
+              out.push({
+                id:String(id),
+                platform,
+                raw:value
+              });
+            }
+
+            Object.values(value).forEach(v=>{
+              if(v && (Array.isArray(v) || typeof v === "object")){
+                collectAccounts(v,out);
+              }
+            });
+          }
+
+          return out;
+        }
+
+        const connectedAccounts = collectAccounts(accountsResponse);
+
+        const aliases = {
+          instagram:["instagram","ig"],
+          facebook:["facebook","fb"],
+          tiktok:["tiktok","tiktok_business","tiktok-business"],
+          youtube:["youtube","google"]
+        };
+
+        function accountFor(platform){
+          const names = aliases[platform] || [platform];
+
+          return connectedAccounts.find(a=>
+            names.some(name=>
+              a.platform === name ||
+              a.platform.includes(name)
+            )
+          ) || null;
+        }
+
+        const selectedAccounts = {};
+
+        for(const platform of platforms){
+          const account = accountFor(platform);
+
+          if(!account){
+            throw new Error(
+              "No encontré una cuenta conectada para " + platform + "."
+            );
+          }
+
+          selectedAccounts[platform] = account;
+        }
+
+        /* 3) Resolver userId de GHL. */
+        status.textContent="Preparando usuario y programación...";
+
+        let ghlUserId = "";
+
+        try{
+          const {data:postsResponse,error:postsError} =
+            await sb.functions.invoke(
+              "ghl-social-planner",
+              {body:{action:"posts",locationId:GHL_LOCATION_ID,filters:{}}}
+            );
+
+          if(!postsError){
+            function findUserId(value){
+              if(Array.isArray(value)){
+                for(const v of value){
+                  const found = findUserId(v);
+                  if(found) return found;
+                }
+                return "";
+              }
+
+              if(value && typeof value === "object"){
+                const candidate =
+                  value.userId ||
+                  value.createdBy ||
+                  (value.user && (value.user.id || value.user._id));
+
+                if(typeof candidate === "string" && candidate.trim()){
+                  return candidate.trim();
+                }
+
+                for(const v of Object.values(value)){
+                  if(v && (Array.isArray(v) || typeof v === "object")){
+                    const found = findUserId(v);
+                    if(found) return found;
+                  }
+                }
+              }
+
+              return "";
+            }
+
+            ghlUserId = findUserId(postsResponse);
+          }
+        }catch(e){
+          console.warn("No se pudo detectar userId automáticamente.",e);
+        }
+
+        if(!ghlUserId){
+          ghlUserId = FALLBACK_GHL_USER_ID;
+        }
+
+        const publishDate = $("t2e-publish-date").value;
+        const publishTime = $("t2e-publish-time").value || "10:00";
+
+        if(!publishDate){
+          throw new Error("Seleccioná una fecha de publicación.");
+        }
+
+        const localSchedule =
+          new Date(`${publishDate}T${publishTime}:00`);
+
+        if(Number.isNaN(localSchedule.getTime())){
+          throw new Error("La fecha u hora de publicación no es válida.");
+        }
+
+        const scheduleDate =
+        t2eSafeFutureSchedule(
+          publishDate,
+          publishTime
+        );
+        const caption = $("t2e-publish-caption").value || "";
+        const title = $("t2e-publish-title").value || publishItem.topic || "";
+        const contentFormat = publishItem.format || "";
+        const mimeType = normalizedMime;
+        const isVideo = String(mimeType).startsWith("video/");
+
+        console.log("T2E MEDIA DEBUG",{
+          originalName:file.name,
+          canonicalFileName,
+          mimeType,
+          mediaUrl,
+          scheduleDate,
+          browserTimeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+          localNow:new Date().toString()
+        });
+
+        /*
+          IMPORTANTE:
+          Cada plataforma se crea en una llamada INDEPENDIENTE.
+          Así evitamos mezclar requisitos de Facebook, Instagram,
+          TikTok y YouTube en un mismo payload.
+        */
+        const results = [];
+        const errors = [];
+
+        for(const platform of platforms){
+          const account = selectedAccounts[platform];
+
+          const post = {
+            accountIds:[account.id],
+            summary:caption,
+            type:"post",
+            media:[{
+              url:mediaUrl,
+              type:mimeType
+            }],
+            status:"scheduled",
+            scheduleDate,
+            selectedBestTime:scheduleDate,
+            userId:ghlUserId,
+            createdBy:ghlUserId
+          };
+
+          if(platform === "facebook"){
+            post.facebookPostDetails = {
+              type: contentFormat === "H" ? "story" : "post"
+            };
+
+            if(contentFormat === "H"){
+              post.summary = "";
+            }
+          }
+
+          if(platform === "instagram"){
+            post.instagramPostDetails = {
+              type:
+                contentFormat === "H"
+                  ? "story"
+                  : isVideo
+                    ? "reel"
+                    : "post",
+              showOnFeed:
+                contentFormat !== "H" && isVideo
+            };
+
+            if(contentFormat === "H"){
+              post.summary = "";
+            }
+          }
+
+          if(platform === "tiktok"){
+            if(!isVideo){
+              errors.push({
+                platform,
+                message:"TikTok requiere un archivo de video para esta publicación."
+              });
+              continue;
+            }
+
+            post.tiktokPostDetails = {
+              privacyLevel:"PUBLIC_TO_EVERYONE",
+              promoteOtherBrand:false
+            };
+          }
+
+          if(platform === "youtube"){
+            if(!isVideo){
+              errors.push({
+                platform,
+                message:"YouTube requiere un archivo de video."
+              });
+              continue;
+            }
+
+            post.youtubePostDetails = {
+              title:title || "Video",
+              type:"short"
+            };
+          }
+
+          async function invokeCreatePost(){
+            const {data,error} = await sb.functions.invoke(
+              "ghl-social-planner",
+              {
+                body:{
+                  action:"create-post",
+                  locationId:GHL_LOCATION_ID,
+                  post
+                }
+              }
+            );
+
+            if(error){
+              let realMessage = error.message || "Edge Function devolvió un error.";
+
+              try{
+                if(error.context){
+                  const responseClone =
+                    typeof error.context.clone === "function"
+                      ? error.context.clone()
+                      : error.context;
+
+                  const errorBody = await responseClone.json();
+
+                  const ghlBody =
+                    errorBody && errorBody.ghl
+                      ? errorBody.ghl
+                      : errorBody;
+
+                  if(ghlBody){
+                    if(Array.isArray(ghlBody.message)){
+                      realMessage = ghlBody.message.join(" · ");
+                    }else if(typeof ghlBody.message === "string"){
+                      realMessage = ghlBody.message;
+                    }else if(typeof ghlBody.error === "string"){
+                      realMessage = ghlBody.error;
+                    }else{
+                      realMessage = JSON.stringify(ghlBody);
+                    }
+                  }
+                }
+              }catch(parseError){
+                console.warn("No se pudo leer el cuerpo real del error.",parseError);
+              }
+
+              throw new Error(realMessage);
+            }
+
+            if(!data || data.success === false){
+              const ghlBody = data && data.ghl;
+              let detail = data && data.error;
+
+              if(ghlBody){
+                if(Array.isArray(ghlBody.message)){
+                  detail = ghlBody.message.join(" · ");
+                }else if(typeof ghlBody.message === "string"){
+                  detail = ghlBody.message;
+                }else if(typeof ghlBody.error === "string"){
+                  detail = ghlBody.error;
+                }else{
+                  detail = JSON.stringify(ghlBody);
+                }
+              }
+
+              throw new Error(
+                detail || "GoHighLevel rechazó la publicación."
+              );
+            }
+
+            return data;
+          }
+
+          status.textContent =
+            `Programando ${platform.toUpperCase()} en Social Planner...`;
+
+          try{
+            let data = null;
+            let lastError = null;
+
+            /*
+              La prueba manual con la misma URL funciona después de unos segundos.
+              Si IG/TikTok responde que "no reconoce" el formato justo después del
+              upload, reintentamos cuando el archivo ya está propagado.
+            */
+            const retryablePlatform =
+              platform === "instagram" || platform === "tiktok";
+
+            const retryDelays =
+              retryablePlatform
+                ? [0, 9000, 16000]
+                : [0];
+
+            for(let attempt=0; attempt<retryDelays.length; attempt++){
+              if(retryDelays[attempt] > 0){
+                status.textContent =
+                  `${platform.toUpperCase()} está procesando el video. Reintentando...`;
+                await new Promise(resolve=>setTimeout(resolve,retryDelays[attempt]));
+              }
+
+              try{
+                data = await invokeCreatePost();
+                lastError = null;
+                break;
+              }catch(attemptError){
+                lastError = attemptError;
+
+                const msg = String(
+                  attemptError && attemptError.message
+                    ? attemptError.message
+                    : ""
+                ).toLowerCase();
+
+                const looksLikeFreshMediaValidation =
+                  msg.includes("supports mov and mp4") ||
+                  msg.includes("supports mp4, mov, webm") ||
+                  msg.includes("video formats only");
+
+                if(!retryablePlatform || !looksLikeFreshMediaValidation){
+                  throw attemptError;
+                }
+
+                console.warn(
+                  `T2E ${platform}: intento ${attempt+1} rechazado mientras se propaga el archivo.`,
+                  attemptError
+                );
+              }
+            }
+
+            if(!data){
+              throw lastError || new Error("No se pudo crear la publicación.");
+            }
+
+            registerTestPost(data,platform);
+
+            results.push({
+              platform,
+              data
+            });
+
+            await new Promise(resolve=>setTimeout(resolve,750));
+
+          }catch(platformError){
+            console.error("Error publicando en " + platform,platformError);
+
+            errors.push({
+              platform,
+              message:
+                platformError && platformError.message
+                  ? platformError.message
+                  : "Error desconocido."
+            });
+
+            await new Promise(resolve=>setTimeout(resolve,750));
+          }
+        }
+
+        if(results.length && publishItem && publishItem.id){
+          const {error:statusError} = await sb
+            .from("t2e_content")
+            .update({status:"published"})
+            .eq("id",publishItem.id);
+
+          if(!statusError){
+            publishItem.status = "published";
+            await loadContents();
+          }else{
+            console.error("No se pudo bloquear el contenido local:",statusError);
+          }
+        }
+
+        const instagramPublished =
+          results.some(r=>r.platform === "instagram");
+
+        if(instagramPublished){
+          await prepareManyChatSafely(publishItem);
+        }
+
+        if(results.length && !errors.length){
+          status.className="t2e-publish-status ok";
+          status.textContent =
+            "Publicación programada correctamente en: " +
+            results.map(r=>r.platform.toUpperCase()).join(", ") +
+            ".";
+
+          toast("Publicaciones programadas correctamente.");
+
+          if(finishBtn){
+            finishBtn.style.display="flex";
+          }
+
+          return;
+        }
+
+        if(results.length && errors.length){
+          status.className="t2e-publish-status error";
+          status.textContent =
+            "Se programó correctamente en " +
+            results.map(r=>r.platform.toUpperCase()).join(", ") +
+            ". Fallos: " +
+            errors
+              .map(e=>e.platform.toUpperCase() + " → " + e.message)
+              .join(" | ");
+
+          if(finishBtn){
+            finishBtn.style.display="flex";
+          }
+
+          return;
+        }
+
+        throw new Error(
+          "No se pudo programar en ninguna red. " +
+          errors.map(e=>`${e.platform}: ${e.message}`).join(" | ")
+        );
+
+      }catch(err){
+        console.error(err);
+
+        status.className="t2e-publish-status error";
+
+        status.textContent =
+          err && err.message
+            ? err.message
+            : "No se pudo programar la publicación en Social Planner.";
+
+      }finally{
+        btn.disabled=false;
+        btn.textContent="PROGRAMAR EN SOCIAL PLANNER →";
+      }
+    });
+
+
+
+    document.querySelectorAll(".t2e-publish-platform").forEach(input=>{
+      input.addEventListener("change",renderManyChatBox);
+    });
+
+    const ctaSlideSelect = $("t2e-cta-slide");
+    if(ctaSlideSelect){
+      ctaSlideSelect.addEventListener("change",function(){
+        if(publishItem){
+          setManyChatRecord(publishItem,{ctaSlide:selectedCtaSlide()});
+        }
+        renderManyChatBox();
+      });
+    }
+
+    $("t2e-copy-manychat-data").addEventListener("click",async function(){
+      if(!publishItem) return;
+
+      const ctaSlide =
+        publishItem.format === "H"
+          ? `\nHISTORIA CTA: Slide ${selectedCtaSlide() || "—"}`
+          : "";
+
+      const text =
+    `PLANTILLA: ${manyChatTemplateFor(publishItem)}
+    CTA: ${publishItem.keyword || "—"}
+    CÓDIGO / ETIQUETA: ${publishItem.tracking_code || "—"}${ctaSlide}`;
+
+      try{
+        await navigator.clipboard.writeText(text);
+        toast("Datos de ManyChat copiados.");
+      }catch(e){
+        console.error(e);
+        toast("No se pudieron copiar los datos.");
+      }
+    });
+
+    $("t2e-open-manychat").addEventListener("click",function(){
+      if(!publishItem) return;
+      showManyChatFloatingHelper(publishItem);
+      window.open(MANYCHAT_APP_URL,"_blank","noopener,noreferrer");
+    });
+
+    $("t2e-mc-float-close").addEventListener("click",function(){
+      hideManyChatFloatingHelper();
+    });
+
+    document.querySelectorAll("[data-mc-copy-target]").forEach(button=>{
+      button.addEventListener("click",function(){
+        copyManyChatField(button.dataset.mcCopyTarget);
+      });
+    });
+
+    $("t2e-confirm-manychat").addEventListener("click",function(){
+
+      if(!publishItem){
+        return;
+      }
+
+      const record = manyChatRecord(publishItem);
+
+      if(!record.prepared){
+        toast("Primero programá el contenido en Instagram.");
+        return;
+      }
+
+      setManyChatRecord(
+        publishItem,
+        {
+          manuallyPrepared:true,
+          linked:false,
+          preparedManualAt:new Date().toISOString(),
+          ctaSlide:
+            publishItem.format === "H"
+              ? selectedCtaSlide()
+              : null
+        }
+      );
+
+      renderManyChatBox();
+      renderDailyActions();
+
+      toast(
+        "Automatización preparada. Quedará pendiente de vincular al publicarse."
+      );
+
+    });
+
+    $("t2e-delete-test-posts").addEventListener("click",async function(){
+      const status = $("t2e-publish-status");
+      const btn = this;
+      const GHL_LOCATION_ID = "vPbsaMxZv8Q6kYFqQH4y";
+      const tests = getTestPosts();
+
+      if(!tests.length){
+        up
+<truncated 93482 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.
