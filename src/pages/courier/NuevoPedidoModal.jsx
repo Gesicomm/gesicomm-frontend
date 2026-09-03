@@ -554,11 +554,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                   onChange={e => setForm({ ...form, origen: e.target.value })}
                 />
                 <datalist id="canal-origen-sugerencias">
-                  <option value="Web / Tienda Online" />
+                  <option value="Tienda Online" />
                   <option value="WhatsApp" />
-                  <option value="Landing Page" />
-                  <option value="Meta Ads / Facebook" />
-                  <option value="Manual / Directo" />
+                  <option value="Organico" />
                 </datalist>
               </div>
 

@@ -6,7 +6,7 @@ import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio } from '../iconosBeneficios';
 import { hexToRgba, componer, contraste, resolverTemaPorSlug } from '../themeUtils';
 import { ahorroDePack, inicialesDe } from '../fichaComun';
-import { RedesSocialesFooter } from '../sections';
+import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
@@ -622,7 +622,13 @@ export default function TechProductPage({
               return (
                 <div className="tpp-upsell" key={r.id}>
                   <div className="tpp-upsell-img">
-                    {r.imagen ? <img src={getMediaUrl(r.imagen)} alt={r.nombre} /> : <ImageOff size={20} />}
+                    <ImagenProductoHover
+                      imagenes={(r.imagenes || []).map(getMediaUrl)}
+                      imagen={r.imagen ? getMediaUrl(r.imagen) : null}
+                      alt={r.nombre}
+                      imgClassName="transition-opacity duration-500 ease-out"
+                      fallback={<ImageOff size={20} />}
+                    />
                   </div>
                   <div className="tpp-upsell-datos">
                     <b>{r.nombre}</b>

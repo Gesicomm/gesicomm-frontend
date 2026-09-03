@@ -5,7 +5,7 @@ import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio } from '../iconosBeneficios';
 import { hexToRgba, componer, contraste, resolverTemaPorSlug } from '../themeUtils';
 import { ahorroDePack, inicialesDe } from '../fichaComun';
-import { RedesSocialesFooter } from '../sections';
+import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
@@ -464,9 +464,13 @@ export default function BeautyProductPage({
                 return (
                   <div className="bpp-upsell" key={r.id}>
                     <span className="bpp-upsell-img">
-                      {r.imagen
-                        ? <img src={getMediaUrl(r.imagen)} alt={r.nombre} loading="lazy" />
-                        : <ImageOff size={22} />}
+                      <ImagenProductoHover
+                        imagenes={(r.imagenes || []).map(getMediaUrl)}
+                        imagen={r.imagen ? getMediaUrl(r.imagen) : null}
+                        alt={r.nombre}
+                        imgClassName="transition-opacity duration-500 ease-out"
+                        fallback={<ImageOff size={22} />}
+                      />
                     </span>
                     <b>{r.nombre}</b>
                     {r.descripcion && <p>{r.descripcion}</p>}

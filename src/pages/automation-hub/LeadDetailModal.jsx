@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Trash2, Plus, Minus, Mail, Phone, Tag, Pencil } from 'lucide-react';
-import { crmApi } from '../../services/automationHubApi';
+import { crmApi, financeApi } from '../../services/automationHubApi';
 import { TICKET_OPTIONS, obtenerTicketTag, reemplazarTicketTag } from './ticketTags';
 import CurrencyInput from '../../components/CurrencyInput';
 
@@ -327,10 +327,14 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
     status: lead.status || 'open',
     stage_id: lead.stage_id,
     ticket: obtenerTicketTag(lead.tags),
+    program_id: lead.program_id || '',
+    closer_id: lead.closer_id || '',
   });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [estados, setEstados] = useState([]);
+  const [programas, setProgramas] = useState([]);
+  const [equipo, setEquipo] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [mostrarFormPlan, setMostrarFormPlan] = useState(false);
   const [editandoPlan, setEditandoPlan] = useState(false);
@@ -345,6 +349,8 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
 
   useEffect(() => {
     crmApi.estados().then(setEstados).catch(() => {});
+    financeApi.programs.listar().then(setProgramas).catch(() => {});
+    financeApi.teamMembers.listar().then((data) => setEquipo((data || []).filter((m) => m.active))).catch(() => {});
     recargarPlanes();
   }, [lead.id]);
 
@@ -365,6 +371,8 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
         value: form.value === '' ? null : form.value,
         status: form.status,
         tags: reemplazarTicketTag(lead.tags, form.ticket || null),
+        program_id: form.program_id === '' ? null : Number(form.program_id),
+        closer_id: form.closer_id === '' ? null : Number(form.closer_id),
       });
       onCambio();
     } catch (err) {
@@ -427,6 +435,22 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
               <select className={inputClass} value={form.ticket} onChange={set('ticket')}>
                 <option value="">—</option>
                 {TICKET_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            <div>
+              <label className="text-[9px] font-semibold uppercase text-fg-subtle">Programa</label>
+              <select className={inputClass} value={form.program_id} onChange={set('program_id')}>
+                <option value="">—</option>
+                {programas.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[9px] font-semibold uppercase text-fg-subtle">Closer</label>
+              <select className={inputClass} value={form.closer_id} onChange={set('closer_id')}>
+                <option value="">—</option>
+                {equipo.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
           </div>

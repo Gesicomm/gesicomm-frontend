@@ -480,6 +480,9 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           id: r.id,
           nombre: r.nombre,
           imagen: r.imagen,
+          // Galería completa: la tarjeta de relacionado la rota al pasar el
+          // mouse por encima (ver ImagenProductoHover).
+          imagenes: r.imagenes || [],
           precio_efectivo: r.precio ?? r.precio_efectivo,
           precio_ancla: landingItem?.precio_ancla || r.precio_tachado || null,
           etiqueta: landingItem?.etiqueta || null,
@@ -554,6 +557,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         id: item.id, 
         nombre: item.nombre, 
         imagen: item.imagen, 
+        imagenes: item.imagenes || [],
         precio_efectivo: item.precio_efectivo ?? item.precio_base,
         precio_ancla: landingItem?.precio_ancla || item.precio_tachado || null,
         etiqueta: landingItem?.etiqueta || null

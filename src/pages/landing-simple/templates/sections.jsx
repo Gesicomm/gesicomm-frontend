@@ -18,7 +18,7 @@ const MAX_FOTOS_TARJETA = 5;
  * Sin hover (touch) o con una sola foto se comporta como un <img> común:
  * nunca se anima sola.
  */
-export function ImagenProductoHover({ imagenes = [], imagen = null, alt = '', fallback = null, intervaloMs = 900, className = '' }) {
+export function ImagenProductoHover({ imagenes = [], imagen = null, alt = '', fallback = null, intervaloMs = 900, className = '', imgClassName = 'w-full h-full object-cover transition-opacity duration-500 ease-out' }) {
   // `imagen` es el respaldo para los orígenes de datos que todavía mandan
   // una sola foto (funnels, items cacheados): la tarjeta se ve igual que
   // antes, simplemente no rota.
@@ -63,7 +63,11 @@ export function ImagenProductoHover({ imagenes = [], imagen = null, alt = '', fa
           aria-hidden={i !== 0}
           loading={i === 0 ? undefined : 'lazy'}
           decoding="async"
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out"
+          // Lo único que impone el componente es la superposición: el tamaño,
+          // el recorte y la transición se pasan por `imgClassName` para no
+          // pisar las hojas que ya estilan estas imágenes (.fpp-upsell-img img,
+          // .lp-card-media img y compañía).
+          className={`absolute inset-0 ${imgClassName}`}
           style={{ opacity: i === indice ? 1 : 0 }}
         />
       ))}

@@ -315,8 +315,8 @@ export default function EducacionView() {
             </div>
           </div>
           <div style={{ borderLeft: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', paddingLeft: '1.25rem' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Nivel</span>
-            <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'white' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--aca-text-muted)', display: 'block' }}>Nivel</span>
+            <span style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'var(--color-fg)' }}>
               {estadisticas.nivel_actual}
             </span>
           </div>
@@ -325,14 +325,14 @@ export default function EducacionView() {
 
       {/* 2. MAIN LEARNING SPLIT WORKSPACE */}
       {loading && !moduloActivo ? (
-        <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
+        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--aca-text-muted)' }}>
           <p>Cargando tu ruta de aprendizaje...</p>
         </div>
       ) : (
         <main className="aca-main-workspace">
           {/* Left Sidebar: Modules Roadmap */}
           <aside className="aca-modules-nav-list">
-            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#94a3b8', letterSpacing: '0.05em', margin: '0 0 0.5rem 0' }}>
+            <h3 style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: 'var(--aca-text-muted)', letterSpacing: '0.05em', margin: '0 0 0.5rem 0' }}>
               Módulos del Programa ({modulos.length})
             </h3>
 
@@ -381,7 +381,7 @@ export default function EducacionView() {
                   <span style={{ fontSize: '2rem' }}>{moduloActivo.icono || '🚀'}</span>
                   <div>
                     <h2 className="aca-player-title">{moduloActivo.titulo}</h2>
-                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem', color: '#94a3b8' }}>
+                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.88rem', color: 'var(--aca-text-secondary)' }}>
                       {moduloActivo.descripcion}
                     </p>
                   </div>
@@ -547,7 +547,7 @@ export default function EducacionView() {
         <div className="aca-quiz-modal-backdrop">
           <div className="aca-quiz-modal-card">
             <div className="aca-quiz-modal-header">
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <Award color="#f59e0b" />
                 {examenData.titulo || 'Evaluación del Módulo'}
               </h3>
@@ -567,7 +567,7 @@ export default function EducacionView() {
                   <div className="aca-cooldown-badge">
                     <Clock size={32} color="#f43f5e" />
                   </div>
-                  <h3 style={{ fontSize: '1.4rem', color: 'white', margin: '0.75rem 0 0.5rem 0' }}>
+                  <h3 style={{ fontSize: '1.4rem', color: 'var(--color-fg)', margin: '0.75rem 0 0.5rem 0' }}>
                     Examen Bloqueado Temporalmente (4 Horas)
                   </h3>
                   <p style={{ color: '#94a3b8', fontSize: '0.92rem', marginBottom: '1.25rem', maxWidth: '480px', margin: '0 auto 1.25rem auto' }}>
@@ -670,7 +670,7 @@ export default function EducacionView() {
                     {resultadoExamen.puntaje}%
                   </div>
 
-                  <h3 style={{ fontSize: '1.5rem', color: 'white', margin: '0 0 0.5rem 0' }}>
+                  <h3 style={{ fontSize: '1.5rem', color: 'var(--color-fg)', margin: '0 0 0.5rem 0' }}>
                     {resultadoExamen.aprobado
                       ? '🎉 ¡Felicitaciones! Has Aprobado el Módulo'
                       : '⚠️ No alcanzaste la nota mínima'}

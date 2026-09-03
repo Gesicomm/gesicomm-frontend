@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, ChevronRight, MessageCircle, ArrowLeft, ChevronDown, Zap } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
-import { RedesSocialesFooter } from '../landing-simple/templates/sections';
+import { RedesSocialesFooter, ImagenProductoHover } from '../landing-simple/templates/sections';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import RichText from '../../components/RichText';
 import StoreFooterLegal from './StoreFooterLegal';
@@ -363,7 +363,13 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
                     tabIndex={0}
                   >
                     <div className="lp-product-relacionados-img">
-                      {r.imagen ? <img src={getMediaUrl(r.imagen)} alt={r.nombre} /> : <ImageOff size={20} />}
+                      <ImagenProductoHover
+                        imagenes={(r.imagenes || []).map(getMediaUrl)}
+                        imagen={r.imagen ? getMediaUrl(r.imagen) : null}
+                        alt={r.nombre}
+                        imgClassName="transition-opacity duration-500 ease-out"
+                        fallback={<ImageOff size={20} />}
+                      />
                     </div>
                     <p className="lp-product-relacionados-nombre">{r.nombre}</p>
                     <div className="lp-product-relacionados-precio">

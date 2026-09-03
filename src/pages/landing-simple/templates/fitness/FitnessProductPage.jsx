@@ -7,7 +7,7 @@ import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio } from '../iconosBeneficios';
 import { hexToRgba, componer, contraste, resolverTemaPorSlug } from '../themeUtils';
 import { ahorroDePack, precioUnitarioDePack, inicialesDe } from './fichaFitness';
-import { RedesSocialesFooter } from '../sections';
+import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
@@ -450,7 +450,13 @@ export default function FitnessProductPage({
               return (
                 <div className="fpp-upsell" key={r.id}>
                   <div className="fpp-upsell-img">
-                    {r.imagen ? <img src={getMediaUrl(r.imagen)} alt={r.nombre} /> : <ImageOff size={22} />}
+                    <ImagenProductoHover
+                      imagenes={(r.imagenes || []).map(getMediaUrl)}
+                      imagen={r.imagen ? getMediaUrl(r.imagen) : null}
+                      alt={r.nombre}
+                      imgClassName="transition-opacity duration-500 ease-out"
+                      fallback={<ImageOff size={22} />}
+                    />
                   </div>
                   <div className="fpp-upsell-datos">
                     <b>{r.nombre}</b>

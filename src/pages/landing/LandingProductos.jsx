@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Heart, ImageOff, Layers } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
+import { ImagenProductoHover } from '../landing-simple/templates/sections';
 
 export default function LandingProductos({ 
   seccion, items, contacto, wishlist, toggleWishlist, agregadoRapido, handleAgregarRapido, slug, navigate 
@@ -23,18 +24,19 @@ export default function LandingProductos({
     return (
       <div key={item.content_id} className="lp-card" onClick={() => onCardClick(item)} role="button" tabIndex={0}>
         <div className="lp-card-media group">
-          {item.imagen ? (
-            <>
-              <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" className="lp-card-img-main" />
-              {item.imagenes && item.imagenes.length > 1 && (
-                <img src={getMediaUrl(item.imagenes[1])} alt={item.nombre} loading="lazy" className="lp-card-img-hover" />
-              )}
-            </>
-          ) : (
-            <div className="lp-card-media-placeholder">
-              {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
-            </div>
-          )}
+          {/* imgClassName vacío: el tamaño, el recorte, el fundido y el zoom
+              del hover ya los define .lp-card-media img en landingPublica.css. */}
+          <ImagenProductoHover
+            imagenes={(item.imagenes || []).map(getMediaUrl)}
+            imagen={item.imagen ? getMediaUrl(item.imagen) : null}
+            alt={item.nombre}
+            imgClassName=""
+            fallback={(
+              <div className="lp-card-media-placeholder">
+                {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
+              </div>
+            )}
+          />
           <div className="lp-card-badges">
             {item.tipo === 'combo' && <span className="lp-card-badge combo"><Layers size={11} /> Combo</span>}
             {item.nuevo && <span className="lp-card-badge nuevo">Nuevo</span>}

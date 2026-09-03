@@ -2,6 +2,7 @@ import React from 'react';
 import { Check, Heart, ImageOff, Layers, MessageCircle, Plus, ShoppingCart } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
+import { ImagenProductoHover } from '../landing-simple/templates/sections';
 
 /**
  * Productos destacados — items reales marcados `destacado` desde el
@@ -31,14 +32,18 @@ export default function LandingFeatured({
             // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
             <div key={item.content_id} className="lp-card" onClick={() => onAbrir(item)} role="button" tabIndex={0}>
               <div className="lp-card-media">
-                {item.imagen ? (
-                  <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
-                ) : (
-                  <div className="lp-card-media-placeholder">
-                    {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
-                    <span>Sin imagen</span>
-                  </div>
-                )}
+                <ImagenProductoHover
+                  imagenes={(item.imagenes || []).map(getMediaUrl)}
+                  imagen={item.imagen ? getMediaUrl(item.imagen) : null}
+                  alt={item.nombre}
+                  imgClassName=""
+                  fallback={(
+                    <div className="lp-card-media-placeholder">
+                      {item.tipo === 'combo' ? <Layers size={32} /> : <ImageOff size={32} />}
+                      <span>Sin imagen</span>
+                    </div>
+                  )}
+                />
                 <div className="lp-card-badges">
                   <span className="lp-card-badge">Destacado</span>
                 </div>

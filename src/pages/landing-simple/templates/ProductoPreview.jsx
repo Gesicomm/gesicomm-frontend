@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ImageOff } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
-import { RedesSocialesFooter } from './sections';
+import { RedesSocialesFooter, ImagenProductoHover } from './sections';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import RichText from '../../../components/RichText';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
@@ -209,7 +209,12 @@ export default function ProductoPreview({ producto, ofertas, imagenes, descripci
                       style={{ border: `1px solid ${bordeSuave}` }}
                     >
                       <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.05) }}>
-                        {imagenUrl ? <img src={imagenUrl} alt={r.nombre} className="w-full h-full object-cover" /> : <ImageOff size={24} style={{ color: hexToRgba(t.texto, 0.2) }} />}
+                        <ImagenProductoHover
+                          imagenes={(r.imagenes || []).map(getMediaUrl)}
+                          imagen={imagenUrl}
+                          alt={r.nombre}
+                          fallback={<ImageOff size={24} style={{ color: hexToRgba(t.texto, 0.2) }} />}
+                        />
                         {enOferta && (
                           <div className="absolute top-2 left-2">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: t.acento, color: t.fondo }}>Oferta</span>

@@ -176,7 +176,7 @@
 .aca-module-nav-card:hover:not(.locked) {
   border-color: color-mix(in srgb, var(--color-fg) 20%, transparent);
   transform: translateX(4px);
-  background: rgba(26, 29, 42, 0.9);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
 }
 
 .aca-module-nav-card.active {
@@ -188,7 +188,7 @@
 .aca-module-nav-card.locked {
   opacity: 0.6;
   cursor: not-allowed;
-  background: rgba(14, 15, 22, 0.6);
+  background: color-mix(in srgb, var(--color-fg) 6%, transparent);
 }
 
 .aca-nav-card-header {
@@ -211,8 +211,12 @@
 .aca-nav-card-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: white;
+  color: var(--aca-text-primary);
   margin: 0;
+}
+
+.aca-module-nav-card.active .aca-nav-card-title {
+  color: white;
 }
 
 .aca-nav-card-meta {
@@ -253,7 +257,7 @@
   font-size: 1.5rem;
   font-weight: 800;
   margin: 0;
-  color: white;
+  color: var(--aca-text-primary);
 }
 
 /* YouTube Player Screen con Protección Anti-Grabación */
@@ -499,7 +503,7 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--color-fg) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
-  color: white;
+  color: var(--color-fg);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;

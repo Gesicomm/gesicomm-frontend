@@ -241,11 +241,11 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                 <PasoHeader numero={4} titulo="Programá la publicación" subtitulo="Definí cuándo debe publicarse la pieza." />
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-fg-muted">Fecha</label>
+                    <label className="mb-1 block text-xs font-semibold text-fg-muted">Fecha de Producción del video</label>
                     <input type="date" className={inputClass} value={datos.publish_date} onChange={set('publish_date')} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-fg-muted">Hora</label>
+                    <label className="mb-1 block text-xs font-semibold text-fg-muted">Hora de Producción del video</label>
                     <input type="time" className={inputClass} value={datos.publish_time} onChange={set('publish_time')} />
                   </div>
                 </div>
