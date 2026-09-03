@@ -765,7 +765,7 @@ export default function ProductForm() {
             <div className={esAdmin ? 'form-grid-3' : 'form-grid-2'}>
               <div className="form-group">
                 <label htmlFor="prod-precio-costo">
-                  Precio de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
+                  Costo de compra del producto {esAdmin && <span className="hint">(solo admins)</span>}
                   {esDolarVal && <span className="hint" style={{ color: 'var(--primary)', marginLeft: 8 }}>(Calculado según cotización del proveedor)</span>}
                 </label>
                 <div className={`pricing-input-wrapper costo ${esDolarVal ? 'disabled' : ''}`}>

@@ -15,7 +15,7 @@ import StoreHeader from './StoreHeader';
  * componente solo evita que el comercio se vaya del editor al mirar cómo
  * queda la página.
  */
-export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, logo, onClickInicio, onClickCatalogo, onClickContacto, onVolver }) {
+export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, logo, onClickInicio, onClickCatalogo, onClickContacto, onVolver, isMobile = false }) {
   const t = resolverTemaPorSlug(tema, templateSlug);
   const bordeSuave = hexToRgba(t.texto, 0.12);
 
@@ -30,6 +30,7 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
       
       <StoreHeader
         templateSlug={templateSlug}
+        isMobile={isMobile}
         nombreComercio={nombreComercio}
         logo={logo}
         tema={t}

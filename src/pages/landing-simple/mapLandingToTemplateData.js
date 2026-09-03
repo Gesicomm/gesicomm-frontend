@@ -1,6 +1,18 @@
 import { getMediaUrl } from '../../services/api';
 
 /**
+ * Galería de una tarjeta de producto, ya resuelta a URLs absolutas y con la
+ * principal primero. Cae a `imagen` sola cuando el origen no manda galería
+ * (items viejos en cache, combos sin producto padre), así el componente de
+ * la tarjeta nunca tiene que distinguir los dos casos.
+ */
+function galeriaDeItem(item) {
+  const urls = (item?.imagenes || []).filter(Boolean);
+  if (!urls.length) return item?.imagen ? [getMediaUrl(item.imagen)] : [];
+  return urls.map(getMediaUrl);
+}
+
+/**
  * Forma canónica que consumen los 3 componentes de template rígido
  * (templates/FitnessTemplate.jsx, BeautyTemplate.jsx, TechTemplate.jsx).
  * Un único shape para que el preview del editor y la landing pública
@@ -39,6 +51,9 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
         precio: c?.precio_efectivo ?? c?.precio_base ?? null,
         precioAntes: item.precio_ancla ? Number(item.precio_ancla) : (c?.precio_tachado ? Number(c.precio_tachado) : null),
         imagen: c?.imagen ? getMediaUrl(c.imagen) : null,
+        // Galería completa: la tarjeta la rota al pasar el mouse por encima
+        // (ver ImagenProductoHover). `imagen` sigue siendo la principal.
+        imagenes: galeriaDeItem(c),
         etiqueta: item.etiqueta || null,
       };
     });
@@ -111,6 +126,7 @@ export function mapPublicDtoToTemplateData(dto) {
       precio: i.precio,
       precioAntes: i.precio_antes,
       imagen: i.imagen ? getMediaUrl(i.imagen) : null,
+      imagenes: galeriaDeItem(i),
       etiqueta: i.etiqueta || null,
       stock: i.stock,
       // Con variantes u ofertas hay que elegir una opción antes de agregar

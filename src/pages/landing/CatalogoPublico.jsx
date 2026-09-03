@@ -6,7 +6,7 @@ import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTempla
 import { getMediaUrl } from '../../services/api';
 import { Store, Loader, ImageOff } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
-import { RedesSocialesFooter } from '../landing-simple/templates/sections';
+import { RedesSocialesFooter, ImagenProductoHover } from '../landing-simple/templates/sections';
 import StoreFooterLegal from './StoreFooterLegal';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
 import CartDrawer from './CartDrawer';
@@ -91,6 +91,8 @@ export default function CatalogoPublico() {
     precio: i.precio,
     precioAntes: i.precio_antes,
     imagen: i.imagen ? getMediaUrl(i.imagen) : null,
+    // Galería completa para el hover de la tarjeta (ImagenProductoHover).
+    imagenes: (i.imagenes?.length ? i.imagenes : [i.imagen]).filter(Boolean).map(getMediaUrl),
     categoria: i.categoria || null,
     etiqueta: i.etiqueta || null,
     stock: i.stock,
@@ -266,7 +268,12 @@ export default function CatalogoPublico() {
               return (
                 <div key={p.id} onClick={() => navigate(linkProducto(p.id))} className="rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-opacity hover:opacity-90" style={{ backgroundColor: tema.fondo, border: `1px solid ${bordeSuave}` }}>
                   <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(tema.texto, 0.05) }}>
-                    {p.imagen ? <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" /> : <ImageOff size={28} style={{ color: hexToRgba(tema.texto, 0.2) }} />}
+                    <ImagenProductoHover
+                      imagenes={p.imagenes}
+                      imagen={p.imagen}
+                      alt={p.nombre}
+                      fallback={<ImageOff size={28} style={{ color: hexToRgba(tema.texto, 0.2) }} />}
+                    />
                     <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
                       {agotado && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.texto, color: tema.fondo }}>Agotado</span>

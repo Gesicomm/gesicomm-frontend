@@ -1,7 +1,75 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock, Check, MessageCircle } from 'lucide-react';
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
+
+/** Tope de fotos que rota una tarjeta: más que esto marea y son bytes de más. */
+const MAX_FOTOS_TARJETA = 5;
+
+/**
+ * Imagen de la tarjeta de producto. Cuando el producto tiene más de una
+ * foto, al pasar el mouse por encima va rotando la galería y vuelve a la
+ * principal al salir (igual que las tarjetas de Shopify).
+ *
+ * El resto de la galería recién se agrega al DOM en el primer hover: con
+ * un catálogo grande, precargar todas las fotos de todas las tarjetas es
+ * un montón de tráfico que casi nadie llega a mirar.
+ *
+ * Sin hover (touch) o con una sola foto se comporta como un <img> común:
+ * nunca se anima sola.
+ */
+export function ImagenProductoHover({ imagenes = [], imagen = null, alt = '', fallback = null, intervaloMs = 900, className = '' }) {
+  // `imagen` es el respaldo para los orígenes de datos que todavía mandan
+  // una sola foto (funnels, items cacheados): la tarjeta se ve igual que
+  // antes, simplemente no rota.
+  const galeria = (imagenes || []).filter(Boolean);
+  const fotos = (galeria.length ? galeria : [imagen].filter(Boolean)).slice(0, MAX_FOTOS_TARJETA);
+  const [indice, setIndice] = useState(0);
+  const [precargar, setPrecargar] = useState(false);
+  const timer = useRef(null);
+
+  const detener = useCallback(() => {
+    if (timer.current) { clearInterval(timer.current); timer.current = null; }
+    setIndice(0);
+  }, []);
+
+  // Sin esto, salir de la página (o filtrar el catálogo) deja el intervalo
+  // corriendo contra una tarjeta que ya no está montada.
+  useEffect(() => detener, [detener]);
+
+  const cantidad = fotos.length;
+  const iniciar = useCallback(() => {
+    if (cantidad < 2 || timer.current) return;
+    setPrecargar(true);
+    timer.current = setInterval(() => setIndice(i => (i + 1) % cantidad), intervaloMs);
+  }, [cantidad, intervaloMs]);
+
+  if (!cantidad) {
+    return <div className={`w-full h-full flex items-center justify-center ${className}`}>{fallback}</div>;
+  }
+
+  const visibles = precargar ? fotos : fotos.slice(0, 1);
+  return (
+    <div
+      className={`relative w-full h-full overflow-hidden ${className}`}
+      onMouseEnter={iniciar}
+      onMouseLeave={detener}
+    >
+      {visibles.map((url, i) => (
+        <img
+          key={`${url}-${i}`}
+          src={url}
+          alt={i === 0 ? alt : ''}
+          aria-hidden={i !== 0}
+          loading={i === 0 ? undefined : 'lazy'}
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out"
+          style={{ opacity: i === indice ? 1 : 0 }}
+        />
+      ))}
+    </div>
+  );
+}
 
 /**
  * Botón de carrito con badge de cantidad — vive en el Header de los 4

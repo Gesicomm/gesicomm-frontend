@@ -16,7 +16,7 @@ const TABS = [
   { id: 'calendario', label: 'Calendario', icon: CalendarDays },
   { id: 'manychat', label: 'ManyChat', icon: MessageCircle },
   { id: 'oportunidades', label: 'Oportunidades', icon: Kanban },
-  { id: 'cobranzas', label: 'Cobranzas', icon: Wallet },
+  { id: 'cobranzas', label: 'Seguimiento de pagos', icon: Wallet },
   { id: 'analizador', label: 'Analizador', icon: LineChart },
   { id: 'acciones', label: 'Acciones pendientes', icon: ListChecks },
   { id: 'finanzas', label: 'Finanzas', icon: DollarSign },
@@ -138,7 +138,13 @@ export default function AutomationHub() {
         <ContentFormModal
           fechaInicial={modalNuevo}
           onClose={() => setModalNuevo(null)}
-          onCreado={() => { setModalNuevo(null); cargarContenido(); }}
+          onCreado={(creado) => {
+            setModalNuevo(null);
+            cargarContenido();
+            // El asistente pasa a mostrar la pieza recién creada — si no,
+            // se quedaba con los datos de la anterior indefinidamente.
+            if (creado) setFloatingAssistantItem({ item: creado, manychatLink: null });
+          }}
         />
       )}
 
@@ -153,8 +159,10 @@ export default function AutomationHub() {
 
       {floatingAssistantItem && (
         <ManyChatFloatingAssistant
+          key={floatingAssistantItem.item?.id}
           item={floatingAssistantItem.item}
           manychatLink={floatingAssistantItem.manychatLink}
+          onClose={() => setFloatingAssistantItem(null)}
         />
       )}
     </div>

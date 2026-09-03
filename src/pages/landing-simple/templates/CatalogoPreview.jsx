@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ImageOff, Pencil } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
-import { RedesSocialesFooter } from './sections';
+import { RedesSocialesFooter, ImagenProductoHover } from './sections';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 import StoreHeader from './StoreHeader';
 
@@ -44,6 +44,7 @@ export default function CatalogoPreview({
       
       <StoreHeader
         templateSlug={templateSlug}
+        isMobile={isMobile}
         nombreComercio={nombreComercio}
         logo={logo}
         tema={t}
@@ -91,6 +92,10 @@ export default function CatalogoPreview({
               const precioAntes = p.precio_ancla ?? p.precio_tachado ?? null;
               const enOferta = precioAntes != null && precio != null && Number(precioAntes) > Number(precio);
               const imagenUrl = p.imagen ? getMediaUrl(p.imagen) : null;
+              // Galería completa para el hover de la tarjeta: acá los productos
+              // llegan crudos del catálogo de la vitrina (no pasan por
+              // mapLandingToTemplateData), así que las urls se resuelven acá.
+              const galeriaUrls = (p.imagenes || []).filter(Boolean).map(getMediaUrl);
               return (
                 <div
                   key={`${p.tipo}:${p.id}`}
@@ -99,7 +104,12 @@ export default function CatalogoPreview({
                   style={{ border: `1px solid ${bordeSuave}` }}
                 >
                   <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.05) }}>
-                    {imagenUrl ? <img src={imagenUrl} alt={p.nombre} className="w-full h-full object-cover" /> : <ImageOff size={24} style={{ color: hexToRgba(t.texto, 0.2) }} />}
+                    <ImagenProductoHover
+                      imagenes={galeriaUrls}
+                      imagen={imagenUrl}
+                      alt={p.nombre}
+                      fallback={<ImageOff size={24} style={{ color: hexToRgba(t.texto, 0.2) }} />}
+                    />
                     <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
                       {enOferta && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: t.acento, color: t.fondo }}>Oferta</span>

@@ -12,8 +12,10 @@ import ProductoPreview from './templates/ProductoPreview';
 import FitnessProductPage from './templates/fitness/FitnessProductPage';
 import TechProductPage from './templates/tech/TechProductPage';
 import BeautyProductPage from './templates/beauty/BeautyProductPage';
+import BasicoProductPage from './templates/basico/BasicoProductPage';
 import { fichaTechDesdeProducto, resolverFichaTech } from './templates/tech/fichaTech';
 import { fichaBeautyDesdeProducto, resolverFichaBeauty } from './templates/beauty/fichaBeauty';
+import { fichaBasicoDesdeProducto, resolverFichaBasico } from './templates/basico/fichaBasico';
 import { armarItemFicha as armarItemFichaComun } from './templates/fichaComun';
 import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
@@ -36,6 +38,7 @@ import ProductoPanel from './panels/ProductoPanel';
 import FichaFitnessPanel from './panels/FichaFitnessPanel';
 import FichaTechPanel from './panels/FichaTechPanel';
 import FichaBeautyPanel from './panels/FichaBeautyPanel';
+import FichaBasicoPanel from './panels/FichaBasicoPanel';
 
 // El id de la sección apunta a la misma sección del template (ver los
 // `id="..."` en templates/*.jsx y templates/sections.jsx) — al cambiar de
@@ -57,6 +60,10 @@ const SLUG_FICHA_RICA = 'fitness-suplementos';
 const SLUG_FICHA_TECH = 'tech-electronica';
 
 const SLUG_FICHA_BEAUTY = 'beauty-skincare';
+
+// El template neutro. Misma ficha de 13 secciones que las otras tres, sin
+// campos de rubro: sirve para cualquier producto.
+const SLUG_FICHA_BASICO = 'basico';
 
 const TABS = [
   { key: 'marca', label: 'Marca', seccionId: 'header' },
@@ -336,6 +343,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoFichaTech, setProductoFichaTech] = useState(null);
 
   const [productoFichaBeauty, setProductoFichaBeauty] = useState(null);
+  const [productoFichaBasico, setProductoFichaBasico] = useState(null);
 
   const catalogoFiltradoParaRelacionados = useMemo(() => {
     if (!catalogo || !items) return { productos: [], combos: [] };
@@ -461,6 +469,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setProductoFicha(propio?.ficha || null);
       setProductoFichaTech(propio?.ficha_tech || null);
       setProductoFichaBeauty(propio?.ficha_beauty || null);
+      setProductoFichaBasico(propio?.ficha_basico || null);
 
       setProductoRelacionadosTitulo(propio?.relacionados_titulo ?? (relacionados.titulo || ''));
       // Mostramos los relacionados en el preview SIEMPRE (sean automáticos o curados).
@@ -640,6 +649,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         ficha: productoFicha && Object.keys(productoFicha).length ? productoFicha : null,
         ficha_tech: productoFichaTech && Object.keys(productoFichaTech).length ? productoFichaTech : null,
         ficha_beauty: productoFichaBeauty && Object.keys(productoFichaBeauty).length ? productoFichaBeauty : null,
+        ficha_basico: productoFichaBasico && Object.keys(productoFichaBasico).length ? productoFichaBasico : null,
       };
 
       const contenidoNuevo = { ...contenido, productos: porProducto };
@@ -697,7 +707,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     
   // Una sola bandera para lo que es común a las tres: mostrar la pestaña
   // "Ficha" en el panel del producto y la de defaults en el sidebar.
-  const algunaFichaActiva = fichaActiva || fichaTechActiva || fichaBeautyActiva;
+  const fichaBasicoActiva = templateSlug === SLUG_FICHA_BASICO;
+  const fichaBasicoLanding = draft?.content?.ficha_basico || null;
+  const fichaBasicoDelProducto = fichaBasicoDesdeProducto(productoMarketing);
+  const fichaBasicoResuelta = fichaBasicoActiva
+    ? resolverFichaBasico(productoFichaBasico, fichaBasicoLanding, fichaBasicoDelProducto)
+    : null;
+
+  const algunaFichaActiva = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva;
   const draftParaPreview = { ...draft, items, faq, beneficios };
   const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo);
   datosPreview.tienda = { subdominio: tienda?.subdominio };
@@ -848,6 +865,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               fichaBeautyLanding={fichaBeautyLanding}
               fichaBeautyDelProducto={fichaBeautyDelProducto}
               onFichaBeauty={setProductoFichaBeauty}
+              fichaBasicoActiva={fichaBasicoActiva}
+              fichaBasico={productoFichaBasico}
+              fichaBasicoResuelta={fichaBasicoResuelta}
+              fichaBasicoLanding={fichaBasicoLanding}
+              fichaBasicoDelProducto={fichaBasicoDelProducto}
+              onFichaBasico={setProductoFichaBasico}
               packs={productoOfertas.filter(o => o.estrategia === 'normal' && o.tipo_contenido === 'pack')}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
@@ -946,6 +969,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                     onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_beauty: nueva })}
                   />
                 )}
+                {tab === 'ficha' && fichaBasicoActiva && (
+                  <FichaBasicoPanel
+                    ficha={fichaBasicoLanding}
+                    fichaResuelta={resolverFichaBasico(null, fichaBasicoLanding, null)}
+                    modo="landing"
+                    onChange={(nueva) => campo('content', { ...(draft?.content || {}), ficha_basico: nueva })}
+                  />
+                )}
               </div>
             </>
           )}
@@ -982,6 +1013,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
+                  fichaBasicoResuelta={fichaBasicoResuelta}
                   precioAnclaEnVivo={precioAnclaDe(productoPreview)}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
@@ -1030,6 +1062,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
+                  fichaBasicoResuelta={fichaBasicoResuelta}
                   precioAnclaEnVivo={precioAnclaDe(productoPreview)}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
@@ -1135,6 +1168,7 @@ function PreviewContent({
   vistaCatalogo, onAbrirInicio, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
   fichaResuelta = null, fichaTechResuelta = null, fichaBeautyResuelta = null,
+  fichaBasicoResuelta = null,
   onCerrarProducto = null, onAbrirRelacionado = null,
   // El precio ancla se edita en el panel del producto y vive en `items`;
   // `productoPreview` es una foto del catálogo del momento en que se abrió,
@@ -1159,7 +1193,10 @@ function PreviewContent({
       onClickContacto: onAbrirContacto,
       linkInicio: '#',
       linkCatalogo: '#',
-      linkContacto: '#'
+      linkContacto: '#',
+      // El preview no es un iframe: sin esto el header seguiria viendo el
+      // viewport de escritorio y nunca colapsaria a hamburguesa.
+      isMobile: viewportMode === 'mobile'
     };
 
     if (fichaResuelta) {
@@ -1272,6 +1309,43 @@ function PreviewContent({
       );
     }
 
+    if (fichaBasicoResuelta) {
+      return (
+        <div className="flex flex-col min-h-screen">
+          <StoreHeader {...headerProps} />
+          <BasicoProductPage
+            item={armarItemFichaComun({
+              nombre: productoPreview.nombre,
+              categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
+              descripcion: productoDescripcion,
+              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
+              imagenes: (productoImagenes || []).map(i => i.url),
+              ofertas: ofertasPublicas,
+              faq: productoFaq,
+              faqTitulo: productoFaqTitulo,
+              relacionados: productoRelacionados,
+              relacionadosTitulo: productoRelacionadosTitulo,
+            })}
+            ficha={fichaBasicoResuelta}
+            tema={datosPreview.tema}
+            templateSlug={templateSlug}
+            contacto={datosPreview.contacto}
+            nombreComercio={datosPreview.nombreComercio}
+            logo={datosPreview.logo}
+            isMobile={viewportMode === 'mobile'}
+            previewMode
+            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
+            // Agregar al carrito NO abre el checkout: son acciones
+            // distintas. Acá no hay carrito, así que se avisa.
+            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
+            onVolver={onCerrarProducto}
+            onClickRelacionado={onAbrirRelacionado}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col min-h-screen">
         <StoreHeader {...headerProps} />
@@ -1328,6 +1402,7 @@ function PreviewContent({
         onClickInicio={onAbrirInicio}
         onClickCatalogo={onAbrirCatalogo}
         onClickContacto={onAbrirContacto}
+        isMobile={viewportMode === 'mobile'}
       />
     );
   }

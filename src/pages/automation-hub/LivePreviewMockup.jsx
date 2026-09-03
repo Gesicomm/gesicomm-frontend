@@ -1,19 +1,29 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, ImageOff } from 'lucide-react';
 
-export default function LivePreviewMockup({ format, text, medias }) {
+export default function LivePreviewMockup({ format, text, medias, onRemove }) {
   const [slideIndex, setSlideIndex] = useState(0);
+  const [urlsRotas, setUrlsRotas] = useState(() => new Set());
 
   const prev = () => setSlideIndex((s) => (s > 0 ? s - 1 : s));
   const next = () => setSlideIndex((s) => (s < medias.length - 1 ? s + 1 : s));
 
-  // Simulating IG mockup
-  const currentMedia = medias[slideIndex];
+  const currentMedia = medias[Math.min(slideIndex, medias.length - 1)];
+  const rota = currentMedia && urlsRotas.has(currentMedia.url);
+
+  const marcarRota = (url) => setUrlsRotas((prev) => new Set(prev).add(url));
+
+  const quitarActual = () => {
+    if (!onRemove) return;
+    const idx = Math.min(slideIndex, medias.length - 1);
+    onRemove(idx);
+    setSlideIndex((s) => Math.max(0, Math.min(s, medias.length - 2)));
+  };
 
   return (
     <div className="flex w-full flex-col items-center justify-center bg-surface-2 p-4 rounded-xl border border-border">
       <div className="relative w-[280px] h-[580px] overflow-hidden rounded-[2.5rem] border-[12px] border-black bg-black shadow-2xl">
-        
+
         <div className="absolute top-0 z-20 flex w-full justify-center p-2">
           <div className="h-5 w-24 rounded-full bg-black"></div>
         </div>
@@ -21,23 +31,40 @@ export default function LivePreviewMockup({ format, text, medias }) {
         <div className="relative h-full w-full bg-[#1a1a1a]">
           {!currentMedia ? (
             <div className="flex h-full items-center justify-center p-6 text-center text-xs text-white/50">
-              Sube fotos o videos localmente para ver la previsualizacin
+              Subí fotos o videos, o pegá un link, para ver la previsualización
             </div>
           ) : (
             <div className="flex h-full flex-col">
-              
+
               <div className="flex items-center gap-2 p-3 pb-2">
                 <div className="h-7 w-7 rounded-full bg-white/20"></div>
                 <div className="text-xs font-semibold text-white">tusegundaempresa</div>
               </div>
 
               <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
-                {currentMedia.type.startsWith('video/') ? (
-                  <video src={currentMedia.url} className="w-full h-full object-cover" autoPlay muted loop playsInline />
+                {rota ? (
+                  <div className="flex flex-col items-center gap-2 p-4 text-center text-[11px] text-white/60">
+                    <ImageOff size={28} />
+                    No se pudo cargar este link — puede estar bloqueado (CORS) o no ser una URL directa de imagen/video.
+                  </div>
+                ) : currentMedia.type === 'embed/youtube' ? (
+                  <iframe src={currentMedia.url} className="h-full w-full" title="Preview de YouTube"
+                    allow="autoplay; encrypted-media" allowFullScreen frameBorder="0" />
+                ) : currentMedia.type.startsWith('video/') ? (
+                  <video src={currentMedia.url} className="w-full h-full object-cover" autoPlay muted loop playsInline
+                    onError={() => marcarRota(currentMedia.url)} />
                 ) : (
-                  <img src={currentMedia.url} className="w-full h-full object-cover" alt="Preview" />
+                  <img src={currentMedia.url} className="w-full h-full object-cover" alt="Preview"
+                    onError={() => marcarRota(currentMedia.url)} />
                 )}
-                
+
+                {onRemove && (
+                  <button type="button" onClick={quitarActual}
+                    className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-danger">
+                    <X size={13} />
+                  </button>
+                )}
+
                 {medias.length > 1 && (
                   <>
                     <button onClick={prev} disabled={slideIndex === 0} className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-1 text-white disabled:opacity-0">
@@ -60,10 +87,10 @@ export default function LivePreviewMockup({ format, text, medias }) {
                     <div className="h-5 w-5 rounded-full border border-white"></div>
                     <div className="h-5 w-5 rounded-full border border-white"></div>
                   </div>
-                  
-                  <div className="max-h-24 overflow-y-auto pr-1 text-xs text-white [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/30">
+
+                  <div className="max-h-24 overflow-y-auto overflow-x-hidden break-words pr-1 text-xs text-white [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/30">
                     <span className="font-semibold mr-1">tusegundaempresa</span>
-                    <span className="whitespace-pre-wrap">{text || 'El copy aparecerǭ aqu...'}</span>
+                    <span className="whitespace-pre-wrap break-words">{text || 'El copy aparecerá acá...'}</span>
                   </div>
                 </div>
               )}

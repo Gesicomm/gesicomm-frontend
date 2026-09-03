@@ -77,7 +77,7 @@ export function getManychatUpdateWebhookUrl(webhookToken) {
 export const crmApi = {
   pipelines: () => AutomationAPI.get('/crm/pipelines').then((r) => r.data),
   estados: () => AutomationAPI.get('/crm/lead-statuses').then((r) => r.data),
-  leads: (pipelineId) => AutomationAPI.get('/crm/leads', { params: { pipelineId } }).then((r) => r.data),
+  leads: (pipelineId, buscar) => AutomationAPI.get('/crm/leads', { params: { pipelineId, buscar } }).then((r) => r.data),
   crearLead: (payload) => AutomationAPI.post('/crm/leads', payload).then((r) => r.data),
   moverEtapa: (leadId, stageId) => AutomationAPI.patch(`/crm/leads/${leadId}/etapa`, { stage_id: stageId }).then((r) => r.data),
   actualizarLead: (leadId, payload) => AutomationAPI.put(`/crm/leads/${leadId}`, payload).then((r) => r.data),
@@ -89,7 +89,7 @@ export const crmApi = {
 
 // --- Cobranzas (tablero de planes de pago) ---
 export const collectionsApi = {
-  listar: () => AutomationAPI.get('/crm/collections').then((r) => r.data),
+  listar: (buscar) => AutomationAPI.get('/crm/collections', { params: { buscar } }).then((r) => r.data),
   registrarCobro: (paymentId, payload) => AutomationAPI.patch(`/crm/collections/${paymentId}/pay`, payload).then((r) => r.data),
 };
 

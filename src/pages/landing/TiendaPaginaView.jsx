@@ -13,6 +13,7 @@ import ProductPagePublica from './ProductPagePublica';
 import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
 import TechProductPagePublica from '../landing-simple/templates/tech/TechProductPagePublica';
 import BeautyProductPagePublica from '../landing-simple/templates/beauty/BeautyProductPagePublica';
+import BasicoProductPagePublica from '../landing-simple/templates/basico/BasicoProductPagePublica';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
@@ -796,6 +797,32 @@ export default function TiendaPaginaView({ data, slug, productId }) {
                 // Agregar al carrito es SOLO agregar: nunca abre el
                 // checkout. Se abre el carrito para que la clienta vea que
                 // pasó algo.
+                agregarAlCarrito(datos);
+                setCarritoAbierto(true);
+              }}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
+      if (data.template.slug === 'basico') {
+        return (
+          <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
+            <BasicoProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={data.content || {}}
+              tema={temaResuelto}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              relacionados={data?.relacionados}
+              onAgregar={(datos) => {
+                // Agregar al carrito es SOLO agregar: nunca abre el
+                // checkout. Se abre el carrito para que se vea que pasó algo.
                 agregarAlCarrito(datos);
                 setCarritoAbierto(true);
               }}

@@ -9,6 +9,7 @@ import FichaTechPanel from './FichaTechPanel';
 import CurrencyInput from '../../../components/CurrencyInput';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import FichaBeautyPanel from './FichaBeautyPanel';
+import FichaBasicoPanel from './FichaBasicoPanel';
 import '../../landing/landing.css';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
@@ -31,6 +32,7 @@ export default function ProductoPanel({
   fichaTechActiva = false, fichaTech = null, fichaTechResuelta = null,
   fichaTechLanding = null, fichaTechDelProducto = null, onFichaTech = null,
   fichaBeautyActiva = false, fichaBeauty = null, fichaBeautyResuelta = null, fichaBeautyLanding = null, fichaBeautyDelProducto = null, onFichaBeauty = null,
+  fichaBasicoActiva = false, fichaBasico = null, fichaBasicoResuelta = null, fichaBasicoLanding = null, fichaBasicoDelProducto = null, onFichaBasico = null,
   descripcion, onDescripcion,
   // Precio tachado de ESTE producto en ESTA landing (LandingItem.precio_ancla).
   // `precioActual` es solo para calcular el descuento que se muestra al lado.
@@ -97,7 +99,7 @@ export default function ProductoPanel({
         <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Detalles</button>
         <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Relacionados</button>
         <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ofertas</button>
-        {(fichaActiva || fichaTechActiva || fichaBeautyActiva) && (
+        {(fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva) && (
           <button type="button" onClick={() => setTab('ficha')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ficha' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ficha</button>
         )}
       </div>
@@ -285,6 +287,24 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFichaBeauty}
+              />
+            )}
+
+            {tab === 'ficha' && fichaBasicoActiva && fichaBasicoResuelta && (
+              <FichaBasicoPanel
+                packs={packs}
+                ficha={fichaBasico}
+                fichaResuelta={fichaBasicoResuelta}
+                fichaLanding={fichaBasicoLanding}
+                fichaDelProducto={fichaBasicoDelProducto}
+                respaldos={{
+                  titulo: producto?.nombre || '',
+                  eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
+                  lead: descripcion || '',
+                  descripcion: descripcion || '',
+                }}
+                modo="producto"
+                onChange={onFichaBasico}
               />
             )}
 

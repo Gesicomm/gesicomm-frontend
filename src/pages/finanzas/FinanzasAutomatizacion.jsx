@@ -80,6 +80,11 @@ export default function FinanzasAutomatizacion() {
   const metrics = dash?.metrics || { totalSold: 0, totalPaid: 0, totalPending: 0, totalExpenses: 0, totalTeamPayments: 0, profit: 0, students: 0, activeStudents: 0 };
   const payments = dash?.payments || [];
   
+  // Gastos y pagos de equipo no se pueden atribuir a un programa (no tienen
+  // program_id), así que cuando se filtra por programa siguen siendo globales
+  // — se avisa en los KPIs para que "Beneficio Neto" no se lea mal.
+  const hayFiltroPrograma = !!filtrosAplicados.programId;
+
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
   const d15 = new Date(Date.now() + 15*86400000).toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
   const d30 = new Date(Date.now() + 30*86400000).toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
@@ -124,11 +129,11 @@ export default function FinanzasAutomatizacion() {
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <Kpi label="Ventas Totales" value={`Gs ${fmt(metrics.totalSold)}`} sublabel="Valor vendido" />
-        <Kpi label="Cobrado" value={`Gs ${fmt(metrics.totalPaid)}`} sublabel="Cobros efectivos" />
-        <Kpi label="Pendiente" value={`Gs ${fmt(metrics.totalPending)}`} sublabel="Cartera por cobrar" />
-        <Kpi label="Gastos" value={`Gs ${fmt(metrics.totalExpenses)}`} sublabel="Gastos registrados" />
-        <Kpi label="Pagos Equipo" value={`Gs ${fmt(metrics.totalTeamPayments)}`} sublabel="Comisiones/pagos realizados" />
-        <Kpi label="Beneficio Neto" value={`Gs ${fmt(metrics.profit)}`} sublabel="Cobrado - gastos - equipo" tono={metrics.profit >= 0 ? "text-primary" : "text-danger"} />
+        <Kpi label="Cobrado" value={`Gs ${fmt(metrics.totalPaid)}`} sublabel="Cobrado en el periodo" />
+        <Kpi label="Pendiente" value={`Gs ${fmt(metrics.totalPending)}`} sublabel="Saldo de esas ventas" />
+        <Kpi label="Gastos" value={`Gs ${fmt(metrics.totalExpenses)}`} sublabel={hayFiltroPrograma ? 'Gastos globales (no por programa)' : 'Gastos registrados'} />
+        <Kpi label="Pagos Equipo" value={`Gs ${fmt(metrics.totalTeamPayments)}`} sublabel={hayFiltroPrograma ? 'Globales (no por programa)' : 'Comisiones/pagos realizados'} />
+        <Kpi label="Beneficio Neto" value={`Gs ${fmt(metrics.profit)}`} sublabel={hayFiltroPrograma ? 'Cobrado del programa - gastos globales' : 'Cobrado - gastos - equipo'} tono={metrics.profit >= 0 ? "text-primary" : "text-danger"} />
         <Kpi label="Alumnos" value={metrics.students} sublabel="Registros del periodo" />
         <Kpi label="Activos" value={metrics.activeStudents} sublabel="Alumnos activos" />
       </div>
@@ -211,7 +216,7 @@ export default function FinanzasAutomatizacion() {
           {tab === 'PROGRAMAS' && <TabProgramas programas={programas} onRefrescar={cargar} />}
           {tab === 'EQUIPO' && <TabEquipo equipo={equipo} onRefrescar={cargar} />}
           {tab === 'COMISIONES' && <TabComisiones equipo={equipo} programas={programas} onRefrescar={cargar} />}
-          {tab === 'ALERTAS' && <TabAlertas dash={dash} />}
+          {tab === 'ALERTAS' && <TabAlertas programas={programas} />}
         </div>
       </div>
     </div>
@@ -358,10 +363,10 @@ function NuevoAcuerdoModal({ programas, equipo, onClose, onGuardado }) {
               <label className={lbl}>Inicio del Programa</label>
               <input type="date" className={inp} value={form.start_date} onChange={e => setF('start_date', e.target.value)} />
             </div>
-            <div>
+            {/* <div>
               <label className={lbl}>Duración Negociada (Meses)</label>
               <input type="number" min="1" className={inp} value={form.duration_months} onChange={e => setF('duration_months', e.target.value)} />
-            </div>
+            </div> */}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1315,35 +1320,175 @@ function TabComisiones({ equipo, programas, onRefrescar }) {
   );
 }
 
-function TabAlertas({ dash }) {
-  if (!dash) return null;
-  const pendientes = dash.payments.filter(p => p.status !== 'Pagado' && p.due_date);
-  pendientes.sort((a,b) => a.due_date.localeCompare(b.due_date));
-  
+const soloDigitos = (v) => String(v || '').replace(/\D/g, '');
+const fechaMas = (dias) => new Date(Date.now() + dias * 86400000).toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
+
+/** Días entre hoy y el vencimiento: negativo = ya vencida. */
+function diasHasta(dueDate) {
+  const hoy = new Date(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
+  return Math.round((new Date(dueDate) - hoy) / 86400000);
+}
+
+function TabAlertas({ programas }) {
+  const [cuotas, setCuotas] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [pages, setPages] = useState(1);
+  const [cargando, setCargando] = useState(false);
+  const [urgencia, setUrgencia] = useState('');
+  const [filtros, setFiltros] = useState({
+    page: 1, limit: 10, buscar: '', program_id: '',
+    status: 'Pendiente', due_date_from: '', due_date_to: '',
+  });
+
+  const cargar = useCallback(async () => {
+    setCargando(true);
+    try {
+      const res = await financeApi.payments.buscar(filtros);
+      setCuotas(res.data || []);
+      setTotal(res.total || 0);
+      setPages(res.pages || 1);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setCargando(false);
+    }
+  }, [filtros]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const setF = (k, v) => setFiltros(f => ({ ...f, [k]: v, page: 1 }));
+
+  // Los atajos de urgencia se traducen a un rango de vencimiento, que es lo
+  // que el backend ya sabe filtrar — no hace falta un parámetro nuevo.
+  const aplicarUrgencia = (tipo) => {
+    setUrgencia(tipo);
+    const hoy = fechaMas(0);
+    const rangos = {
+      '': { due_date_from: '', due_date_to: '' },
+      vencidas: { due_date_from: '', due_date_to: fechaMas(-1) },
+      hoy: { due_date_from: hoy, due_date_to: hoy },
+      d15: { due_date_from: hoy, due_date_to: fechaMas(15) },
+      d30: { due_date_from: hoy, due_date_to: fechaMas(30) },
+    };
+    setFiltros(f => ({ ...f, ...rangos[tipo], page: 1 }));
+  };
+
+  const limpiar = () => {
+    setUrgencia('');
+    setFiltros({ page: 1, limit: 10, buscar: '', program_id: '', status: 'Pendiente', due_date_from: '', due_date_to: '' });
+  };
+
+  const inp = 'h-8 rounded-md border border-border bg-surface-2 px-3 text-xs';
+  const URGENCIAS = [
+    { v: '', label: 'Todas' },
+    { v: 'vencidas', label: 'Vencidas' },
+    { v: 'hoy', label: 'Vencen hoy' },
+    { v: 'd15', label: '≤ 15 días' },
+    { v: 'd30', label: '≤ 30 días' },
+  ];
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-xs">
-        <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
-          <tr><th className="py-2">Cuota</th><th className="py-2">Vencimiento</th><th className="py-2">Monto</th><th className="py-2">Estado Actual</th></tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {pendientes.map(p => {
-            const esVencida = p.due_date < new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
-            return (
-              <tr key={p.id} className="hover:bg-surface-2">
-                <td className="py-2 font-semibold text-fg">{p.label || `Cuota ${p.installment_number}`}</td>
-                <td className="py-2 text-fg-muted">{p.due_date}</td>
-                <td className="py-2 font-bold text-fg">Gs {fmt(p.amount)}</td>
-                <td className="py-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${esVencida ? 'bg-danger/15 text-danger' : 'bg-warning/15 text-warning'}`}>
-                    {esVencida ? 'VENCIDA' : 'PENDIENTE'}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input type="text" placeholder="Buscar alumno..." className={`${inp} w-44`}
+          value={filtros.buscar} onChange={e => setF('buscar', e.target.value)} />
+
+        <select className={`${inp} w-40`} value={filtros.program_id} onChange={e => setF('program_id', e.target.value)}>
+          <option value="">Programa (todos)</option>
+          {(programas || []).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+
+        <select className={`${inp} w-32`} value={filtros.status} onChange={e => setF('status', e.target.value)}>
+          <option value="Pendiente">Pendientes</option>
+          <option value="">Todas</option>
+          <option value="Pagado">Pagadas</option>
+        </select>
+
+        <div className="flex gap-1">
+          {URGENCIAS.map(u => (
+            <button key={u.v} type="button" onClick={() => aplicarUrgencia(u.v)}
+              className={`h-8 rounded-md border px-2.5 text-[11px] font-semibold ${
+                urgencia === u.v ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-surface-2 text-fg-muted hover:bg-surface-3'
+              }`}>
+              {u.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] text-fg-muted">Venc.</span>
+          <input type="date" className={inp} value={filtros.due_date_from} onChange={e => { setUrgencia(''); setF('due_date_from', e.target.value); }} />
+          <span className="text-[10px] text-fg-muted">-</span>
+          <input type="date" className={inp} value={filtros.due_date_to} onChange={e => { setUrgencia(''); setF('due_date_to', e.target.value); }} />
+        </div>
+
+        <button type="button" onClick={limpiar} className="h-8 rounded-md border border-border bg-surface-2 px-3 text-xs font-semibold text-fg hover:bg-surface-3">
+          Limpiar
+        </button>
+      </div>
+
+      <div className="relative min-h-[300px] overflow-x-auto">
+        {cargando && <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface/50 backdrop-blur-[1px]"><span className="animate-pulse text-xs font-bold text-fg-muted">Cargando...</span></div>}
+        <table className="w-full text-left text-xs">
+          <thead className="border-b border-border text-[10px] uppercase text-fg-subtle">
+            <tr>
+              <th className="py-2 pr-3">Alumno</th>
+              <th className="py-2 pr-3">Programa</th>
+              <th className="py-2 pr-3">Cuota</th>
+              <th className="py-2 pr-3">Vencimiento</th>
+              <th className="py-2 pr-3">Monto</th>
+              <th className="py-2 pr-3">Estado</th>
+              <th className="py-2 pr-3">Contacto</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {cuotas.length === 0 && !cargando && (
+              <tr><td colSpan={7} className="py-6 text-center text-fg-muted">No hay cuotas que coincidan con el filtro.</td></tr>
+            )}
+            {cuotas.map(p => {
+              const dias = p.due_date ? diasHasta(p.due_date) : null;
+              const pagada = p.status === 'Pagado';
+              let tono = 'bg-warning/15 text-warning';
+              let etiqueta = dias === null ? 'SIN VENCIMIENTO' : `EN ${dias} DÍAS`;
+              if (pagada) { tono = 'bg-success/15 text-success'; etiqueta = 'PAGADA'; }
+              else if (dias !== null && dias < 0) { tono = 'bg-danger/15 text-danger'; etiqueta = `VENCIDA HACE ${Math.abs(dias)} D`; }
+              else if (dias === 0) { tono = 'bg-danger/15 text-danger'; etiqueta = 'VENCE HOY'; }
+
+              return (
+                <tr key={p.id} className="hover:bg-surface-2">
+                  <td className="py-2 pr-3 font-semibold text-fg">{p.Student?.name || '—'}</td>
+                  <td className="py-2 pr-3 text-fg-muted">{p.Student?.Program?.name || 'Sin programa'}</td>
+                  <td className="py-2 pr-3 text-fg-muted">{p.label || `Cuota ${p.installment_number}`}</td>
+                  <td className="py-2 pr-3 text-fg-muted">{p.due_date || '—'}</td>
+                  <td className="py-2 pr-3 font-bold text-fg">Gs {fmt(p.amount)}</td>
+                  <td className="py-2 pr-3">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${tono}`}>{etiqueta}</span>
+                  </td>
+                  <td className="py-2 pr-3">
+                    {p.Student?.phone ? (
+                      <a href={`https://wa.me/${soloDigitos(p.Student.phone)}`} target="_blank" rel="noopener noreferrer"
+                        className="font-semibold text-success hover:underline">
+                        {p.Student.phone}
+                      </a>
+                    ) : <span className="text-fg-muted">—</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {pages > 1 && (
+        <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
+          <div className="text-[10px] text-fg-muted">Mostrando {cuotas.length} de {total}</div>
+          <div className="flex gap-1">
+            <button disabled={filtros.page <= 1} onClick={() => setFiltros(f => ({ ...f, page: f.page - 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Anterior</button>
+            <span className="flex items-center px-2 text-xs font-bold">{filtros.page} / {pages}</span>
+            <button disabled={filtros.page >= pages} onClick={() => setFiltros(f => ({ ...f, page: f.page + 1 }))} className="h-7 rounded border border-border px-2 text-xs hover:bg-surface-2 disabled:opacity-50">Siguiente</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

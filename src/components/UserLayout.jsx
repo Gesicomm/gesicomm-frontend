@@ -203,7 +203,7 @@ const UserLayout = ({ children }) => {
               
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles size={14} />, prefix: '/landing', menuKey: 'landing' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Automatización', icon: <Bot size={14} />, menuKey: 'automatizacion' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de Venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })}
             </ul>
           </div>
 

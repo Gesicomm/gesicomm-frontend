@@ -13,14 +13,14 @@ const BODY_CREAR_EJEMPLO = `{
 
 const BODY_ETAPA_EJEMPLO = `{
   "subscriber_id": "{{id}}",
-  "pipeline": "Instagram",
-  "stage": "En conversación"
+  "pipeline": "Ventas por chat",
+  "stage": "Oferta enviada"
 }`;
 
 const BODY_VENTA_EJEMPLO = `{
   "subscriber_id": "{{id}}",
-  "pipeline": "Ventas",
-  "stage": "Seguimiento pago",
+  "pipeline": "Ventas por llamada",
+  "stage": "En seguimiento de pago",
   "value": 150000,
   "ticket": "HG"
 }`;
@@ -96,7 +96,7 @@ export default function ManyChatPanel() {
             <div className="mb-4 rounded-lg border border-border bg-surface-2 p-3">
               <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">1. Crear un lead nuevo</div>
               <p className="m-0 mb-2 text-xs text-fg-muted">
-                URL para la acción "External Request" (método <strong>POST</strong>) que se dispara cuando arranca la conversación. Cae siempre en el tablero <strong>Instagram</strong>, etapa <strong>New Lead</strong>.
+                URL para la acción "External Request" (método <strong>POST</strong>) que se dispara cuando arranca la conversación. El tablero lo decide el <code>ticket</code>: <strong>HG</strong> y <strong>MD</strong> caen en "Ventas por llamada", <strong>LT</strong> (o sin clasificar) en "Ventas por chat" — siempre en la etapa <strong>Nueva oportunidad</strong>.
               </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 truncate rounded-md border border-border bg-surface px-2 py-2 text-[11px] text-fg">

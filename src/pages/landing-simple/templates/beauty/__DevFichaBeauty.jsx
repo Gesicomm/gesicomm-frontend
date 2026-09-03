@@ -187,6 +187,7 @@ export default function DevFichaBeauty() {
       <StoreHeader
         templateSlug="beauty-skincare"
         nombreComercio="Beauty & Skin Care"
+        isMobile={movil}
         tema={crudo ? { fondo: null, texto: null, acento: null } : TEMAS[temaNombre]}
         previewMode
         linkInicio="#" linkCatalogo="#" linkContacto="#"

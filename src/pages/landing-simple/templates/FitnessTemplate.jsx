@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dumbbell, Flame } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
-import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto } from './sections';
+import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto, ImagenProductoHover } from './sections';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 import StoreHeader from './StoreHeader';
 
@@ -45,6 +45,7 @@ export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickC
       {/* Header */}
       <StoreHeader
         templateSlug="fitness-suplementos"
+        isMobile={isMobile}
         nombreComercio={nombreComercio}
         logo={logo}
         tema={tema}
@@ -105,7 +106,7 @@ export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickC
             {productosFiltrados.map(p => (
               <div key={p.id} onClick={() => onClickProducto(p)} className="rounded-2xl overflow-hidden cursor-pointer transition-opacity hover:opacity-90" style={{ backgroundColor: hexToRgba(tema.texto, 0.05), border: `1px solid ${bordeSuave}` }}>
                 <div className="aspect-square" style={{ backgroundColor: hexToRgba(tema.texto, 0.1) }}>
-                  {p.imagen && <img src={p.imagen} alt={p.nombre} className="w-full h-full object-cover" />}
+                  <ImagenProductoHover imagenes={p.imagenes} imagen={p.imagen} alt={p.nombre} />
                 </div>
                 <div className="p-3">
                   <p className="font-semibold text-sm line-clamp-2 leading-snug">{p.nombre}</p>

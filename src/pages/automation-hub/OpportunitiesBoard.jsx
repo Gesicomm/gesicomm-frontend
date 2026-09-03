@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { RefreshCcw, MessageCircle, Plus, X } from 'lucide-react';
+import { RefreshCcw, MessageCircle, Plus, X, Search } from 'lucide-react';
 import { crmApi } from '../../services/automationHubApi';
 import LeadDetailModal from './LeadDetailModal';
 import { TICKET_OPTIONS, obtenerTicketTag, etiquetaTicket } from './ticketTags';
@@ -90,6 +90,7 @@ export default function OpportunitiesBoard() {
   const [error, setError] = useState('');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [leadSeleccionado, setLeadSeleccionado] = useState(null);
+  const [busqueda, setBusqueda] = useState('');
 
   const pipeline = useMemo(() => pipelines.find((p) => p.id === pipelineId), [pipelines, pipelineId]);
 
@@ -107,12 +108,12 @@ export default function OpportunitiesBoard() {
     }
   };
 
-  const cargarLeads = async (pid) => {
+  const cargarLeads = async (pid, texto = busqueda) => {
     if (!pid) return;
     setCargando(true);
     setError('');
     try {
-      setLeads(await crmApi.leads(pid));
+      setLeads(await crmApi.leads(pid, texto || undefined));
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudieron cargar los leads.');
     } finally {
@@ -121,7 +122,14 @@ export default function OpportunitiesBoard() {
   };
 
   useEffect(() => { cargarPipelines(); }, []);
-  useEffect(() => { if (pipelineId) cargarLeads(pipelineId); }, [pipelineId]);
+
+  // Un solo efecto para pipeline + búsqueda, con debounce: así escribir en el
+  // buscador no dispara una consulta por tecla.
+  useEffect(() => {
+    if (!pipelineId) return;
+    const t = setTimeout(() => cargarLeads(pipelineId, busqueda), busqueda ? 300 : 0);
+    return () => clearTimeout(t);
+  }, [pipelineId, busqueda]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
@@ -151,20 +159,39 @@ export default function OpportunitiesBoard() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <select value={pipelineId} onChange={(e) => setPipelineId(Number(e.target.value))}
-          className="h-10 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
-          {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select value={pipelineId} onChange={(e) => setPipelineId(Number(e.target.value))}
+            className="h-10 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
+            {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+
+          <div className="relative">
+            <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-muted" />
+            <input
+              type="text"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar por nombre, email o teléfono..."
+              className="h-10 w-64 rounded-md border border-border bg-surface-2 pl-8 pr-8 text-sm text-fg"
+            />
+            {busqueda && (
+              <button type="button" onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-muted hover:text-fg">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {busqueda && !cargando && (
+            <span className="text-xs text-fg-muted">{leads.length} resultado{leads.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+        {/* <div className="flex gap-2">
           <button type="button" onClick={() => setModalAbierto(true)}
             className="flex h-10 items-center gap-2 rounded-md bg-primary px-3 text-xs font-semibold text-primary-fg">
             <Plus size={14} /> Nuevo lead
           </button>
-          <button type="button" onClick={() => cargarLeads(pipelineId)}
-            className="flex h-10 items-center gap-2 rounded-md border border-border bg-surface-2 px-3 text-xs font-semibold text-fg">
-            <RefreshCcw size={14} /> Actualizar
-          </button>
-        </div>
+        </div> */}
       </div>
 
       {error && <div className="mb-4 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}

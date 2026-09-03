@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Trash2, Plus, Minus, Mail, Phone, Tag } from 'lucide-react';
+import { X, Trash2, Plus, Minus, Mail, Phone, Tag, Pencil } from 'lucide-react';
 import { crmApi } from '../../services/automationHubApi';
 import { TICKET_OPTIONS, obtenerTicketTag, reemplazarTicketTag } from './ticketTags';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -29,7 +29,7 @@ function distribuirAutomatico(monto, cantidad) {
   return Array.from({ length: cantidad }, (_, i) => (i === cantidad - 1 ? base + resto : base));
 }
 
-function PlanPagosForm({ leadId, montoNegociado, hayPlanActivo, onCancelar, onCreado }) {
+function PlanPagosForm({ leadId, montoNegociado, onCancelar, onCreado }) {
   const [cantidad, setCantidad] = useState(3);
   const [auto, setAuto] = useState(false);
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
@@ -93,12 +93,6 @@ function PlanPagosForm({ leadId, montoNegociado, hayPlanActivo, onCancelar, onCr
     <form onSubmit={handleSubmit} className="mt-2 flex flex-col gap-2 rounded-md border border-border bg-surface-2 p-3">
       <div className="mb-1 text-xs font-semibold uppercase text-fg-subtle">Crear acuerdo de pago</div>
 
-      {hayPlanActivo && (
-        <div className="rounded-md border border-warning/30 bg-warning/10 px-2 py-1.5 text-[11px] text-warning">
-          Este lead ya tiene un acuerdo sin terminar de pagar — revisá si en realidad querés ver ese en vez de crear uno nuevo.
-        </div>
-      )}
-
       <div>
         <label className="text-[10px] font-semibold uppercase text-fg-subtle">Monto a negociar</label>
         <div className="flex h-11 items-center rounded-md border border-border bg-surface px-2 text-base font-semibold text-fg">
@@ -156,14 +150,150 @@ function PlanPagosForm({ leadId, montoNegociado, hayPlanActivo, onCancelar, onCr
   );
 }
 
-function AcuerdoCard({ plan }) {
+/** Edita un acuerdo ya existente — las cuotas ya cobradas quedan fijas
+ * (son historial real), solo se pueden cambiar las pendientes. */
+function EditarPlanForm({ plan, onCancelar, onGuardado }) {
+  const cuotasPagadas = plan.cuotas.filter((c) => c.status === 'Pagado');
+  const cuotasPendientesOriginal = plan.cuotas.filter((c) => c.status !== 'Pagado');
+  const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
+
+  const [total, setTotal] = useState(Number(plan.negotiated_price));
+  const [cantidad, setCantidad] = useState(cuotasPendientesOriginal.length || 1);
+  const [auto, setAuto] = useState(false);
+  const [cuotas, setCuotas] = useState(
+    cuotasPendientesOriginal.length
+      ? cuotasPendientesOriginal.map((c) => ({ amount: String(c.amount), due_date: c.due_date }))
+      : [{ amount: '', due_date: sumarMeses(hoy, 1) }]
+  );
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+
+  const totalPagado = cuotasPagadas.reduce((a, c) => a + Number(c.amount), 0);
+  const pendienteObjetivo = total - totalPagado;
+
+  const regenerar = (cant, automatico, montoParaDistribuir) => {
+    setCuotas((prev) => {
+      const montos = automatico && montoParaDistribuir > 0 ? distribuirAutomatico(montoParaDistribuir, cant) : null;
+      return Array.from({ length: cant }, (_, i) => ({
+        amount: montos ? String(montos[i]) : (prev[i]?.amount || ''),
+        due_date: prev[i]?.due_date || sumarMeses(hoy, i + 1),
+      }));
+    });
+  };
+
+  const cambiarTotal = (v) => { const t = v === '' ? 0 : v; setTotal(t); if (auto) regenerar(cantidad, true, t - totalPagado); };
+  const cambiarCantidad = (n) => { const c = Math.max(1, Number(n) || 1); setCantidad(c); regenerar(c, auto, pendienteObjetivo); };
+  const cambiarAuto = (v) => {
+    setAuto(v);
+    if (v) regenerar(cantidad, true, pendienteObjetivo);
+    else setCuotas((prev) => prev.map((c) => ({ ...c, amount: '' })));
+  };
+  const cambiarCuota = (i, campo, valor) => setCuotas((prev) => prev.map((c, idx) => (idx === i ? { ...c, [campo]: valor } : c)));
+
+  const suma = cuotas.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+  const diferencia = pendienteObjetivo - suma;
+  const coincide = total > 0 && pendienteObjetivo >= 0 && Math.abs(diferencia) < 0.01;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!coincide) return;
+    setGuardando(true);
+    setError('');
+    try {
+      await crmApi.editarPlanDePagos(plan.id, {
+        total,
+        cuotas: cuotas.map((c) => ({ amount: Number(c.amount), due_date: c.due_date })),
+      });
+      onGuardado();
+    } catch (err) {
+      setError(err.response?.data?.message || 'No se pudo editar el acuerdo.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 rounded-md border border-border bg-surface-2 p-3">
+      <div className="mb-1 text-xs font-semibold uppercase text-fg-subtle">Editar acuerdo #{plan.id}</div>
+
+      {cuotasPagadas.length > 0 && (
+        <div className="flex flex-col gap-1 rounded-md bg-surface px-2 py-1.5">
+          <span className="text-[10px] font-semibold uppercase text-fg-subtle">Ya cobradas (no se pueden cambiar)</span>
+          {cuotasPagadas.map((c) => (
+            <div key={c.id} className="flex items-center justify-between text-[11px] text-success">
+              <span>✓ Cuota {c.installment_number} · Gs {fmtGs(c.amount)}</span>
+              <span>Pagado {c.paid_date}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Nuevo total negociado</label>
+      <CurrencyInput className={inputClass} value={total === '' ? '' : total} onChange={cambiarTotal} />
+
+      <div className="mt-1 flex items-center justify-between">
+        <label className="text-[10px] font-semibold uppercase text-fg-subtle">Cuotas pendientes</label>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => cambiarCantidad(cantidad - 1)} className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-fg"><Minus size={13} /></button>
+          <span className="w-5 text-center text-sm font-semibold text-fg">{cantidad}</span>
+          <button type="button" onClick={() => cambiarCantidad(cantidad + 1)} className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-fg"><Plus size={13} /></button>
+        </div>
+      </div>
+
+      <label className="mt-1 flex items-center gap-2 text-xs text-fg">
+        <input type="checkbox" checked={auto} onChange={(e) => cambiarAuto(e.target.checked)} />
+        Distribuir automáticamente
+      </label>
+
+      <div className="mt-1 flex flex-col gap-1.5">
+        {cuotas.map((c, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <span className="w-14 shrink-0 text-[10px] font-semibold text-fg-muted">Cuota {cuotasPagadas.length + i + 1}</span>
+            <CurrencyInput className={inputClass} placeholder="Monto" value={c.amount === '' ? '' : Number(c.amount)} disabled={auto}
+              onChange={(v) => cambiarCuota(i, 'amount', v === '' ? '' : v)} />
+            <input type="date" className={inputClass} value={c.due_date} onChange={(e) => cambiarCuota(i, 'due_date', e.target.value)} />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-1 flex flex-col gap-0.5 rounded-md bg-surface px-2 py-1.5 text-[11px]">
+        <div className="flex justify-between text-fg-muted"><span>Ya cobrado</span><span className="font-semibold text-success">Gs {fmtGs(totalPagado)}</span></div>
+        <div className="flex justify-between text-fg-muted"><span>Pendiente a distribuir</span><span className="font-semibold text-fg">Gs {fmtGs(pendienteObjetivo)}</span></div>
+        <div className="flex justify-between text-fg-muted"><span>Distribuido</span><span className="font-semibold text-fg">Gs {fmtGs(suma)}</span></div>
+        <div className={`flex justify-between font-semibold ${coincide ? 'text-success' : 'text-danger'}`}><span>Diferencia</span><span>Gs {fmtGs(diferencia)}</span></div>
+      </div>
+
+      {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-2 py-1.5 text-[11px] text-danger">{error}</div>}
+
+      <div className="mt-1 flex gap-2">
+        <button type="button" onClick={onCancelar} disabled={guardando}
+          className="h-9 flex-1 rounded-md border border-border text-xs font-semibold text-fg">
+          Cancelar
+        </button>
+        <button type="submit" disabled={!coincide || guardando}
+          className="h-9 flex-[2] rounded-md bg-primary text-xs font-semibold text-primary-fg disabled:opacity-40">
+          {guardando ? 'Guardando...' : 'Guardar cambios'}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function AcuerdoCard({ plan, onEditar }) {
   return (
     <div className="rounded-md border border-border bg-surface-2 p-3">
       <div className="mb-1 flex items-center justify-between">
         <span className="text-xs font-semibold text-fg">Acuerdo #{plan.id} — Gs {fmtGs(plan.negotiated_price)}</span>
-        <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${plan.saldado ? COLOR_CLASS.green : COLOR_CLASS.amber}`}>
-          {plan.saldado ? 'Saldado' : 'Activo'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${plan.saldado ? COLOR_CLASS.green : COLOR_CLASS.amber}`}>
+            {plan.saldado ? 'Saldado' : 'Activo'}
+          </span>
+          {!plan.saldado && (
+            <button type="button" onClick={onEditar} className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-fg-muted hover:text-fg">
+              <Pencil size={12} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex flex-col gap-1">
         {plan.cuotas.map((c) => (
@@ -179,6 +309,11 @@ function AcuerdoCard({ plan }) {
         <span className="text-fg-muted">Pagado <strong className="text-success">Gs {fmtGs(plan.total_pagado)}</strong></span>
         <span className="text-fg-muted">Pendiente <strong className="text-fg">Gs {fmtGs(plan.total_pendiente)}</strong></span>
       </div>
+      {plan.saldado && (
+        <p className="m-0 mt-2 text-[10px] text-fg-subtle">
+          Ya está saldado — no hay cuotas pendientes para redistribuir, por eso no se puede editar.
+        </p>
+      )}
     </div>
   );
 }
@@ -198,10 +333,19 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
   const [estados, setEstados] = useState([]);
   const [planes, setPlanes] = useState([]);
   const [mostrarFormPlan, setMostrarFormPlan] = useState(false);
+  const [editandoPlan, setEditandoPlan] = useState(false);
+
+  const recargarPlanes = () => crmApi.planesDeLead(lead.id).then((data) => {
+    setPlanes(data);
+    // "Monto negociado" y el total del acuerdo son el mismo concepto — una
+    // vez que hay un acuerdo, se muestra ese número acá (el backend ya los
+    // mantiene sincronizados al crear/editar el acuerdo).
+    if (data[0]) setForm((f) => ({ ...f, value: Number(data[0].negotiated_price) }));
+  }).catch(() => {});
 
   useEffect(() => {
     crmApi.estados().then(setEstados).catch(() => {});
-    crmApi.planesDeLead(lead.id).then(setPlanes).catch(() => {});
+    recargarPlanes();
   }, [lead.id]);
 
   const set = (campo) => (e) => setForm((f) => ({ ...f, [campo]: e.target.value }));
@@ -243,8 +387,8 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
   };
 
   const otrosTags = (lead.tags || []).filter((t) => !TICKET_OPTIONS.some((o) => o.value === t));
-  const hayPlanActivo = planes.some((p) => !p.saldado);
   const estadoActual = estados.find((e) => e.code === form.status);
+  const plan = planes[0] || null; // un solo acuerdo por lead
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
@@ -302,9 +446,14 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
           <input className={inputClass} value={form.source} onChange={set('source')} />
 
           <label className="mt-1 text-[10px] font-semibold uppercase text-fg-subtle">Monto negociado</label>
-          <CurrencyInput className={inputClass} placeholder="Ej: 5.000.000" value={form.value === '' ? '' : Number(form.value)}
+          <CurrencyInput className={`${inputClass} ${planes[0] ? 'opacity-60' : ''}`} placeholder="Ej: 5.000.000" disabled={!!planes[0]}
+            value={form.value === '' ? '' : Number(form.value)}
             onChange={(v) => setForm((f) => ({ ...f, value: v === '' ? '' : v }))} />
-          <p className="m-0 text-[10px] text-fg-subtle">Este monto se usa como punto de partida al crear el acuerdo de pago, abajo.</p>
+          <p className="m-0 text-[10px] text-fg-subtle">
+            {planes[0]
+              ? 'Es el total del acuerdo de pago, abajo — se edita desde ahí.'
+              : 'Este monto se usa como punto de partida al crear el acuerdo de pago, abajo.'}
+          </p>
 
           {lead.tracking_code && (
             <>
@@ -337,27 +486,34 @@ export default function LeadDetailModal({ lead, pipeline, onClose, onCambio }) {
         <div className="p-4 pt-3">
           <div className="mb-2 text-[10px] font-semibold uppercase text-fg-subtle">Acuerdo de pago</div>
 
-          {planes.length > 0 && (
-            <div className="mb-2 flex flex-col gap-2">
-              {planes.map((p) => <AcuerdoCard key={p.id} plan={p} />)}
+          {plan && !editandoPlan && (
+            <div className="mb-2">
+              <AcuerdoCard plan={plan} onEditar={() => setEditandoPlan(true)} />
             </div>
           )}
 
-          {mostrarFormPlan ? (
-            <PlanPagosForm
-              leadId={lead.id}
-              montoNegociado={Number(form.value) || 0}
-              hayPlanActivo={hayPlanActivo}
-              onCancelar={() => setMostrarFormPlan(false)}
-              onCreado={onCambio}
+          {plan && editandoPlan && (
+            <EditarPlanForm
+              plan={plan}
+              onCancelar={() => setEditandoPlan(false)}
+              onGuardado={() => { setEditandoPlan(false); recargarPlanes(); }}
             />
-          ) : (
-            <button type="button" onClick={() => setMostrarFormPlan(true)}
-              className={planes.length === 0
-                ? 'flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-fg'
-                : 'flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-border text-xs font-semibold text-fg'}>
-              <Plus size={planes.length === 0 ? 16 : 14} /> {planes.length === 0 ? 'Crear acuerdo de pago' : 'Nuevo acuerdo'}
-            </button>
+          )}
+
+          {!plan && (
+            mostrarFormPlan ? (
+              <PlanPagosForm
+                leadId={lead.id}
+                montoNegociado={Number(form.value) || 0}
+                onCancelar={() => setMostrarFormPlan(false)}
+                onCreado={onCambio}
+              />
+            ) : (
+              <button type="button" onClick={() => setMostrarFormPlan(true)}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-fg">
+                <Plus size={16} /> Crear acuerdo de pago
+              </button>
+            )
           )}
         </div>
       </div>
