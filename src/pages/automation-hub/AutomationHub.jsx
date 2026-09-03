@@ -18,8 +18,9 @@ const TABS = [
   { id: 'oportunidades', label: 'Oportunidades', icon: Kanban },
   { id: 'cobranzas', label: 'Seguimiento de pagos', icon: Wallet },
   { id: 'analizador', label: 'Analizador', icon: LineChart },
-  { id: 'acciones', label: 'Acciones pendientes', icon: ListChecks },
   { id: 'finanzas', label: 'Finanzas', icon: DollarSign },
+  { id: 'acciones', label: 'Acciones pendientes', icon: ListChecks },
+
 ];
 
 export default function AutomationHub() {

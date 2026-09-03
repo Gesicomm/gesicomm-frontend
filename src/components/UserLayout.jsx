@@ -214,7 +214,6 @@ const UserLayout = ({ children }) => {
                 <ul className="sidebar-list">
                   {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y Gastos', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
                   {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
-                  {renderLink({ path: '/finanzas/automatizacion', label: 'Automatización', icon: <Bot size={14} />, menuKey: 'finanzas-automatizacion' })}
                 </ul>
               </div>
 
