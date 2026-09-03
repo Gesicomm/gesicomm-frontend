@@ -3,6 +3,7 @@ import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle } from "
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago } from "../../services/courierApi";
+import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa } from "../../lib/tarifaCourier";
 import CurrencyInput from "../../components/CurrencyInput";
 import CreatableSelect from "react-select/creatable";
@@ -63,6 +64,7 @@ function buildFormFromEnvio(envio) {
       hora: horaActual,
       confirmador: "",
       origen: "WEB",
+      canal_venta_id: "",
       campaign_name: "",
       nombre_cliente: "",
       apellido_cliente: "",
@@ -110,6 +112,7 @@ function buildFormFromEnvio(envio) {
     hora: horaFinal,
     confirmador: envio.confirmador || "",
     origen: envio.origen || "WEB",
+    canal_venta_id: envio.canal_venta_id || "",
     campaign_name: envio.campaign_name || "",
     nombre_cliente: nombreCompleto,
     apellido_cliente: "",
@@ -147,6 +150,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [couriers, setCouriers] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
+  const [canalesVenta, setCanalesVenta] = useState([]);
   const [selectedProdId, setSelectedProdId] = useState("");
   const [ofertasDelProducto, setOfertasDelProducto] = useState([]);
   const [selectedOfertaId, setSelectedOfertaId] = useState("");
@@ -168,14 +172,16 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
 
   const cargarDatosIniciales = async () => {
     try {
-      const [resProds, dataCouriers, dataMetodos] = await Promise.all([
+      const [resProds, dataCouriers, dataMetodos, dataCanales] = await Promise.all([
         productService.buscar({}),
         getCouriers(),
-        getMetodosPago()
+        getMetodosPago(),
+        canalVentaService.listar().catch(() => []),
       ]);
       const prods = Array.isArray(resProds) ? resProds : (resProds.productos || resProds.rows || []);
       setProductosDisponibles(prods);
       setCouriers(dataCouriers || []);
+      setCanalesVenta(dataCanales || []);
 
       const metodosActivos = (dataMetodos || []).filter(m => m.activo);
       setMetodosPago(metodosActivos);
@@ -543,21 +549,22 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 />
               </div>
 
+              {/* Select contra el catálogo `canales_venta`, no texto libre:
+                  antes cada pedido podía traer un canal escrito distinto
+                  ("Organico", "organico", "Tienda Online") y los reportes
+                  lo contaban como canales separados. */}
               <div className="np-row">
                 <label>Canal / Origen</label>
-                <input
-                  type="text"
+                <select
                   className="form-input"
-                  list="canal-origen-sugerencias"
-                  placeholder="Ej. Web, WhatsApp, Instagram..."
-                  value={form.origen}
-                  onChange={e => setForm({ ...form, origen: e.target.value })}
-                />
-                <datalist id="canal-origen-sugerencias">
-                  <option value="Tienda Online" />
-                  <option value="WhatsApp" />
-                  <option value="Organico" />
-                </datalist>
+                  value={form.canal_venta_id}
+                  onChange={e => setForm({ ...form, canal_venta_id: e.target.value })}
+                >
+                  <option value="">Sin especificar</option>
+                  {canalesVenta.map(c => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="np-row">

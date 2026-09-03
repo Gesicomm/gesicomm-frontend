@@ -6,9 +6,10 @@ import {
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
 import { productService } from "../../services/productService";
+import { canalVentaService } from "../../services/canalVentaService";
 import { verificarSesion } from "../../utils/auth";
 
-const ORIGENES = ["TODOS", "MANUAL", "WHATSAPP", "LANDING", "WEB", "META_ADS"];
+
 const LIMITE = 10;
 
 // Transiciones que necesitan datos adicionales (fecha, método de pago,
@@ -35,7 +36,7 @@ const FILTROS_VACIOS = {
   fecha_hasta: "",
   courier_id: "TODOS",
   confirmador: "",
-  origen: "TODOS",
+  canal_venta_id: "TODOS",
   producto: "TODOS",
   metodo_pago_id: "TODOS",
 };
@@ -268,6 +269,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
   const [masFilters, setMasFilters] = useState(false);
   const [productos, setProductos] = useState([]);
   const [metodosPagoList, setMetodosPagoList] = useState([]);
+  const [canalesVenta, setCanalesVenta] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
 
   // Modals
@@ -279,6 +281,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
       setProductos(prods);
     }).catch(() => setProductos([]));
     getMetodosPago().then((data) => setMetodosPagoList(data || [])).catch(() => setMetodosPagoList([]));
+    canalVentaService.listar().then((data) => setCanalesVenta(data || [])).catch(() => setCanalesVenta([]));
     verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
   }, []);
 
@@ -290,7 +293,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
     if (f.fecha_hasta) payload.fecha_hasta = f.fecha_hasta;
     if (f.courier_id !== "TODOS") payload.courier_id = f.courier_id;
     if (f.confirmador.trim()) payload.confirmador = f.confirmador.trim();
-    if (f.origen !== "TODOS") payload.origen = f.origen;
+    if (f.canal_venta_id !== "TODOS") payload.canal_venta_id = f.canal_venta_id;
     if (f.producto !== "TODOS") payload.producto = f.producto;
     if (f.metodo_pago_id !== "TODOS") payload.metodo_pago_id = f.metodo_pago_id;
     return payload;
@@ -552,7 +555,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
         >
           <Filter size={14} />
           Más
-          {(filtros.courier_id !== "TODOS" || filtros.origen !== "TODOS" || filtros.confirmador || filtros.producto !== "TODOS" || filtros.metodo_pago_id !== "TODOS") && (
+          {(filtros.courier_id !== "TODOS" || filtros.canal_venta_id !== "TODOS" || filtros.confirmador || filtros.producto !== "TODOS" || filtros.metodo_pago_id !== "TODOS") && (
             <span className="pt-filter-dot" />
           )}
         </button>
@@ -602,15 +605,17 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
             />
           </label>
 
+          {/* Opciones del catálogo `canales_venta`, no de una constante:
+              la lista fija de acá se desincronizaba de los valores que de
+              verdad tenían los pedidos. */}
           <select
             className="pt-filter-select"
-            value={filtros.origen}
-            onChange={(e) => setFiltro("origen", e.target.value)}
+            value={filtros.canal_venta_id}
+            onChange={(e) => setFiltro("canal_venta_id", e.target.value)}
           >
-            {ORIGENES.map((o) => (
-              <option key={o} value={o}>
-                {o === "TODOS" ? "Todos los orígenes" : o}
-              </option>
+            <option value="TODOS">Todos los canales</option>
+            {canalesVenta.map((c) => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
             ))}
           </select>
 
