@@ -52,8 +52,11 @@ async function main() {
   await png(cuadrado, join(publico, 'apple-touch-icon.png'), 180);
 
   console.log('Favicons (fondo transparente):');
+  await png(favicon, join(publico, 'favicon-48.png'), 48);
   await png(favicon, join(publico, 'favicon-32.png'), 32);
   await png(favicon, join(publico, 'favicon-16.png'), 16);
+  // Also create a favicon.ico (as a 48x48 PNG) to prevent SPA fallback and satisfy crawlers
+  await png(favicon, join(publico, 'favicon.ico'), 48);
 
   console.log('Open Graph:');
   await png(og, join(publico, 'og-image.png'), 1200, 630);
