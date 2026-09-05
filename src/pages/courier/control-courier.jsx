@@ -1,10 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, CreditCard, HandCoins, LayoutDashboard } from "lucide-react";
+import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, HandCoins } from "lucide-react";
 import { PedidosTable } from "./PedidosTable";
-import { DashboardGeneralTab } from "./DashboardGeneralTab";
 import { CouriersCrud } from "./couriers-crud";
-import { MetodosPagoCrud } from "./MetodosPagoCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
@@ -28,10 +26,10 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "couriers", "metodos-pago", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "couriers", "rendicion", "analitica"]);
 
 export function ControlCourier() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const tabInicial = searchParams.get("tab");
   const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
   const [fechaDesde, setFechaDesde] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
@@ -49,6 +47,29 @@ export function ControlCourier() {
   const [accionEspecial, setAccionEspecial] = useState(null);
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
+
+  useEffect(() => {
+    if (!tabInicial) return;
+    if (TABS_VALIDOS.has(tabInicial)) {
+      if (tabInicial !== tab) setTab(tabInicial);
+      return;
+    }
+    setTab("tablero");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", "tablero");
+      return next;
+    }, { replace: true });
+  }, [tabInicial, tab, setSearchParams]);
+
+  function seleccionarTab(tabId) {
+    setTab(tabId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", tabId);
+      return next;
+    }, { replace: true });
+  }
 
   useEffect(() => {
     cargarDatos();
@@ -159,51 +180,53 @@ export function ControlCourier() {
   return (
     <div className="prod-page" style={{ minHeight: '100vh', maxWidth: '100%' }}>
       <div className="courier-header">
-        <div className="prod-header-left">
-          <div className="prod-icon-wrap" style={{ background: 'var(--vit-accent-soft)', color: 'var(--color-primary-text)' }}>
-            <PackageCheck size={22} />
+        <div className="courier-header-main">
+          <div className="prod-header-left">
+            <div className="prod-icon-wrap" style={{ background: 'var(--vit-accent-soft)', color: 'var(--color-primary-text)' }}>
+              <PackageCheck size={22} />
+            </div>
+            <div>
+              <h1 className="prod-title">Control de Pedidos y Couriers</h1>
+              <p className="prod-subtitle">Módulo logístico centralizado</p>
+            </div>
           </div>
-          <div>
-            <h1 className="prod-title">Control de Pedidos y Couriers</h1>
-            <p className="prod-subtitle">Módulo logístico centralizado</p>
+
+          <div className="courier-header-actions">
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              onClick={() => setOpenImprimir(true)}
+            >
+              <Printer size={16} />
+              Imprimir Pedidos
+            </button>
+
+            <button
+              type="button"
+              className="btn-nuevo-pedido"
+              onClick={() => setOpenNuevoPedido(true)}
+            >
+              <Plus size={18} />
+              Nuevo Pedido
+            </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className="btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-            onClick={() => setOpenImprimir(true)}
-          >
-            <Printer size={16} />
-            Imprimir Pedidos
-          </button>
-
-          <button
-            type="button"
-            className="btn-nuevo-pedido"
-            onClick={() => setOpenNuevoPedido(true)}
-          >
-            <Plus size={18} />
-            Nuevo Pedido
-          </button>
-
-          <nav className="courier-tabs">
-            <TabButton active={tab === "tablero"} onClick={() => setTab("tablero")} icon={<LayoutGrid size={16} />}>
-              Tablero
-            </TabButton>
-            <TabButton active={tab === "couriers"} onClick={() => setTab("couriers")} icon={<Users size={16} />}>
-              Couriers
-            </TabButton>
-            <TabButton active={tab === "metodos-pago"} onClick={() => setTab("metodos-pago")} icon={<CreditCard size={16} />}>
-              Métodos de Pago
-            </TabButton>
-            <TabButton active={tab === "analitica"} onClick={() => setTab("analitica")} icon={<TrendingUp size={16} />}>
-              Analítica
-            </TabButton>
-          </nav>
-        </div>
+        <nav className="courier-tabs" aria-label="Secciones de pedidos">
+          <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
+            Tablero
+          </TabButton>
+          <TabButton active={tab === "couriers"} onClick={() => seleccionarTab("couriers")} icon={<Users size={16} />}>
+            Couriers
+          </TabButton>
+          <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
+            Rendición
+          </TabButton>
+          <TabButton active={tab === "analitica"} onClick={() => seleccionarTab("analitica")} icon={<TrendingUp size={16} />}>
+            Analítica
+          </TabButton>
+        </nav>
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
@@ -236,8 +259,8 @@ export function ControlCourier() {
               setCouriers(prev => prev.filter(x => x.id !== id));
             }}
           />
-        ) : tab === "metodos-pago" ? (
-          <MetodosPagoCrud />
+        ) : tab === "rendicion" ? (
+          <RendicionTab couriers={couriers} />
         ) : (
           <CentroInteligenciaComercial couriers={couriers} />
         )}

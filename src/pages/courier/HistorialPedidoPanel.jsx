@@ -37,7 +37,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
       <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <History size={18} color="#7d9bd6" /> Historial · Pedido #{envio.id}
+            <History size={18} color="var(--color-primary-text)" /> Historial · Pedido #{envio.id}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>
@@ -46,7 +46,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
           {cargando ? (
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-fg-muted)" }}><Loader size={16} /> Cargando...</div>
           ) : error ? (
-            <p style={{ color: "#f87171" }}>{error}</p>
+            <p style={{ color: "var(--color-danger)" }}>{error}</p>
           ) : historial.length === 0 ? (
             <p style={{ color: "var(--color-fg-subtle)" }}>Todavía no hay movimientos registrados para este pedido.</p>
           ) : (
@@ -54,7 +54,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
               {historial.map((h, i) => (
                 <div key={h.id} style={{ display: "flex", gap: "0.75rem", position: "relative", paddingBottom: i === historial.length - 1 ? 0 : "1rem" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#7d9bd6", flexShrink: 0, marginTop: "0.3rem" }} />
+                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--color-primary-text)", flexShrink: 0, marginTop: "0.3rem" }} />
                     {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "color-mix(in srgb, var(--color-fg) 10%, transparent)", marginTop: "0.2rem" }} />}
                   </div>
                   <div style={{ paddingBottom: "0.2rem" }}>

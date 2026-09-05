@@ -35,7 +35,7 @@ export function OrderCard({
           <h4 className="order-card-client">{nombreCliente}</h4>
           {ubicacionLabel && (
             <p className="order-card-address" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-              <MapPin size={11} style={{ color: '#8577fa' }} />
+              <MapPin size={11} style={{ color: 'var(--color-primary-text)' }} />
               <span>{ubicacionLabel}</span>
             </p>
           )}
@@ -67,12 +67,12 @@ export function OrderCard({
             borderRadius: '0.25rem',
             fontSize: '0.72rem',
             fontWeight: 700,
-            background: envio.metodo_pago === 'Efectivo' ? 'rgba(16,185,129,0.15)' :
-                       envio.metodo_pago === 'Transferencia' ? 'rgba(59,130,246,0.15)' :
-                       envio.metodo_pago === 'POS' ? 'rgba(46, 74, 133,0.15)' : 'rgba(245,158,11,0.15)',
-            color: envio.metodo_pago === 'Efectivo' ? '#10b981' :
-                   envio.metodo_pago === 'Transferencia' ? '#3b82f6' :
-                   envio.metodo_pago === 'POS' ? '#2e4a85' : '#f59e0b'
+              background: envio.metodo_pago === 'Efectivo' ? 'color-mix(in srgb, var(--color-success) 15%, transparent)' :
+                       envio.metodo_pago === 'Transferencia' ? 'color-mix(in srgb, var(--color-info) 15%, transparent)' :
+                       envio.metodo_pago === 'POS' ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)' : 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
+            color: envio.metodo_pago === 'Efectivo' ? 'var(--color-success)' :
+                   envio.metodo_pago === 'Transferencia' ? 'var(--color-info)' :
+                   envio.metodo_pago === 'POS' ? 'var(--color-primary-text)' : 'var(--color-warning)'
           }}>
             {envio.metodo_pago === 'Efectivo' ? 'Al Recibir (Efectivo)' : 
              envio.metodo_pago === 'POS' ? 'Al Recibir (POS)' : envio.metodo_pago}
@@ -89,7 +89,7 @@ export function OrderCard({
       {/* Ítems del pedido preview */}
       {envio.items && envio.items.length > 0 && (
         <div style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)', margin: '0.3rem 0', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          <ShoppingBag size={12} style={{ color: '#3b82f6' }} />
+          <ShoppingBag size={12} style={{ color: 'var(--color-primary-text)' }} />
           <span>
             {envio.items.map(it => `${it.cantidad}x ${it.nombre_producto}`).join(', ')}
           </span>
@@ -102,7 +102,7 @@ export function OrderCard({
             {formatGs(envio.monto)}
           </span>
           {Number(envio.costo_envio) > 0 && (
-            <span style={{ fontSize: '0.72rem', color: '#8577fa', fontWeight: 700, display: 'block', marginTop: '0.1rem' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--color-primary-text)', fontWeight: 700, display: 'block', marginTop: '0.1rem' }}>
               Delivery: {formatGs(envio.costo_envio)}
             </span>
           )}

@@ -156,19 +156,19 @@ export function SummaryBar({ envios = [], couriers = [] }) {
         <MetricCard 
           title="Saldo Courier" 
           value={stats.saldoCourier} 
-          bg="rgba(16, 185, 129, 0.08)"
-          border="1px solid rgba(16, 185, 129, 0.3)"
-          textColor="#10b981"
+          bg="color-mix(in srgb, var(--color-success) 8%, transparent)"
+          border="1px solid color-mix(in srgb, var(--color-success) 30%, transparent)"
+          textColor="var(--color-success)"
         />
 
         {/* Caja Neta (métrica destacada — acento dorado, no rompe la paleta oscura) */}
         <MetricCard
           title="Caja Neta"
           value={stats.cajaNeta}
-          bg="rgba(255, 193, 7, 0.1)"
-          border="1px solid rgba(255, 193, 7, 0.3)"
-          textColor="#ffd966"
-          labelColor="#e6ac00"
+          bg="color-mix(in srgb, var(--color-accent) 10%, transparent)"
+          border="1px solid color-mix(in srgb, var(--color-accent) 30%, transparent)"
+          textColor="var(--color-accent-text)"
+          labelColor="var(--color-accent-text)"
         />
       </div>
 

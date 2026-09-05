@@ -52,30 +52,30 @@ export function VistaComisiones({ filters }) {
       
       {/* KPIs */}
       <div className="cic-kpis-grid">
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             TOTAL FACTURADO
-            <DollarSign size={16} color="#10b981" />
+            <DollarSign size={16} color="var(--color-success)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#10b981' }}>{formatMoney(kpis.total_facturado)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_facturado)}</div>
           <div className="cic-kpi-sub">Base de cálculo (Entregados/Confirmados)</div>
         </div>
 
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(244, 63, 94, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-danger) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             TOTAL COMISIONES
-            <Percent size={16} color="#f43f5e" />
+            <Percent size={16} color="var(--color-danger)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#f43f5e' }}>{formatMoney(kpis.total_comisiones)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-danger)' }}>{formatMoney(kpis.total_comisiones)}</div>
           <div className="cic-kpi-sub">Descuento de pasarelas de pago</div>
         </div>
 
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             RECAUDACIÓN NETA
-            <TrendingDown size={16} color="#3b82f6" />
+            <TrendingDown size={16} color="var(--color-primary-text)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#3b82f6' }}>{formatMoney(kpis.total_neto)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{formatMoney(kpis.total_neto)}</div>
           <div className="cic-kpi-sub">Dinero libre de comisiones</div>
         </div>
       </div>
@@ -93,8 +93,8 @@ export function VistaComisiones({ filters }) {
                 <th>Método de Pago</th>
                 <th style={{ textAlign: 'right' }}>Comisión (%)</th>
                 <th style={{ textAlign: 'right' }}>Precio (Total)</th>
-                <th style={{ textAlign: 'right', color: '#f43f5e' }}>Costo Comisión</th>
-                <th style={{ textAlign: 'right', color: '#10b981' }}>Precio Neto</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-danger)' }}>Costo Comisión</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Precio Neto</th>
               </tr>
             </thead>
             <tbody>
@@ -120,8 +120,8 @@ export function VistaComisiones({ filters }) {
                     <td>{row.metodo_pago || 'N/A'}</td>
                     <td style={{ textAlign: 'right' }}>{Number(row.comision_pct_aplicada || 0).toFixed(1)}%</td>
                     <td style={{ textAlign: 'right' }}>{formatMoney(row.monto)}</td>
-                    <td style={{ textAlign: 'right', color: '#f43f5e' }}>-{formatMoney(row.costo_comision)}</td>
-                    <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>{formatMoney(row.precio_neto)}</td>
+                    <td style={{ textAlign: 'right', color: 'var(--color-danger)' }}>-{formatMoney(row.costo_comision)}</td>
+                    <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.precio_neto)}</td>
                   </tr>
                 ))
               )}
@@ -130,7 +130,7 @@ export function VistaComisiones({ filters }) {
         </div>
         {!loading && pagination.totalPages > 1 && (
           <div className="cic-table-pagination" style={{ padding: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
               Página {pagination.page} de {pagination.totalPages} <span style={{ opacity: 0.5 }}>• {pagination.total} registros</span>
             </span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>

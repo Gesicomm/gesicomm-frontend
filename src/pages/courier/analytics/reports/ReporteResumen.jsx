@@ -25,7 +25,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         anio: filters.anio,
         confirmador: filters.confirmador,
         courier_id: filters.courierId,
-        origen: filters.origen,
+        canal_venta_id: filters.canal_venta_id,
       };
       const res = await getMetricasDashboardPedidos(payload);
       setData(res);
@@ -41,8 +41,8 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
 
   if (loading && !data) {
     return (
-      <div style={{ padding: '4rem', textAlign: 'center', color: '#94a3b8' }}>
-        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid #3d5fa3', borderTopColor: 'transparent', borderRadius: '50%' }} />
+      <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--color-fg-muted)' }}>
+        <div className="animate-spin" style={{ margin: '0 auto 1rem auto', width: '28px', height: '28px', border: '3px solid var(--color-primary)', borderTopColor: 'transparent', borderRadius: '50%' }} />
         Calculando métricas comerciales y ejecutivas...
       </div>
     );
@@ -58,34 +58,34 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
       
       {/* KPIs PRINCIPALES (5-7 métricas ejecutivas) */}
       <div className="cic-kpis-grid" style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #3b82f6' }}>
-          <div className="cic-kpi-header"><span>Pedidos Creados</span><Package size={16} style={{ color: '#60a5fa' }} /></div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-info)' }}>
+          <div className="cic-kpi-header"><span>Pedidos Creados</span><Package size={16} style={{ color: 'var(--color-info)' }} /></div>
           <div className="cic-kpi-val">{funnel.total_creados}</div>
           <div className="cic-kpi-sub">Volumen base del período</div>
         </div>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #10b981' }}>
-          <div className="cic-kpi-header"><span>Confirmados</span><CheckCircle2 size={16} style={{ color: '#34d399' }} /></div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-success)' }}>
+          <div className="cic-kpi-header"><span>Confirmados</span><CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} /></div>
           <div className="cic-kpi-val">{funnel.confirmados}</div>
           <div className="cic-kpi-sub">{funnel.tasa_confirmacion}% Tasa de Confirmación</div>
         </div>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #06b6d4' }}>
-          <div className="cic-kpi-header"><span>Entregados</span><Trophy size={16} style={{ color: '#5b8fd6' }} /></div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-primary)' }}>
+          <div className="cic-kpi-header"><span>Entregados</span><Trophy size={16} style={{ color: 'var(--color-primary-text)' }} /></div>
           <div className="cic-kpi-val">{funnel.entregados}</div>
           <div className="cic-kpi-sub">{funnel.tasa_entrega}% Tasa de Entrega</div>
         </div>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #2e4a85' }}>
-          <div className="cic-kpi-header"><span>Facturación Entregada</span><DollarSign size={16} style={{ color: '#d4a537' }} /></div>
-          <div className="cic-kpi-val" style={{ color: '#d4a537' }}>{formatGs(kpis.facturacion_entregada)}</div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-primary)' }}>
+          <div className="cic-kpi-header"><span>Facturación Entregada</span><DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} /></div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>{formatGs(kpis.facturacion_entregada)}</div>
           <div className="cic-kpi-sub">Ingreso real bruto</div>
         </div>
-        <div className="cic-kpi-card" style={{ borderTop: '3px solid #f59e0b' }}>
-          <div className="cic-kpi-header"><span>Margen Bruto Est.</span><TrendingUp size={16} style={{ color: '#fbbf24' }} /></div>
-          <div className="cic-kpi-val" style={{ color: '#fbbf24' }}>{formatGs(kpis.margen_bruto_estimado)}</div>
+        <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-warning)' }}>
+          <div className="cic-kpi-header"><span>Margen Bruto Est.</span><TrendingUp size={16} style={{ color: 'var(--color-warning)' }} /></div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-warning)' }}>{formatGs(kpis.margen_bruto_estimado)}</div>
           <div className="cic-kpi-sub">{kpis.pct_margen_bruto}% sobre ventas</div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="cic-content-grid">
         
         {/* FUNNEL SIMPLIFICADO */}
         <div className="cic-funnel-card" style={{ margin: 0 }}>
@@ -100,55 +100,55 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
             <div className="cic-funnel-step step-created">
               <div className="cic-step-head"><span>1. Creados</span></div>
               <div className="cic-step-val">{funnel.total_creados}</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: '100%', background: '#3b82f6' }} /></div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: '100%', background: 'var(--color-info)' }} /></div>
             </div>
             {/* Confirmados */}
             <div className="cic-funnel-step step-confirmed">
               <div className="cic-step-head"><span>2. Confirmados</span></div>
               <div className="cic-step-val">{funnel.confirmados}</div>
               <div className="cic-step-rate-badge rate-green">{funnel.tasa_confirmacion}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_confirmacion)}%`, background: '#10b981' }} /></div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_confirmacion)}%`, background: 'var(--color-success)' }} /></div>
             </div>
             {/* Cancelados */}
             <div className="cic-funnel-step step-returned" style={{ borderColor: 'color-mix(in srgb, var(--color-fg) 6%, transparent)' }}>
-              <div className="cic-step-head"><span style={{ color: '#94a3b8' }}>Cancelados/Rechaz.</span></div>
-              <div className="cic-step-val" style={{ color: '#94a3b8' }}>{funnel.cancelados}</div>
-              <div className="cic-step-rate-badge" style={{ background: 'rgba(148,163,184,0.1)', color: '#94a3b8' }}>{funnel.tasa_cancelacion}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_cancelacion)}%`, background: '#64748b' }} /></div>
+              <div className="cic-step-head"><span style={{ color: 'var(--color-fg-muted)' }}>Cancelados/Rechaz.</span></div>
+              <div className="cic-step-val" style={{ color: 'var(--color-fg-muted)' }}>{funnel.cancelados}</div>
+              <div className="cic-step-rate-badge" style={{ background: 'color-mix(in srgb, var(--color-fg-muted) 10%, transparent)', color: 'var(--color-fg-muted)' }}>{funnel.tasa_cancelacion}% de creados</div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_cancelacion)}%`, background: 'var(--color-fg-muted)' }} /></div>
             </div>
             {/* Despachados */}
             <div className="cic-funnel-step step-dispatched">
               <div className="cic-step-head"><span>3. Despachados</span></div>
               <div className="cic-step-val">{funnel.despachados}</div>
               <div className="cic-step-rate-badge rate-purple">{funnel.tasa_despacho}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_despacho)}%`, background: '#2e4a85' }} /></div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_despacho)}%`, background: 'var(--color-primary)' }} /></div>
             </div>
             {/* Entregados */}
             <div className="cic-funnel-step step-delivered">
               <div className="cic-step-head"><span>4. Entregados</span></div>
               <div className="cic-step-val">{funnel.entregados}</div>
               <div className="cic-step-rate-badge rate-green">{funnel.tasa_entrega}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_entrega)}%`, background: '#06b6d4' }} /></div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_entrega)}%`, background: 'var(--color-primary)' }} /></div>
             </div>
             {/* Devueltos */}
             <div className="cic-funnel-step step-returned">
               <div className="cic-step-head"><span>5. Devueltos</span></div>
               <div className="cic-step-val">{funnel.devueltos}</div>
               <div className="cic-step-rate-badge rate-red">{funnel.tasa_devolucion}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_devolucion)}%`, background: '#f43f5e' }} /></div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_devolucion)}%`, background: 'var(--color-danger)' }} /></div>
             </div>
             {/* Perdidos */}
-            <div className="cic-funnel-step step-returned" style={{ borderColor: 'rgba(245,158,11,0.2)' }}>
-              <div className="cic-step-head"><span style={{ color: '#f59e0b' }}>Perdidos</span></div>
-              <div className="cic-step-val" style={{ color: '#f59e0b' }}>{funnel.perdidos}</div>
-              <div className="cic-step-rate-badge" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>{funnel.tasa_perdida}% de creados</div>
-              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_perdida)}%`, background: '#f59e0b' }} /></div>
+            <div className="cic-funnel-step step-returned" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 20%, transparent)' }}>
+              <div className="cic-step-head"><span style={{ color: 'var(--color-warning)' }}>Perdidos</span></div>
+              <div className="cic-step-val" style={{ color: 'var(--color-warning)' }}>{funnel.perdidos}</div>
+              <div className="cic-step-rate-badge" style={{ background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', color: 'var(--color-warning)' }}>{funnel.tasa_perdida}% de creados</div>
+              <div className="cic-step-progress-bar"><div className="cic-step-progress-fill" style={{ width: `${Math.min(100, funnel.tasa_perdida)}%`, background: 'var(--color-warning)' }} /></div>
             </div>
           </div>
         </div>
 
         {/* INSIGHTS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="cic-side-stack">
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--color-fg)' }}>Insights Importantes</h3>
           {data.insights && data.insights.slice(0, 4).map((ins, i) => {
             let iconClass = 'icon-info';
@@ -162,13 +162,13 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
                 </div>
                 <div>
                   <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: '0 0 0.3rem 0', color: 'var(--color-fg)' }}>{ins.titulo}</h4>
-                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, lineHeight: 1.4 }}>{ins.mensaje}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', margin: 0, lineHeight: 1.4 }}>{ins.mensaje}</p>
                 </div>
               </div>
             );
           })}
           {(!data.insights || data.insights.length === 0) && (
-            <div style={{ color: '#64748b', fontSize: '0.85rem', padding: '1rem', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px', textAlign: 'center' }}>
+            <div style={{ color: 'var(--color-fg-subtle)', fontSize: '0.85rem', padding: '1rem', border: '1px dashed color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: '8px', textAlign: 'center' }}>
               No se detectaron alertas o insights relevantes en este período.
             </div>
           )}
@@ -180,7 +180,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
           <div className="cic-card-header">
             <div>
-              <h3 className="cic-card-title"><TrendingUp size={18} style={{ color: '#3b82f6' }}/> Evolución Temporal</h3>
+              <h3 className="cic-card-title"><TrendingUp size={18} style={{ color: 'var(--color-primary-text)' }}/> Evolución Temporal</h3>
             </div>
             <select 
               className="cic-select" 
@@ -198,15 +198,15 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
             {data.tendencias.map((t, idx) => {
               const maxV = Math.max(...data.tendencias.map(x => x[metricaTendencia]), 1);
               const h = Math.max(5, (t[metricaTendencia] / maxV) * 100);
-              let color = '#3b82f6';
-              if (metricaTendencia === 'confirmados') color = '#10b981';
-              if (metricaTendencia === 'entregados') color = '#06b6d4';
-              if (metricaTendencia === 'devueltos') color = '#f43f5e';
+              let color = 'var(--color-info)';
+              if (metricaTendencia === 'confirmados') color = 'var(--color-success)';
+              if (metricaTendencia === 'entregados') color = 'var(--color-primary)';
+              if (metricaTendencia === 'devueltos') color = 'var(--color-danger)';
               
               return (
                 <div key={idx} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
                   <div style={{ width: '8px', height: `${h}%`, background: color, borderRadius: '4px', transition: 'height 0.4s ease' }} title={`${t.fecha}: ${t[metricaTendencia]}`} />
-                  <div style={{ fontSize: '0.6rem', color: '#64748b', transform: 'rotate(-45deg)', transformOrigin: 'top left', marginTop: '5px' }}>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--color-fg-subtle)', transform: 'rotate(-45deg)', transformOrigin: 'top left', marginTop: '5px' }}>
                     {t.fecha.split('-').slice(1).join('/')}
                   </div>
                 </div>

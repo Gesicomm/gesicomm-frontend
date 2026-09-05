@@ -52,21 +52,21 @@ export function VistaFacturacion({ filters }) {
       
       {/* KPIs */}
       <div className="cic-kpis-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             TOTAL SUJETO A IVA
-            <FileText size={16} color="#3b82f6" />
+            <FileText size={16} color="var(--color-primary-text)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#3b82f6' }}>{formatMoney(kpis.total_sujeto_iva)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{formatMoney(kpis.total_sujeto_iva)}</div>
           <div className="cic-kpi-sub">Base de cálculo (Factura solicitada)</div>
         </div>
 
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(234, 179, 8, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-accent) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             TOTAL IVA (10%)
-            <Calculator size={16} color="#eab308" />
+            <Calculator size={16} color="var(--color-accent-text)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#eab308' }}>{formatMoney(kpis.total_iva)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>{formatMoney(kpis.total_iva)}</div>
           <div className="cic-kpi-sub">IVA generado en este período</div>
         </div>
       </div>
@@ -84,7 +84,7 @@ export function VistaFacturacion({ filters }) {
                 <th>RUC</th>
                 <th>Razón Social</th>
                 <th style={{ textAlign: 'right' }}>Monto Facturable</th>
-                <th style={{ textAlign: 'right', color: '#eab308' }}>IVA (10%)</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-accent-text)' }}>IVA (10%)</th>
               </tr>
             </thead>
             <tbody>
@@ -110,7 +110,7 @@ export function VistaFacturacion({ filters }) {
                     <td>{row.ruc || '-'}</td>
                     <td>{row.razon_social || '-'}</td>
                     <td style={{ textAlign: 'right' }}>{formatMoney(row.monto)}</td>
-                    <td style={{ textAlign: 'right', color: '#eab308', fontWeight: 'bold' }}>{formatMoney(row.iva)}</td>
+                    <td style={{ textAlign: 'right', color: 'var(--color-accent-text)', fontWeight: 'bold' }}>{formatMoney(row.iva)}</td>
                   </tr>
                 ))
               )}
@@ -119,7 +119,7 @@ export function VistaFacturacion({ filters }) {
         </div>
         {!loading && pagination.totalPages > 1 && (
           <div className="cic-table-pagination" style={{ padding: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
               Página {pagination.page} de {pagination.totalPages} <span style={{ opacity: 0.5 }}>• {pagination.total} registros</span>
             </span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>

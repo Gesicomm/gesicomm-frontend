@@ -80,7 +80,7 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
       <div className="modal-content" style={{ maxWidth: "560px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <AlertTriangle size={18} color="#f87171" /> Registrar pérdida #{envio.id}
+            <AlertTriangle size={18} color="var(--color-danger)" /> Registrar pérdida #{envio.id}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>
@@ -116,7 +116,7 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
           )}
 
           {filas.length > 0 && (
-            <div style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: "0.6rem", padding: "0.8rem", fontSize: "0.85rem" }}>
+            <div style={{ background: "color-mix(in srgb, var(--color-danger) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)", borderRadius: "0.6rem", padding: "0.8rem", fontSize: "0.85rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>Valor de productos perdidos</span>
                 <span>{formatGs(Math.round(valorPerdido))}</span>
@@ -125,7 +125,7 @@ export function PerdidaModal({ open, envio, onClose, onSubmit }) {
                 <span>− Costo del servicio de courier</span>
                 <span>{formatGs(costoEnvio)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, marginTop: "0.3rem", borderTop: "1px solid rgba(248,113,113,0.25)", paddingTop: "0.3rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, marginTop: "0.3rem", borderTop: "1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)", paddingTop: "0.3rem" }}>
                 <span>= Cargo al courier (estimado)</span>
                 <span>{formatGs(cargoEstimado)}</span>
               </div>

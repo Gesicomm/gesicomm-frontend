@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { CreditCard, Pencil, Plus, Trash2, X, Percent } from "lucide-react"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { getMetodosPago, createMetodoPago, updateMetodoPago, deleteMetodoPago } from "../../services/courierApi"
+import "./courier.css"
 
 const emptyForm = {
   nombre: "",
@@ -116,13 +118,13 @@ export function MetodosPagoCrud() {
               <tr key={m.id}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-success) 14%, transparent)', color: 'var(--color-success)' }}>
                       <CreditCard size={15} />
                     </span>
                     <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{m.nombre}</span>
                   </div>
                 </td>
-                <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: '#60a5fa' }}>
+                <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: 'var(--color-primary-text)' }}>
                   {Number(m.comision_porcentaje).toLocaleString('es-PY', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%
                 </td>
                 <td style={{ textAlign: 'center' }}>
@@ -131,18 +133,18 @@ export function MetodosPagoCrud() {
                   </span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', color: m.custodia_cobro === 'courier' ? '#fb923c' : '#60a5fa' }}>
+                  <span style={{ fontSize: '0.75rem', color: m.custodia_cobro === 'courier' ? 'var(--color-warning)' : 'var(--color-primary-text)' }}>
                     {m.custodia_cobro === 'courier' ? "Manos del courier" : "Cuenta del negocio"}
                   </span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
-                    background: m.activo ? 'rgba(16, 185, 129, 0.15)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
-                    color: m.activo ? '#34d399' : 'var(--color-fg-muted)',
-                    border: m.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
+                    background: m.activo ? 'color-mix(in srgb, var(--color-success) 15%, transparent)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
+                    color: m.activo ? 'var(--color-success)' : 'var(--color-fg-muted)',
+                    border: m.activo ? '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
                   }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.activo ? '#10b981' : '#64748b' }} />
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.activo ? 'var(--color-success)' : 'var(--color-fg-muted)' }} />
                     {m.activo ? "Activo" : "Inactivo"}
                   </span>
                 </td>
@@ -176,7 +178,7 @@ export function MetodosPagoCrud() {
         </table>
       </div>
 
-      {open && (
+      {open && createPortal((
         <div className="modal-overlay" onClick={() => setOpen(false)}>
           <form
             onSubmit={submit}
@@ -206,7 +208,7 @@ export function MetodosPagoCrud() {
             </div>
 
             {error && (
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.6rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
+              <div style={{ background: 'color-mix(in srgb, var(--color-danger) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)', color: 'var(--color-danger)', padding: '0.6rem 0.8rem', borderRadius: '0.5rem', fontSize: '0.8rem', marginBottom: '1rem' }}>
                 {error}
               </div>
             )}
@@ -256,7 +258,7 @@ export function MetodosPagoCrud() {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
                   <input
                     type="checkbox"
-                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
                     checked={form.es_anticipado}
                     onChange={(e) => setForm((f) => ({ ...f, es_anticipado: e.target.checked }))}
                   />
@@ -286,7 +288,7 @@ export function MetodosPagoCrud() {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
                   <input
                     type="checkbox"
-                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
                     checked={form.activo}
                     onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
                   />
@@ -315,15 +317,15 @@ export function MetodosPagoCrud() {
               <button
                 type="submit"
                 style={{
-                  background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)',
-                  color: 'var(--color-fg)',
+                  background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-active))',
+                  color: 'var(--color-primary-fg)',
                   border: 'none',
                   padding: '0.65rem 1.6rem',
                   borderRadius: '0.6rem',
                   fontWeight: 700,
                   fontSize: '0.875rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(61, 95, 163, 0.4)'
+                  boxShadow: '0 4px 14px color-mix(in srgb, var(--color-primary) 35%, transparent)'
                 }}
               >
                 {editing ? "Guardar cambios" : "Crear método"}
@@ -331,7 +333,7 @@ export function MetodosPagoCrud() {
             </div>
           </form>
         </div>
-      )}
+      ), document.body)}
 
       <ConfirmDialog
         open={!!metodoABorrar}

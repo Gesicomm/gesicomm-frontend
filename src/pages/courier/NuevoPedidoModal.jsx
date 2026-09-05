@@ -1,24 +1,27 @@
 import { useState, useEffect, useMemo } from "react";
-import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle } from "lucide-react";
+import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package } from "lucide-react";
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago } from "../../services/courierApi";
 import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa } from "../../lib/tarifaCourier";
+import { getMediaUrl } from "../../services/api";
 import CurrencyInput from "../../components/CurrencyInput";
 import CreatableSelect from "react-select/creatable";
+import ProductPicker from "../landing/ProductPicker";
+import "../landing/landing.css";
 
 const selectStyles = {
   control: (base, state) => ({
     ...base,
     background: 'var(--color-canvas)',
-    borderColor: state.isFocused ? '#2563eb' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
-    boxShadow: state.isFocused ? '0 0 0 1px #2563eb' : 'none',
+    borderColor: state.isFocused ? 'var(--color-primary)' : 'color-mix(in srgb, var(--color-fg) 8%, transparent)',
+    boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary)' : 'none',
     borderRadius: '0.375rem',
     minHeight: '38px',
     color: 'var(--color-fg)',
     '&:hover': {
-      borderColor: '#2563eb'
+      borderColor: 'var(--color-primary)'
     }
   }),
   menu: (base) => ({
@@ -29,12 +32,12 @@ const selectStyles = {
   }),
   option: (base, state) => ({
     ...base,
-    background: state.isSelected ? '#2563eb' : state.isFocused ? 'color-mix(in srgb, var(--color-fg) 8%, transparent)' : 'var(--color-canvas)',
+    background: state.isSelected ? 'var(--color-primary)' : state.isFocused ? 'color-mix(in srgb, var(--color-fg) 8%, transparent)' : 'var(--color-canvas)',
     color: 'var(--color-fg)',
     cursor: 'pointer',
     fontSize: '0.85rem',
     '&:active': {
-      background: '#2563eb'
+      background: 'var(--color-primary)'
     }
   }),
   singleValue: (base) => ({
@@ -54,6 +57,14 @@ const selectStyles = {
   })
 };
 
+const precioProducto = (producto) => (
+  Number(producto?.precio_efectivo ?? producto?.precio_base ?? producto?.precio_venta ?? producto?.precio ?? 0) || 0
+);
+
+const imagenProducto = (producto) => (
+  producto?.imagen || producto?.imagenes?.[0]?.url || producto?.imagenes?.[0] || null
+);
+
 function buildFormFromEnvio(envio) {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
   const horaActual = new Date().toLocaleTimeString('es-PY', { timeZone: 'America/Asuncion', hour: '2-digit', minute: '2-digit' });
@@ -65,7 +76,6 @@ function buildFormFromEnvio(envio) {
       confirmador: "",
       origen: "WEB",
       canal_venta_id: "",
-      campaign_name: "",
       nombre_cliente: "",
       apellido_cliente: "",
       telefono: "",
@@ -113,7 +123,6 @@ function buildFormFromEnvio(envio) {
     confirmador: envio.confirmador || "",
     origen: envio.origen || "WEB",
     canal_venta_id: envio.canal_venta_id || "",
-    campaign_name: envio.campaign_name || "",
     nombre_cliente: nombreCompleto,
     apellido_cliente: "",
     telefono: envio.telefono || "",
@@ -151,10 +160,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   const [couriers, setCouriers] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
-  const [selectedProdId, setSelectedProdId] = useState("");
-  const [ofertasDelProducto, setOfertasDelProducto] = useState([]);
-  const [selectedOfertaId, setSelectedOfertaId] = useState("");
-  const [cant, setCant] = useState(1);
+  const [ofertasPorProducto, setOfertasPorProducto] = useState({});
   const [errors, setErrors] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -163,6 +169,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     if (open) {
       setForm(buildFormFromEnvio(envio));
       setItems([]);
+      setOfertasPorProducto({});
       setErrors({});
       setSubmitError(null);
       cargarDatosIniciales();
@@ -230,19 +237,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, modoCompletar, couriers, metodosPago, form.ciudad]);
 
-  // Al elegir un producto, cargar sus ofertas activas (individual siempre es
-  // la opción base, sin oferta) para el selector de "Presentación".
-  useEffect(() => {
-    setSelectedOfertaId("");
-    if (!selectedProdId) {
-      setOfertasDelProducto([]);
-      return;
-    }
-    ofertaService.listarPorProducto(selectedProdId)
-      .then(data => setOfertasDelProducto((Array.isArray(data) ? data : []).filter(o => o.activo)))
-      .catch(() => setOfertasDelProducto([]));
-  }, [selectedProdId]);
-
   // Opciones de ciudades (únicamente configuradas en los couriers del usuario)
   const optionsCiudades = useMemo(() => {
     const setCiudades = new Set();
@@ -257,6 +251,34 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
 
     return Array.from(setCiudades).sort().map(c => ({ value: c, label: c }));
   }, [couriers]);
+
+  const productoPorId = useMemo(() => {
+    const map = new Map();
+    productosDisponibles.forEach(p => map.set(Number(p.id), p));
+    return map;
+  }, [productosDisponibles]);
+
+  const catalogoPedidoPicker = useMemo(() => ({
+    productos: productosDisponibles.map(p => ({
+      id: p.id,
+      nombre: p.nombre,
+      imagen: imagenProducto(p),
+      precio_efectivo: precioProducto(p),
+      stock: p.cantidad_disponible ?? p.stock ?? null,
+      categoria: p.categoria?.nombre || (typeof p.categoria === 'string' ? p.categoria : null),
+      marca: p.marca?.nombre || (typeof p.marca === 'string' ? p.marca : null),
+      destacado: p.destacado,
+    })),
+    combos: [],
+  }), [productosDisponibles]);
+
+  const seleccionPedidoPicker = useMemo(() => {
+    const map = new Map();
+    items.forEach(it => {
+      if (it.producto_id) map.set(`producto:${Number(it.producto_id)}`, { id: Number(it.producto_id), tipo: 'producto' });
+    });
+    return map;
+  }, [items]);
 
   // El tipo de pago que espera la tarifa de courier ("Anticipado"/"Al Recibir")
   // se deriva del flag es_anticipado configurado en el ABM de Métodos de Pago.
@@ -335,70 +357,99 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     });
   };
 
-  const handleAddItem = () => {
-    if (!selectedProdId) {
-      setErrors(prev => ({ ...prev, producto: "Selecciona un producto para añadir" }));
-      return;
+  const cargarOfertasProducto = async (productoId) => {
+    const id = Number(productoId);
+    if (!id) return [];
+    if (ofertasPorProducto[id]) return ofertasPorProducto[id];
+
+    try {
+      const data = await ofertaService.listarPorProducto(id);
+      const activas = (Array.isArray(data) ? data : []).filter(o => o.activo);
+      setOfertasPorProducto(prev => ({ ...prev, [id]: activas }));
+      return activas;
+    } catch {
+      setOfertasPorProducto(prev => ({ ...prev, [id]: [] }));
+      return [];
     }
-    const prod = productosDisponibles.find(p => p.id === Number(selectedProdId));
-    if (!prod) return;
+  };
 
-    const oferta = selectedOfertaId ? ofertasDelProducto.find(o => o.id === Number(selectedOfertaId)) : null;
-    const precioUnit = oferta ? Number(oferta.precio) : Number(prod.precio_base ?? prod.precio_venta ?? prod.precio ?? 0);
-    const nuevoItem = {
-      producto_id: prod.id,
-      oferta_id: oferta ? oferta.id : null,
-      oferta_codigo: oferta ? oferta.codigo : null,
-      oferta_nombre: oferta ? oferta.nombre : null,
-      nombre_producto: oferta ? `${prod.nombre} — ${oferta.nombre}` : prod.nombre,
-      cantidad: Number(cant),
-      precio_unitario: precioUnit,
-      subtotal: Number(cant) * precioUnit
-    };
-
-    const nuevosItems = [...items, nuevoItem];
-    setItems(nuevosItems);
-    setSelectedProdId("");
-    setSelectedOfertaId("");
-    setCant(1);
-    setErrors(prev => ({ ...prev, items: null, producto: null }));
-
-    // Recalcular tarifa de delivery según el nuevo rango de unidades
-    if (form.ciudad) {
-      const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
-      if (form.courier_id) {
-        const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems);
-        if (nuevoCosto !== null) {
-          setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
-        }
-      } else {
-        const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems);
-        if (resultado) {
-          setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
-        }
+  const aplicarTarifaConItems = (nuevosItems) => {
+    if (!form.ciudad) return;
+    const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
+    if (form.courier_id) {
+      const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems);
+      if (nuevoCosto !== null) {
+        setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
+      }
+    } else {
+      const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems);
+      if (resultado) {
+        setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
       }
     }
   };
 
+  const crearItemPedido = (producto, oferta = null, cantidad = 1) => {
+    const qty = Math.max(1, Number(cantidad) || 1);
+    const precioUnit = oferta ? Number(oferta.precio) : precioProducto(producto);
+    return {
+      producto_id: Number(producto.id),
+      oferta_id: oferta ? oferta.id : null,
+      oferta_codigo: oferta ? oferta.codigo : null,
+      oferta_nombre: oferta ? oferta.nombre : null,
+      nombre_producto: oferta ? `${producto.nombre} — ${oferta.nombre}` : producto.nombre,
+      cantidad: qty,
+      precio_unitario: precioUnit,
+      subtotal: qty * precioUnit
+    };
+  };
+
+  const actualizarItemsPedido = (nuevosItems) => {
+    setItems(nuevosItems);
+    setErrors(prev => ({ ...prev, items: null, producto: null }));
+    aplicarTarifaConItems(nuevosItems);
+  };
+
+  const handleToggleProductoPedido = (item) => {
+    if (item?.tipo && item.tipo !== 'producto') return;
+    const productoId = Number(item.id);
+    const yaEsta = items.some(it => Number(it.producto_id) === productoId);
+
+    if (yaEsta) {
+      actualizarItemsPedido(items.filter(it => Number(it.producto_id) !== productoId));
+      return;
+    }
+
+    const producto = productoPorId.get(productoId) || item;
+    cargarOfertasProducto(productoId);
+    actualizarItemsPedido([...items, crearItemPedido(producto)]);
+  };
+
   const handleRemoveItem = (index) => {
     const nuevosItems = items.filter((_, i) => i !== index);
-    setItems(nuevosItems);
+    actualizarItemsPedido(nuevosItems);
+  };
 
-    // Recalcular tarifa de delivery según el nuevo rango de unidades
-    if (form.ciudad) {
-      const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
-      if (form.courier_id) {
-        const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems);
-        if (nuevoCosto !== null) {
-          setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
-        }
-      } else {
-        const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems);
-        if (resultado) {
-          setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
-        }
-      }
-    }
+  const handleCantidadItemChange = (index, cantidad) => {
+    const qty = Math.max(1, Number(cantidad) || 1);
+    const nuevosItems = items.map((it, i) => (
+      i === index
+        ? { ...it, cantidad: qty, subtotal: qty * (Number(it.precio_unitario) || 0) }
+        : it
+    ));
+    actualizarItemsPedido(nuevosItems);
+  };
+
+  const handleOfertaItemChange = (index, ofertaId) => {
+    const nuevosItems = items.map((it, i) => {
+      if (i !== index) return it;
+      const producto = productoPorId.get(Number(it.producto_id)) || { id: it.producto_id, nombre: it.nombre_producto };
+      const oferta = ofertaId
+        ? (ofertasPorProducto[Number(it.producto_id)] || []).find(o => Number(o.id) === Number(ofertaId))
+        : null;
+      return crearItemPedido(producto, oferta || null, it.cantidad);
+    });
+    actualizarItemsPedido(nuevosItems);
   };
 
   const subtotalProductos = itemsParaTarifa.reduce((acc, curr) => {
@@ -465,6 +516,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     }
   };
 
+  const unidadesSeleccionadas = itemsParaTarifa.reduce((acc, it) => acc + (Number(it.cantidad) || 0), 0);
+  const resumenCarga = [
+    { label: "Cliente", ok: Boolean(form.nombre_cliente.trim()) },
+    { label: "Entrega", ok: Boolean(form.ciudad.trim() && form.direccion.trim()) },
+    { label: "Productos", ok: itemsParaTarifa.length > 0 },
+    { label: "Total", ok: precioTotalVendido > 0 },
+  ];
+
   if (!open) return null;
 
   return (
@@ -473,12 +532,25 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
         className="modal-content np-modal-container"
         onClick={e => e.stopPropagation()}
       >
-        {/* Banner Superior */}
         <div className="np-header-banner">
-          <h2>{modoCompletar ? `COMPLETAR PEDIDO #${envio.id}` : "NUEVO PEDIDO"}</h2>
-          <button type="button" onClick={onClose} className="close-btn dark">
+          <div className="np-header-copy">
+            <span className="np-brand-mark">Gesicom<span>.</span></span>
+            <h2>{modoCompletar ? `Completar pedido #${envio.id}` : "Nuevo pedido"}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="np-close-action" aria-label="Cerrar modal">
             <X size={20} />
+            <span>Cerrar</span>
           </button>
+        </div>
+
+        <div className="np-progress-strip" aria-label="Resumen de carga del pedido">
+          {resumenCarga.map(paso => (
+            <span key={paso.label} className={`np-progress-chip ${paso.ok ? 'is-ready' : ''}`}>
+              <span />
+              {paso.label}
+            </span>
+          ))}
+          <strong>Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}</strong>
         </div>
 
         {/* Error de guardado (servidor) */}
@@ -568,17 +640,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                     <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
                 </select>
-              </div>
-
-              <div className="np-row">
-                <label>Campaña Publicitaria (Opcional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Ej. BlackFriday_Set2026"
-                  value={form.campaign_name}
-                  onChange={e => setForm({ ...form, campaign_name: e.target.value })}
-                />
               </div>
 
               <div className="np-row">
@@ -684,7 +745,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
               {/* Asignación de Courier y Precio de Delivery Automático */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)' }}>
                 <div className="np-row">
-                  <label style={{ color: '#60a5fa' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier Asignado para el Envio</label>
+                  <label style={{ color: 'var(--color-primary-text)' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier Asignado para el Envio</label>
                   <select
                     className="form-input"
                     value={form.courier_id}
@@ -698,7 +759,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 </div>
 
                 <div className="np-row">
-                  <label style={{ color: '#10b981' }}>Costo del Envio (Gs)</label>
+                  <label style={{ color: 'var(--color-success)' }}>Costo del Envio (Gs)</label>
                   <CurrencyInput
                     className="form-input"
                     style={{ fontFamily: 'monospace', fontWeight: 'bold', opacity: form.incluye_delivery ? 1 : 0.5 }}
@@ -724,7 +785,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                       }));
                     }}
                   />
-                  <span style={{ color: '#60a5fa', fontSize: '0.85rem' }}>Incluye Delivery</span>
+                  <span style={{ color: 'var(--color-primary-text)', fontSize: '0.85rem' }}>Incluye Delivery</span>
                 </label>
               </div>
 
@@ -746,7 +807,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
                     checked={form.quiere_factura}
                     onChange={e => setForm({ ...form, quiere_factura: e.target.checked })}
                   />
@@ -803,110 +864,145 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
             <h3 className="np-section-title">
               <ShoppingBag size={16} /> Productos Vendidos en el Pedido
             </h3>
+            <div className="np-products-hero">
+              <div>
+                <span className="np-kicker">Selección visual</span>
+                <p>Buscá en el catálogo, elegí por imagen y ajustá cada línea antes de confirmar.</p>
+              </div>
+              <div className="np-products-metrics">
+                <span><strong>{itemsParaTarifa.length}</strong> ítems</span>
+                <span><strong>{unidadesSeleccionadas}</strong> unidades</span>
+              </div>
+            </div>
 
-            {!modoCompletar && (
-              <div className="np-add-item-bar">
-                <select
-                  className="form-input"
-                  style={{ flex: 2, minWidth: '200px' }}
-                  value={selectedProdId}
-                  onChange={e => {
-                    setSelectedProdId(e.target.value);
-                    if (errors.producto) setErrors(prev => ({ ...prev, producto: null }));
-                  }}
-                >
-                  <option value="">-- Seleccionar Producto del sistema --</option>
-                  {productosDisponibles.map(p => {
-                    const pPrecio = Number(p.precio_base ?? p.precio_venta ?? p.precio ?? 0);
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre} (Gs. {pPrecio.toLocaleString('es-PY')})
-                      </option>
-                    );
-                  })}
-                </select>
+            <div className="np-product-workbench">
+              {!modoCompletar && (
+                <div className="np-picker-panel">
+                  <div className="np-panel-head">
+                    <div>
+                      <span className="np-kicker">Catálogo</span>
+                      <strong>Elegí productos con imagen y búsqueda</strong>
+                    </div>
+                    <Package size={18} />
+                  </div>
 
-                {ofertasDelProducto.length > 0 && (
-                  <select
-                    className="form-input"
-                    style={{ flex: 1, minWidth: '180px' }}
-                    value={selectedOfertaId}
-                    onChange={e => setSelectedOfertaId(e.target.value)}
-                  >
-                    <option value="">Individual (Gs. {Number(productosDisponibles.find(p => p.id === Number(selectedProdId))?.precio_base || 0).toLocaleString('es-PY')})</option>
-                    {ofertasDelProducto.map(o => (
-                      <option key={o.id} value={o.id}>{o.nombre} (Gs. {Number(o.precio).toLocaleString('es-PY')})</option>
-                    ))}
-                  </select>
+                  <ProductPicker
+                    catalogo={catalogoPedidoPicker}
+                    seleccion={seleccionPedidoPicker}
+                    onToggle={handleToggleProductoPedido}
+                    max={80}
+                    mostrarLista={false}
+                    mostrarInputs={false}
+                    zIndexModal={1300}
+                    themeScopeClassName="np-picker-theme"
+                    triggerLabel="Abrir catálogo visual"
+                    modalTitle="Agregar productos al pedido"
+                  />
+
+                  {errors.producto && <span className="field-error">{errors.producto}</span>}
+                  {errors.items && <span className="field-error">{errors.items}</span>}
+                </div>
+              )}
+
+              <div className="np-cart-panel">
+                <div className="np-panel-head">
+                  <div>
+                    <span className="np-kicker">Pedido</span>
+                    <strong>Productos seleccionados</strong>
+                  </div>
+                  <span className="np-count-pill">{itemsParaTarifa.length}</span>
+                </div>
+
+                {itemsParaTarifa.length > 0 ? (
+                  <div className="np-order-items-list">
+                    {itemsParaTarifa.map((it, idx) => {
+                      const productoCatalogo = productoPorId.get(Number(it.producto_id));
+                      const foto = imagenProducto(productoCatalogo);
+                      const ofertas = ofertasPorProducto[Number(it.producto_id)] || [];
+                      const pUnit = Number(it.precio_unitario) || 0;
+                      const cantLinea = Number(it.cantidad) || 1;
+                      const sub = Number(it.subtotal) || (pUnit * cantLinea);
+
+                      return (
+                        <div className="np-order-item-card" key={`${it.producto_id || idx}-${idx}`}>
+                          <div className="np-order-item-media">
+                            {foto ? (
+                              <img src={getMediaUrl(foto)} alt="" loading="lazy" />
+                            ) : (
+                              <ImageOff size={18} />
+                            )}
+                          </div>
+
+                          <div className="np-order-item-main">
+                            <div className="np-order-item-title-row">
+                              <div>
+                                <strong>{it.nombre_producto}</strong>
+                                <span>Gs. {pUnit.toLocaleString('es-PY')} c/u</span>
+                              </div>
+                              {!modoCompletar && (
+                                <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto">
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="np-order-item-controls">
+                              {!modoCompletar ? (
+                                <>
+                                  <label>
+                                    Presentación
+                                    <select
+                                      className="form-input np-offer-select"
+                                      value={it.oferta_id || ""}
+                                      onFocus={() => cargarOfertasProducto(it.producto_id)}
+                                      onChange={e => handleOfertaItemChange(idx, e.target.value)}
+                                    >
+                                      <option value="">Individual (Gs. {precioProducto(productoCatalogo || it).toLocaleString('es-PY')})</option>
+                                      {ofertas.map(o => (
+                                        <option key={o.id} value={o.id}>{o.nombre} (Gs. {Number(o.precio).toLocaleString('es-PY')})</option>
+                                      ))}
+                                    </select>
+                                  </label>
+
+                                  <label>
+                                    Cantidad
+                                    <div className="np-qty-control">
+                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea - 1)} title="Restar">
+                                        <Minus size={14} />
+                                      </button>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={cantLinea}
+                                        onChange={e => handleCantidadItemChange(idx, e.target.value)}
+                                      />
+                                      <button type="button" onClick={() => handleCantidadItemChange(idx, cantLinea + 1)} title="Sumar">
+                                        <Plus size={14} />
+                                      </button>
+                                    </div>
+                                  </label>
+                                </>
+                              ) : (
+                                <span className="np-line-option">{it.oferta_nombre || "Individual"} · {cantLinea} un.</span>
+                              )}
+
+                              <div className="np-line-subtotal">
+                                <span>Subtotal</span>
+                                <strong>Gs. {sub.toLocaleString('es-PY')}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="np-empty-items">
+                    Sin productos seleccionados aún. Abrí el catálogo visual para buscar y agregar ítems.
+                  </div>
                 )}
-
-                <input
-                  type="number"
-                  min="1"
-                  className="form-input"
-                  style={{ width: '80px' }}
-                  value={cant}
-                  onChange={e => setCant(e.target.value)}
-                />
-
-                <button
-                  type="button"
-                  className="btn-outline"
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                  onClick={handleAddItem}
-                >
-                  <Plus size={16} /> Añadir al pedido
-                </button>
               </div>
-            )}
-
-            {!modoCompletar && errors.producto && <span className="field-error">{errors.producto}</span>}
-            {!modoCompletar && errors.items && <span className="field-error" style={{ display: 'block', marginTop: '0.5rem' }}>{errors.items}</span>}
-
-            {/* Tabla de items agregados */}
-            {itemsParaTarifa.length > 0 ? (
-              <table className="prod-table np-items-table">
-                <thead>
-                  <tr>
-                    <th>Producto</th>
-                    <th style={{ textAlign: 'center' }}>Cant.</th>
-                    <th style={{ textAlign: 'right' }}>Precio Unit.</th>
-                    <th style={{ textAlign: 'right' }}>Subtotal</th>
-                    {!modoCompletar && <th></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {itemsParaTarifa.map((it, idx) => {
-                    const pUnit = Number(it.precio_unitario) || 0;
-                    const cant = Number(it.cantidad) || 1;
-                    const sub = Number(it.subtotal) || (pUnit * cant);
-                    return (
-                      <tr key={idx}>
-                        <td style={{ color: 'var(--color-fg)', fontWeight: 600 }}>{it.nombre_producto}</td>
-                        <td style={{ textAlign: 'center' }}>{cant}</td>
-                        <td style={{ textAlign: 'right', fontFamily: 'monospace' }}>
-                          Gs. {pUnit.toLocaleString('es-PY')}
-                        </td>
-                        <td style={{ textAlign: 'right', fontFamily: 'monospace', color: '#10b981', fontWeight: 'bold' }}>
-                          Gs. {sub.toLocaleString('es-PY')}
-                        </td>
-                        {!modoCompletar && (
-                          <td style={{ textAlign: 'right' }}>
-                            <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger">
-                              <Trash2 size={14} />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <div className="np-empty-items">
-                Sin productos seleccionados aún. Usa el buscador superior para agregar ítems.
-              </div>
-            )}
+            </div>
 
             {/* Resumen Total Desglosado */}
             <div className="np-total-row">

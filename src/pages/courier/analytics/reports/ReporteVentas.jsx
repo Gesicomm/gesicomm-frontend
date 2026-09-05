@@ -19,7 +19,7 @@ export function ReporteVentas({ filters }) {
   
   // Transformamos los filtros globales de Analytics al formato que espera VistaPedidos
   // VistaPedidos espera: { buscador, fecha_desde, fecha_hasta }
-  // Analytics provee: { periodo, mes, anio, confirmador, courierId, origen }
+  // Analytics provee: { periodo, mes, anio, confirmador, courierId, canal_venta_id }
   // Para simplificar y no romper el API de reportes, le pasaremos el buscador y el confirmador/courier si es posible
   const [filtrosActivos, setFiltrosActivos] = useState({
     buscador: '',
@@ -63,7 +63,7 @@ export function ReporteVentas({ filters }) {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 shrink-0">
         <div>
           <h2 className="text-xl font-bold text-fg flex items-center gap-2">
-            <ShoppingCart className="text-[#3b82f6]" size={20} />
+            <ShoppingCart className="text-[var(--color-primary-text)]" size={20} />
             Desglose de Ventas y Pedidos
           </h2>
           <p className="text-sm text-fg-muted">
@@ -79,11 +79,11 @@ export function ReporteVentas({ filters }) {
               placeholder="Buscar cliente, tel, #pedido..." 
               value={localSearch}
               onChange={e => setLocalSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 bg-canvas border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[#3d5fa3] text-fg"
+              className="pl-9 pr-3 py-2 bg-canvas border border-[color-mix(in_srgb,_var(--color-fg)_10%,_transparent)] rounded-lg text-sm w-[250px] focus:outline-none focus:border-[var(--color-primary)] text-fg"
             />
           </div>
           
-          <button type="submit" className="px-4 py-2 bg-[#3d5fa3] text-white font-semibold rounded-lg text-sm hover:bg-[#2e4a85] transition-colors">
+          <button type="submit" className="px-4 py-2 bg-primary text-primary-fg font-semibold rounded-lg text-sm hover:bg-primary-hover transition-colors">
             Buscar
           </button>
         </form>
@@ -92,24 +92,24 @@ export function ReporteVentas({ filters }) {
       {/* KPIS ROW */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 shrink-0">
         <KpiCard icon={<DollarSign size={20} />} title="Ventas Totales" value={formatPrecio(kpis.ventas_totales)} color="text-green-400" />
-        <KpiCard icon={<ShoppingBag size={20} />} title="Pedidos" value={kpis.pedidos} color="text-blue-400" />
-        <KpiCard icon={<TrendingUp size={20} />} title="Ticket Promedio" value={formatPrecio(kpis.ticket_promedio)} color="text-[#d4a537]" />
+        <KpiCard icon={<ShoppingBag size={20} />} title="Pedidos" value={kpis.pedidos} color="text-[var(--color-primary-text)]" />
+        <KpiCard icon={<TrendingUp size={20} />} title="Ticket Promedio" value={formatPrecio(kpis.ticket_promedio)} color="text-[var(--color-accent-text)]" />
         <KpiCard icon={<Package size={20} />} title="Order Bumps" value={kpis.order_bumps} color="text-orange-400" />
         <KpiCard icon={<TrendingUp size={20} />} title="Upsells" value={kpis.upsells} color="text-pink-400" />
-        <KpiCard icon={<Layers size={20} />} title="Bundles" value={kpis.bundles} color="text-[#7d9bd6]" />
+        <KpiCard icon={<Layers size={20} />} title="Bundles" value={kpis.bundles} color="text-[var(--color-info)]" />
       </div>
 
       {/* TABS & VIEWS */}
       <div className="flex-1 flex flex-col min-h-0 bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] shadow-sm overflow-hidden">
-        <div className="flex border-b border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] bg-[rgba(0,0,0,0.2)] shrink-0">
+        <div className="flex border-b border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] bg-[color-mix(in_srgb,_var(--color-fg)_3%,_transparent)] shrink-0">
           <button 
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'pedidos' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61,95,163,0.05)]' : 'text-fg-muted hover:text-fg'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'pedidos' ? 'text-[var(--color-primary-text)] border-b-2 border-[var(--color-primary)] bg-[color-mix(in_srgb,_var(--color-primary)_8%,_transparent)]' : 'text-fg-muted hover:text-fg'}`}
             onClick={() => setActiveTab('pedidos')}
           >
             <LayoutList size={16} /> Vista Pedidos
           </button>
           <button 
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'items' ? 'text-[#7d9bd6] border-b-2 border-[#3d5fa3] bg-[rgba(61,95,163,0.05)]' : 'text-fg-muted hover:text-fg'}`}
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-colors ${activeTab === 'items' ? 'text-[var(--color-primary-text)] border-b-2 border-[var(--color-primary)] bg-[color-mix(in_srgb,_var(--color-primary)_8%,_transparent)]' : 'text-fg-muted hover:text-fg'}`}
             onClick={() => setActiveTab('items')}
           >
             <Table2 size={16} /> Vista Ítems Vendidos

@@ -114,7 +114,7 @@ export function CouriersCrud({
               <tr key={c.id}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', fontWeight: 'bold', fontSize: '12px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-primary) 14%, transparent)', color: 'var(--color-primary-text)', fontWeight: 'bold', fontSize: '12px' }}>
                       {c.nombre.slice(0, 2).toUpperCase()}
                     </span>
                     <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{c.nombre}</span>
@@ -132,17 +132,17 @@ export function CouriersCrud({
                     {c.vehiculo}
                   </span>
                 </td>
-                <td style={{ textAlign: 'center', fontFamily: 'monospace', color: '#34d399', fontWeight: 'bold' }}>
+                <td style={{ textAlign: 'center', fontFamily: 'monospace', color: 'var(--color-success)', fontWeight: 'bold' }}>
                   {enviosCountByCourier[c.id] ?? 0}
                 </td>
                 <td style={{ textAlign: 'center' }}>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
-                    background: c.activo ? 'rgba(16, 185, 129, 0.15)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)', 
-                    color: c.activo ? '#34d399' : 'var(--color-fg-muted)',
-                    border: c.activo ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
+                    background: c.activo ? 'color-mix(in srgb, var(--color-success) 15%, transparent)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
+                    color: c.activo ? 'var(--color-success)' : 'var(--color-fg-muted)',
+                    border: c.activo ? '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
                   }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.activo ? '#10b981' : '#64748b' }} />
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: c.activo ? 'var(--color-success)' : 'var(--color-fg-muted)' }} />
                     {c.activo ? "Activo" : "Inactivo"}
                   </span>
                 </td>
@@ -261,7 +261,7 @@ export function CouriersCrud({
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
                   <input
                     type="checkbox"
-                    style={{ accentColor: '#3b82f6', width: '16px', height: '16px' }}
+                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
                     checked={form.activo}
                     onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
                   />
@@ -277,7 +277,7 @@ export function CouriersCrud({
                 <button 
                   type="button" 
                   onClick={addTarifa} 
-                  style={{ background: 'transparent', border: 'none', color: '#3b82f6', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--color-primary-text)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                 >
                   <Plus size={16} /> Agregar tarifa
                 </button>
@@ -409,15 +409,15 @@ export function CouriersCrud({
               <button
                 type="submit"
                 style={{
-                  background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)',
-                  color: 'var(--color-fg)',
+                  background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-active))',
+                  color: 'var(--color-primary-fg)',
                   border: 'none',
                   padding: '0.65rem 1.6rem',
                   borderRadius: '0.6rem',
                   fontWeight: 700,
                   fontSize: '0.875rem',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 14px rgba(61, 95, 163, 0.4)',
+                  boxShadow: '0 4px 14px color-mix(in srgb, var(--color-primary) 35%, transparent)',
                   transition: 'all 0.2s'
                 }}
               >

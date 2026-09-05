@@ -1,170 +1,452 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TIENDA — Configuración (rediseño con tabs + message builder)
-   Reutiliza --vit-* (vitrina.css) y las clases .land-* (landing.css)
+   TIENDA — Configuración (/mi-tienda)
+
+   Layout de "settings de SaaS": una sola tarjeta con navegación arriba,
+   encabezado de sección, bloques en dos columnas (título+explicación a la
+   izquierda, controles a la derecha) y un footer de acciones separado.
+
+   Reutiliza los tokens --vit-* (vitrina.css) y --color-* (index.css). Las
+   clases .land-* (landing.css) siguen usándose solo para el botón primario
+   y las alertas, que ya son del sistema.
 ═══════════════════════════════════════════════════════════════════════════ */
 
-/* DominioPropio tiene su propio <form> — este wrapper no puede ser otro
-   <form> (HTML no permite forms anidados). display:contents lo saca del
-   flujo de layout sin afectar el grid de .land-editor-grid: sus hijos
-   (.land-section, .land-editor-footer) siguen siendo grid items directos. */
-.land-editor-grid-form { display: contents; }
+/* ─── Página ──────────────────────────────────────────────────────────── */
+.tn-page {
+  padding: 2rem 2.25rem 3rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
 
-/* ─── Tabs ────────────────────────────────────────────────────────────── */
+.tn-page-head h1 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--vit-text);
+}
+
+.tn-page-head p {
+  margin: 0.4rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--vit-muted);
+  max-width: 68ch;
+}
+
+.tn-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 4rem 0;
+  color: var(--vit-muted);
+}
+.tn-loading p { margin: 0; font-size: 0.9rem; }
+
+/* ─── Contenedor único ────────────────────────────────────────────────── */
+/* Sin overflow: el footer es sticky y cualquier recorte lo rompería. */
+.tn-shell {
+  background: var(--vit-surface);
+  border: 1px solid var(--vit-border);
+  border-radius: 16px;
+}
+
+/* ─── Navegación ──────────────────────────────────────────────────────── */
+/* Pestañas subrayadas apoyadas en el borde del panel: ocupan solo lo que
+   miden (no se estiran a 5 bloques iguales) y en mobile hacen scroll
+   horizontal en vez de apilarse en una columna gigante. */
 .tn-tabs {
   display: flex;
-  gap: 0.25rem;
-  padding: 0.3rem;
-  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
-  border: 1px solid var(--vit-border);
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
+  gap: 0.15rem;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid var(--vit-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.tn-tabs::-webkit-scrollbar { display: none; }
 
 .tn-tab {
-  flex: 1;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1rem;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+  padding: 0.85rem 0.85rem;
+  margin-bottom: -1px;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 10px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   color: var(--vit-muted);
   font-size: 0.82rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
   white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
-.tn-tab:hover {
-  color: var(--vit-text);
-  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
-}
+.tn-tab:hover { color: var(--vit-text); }
 
 .tn-tab.activo {
-  background: var(--vit-accent-soft);
-  border-color: rgba(61, 95, 163, 0.3);
   color: var(--vit-accent-fg);
-  box-shadow: 0 1px 6px rgba(61, 95, 163, 0.12);
+  border-bottom-color: var(--vit-accent-fg);
 }
 
-.tn-tab .tn-tab-icon {
-  display: flex;
-  align-items: center;
-  opacity: 0.7;
+.tn-tab .tn-tab-icon { display: flex; align-items: center; opacity: 0.65; }
+.tn-tab.activo .tn-tab-icon { opacity: 1; }
+
+/* ─── Panel ───────────────────────────────────────────────────────────── */
+.tn-panel { display: flex; flex-direction: column; }
+
+.tn-panel-head { padding: 1.6rem 2rem 0.25rem; }
+
+.tn-panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--vit-text);
 }
 
-.tn-tab.activo .tn-tab-icon {
-  opacity: 1;
+.tn-panel-head p {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--vit-muted);
+  max-width: 72ch;
 }
 
-/* ─── Tab Content Transition ─────────────────────────────────────────── */
-.tn-tab-content {
-  animation: tnFadeIn 0.25s ease-out;
-}
+.tn-form { display: flex; flex-direction: column; min-width: 0; }
+
+.tn-body { padding: 0 2rem; min-width: 0; }
+
+.tn-alert { margin: 1.25rem 0 0; }
+
+.tn-tab-content { animation: tnFadeIn 0.22s ease-out; }
 
 @keyframes tnFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Section Header with Icon ───────────────────────────────────────── */
-.tn-section-header {
+/* ─── Bloque de configuración ─────────────────────────────────────────── */
+/* Título + explicación a la izquierda, controles a la derecha. Es lo que
+   deja de hacer que todo pese lo mismo: la columna izquierda dice qué es
+   cada cosa y la derecha es lo único accionable. */
+.tn-group {
+  display: grid;
+  grid-template-columns: minmax(0, 250px) minmax(0, 1fr);
+  gap: 1rem 3rem;
+  padding: 1.75rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--vit-border) 70%, transparent);
+}
+
+/* Para bloques que embeben un componente entero y necesitan todo el ancho. */
+.tn-group-plena { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+
+.tn-group-head { min-width: 0; }
+
+.tn-group-head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  color: var(--vit-text);
+}
+
+.tn-group-head p {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--vit-muted);
+  max-width: 46ch;
+}
+.tn-group-plena .tn-group-head p { max-width: 78ch; }
+
+.tn-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* ─── Estados ─────────────────────────────────────────────────────────── */
+.tn-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--vit-border);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  color: var(--vit-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.tn-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.tn-badge.ok {
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.tn-badge.pendiente {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* ─── Campos ──────────────────────────────────────────────────────────── */
+.tn-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.tn-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.tn-field-ancho { grid-column: 1 / -1; }
+
+.tn-field-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--vit-text);
+}
+.tn-field-label em {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--vit-muted-2);
+}
+
+.tn-field-hint {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--vit-muted-2);
+}
+
+.tn-field > input,
+.tn-token-input-group > input,
+.dp-form input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 9px;
+  padding: 0.55rem 0.7rem;
+  color: var(--vit-text);
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tn-field > input::placeholder,
+.tn-token-input-group > input::placeholder,
+.dp-form input::placeholder { color: var(--vit-muted-2); }
+
+.tn-field > input:focus,
+.tn-token-input-group > input:focus,
+.dp-form input:focus,
+.tn-msg-textarea:focus {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 2px var(--vit-accent-soft);
+}
+
+/* ─── URL pública (solo lectura) ──────────────────────────────────────── */
+.tn-url-readonly {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.15rem;
-}
-
-.tn-section-header h2 {
-  margin: 0;
-  font-size: 0.85rem;
+  gap: 0.45rem;
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  border: 1px dashed var(--vit-border);
+  border-radius: 9px;
+  padding: 0.55rem 0.7rem;
   color: var(--vit-text);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+.tn-url-readonly svg { color: var(--vit-muted); flex-shrink: 0; }
+.tn-url-readonly code {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
 }
 
-.tn-section-icon {
+/* ─── Checkbox ────────────────────────────────────────────────────────── */
+.tn-checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--vit-text);
+  cursor: pointer;
+}
+.tn-checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--vit-accent); }
+
+/* ─── Plan / upsell ───────────────────────────────────────────────────── */
+/* El plan dejó de ser un par de chips grises indistinguibles: en Free es un
+   bloque que argumenta y empuja a /planes, y en un plan de pago es una
+   confirmación tranquila. La jerarquía la da el contraste con el resto de
+   la pantalla, que es toda formulario. */
+.tn-upsell {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.5rem 1.6rem;
+  border-radius: 14px;
+  border: 1px solid var(--vit-accent);
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--vit-accent-soft) 0%, transparent 60%),
+    var(--vit-bg);
+  max-width: 720px;
+}
+
+.tn-upsell-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  padding: 0.24rem 0.65rem;
+  border-radius: 999px;
+  background: var(--vit-accent-soft);
+  color: var(--vit-accent-fg);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tn-upsell h4 {
+  margin: 0.25rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--vit-text);
+}
+
+.tn-upsell > p {
+  margin: 0;
+  max-width: 58ch;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--vit-muted);
+}
+
+.tn-upsell-lista {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.4rem 1.25rem;
+}
+.tn-upsell-lista li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--vit-text);
+}
+.tn-upsell-lista svg { flex-shrink: 0; color: #10b981; }
+
+.tn-upsell-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.tn-upsell-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.72rem 1.3rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--vit-accent);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+.tn-upsell-cta:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.tn-upsell-cta:active { transform: translateY(0); }
+
+.tn-upsell-nota { font-size: 0.75rem; color: var(--vit-muted-2); }
+
+/* Ya tiene plan de pago: nada que vender, solo confirmar. */
+.tn-plan-actual {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.15rem;
+  border-radius: 12px;
+  border: 1px solid var(--vit-border);
+  background: var(--vit-bg);
+  max-width: 620px;
+}
+
+.tn-plan-actual-icono {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: var(--vit-accent-soft);
   color: var(--vit-accent-fg);
   flex-shrink: 0;
 }
 
-.tn-section-icon.purple {
-  background: rgba(255, 193, 7, 0.12);
-  color: #ffc107;
-}
+.tn-plan-actual-texto { display: flex; flex-direction: column; gap: 0.1rem; flex: 1; min-width: 0; }
+.tn-plan-actual-texto strong { font-size: 0.88rem; font-weight: 700; color: var(--vit-text); }
+.tn-plan-actual-texto span { font-size: 0.76rem; color: var(--vit-muted); }
 
-.tn-section-icon.blue {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
-.tn-section-icon.amber {
-  background: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-}
-
-.tn-section-icon.rose {
-  background: rgba(244, 63, 94, 0.1);
-  color: #f43f5e;
-}
-
-.tn-section-desc {
-  font-size: 0.75rem;
-  color: var(--vit-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
-/* ─── URL Readonly ───────────────────────────────────────────────────── */
-.tn-url-readonly {
-  display: flex;
+.tn-plan-link {
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: var(--vit-bg);
-  border: 1px solid var(--vit-border);
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
-  color: var(--vit-text);
-  font-size: 0.85rem;
-}
-
-/* ─── Checkbox Row ───────────────────────────────────────────────────── */
-.tn-checkbox-row {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 0.5rem !important;
+  gap: 0.3rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--vit-accent-fg);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
 }
-.tn-checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--vit-accent); }
+.tn-plan-link:hover { text-decoration: underline; }
 
-/* ─── Plan Chips ─────────────────────────────────────────────────────── */
-.tn-plan-row { display: flex; gap: 0.5rem; }
-.tn-plan-chip {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  background: var(--vit-bg);
-  border: 1px solid var(--vit-border);
-  border-radius: 999px;
-  padding: 0.45rem 0.9rem;
-  color: var(--vit-muted);
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.tn-plan-chip:hover { color: var(--vit-text); }
-.tn-plan-chip.selected { border-color: var(--vit-accent); color: var(--vit-accent-fg); background: var(--vit-accent-soft); }
-
-/* ─── Availability & Warnings ────────────────────────────────────────── */
+/* ─── Disponibilidad y avisos ─────────────────────────────────────────── */
 .tn-disponibilidad { min-height: 1.2rem; }
 .tn-check { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.78rem; }
 .tn-check.ok { color: #10b981; }
@@ -172,36 +454,79 @@
 .tn-check.cargando { color: var(--vit-muted); }
 
 .tn-warning {
-  display: flex; align-items: flex-start; gap: 0.4rem;
+  display: flex; align-items: flex-start; gap: 0.45rem;
   background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 8px;
-  padding: 0.55rem 0.65rem;
+  border-radius: 9px;
+  padding: 0.6rem 0.75rem;
   color: #f59e0b;
   font-size: 0.78rem;
-  line-height: 1.4;
-  margin: 0.4rem 0 0;
+  line-height: 1.45;
+  margin: 0;
 }
 .tn-warning svg { flex-shrink: 0; margin-top: 0.15rem; }
 
-.tn-saved {
-  display: flex; align-items: center; gap: 0.3rem;
-  color: #10b981;
-  font-size: 0.82rem;
-  margin-right: 0.75rem;
+/* ─── Footer de acciones ──────────────────────────────────────────────── */
+/* Pegado abajo mientras se scrollea, con borde superior y aire propio —
+   deja de "flotar" contra el borde del contenedor. */
+.tn-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+  padding: 1.1rem 2rem;
+  border-top: 1px solid var(--vit-border);
+  border-radius: 0 0 16px 16px;
+  background: color-mix(in srgb, var(--vit-surface) 92%, transparent);
+  backdrop-filter: blur(8px);
 }
 
-/* ─── Message Builder ────────────────────────────────────────────────── */
+.tn-footer-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--vit-muted-2);
+  max-width: 62ch;
+}
+.tn-footer-note svg { flex-shrink: 0; margin-top: 0.15rem; }
+
+.tn-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.tn-saved {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  color: #10b981;
+  font-size: 0.82rem;
+}
+
+/* ─── Message builder ─────────────────────────────────────────────────── */
+.tn-msg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 1150px) {
+  .tn-msg-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+
 .tn-msg-builder {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-}
-
-.tn-msg-builder-label {
-  font-size: 0.78rem;
-  color: var(--vit-muted);
-  margin: 0;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .tn-msg-textarea {
@@ -216,32 +541,24 @@
   box-sizing: border-box;
   outline: none;
   resize: vertical;
-  min-height: 72px;
+  min-height: 84px;
   line-height: 1.5;
   transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.tn-msg-textarea:focus {
-  border-color: var(--vit-accent);
-  box-shadow: 0 0 0 2px var(--vit-accent-soft);
 }
 
 .tn-msg-vars-header {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.72rem;
-  color: var(--vit-muted);
+  font-size: 0.7rem;
+  color: var(--vit-muted-2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
+  margin-top: 0.2rem;
 }
 
-.tn-msg-vars {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
+.tn-msg-vars { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 .tn-msg-var-chip {
   display: inline-flex;
@@ -257,7 +574,6 @@
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--font-mono);
   font-weight: 500;
-  position: relative;
 }
 
 .tn-msg-var-chip:hover {
@@ -267,9 +583,7 @@
   box-shadow: 0 2px 8px rgba(61, 95, 163, 0.16);
 }
 
-.tn-msg-var-chip:active {
-  transform: scale(0.97);
-}
+.tn-msg-var-chip:active { transform: scale(0.97); }
 
 .tn-msg-var-chip .tn-var-desc {
   font-family: inherit;
@@ -278,19 +592,20 @@
   font-size: 0.72rem;
 }
 
-/* ─── WhatsApp Preview Bubble ────────────────────────────────────────── */
+/* ─── Preview de WhatsApp ─────────────────────────────────────────────── */
 .tn-msg-preview-wrap {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .tn-msg-preview-label {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.72rem;
-  color: var(--vit-muted);
+  font-size: 0.7rem;
+  color: var(--vit-muted-2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
@@ -300,9 +615,8 @@
   position: relative;
   background: #005c4b;
   border-radius: 0 12px 12px 12px;
-  padding: 0.65rem 0.85rem;
-  padding-bottom: 1.1rem;
-  color: var(--color-fg);
+  padding: 0.65rem 0.85rem 1.1rem;
+  color: #f5f5f2;
   font-size: 0.82rem;
   line-height: 1.55;
   max-width: 380px;
@@ -328,10 +642,11 @@
   bottom: 0.35rem;
   right: 0.65rem;
   font-size: 0.62rem;
-  color: color-mix(in srgb, var(--color-fg) 50%, transparent);
+  color: rgba(245, 245, 242, 0.5);
 }
 
 .tn-msg-preview-bg {
+  flex: 1;
   background: linear-gradient(135deg, #0b141a 0%, #0d1b25 100%);
   border: 1px solid var(--vit-border);
   border-radius: 12px;
@@ -348,12 +663,12 @@
   padding: 1rem;
 }
 
-/* Highlighted variables inside preview */
+/* Variables resaltadas dentro del preview */
 .tn-preview-var {
-  background: rgba(61, 95, 163, 0.18);
+  background: rgba(125, 155, 214, 0.25);
   border-radius: 3px;
   padding: 0 2px;
-  color: var(--vit-accent-fg);
+  color: #dbe6fa;
   font-weight: 500;
 }
 
@@ -361,20 +676,18 @@
 .dp-form, .dp-pending {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.75rem;
 }
 .dp-form label {
-  display: flex; flex-direction: column; gap: 0.3rem;
-  font-size: 0.78rem; color: var(--vit-muted);
+  display: flex; flex-direction: column; gap: 0.35rem;
+  font-size: 0.78rem; font-weight: 600; color: var(--vit-text);
+  width: 100%;
+  max-width: 420px;
 }
-.dp-form input {
-  background: var(--vit-bg);
-  border: 1px solid var(--vit-border);
-  border-radius: 8px;
-  padding: 0.5rem 0.65rem;
-  color: var(--vit-text);
-  font-size: 0.85rem;
-}
+/* El botón no debe estirarse a todo el ancho del bloque. */
+.dp-form > .land-btn-primary,
+.dp-pending .dp-actions { align-self: flex-start; }
 
 .dp-verified {
   display: flex; align-items: center; gap: 0.5rem;
@@ -382,16 +695,20 @@
   color: var(--vit-text);
 }
 
+.dp-pending > p { margin: 0; font-size: 0.82rem; color: var(--vit-text); }
+
 .dp-txt-box {
   background: var(--vit-bg);
   border: 1px solid var(--vit-border);
-  border-radius: 8px;
-  padding: 0.75rem;
+  border-radius: 10px;
+  padding: 0.85rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
+  width: 100%;
+  box-sizing: border-box;
 }
-.dp-txt-box p { margin: 0; font-size: 0.78rem; color: var(--vit-muted); }
+.dp-txt-box p { margin: 0; font-size: 0.75rem; color: var(--vit-muted); }
 .dp-txt-row { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
 .dp-txt-row span { font-size: 0.72rem; color: var(--vit-muted-2); min-width: 50px; }
 .dp-txt-row code {
@@ -399,6 +716,7 @@
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
   font-size: 0.78rem;
+  font-family: var(--font-mono);
   color: var(--vit-accent-fg);
   word-break: break-all;
 }
@@ -406,23 +724,33 @@
 .dp-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .dp-hint { margin: 0; font-size: 0.75rem; color: var(--vit-muted-2); }
 
-/* ─── CAPI Token Management ─────────────────────────────────────────── */
+/* ─── Token de Meta CAPI ──────────────────────────────────────────────── */
 .tn-token-wrapper {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  max-width: 640px;
+}
+
+.tn-token-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .tn-token-status-pill {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  border-radius: 9px;
   font-size: 0.78rem;
-  border: 1px solid var(--vit-border);
   background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(16, 185, 129, 0.25);
   color: #10b981;
 }
 
@@ -446,16 +774,15 @@
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-size: 0.72rem;
+  font-family: inherit;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
 
-.tn-token-btn-remove:hover {
-  background: rgba(239, 68, 68, 0.15);
-}
+.tn-token-btn-remove:hover { background: rgba(239, 68, 68, 0.15); }
 
 .tn-token-btn-undo {
   background: transparent;
@@ -464,9 +791,11 @@
   padding: 0.25rem 0.6rem;
   border-radius: 6px;
   font-size: 0.72rem;
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease;
 }
+.tn-token-btn-undo:hover { background: rgba(16, 185, 129, 0.15); }
 
 .tn-token-input-group {
   position: relative;
@@ -474,9 +803,7 @@
   align-items: center;
 }
 
-.tn-token-input-group input {
-  padding-right: 2.5rem !important;
-}
+.tn-token-input-group > input { padding-right: 2.5rem; }
 
 .tn-token-toggle-btn {
   position: absolute;
@@ -495,51 +822,38 @@
   transition: color 0.15s;
 }
 
-.tn-token-toggle-btn:hover {
-  color: var(--vit-text);
-}
+.tn-token-toggle-btn:hover { color: var(--vit-text); }
 
 .tn-token-guide-toggle {
   background: transparent;
   border: none;
   color: var(--vit-accent-fg);
   font-size: 0.75rem;
+  font-family: inherit;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   padding: 0;
-  margin-top: 0.2rem;
   width: fit-content;
 }
 
-.tn-token-guide-toggle:hover {
-  text-decoration: underline;
-}
+.tn-token-guide-toggle:hover { text-decoration: underline; }
 
 .tn-token-guide-box {
   background: var(--vit-bg);
   border: 1px solid var(--vit-border);
-  border-radius: 8px;
-  padding: 0.75rem 0.9rem;
+  border-radius: 9px;
+  padding: 0.85rem 1rem;
   font-size: 0.75rem;
   color: var(--vit-muted);
-  line-height: 1.5;
-  margin-top: 0.3rem;
+  line-height: 1.55;
 }
 
-.tn-token-guide-box ol {
-  margin: 0.4rem 0 0 1.1rem;
-  padding: 0;
-}
-
-.tn-token-guide-box li {
-  margin-bottom: 0.25rem;
-}
-
-.tn-token-guide-box strong {
-  color: var(--vit-text);
-}
+.tn-token-guide-box ol { margin: 0.4rem 0 0 1.1rem; padding: 0; }
+.tn-token-guide-box li { margin-bottom: 0.25rem; }
+.tn-token-guide-box strong { color: var(--vit-text); }
+.tn-token-guide-box code { font-family: var(--font-mono); }
 
 .tn-token-info-note {
   display: flex;
@@ -547,28 +861,108 @@
   gap: 0.45rem;
   background: color-mix(in srgb, var(--color-fg) 3%, transparent);
   border: 1px dashed var(--vit-border);
-  border-radius: 8px;
-  padding: 0.5rem 0.65rem;
+  border-radius: 9px;
+  padding: 0.55rem 0.7rem;
   font-size: 0.74rem;
   color: var(--vit-muted);
-  line-height: 1.4;
-  margin-top: 0.2rem;
+  line-height: 1.45;
 }
 
-.tn-token-info-note svg {
-  flex-shrink: 0;
-  margin-top: 0.1rem;
+.tn-token-info-note svg { flex-shrink: 0; margin-top: 0.1rem; }
+
+/* ─── Componentes embebidos ───────────────────────────────────────────── */
+/* PagoParConfig y ComboConfiguracion traen su propio contenedor (pensado
+   para vivir como página). Acá se les saca el padding/ancho de página para
+   que no queden como una caja dentro de otra caja. Solo presentación: el
+   markup y la lógica de esos componentes no se tocan. */
+.tn-embed { min-width: 0; }
+
+.tn-embed .combo-page {
+  padding: 0;
+  max-width: none;
+  gap: 1.25rem;
 }
 
-/* ─── Responsive ─────────────────────────────────────────────────────── */
+.tn-embed .combo-section {
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+/* Los títulos de ComboConfiguracion vienen en versalitas con chip de icono
+   (lenguaje visual de la página /combos). Acá se alinean a la tipografía de
+   esta pantalla para que no convivan dos jerarquías distintas. */
+.tn-embed .combo-section-icon { display: none; }
+.tn-embed .combo-section-header { gap: 0; margin-bottom: 0; }
+.tn-embed .combo-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.005em;
+  color: var(--vit-text);
+}
+.tn-embed .combo-section-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--vit-text);
+}
+
+.tn-embed-pagopar > div {
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.tn-embed-metodos-pago > div {
+  background: var(--vit-bg) !important;
+  border: 1px solid var(--vit-border) !important;
+  border-radius: 12px !important;
+}
+
+.tn-embed-metodos-pago .btn-nuevo-pedido {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-active));
+  color: var(--color-primary-fg);
+}
+
+/* PagoParConfig trae su propio azul de Tailwind — se alinea al primario de
+   la app para no tener dos botones "principales" de colores distintos en
+   la misma pantalla. */
+.tn-embed-pagopar button.bg-blue-600 { background: var(--vit-accent); }
+.tn-embed-pagopar button.bg-blue-600:hover { background: var(--vit-accent-hover); }
+
+/* ─── Responsive ──────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .tn-group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .tn-group-head p { max-width: 78ch; }
+}
+
+@media (max-width: 900px) {
+  .tn-page { padding: 1.5rem 1.25rem 2.5rem; gap: 1.25rem; }
+  .tn-page-head h1 { font-size: 1.35rem; }
+  .tn-tabs { padding: 0 0.75rem; }
+  .tn-panel-head { padding: 1.25rem 1.25rem 0.25rem; }
+  .tn-body { padding: 0 1.25rem; }
+  .tn-footer { padding: 1rem 1.25rem; }
+  .tn-group { padding: 1.4rem 0; }
+}
+
 @media (max-width: 640px) {
-  .tn-tabs {
-    flex-direction: column;
-  }
-  .tn-tab {
-    justify-content: flex-start;
-  }
-  .tn-msg-preview-bubble {
-    max-width: 100%;
-  }
+  .tn-page { padding: 1.15rem 0.9rem 2rem; }
+  .tn-shell { border-radius: 14px; }
+  .tn-footer { border-radius: 0 0 14px 14px; }
+  .tn-panel-head { padding: 1.1rem 1rem 0.25rem; }
+  .tn-body { padding: 0 1rem; }
+  .tn-footer { padding: 0.9rem 1rem; }
+  .tn-fields { grid-template-columns: minmax(0, 1fr); }
+  .tn-msg-preview-bubble { max-width: 100%; }
+  .tn-footer-actions { width: 100%; justify-content: flex-end; }
+  .tn-embed .combo-section,
+  .tn-embed-pagopar > div { padding: 1rem; }
 }

@@ -52,30 +52,30 @@ export default function ReporteProductos({ filters }) {
       
       {/* KPIs */}
       <div className="cic-kpis-grid">
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-primary) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             TOTAL UNIDADES
-            <Package size={16} color="#3b82f6" />
+            <Package size={16} color="var(--color-primary-text)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#3b82f6' }}>{kpis.total_unidades}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{kpis.total_unidades}</div>
           <div className="cic-kpi-sub">Unidades de catálogo entregadas</div>
         </div>
 
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             TOTAL INGRESOS
-            <TrendingUp size={16} color="#10b981" />
+            <TrendingUp size={16} color="var(--color-success)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#10b981' }}>{formatMoney(kpis.total_ingresos)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ingresos)}</div>
           <div className="cic-kpi-sub">Ingreso bruto generado por catálogo</div>
         </div>
 
-        <div className="cic-kpi-card" style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+        <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)' }}>
           <div className="cic-kpi-header">
             PRODUCTO ESTRELLA
-            <Award size={16} color="#f59e0b" />
+            <Award size={16} color="var(--color-warning)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: '#f59e0b', fontSize: '1.1rem', wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: '1.2' }}>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-warning)', fontSize: '1.1rem', wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: '1.2' }}>
             {kpis.producto_estrella}
           </div>
           <div className="cic-kpi-sub">Mayor cantidad de unidades vendidas</div>
@@ -90,24 +90,24 @@ export default function ReporteProductos({ filters }) {
               <tr>
                 <th>Nombre del Producto</th>
                 <th style={{ textAlign: 'center' }}>Total Procesados</th>
-                <th style={{ textAlign: 'center', color: '#10b981' }}>Vendidos (Entregado)</th>
-                <th style={{ textAlign: 'center', color: '#f43f5e' }}>Devueltos/Rechazados</th>
-                <th style={{ textAlign: 'center', color: '#64748b' }}>Cancelados</th>
+                <th style={{ textAlign: 'center', color: 'var(--color-success)' }}>Vendidos (Entregado)</th>
+                <th style={{ textAlign: 'center', color: 'var(--color-danger)' }}>Devueltos/Rechazados</th>
+                <th style={{ textAlign: 'center', color: 'var(--color-fg-subtle)' }}>Cancelados</th>
                 <th style={{ textAlign: 'right' }}>P. Costo Unid.</th>
                 <th style={{ textAlign: 'right' }}>P. Venta Base</th>
                 <th style={{ textAlign: 'right' }}>Costo Total</th>
-                <th style={{ textAlign: 'right', color: '#10b981' }}>Ingresos Generados</th>
-                <th style={{ textAlign: 'right', color: '#3b82f6' }}>Tasa Devolución</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ingresos Generados</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-primary-text)' }}>Tasa Devolución</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Cargando reporte de productos...</td>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de productos...</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No se encontraron productos vendidos en este período.</td>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron productos vendidos en este período.</td>
                 </tr>
               ) : (
                 data.map((row, idx) => {
@@ -119,14 +119,14 @@ export default function ReporteProductos({ filters }) {
                     <tr key={row.id || idx}>
                       <td style={{ fontWeight: 600 }}>{row.nombre}</td>
                       <td style={{ textAlign: 'center' }}>{row.total_procesados}</td>
-                      <td style={{ textAlign: 'center', color: '#10b981', fontWeight: 'bold' }}>{row.vendidos}</td>
-                      <td style={{ textAlign: 'center', color: '#f43f5e' }}>{row.devoluciones}</td>
-                      <td style={{ textAlign: 'center', color: '#64748b' }}>{row.cancelados}</td>
-                      <td style={{ textAlign: 'right', color: '#94a3b8' }}>{formatMoney(row.precio_costo_unitario)}</td>
+                      <td style={{ textAlign: 'center', color: 'var(--color-success)', fontWeight: 'bold' }}>{row.vendidos}</td>
+                      <td style={{ textAlign: 'center', color: 'var(--color-danger)' }}>{row.devoluciones}</td>
+                      <td style={{ textAlign: 'center', color: 'var(--color-fg-subtle)' }}>{row.cancelados}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-fg-muted)' }}>{formatMoney(row.precio_costo_unitario)}</td>
                       <td style={{ textAlign: 'right', color: 'var(--color-fg)' }}>{formatMoney(row.precio_venta_unitario)}</td>
                       <td style={{ textAlign: 'right' }}>{formatMoney(row.costo_total)}</td>
-                      <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 'bold' }}>{formatMoney(row.ingresos)}</td>
-                      <td style={{ textAlign: 'right', color: returnRate > 15 ? '#f43f5e' : '#3b82f6' }}>{returnRate}%</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.ingresos)}</td>
+                      <td style={{ textAlign: 'right', color: returnRate > 15 ? 'var(--color-danger)' : 'var(--color-primary-text)' }}>{returnRate}%</td>
                     </tr>
                   );
                 })
@@ -136,7 +136,7 @@ export default function ReporteProductos({ filters }) {
         </div>
         {!loading && pagination.totalPages > 1 && (
           <div className="cic-table-pagination" style={{ padding: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
               Página {pagination.page} de {pagination.totalPages} <span style={{ opacity: 0.5 }}>• {pagination.total} registros</span>
             </span>
             <div style={{ display: 'flex', gap: '0.5rem' }}>

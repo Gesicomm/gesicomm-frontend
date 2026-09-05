@@ -475,7 +475,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                 ? `Tienda debe courier: ${formatGs(Math.abs(resumenEntregados.saldo_liquidacion))}`
                 : "Equilibrado"
             }
-            color={resumenEntregados.saldo_liquidacion > 0 ? "#34d399" : resumenEntregados.saldo_liquidacion < 0 ? "#f87171" : "var(--color-fg-muted)"}
+            color={resumenEntregados.saldo_liquidacion > 0 ? "var(--color-success)" : resumenEntregados.saldo_liquidacion < 0 ? "var(--color-danger)" : "var(--color-fg-muted)"}
           />
           <ResumenItem label="Pendientes de rendición" value={String(resumenEntregados.pendientes_rendicion)} />
 
@@ -643,7 +643,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
               onChange={(e) => setFiltro("metodo_pago_id", e.target.value)}
             >
               <option value="TODOS">Todos los métodos de pago</option>
-              {metodosPago.map((m) => (
+              {metodosPagoList.map((m) => (
                 <option key={m.id} value={m.id}>{m.nombre}</option>
               ))}
             </select>
@@ -772,7 +772,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                           <button
                             type="button"
                             title="Eliminar pedido permanentemente"
-                            style={{ ...accionBtnStyle, padding: "4px 6px", color: "#f87171", borderColor: "rgba(248, 113, 113, 0.3)" }}
+                            style={{ ...accionBtnStyle, padding: "4px 6px", color: "var(--color-danger)", borderColor: "color-mix(in srgb, var(--color-danger) 30%, transparent)" }}
                             onClick={() => handleEliminarPedido(e)}
                           >
                             <X size={13} />

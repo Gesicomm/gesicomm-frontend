@@ -36,14 +36,16 @@
 
   background: var(--md-bg);
   min-height: 100vh;
-  padding: 2rem 2rem 3rem;
+  width: 100%;
+  max-width: 1760px;
+  padding: 1.5rem clamp(1rem, 2vw, 2rem) 2.5rem;
   color: var(--md-ink);
   font-family: var(--font-sans);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  max-width: 1180px;
+  gap: 1rem;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 :root[data-theme='light'] .md-page {
@@ -64,9 +66,6 @@
   --md-checkout: #b8860b;
   --md-ratio: #b8860b;
   --md-negativo: #dc2626;
-}
-
-.md-page {
 }
 
 .md-eyebrow {
@@ -115,18 +114,20 @@
 
 /* ── Header ────────────────────────────────────────────────────────── */
 .md-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) minmax(520px, 1.7fr);
+  align-items: end;
   gap: 1rem;
-  padding-bottom: 0.25rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--md-surface) 72%, transparent);
+  border: 1px solid var(--md-border);
+  border-radius: 8px;
 }
 .md-h1 {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 650;
   font-size: 1.55rem;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   margin: 0.15rem 0 0;
   color: var(--md-ink);
 }
@@ -136,6 +137,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0.5rem;
+  min-width: 0;
 }
 .md-tabs {
   display: flex;
@@ -143,8 +145,9 @@
   gap: 0.2rem;
   background: var(--md-surface);
   border: 1px solid var(--md-border);
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0.25rem;
+  min-width: 0;
 }
 .md-tab {
   background: transparent;
@@ -153,7 +156,7 @@
   font-size: 0.76rem;
   font-weight: 600;
   padding: 0.4rem 0.65rem;
-  border-radius: 7px;
+  border-radius: 6px;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
   white-space: nowrap;
@@ -165,7 +168,43 @@
    tarjeta "Embudo de Conversión" — solo agrega el margen que necesita ahí. */
 .md-tabs-embudo { margin: 0.9rem 0 1.2rem; }
 
-.md-selects { display: flex; gap: 0.4rem; }
+/* Selector de landing: el mismo componente de tabs, con una etiqueta al
+   frente porque acá el nombre de la página no alcanza para saber qué se
+   está eligiendo (a diferencia de "Hoy"/"Este mes", que se explican solos). */
+.md-tabs-landing { align-items: center; }
+.md-tabs-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0 0.5rem 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--md-ink-faint);
+  white-space: nowrap;
+}
+/* Una página sin publicar puede tener historial pero no recibe tráfico
+   nuevo: se avisa en el propio tab para no leer sus ceros como una caída. */
+.md-tab-badge {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: var(--md-surface-2);
+  color: var(--md-ink-faint);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.md-selects {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
+}
 .md-select {
   background: var(--md-surface);
   border: 1px solid var(--md-border);
@@ -174,8 +213,23 @@
   padding: 0.4rem 0.6rem;
   border-radius: 8px;
   outline: none;
+  min-width: 112px;
+  max-width: 100%;
 }
+.md-select:last-child { min-width: min(260px, 100%); }
 .md-select:focus { border-color: var(--md-confirmado); }
+
+/* ── Layout principal ─────────────────────────────────────────────── */
+.md-bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.md-span-4 { grid-column: span 4; }
+.md-span-8 { grid-column: span 8; }
+.md-span-12 { grid-column: 1 / -1; }
 
 /* ── Hero: plata confirmada ────────────────────────────────────────── */
 .md-hero {
@@ -183,9 +237,10 @@
     radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--md-confirmado) 12%, transparent), transparent 60%),
     linear-gradient(155deg, var(--md-surface-2) 0%, var(--md-surface) 100%);
   border: 1px solid var(--md-border);
-  border-radius: 20px;
-  padding: 1.9rem 2.1rem 1.7rem;
+  border-radius: 8px;
+  padding: clamp(1.2rem, 2.3vw, 2rem);
   animation: md-rise 0.45s ease both;
+  min-height: 100%;
 }
 @keyframes md-rise {
   from { opacity: 0; transform: translateY(6px); }
@@ -232,11 +287,12 @@
 .md-hero-numero {
   font-family: var(--font-display);
   font-weight: 560;
-  font-size: clamp(2.6rem, 6vw, 4.2rem);
-  letter-spacing: -0.02em;
+  font-size: clamp(2.4rem, 4.5vw, 4.8rem);
+  letter-spacing: 0;
   line-height: 1;
   color: var(--md-ink);
-  margin: 0.15rem 0 0.85rem;
+  margin: 0.4rem 0 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .md-hero-stats {
@@ -258,8 +314,9 @@
 .md-card {
   background: var(--md-surface);
   border: 1px solid var(--md-border);
-  border-radius: 16px;
-  padding: 1.35rem 1.5rem;
+  border-radius: 8px;
+  padding: 1.15rem;
+  min-width: 0;
 }
 .md-card-title {
   font-size: 0.9rem;
@@ -269,6 +326,7 @@
   display: flex;
   align-items: baseline;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 .md-card-title-sub {
   font-size: 0.68rem;
@@ -276,6 +334,10 @@
   color: var(--md-ink-faint);
   text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.md-summary-card {
+  min-height: 100%;
 }
 
 /* ── Embudo de Conversión ────────────────────────────────────────── */
@@ -287,8 +349,9 @@
   margin-top: 1.2rem;
   background: var(--md-surface-alt);
   border: 1px solid var(--md-border);
-  border-radius: 12px;
-  padding: 1.2rem 1.5rem;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow: hidden;
 }
 .md-funnel-step {
   display: flex;
@@ -301,7 +364,7 @@
 .md-funnel-icon {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -315,6 +378,12 @@
 
 .md-funnel-info { display: flex; flex-direction: column; }
 .md-funnel-val { font-size: 1.4rem; font-weight: 700; color: var(--md-ink); line-height: 1.1; }
+.md-funnel-val,
+.md-rent-valor,
+.md-table td,
+.md-rank-valor {
+  font-variant-numeric: tabular-nums;
+}
 .md-funnel-label { font-size: 0.72rem; color: var(--md-ink-muted); margin-top: 0.2rem; font-weight: 500; }
 
 .md-funnel-arrow {
@@ -412,6 +481,9 @@
 
 /* ── Gráfico de tendencia ──────────────────────────────────────────── */
 .md-chart-card { display: flex; flex-direction: column; gap: 1rem; }
+.md-chart-primary { min-height: 100%; }
+.md-chart-primary .md-chart-svg { min-height: 300px; }
+.md-chart-secondary .md-chart-svg { max-height: 260px; }
 .md-chart-head {
   display: flex;
   justify-content: space-between;
@@ -419,7 +491,7 @@
   flex-wrap: wrap;
   gap: 0.75rem;
 }
-.md-legend { display: flex; gap: 1rem; margin-top: 0.5rem; }
+.md-legend { display: flex; flex-wrap: wrap; gap: 0.45rem 1rem; margin-top: 0.5rem; }
 .md-legend-item {
   display: inline-flex;
   align-items: center;
@@ -453,8 +525,18 @@
 
 .md-chart-svg-wrap { position: relative; width: 100%; cursor: crosshair; touch-action: none; }
 .md-chart-svg { width: 100%; height: auto; display: block; overflow: visible; pointer-events: none; }
-.md-chart-grid { stroke: var(--md-border); stroke-width: 1; }
-.md-chart-baseline { stroke: var(--md-border-strong); stroke-width: 1; }
+.md-chart-plot-bg {
+  fill: color-mix(in srgb, var(--color-fg) 2%, transparent);
+}
+.md-chart-grid {
+  stroke: color-mix(in srgb, var(--md-border) 62%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 7;
+}
+.md-chart-baseline {
+  stroke: color-mix(in srgb, var(--md-border-strong) 70%, transparent);
+  stroke-width: 1;
+}
 .md-bar { transition: opacity 0.15s, filter 0.15s; }
 .md-bar-visitas { fill: var(--md-visitas); }
 .md-bar-contactos { fill: var(--md-contactos); }
@@ -465,11 +547,25 @@
 /* Evolución de Ventas — mismas 3 variables de color que el resto del
    dashboard (visitas/negativo/confirmado), solo aplicadas a líneas en vez
    de barras porque son series continuas. */
-.md-line { stroke-width: 2px; }
+.md-line {
+  stroke-width: 2.6px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: url(#md-line-glow);
+}
 .md-line-ventas { stroke: var(--md-visitas); }
 .md-line-costos { stroke: var(--md-negativo); }
 .md-line-ganancia { stroke: var(--md-confirmado); }
-.md-line-punto { stroke: var(--md-surface); stroke-width: 1.5px; }
+.md-area {
+  pointer-events: none;
+}
+.md-area-ventas { fill: url(#md-area-ventas); }
+.md-area-ganancia { fill: url(#md-area-ganancia); }
+.md-line-punto {
+  stroke: var(--md-surface);
+  stroke-width: 2px;
+  filter: drop-shadow(0 1px 5px color-mix(in srgb, var(--color-fg) 24%, transparent));
+}
 .md-line-punto-ventas { fill: var(--md-visitas); }
 .md-line-punto-costos { fill: var(--md-negativo); }
 .md-line-punto-ganancia { fill: var(--md-confirmado); }
@@ -479,7 +575,7 @@
   top: -8px;
   background: var(--md-surface-2);
   border: 1px solid var(--md-border-strong);
-  border-radius: 9px;
+  border-radius: 8px;
   padding: 0.55rem 0.75rem;
   font-size: 0.75rem;
   color: var(--md-ink);
@@ -500,7 +596,10 @@
 .md-chart-tooltip span { display: flex; align-items: center; gap: 0.4rem; color: var(--md-ink-muted); }
 .md-chart-tooltip small { color: var(--md-carrito); margin-top: 0.1rem; font-weight: 500; }
 
-.md-table-wrap { overflow-x: auto; }
+.md-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.7rem;
+}
 .md-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .md-table th {
   text-align: left;
@@ -513,11 +612,27 @@
   border-bottom: 1px solid var(--md-border);
 }
 .md-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--md-border); color: var(--md-ink); }
+.md-table tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 3%, transparent); }
+
+/* Fila de totales (ranking de landings): se despega del cuerpo con una línea
+   más marcada y no toma el hover, porque no es una fila más que se pueda
+   leer como un ítem del ranking. */
+.md-table-total td {
+  border-bottom: none;
+  border-top: 2px solid var(--md-border);
+  font-weight: 700;
+  background: var(--md-surface-2);
+}
+.md-table-total-nota {
+  font-weight: 500;
+  font-size: 0.7rem;
+  color: var(--md-ink-faint);
+}
 
 /* ── Rankings (más vendidos / más consultados) ────────────────────── */
 .md-cols-2 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 
@@ -578,9 +693,9 @@
 /* ── Rentabilidad del período ──────────────────────────────────────── */
 .md-rentabilidad-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.1rem;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.9rem;
 }
 .md-rent-item {
   display: flex;
@@ -589,7 +704,8 @@
   padding: 0.7rem 0.85rem;
   background: var(--md-surface-alt);
   border: 1px solid var(--md-border);
-  border-radius: 10px;
+  border-radius: 8px;
+  min-width: 0;
 }
 .md-rent-destacado {
   border-color: color-mix(in srgb, var(--md-confirmado) 35%, var(--md-border));
@@ -597,7 +713,28 @@
 }
 .md-rent-label { font-size: 0.7rem; font-weight: 600; color: var(--md-ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
 .md-rent-label small { text-transform: none; letter-spacing: 0; opacity: 0.85; }
-.md-rent-valor { font-size: 1.05rem; font-weight: 700; color: var(--md-ink); }
+.md-rent-valor {
+  font-size: clamp(0.96rem, 1vw, 1.08rem);
+  font-weight: 700;
+  color: var(--md-ink);
+  overflow-wrap: anywhere;
+}
+
+.md-summary-card .md-rentabilidad-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.md-summary-card .md-rent-destacado {
+  grid-column: 1 / -1;
+}
+
+.md-rentabilidad-card .md-rentabilidad-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.md-products-card .md-subsection-label {
+  margin-top: 0;
+}
 
 .md-rent-desglose {
   margin-top: 1rem;
@@ -703,10 +840,44 @@
 
 .md-ver-todos { margin-top: 0.9rem; }
 
+@media (max-width: 1280px) {
+  .md-header {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .md-filtros { align-items: flex-start; }
+  .md-selects { justify-content: flex-start; }
+  .md-span-4,
+  .md-span-8 { grid-column: 1 / -1; }
+  .md-summary-card .md-rentabilidad-grid,
+  .md-rentabilidad-card .md-rentabilidad-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .md-cols-2 { grid-template-columns: 1fr; }
+  .md-chart-primary .md-chart-svg { min-height: 240px; }
+}
+
 @media (max-width: 640px) {
-  .md-page { padding: 1.25rem 1rem 2.5rem; }
-  .md-header { flex-direction: column; align-items: flex-start; }
-  .md-filtros { align-items: flex-start; width: 100%; }
+  .md-page { padding: 0.85rem 0.75rem 2rem; }
+  .md-header { padding: 0.85rem; }
+  .md-tabs { width: 100%; flex-wrap: wrap; }
+  .md-tab { flex: 1 1 auto; }
+  .md-selects { flex-direction: column; }
+  .md-select,
+  .md-select:last-child { width: 100%; min-width: 0; }
   .md-hero { padding: 1.5rem 1.25rem; }
   .md-card { padding: 1.1rem 1.15rem; }
+  .md-hero-numero { font-size: clamp(1.9rem, 9.2vw, 2.35rem); }
+  .md-summary-card .md-rentabilidad-grid,
+  .md-rentabilidad-card .md-rentabilidad-grid {
+    grid-template-columns: 1fr;
+  }
+  .md-chart-primary .md-chart-svg,
+  .md-chart-secondary .md-chart-svg {
+    min-height: 210px;
+    max-height: none;
+  }
 }

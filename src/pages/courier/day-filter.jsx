@@ -14,7 +14,7 @@ export function DayFilter({ date, onChange, count }) {
       </button>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <Calendar size={16} style={{ color: '#64748b' }} />
+        <Calendar size={16} style={{ color: 'var(--color-fg-subtle)' }} />
         <input
           type="date"
           value={date}

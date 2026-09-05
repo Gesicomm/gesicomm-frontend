@@ -75,6 +75,24 @@ function pathBarraRedondeada(x, yTop, ancho, alto, radio) {
           L ${x + ancho} ${yBase} Z`;
 }
 
+function pathLineaSuave(puntos) {
+  if (puntos.length === 0) return '';
+  if (puntos.length === 1) return `M ${puntos[0].x} ${puntos[0].y}`;
+  return puntos.reduce((path, punto, i) => {
+    if (i === 0) return `M ${punto.x} ${punto.y}`;
+    const previo = puntos[i - 1];
+    const medioX = (previo.x + punto.x) / 2;
+    return `${path} C ${medioX} ${previo.y}, ${medioX} ${punto.y}, ${punto.x} ${punto.y}`;
+  }, '');
+}
+
+function pathAreaSuave(puntos, yBase) {
+  if (puntos.length === 0) return '';
+  const primero = puntos[0];
+  const ultimo = puntos[puntos.length - 1];
+  return `${pathLineaSuave(puntos)} L ${ultimo.x} ${yBase} L ${primero.x} ${yBase} Z`;
+}
+
 /** Fila de ranking con barra proporcional — nunca divide por un máximo de
  * 0 (esa división es lo que rompía el ancho de las barras antes: NaN% cae
  * al ancho por defecto del navegador, que en un bloque es "ocupar todo"). */
@@ -96,7 +114,7 @@ function FilaRanking({ posicion, nombre, valor, valorLabel, max, tono }) {
   );
 }
 
-function GraficoTendencia({ serie }) {
+function GraficoTendencia({ serie, className = '' }) {
   const [vistaTabla, setVistaTabla] = useState(false);
   const [hover, setHover] = useState(null);
   const wrapRef = useRef(null);
@@ -146,7 +164,7 @@ function GraficoTendencia({ serie }) {
   }, [hover, serie.length]);
 
   return (
-    <section className="md-card md-chart-card">
+    <section className={`md-card md-chart-card ${className}`}>
       <div className="md-chart-head">
         <div>
           <h3 className="md-card-title">Visitas vs. contactos por día</h3>
@@ -278,17 +296,21 @@ function useEmbudoPorProducto(ventas, pixel) {
     (ventas?.ranking_productos || []).forEach(p => {
       const clave = normalizar(p.nombre);
       if (!clave) return;
+      // Solo se completan productos que YA están en el mapa, o sea que
+      // tuvieron interés en la landing. Un producto vendido a mano o por
+      // WhatsApp no entra: esta tabla compara el interés del pixel contra la
+      // venta, y sin interés no hay nada que comparar. Peor todavía, aparecía
+      // con "0 leads" y se leía como que la landing no supo venderlo, cuando
+      // en realidad nunca estuvo publicado ahí.
       const previo = mapa.get(clave);
       if (previo) {
         previo.confirmados = p.confirmados;
         previo.compras = p.entregados;
-      } else {
-        mapa.set(clave, { nombre: p.nombre, leads: 0, confirmados: p.confirmados, compras: p.entregados });
       }
     });
 
     return [...mapa.values()]
-      .filter(p => p.leads > 0 || p.confirmados > 0 || p.compras > 0)
+      .filter(p => p.leads > 0)
       // La conversión mide el embudo completo: de los interesados, cuántos
       // terminaron con el producto en la mano. No contra los confirmados.
       .map(p => ({ ...p, conversion: p.leads > 0 ? (p.compras / p.leads) * 100 : null }))
@@ -300,7 +322,9 @@ function TablaEmbudoProductos({ filas }) {
   if (filas.length === 0) {
     return (
       <p className="md-empty-hint">
-        Todavía no hay suficiente actividad por producto en este período — en cuanto tengas consultas o ventas, aparece acá.
+        Todavía nadie consultó productos en tu landing en este período. Acá aparecen
+        solo los productos que despertaron interés ahí; los que vendés a mano o por
+        WhatsApp se ven en "Más Vendidos".
       </p>
     );
   }
@@ -348,8 +372,14 @@ function EmbudoPasos({ pasos, nota, pieFinal }) {
           <React.Fragment key={paso.label}>
             {i > 0 && (
               <div className="md-funnel-arrow">
+                {/* Un paso con valor null es un dato que no se pudo traer, no
+                    un cero. Calcular un porcentaje contra eso daría "0%", que
+                    se lee como "no convirtió nadie" cuando en realidad no
+                    sabemos cuánta gente entró. */}
                 <span className="md-funnel-pct">
-                  {pasos[i - 1].valor > 0 ? ((paso.valor / pasos[i - 1].valor) * 100).toFixed(1) : '0'}%
+                  {paso.valor == null || pasos[i - 1].valor == null
+                    ? '—'
+                    : `${pasos[i - 1].valor > 0 ? ((paso.valor / pasos[i - 1].valor) * 100).toFixed(1) : '0'}%`}
                 </span>
                 <div className="md-funnel-line" />
               </div>
@@ -383,7 +413,7 @@ function EmbudoPasos({ pasos, nota, pieFinal }) {
  * negativa en un día con pérdida, por eso la escala usa un mínimo real en
  * vez de asumir que todo arranca en cero.
  */
-function GraficoEvolucionFinanciera({ serie }) {
+function GraficoEvolucionFinanciera({ serie, className = '' }) {
   const [vistaTabla, setVistaTabla] = useState(false);
   const [hover, setHover] = useState(null);
   const wrapRef = useRef(null);
@@ -444,7 +474,7 @@ function GraficoEvolucionFinanciera({ serie }) {
   }, [hover, serie.length]);
 
   return (
-    <section className="md-card md-chart-card">
+    <section className={`md-card md-chart-card ${className}`}>
       <div className="md-chart-head">
         <div>
           <h3 className="md-card-title">Evolución de Ventas</h3>
@@ -492,6 +522,28 @@ function GraficoEvolucionFinanciera({ serie }) {
           onTouchEnd={handleMouseLeave}
         >
           <svg viewBox={`0 0 ${ANCHO} ${ALTO + PAD_INF}`} preserveAspectRatio="none" className="md-chart-svg">
+            <defs>
+              <linearGradient id="md-area-ventas" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--md-visitas)" stopOpacity="0.2" />
+                <stop offset="72%" stopColor="var(--md-visitas)" stopOpacity="0.03" />
+                <stop offset="100%" stopColor="var(--md-visitas)" stopOpacity="0" />
+              </linearGradient>
+              <linearGradient id="md-area-ganancia" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--md-confirmado)" stopOpacity="0.18" />
+                <stop offset="72%" stopColor="var(--md-confirmado)" stopOpacity="0.03" />
+                <stop offset="100%" stopColor="var(--md-confirmado)" stopOpacity="0" />
+              </linearGradient>
+              <filter id="md-line-glow" x="-8%" y="-18%" width="116%" height="136%">
+                <feGaussianBlur stdDeviation="2.2" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <rect x="0" y="0" width={ANCHO} height={ALTO} rx="10" className="md-chart-plot-bg" />
+
             {lineasGrid.map(f => (
               <line key={f} x1="0" y1={ALTO * (1 - f)} x2={ANCHO} y2={ALTO * (1 - f)} className="md-chart-grid" />
             ))}
@@ -501,14 +553,28 @@ function GraficoEvolucionFinanciera({ serie }) {
               <line x1={xFor(hover)} y1={0} x2={xFor(hover)} y2={ALTO} className="md-chart-grid" style={{ pointerEvents: 'none' }} />
             )}
 
-            {CAMPOS.map(c => (
-              <polyline
-                key={c.campo}
-                fill="none"
-                points={serie.map((d, i) => `${xFor(i)},${yFor(valorDe(d, c.campo))}`).join(' ')}
-                className={`md-line md-line-${c.clase}`}
-              />
-            ))}
+            {CAMPOS.filter(c => c.campo !== 'costo').map(c => {
+              const puntos = serie.map((d, i) => ({ x: xFor(i), y: yFor(valorDe(d, c.campo)) }));
+              return (
+                <path
+                  key={`area-${c.campo}`}
+                  d={pathAreaSuave(puntos, yFor(0))}
+                  className={`md-area md-area-${c.clase}`}
+                />
+              );
+            })}
+
+            {CAMPOS.map(c => {
+              const puntos = serie.map((d, i) => ({ x: xFor(i), y: yFor(valorDe(d, c.campo)) }));
+              return (
+                <path
+                  key={c.campo}
+                  fill="none"
+                  d={pathLineaSuave(puntos)}
+                  className={`md-line md-line-${c.clase}`}
+                />
+              );
+            })}
 
             {hover !== null && serie[hover] && CAMPOS.map(c => (
               <circle key={c.campo} cx={xFor(hover)} cy={yFor(valorDe(serie[hover], c.campo))} r={3.5} className={`md-line-punto md-line-punto-${c.clase}`} />
@@ -566,6 +632,76 @@ function TablaRendimientoCanal({ filas }) {
             </tr>
           ))}
         </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * Ranking de landings: qué página vende más, con su tráfico al lado para que
+ * se pueda ver POR QUÉ (una landing puede facturar poco porque no le llega
+ * gente, o porque le llega y no convierte — son dos problemas distintos).
+ *
+ * Esta tabla NO obedece al selector de landing del header, a propósito:
+ * comparar páginas entre sí con una sola seleccionada no compara nada. Sí
+ * respeta el período y el filtro de producto.
+ */
+function TablaRankingLandings({ ranking }) {
+  const filas = ranking?.top || [];
+  if (filas.length === 0) {
+    return (
+      <p className="md-empty-hint">
+        Todavía no hay actividad en tus landings en este período. Los pedidos cargados a mano
+        o que entraron por WhatsApp no aparecen acá, porque no vienen de ninguna página.
+      </p>
+    );
+  }
+  const t = ranking.totales;
+  return (
+    <div className="md-table-wrap">
+      <table className="md-table">
+        <thead>
+          <tr>
+            <th>Landing</th>
+            <th>Visitas <Ayuda texto="Cuánta gente entró a esa página en el período." /></th>
+            <th>Pedidos <Ayuda texto="Cuántos pedidos salieron de esa página, sin importar cómo terminaron." /></th>
+            <th>Entregados <Ayuda texto="De esos pedidos, cuántos llegaron a manos del cliente. Es lo único que factura." /></th>
+            <th>Facturación <Ayuda texto="La plata que entró por esa página: la suma de sus pedidos entregados." /></th>
+            <th>Ganancia <Ayuda texto="Lo que dejó esa página: facturación menos el costo del producto, el envío, la comisión y el IVA. No le descuenta los costos fijos del negocio (alquiler, sueldos, publicidad), porque esos no son de una landing en particular." /></th>
+            <th>Conversión <Ayuda texto="De cada 100 personas que entraron a esa página, cuántas terminaron comprando y recibiendo el pedido." /></th>
+          </tr>
+        </thead>
+        <tbody>
+          {filas.map(l => (
+            <tr key={l.landing_id}>
+              <td>{l.nombre}</td>
+              <td>{l.visitas}</td>
+              <td>{l.pedidos}</td>
+              <td>{l.entregados}</td>
+              <td>{gs(l.facturacion)}</td>
+              <td className={l.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(l.ganancia)}</td>
+              {/* Sin visitas registradas no hay 0% de conversión: no hay con
+                  qué calcularla. Un guion dice eso; un 0% mentiría. */}
+              <td>{l.visitas > 0 ? `${l.conversion}%` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="md-table-total">
+            <td>
+              Total
+              {ranking.total_landings > filas.length && (
+                <span className="md-table-total-nota"> · {ranking.total_landings} landings con actividad</span>
+              )}
+            </td>
+            <td>{t.visitas}</td>
+            <td>{t.pedidos}</td>
+            <td>{t.entregados}</td>
+            <td>{gs(t.facturacion)}</td>
+            <td className={t.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(t.ganancia)}</td>
+            <td>{t.visitas > 0 ? `${t.conversion}%` : '—'}</td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   );
@@ -671,32 +807,24 @@ export default function MiDashboard() {
   const [embudoTab, setEmbudoTab] = useState('formularios');
   const [verTodosProductos, setVerTodosProductos] = useState(false);
 
-  const [landingId, setLandingId] = useState(undefined); // undefined = todavía no se sabe, null = no tiene landing
+  // Qué landing se está mirando. 'TODAS' = toda la tienda (sin filtrar), que
+  // es el total del negocio; un id = solo esa página.
+  //
+  // Antes esto era una heurística que elegía UNA landing sola (es_home →
+  // 'inicio' → la primera) y no se podía cambiar. Con varias tiendas
+  // publicadas eso apuntaba a cualquier página — en un caso real, a una
+  // recién creada y ni siquiera publicada, con cero eventos: el embudo
+  // mostraba "0 visitas → 3 formularios" porque las visitas eran de esa
+  // página vacía y los pedidos, de todo el negocio. Elegir a mano es la
+  // única forma de que las dos mitades del embudo hablen de lo mismo.
+  const [landingId, setLandingId] = useState('TODAS');
   const [ventas, setVentas] = useState(null);
   const [pixel, setPixel] = useState(null);
+  // "No se pudo traer el tráfico" ≠ "hubo 0 visitas". Sin esta distinción, un
+  // error de la consulta del pixel se dibujaba como un embudo de 0 visitas →
+  // 4 formularios: una lectura imposible que parece un bug de negocio.
+  const [pixelFallo, setPixelFallo] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let activo = true;
-    landingService.listar()
-      .then(landings => {
-        if (!activo) return;
-        // La landing EN USO es la que se sirve en la raíz del subdominio
-        // (es_home / tipo_pagina 'inicio'), que es donde está puesto el
-        // Pixel y por donde entra la gente. `listar()` devuelve además
-        // Catálogo, Contacto y los funnels, ordenados por fecha de
-        // creación — tomar landings[0] a ciegas hacía que las métricas
-        // salieran de cualquier página (un funnel creado después, por
-        // ejemplo) en vez de la tienda.
-        const enUso = landings.find(l => l.es_home)
-          || landings.find(l => l.tipo_pagina === 'inicio')
-          || landings.find(l => l.tipo_pagina !== 'funnel')
-          || landings[0];
-        setLandingId(enUso ? enUso.id : null);
-      })
-      .catch(() => { if (activo) setLandingId(null); });
-    return () => { activo = false; };
-  }, []);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -705,13 +833,22 @@ export default function MiDashboard() {
       mes: periodo === 'personalizado_mes' ? mes : undefined,
       anio,
       producto_id: productoId !== 'TODOS' ? productoId : undefined,
+      landing_id: landingId !== 'TODAS' ? landingId : undefined,
     };
     try {
-      const promesas = [getMetricasDashboardPedidos(filtros)];
-      if (landingId) promesas.push(landingService.estadisticasRango(landingId, filtros));
-      const [ventasRes, pixelRes] = await Promise.all(promesas);
+      const [ventasRes, pixelRes] = await Promise.all([
+        getMetricasDashboardPedidos(filtros),
+        // 'todas' suma el tráfico de todas las páginas de la tienda. Va con
+        // catch propio para que un problema del pixel no deje sin ventas al
+        // dashboard entero: el lado de la plata tiene que verse igual.
+        landingService.estadisticasRango(landingId === 'TODAS' ? 'todas' : landingId, filtros)
+          .catch(err => { console.error('Error cargando el tráfico de la landing:', err); return null; }),
+      ]);
       setVentas(ventasRes);
-      if (pixelRes) setPixel(pixelRes);
+      // Se pisa siempre, incluso con null: dejar el pixel anterior al cambiar
+      // de tab mostraría las visitas de OTRA landing junto a estos pedidos.
+      setPixel(pixelRes);
+      setPixelFallo(pixelRes === null);
     } catch (err) {
       console.error('Error cargando el dashboard:', err);
     } finally {
@@ -720,9 +857,8 @@ export default function MiDashboard() {
   }, [periodo, mes, anio, productoId, landingId]);
 
   useEffect(() => {
-    if (landingId === undefined) return;
     cargar();
-  }, [cargar, landingId]);
+  }, [cargar]);
 
   // Años y productos disponibles son 100% dinámicos: el backend los calcula
   // sobre la actividad real del inquilino (ver anios_disponibles /
@@ -730,6 +866,9 @@ export default function MiDashboard() {
   // el front nunca hardcodea esas listas.
   const aniosDisponibles = ventas?.anios_disponibles?.length ? ventas.anios_disponibles : [new Date().getFullYear()];
   const productosDisponibles = ventas?.productos_disponibles || [];
+  const landingsDisponibles = ventas?.landings_disponibles || [];
+  const ranking = ventas?.ranking_landings || null;
+  const landingActiva = landingsDisponibles.find(l => String(l.landing_id) === String(landingId));
 
   const kpis = ventas?.kpis || { facturacion_entregada: 0, ticket_promedio: 0 };
   const funnel = ventas?.funnel || { entregados: 0 };
@@ -797,7 +936,7 @@ export default function MiDashboard() {
     // son etapas previas a la bifurcación y viven en el embudo de pago.
     formularios: {
       pasos: [
-        { label: 'Visitas', valor: pixel?.visitas ?? 0, icono: <Eye size={18} />, tono: 'visitas' },
+        { label: 'Visitas', valor: pixelFallo ? null : (pixel?.visitas ?? 0), valorLabel: pixelFallo ? '—' : undefined, icono: <Eye size={18} />, tono: 'visitas' },
         { label: 'Formulario', valor: canalLanding.total, icono: <FileText size={18} />, tono: 'carrito' },
         { label: 'Pedidos por Confirmar', valor: canalLanding.total - canalLanding.cancelados, icono: <Clock size={18} />, tono: 'checkout' },
         { label: 'Pedidos Confirmados', valor: canalLanding.confirmados, icono: <CheckCircle2 size={18} />, tono: 'checkout' },
@@ -805,14 +944,26 @@ export default function MiDashboard() {
       ],
       pieFinal: (
         <>
-          % conversión del embudo (Visitas a Entregados): <strong>{(pixel?.visitas || 0) > 0 ? ((canalLanding.entregados / pixel.visitas) * 100).toFixed(1) : 0}%</strong>
+          % conversión del embudo (Visitas a Entregados): <strong>{pixelFallo ? '—' : `${(pixel?.visitas || 0) > 0 ? ((canalLanding.entregados / pixel.visitas) * 100).toFixed(1) : 0}%`}</strong>
           <span className="md-funnel-div" />
           Contactos a WhatsApp: <strong>{pixel?.contactos_whatsapp ?? 0}</strong> ({ctrPct}% de las visitas)
           <span className="md-funnel-div" />
           Valor total en carritos: <strong>{gs(pixel?.valor_carritos || 0)}</strong>
         </>
       ),
-      nota: pixel?.visitas_sin_filtrar ? 'Visitas totales de la landing — un pageview no queda asociado a un producto, así que este número no se filtra por producto.' : null,
+      // El embudo pega dos fuentes distintas (visitas del pixel arriba,
+      // pedidos abajo). La nota dice a qué alcance corresponde cada mitad,
+      // que es justo lo que faltaba cuando esto mostraba "0 visitas → 3
+      // formularios" sin explicar que eran de páginas distintas.
+      nota: [
+        pixelFallo
+          ? 'No pudimos traer las visitas de esta página, por eso ese paso muestra un guion en vez de un número. Los pedidos de abajo sí son reales.'
+          : null,
+        landingActiva
+          ? `Solo "${landingActiva.nombre}". Los pedidos que se cargaron antes de que el sistema empezara a guardar la landing de origen no entran acá: se ven en "Todas".`
+          : 'Sumando todas tus páginas. Los pedidos por WhatsApp y los cargados a mano también cuentan acá, aunque no vengan de ninguna landing.',
+        pixel?.visitas_sin_filtrar ? 'Visitas totales de la landing — un pageview no queda asociado a un producto, así que este número no se filtra por producto.' : null,
+      ].filter(Boolean).join(' '),
     },
     whatsapp: {
       pasos: [
@@ -828,13 +979,13 @@ export default function MiDashboard() {
     // el carrito no es una etapa obligatoria de este embudo.
     pago: {
       pasos: [
-        { label: 'Visitas', valor: pixel?.visitas ?? 0, icono: <Eye size={18} />, tono: 'visitas' },
-        { label: 'Checkout', valor: pixel?.checkouts_iniciados ?? 0, icono: <CreditCard size={18} />, tono: 'checkout' },
+        { label: 'Visitas', valor: pixelFallo ? null : (pixel?.visitas ?? 0), valorLabel: pixelFallo ? '—' : undefined, icono: <Eye size={18} />, tono: 'visitas' },
+        { label: 'Checkout', valor: pixelFallo ? null : (pixel?.checkouts_iniciados ?? 0), valorLabel: pixelFallo ? '—' : undefined, icono: <CreditCard size={18} />, tono: 'checkout' },
         { label: 'Pagos Realizados', valor: pagosOnline.pagos_realizados, icono: <Wallet size={18} />, tono: 'contactos' },
       ],
       pieFinal: (
         <>
-          % conversión (Visitas a Pagos): <strong>{(pixel?.visitas || 0) > 0 ? ((pagosOnline.pagos_realizados / pixel.visitas) * 100).toFixed(1) : 0}%</strong>
+          % conversión (Visitas a Pagos): <strong>{pixelFallo ? '—' : `${(pixel?.visitas || 0) > 0 ? ((pagosOnline.pagos_realizados / pixel.visitas) * 100).toFixed(1) : 0}%`}</strong>
           <span className="md-funnel-div" />
           {/* El carrito no se pierde: deja de ser una etapa obligatoria del
               embudo y pasa acá, donde es un dato más y no rompe la lectura. */}
@@ -884,6 +1035,39 @@ export default function MiDashboard() {
         </div>
 
         <div className="md-filtros">
+          {/* Selector de landing. Se muestra siempre que haya al menos una
+              tienda publicada: aun con una sola, "Todas" no es lo mismo que
+              esa página (suma catálogo, contacto, funnels y los pedidos
+              cargados a mano, que no vienen de ninguna landing). */}
+          {landingsDisponibles.length > 0 && (
+            <div className="md-tabs md-tabs-landing">
+              <span className="md-tabs-label">
+                Landing
+                <Ayuda texto="Elegí de qué página querés ver los números. Cada tienda tiene su propio tráfico y sus propios pedidos. 'Todas' suma el negocio completo, incluidos los pedidos por WhatsApp y los cargados a mano, que no vienen de ninguna landing — por eso 'Todas' siempre da más que la suma de las páginas." />
+              </span>
+              <button
+                type="button"
+                className={`md-tab ${landingId === 'TODAS' ? 'activo' : ''}`}
+                onClick={() => setLandingId('TODAS')}
+                disabled={loading}
+              >
+                Todas
+              </button>
+              {landingsDisponibles.map(l => (
+                <button
+                  key={l.landing_id}
+                  type="button"
+                  className={`md-tab ${String(landingId) === String(l.landing_id) ? 'activo' : ''}`}
+                  onClick={() => setLandingId(l.landing_id)}
+                  disabled={loading}
+                  title={l.publicada ? l.nombre : `${l.nombre} — sin publicar`}
+                >
+                  {l.nombre}
+                  {!l.publicada && <span className="md-tab-badge">sin publicar</span>}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="md-tabs">
             {PRESETS.map(p => (
               <button
@@ -926,7 +1110,7 @@ export default function MiDashboard() {
         
         {/* ── Resumen Ejecutivo: plata confirmada + los 5 indicadores que
             antes vivían dispersos (pedidos/ticket ya no se repiten abajo) ── */}
-        <section className="md-hero md-span-4">
+        <section className="md-hero md-span-8">
           <div className="md-hero-top">
             <span className="md-eyebrow">Facturación Real · {rangoLabel}</span>
             <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
@@ -934,40 +1118,40 @@ export default function MiDashboard() {
           <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
         </section>
 
-        <section className="md-card">
+        <section className="md-card md-summary-card md-span-4">
           <h3 className="md-card-title">
-          Resumen Ejecutivo
-          <Ayuda texto="Los números principales del período que elegiste arriba. Todo lo demás del dashboard explica de dónde salen estos." />
-        </h3>
-        <div className="md-rentabilidad-grid">
-          <div className="md-rent-item">
-            <span className="md-rent-label">Pedidos <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
-            <span className="md-rent-valor">{funnel.entregados}</span>
+            Resumen Ejecutivo
+            <Ayuda texto="Los números principales del período que elegiste arriba. Todo lo demás del dashboard explica de dónde salen estos." />
+          </h3>
+          <div className="md-rentabilidad-grid">
+            <div className="md-rent-item">
+              <span className="md-rent-label">Pedidos <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
+              <span className="md-rent-valor">{funnel.entregados}</span>
+            </div>
+            <div className="md-rent-item">
+              <span className="md-rent-label">Ticket Promedio <Ayuda texto="Cuánto gastó en promedio cada cliente por pedido entregado." /></span>
+              <span className="md-rent-valor">{gs(kpis.ticket_promedio)}</span>
+            </div>
+            <div className="md-rent-item md-rent-destacado">
+              <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: la facturación menos todos los costos y gastos del período." /></span>
+              <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
+            </div>
+            <div className="md-rent-item">
+              <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes que facturaste, cuántos te quedaron limpios." /></span>
+              <span className="md-rent-valor">{kpis.pct_margen_neto}%</span>
+            </div>
+            <div className="md-rent-item">
+              <span className="md-rent-label">Conversión <Ayuda texto="De cada 100 pedidos que entraron, cuántos lograste confirmar." /></span>
+              <span className="md-rent-valor">{funnel.tasa_confirmacion}%</span>
+            </div>
           </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Ticket Promedio <Ayuda texto="Cuánto gastó en promedio cada cliente por pedido entregado." /></span>
-            <span className="md-rent-valor">{gs(kpis.ticket_promedio)}</span>
-          </div>
-          <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: la facturación menos todos los costos y gastos del período." /></span>
-            <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes que facturaste, cuántos te quedaron limpios." /></span>
-            <span className="md-rent-valor">{kpis.pct_margen_neto}%</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Conversión <Ayuda texto="De cada 100 pedidos que entraron, cuántos lograste confirmar." /></span>
-            <span className="md-rent-valor">{funnel.tasa_confirmacion}%</span>
-          </div>
-        </div>
-      </section>
+        </section>
 
       {/* ── Evolución de Ventas: la sección con más protagonismo ───────── */}
-      <GraficoEvolucionFinanciera serie={tendenciasFinancieras} />
+      <GraficoEvolucionFinanciera serie={tendenciasFinancieras} className="md-chart-primary md-span-8" />
 
       {/* ── Rentabilidad: agregado del período + detalle por producto ──── */}
-      <section className="md-card md-rentabilidad-card">
+      <section className="md-card md-rentabilidad-card md-span-4">
         <h3 className="md-card-title">
           Rentabilidad
           <Ayuda texto="La cuenta completa del período, de arriba hacia abajo: arrancás con lo que facturaste y le vas descontando cada costo hasta llegar a lo que te quedó." />
@@ -1031,6 +1215,9 @@ export default function MiDashboard() {
             </ul>
           </details>
         )}
+      </section>
+
+      <section className="md-card md-products-card md-span-12">
         <p className="md-card-title-sub md-subsection-label">Más Vendidos</p>
         <p className="md-empty-hint md-subsection-ayuda">
           Cuánto vendiste, cuánto te costó, cuánto ganaste y cuánto perdiste con
@@ -1041,7 +1228,7 @@ export default function MiDashboard() {
       </section>
 
       {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
-      <section className="md-card md-funnel-card">
+      <section className="md-card md-funnel-card md-span-12">
         <h3 className="md-card-title">
           Embudo de Conversión
           <Ayuda texto="El camino que recorre una persona hasta comprarte. En cada paso se pierde gente: el porcentaje entre paso y paso te muestra dónde se te caen más." />
@@ -1061,8 +1248,20 @@ export default function MiDashboard() {
         <EmbudoPasos {...embudosPorTab[embudoTab]} />
       </section>
 
+      {/* ── Qué landing vende más. Va a lo ancho: son 7 columnas y la fila
+          de totales tiene que leerse alineada con ellas. ─────────────────── */}
+      <section className="md-card md-span-12">
+        <h3 className="md-card-title">
+          {/* Sin número en el título: con una sola landing, "Top 1 landings"
+              se lee mal. El recorte queda dicho en la fila de totales. */}
+          <Store size={15} /> Landings que más venden
+          <Ayuda texto="Cuál de tus páginas te está dejando más plata, y cuánta gente le llega. Compara siempre TODAS tus landings: no cambia con el selector de arriba, porque comparar una página contra sí misma no diría nada. Sí respeta el período y el filtro de producto." />
+        </h3>
+        <TablaRankingLandings ranking={ranking} />
+      </section>
+
       {/* ── Rendimiento por canal + Couriers: comparación, no detalle ──── */}
-      <div className="md-cols-2">
+      <div className="md-cols-2 md-span-12">
         <section className="md-card">
           <h3 className="md-card-title">
             Rendimiento por canal
@@ -1081,12 +1280,12 @@ export default function MiDashboard() {
       </div>
 
       {/* ── Productos: leads vs confirmados (compacto) + más consultados ── */}
-      <div className="md-cols-2">
+      <div className="md-cols-2 md-span-12">
         <section className="md-card">
           <h3 className="md-card-title">
             Leads vs. Confirmados por producto
             <span className="md-card-title-sub">pixel + confirmado a mano</span>
-            <Ayuda texto="Compara la intención de compra en la landing (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto." />
+            <Ayuda texto="Compara la intención de compra en la landing (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en la landing: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
           </h3>
           <TablaEmbudoProductos filas={embudoProductosVisibles} />
           {embudoProductos.length > 5 && (
@@ -1124,23 +1323,32 @@ export default function MiDashboard() {
 
       {/* ── Actividad: secundaria, ocupa solo lo necesario ──────────────── */}
       {pixel ? (
-        <GraficoTendencia serie={pixel.serie} />
+        <GraficoTendencia serie={pixel.serie} className="md-chart-secondary md-span-12" />
       ) : (
-        <section className="md-card md-chart-card">
+        <section className="md-card md-chart-card md-chart-secondary md-span-12">
           <div className="md-empty">
             <Store size={22} opacity={0.35} />
-            <p>Todavía no tenés una landing publicada.</p>
-            {/* Apunta al nuevo flujo de Landing simple (3 templates rígidos)
-                — el editor flexible (/mi-landing) sigue existiendo pero ya
-                no es un punto de entrada visible, ver UserLayout.jsx. */}
-            <Link to="/landing" className="md-btn-primary">
-              Crear mi landing <ArrowRight size={14} />
-            </Link>
+            {/* Sin landings es un estado real; con landings, que no haya
+                tráfico significa que falló la consulta, no que falte crear
+                nada — decir "creá tu landing" ahí sería mentir. */}
+            {landingsDisponibles.length > 0 ? (
+              <p>No pudimos traer las visitas de esta página. Probá recargar en un momento.</p>
+            ) : (
+              <>
+                <p>Todavía no tenés una landing publicada.</p>
+                {/* Apunta al nuevo flujo de Landing simple (3 templates rígidos)
+                    — el editor flexible (/mi-landing) sigue existiendo pero ya
+                    no es un punto de entrada visible, ver UserLayout.jsx. */}
+                <Link to="/landing" className="md-btn-primary">
+                  Crear mi landing <ArrowRight size={14} />
+                </Link>
+              </>
+            )}
           </div>
         </section>
       )}
 
-      <div className="md-footer-link">
+      <div className="md-footer-link md-span-12">
         <Link to="/mis-pedidos?tab=analitica" className="md-btn-ghost">
           Ver Centro de Inteligencia Comercial completo <ArrowRight size={14} />
         </Link>

@@ -8,7 +8,7 @@ import ProductForm from './pages/productos/ProductForm';
 import CategoriaList from './pages/categorias/CategoriaList';
 import ComboList from './pages/combos/ComboList';
 import ComboEditor from './pages/combos/ComboEditor';
-import ComboConfiguracion from './pages/combos/ComboConfiguracion';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import RequireTienda from './components/RequireTienda';
@@ -27,6 +27,8 @@ import FunnelEntry from './pages/funnel/FunnelEntry';
 import FunnelEditor from './pages/funnel/FunnelEditor';
 import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
+import Planes from './pages/planes/Planes';
+import AdminPlanes from './pages/planes/AdminPlanes';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
 import EducacionView from './pages/educacion/EducacionView';
@@ -260,9 +262,7 @@ function App() {
         <Route path="/combos/:id/editar" element={
           <RequireTienda><DynamicLayout><ComboEditor /></DynamicLayout></RequireTienda>
         } />
-        <Route path="/configuracion-economica" element={
-          <RequireTienda><DynamicLayout><ComboConfiguracion /></DynamicLayout></RequireTienda>
-        } />
+
 
         {/* Finanzas */}
         <Route path="/finanzas/costos-gastos" element={
@@ -298,6 +298,15 @@ function App() {
         } />
         <Route path="/mi-tienda" element={
           <RequireTienda><DynamicLayout><ConfigurarTienda /></DynamicLayout></RequireTienda>
+        } />
+        {/* Planes: /planes es la pantalla que ve el comercio (catálogo de
+            lib/planesCatalogo.js); /admin/planes es donde el admin edita ese
+            catálogo. Sin backend todavía — ver el aviso del editor. */}
+        <Route path="/planes" element={
+          <RequireTienda><DynamicLayout><Planes /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/admin/planes" element={
+          <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>
         } />
         {/* Cada tienda tiene 3 páginas fijas (Inicio/Catálogo/Contacto, ver
             landing.service.js asegurarPaginasFijas). /mi-landing garantiza

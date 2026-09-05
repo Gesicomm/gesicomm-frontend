@@ -1,12 +1,15 @@
 import React from 'react';
 import { RotateCcw } from 'lucide-react';
+import { resolverTemaPorSlug } from '../templates/themeUtils';
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
+// `temaKey` es el nombre del color dentro del tema resuelto del template
+// (ver DEFAULT_TEMA_POR_TEMPLATE), que no coincide con el de la columna.
 const CAMPOS = [
-  { key: 'color_fondo', label: 'Fondo' },
-  { key: 'color_texto', label: 'Texto' },
-  { key: 'color_primario', label: 'Acento' },
+  { key: 'color_fondo', temaKey: 'fondo', label: 'Fondo' },
+  { key: 'color_texto', temaKey: 'texto', label: 'Texto' },
+  { key: 'color_primario', temaKey: 'acento', label: 'Acento' },
 ];
 
 /**
@@ -16,15 +19,27 @@ const CAMPOS = [
  * LandingService.validarPayload. null = el template usa su propia paleta
  * por defecto (ver templates/*.jsx).
  */
-export default function ColoresPanel({ draft, onCampo }) {
+export default function ColoresPanel({ draft, onCampo, templateSlug }) {
+  // Paleta que la landing está usando de verdad: lo que el comercio pisó,
+  // y donde no pisó nada, el default del template activo. Sin esto el panel
+  // arrancaba con los tres selectores en negro y los campos de texto
+  // vacíos — no mostraba en ningún lado los colores reales de la página.
+  const temaActual = resolverTemaPorSlug(
+    { fondo: draft.color_fondo, texto: draft.color_texto, acento: draft.color_primario },
+    templateSlug,
+  );
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-xs text-fg/40">
         Se aplican a toda la landing. Dejá un color vacío para usar el de este template.
       </p>
-      {CAMPOS.map(({ key, label }) => {
+      {CAMPOS.map(({ key, temaKey, label }) => {
+        const heredado = temaActual[temaKey];
         const valor = draft[key] || '';
-        const valorValido = HEX_RE.test(valor) ? valor : '#000000';
+        // El selector siempre muestra el color que se ve en la página: el
+        // propio si lo hay, si no el heredado del template.
+        const valorValido = HEX_RE.test(valor) ? valor : (HEX_RE.test(heredado) ? heredado : '#000000');
         return (
           <div key={key}>
             <div className="flex items-center justify-between mb-1.5">
@@ -50,7 +65,9 @@ export default function ColoresPanel({ draft, onCampo }) {
                 type="text"
                 value={draft[key] || ''}
                 onChange={e => onCampo(key, e.target.value)}
-                placeholder="#000000"
+                // Vacío = heredado: el placeholder dice cuál es ese color en
+                // vez de un "#000000" genérico que no es el de la página.
+                placeholder={heredado || '#000000'}
                 maxLength={7}
                 className="flex-1 bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30"
               />

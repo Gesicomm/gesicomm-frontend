@@ -14,6 +14,11 @@ export function ReprogramarModal({ open, envio, onClose, onSubmit }) {
   const [fecha, setFecha] = useState("");
   const [motivoOpcion, setMotivoOpcion] = useState("");
   const [motivoLibre, setMotivoLibre] = useState("");
+  // El viaje en falso ya se hizo y normalmente se paga igual. Se pide acá y
+  // se acumula en el costo del pedido; antes se perdía y el margen quedaba
+  // inflado. Arranca vacío a propósito: no hay un valor por defecto honesto,
+  // lo tiene que decir quien habló con el courier.
+  const [costoViaje, setCostoViaje] = useState("");
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -22,6 +27,7 @@ export function ReprogramarModal({ open, envio, onClose, onSubmit }) {
       setFecha("");
       setMotivoOpcion("");
       setMotivoLibre("");
+      setCostoViaje("");
       setError(null);
     }
   }, [open]);
@@ -34,11 +40,21 @@ export function ReprogramarModal({ open, envio, onClose, onSubmit }) {
       setError("La nueva fecha es obligatoria");
       return;
     }
+    // Se exige una respuesta explícita, incluso si es 0: dejarlo en blanco
+    // haría que el costo del viaje desaparezca sin que nadie lo decida.
+    if (costoViaje === "" || Number.isNaN(Number(costoViaje)) || Number(costoViaje) < 0) {
+      setError('Indicá cuánto te cuesta este viaje. Si el courier no te lo cobra, poné 0.');
+      return;
+    }
     const motivo = motivoOpcion === "Otro" ? motivoLibre.trim() : motivoOpcion;
     setGuardando(true);
     setError(null);
     try {
-      await onSubmit(envio.id, { fecha_reprogramada: fecha, motivo_reprogramacion: motivo || null });
+      await onSubmit(envio.id, {
+        fecha_reprogramada: fecha,
+        motivo_reprogramacion: motivo || null,
+        costo_intento: Number(costoViaje),
+      });
     } catch (err) {
       setError(err?.response?.data?.error || "Error al reprogramar el pedido");
     } finally {
@@ -51,7 +67,7 @@ export function ReprogramarModal({ open, envio, onClose, onSubmit }) {
       <div className="modal-content" style={{ maxWidth: "420px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <CalendarClock size={18} color="#fb923c" /> Reprogramar pedido #{envio.id}
+            <CalendarClock size={18} color="var(--color-warning)" /> Reprogramar pedido #{envio.id}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>
@@ -76,6 +92,35 @@ export function ReprogramarModal({ open, envio, onClose, onSubmit }) {
               <input type="text" className="form-input" value={motivoLibre} onChange={(e) => setMotivoLibre(e.target.value)} placeholder="Describí el motivo..." />
             </div>
           )}
+
+          <div className="np-row">
+            <label>Costo de este viaje <span className="req">*</span></label>
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <input
+                type="number"
+                min="0"
+                step="1000"
+                className="form-input"
+                value={costoViaje}
+                onChange={(e) => setCostoViaje(e.target.value)}
+                placeholder="Gs 0"
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setCostoViaje("0")}
+                style={{ whiteSpace: "nowrap" }}
+              >
+                No me lo cobran
+              </button>
+            </div>
+            <small style={{ color: "var(--color-fg-muted)", fontSize: "0.75rem" }}>
+              Lo que te cobra el courier por haber ido sin poder entregar. Se suma al
+              costo de envío del pedido, así el margen y la rendición muestran lo que
+              de verdad pagaste. Si no te lo cobran, poné 0.
+            </small>
+          </div>
 
           {error && <div className="field-error">{error}</div>}
 

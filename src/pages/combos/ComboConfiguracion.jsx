@@ -11,7 +11,7 @@ function fmtNumber(n) {
   return String(Number(n));
 }
 
-export default function ComboConfiguracion() {
+export default function ComboConfiguracion({ asTab = false }) {
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -117,23 +117,28 @@ export default function ComboConfiguracion() {
     );
   }
 
+  const Wrapper = asTab ? 'div' : 'form';
+  const wrapperProps = asTab ? { className: 'combo-page' } : { className: 'combo-page', onSubmit: handleGuardar, noValidate: true };
+
   return (
-    <form className="combo-page" onSubmit={handleGuardar} noValidate>
+    <Wrapper {...wrapperProps}>
       {/* Header */}
+      {!asTab && (
       <div className="combo-header">
         <div className="combo-header-left">
           <div className="combo-icon-wrap" style={{ background: 'linear-gradient(135deg, #3d5fa3, #2e4a85)' }}>
             <Settings size={20} />
           </div>
           <div>
-            <h1 className="combo-title">Configuración económica de combos</h1>
+            <h1 className="combo-title">Configuración económica</h1>
             <p className="combo-subtitle">Parámetros utilizados en el motor de cálculo de rentabilidad</p>
           </div>
         </div>
-        <button type="submit" className="btn-primary" disabled={guardando}>
+        <button type="button" onClick={handleGuardar} className="btn-primary" disabled={guardando}>
           <Save size={15} /> {guardando ? 'Guardando...' : 'Guardar configuración'}
         </button>
       </div>
+      )}
 
       {error && (
         <div className="combo-warning-item" style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.2)', background: 'rgba(239,68,68,0.05)' }}>
@@ -158,7 +163,7 @@ export default function ComboConfiguracion() {
           <div>
             <div className="combo-section-label">CPA (%)</div>
             <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={cpa} onChange={e => setCpa(e.target.value)} />
-            <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '0.3rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Costo por Adquisición como porcentaje del precio de venta. Ej: 20 = 20%.
             </div>
           </div>
@@ -189,28 +194,28 @@ export default function ComboConfiguracion() {
           <div>
             <div className="combo-section-label">Margen mínimo (%)</div>
             <input style={inputStyle} type="number" min="0" max="100" step="0.1" value={margenMinimo} onChange={e => setMargenMinimo(e.target.value)} />
-            <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '0.3rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Umbral de advertencia. No bloquea — solo avisa cuando el combo queda por debajo.
             </div>
           </div>
           <div>
             <div className="combo-section-label">Umbral de oferta excelente (%)</div>
             <input style={inputStyle} type="number" min="0" max="500" step="1" value={umbralExcelente} onChange={e => setUmbralExcelente(e.target.value)} />
-            <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '0.3rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Si la utilidad del combo supera este % respecto a vender el producto solo, la oferta se clasifica como "Excelente".
             </div>
           </div>
           <div>
             <div className="combo-section-label">Márgenes objetivo (lista separada por coma)</div>
             <input style={inputStyle} type="text" value={margenes} onChange={e => setMargenes(e.target.value)} placeholder="15, 30, 45" />
-            <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '0.3rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Para cada margen se calcula un precio sugerido. Ej: <code>15, 30, 45</code>
             </div>
           </div>
           <div>
             <div className="combo-section-label">Escenarios de descuento (lista separada por coma)</div>
             <input style={inputStyle} type="text" value={escenarios} onChange={e => setEscenarios(e.target.value)} placeholder="0, 5, 10, 15, 20, 25, 30, 35" />
-            <div style={{ fontSize: '0.72rem', color: '#475569', marginTop: '0.3rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Porcentajes simulados en el análisis de sensibilidad. Ej: <code>0, 5, 10, 15, 20, 25, 30, 35</code>
             </div>
           </div>
@@ -218,12 +223,12 @@ export default function ComboConfiguracion() {
       </div>
       )}
 
-      {/* Botón móvil */}
+      {/* Acción de guardado — al pie de las secciones que edita, no antes. */}
       <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-        <button type="submit" className="btn-primary" disabled={guardando}>
-          <Save size={15} /> {guardando ? 'Guardando...' : 'Guardar configuración'}
+        <button type="button" onClick={handleGuardar} className="btn-primary" disabled={guardando}>
+          <Save size={15} /> {guardando ? 'Guardando...' : (asTab ? 'Guardar configuración económica' : 'Guardar configuración')}
         </button>
       </div>
-    </form>
+    </Wrapper>
   );
 }

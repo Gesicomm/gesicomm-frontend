@@ -31,8 +31,12 @@ function galeriaDeItem(item) {
  * @property {{fondo:string|null, texto:string|null, acento:string|null}} tema — null = el template usa su paleta default.
  */
 
-/** Desde el detalle que devuelve landingSimpleService (editor: crear/obtener/actualizar) + catálogo del picker. */
-export function mapEditorDraftToTemplateData(draft, catalogo) {
+/**
+ * Desde el detalle que devuelve landingSimpleService (editor:
+ * crear/obtener/actualizar) + catálogo del picker + la tienda (Mi tienda),
+ * de donde sale la plantilla del mensaje de WhatsApp.
+ */
+export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
   const porClave = new Map();
   (catalogo?.productos || []).forEach(p => porClave.set(`producto:${p.id}`, p));
   (catalogo?.combos || []).forEach(c => porClave.set(`combo:${c.id}`, c));
@@ -40,8 +44,14 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
   // El preview del home solo muestra los items con mostrar_en_inicio (mismo
   // filtro que aplica el backend en obtenerPublica) — el resto solo
   // aparece en la página de Catálogo completo (/catalogo), no acá.
+  // Un item cuyo producto ya no está en el catálogo (dado de baja, o de otro
+  // comercio) no llega nunca a la landing publicada: el backend lo filtra al
+  // armar itemsDto. El preview lo dibujaba igual como "(producto no
+  // disponible)", así que el comercio veía una tarjeta fantasma que además
+  // le corría la grilla respecto de la página real.
   const productos = (draft?.items || [])
     .filter(item => item.mostrar_en_inicio !== false)
+    .filter(item => porClave.has(`${item.tipo}:${item.referencia_id}`))
     .map(item => {
       const c = porClave.get(`${item.tipo}:${item.referencia_id}`);
       const finalId = c?.slug ? c.slug : `${item.tipo}:${item.referencia_id}`;
@@ -55,12 +65,18 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
         // (ver ImagenProductoHover). `imagen` sigue siendo la principal.
         imagenes: galeriaDeItem(c),
         etiqueta: item.etiqueta || null,
+        // stock y tieneOpciones deciden qué botón dibuja la tarjeta (ver
+        // AccionesProducto en templates/sections.jsx). Sin ellos el preview
+        // mostraba "Agregar al carrito" en productos que en la publicada
+        // llevan al detalle, o los daba por disponibles estando sin stock.
+        stock: c?.cantidad_disponible ?? c?.stock ?? null,
+        tieneOpciones: !!(c?.variantes?.length || (c?.ofertas || []).some(o => o.estrategia === 'normal')),
       };
     });
 
   return {
     slug: draft?.slug,
-    nombreComercio: draft?.titulo,
+    nombreComercio: draft?.titulo || '',
     logo: draft?.logo_imagen ? getMediaUrl(draft.logo_imagen) : null,
     hero: {
       titulo: draft?.banner_titulo || '',
@@ -88,6 +104,13 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
       tiktok: draft?.contacto_tiktok || '',
       youtube: draft?.contacto_youtube || '',
       twitter: draft?.contacto_twitter || '',
+      // La plantilla del mensaje vive en Mi tienda y los dos toggles en la
+      // landing — mismas dos fuentes que usa el DTO público. Sin esto el
+      // link de WhatsApp del preview salía con el texto por defecto y el de
+      // la landing publicada con el que el comercio configuró.
+      mensaje: tienda?.mensaje_contacto || '',
+      incluir_precio: !!draft?.whatsapp_incluir_precio,
+      incluir_url: !!draft?.whatsapp_incluir_url,
     },
     faq: (draft?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
     beneficios: (draft?.beneficios || []).map(b => ({ titulo: b.titulo, texto: b.texto, icono: b.icono })),
@@ -107,15 +130,24 @@ export function mapEditorDraftToTemplateData(draft, catalogo) {
 export function mapPublicDtoToTemplateData(dto) {
   return {
     slug: dto?.slug,
-    nombreComercio: dto?.titulo || dto?.tienda?.nombre,
+    // Solo lo configurado EN ESTA LANDING (panel Marca). Antes caía a
+    // Tienda.nombre, así que una landing sin nombre propio mostraba en la
+    // publicada el nombre del comercio configurado en Mi tienda mientras el
+    // preview del editor lo mostraba vacío — la misma landing, dos textos.
+    nombreComercio: dto?.titulo || '',
     logo: dto?.logo_imagen ? getMediaUrl(dto.logo_imagen) : null,
     hero: {
-      titulo: dto?.banner?.titulo || dto?.titulo || '',
+      // La portada muestra el título del BANNER y nada más. Caer a
+      // dto.titulo hacía que el nombre del comercio se colara como titular
+      // del hero sin que nadie lo hubiera escrito ahí.
+      titulo: dto?.banner?.titulo || '',
       subtitulo: dto?.banner?.subtitulo || '',
       imagen: dto?.banner?.imagen ? getMediaUrl(dto.banner.imagen) : null,
       ctaTexto: dto?.banner?.boton_texto || '',
       ctaLink: dto?.banner?.boton_link || '',
-      opacidad: dto?.banner_opacidad,
+      // Viene dentro de `banner`, no en la raíz del DTO: leerlo de la raíz
+      // daba undefined siempre y la publicada ignoraba la opacidad elegida.
+      opacidad: dto?.banner?.opacidad,
     },
     productosTitulo: dto?.productos_titulo || 'Productos destacados',
     catalogoTitulo: dto?.catalogo_titulo || '',

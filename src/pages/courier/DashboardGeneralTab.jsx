@@ -74,7 +74,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "1100px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-        <LayoutDashboard size={20} color="#60a5fa" />
+        <LayoutDashboard size={20} color="var(--color-primary-text)" />
         <h2 style={{ margin: 0, color: "var(--color-fg)", fontSize: "1.1rem" }}>Dashboard</h2>
       </div>
 
@@ -115,13 +115,13 @@ export function DashboardGeneralTab({ couriers = [] }) {
           {/* Bloque 1 — Trabajo pendiente */}
           <Bloque titulo="Trabajo pendiente">
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1.2rem" }}>
-              <Stat label="Pendientes de confirmar" value={tp.pendientes_confirmar} color="#fbbf24" />
-              <Stat label="Confirmados por preparar" value={tp.confirmados_preparar} color="#2dd4bf" />
-              <Stat label="Preparados por despachar" value={tp.preparados_despachar} color="#3d5fa3" />
-              <Stat label="Despachados sin resultado" value={tp.despachados_sin_resultado} color="#60a5fa" />
-              <Stat label="Reprogramados para hoy" value={tp.reprogramados_hoy} color="#fb923c" />
-              <Stat label="Reprogramados vencidos" value={tp.reprogramados_vencidos} color="#f87171" />
-              <Stat label="Entregados sin rendir" value={tp.entregados_pendientes_rendicion} color="#34d399" />
+              <Stat label="Pendientes de confirmar" value={tp.pendientes_confirmar} color="var(--color-warning)" />
+              <Stat label="Confirmados por preparar" value={tp.confirmados_preparar} color="var(--color-info)" />
+              <Stat label="Preparados por despachar" value={tp.preparados_despachar} color="var(--color-primary-text)" />
+              <Stat label="Despachados sin resultado" value={tp.despachados_sin_resultado} color="var(--color-info)" />
+              <Stat label="Reprogramados para hoy" value={tp.reprogramados_hoy} color="var(--color-warning)" />
+              <Stat label="Reprogramados vencidos" value={tp.reprogramados_vencidos} color="var(--color-danger)" />
+              <Stat label="Entregados sin rendir" value={tp.entregados_pendientes_rendicion} color="var(--color-success)" />
             </div>
           </Bloque>
 
@@ -130,13 +130,13 @@ export function DashboardGeneralTab({ couriers = [] }) {
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1.2rem", alignItems: "center" }}>
               <Stat label="Ingresados" value={ro.ingresados} />
               <span style={{ color: "var(--color-fg-subtle)" }}>→</span>
-              <Stat label="Confirmados" value={ro.confirmados} color="#2dd4bf" />
+              <Stat label="Confirmados" value={ro.confirmados} color="var(--color-info)" />
               <span style={{ color: "var(--color-fg-subtle)" }}>→</span>
-              <Stat label="Entregados" value={ro.entregados} color="#34d399" />
+              <Stat label="Entregados" value={ro.entregados} color="var(--color-success)" />
               <span style={{ color: "var(--color-fg-subtle)", marginLeft: "0.5rem" }}>·</span>
-              <Stat label="Cancelados" value={ro.cancelados} color="#f87171" />
-              <Stat label="Devueltos" value={ro.devueltos} color="#a8917a" />
-              <Stat label="Perdidos" value={ro.perdidos} color="#f87171" />
+              <Stat label="Cancelados" value={ro.cancelados} color="var(--color-danger)" />
+              <Stat label="Devueltos" value={ro.devueltos} color="var(--color-fg-muted)" />
+              <Stat label="Perdidos" value={ro.perdidos} color="var(--color-danger)" />
             </div>
           </Bloque>
 
@@ -162,10 +162,10 @@ export function DashboardGeneralTab({ couriers = [] }) {
                       <tr key={c.courier_id ?? "sin_courier"}>
                         <td>{c.courier_nombre}</td>
                         <td style={{ textAlign: "center" }}>{c.despachados}</td>
-                        <td style={{ textAlign: "center", color: "#34d399" }}>{c.entregados}</td>
-                        <td style={{ textAlign: "center", color: "#a8917a" }}>{c.devueltos}</td>
-                        <td style={{ textAlign: "center", color: "#f87171" }}>{c.perdidos}</td>
-                        <td style={{ textAlign: "center", fontWeight: 700, color: c.pct_entrega >= 80 ? "#34d399" : c.pct_entrega >= 70 ? "#fbbf24" : "#f87171" }}>
+                        <td style={{ textAlign: "center", color: "var(--color-success)" }}>{c.entregados}</td>
+                        <td style={{ textAlign: "center", color: "var(--color-fg-muted)" }}>{c.devueltos}</td>
+                        <td style={{ textAlign: "center", color: "var(--color-danger)" }}>{c.perdidos}</td>
+                        <td style={{ textAlign: "center", fontWeight: 700, color: c.pct_entrega >= 80 ? "var(--color-success)" : c.pct_entrega >= 70 ? "var(--color-warning)" : "var(--color-danger)" }}>
                           {c.pct_entrega}%
                         </td>
                       </tr>

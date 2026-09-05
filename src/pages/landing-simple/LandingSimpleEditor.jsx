@@ -720,7 +720,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   const algunaFichaActiva = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva;
   const draftParaPreview = { ...draft, items, faq, beneficios };
-  const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo);
+  const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo, tienda);
   datosPreview.tienda = { subdominio: tienda?.subdominio };
   datosPreview.slug = landing?.slug || draft?.slug;
   // Mismo criterio de id (slug si existe, si no `tipo:referencia_id`) que
@@ -929,7 +929,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   />
                 )}
                 {tab === 'colores' && (
-                  <ColoresPanel draft={draft} onCampo={campo} />
+                  <ColoresPanel draft={draft} onCampo={campo} templateSlug={templateSlug} />
                 )}
                 {tab === 'catalogo' && (
                   <CatalogoPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} onEditarProducto={abrirProducto} />

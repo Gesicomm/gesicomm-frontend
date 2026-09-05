@@ -9,8 +9,10 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
   // Título principal del encabezado personalizable
   const [tituloEncabezado, setTituloEncabezado] = useState("GESICOM LOGÍSTICA");
 
-  // Estados seleccionados para filtrar (por defecto Pendiente y En camino)
-  const [estadosFiltro, setEstadosFiltro] = useState(["Pendiente", "En camino"]);
+  // Estados seleccionados para imprimir por defecto: pendientes de contacto
+  // y pedidos listos para preparación/despacho. "En camino" ya no existe en
+  // el catálogo operativo actual.
+  const [estadosFiltro, setEstadosFiltro] = useState(["Pendiente", "Confirmado", "Preparado"]);
   const [presetTamano, setPresetTamano] = useState("4x6"); // 4x6, 4x4, 80mm, custom
   const [customAncho, setCustomAncho] = useState(100);
   const [customAlto, setCustomAlto] = useState(150);
@@ -269,7 +271,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
                 <button
                   type="button"
                   onClick={toggleSelectAll}
-                  style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-primary-text)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
                 >
                   {selectedIds.length === enviosFiltrados.length ? "Desmarcar todos" : "Marcar todos"}
                 </button>
@@ -302,7 +304,7 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
               type="button"
               className="btn-confirmar-pedido"
               style={{
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-active))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

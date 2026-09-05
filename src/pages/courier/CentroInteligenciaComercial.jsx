@@ -13,9 +13,6 @@ import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
 import { ReporteRentabilidad } from './analytics/reports/ReporteRentabilidad';
 import { PlaceholderReport } from './analytics/reports/PlaceholderReport';
 import { DashboardGeneralTab } from './DashboardGeneralTab';
-import { RendicionTab } from './RendicionTab';
-
-const REPORTES_VALIDOS = ['resumen', 'ventas', 'productos', 'confirmadores', 'finanzas', 'rentabilidad', 'resumen_pedidos', 'rendicion'];
 
 export function CentroInteligenciaComercial({ couriers = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,7 +33,7 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
     anio: new Date().getFullYear(),
     confirmador: 'TODOS',
     courierId: 'TODOS',
-    origen: 'TODOS'
+    canal_venta_id: 'TODOS'
   });
 
   const [confirmadoresDisponibles, setConfirmadoresDisponibles] = useState([]);
@@ -61,8 +58,6 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         return <ReporteRentabilidad filters={analyticsFilters} />;
       case 'resumen_pedidos':
         return <DashboardGeneralTab couriers={couriers} />;
-      case 'rendicion':
-        return <RendicionTab couriers={couriers} />;
       default:
         return <ReporteResumen filters={analyticsFilters} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
     }
@@ -73,7 +68,7 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
       <div className="cic-top-bar">
         <div className="cic-header-row">
           <div className="cic-title-box">
-            <div style={{ background: 'linear-gradient(135deg, #3d5fa3, #3b82f6)', padding: '0.6rem', borderRadius: '12px', color: 'var(--color-fg)', display: 'flex' }}>
+            <div style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-active))', padding: '0.6rem', borderRadius: '12px', color: 'var(--color-primary-fg)', display: 'flex' }}>
               <TrendingUp size={22} />
             </div>
             <div>
@@ -83,7 +78,7 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
                   <span className="pulse-dot" /> En Vivo
                 </span>
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0.2rem 0 0 0' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', margin: '0.2rem 0 0 0' }}>
                 Tracker analítico de confirmaciones, funnel comercial, rendimiento de productos y scorecards de transporte.
               </p>
             </div>
@@ -114,9 +109,6 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'resumen_pedidos' ? 'active' : ''}`} onClick={() => setTab('resumen_pedidos')}>
           <Truck size={16} /> Resumen de Pedidos
-        </button>
-        <button className={`cic-subnav-btn ${activeReport === 'rendicion' ? 'active' : ''}`} onClick={() => setTab('rendicion')}>
-          <DollarSign size={16} /> Rendición Couriers
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setTab('finanzas')}>
           <DollarSign size={16} /> Control Financiero

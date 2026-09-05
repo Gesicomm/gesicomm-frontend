@@ -224,6 +224,9 @@ export default function ProductPicker({
   // (ej. el formulario de ofertas, que va en z-index 1000) hay que subirlo
   // por encima o se abre detrás y parece que el botón no hace nada.
   zIndexModal = 100,
+  themeScopeClassName = '',
+  triggerLabel = 'Elegir productos',
+  modalTitle = 'Seleccionar productos',
 }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -295,20 +298,20 @@ export default function ProductPicker({
   }
 
   return (
-    <div className="lb-picker">
+    <div className={`lb-picker ${themeScopeClassName}`}>
       <div className="flex items-center justify-between mb-3 px-1">
         <span className="text-[13px] font-semibold text-fg/60">{cantidad} / {max} seleccionados</span>
         <button type="button" onClick={() => setModalAbierto(true)} className="px-3 py-1.5 bg-fg/10 hover:bg-fg/20 text-fg text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
-          <Search size={14} /> Elegir productos
+          <Search size={14} /> {triggerLabel}
         </button>
       </div>
 
       {modalAbierto && createPortal(
-        <div className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" style={{ zIndex: zIndexModal }}>
-          <div className="bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
-              <h3 className="text-base font-semibold text-fg">Seleccionar productos</h3>
-              <button type="button" onClick={() => setModalAbierto(false)} className="p-1.5 text-fg/40 hover:text-fg hover:bg-fg/10 rounded-lg transition-colors"><X size={18} /></button>
+        <div className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>
+          <div className="lb-modal-panel bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="lb-modal-header flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
+              <h3 className="text-base font-semibold text-fg">{modalTitle}</h3>
+              <button type="button" onClick={() => setModalAbierto(false)} className="lb-modal-close p-1.5 text-fg/40 hover:text-fg hover:bg-fg/10 rounded-lg transition-colors"><X size={18} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
               <div className="lb-toolbar">

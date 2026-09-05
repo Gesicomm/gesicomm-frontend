@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign
 } from 'lucide-react';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
@@ -129,6 +129,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/page-builder', label: 'Page Builder', icon: <Code2 /> })}
             {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store /> })}
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
+            {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
           </ul>
 
           <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">

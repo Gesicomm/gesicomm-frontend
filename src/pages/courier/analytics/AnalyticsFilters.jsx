@@ -43,7 +43,7 @@ export function AnalyticsFilters({ filters, setFilters, confirmadoresDisponibles
     <div className="cic-filters-container">
       {/* Barra de Presets Rápidos */}
       <div className="cic-presets-bar">
-        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginRight: '0.3rem' }}>
+        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-fg-subtle)', textTransform: 'uppercase', marginRight: '0.3rem' }}>
           Período:
         </span>
         {[

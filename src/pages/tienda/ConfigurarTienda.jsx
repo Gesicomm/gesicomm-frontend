@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
-  ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, Key, CheckCircle2,
-  Store, MessageCircle, BarChart3, Phone, Palette, MousePointerClick, CreditCard,
+  ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
+  Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
+  ArrowRight
 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
 import PagoParConfig from './PagoParConfig';
 import DominioPropio from './DominioPropio';
+import ComboConfiguracion from '../combos/ComboConfiguracion';
+import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
 import '../vitrina/vitrina.css';
 import '../landing/landing.css';
 import './tienda.css';
@@ -23,16 +27,13 @@ function slugifyLigero(texto) {
     .slice(0, 63);
 }
 
-const PLANES = [
-  { id: 'free', icono: Sparkles, titulo: 'Free' },
-  { id: 'pago', icono: Crown, titulo: 'Pago' },
-];
-
+// Los colores de la tienda (color_primario/secundario/fondo) NO están acá a
+// propósito: se editan en cada landing, desde su propio editor. Al no viajar
+// en el payload, TiendaService.camposEditables ni los toca (solo asigna los
+// campos !== undefined), así que los valores guardados quedan intactos y las
+// landings que no definen color propio los siguen heredando como default.
 const FORM_INICIAL = {
   nombre: '',
-  color_primario: '#10b981',
-  color_secundario: '#059669',
-  color_fondo: '#0a0a0a',
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
@@ -44,12 +45,55 @@ const FORM_INICIAL = {
   tiktok_pixel_id: '',
 };
 
+// El orden sigue el recorrido de una tienda nueva: primero quién sos y dónde
+// se publica tu catálogo, después por dónde te escriben, después cómo cobrás,
+// después con qué costos calculás, y al final la medición (lo más técnico y
+// lo que menos se toca). Los `id` son los mismos de siempre — solo cambió el
+// orden en que se listan y la etiqueta de "Económica" → "Costos", que dice
+// mejor qué se configura ahí.
 const TABS = [
-  { id: 'tienda', label: 'Tu Tienda', icono: Store },
-  { id: 'contacto', label: 'Contacto', icono: MessageCircle },
-  { id: 'analitica', label: 'Analítica', icono: BarChart3 },
-  { id: 'pasarelas', label: 'Pagos', icono: CreditCard },
+  {
+    id: 'tienda',
+    label: 'Tienda',
+    icono: Store,
+    titulo: 'Tu tienda',
+    desc: 'Cómo se llama tu negocio, dónde se publica y bajo qué dominio. Los colores se configuran en cada landing, desde su propio editor.',
+  },
+  {
+    id: 'contacto',
+    label: 'Contacto',
+    icono: MessageCircle,
+    titulo: 'Contacto',
+    desc: 'Por dónde te escriben tus clientes y con qué mensaje te llegan.',
+  },
+  {
+    id: 'pasarelas',
+    label: 'Pagos',
+    icono: CreditCard,
+    titulo: 'Medios de cobro',
+    desc: 'Conectá una pasarela para que tus clientes puedan pagar online.',
+  },
+  {
+    id: 'economica',
+    label: 'Costos',
+    icono: Coins,
+    titulo: 'Configuración económica',
+    desc: 'Los costos con los que se calcula la rentabilidad de tus combos y ofertas.',
+  },
+  {
+    id: 'analitica',
+    label: 'Analítica',
+    icono: BarChart3,
+    titulo: 'Medición y píxeles',
+    desc: 'Conectá Meta, Google y TikTok para medir lo que pasa en tus landings.',
+  },
 ];
+
+const TABS_VALIDAS = new Set(TABS.map(t => t.id));
+
+// Tabs cuyo contenido tiene su propio botón de guardado (componentes con su
+// propio servicio) — el footer de esta pantalla no los alcanza.
+const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas'];
 
 const VARIABLES_MENSAJE = [
   { variable: '{producto}', desc: 'Nombre del producto', ejemplo: 'Chomba Lacoste Clásica' },
@@ -62,6 +106,9 @@ const VARIABLES_MENSAJE = [
 // creada (lo garantiza el guard RequireTienda), así que acá es siempre
 // edición.
 export default function ConfigurarTienda() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabInicial = searchParams.get('tab');
   const [tienda, setTienda] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [form, setForm] = useState(FORM_INICIAL);
@@ -70,7 +117,7 @@ export default function ConfigurarTienda() {
   const [erroresValidacion, setErroresValidacion] = useState([]);
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
-  const [tab, setTab] = useState('tienda');
+  const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
@@ -101,9 +148,6 @@ export default function ConfigurarTienda() {
       if (data) {
         setForm({
           nombre: data.nombre || '',
-          color_primario: data.color_primario || '#10b981',
-          color_secundario: data.color_secundario || '#059669',
-          color_fondo: data.color_fondo || '#0a0a0a',
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
@@ -123,6 +167,22 @@ export default function ConfigurarTienda() {
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  useEffect(() => {
+    const tabUrl = searchParams.get('tab');
+    if (tabUrl && TABS_VALIDAS.has(tabUrl) && tabUrl !== tab) {
+      setTab(tabUrl);
+    }
+  }, [searchParams, tab]);
+
+  function seleccionarTab(tabId) {
+    setTab(tabId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tabId);
+      return next;
+    }, { replace: true });
+  }
 
   // Chequeo de disponibilidad en vivo — solo hace falta consultar cuando
   // el subdominio derivado del nombre difiere del que ya tiene guardado
@@ -222,413 +282,530 @@ export default function ConfigurarTienda() {
     }
   }
 
+  const esPlanPago = form.plan === 'pago';
+
+  const tabActual = TABS.find(t => t.id === tab) || TABS[0];
+  const tabGuardaAparte = TABS_CON_GUARDADO_PROPIO.includes(tab);
+
+  // Estados derivados de datos que ya existen — no hay lógica nueva detrás,
+  // solo se hacen visibles en el encabezado de cada bloque.
+  const estadoDominio = tienda?.dominio_propio_verificado
+    ? { tono: 'ok', texto: 'Verificado' }
+    : tienda?.dominio_propio
+      ? { tono: 'pendiente', texto: 'Pendiente de verificación' }
+      : { tono: 'neutro', texto: 'Sin dominio propio' };
+
+  const estadoMeta = form.meta_pixel_id
+    ? { tono: 'ok', texto: 'Píxel cargado' }
+    : { tono: 'neutro', texto: 'Sin configurar' };
+
   if (cargando) {
-    return <div className="vit-page"><div className="vit-empty"><Loader size={22} className="spin-icon" /><p>Cargando...</p></div></div>;
+    return (
+      <div className="tn-page">
+        <div className="tn-loading"><Loader size={22} className="spin-icon" /><p>Cargando...</p></div>
+      </div>
+    );
   }
 
   return (
-    <div className="vit-page">
-      <div className="vit-header">
-        <div>
-          <h1>Configuración de tu Tienda</h1>
-          <p className="vit-subtitle">Ajustá la identidad visual, datos de contacto y analítica de todas tus landings.</p>
-        </div>
-      </div>
+    <div className="tn-page">
+      <header className="tn-page-head">
+        <h1>Configuración de tu tienda</h1>
+        <p>Todo lo que define tu negocio online: identidad, contacto, cobros, costos y medición. Se aplica a tu catálogo y a todas tus landings.</p>
+      </header>
 
-      <div className="vit-card">
-        {ok && mensajeExito && (
-          <div className="land-alert-success" style={{ marginBottom: '1.25rem' }}>
-            <CheckCircle2 size={18} />
-            <span>{mensajeExito}</span>
-          </div>
-        )}
-
-        {error && (
-          <div className="land-alert-error" style={{ marginBottom: '1.25rem' }}>
-            <span><AlertCircle size={15} /> {error}</span>
-            {erroresValidacion.length > 0 && (
-              <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>
-            )}
-          </div>
-        )}
-
-        {/* ── Tabs ────────────────────────────────────────────────────── */}
-        <div className="tn-tabs">
+      <div className="tn-shell">
+        {/* ── Navegación ──────────────────────────────────────────────── */}
+        <nav className="tn-tabs" role="tablist" aria-label="Secciones de configuración">
           {TABS.map(t => {
             const Icono = t.icono;
+            const activo = tab === t.id;
             return (
               <button
                 key={t.id}
                 type="button"
-                className={`tn-tab ${tab === t.id ? 'activo' : ''}`}
-                onClick={() => setTab(t.id)}
+                role="tab"
+                aria-selected={activo}
+                className={`tn-tab ${activo ? 'activo' : ''}`}
+                onClick={() => seleccionarTab(t.id)}
               >
                 <span className="tn-tab-icon"><Icono size={15} /></span>
                 {t.label}
               </button>
             );
           })}
-        </div>
+        </nav>
 
-        <form onSubmit={handleSubmit} className="land-editor-grid land-editor-grid-form">
+        <div className="tn-panel">
+          <div className="tn-panel-head">
+            <h2>{tabActual.titulo}</h2>
+            <p>{tabActual.desc}</p>
+          </div>
 
-          {/* ════════════════════════ TAB: TU TIENDA ═════════════════════ */}
-          {tab === 'tienda' && (
-            <div className="tn-tab-content" key="tienda">
-              <div className="land-editor-grid">
-                <div className="land-section">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon"><Store size={14} /></span>
-                    <h2>Identidad</h2>
-                  </div>
-                  <label>Nombre de la tienda
-                    <input value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} />
-                  </label>
+          <form onSubmit={handleSubmit} className="tn-form">
+            <div className="tn-body">
 
-                  <label>URL pública
-                    <div className="tn-url-readonly">
-                      <Globe size={14} color="var(--vit-muted)" />
-                      <code>{subdominioDerivado || 'tu-tienda'}.{tienda?.dominio_base || 'gesicomm.com'}</code>
-                    </div>
-                  </label>
-
-                  {subdominioCambia && (
-                    <div className="tn-disponibilidad">
-                      {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
-                      {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
-                        <span className="tn-check ok"><Check size={12} /> URL disponible</span>
-                      )}
-                      {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
-                        <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
-                      )}
-                    </div>
-                  )}
-
-                  {subdominioCambia && !!tienda && (
-                    <p className="tn-warning">
-                      <AlertCircle size={14} />
-                      <span><strong>Atención:</strong> Cambiar el nombre va a modificar la URL pública de tu catálogo y de todas tus landings. Links que ya hayas compartido dejarán de funcionar.</span>
-                    </p>
-                  )}
-
-                  <label>Plan de tu cuenta</label>
-                  <div className="tn-plan-row">
-                    {PLANES.map(p => {
-                      const Icono = p.icono;
-                      const activo = form.plan === p.id;
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          className={`tn-plan-chip ${activo ? 'selected' : ''}`}
-                          onClick={() => handleChange('plan', p.id)}
-                        >
-                          <Icono size={14} />
-                          {p.titulo}
-                        </button>
-                      );
-                    })}
-                  </div>
+              {ok && mensajeExito && (
+                <div className="land-alert-success tn-alert">
+                  <CheckCircle2 size={18} />
+                  <span>{mensajeExito}</span>
                 </div>
+              )}
 
-                <div className="land-section">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon purple"><Palette size={14} /></span>
-                    <h2>Colores</h2>
-                  </div>
-                  <p className="tn-section-desc">Estos colores se aplican a todas tus landings y al catálogo público.</p>
-                  <div className="land-color-row">
-                    <label>Primario<input type="color" value={form.color_primario} onChange={e => handleChange('color_primario', e.target.value)} /></label>
-                    <label>Secundario<input type="color" value={form.color_secundario} onChange={e => handleChange('color_secundario', e.target.value)} /></label>
-                    <label>Fondo<input type="color" value={form.color_fondo} onChange={e => handleChange('color_fondo', e.target.value)} /></label>
-                  </div>
-                </div>
-
-                <div className="land-section land-section-wide">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon blue"><Globe size={14} /></span>
-                    <h2>Dominio propio</h2>
-                  </div>
-                  {tienda ? (
-                    <DominioPropio tienda={tienda} onActualizado={cargar} />
-                  ) : (
-                    <p className="tn-section-desc">Guardá tu tienda primero para poder configurar un dominio propio.</p>
+              {error && (
+                <div className="land-alert-error tn-alert">
+                  <span><AlertCircle size={15} /> {error}</span>
+                  {erroresValidacion.length > 0 && (
+                    <ul>{erroresValidacion.map((e, i) => <li key={i}>{e}</li>)}</ul>
                   )}
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* ════════════════════ TAB: CONTACTO ══════════════════════════ */}
-          {tab === 'contacto' && (
-            <div className="tn-tab-content" key="contacto">
-              <div className="land-editor-grid">
-                <div className="land-section">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon"><Phone size={14} /></span>
-                    <h2>Datos de contacto</h2>
-                  </div>
-                  <p className="tn-section-desc">El número de WhatsApp es el que recibe las consultas desde tus landings.</p>
-                  <label>WhatsApp
-                    <input value={form.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)} placeholder="Ej: 595981234567" />
-                  </label>
-                  <label>Teléfono (opcional)
-                    <input value={form.telefono} onChange={e => handleChange('telefono', e.target.value)} placeholder="Solo si querés mostrar otro número" />
-                  </label>
-                </div>
+              {/* ═════════════════════ TAB: TU TIENDA ═════════════════════ */}
+              {tab === 'tienda' && (
+                <div className="tn-tab-content" key="tienda">
 
-                <div className="land-section">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon"><MessageCircle size={14} /></span>
-                    <h2>Mensaje de WhatsApp</h2>
-                  </div>
-                  <p className="tn-section-desc">
-                    Personalizá el texto que se envía cuando un cliente toca "Consultar" o "Finalizar pedido" desde tu landing.
-                  </p>
-
-                  <div className="tn-msg-builder">
-                    <p className="tn-msg-builder-label">Plantilla del mensaje</p>
-                    <textarea
-                      ref={textareaRef}
-                      className="tn-msg-textarea"
-                      value={form.mensaje_contacto}
-                      onChange={e => handleChange('mensaje_contacto', e.target.value)}
-                      placeholder="Ej: Hola, me interesa {producto}"
-                      rows={3}
-                    />
-
-                    <div className="tn-msg-vars-header">
-                      <MousePointerClick size={12} />
-                      <span>Hacé clic para insertar una variable</span>
+                  {/* Quién es tu tienda */}
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Identidad</h3>
+                      <p>El nombre de tu negocio y la dirección donde se publica tu catálogo.</p>
                     </div>
-                    <div className="tn-msg-vars">
-                      {VARIABLES_MENSAJE.map(v => (
-                        <button
-                          key={v.variable}
-                          type="button"
-                          className="tn-msg-var-chip"
-                          onClick={() => insertarVariable(v.variable)}
-                          title={`${v.desc} — ej: ${v.ejemplo}`}
-                        >
-                          {v.variable}
-                          <span className="tn-var-desc">— {v.desc}</span>
-                        </button>
-                      ))}
-                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Nombre de la tienda</span>
+                          <input value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} />
+                        </label>
 
-                    <div className="tn-msg-preview-wrap">
-                      <div className="tn-msg-preview-label">
-                        <Eye size={12} />
-                        <span>Preview — así se ve en WhatsApp</span>
-                      </div>
-                      <div className="tn-msg-preview-bg">
-                        {previewMensaje ? (
-                          <div className="tn-msg-preview-bubble">
-                            {previewMensaje}
-                            <span className="tn-preview-time">10:30 a.m.</span>
+                        <div className="tn-field">
+                          <span className="tn-field-label">URL pública</span>
+                          <div className="tn-url-readonly">
+                            <Globe size={14} />
+                            <code>{subdominioDerivado || 'tu-tienda'}.{tienda?.dominio_base || 'gesicomm.com'}</code>
                           </div>
-                        ) : (
-                          <div className="tn-msg-preview-empty">Escribí un mensaje arriba para ver el preview.</div>
+                          <span className="tn-field-hint">Se genera automáticamente a partir del nombre.</span>
+                        </div>
+                      </div>
+
+                      {subdominioCambia && (
+                        <div className="tn-disponibilidad">
+                          {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
+                          {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
+                            <span className="tn-check ok"><Check size={12} /> URL disponible</span>
+                          )}
+                          {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
+                            <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
+                          )}
+                        </div>
+                      )}
+
+                      {subdominioCambia && !!tienda && (
+                        <p className="tn-warning">
+                          <AlertCircle size={14} />
+                          <span><strong>Atención:</strong> Cambiar el nombre va a modificar la URL pública de tu catálogo y de todas tus landings. Links que ya hayas compartido dejarán de funcionar.</span>
+                        </p>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Dónde se publica */}
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Dominio propio</h3>
+                      <p>Publicá tu tienda bajo tu propia dirección web en lugar del subdominio de Gesicomm.</p>
+                      <span className={`tn-badge ${estadoDominio.tono}`}>{estadoDominio.texto}</span>
+                    </div>
+                    <div className="tn-group-body">
+                      {tienda ? (
+                        <DominioPropio tienda={tienda} onActualizado={cargar} />
+                      ) : (
+                        <p className="tn-field-hint">Guardá tu tienda primero para poder configurar un dominio propio.</p>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* Suscripción — el plan dejó de elegirse acá con dos chips:
+                      se mira y se mejora desde /planes. form.plan sigue en el
+                      payload con el valor cargado, así que el guardado no
+                      cambia. */}
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Plan de tu cuenta</h3>
+                      <p>Define qué funciones tenés habilitadas dentro de Gesicomm.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      {esPlanPago ? (
+                        <div className="tn-plan-actual">
+                          <span className="tn-plan-actual-icono"><Crown size={18} /></span>
+                          <div className="tn-plan-actual-texto">
+                            <strong>Estás en un plan de pago</strong>
+                            <span>Tenés habilitadas todas las funciones de tu plan.</span>
+                          </div>
+                          <button type="button" className="tn-plan-link" onClick={() => navigate('/planes')}>
+                            Ver planes <ArrowRight size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="tn-upsell">
+                          <span className="tn-upsell-eyebrow"><Sparkles size={13} /> Estás en el plan Free</span>
+                          <h4>Tu tienda ya funciona. Ahora hacela vender sola.</h4>
+                          <p>
+                            Con un plan de pago publicás bajo tu propio dominio, cobrás online desde el
+                            checkout y medís cada campaña con Meta, Google y TikTok — todo lo que hoy
+                            tenés a medias en esta misma pantalla.
+                          </p>
+                          <ul className="tn-upsell-lista">
+                            <li><Check size={14} /> Dominio propio con certificado</li>
+                            <li><Check size={14} /> Cobros online en tus landings</li>
+                            <li><Check size={14} /> Píxeles y Conversions API</li>
+                            <li><Check size={14} /> Landings y embudos ilimitados</li>
+                          </ul>
+                          <div className="tn-upsell-acciones">
+                            <button type="button" className="tn-upsell-cta" onClick={() => navigate('/planes')}>
+                              Ver planes y mejorar <ArrowRight size={15} />
+                            </button>
+                            <span className="tn-upsell-nota">Sin permanencia — cambiás cuando quieras.</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* ═════════════════════ TAB: CONTACTO ══════════════════════ */}
+              {tab === 'contacto' && (
+                <div className="tn-tab-content" key="contacto">
+
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Canales de contacto</h3>
+                      <p>El número de WhatsApp es el que recibe las consultas que salen de tus landings.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">WhatsApp</span>
+                          <input value={form.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)} placeholder="Ej: 595981234567" />
+                          <span className="tn-field-hint">Con código de país, sin espacios ni signos.</span>
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Teléfono <em>(opcional)</em></span>
+                          <input value={form.telefono} onChange={e => handleChange('telefono', e.target.value)} placeholder="Solo si querés mostrar otro número" />
+                          <span className="tn-field-hint">Se muestra como dato de contacto, no recibe los mensajes.</span>
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Mensaje de WhatsApp</h3>
+                      <p>El texto que se envía cuando un cliente toca “Consultar” o “Finalizar pedido”.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-msg-grid">
+                        <div className="tn-msg-builder">
+                          <span className="tn-field-label">Plantilla del mensaje</span>
+                          <textarea
+                            ref={textareaRef}
+                            className="tn-msg-textarea"
+                            value={form.mensaje_contacto}
+                            onChange={e => handleChange('mensaje_contacto', e.target.value)}
+                            placeholder="Ej: Hola, me interesa {producto}"
+                            rows={3}
+                          />
+
+                          <div className="tn-msg-vars-header">
+                            <MousePointerClick size={12} />
+                            <span>Hacé clic para insertar una variable</span>
+                          </div>
+                          <div className="tn-msg-vars">
+                            {VARIABLES_MENSAJE.map(v => (
+                              <button
+                                key={v.variable}
+                                type="button"
+                                className="tn-msg-var-chip"
+                                onClick={() => insertarVariable(v.variable)}
+                                title={`${v.desc} — ej: ${v.ejemplo}`}
+                              >
+                                {v.variable}
+                                <span className="tn-var-desc">— {v.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="tn-msg-preview-wrap">
+                          <div className="tn-msg-preview-label">
+                            <Eye size={12} />
+                            <span>Preview — así se ve en WhatsApp</span>
+                          </div>
+                          <div className="tn-msg-preview-bg">
+                            {previewMensaje ? (
+                              <div className="tn-msg-preview-bubble">
+                                {previewMensaje}
+                                <span className="tn-preview-time">10:30 a.m.</span>
+                              </div>
+                            ) : (
+                              <div className="tn-msg-preview-empty">Escribí un mensaje arriba para ver el preview.</div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* ═════════════════════ TAB: PAGOS ═════════════════════════ */}
+              {tab === 'pasarelas' && (
+                <div className="tn-tab-content" key="pasarelas">
+                  <section className="tn-group tn-group-plena">
+                    <div className="tn-group-head">
+                      <h3>Métodos de pago del negocio</h3>
+                      <p>Definí efectivo, transferencia, tarjetas y quién custodia el cobro. Pedidos usa esta lista para calcular rendición, comisiones y método final de entrega.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-embed tn-embed-metodos-pago">
+                        <MetodosPagoCrud />
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="tn-group tn-group-plena">
+                    <div className="tn-group-head">
+                      <h3>Pasarelas disponibles</h3>
+                      <p>Activá una pasarela y cargá sus credenciales para que aparezca como opción de pago en el checkout de tus landings.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-embed tn-embed-pagopar">
+                        <PagoParConfig />
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* ═════════════════ TAB: CONFIGURACIÓN ECONÓMICA ═══════════ */}
+              {tab === 'economica' && (
+                <div className="tn-tab-content" key="economica">
+                  <section className="tn-group tn-group-plena">
+                    <div className="tn-group-head">
+                      <h3>Cómo se usan estos valores</h3>
+                      <p>
+                        No cambian el precio de tus productos ni lo que ve el cliente: son los costos con los
+                        que el armador de combos calcula margen, utilidad y precio sugerido.
+                      </p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-embed tn-embed-combo">
+                        <ComboConfiguracion asTab={true} />
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* ═════════════════════ TAB: ANALÍTICA ═════════════════════ */}
+              {tab === 'analitica' && (
+                <div className="tn-tab-content" key="analitica">
+
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Meta Pixel y Conversions API</h3>
+                      <p>Para medir los clics en “Consultar” como conversiones en tus campañas de Meta Ads.</p>
+                      <span className={`tn-badge ${estadoMeta.tono}`}>{estadoMeta.texto}</span>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Pixel ID</span>
+                          <input
+                            value={form.meta_pixel_id}
+                            onChange={e => handleChange('meta_pixel_id', e.target.value.replace(/\D/g, ''))}
+                            placeholder="Ej: 1234567890123456"
+                            inputMode="numeric"
+                          />
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label">Test Event Code <em>(opcional, solo mientras probás)</em></span>
+                          <input
+                            value={form.meta_test_event_code}
+                            onChange={e => handleChange('meta_test_event_code', e.target.value)}
+                            placeholder="Ej: TEST12345"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="tn-token-wrapper">
+                        <div className="tn-token-head">
+                          <span className="tn-field-label">Access Token (Conversions API)</span>
+                          <button
+                            type="button"
+                            className="tn-token-guide-toggle"
+                            onClick={() => setMostrarGuiaCapi(prev => !prev)}
+                          >
+                            <HelpCircle size={13} />
+                            {mostrarGuiaCapi ? 'Ocultar ayuda' : '¿De dónde saco este token?'}
+                          </button>
+                        </div>
+
+                        {tienda?.meta_access_token_configurado && !eliminarMetaToken && (
+                          <div className="tn-token-status-pill">
+                            <div className="tn-token-status-left">
+                              <ShieldCheck size={15} />
+                              <span>Token CAPI guardado en el servidor</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="tn-token-btn-remove"
+                              onClick={() => {
+                                setEliminarMetaToken(true);
+                                setMetaTokenNuevo('');
+                              }}
+                              title="Eliminar token guardado"
+                            >
+                              <Trash2 size={12} />
+                              Quitar token
+                            </button>
+                          </div>
+                        )}
+
+                        {eliminarMetaToken && (
+                          <div className="tn-token-status-pill removed">
+                            <div className="tn-token-status-left">
+                              <AlertCircle size={15} />
+                              <span>El token se eliminará al guardar cambios.</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="tn-token-btn-undo"
+                              onClick={() => setEliminarMetaToken(false)}
+                            >
+                              Deshacer
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="tn-token-input-group">
+                          <input
+                            type={mostrarToken ? 'text' : 'password'}
+                            value={metaTokenNuevo}
+                            onChange={e => {
+                              setMetaTokenNuevo(e.target.value);
+                              if (eliminarMetaToken) setEliminarMetaToken(false);
+                            }}
+                            placeholder={
+                              tienda?.meta_access_token_configurado && !eliminarMetaToken
+                                ? 'Escribe acá para reemplazar el token actual...'
+                                : 'Pegá acá el token de Events Manager (EAAB...)'
+                            }
+                            autoComplete="new-password"
+                          />
+                          {metaTokenNuevo && (
+                            <button
+                              type="button"
+                              className="tn-token-toggle-btn"
+                              onClick={() => setMostrarToken(prev => !prev)}
+                              title={mostrarToken ? 'Ocultar token' : 'Ver token'}
+                            >
+                              {mostrarToken ? <EyeOff size={15} /> : <Eye size={15} />}
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="tn-token-info-note">
+                          <ShieldCheck size={14} color="var(--color-success)" />
+                          <span>
+                            {tienda?.meta_access_token_configurado && !eliminarMetaToken
+                              ? 'Tu token de CAPI está activo y protegido con cifrado AES-256 en el servidor. Por seguridad no se expone en texto plano en la pantalla.'
+                              : 'Pegá acá tu token generado en Meta Events Manager para que las compras se registren por el servidor.'}
+                          </span>
+                        </div>
+
+                        {mostrarGuiaCapi && (
+                          <div className="tn-token-guide-box">
+                            <strong>¿Cómo obtener tu Access Token de Conversions API?</strong>
+                            <ol>
+                              <li>Entrá a <strong>Meta Events Manager</strong> con tu cuenta comercial de Meta.</li>
+                              <li>Seleccioná tu <strong>Píxel / Conjunto de datos</strong> en la columna izquierda.</li>
+                              <li>Hacé clic en la pestaña <strong>Configuración</strong>.</li>
+                              <li>Bajá hasta la sección <strong>API de conversiones</strong> y haz clic en <strong>"Generar token de acceso"</strong>.</li>
+                              <li>Copiá ese token largo (comienza con <code>EAAB...</code>) y pegalo en el campo de arriba.</li>
+                            </ol>
+                          </div>
                         )}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* ════════════════════ TAB: ANALÍTICA ═════════════════════════ */}
-          {tab === 'analitica' && (
-            <div className="tn-tab-content" key="analitica">
-              <div className="land-editor-grid">
-                <div className="land-section land-section-wide">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon rose"><BarChart3 size={14} /></span>
-                    <h2>Meta Pixel / CAPI</h2>
-                  </div>
-                  <p className="tn-section-desc">Para medir clics en "Consultar" como conversiones en tus campañas de Meta Ads.</p>
+                      <label className="tn-checkbox-row">
+                        <input type="checkbox" checked={form.meta_capi_activo} onChange={e => handleChange('meta_capi_activo', e.target.checked)} />
+                        Enviar eventos también por Conversions API (recomendado)
+                      </label>
 
-                  <label>Pixel ID
-                    <input
-                      value={form.meta_pixel_id}
-                      onChange={e => handleChange('meta_pixel_id', e.target.value.replace(/\D/g, ''))}
-                      placeholder="Ej: 1234567890123456"
-                      inputMode="numeric"
-                    />
-                  </label>
-
-                  <div className="tn-token-wrapper">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ margin: 0 }}>Access Token (Conversions API)</label>
-                      <button
-                        type="button"
-                        className="tn-token-guide-toggle"
-                        onClick={() => setMostrarGuiaCapi(prev => !prev)}
-                      >
-                        <HelpCircle size={13} />
-                        {mostrarGuiaCapi ? 'Ocultar ayuda' : '¿De dónde saco este token?'}
-                      </button>
-                    </div>
-
-                    {tienda?.meta_access_token_configurado && !eliminarMetaToken && (
-                      <div className="tn-token-status-pill">
-                        <div className="tn-token-status-left">
-                          <ShieldCheck size={15} />
-                          <span>Token CAPI guardado en el servidor</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="tn-token-btn-remove"
-                          onClick={() => {
-                            setEliminarMetaToken(true);
-                            setMetaTokenNuevo('');
-                          }}
-                          title="Eliminar token guardado"
-                        >
-                          <Trash2 size={12} />
-                          Quitar token
-                        </button>
-                      </div>
-                    )}
-
-                    {eliminarMetaToken && (
-                      <div className="tn-token-status-pill removed">
-                        <div className="tn-token-status-left">
-                          <AlertCircle size={15} />
-                          <span>El token se eliminará al guardar cambios.</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="tn-token-btn-undo"
-                          onClick={() => setEliminarMetaToken(false)}
-                        >
-                          Deshacer
-                        </button>
-                      </div>
-                    )}
-
-                    <div className="tn-token-input-group">
-                      <input
-                        type={mostrarToken ? 'text' : 'password'}
-                        value={metaTokenNuevo}
-                        onChange={e => {
-                          setMetaTokenNuevo(e.target.value);
-                          if (eliminarMetaToken) setEliminarMetaToken(false);
-                        }}
-                        placeholder={
-                          tienda?.meta_access_token_configurado && !eliminarMetaToken
-                            ? 'Escribe acá para reemplazar el token actual...'
-                            : 'Pegá acá el token de Events Manager (EAAB...)'
-                        }
-                        autoComplete="new-password"
-                      />
-                      {metaTokenNuevo && (
-                        <button
-                          type="button"
-                          className="tn-token-toggle-btn"
-                          onClick={() => setMostrarToken(prev => !prev)}
-                          title={mostrarToken ? 'Ocultar token' : 'Ver token'}
-                        >
-                          {mostrarToken ? <EyeOff size={15} /> : <Eye size={15} />}
-                        </button>
+                      {form.meta_capi_activo && !form.meta_pixel_id && (
+                        <p className="tn-warning"><AlertCircle size={13} /> <span>Activaste CAPI pero todavía no cargaste el Pixel ID — no se va a enviar nada hasta que lo completes.</span></p>
                       )}
                     </div>
+                  </section>
 
-                    <div className="tn-token-info-note">
-                      <ShieldCheck size={14} color="#10b981" />
-                      <span>
-                        {tienda?.meta_access_token_configurado && !eliminarMetaToken
-                          ? 'Tu token de CAPI está activo y protegido con cifrado AES-256 en el servidor. Por seguridad no se expone en texto plano en la pantalla.'
-                          : 'Pegá acá tu token generado en Meta Events Manager para que las compras se registren por el servidor.'}
-                      </span>
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Otras plataformas</h3>
+                      <p>Solo el lado navegador — a diferencia de Meta, acá no hay envío server-side (CAPI / Events API).</p>
                     </div>
-
-                    {mostrarGuiaCapi && (
-                      <div className="tn-token-guide-box">
-                        <strong>¿Cómo obtener tu Access Token de Conversions API?</strong>
-                        <ol>
-                          <li>Entrá a <strong>Meta Events Manager</strong> con tu cuenta comercial de Meta.</li>
-                          <li>Seleccioná tu <strong>Píxel / Conjunto de datos</strong> en la columna izquierda.</li>
-                          <li>Hacé clic en la pestaña <strong>Configuración</strong>.</li>
-                          <li>Bajá hasta la sección <strong>API de conversiones</strong> y haz clic en <strong>"Generar token de acceso"</strong>.</li>
-                          <li>Copiá ese token largo (comienza con <code>EAAB...</code>) y pegalo en el campo de arriba.</li>
-                        </ol>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Google Analytics — Measurement ID</span>
+                          <input
+                            value={form.google_analytics_id}
+                            onChange={e => handleChange('google_analytics_id', e.target.value.toUpperCase())}
+                            placeholder="Ej: G-ABC1234DEF"
+                          />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">TikTok Pixel ID</span>
+                          <input
+                            value={form.tiktok_pixel_id}
+                            onChange={e => handleChange('tiktok_pixel_id', e.target.value)}
+                            placeholder="Pegá el Pixel ID de TikTok Ads Manager"
+                          />
+                        </label>
                       </div>
-                    )}
-                  </div>
-
-                  <label>Test Event Code <span className="vit-subtitle" style={{ display: 'inline' }}>(opcional, solo mientras probás)</span>
-                    <input
-                      value={form.meta_test_event_code}
-                      onChange={e => handleChange('meta_test_event_code', e.target.value)}
-                      placeholder="Ej: TEST12345"
-                    />
-                  </label>
-
-                  <label className="tn-checkbox-row">
-                    <input type="checkbox" checked={form.meta_capi_activo} onChange={e => handleChange('meta_capi_activo', e.target.checked)} />
-                    Enviar eventos también por Conversions API (recomendado)
-                  </label>
-
-                  {form.meta_capi_activo && !form.meta_pixel_id && (
-                    <p className="tn-warning"><AlertCircle size={13} /> Activaste CAPI pero todavía no cargaste el Pixel ID — no se va a enviar nada hasta que lo completes.</p>
-                  )}
+                    </div>
+                  </section>
                 </div>
+              )}
+            </div>
 
-                <div className="land-section land-section-wide">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon amber"><BarChart3 size={14} /></span>
-                    <h2>Google Analytics / TikTok Pixel</h2>
-                  </div>
-                  <p className="tn-section-desc">Solo el lado navegador — a diferencia de Meta, acá no hay envío server-side (CAPI/Events API).</p>
-                  <label>Google Analytics — Measurement ID
-                    <input
-                      value={form.google_analytics_id}
-                      onChange={e => handleChange('google_analytics_id', e.target.value.toUpperCase())}
-                      placeholder="Ej: G-ABC1234DEF"
-                    />
-                  </label>
-                  <label>TikTok Pixel ID
-                    <input
-                      value={form.tiktok_pixel_id}
-                      onChange={e => handleChange('tiktok_pixel_id', e.target.value)}
-                      placeholder="Pegá el Pixel ID de TikTok Ads Manager"
-                    />
-                  </label>
-                </div>
+            {/* ── Footer de acciones ─────────────────────────────────── */}
+            <div className="tn-footer">
+              <p className="tn-footer-note">
+                {tabGuardaAparte ? (
+                  <>
+                    <Info size={13} />
+                    <span>Esta sección tiene su propio botón de guardado. “Guardar cambios” aplica lo que edites en Tienda, Contacto y Analítica.</span>
+                  </>
+                ) : (
+                  <>
+                    <Info size={13} />
+                    <span>Los cambios se aplican a tu catálogo público y a todas tus landings.</span>
+                  </>
+                )}
+              </p>
+              <div className="tn-footer-actions">
+                {ok && <span className="tn-saved"><Check size={14} /> Guardado</span>}
+                <button type="submit" className="land-btn-primary" disabled={guardando}>
+                  {guardando ? <Loader size={15} className="spin-icon" /> : <Save size={15} />}
+                  Guardar cambios
+                </button>
               </div>
             </div>
-          )}
-
-          {/* ════════════════════ TAB: PASARELAS DE PAGO ═════════════════════════ */}
-          {tab === 'pasarelas' && (
-            <div className="tn-tab-content" key="pasarelas">
-              <div className="land-editor-grid">
-                <div className="land-section">
-                  <div className="tn-section-header">
-                    <span className="tn-section-icon"><CreditCard size={14} /></span>
-                    <h2>Pasarelas de Pago</h2>
-                  </div>
-                  <p className="tn-section-desc">Conectá medios de pago para permitir que tus clientes abonen directo desde tu Landing.</p>
-                  
-                  {/* Aquí va el componente importado */}
-                  <div className="mt-4">
-                    <PagoParConfig />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="land-editor-footer">
-            {ok && <span className="tn-saved"><Check size={14} /> Guardado</span>}
-            <button type="submit" className="land-btn-primary" disabled={guardando}>
-              {guardando ? <Loader size={15} className="spin-icon" /> : <Save size={15} />}
-              Guardar cambios
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
   );
