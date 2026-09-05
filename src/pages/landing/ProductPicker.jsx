@@ -219,6 +219,11 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
  */
 export default function ProductPicker({
   catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar, mostrarInputs = true, mostrarLista = true,
+  // Ambos modales se montan por portal en <body>, así que compiten en el
+  // mismo contexto de apilado. Cuando el picker se usa DENTRO de otro modal
+  // (ej. el formulario de ofertas, que va en z-index 1000) hay que subirlo
+  // por encima o se abre detrás y parece que el botón no hace nada.
+  zIndexModal = 100,
 }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -299,7 +304,7 @@ export default function ProductPicker({
       </div>
 
       {modalAbierto && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" style={{ zIndex: zIndexModal }}>
           <div className="bg-surface-2 border border-fg/10 rounded-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-fg/10 bg-fg/5">
               <h3 className="text-base font-semibold text-fg">Seleccionar productos</h3>
@@ -375,7 +380,9 @@ export default function ProductPicker({
             </div>
           ) : (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.2rem', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
+              {/* var(--color-fg-muted) y no un blanco fijo: con el blanco
+                  hardcodeado este texto quedaba invisible en modo claro. */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.2rem', fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
                 <span>Mostrando {visiblesPaginados.length} de {visibles.length}</span>
                 {totalPaginas > 1 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -427,7 +434,7 @@ export default function ProductPicker({
               </div>
 
               {totalPaginas > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.78rem', color: 'rgba(255,255,255,0.6)' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.78rem', color: 'var(--color-fg-muted)' }}>
                   <button
                     type="button"
                     disabled={pagina <= 1}

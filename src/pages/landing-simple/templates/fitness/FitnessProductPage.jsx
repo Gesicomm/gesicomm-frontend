@@ -227,7 +227,7 @@ export default function FitnessProductPage({
           {packs.length === 0 ? (
             previewMode ? (
               <p className="fpp-vacio">
-                Todavía no cargaste paquetes. Se cargan en la pestaña <b>Checkout y Ofertas</b> de este producto
+                Todavía no cargaste paquetes. Se cargan en la pestaña <b>Venta</b> de este producto
                 (“Paquete — más unidades del mismo producto”) y aparecen acá como tarjetas.
               </p>
             ) : null
@@ -302,8 +302,7 @@ export default function FitnessProductPage({
             )}
             {ficha.beneficios.items.length === 0 ? (
               <p className="fpp-vacio" style={{ marginBlock: 30 }}>
-                Sección de beneficios activa y sin contenido. Se cargan en <b>Marketing &amp; Embudo</b> del producto,
-                o acá mismo desde la pestaña <b>Ficha</b>.
+                Sección de beneficios activa y sin contenido. Se cargan en <b>Vista del producto</b>.
               </p>
             ) : (
               <div className="fpp-beneficios">
@@ -328,7 +327,7 @@ export default function FitnessProductPage({
         <section className="fpp-seccion fpp-wrap" id="fpp-ingredientes">
           <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
           {ficha.ingredientes.items.length === 0 ? (
-            <p className="fpp-vacio">Agregá los ingredientes con su dosis desde la pestaña <b>Ficha</b> de este producto.</p>
+            <p className="fpp-vacio">Agregá los ingredientes con su dosis desde <b>Vista del producto</b>.</p>
           ) : (
             <div className="fpp-ingredientes">
               {ficha.ingredientes.items.map((ing, i) => {
@@ -354,7 +353,7 @@ export default function FitnessProductPage({
           <div className="fpp-wrap">
             <TituloSeccion numero={7} texto={ficha.opiniones.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
             {ficha.opiniones.items.length === 0 ? (
-              <p className="fpp-vacio">Cargá las opiniones de tus clientes desde la pestaña <b>Ficha</b> de este producto.</p>
+              <p className="fpp-vacio">Cargá las opiniones de tus clientes desde <b>Vista del producto</b>.</p>
             ) : (
               <div className="fpp-opiniones">
                 {ficha.opiniones.items.map((o, i) => (
@@ -380,7 +379,7 @@ export default function FitnessProductPage({
         <section className="fpp-seccion fpp-wrap" id="fpp-como-funciona">
           <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
           {ficha.como_funciona.pasos.length === 0 ? (
-            <p className="fpp-vacio">Explicá el paso a paso desde la pestaña <b>Ficha</b>.</p>
+            <p className="fpp-vacio">Explicá el paso a paso desde <b>Vista del producto</b>.</p>
           ) : (
             <div className="fpp-pasos">
               {ficha.como_funciona.pasos.map((p, i) => {
@@ -421,7 +420,7 @@ export default function FitnessProductPage({
         <section className="fpp-seccion fpp-wrap" id="fpp-faq">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
           {item.faq.length === 0 ? (
-            <p className="fpp-vacio">Las preguntas se cargan en la pestaña <b>Detalles</b> de este producto.</p>
+            <p className="fpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="fpp-faq-grid">
               {item.faq.map((f, i) => (

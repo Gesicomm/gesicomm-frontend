@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getCouriers } from '../../../services/courierApi';
+import { canalVentaService } from '../../../services/canalVentaService';
 
 const MESES = [
   { id: 1, label: 'Enero' },
@@ -18,9 +19,11 @@ const MESES = [
 
 export function AnalyticsFilters({ filters, setFilters, confirmadoresDisponibles = [] }) {
   const [couriersList, setCouriersList] = useState([]);
+  const [canalesVenta, setCanalesVenta] = useState([]);
 
   useEffect(() => {
     cargarCouriers();
+    canalVentaService.listar().then(setCanalesVenta).catch(() => setCanalesVenta([]));
   }, []);
 
   const cargarCouriers = async () => {
@@ -108,13 +111,13 @@ export function AnalyticsFilters({ filters, setFilters, confirmadoresDisponibles
 
         <div className="cic-filter-item">
           <label className="cic-filter-label">Canal / Origen</label>
-          <select className="cic-select" value={filters.origen} onChange={e => updateFilter('origen', e.target.value)}>
+          {/* Del catálogo `canales_venta`, no de opciones fijas: las que
+              había acá ya no coincidían con los canales reales. */}
+          <select className="cic-select" value={filters.canal_venta_id ?? 'TODOS'} onChange={e => updateFilter('canal_venta_id', e.target.value)}>
             <option value="TODOS">Todos los Canales</option>
-            <option value="WEB">Web / Catálogo</option>
-            <option value="WHATSAPP">WhatsApp</option>
-            <option value="LANDING">Landing Page</option>
-            <option value="MANUAL">Manual / Directo</option>
-            <option value="META_ADS">Meta Ads</option>
+            {canalesVenta.map(c => (
+              <option key={c.id} value={c.id}>{c.nombre}</option>
+            ))}
           </select>
         </div>
       </div>

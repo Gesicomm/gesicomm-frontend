@@ -173,7 +173,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   const cargarDatosIniciales = async () => {
     try {
       const [resProds, dataCouriers, dataMetodos, dataCanales] = await Promise.all([
-        productService.buscar({}),
+        // Sin `sin_limite` solo llegan 10 productos (paginación por defecto
+        // de ProductoService.buscar) y el pedido no se puede cargar con el
+        // resto del catálogo.
+        productService.buscar({ sin_limite: true }),
         getCouriers(),
         getMetodosPago(),
         canalVentaService.listar().catch(() => []),

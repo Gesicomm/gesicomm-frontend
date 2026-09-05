@@ -5,25 +5,22 @@
 
 
 :root {
-  --vit-accent:        #3d5fa3;
-  --vit-accent-hover:  #4e72b8;
-  --vit-accent-soft:   rgba(61, 95, 163, 0.12);
-  --vit-accent-glow:   rgba(61, 95, 163, 0.25);
-  /* El acento pleno (#3d5fa3) sirve como FONDO de botón, pero como texto
-     sobre superficie oscura da 3,03:1. Este es su par legible: 6,8:1 en
-     oscuro, 9:1 en claro. */
+  --vit-accent:        #1e3a75;
+  --vit-accent-hover:  #294c96;
+  --vit-accent-soft:   rgba(13, 27, 61, 0.25);
+  --vit-accent-glow:   rgba(255, 193, 7, 0.25);
   --vit-accent-fg:     #7d9bd6;
-  --vit-bg:            #060709;
-  --vit-card-bg:       #0d1117;
-  --vit-card-bg-transparent: rgba(13, 17, 23, 0);
-  --vit-card-hover-bg: #111720;
-  --vit-border:        color-mix(in srgb, var(--color-fg) 7%, transparent);
-  --vit-border-hover:  rgba(61, 95, 163, 0.4);
+  --vit-bg:            #090e1a;
+  --vit-card-bg:       #0d1527;
+  --vit-card-bg-transparent: rgba(13, 21, 39, 0);
+  --vit-card-hover-bg: #141f38;
+  --vit-border:        #243459;
+  --vit-border-hover:  #324675;
   --vit-ok:            #34d399;
-  --vit-text:          #e2e8f0;
-  --vit-muted:         #8a94a6;
-  --vit-muted-2:       #475569;
-  --vit-surface:       #0a0d13;
+  --vit-text:          #f8fafc;
+  --vit-muted:         #94a3b8;
+  --vit-muted-2:       #64748b;
+  --vit-surface:       #0d1527;
   --radius-card:       16px;
   --transition-fast:   150ms ease;
   --transition-base:   200ms ease;
@@ -31,18 +28,18 @@
 }
 
 :root[data-theme='light'] {
-  --vit-bg:            #f7f7f5;
+  --vit-bg:            #f7f7f8;
   --vit-card-bg:       #ffffff;
   --vit-card-bg-transparent: color-mix(in srgb, var(--color-fg) 0%, transparent);
-  --vit-card-hover-bg: #eeeeea;
-  --vit-border:        #d8d8d0;
-  --vit-border-hover:  #c0c0b6;
-  --vit-text:          #0b1d3d;
-  --vit-muted:         #4b5568;
+  --vit-card-hover-bg: #f1f2f4;
+  --vit-border:        #e5e7eb;
+  --vit-border-hover:  #d1d5db;
+  --vit-text:          #0d1b3d;
+  --vit-muted:         #4b5563;
   --vit-muted-2:       #6b7280;
   --vit-surface:       #ffffff;
-  --vit-accent-soft:   rgba(61, 95, 163, 0.1);
-  --vit-accent-fg:     #2e4a85;
+  --vit-accent-soft:   rgba(13, 27, 61, 0.08);
+  --vit-accent-fg:     #0d1b3d;
 }
 
 /* ─── Layout global ───────────────────────────────────────────────────── */
@@ -280,6 +277,9 @@
   font-family: var(--font-sans);
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
 }
 .vit-filter-btn:hover { color: var(--vit-text); background: color-mix(in srgb, var(--color-fg) 4%, transparent); }

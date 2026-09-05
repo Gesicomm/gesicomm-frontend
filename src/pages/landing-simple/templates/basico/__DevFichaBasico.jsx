@@ -10,7 +10,7 @@ const foto = (semilla, w = 800, h = 800) => `https://picsum.photos/seed/${semill
  * Vista de prueba de la ficha del template Básico (/dev/ficha-basico).
  *
  * Todo lo que se ve acá entra por donde entraría de verdad:
- *   - PRODUCTO.*          → pestaña "Marketing & Embudo" de Mis Productos
+ *   - PRODUCTO.*          → pestaña "Vista del producto" de Mis Productos
  *   - OFERTAS             → pestaña "Ofertas"
  *   - FICHA_LANDING       → panel del armador, modo landing
  *   - FICHA_PRODUCTO      → panel del armador, modo producto

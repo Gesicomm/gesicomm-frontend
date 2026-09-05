@@ -100,6 +100,31 @@ export async function recalcularCarritoLanding(slug, items) {
   return data;
 }
 
+/**
+ * Valida un cupón contra el carrito actual. NO lo consume: el uso se
+ * registra recién cuando el pedido se crea (ver crearCheckoutLanding), así
+ * probar un código no lo gasta.
+ *
+ * El descuento que devuelve es para MOSTRAR — el backend lo vuelve a
+ * calcular al cobrar, así que no se puede inflar desde el navegador.
+ *
+ * @returns {{codigo: string, descuento_porcentaje: number, descuento: number, subtotal: number, total: number}}
+ * @throws {Error} con el motivo legible del rechazo (vencido, agotado, no aplica).
+ */
+export async function validarCuponLanding(slug, codigo, items) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}/cupon` : '/api/l/cupon';
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codigo, items }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || 'No se pudo aplicar el cupón.');
+  }
+  return data;
+}
+
 export async function registrarEventoLanding(slug, payload) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}/eventos` : '/api/l/eventos';
   try {

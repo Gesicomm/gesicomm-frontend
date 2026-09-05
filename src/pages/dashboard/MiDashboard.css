@@ -90,6 +90,29 @@
 .md-spin { animation: md-spin 0.8s linear infinite; }
 @keyframes md-spin { to { transform: rotate(360deg); } }
 
+.md-updating {
+  position: relative;
+}
+
+.md-updating-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 24, 61, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--md-ink);
+  font-weight: 500;
+  border-radius: 12px;
+}
+
+:root[data-theme='light'] .md-updating-overlay {
+  background: rgba(255, 255, 255, 0.6);
+}
+
 /* ── Header ────────────────────────────────────────────────────────── */
 .md-header {
   display: flex;
@@ -596,12 +619,87 @@
 .md-rent-desglose li:last-child { border-bottom: none; }
 
 .md-valor-negativo { color: var(--md-negativo) !important; }
+/* Una pérdida en cero no es una mala noticia: no debe llamar la atención. */
+.md-valor-neutro { color: var(--md-ink-faint); }
+
+/* ── Ayuda contextual (ícono ⓘ con explicación) ────────────────────
+   El dashboard lo usa un comerciante: cada número tiene que poder
+   explicarse solo. Se muestra al pasar el mouse y también al llegar con
+   Tab, para que no dependa de tener mouse. */
+.md-ayuda {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  vertical-align: middle;
+  margin-left: 0.3rem;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--md-ink-faint);
+  cursor: help;
+  transition: color 0.15s;
+}
+.md-ayuda:hover,
+.md-ayuda:focus-visible {
+  color: var(--md-confirmado);
+  z-index: 50;
+}
+.md-ayuda:focus-visible { outline: 2px solid var(--md-confirmado); outline-offset: 2px; }
+
+.md-ayuda-burbuja {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: max-content;
+  max-width: 260px;
+  padding: 0.55rem 0.7rem;
+  background: var(--md-surface-2);
+  border: 1px solid var(--md-border-strong);
+  border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  color: var(--md-ink);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.md-ayuda:hover .md-ayuda-burbuja,
+.md-ayuda:focus-visible .md-ayuda-burbuja { opacity: 1; visibility: visible; }
+
+/* Ajustes de alineación horizontal en tablas para evitar desbordes */
+.md-table th:first-child .md-ayuda-burbuja,
+.md-table th:nth-child(2) .md-ayuda-burbuja { left: 0; transform: none; }
+
+.md-table th:last-child .md-ayuda-burbuja,
+.md-table th:nth-last-child(2) .md-ayuda-burbuja { left: auto; right: 0; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .md-ayuda, .md-ayuda-burbuja { transition: none; }
+}
 
 /* Subtítulo de una subsección dentro de una tarjeta ya existente (ej.
    "Rentabilidad por producto" dentro de la tarjeta Rentabilidad) — mismo
    estilo tipográfico que .md-card-title-sub, solo que como bloque propio
    en vez de ir pegado a un <h3>. */
 .md-subsection-label { display: block; margin: 1.1rem 0 0.6rem; }
+
+/* Línea de ayuda debajo del subtítulo de una subsección — pega el texto al
+   título en vez de dejarlo flotando a media distancia de la tabla. */
+.md-subsection-ayuda { margin: -0.2rem 0 0.8rem; max-width: 68ch; }
 
 .md-ver-todos { margin-top: 0.9rem; }
 

@@ -19,7 +19,7 @@
  * Cuatro capas, de menor a mayor prioridad (ver fichaComun.crearResolver):
  *   1. Defaults de fábrica            (DEFAULTS_TECH, acá abajo)
  *   2. Defaults de la landing         (content.ficha_tech)
- *   3. El PRODUCTO                    (Marketing & Embudo + ficha_datos)
+ *   3. El PRODUCTO                    (Vista del producto + ficha_datos)
  *   4. Ese producto en esta landing   (content.productos[id].ficha_tech)
  */
 
@@ -42,7 +42,7 @@ export const SECCIONES_TECH = [
   { key: 'multimedia',      numero: 8,  label: 'Contenido visual',          ambito: 'producto', ayuda: 'Imágenes y videos adicionales del producto.' },
   { key: 'comparativa',     numero: 9,  label: 'Comparación',               ambito: 'producto', ayuda: 'Por qué es mejor que otras marcas.' },
   { key: 'resenas',         numero: 10, label: 'Reseñas y testimonios',     ambito: 'producto', ayuda: 'Opiniones reales de clientes.' },
-  { key: 'faq',             numero: 11, label: 'Preguntas frecuentes',      ambito: 'producto', ayuda: 'Las preguntas se cargan en la pestaña "Detalles".' },
+  { key: 'faq',             numero: 11, label: 'Preguntas frecuentes',      ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
   { key: 'upsells',         numero: 12, label: 'Complementa tu compra',     ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'garantias',       numero: 13, label: 'Garantía y devoluciones',   ambito: 'landing',  ayuda: 'Garantía, devoluciones, envío, soporte y pago seguro.' },
   { key: 'cta_final',       numero: 14, label: 'Cierre y urgencia',         ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
@@ -290,7 +290,8 @@ const ICONO_CONFIANZA_A_CATALOGO = {
 
 /**
  * Lo que la ficha arma sola con lo que ya está cargado EN EL PRODUCTO:
- * la pestaña "Marketing & Embudo" (propuesta_valor, beneficios, confianza)
+ * "Vista del producto" (propuesta_valor, CTA, beneficios rápidos,
+ * beneficios, confianza)
  * y `ficha_datos` del rubro Tecnología (especificaciones, en la caja,
  * comparativa) que se carga en Mis Productos.
  *
@@ -305,14 +306,14 @@ export function fichaTechDesdeProducto(producto) {
   const beneficios = (producto.beneficios || []).filter(b => b?.titulo?.trim());
   const confianza = (producto.confianza || []).filter(c => c?.texto?.trim());
   const promesa = (producto.propuesta_valor || '').trim();
-  const sobre = (producto.sobre_este_producto || '').trim();
+  const beneficiosRapidos = (datos.beneficios_rapidos || []).filter(t => typeof t === 'string' && t.trim());
+  const ctaPrincipal = (datos.cta_principal_texto || '').trim();
 
-  if (promesa || sobre || beneficios.length) {
+  if (promesa || beneficiosRapidos.length || ctaPrincipal) {
     ficha.hero = {};
-    if (promesa || sobre) ficha.hero.lead = promesa || sobre;
-    // El diseño repite los beneficios como lista de características del
-    // encabezado — es la misma información, no se pide cargarla dos veces.
-    if (beneficios.length) ficha.hero.caracteristicas = beneficios.map(b => b.titulo.trim());
+    if (promesa) ficha.hero.lead = promesa;
+    if (beneficiosRapidos.length) ficha.hero.caracteristicas = beneficiosRapidos.map(t => t.trim());
+    if (ctaPrincipal) ficha.hero.cta_texto = ctaPrincipal;
   }
 
   if (beneficios.length) {
@@ -349,13 +350,44 @@ export function fichaTechDesdeProducto(producto) {
     if (caja.length) ficha.especificaciones.en_la_caja = caja.map(t => t.trim());
   }
 
+  const multimedia = (datos.tech_multimedia || []).filter(m => m?.imagen?.trim() || m?.url?.trim());
+  if (multimedia.length) {
+    ficha.multimedia = {
+      activo: true,
+      items: multimedia.map(m => ({
+        titulo: (m.titulo || '').trim(),
+        url: (m.url || '').trim(),
+        imagen: (m.imagen || '').trim(),
+      })),
+    };
+  }
+
   const comparativa = (datos.comparativa || []).filter(c => c?.caracteristica?.trim());
-  if (comparativa.length) {
+  const imagenNosotros = (datos.comparativa_imagen_nosotros || datos.imagen_nosotros || '').trim();
+  const imagenOtros = (datos.comparativa_imagen_otros || datos.imagen_otros || '').trim();
+  if (comparativa.length || imagenNosotros || imagenOtros) {
     ficha.comparativa = {
+      activo: true,
+      ...(imagenNosotros ? { imagen_nosotros: imagenNosotros } : {}),
+      ...(imagenOtros ? { imagen_otros: imagenOtros } : {}),
       items: comparativa.map(c => ({
         caracteristica: c.caracteristica.trim(),
         nosotros: c.nosotros !== false,
         otros: c.otros === true,
+      })),
+    };
+  }
+
+  const resenas = (datos.tech_resenas || []).filter(o => o?.nombre?.trim() || o?.comentario?.trim());
+  if (resenas.length) {
+    ficha.resenas = {
+      activo: true,
+      items: resenas.map(o => ({
+        nombre: (o.nombre || '').trim(),
+        comentario: (o.comentario || o.testimonio || '').trim(),
+        calificacion: numeroEntre(o.calificacion, 1, 5, 5),
+        foto: (o.foto || '').trim(),
+        verificada: o.verificada !== false,
       })),
     };
   }

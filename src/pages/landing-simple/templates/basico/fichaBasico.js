@@ -10,7 +10,8 @@
  * ── Dónde se guarda ────────────────────────────────────────────────────
  *   content.ficha_basico                    → defaults de la landing
  *   content.productos["<id>"].ficha_basico  → lo que ese producto pisa
- *   Producto (Marketing & Embudo)           → propuesta de valor,
+ *   Producto (Vista del producto)           → propuesta de valor,
+ *                                             CTA, beneficios rápidos,
  *                                             beneficios y confianza
  *
  * ── La regla de los defaults ───────────────────────────────────────────
@@ -38,7 +39,7 @@ export const SECCIONES_BASICO = [
   { key: 'usos',           numero: 7,  label: 'Usos y aplicaciones',   ambito: 'producto', ayuda: 'Los pasos de uso, en orden.' },
   { key: 'prueba_social',  numero: 8,  label: 'Prueba social',         ambito: 'landing',  ayuda: 'Calificación, reseñas y clientes satisfechos.' },
   { key: 'comparacion',    numero: 9,  label: 'Comparación',           ambito: 'producto', ayuda: 'Por qué elegir este producto frente a otras opciones.' },
-  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en la pestaña "Detalles".' },
+  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
   { key: 'relacionados',   numero: 11, label: 'Productos relacionados',ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'garantias',      numero: 12, label: 'Garantía y devoluciones',ambito: 'landing', ayuda: 'Sellos de confianza y la política de devolución.' },
   { key: 'cta_final',      numero: 13, label: 'Cierre y urgencia',     ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
@@ -98,7 +99,7 @@ export const DEFAULTS_BASICO = {
     activo: true,
     titulo: 'Descripción del producto',
     encabezado: '',   // el titular dentro de la tarjeta
-    texto: '',        // vacío = `sobre_este_producto` del producto
+    texto: '',
     destacados: [],   // los ✓ de abajo
   },
 
@@ -246,8 +247,8 @@ const ICONO_CONFIANZA_A_CATALOGO = {
 
 /**
  * Lo que la ficha arma sola con lo ya cargado EN EL PRODUCTO, en la pestaña
- * "Marketing & Embudo". Este template no tiene rubro propio, así que no lee
- * `ficha_datos`: los usos y la comparación se cargan desde el panel.
+ * "Vista del producto". Para la ficha básica también toma `ficha_datos`:
+ * descripción, usos, comparación, beneficios rápidos y CTA del encabezado.
  *
  * Solo devuelve las claves con contenido real: una lista vacía no debe
  * pisar el default de la landing con nada.
@@ -255,18 +256,20 @@ const ICONO_CONFIANZA_A_CATALOGO = {
 export function fichaBasicoDesdeProducto(producto) {
   if (!producto) return {};
   const ficha = {};
+  const datos = esObjeto(producto.ficha_datos) ? producto.ficha_datos : {};
 
   const beneficios = (producto.beneficios || []).filter(b => b?.titulo?.trim());
   const confianza = (producto.confianza || []).filter(c => c?.texto?.trim());
   const promesa = (producto.propuesta_valor || '').trim();
   const sobre = (producto.sobre_este_producto || '').trim();
+  const beneficiosRapidos = (datos.beneficios_rapidos || []).filter(t => typeof t === 'string' && t.trim());
+  const ctaPrincipal = (datos.cta_principal_texto || '').trim();
 
-  if (promesa || beneficios.length) {
+  if (promesa || beneficiosRapidos.length || ctaPrincipal) {
     ficha.hero = {};
     if (promesa) ficha.hero.lead = promesa;
-    // El diseño repite los beneficios como puntos del encabezado: es la
-    // misma información, no se pide cargarla dos veces.
-    if (beneficios.length) ficha.hero.caracteristicas = beneficios.map(b => b.titulo.trim());
+    if (beneficiosRapidos.length) ficha.hero.caracteristicas = beneficiosRapidos.map(t => t.trim());
+    if (ctaPrincipal) ficha.hero.cta_texto = ctaPrincipal;
   }
 
   if (beneficios.length) {
@@ -279,8 +282,45 @@ export function fichaBasicoDesdeProducto(producto) {
     };
   }
 
-  if (sobre) {
-    ficha.descripcion = { texto: sobre };
+  const descripcionTexto = (datos.basico_descripcion_texto || '').trim();
+  const descripcionEncabezado = (datos.basico_descripcion_encabezado || '').trim();
+  const destacados = (datos.basico_descripcion_destacados || []).filter(t => typeof t === 'string' && t.trim());
+  const textoDescripcion = sobre || descripcionTexto;
+  if (textoDescripcion || descripcionEncabezado || destacados.length) {
+    ficha.descripcion = {
+      ...(ficha.descripcion || {}),
+      ...(descripcionEncabezado ? { encabezado: descripcionEncabezado } : {}),
+      ...(textoDescripcion ? { texto: textoDescripcion } : {}),
+      ...(destacados.length ? { destacados: destacados.map(t => t.trim()) } : {}),
+    };
+  }
+
+  const usos = (datos.basico_usos || []).filter(p => p?.titulo?.trim());
+  if (usos.length) {
+    ficha.usos = {
+      activo: true,
+      pasos: usos.map((p, i) => ({
+        paso: (p.paso || String(i + 1)).trim(),
+        titulo: p.titulo.trim(),
+        texto: (p.texto || '').trim(),
+      })),
+    };
+  }
+
+  const comparacion = (datos.basico_comparacion || []).filter(c => c?.caracteristica?.trim());
+  const imagenNosotros = (datos.basico_comparacion_imagen_nosotros || '').trim();
+  const imagenOtros = (datos.basico_comparacion_imagen_otros || '').trim();
+  if (comparacion.length || imagenNosotros || imagenOtros) {
+    ficha.comparacion = {
+      activo: true,
+      ...(imagenNosotros ? { imagen_nosotros: imagenNosotros } : {}),
+      ...(imagenOtros ? { imagen_otros: imagenOtros } : {}),
+      items: comparacion.map(c => ({
+        caracteristica: c.caracteristica.trim(),
+        nosotros: c.nosotros !== false,
+        otros: c.otros === true,
+      })),
+    };
   }
 
   if (confianza.length) {

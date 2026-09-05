@@ -10,8 +10,8 @@ const foto = (semilla, w = 800, h = 800) => `https://picsum.photos/seed/${semill
 /**
  * Datos de prueba de la ficha Beauty. Todo lo que se ve acá entra por donde
  * entraría de verdad:
- *   - PRODUCTO.beneficios / confianza / propuesta_valor → "Marketing & Embudo"
- *   - PRODUCTO.ficha_datos.beauty_*                     → "Ficha del rubro"
+ *   - PRODUCTO.beneficios / confianza / propuesta_valor → "Vista del producto"
+ *   - PRODUCTO.ficha_datos.beauty_*                     → "Vista del producto"
  *   - OFERTAS                                            → pestaña "Ofertas"
  *   - FICHA_LANDING / FICHA_PRODUCTO                     → panel del armador
  * Nada está hardcodeado en el renderer.

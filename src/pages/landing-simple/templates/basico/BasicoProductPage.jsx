@@ -266,7 +266,7 @@ export default function BasicoProductPage({
             <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
             {beneficios.length === 0 ? (
               <p className="bsc-vacio">
-                Se cargan en <b>Marketing &amp; Embudo</b> del producto, o acá desde la pestaña <b>Ficha</b>.
+                Se cargan en <b>Vista del producto</b>.
               </p>
             ) : (
               <div className="bsc-beneficios">
@@ -292,7 +292,7 @@ export default function BasicoProductPage({
           <TituloSeccion numero={6} texto={ficha.descripcion.titulo} vars={vars} />
           {!descripcionTexto ? (
             <p className="bsc-vacio">
-              El texto sale de la descripción del producto, o se escribe acá desde la pestaña <b>Ficha</b>.
+              El texto sale de la descripción del producto, o se escribe en <b>Vista del producto</b>.
             </p>
           ) : (
             <div className="bsc-descripcion-card">
@@ -316,7 +316,7 @@ export default function BasicoProductPage({
           <TituloSeccion numero={7} texto={ficha.usos.titulo} vars={vars} centrado />
           {pasos.length === 0 ? (
             <p className="bsc-vacio">
-              Los pasos de uso se cargan acá, en la pestaña <b>Ficha</b> de este producto.
+              Los pasos de uso se cargan en <b>Vista del producto</b>.
             </p>
           ) : (
             <div className="bsc-pasos">
@@ -351,7 +351,7 @@ export default function BasicoProductPage({
           <TituloSeccion numero={9} texto={ficha.comparacion.titulo} vars={vars} centrado />
           {comparaciones.length === 0 ? (
             <p className="bsc-vacio">
-              Agregá las características a comparar acá, en la pestaña <b>Ficha</b>.
+              Agregá las características a comparar en <b>Vista del producto</b>.
             </p>
           ) : (
             <div className="bsc-compare">
@@ -379,7 +379,7 @@ export default function BasicoProductPage({
         <section className="bsc-seccion bsc-wrap">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
           {item.faq.length === 0 ? (
-            <p className="bsc-vacio">Las preguntas se cargan en la pestaña <b>Detalles</b> de este producto.</p>
+            <p className="bsc-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="bsc-faq-grid">
               {item.faq.map((f, i) => (

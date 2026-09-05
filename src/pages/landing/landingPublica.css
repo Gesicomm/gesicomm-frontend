@@ -2446,3 +2446,81 @@ button.lp-tier-card--imagen {
 .lp-checkout-modal-content .lp-modal-close:hover {
   opacity: 1;
 }
+
+/* ── Cupón de descuento en el checkout ─────────────────────────────────
+   Usa las mismas variables de tema que el resto del drawer (--l-text,
+   --l-accent…) para que se adapte a los colores que eligió cada tienda. */
+.lp-cart-cupon {
+  margin-bottom: 0.75rem;
+}
+.lp-cart-cupon-form {
+  display: flex;
+  gap: 0.5rem;
+}
+.lp-cart-cupon-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--l-text, #f8fafc) 15%, transparent);
+  background: color-mix(in srgb, var(--l-text, #f8fafc) 4%, transparent);
+  color: var(--l-text, #f8fafc);
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.lp-cart-cupon-form input::placeholder {
+  color: var(--l-text-muted, #94a3b8);
+  letter-spacing: normal;
+  text-transform: none;
+}
+.lp-cart-cupon-form button {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--l-text, #f8fafc) 20%, transparent);
+  background: transparent;
+  color: var(--l-text, #f8fafc);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lp-cart-cupon-form button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Aplicado: verde, con el código bien visible — es la confirmación de que
+   el descuento entró, así que tiene que leerse de un vistazo. */
+.lp-cart-cupon-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  font-size: 0.85rem;
+}
+.lp-cart-cupon-ok span { flex: 1; }
+.lp-cart-cupon-ok strong { letter-spacing: 0.06em; }
+.lp-cart-cupon-ok button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  display: inline-flex;
+  padding: 0;
+}
+.lp-cart-cupon-ok button:hover { opacity: 1; }
+
+.lp-cart-cupon-error {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  color: #f87171;
+}
+
+/* El descuento en verde y el total final destacado: la persona tiene que
+   ver cuánto se ahorró, no solo el número nuevo. */
+.lp-cart-descuento strong { color: #10b981; font-size: 1rem; }
+.lp-cart-total-final { margin-top: 0.15rem; }
+.lp-cart-total-final strong { color: var(--l-accent, #10b981); }

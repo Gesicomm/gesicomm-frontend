@@ -34,7 +34,7 @@ export const SECCIONES_BEAUTY = [
   { key: 'resultados',     numero: 7,  label: 'Resultados de clientas',ambito: 'producto', ayuda: 'Testimonios con foto de antes y después.' },
   { key: 'como_funciona',  numero: 8,  label: 'Cómo funciona',         ambito: 'producto', ayuda: 'La rutina paso a paso. Se carga en Mis Productos.' },
   { key: 'garantias',      numero: 9,  label: 'Garantías y confianza', ambito: 'landing',  ayuda: 'Devolución, testeo dermatológico, cruelty free.' },
-  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en la pestaña "Detalles".' },
+  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
   { key: 'upsells',        numero: 11, label: 'Complementa tu rutina', ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'cta_final',      numero: 12, label: 'Cierre y urgencia',     ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
 ];
@@ -52,7 +52,7 @@ export const CLAVES_SECCIONES = SECCIONES_BEAUTY.map(s => s.key);
  *    (los encabezados numerados 1..12). Lleva default siempre. Sin él el
  *    encabezado no se dibuja y la página pierde su forma.
  *  - El CONTENIDO (beneficios, ingredientes, testimonios, pasos) sale del
- *    PRODUCTO — de "Marketing & Embudo" y de `ficha_datos` en Mis
+ *    PRODUCTO — de "Vista del producto" y de `ficha_datos` en Mis
  *    Productos. Va vacío acá: inventarlo sería poner en la landing de un
  *    comercio afirmaciones sobre su producto que nadie escribió.
  *
@@ -252,9 +252,10 @@ const ICONO_CONFIANZA_A_CATALOGO = {
 };
 
 /**
- * Lo que la ficha arma sola con lo ya cargado EN EL PRODUCTO: la pestaña
- * "Marketing & Embudo" y `ficha_datos` del rubro Beauty (ingredientes,
- * resultados y pasos) que se carga en Mis Productos.
+ * Lo que la ficha arma sola con lo ya cargado EN EL PRODUCTO: CTA,
+ * beneficios rápidos, la pestaña "Vista del producto" y `ficha_datos` del
+ * rubro Beauty (ingredientes, resultados y pasos) que se carga en Mis
+ * Productos.
  *
  * Solo devuelve las claves con contenido real: una lista vacía no debe
  * pisar el default de la landing con nada.
@@ -267,17 +268,17 @@ export function fichaBeautyDesdeProducto(producto) {
   const beneficios = (producto.beneficios || []).filter(b => b?.titulo?.trim());
   const confianza = (producto.confianza || []).filter(c => c?.texto?.trim());
   const promesa = (producto.propuesta_valor || '').trim();
-  const sobre = (producto.sobre_este_producto || '').trim();
+  const beneficiosRapidos = (datos.beneficios_rapidos || []).filter(t => typeof t === 'string' && t.trim());
+  const ctaPrincipal = (datos.cta_principal_texto || '').trim();
 
-  if (promesa || sobre || beneficios.length) {
+  if (promesa || beneficiosRapidos.length || ctaPrincipal) {
     ficha.hero = {};
     // La propuesta de valor es el LEAD, no el título: el título es el
     // nombre del producto (o lo que el comercio escriba). Pisarlo con la
     // promesa dejaba la ficha sin decir qué producto es.
-    if (promesa || sobre) ficha.hero.lead = promesa || sobre;
-    // El diseño repite los beneficios como checklist del encabezado: es la
-    // misma información, no se pide cargarla dos veces.
-    if (beneficios.length) ficha.hero.caracteristicas = beneficios.map(b => b.titulo.trim());
+    if (promesa) ficha.hero.lead = promesa;
+    if (beneficiosRapidos.length) ficha.hero.caracteristicas = beneficiosRapidos.map(t => t.trim());
+    if (ctaPrincipal) ficha.hero.cta_texto = ctaPrincipal;
   }
 
   if (beneficios.length) {

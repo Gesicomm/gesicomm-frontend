@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
 import { trackearEventoTikTok } from '../../lib/tiktokPixel';
-import { registrarEventoLanding, recalcularCarritoLanding, crearCheckoutLanding } from '../../services/landingPublicaService';
+import { registrarEventoLanding, recalcularCarritoLanding, crearCheckoutLanding, validarCuponLanding } from '../../services/landingPublicaService';
 
 function claveCarrito(item, varianteId, ofertaId) {
   return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}`;
@@ -155,6 +155,24 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     });
   }
 
+  /**
+   * Valida un cupón contra el carrito actual. Manda los mismos items que el
+   * checkout, para que el descuento que se muestra se calcule sobre
+   * exactamente lo que se va a cobrar.
+   */
+  function validarCupon(codigo) {
+    const itemsPayload = Array.from(carrito.values()).map(i => ({
+      content_id: i.contentId,
+      cantidad: i.cantidad,
+      variante_id: i.varianteId,
+      oferta_id: i.ofertaId,
+    }));
+    // Mismo primer argumento que recalcularCarritoLanding/crearCheckoutLanding
+    // acá al lado — si este endpoint recibiera algo distinto, resolvería otra
+    // landing que la que está cobrando.
+    return validarCuponLanding(data.id, codigo, itemsPayload);
+  }
+
   function confirmarPedido() {
     if (carrito.size === 0) return;
     const itemsCrudos = Array.from(carrito.values());
@@ -230,6 +248,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     agregarAlCarrito,
     quitarDelCarrito,
     cambiarCantidadCarrito,
-    confirmarPedido
+    confirmarPedido,
+    validarCupon
   };
 }

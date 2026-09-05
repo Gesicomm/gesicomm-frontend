@@ -19,7 +19,7 @@ const PRODUCTO = {
     { icono: 'Truck', texto: 'Envío gratis' },
     { icono: 'Headphones', texto: 'Soporte 24/7' },
   ],
-  // Lo que se carga en Mis Productos → Ficha del rubro (rubro tecnología).
+  // Lo que se carga en Mis Productos → Vista del producto (rubro tecnología).
   ficha_rubro: 'tecnologia',
   ficha_datos: {
     especificaciones: [

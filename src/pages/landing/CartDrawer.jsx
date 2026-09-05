@@ -15,13 +15,44 @@ const FORM_VACIO = {
  * opcional que decide la propia landing (ver checkout.redirigir_whatsapp
  * en LandingPublica.jsx).
  */
-export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, pasarelas = [] }) {
+export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [] }) {
   const [paso, setPaso] = useState('carrito'); // 'carrito' | 'formulario' | 'confirmado'
   const [form, setForm] = useState(FORM_VACIO);
   const [acepta, setAcepta] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [resultado, setResultado] = useState(null);
+
+  // Cupón: `codigoCupon` es lo que se está tipeando; `cupon` es el que el
+  // servidor ya validó (con su descuento en guaraníes). Son dos cosas
+  // distintas a propósito — mientras no haya validación no hay descuento.
+  const [codigoCupon, setCodigoCupon] = useState('');
+  const [cupon, setCupon] = useState(null);
+  const [validandoCupon, setValidandoCupon] = useState(false);
+  const [errorCupon, setErrorCupon] = useState(null);
+
+  async function aplicarCupon() {
+    setValidandoCupon(true);
+    setErrorCupon(null);
+    try {
+      const r = await onValidarCupon(codigoCupon);
+      setCupon(r);
+    } catch (err) {
+      // El motivo lo escribe el backend ("vencido", "no aplica a tus
+      // productos"): mostrarlo tal cual es lo que evita que la persona
+      // reintente a ciegas.
+      setErrorCupon(err?.response?.data?.message || 'No pudimos aplicar ese cupón.');
+      setCupon(null);
+    } finally {
+      setValidandoCupon(false);
+    }
+  }
+
+  function quitarCupon() {
+    setCupon(null);
+    setCodigoCupon('');
+    setErrorCupon(null);
+  }
 
   const cantidadTotal = items.reduce((s, it) => s + it.cantidad, 0);
   const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
@@ -55,7 +86,9 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
     setError(null);
     setEnviando(true);
     try {
-      const res = await onConfirmarPedido(form);
+      // El código viaja con el pedido; el backend lo revalida y recalcula
+      // el descuento por su cuenta antes de cobrar.
+      const res = await onConfirmarPedido({ ...form, cupon_codigo: cupon ? cupon.codigo : null });
       if (res?.payment_data?.payment_url) {
         window.location.href = res.payment_data.payment_url;
         return;
@@ -286,10 +319,65 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                     </div>
                   )}
 
+                  {/* ── Cupón de descuento ─────────────────────────────
+                      El descuento que se muestra acá es solo informativo:
+                      el backend lo vuelve a calcular al crear el pedido, así
+                      que tocar esto en el navegador no cambia lo que se cobra. */}
+                  {/* Solo donde la página sabe validar cupones. FunnelView y
+                      TiendaPaginaView arman su propio confirmarPedido y todavía
+                      no lo pasan: sin esta guarda, ahí el botón "Aplicar"
+                      reventaría al llamar una función inexistente. */}
+                  {onValidarCupon && (
+                  <div className="lp-cart-cupon">
+                    {cupon ? (
+                      <div className="lp-cart-cupon-ok">
+                        <Check size={15} />
+                        <span>
+                          Cupón <strong>{cupon.codigo}</strong> aplicado — {cupon.descuento_porcentaje}% de descuento
+                        </span>
+                        <button type="button" onClick={quitarCupon} title="Quitar el cupón">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="lp-cart-cupon-form">
+                        <input
+                          type="text"
+                          placeholder="¿Tenés un cupón?"
+                          value={codigoCupon}
+                          onChange={e => { setCodigoCupon(e.target.value.toUpperCase()); setErrorCupon(null); }}
+                          maxLength={40}
+                        />
+                        <button
+                          type="button"
+                          onClick={aplicarCupon}
+                          disabled={!codigoCupon.trim() || validandoCupon}
+                        >
+                          {validandoCupon ? <Loader size={14} className="lp-spin" /> : 'Aplicar'}
+                        </button>
+                      </div>
+                    )}
+                    {errorCupon && <p className="lp-cart-cupon-error">{errorCupon}</p>}
+                  </div>
+                  )}
+
                   <div className="lp-cart-subtotal">
                     <span>Total</span>
                     <strong>{formatPrecio(subtotal)}</strong>
                   </div>
+
+                  {cupon && (
+                    <>
+                      <div className="lp-cart-subtotal lp-cart-descuento">
+                        <span>Descuento ({cupon.descuento_porcentaje}%)</span>
+                        <strong>− {formatPrecio(cupon.descuento)}</strong>
+                      </div>
+                      <div className="lp-cart-subtotal lp-cart-total-final">
+                        <span>Total con descuento</span>
+                        <strong>{formatPrecio(Math.max(0, subtotal - cupon.descuento))}</strong>
+                      </div>
+                    </>
+                  )}
 
                   <button type="submit" className="lp-cart-checkout" disabled={!formularioValido || enviando}>
                     {enviando ? (<><Loader size={16} className="lp-spin" /> Enviando...</>) : 'Completá tu compra'}

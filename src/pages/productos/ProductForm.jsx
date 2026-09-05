@@ -12,11 +12,12 @@ import CurrencyInput from '../../components/CurrencyInput';
 import SelectorIcono from '../../components/SelectorIcono';
 import OfertasProductoTab from './OfertasProductoTab';
 import FichaRubroTab from './FichaRubroTab';
+import ProductLandingPreview from './ProductLandingPreview';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
-  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity, Monitor,
-  Settings, Layers, HelpCircle, Megaphone, ShieldCheck, CheckSquare, Sparkles
+  Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity,
+  Settings, Layers, Eye, Circle, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import './productos.css';
 import '../combos/combos.css'; // Reutilizar estilos de métricas de combos
@@ -29,22 +30,30 @@ function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '�
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
 const TABS = [
-  { id: 'general',  label: 'General', icon: <Package size={15} /> },
-  { id: 'precio',  label: 'Precio', icon: <DollarSign size={15} /> },
-  { id: 'inventario', label: 'Inventario', icon: <BarChart2 size={15} /> },
-  { id: 'variantes', label: 'Variantes', icon: <Layers size={15} /> },
-  { id: 'multimedia', label: 'Multimedia', icon: <ImageIcon size={15} /> },
-  { id: 'marketing', label: 'Marketing & Embudo', icon: <Megaphone size={15} /> },
-  // Campos que dependen del rubro (specs de electrónica, ingredientes de
-  // suplementos). Ver FichaRubroTab.jsx para por qué van aparte.
-  { id: 'ficha', label: 'Ficha del rubro', icon: <Sparkles size={15} /> },
-  { id: 'faq', label: 'Todo lo que necesitas saber', icon: <HelpCircle size={15} /> },
-  { id: 'ofertas',  label: 'Ofertas comerciales', icon: <Tag size={15} /> },
-  { id: 'configuracion', label: 'Configuración', icon: <Settings size={15} /> },
+  { id: 'basica', label: 'Identidad', desc: 'Datos base, textos y fotos', level: 'Esencial', icon: <Package size={15} /> },
+  { id: 'comercial', label: 'Precio', desc: 'Precio, descuento y margen', level: 'Esencial', icon: <DollarSign size={15} /> },
+  { id: 'stock', label: 'Inventario', desc: 'Stock, SKU y variantes', level: 'Recomendado', icon: <Layers size={15} /> },
+  { id: 'venta', label: 'Venta', desc: 'Packs, bumps y upsells', level: 'Avanzado', icon: <Tag size={15} /> },
+  { id: 'marketing', label: 'Vista del producto', desc: 'Campos dinámicos, FAQ y preview', level: 'Recomendado', icon: <Eye size={15} /> },
+  { id: 'publicacion', label: 'Publicacion', desc: 'Estado y visibilidad', level: 'Esencial', icon: <Settings size={15} /> },
   // NO re-agregar una pestaña que apunte a /mi-landing: ese editor
   // (FunnelSelector + MerchantEditor + page-builder) está deprecado. El
   // funnel vive en su propio módulo, ver pages/funnel/.
 ];
+
+const TAB_ALIASES = {
+  general: 'basica',
+  multimedia: 'basica',
+  clasificacion: 'basica',
+  ficha: 'marketing',
+  precio: 'comercial',
+  inventario: 'stock',
+  variantes: 'stock',
+  ofertas: 'venta',
+  faq: 'marketing',
+  configuracion: 'publicacion',
+  diseno: 'marketing',
+};
 
 const ESTADOS_VENTA = [
   { value: 'en_venta',       label: '🟢 En venta',         desc: 'Visible y disponible para comprar' },
@@ -58,12 +67,231 @@ const ESTADO_VENTA_LABELS = {
   no_disponible: 'No disponible',
 };
 
+const MUESTRAS_VISTA_PRODUCTO = {
+  basico: {
+    propuesta_valor: 'Un producto práctico, confiable y listo para resolver una necesidad concreta desde el primer uso.',
+    sobre_este_producto: 'Diseñado para el uso diario, con materiales seleccionados y una experiencia simple para el cliente. Ideal para quienes buscan una solución clara, durable y fácil de integrar a su rutina.',
+    beneficios: [
+      { icono: 'star', titulo: 'Uso simple', texto: 'Se entiende rápido y no requiere configuración complicada.' },
+      { icono: 'badge', titulo: 'Calidad verificada', texto: 'Materiales y terminaciones pensadas para durar.' },
+      { icono: 'truck', titulo: 'Listo para recibir', texto: 'Presentación clara y envío preparado para vender online.' },
+    ],
+    ficha_datos: {
+      cta_principal_texto: 'Comprar ahora',
+      beneficios_rapidos: ['Uso simple', 'Calidad verificada', 'Listo para recibir'],
+      basico_descripcion_encabezado: 'Diseñado para funcionar, creado para durar',
+      basico_descripcion_destacados: ['Diseño inteligente', 'Uso diario', 'Excelente relación calidad-precio'],
+      basico_usos: [
+        { paso: '1', titulo: 'Elegí', texto: 'Seleccioná la opción que mejor se adapte a tu necesidad.' },
+        { paso: '2', titulo: 'Usá', texto: 'Incorporalo fácilmente a tu rutina diaria.' },
+        { paso: '3', titulo: 'Disfrutá', texto: 'Obtené una experiencia más cómoda desde el primer día.' },
+      ],
+      basico_comparacion_imagen_nosotros: 'https://picsum.photos/seed/mi-producto-basico/900/640',
+      basico_comparacion_imagen_otros: 'https://picsum.photos/seed/otras-opciones/900/640',
+      basico_comparacion: [
+        { caracteristica: 'Garantía incluida', nosotros: true, otros: false },
+        { caracteristica: 'Soporte local', nosotros: true, otros: false },
+        { caracteristica: 'Calidad verificada', nosotros: true, otros: true },
+      ],
+    },
+    faq: [
+      { pregunta: '¿Cuándo recibo mi pedido?', respuesta: 'El tiempo de entrega depende de tu ciudad. Te compartimos el seguimiento apenas se despacha.' },
+      { pregunta: '¿Tiene garantía?', respuesta: 'Sí, el producto cuenta con garantía por fallas de fabricación.' },
+    ],
+  },
+  suplementos: {
+    propuesta_valor: 'Apoyá tu rutina con una fórmula pensada para mejorar constancia, energía y recuperación.',
+    beneficios: [
+      { icono: 'zap', titulo: 'Más constancia', texto: 'Acompaña la rutina diaria sin complicaciones.' },
+      { icono: 'leaf', titulo: 'Ingredientes claros', texto: 'Cada componente se comunica con dosis y beneficio.' },
+      { icono: 'star', titulo: 'Resultado progresivo', texto: 'Ideal para explicar expectativas reales.' },
+    ],
+    ficha_datos: {
+      cta_principal_texto: 'Comprar ahora',
+      beneficios_rapidos: ['Más constancia', 'Ingredientes claros', 'Resultado progresivo'],
+      ingredientes: [
+        { nombre: 'Creatina monohidratada', dosis: '3g', texto: 'Ayuda al rendimiento en entrenamientos intensos.' },
+        { nombre: 'Magnesio', dosis: '120mg', texto: 'Acompaña la recuperación muscular y el descanso.' },
+      ],
+      fitness_opiniones: [
+        { nombre: 'Carlos M.', calificacion: 5, comentario: 'Me ayudó a sostener mejor la rutina y llegar con más energía.', foto: '' },
+        { nombre: 'Dani R.', calificacion: 5, comentario: 'La explicación de dosis me dio confianza para comprar.', foto: '' },
+      ],
+      fitness_pasos: [
+        { paso: '1', titulo: 'Tomalo todos los días', texto: 'Usá la dosis recomendada con agua o tu bebida habitual.' },
+        { paso: '2', titulo: 'Acompañá tu rutina', texto: 'Combiná el suplemento con entrenamiento y descanso.' },
+        { paso: '3', titulo: 'Medí tu progreso', texto: 'Evaluá energía, recuperación y constancia semana a semana.' },
+      ],
+    },
+    faq: [
+      { pregunta: '¿Cuándo conviene tomarlo?', respuesta: 'Podés usarlo en el horario que mejor se adapte a tu rutina, siguiendo la dosis recomendada.' },
+      { pregunta: '¿Necesito entrenar para usarlo?', respuesta: 'Funciona mejor acompañado de hábitos saludables y entrenamiento constante.' },
+    ],
+  },
+  tecnologia: {
+    propuesta_valor: 'Tecnología confiable para mejorar tu día a día con mejor rendimiento, comodidad y soporte.',
+    beneficios: [
+      { icono: 'zap', titulo: 'Alto rendimiento', texto: 'Respuesta fluida para tareas cotidianas.' },
+      { icono: 'shield', titulo: 'Compra segura', texto: 'Garantía y soporte claros desde la ficha.' },
+      { icono: 'star', titulo: 'Mejor elección', texto: 'Comparación visible frente a alternativas comunes.' },
+    ],
+    ficha_datos: {
+      cta_principal_texto: 'Añadir al carrito',
+      beneficios_rapidos: ['Alto rendimiento', 'Compra segura', 'Mejor elección'],
+      especificaciones: [
+        { clave: 'Batería', valor: 'Hasta 50 horas de uso' },
+        { clave: 'Conectividad', valor: 'Bluetooth 5.3' },
+        { clave: 'Garantía', valor: '12 meses' },
+      ],
+      en_la_caja: ['Producto principal', 'Cable USB-C', 'Manual de uso'],
+      tech_multimedia: [
+        { titulo: 'Detalle del producto', imagen: 'https://picsum.photos/seed/producto-tech/900/640', url: '' },
+      ],
+      comparativa_imagen_nosotros: 'https://picsum.photos/seed/mi-producto-tech/900/640',
+      comparativa_imagen_otros: 'https://picsum.photos/seed/otros-tech/900/640',
+      comparativa: [
+        { caracteristica: 'Garantía local', nosotros: true, otros: false },
+        { caracteristica: 'Batería extendida', nosotros: true, otros: false },
+        { caracteristica: 'Conexión inalámbrica', nosotros: true, otros: true },
+      ],
+      tech_resenas: [
+        { nombre: 'Laura P.', calificacion: 5, comentario: 'La batería dura mucho y la comparación me ayudó a decidir.', foto: '', verificada: true },
+      ],
+    },
+    faq: [
+      { pregunta: '¿Incluye garantía?', respuesta: 'Sí, incluye garantía por fallas de fabricación.' },
+      { pregunta: '¿Qué viene en la caja?', respuesta: 'La sección En la caja muestra todo lo incluido antes de comprar.' },
+    ],
+  },
+  beauty: {
+    propuesta_valor: 'Cuidado visible para una piel más luminosa, hidratada y suave desde la rutina diaria.',
+    beneficios: [
+      { icono: 'sparkles', titulo: 'Piel luminosa', texto: 'Ayuda a mejorar la apariencia general de la piel.' },
+      { icono: 'leaf', titulo: 'Ingredientes premium', texto: 'Componentes claros con beneficios fáciles de entender.' },
+      { icono: 'heart', titulo: 'Rutina simple', texto: 'Ideal para explicar pasos de uso sin fricción.' },
+    ],
+    ficha_datos: {
+      cta_principal_texto: 'Comprar ahora',
+      beneficios_rapidos: ['Piel luminosa', 'Ingredientes premium', 'Rutina simple'],
+      beauty_ingredientes: [
+        { icono: '💧', nombre: 'Ácido hialurónico', descripcion: 'Hidratación profunda y aspecto más relleno.' },
+        { icono: '✨', nombre: 'Niacinamida', descripcion: 'Ayuda a mejorar textura y luminosidad.' },
+      ],
+      beauty_resultados: [
+        {
+          nombre: 'Ana M.',
+          calificacion: 5,
+          testimonio: 'Mi piel se ve más hidratada y luminosa después de incorporarlo a mi rutina.',
+          antes: 'https://picsum.photos/seed/antes-beauty/700/700',
+          despues: 'https://picsum.photos/seed/despues-beauty/700/700',
+        },
+      ],
+      beauty_pasos: [
+        { paso: '1', titulo: 'Limpia', descripcion: 'Aplicá sobre la piel limpia y seca.' },
+        { paso: '2', titulo: 'Aplica', descripcion: 'Usá una pequeña cantidad y distribuí suavemente.' },
+        { paso: '3', titulo: 'Continúa', descripcion: 'Repetí la rutina todos los días para mejores resultados.' },
+      ],
+    },
+    faq: [
+      { pregunta: '¿Cuándo se usa?', respuesta: 'Usalo dentro de tu rutina diaria, idealmente sobre la piel limpia.' },
+      { pregunta: '¿Puedo combinarlo con otros productos?', respuesta: 'Sí, podés integrarlo con otros pasos de cuidado según tu tipo de piel.' },
+    ],
+  },
+};
+
+function hayContenido(valor) {
+  if (Array.isArray(valor)) return valor.some(hayContenido);
+  if (valor && typeof valor === 'object') return Object.values(valor).some(hayContenido);
+  return String(valor ?? '').trim().length > 0;
+}
+
+function mezclarDatosMuestra(actual = {}, muestra = {}) {
+  const combinado = { ...(actual || {}) };
+  Object.entries(muestra).forEach(([clave, valor]) => {
+    if (!hayContenido(combinado[clave])) combinado[clave] = valor;
+  });
+  return combinado;
+}
+
+const MAX_BENEFICIOS_RAPIDOS = 6;
+
+function normalizarBeneficiosRapidos(datos) {
+  return Array.isArray(datos?.beneficios_rapidos) ? datos.beneficios_rapidos : [];
+}
+
+function EncabezadoProductoFields({ datos, onDatos }) {
+  const datosActuales = datos && typeof datos === 'object' && !Array.isArray(datos) ? datos : {};
+  const beneficiosRapidos = normalizarBeneficiosRapidos(datosActuales);
+
+  const actualizarDatos = (patch) => onDatos({ ...datosActuales, ...patch });
+  const actualizarBeneficios = (items) => actualizarDatos({ beneficios_rapidos: items });
+
+  return (
+    <div className="rubro-field-card">
+      <div className="rubro-card-header">
+        <div>
+          <label>Encabezado de la vista</label>
+          <p>Texto del botón principal y beneficios rápidos que se ven junto al precio.</p>
+        </div>
+        <button
+          type="button"
+          className="btn-secondary btn-small"
+          onClick={() => actualizarBeneficios([...beneficiosRapidos, ''])}
+          disabled={beneficiosRapidos.length >= MAX_BENEFICIOS_RAPIDOS}
+        >
+          <Plus size={14} /> Agregar beneficio rápido
+        </button>
+      </div>
+
+      <label className="rubro-field">
+        <span>Texto del botón principal</span>
+        <input
+          value={datosActuales.cta_principal_texto || ''}
+          onChange={(e) => actualizarDatos({ cta_principal_texto: e.target.value })}
+          placeholder="Ej: Comprar ahora, Reservar, Pedir por WhatsApp"
+        />
+      </label>
+
+      <div className="quick-benefits-list">
+        {beneficiosRapidos.length === 0 ? (
+          <p className="field-hint">Sin beneficios rápidos. El encabezado usará el contenido base de la ficha.</p>
+        ) : beneficiosRapidos.map((texto, index) => (
+          <div key={index} className="quick-benefit-row">
+            <label className="rubro-field">
+              <span>Beneficio rápido {index + 1}</span>
+              <input
+                value={texto || ''}
+                onChange={(e) => {
+                  const siguientes = [...beneficiosRapidos];
+                  siguientes[index] = e.target.value;
+                  actualizarBeneficios(siguientes);
+                }}
+                placeholder="Ej: Garantía local"
+              />
+            </label>
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => actualizarBeneficios(beneficiosRapidos.filter((_, i) => i !== index))}
+              aria-label={`Eliminar beneficio rápido ${index + 1}`}
+            >
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const esEdicion = Boolean(id);
 
-  const [tabActiva, setTabActiva] = useState('general');
+  const [tabActiva, setTabActiva] = useState('basica');
+  const [previewDevice, setPreviewDevice] = useState('desktop');
+  const [muestrasAplicadas, setMuestrasAplicadas] = useState({});
 
   // Permite abrir directo en una pestaña (ej. desde "Abrir ofertas del
   // producto" en el wizard de campañas) sin filtrar nada por la URL — el
@@ -78,7 +306,8 @@ export default function ProductForm() {
     const payload = sessionStorage.getItem('gesicomm:tabInicial');
     if (!payload) return;
     sessionStorage.removeItem('gesicomm:tabInicial');
-    if (TABS.some(t => t.id === payload)) setTabActiva(payload);
+    const tab = TABS.some(t => t.id === payload) ? payload : TAB_ALIASES[payload];
+    if (tab) setTabActiva(tab);
   }, []);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
@@ -95,6 +324,10 @@ export default function ProductForm() {
   const [faq, setFaq] = useState([]);
   const [imagenesNuevas, setImagenesNuevas] = useState([]); // Para imágenes en cola (nuevo prod)
   const [subiendoImg, setSubiendoImg] = useState(false);
+  // Imagen elegida para cada variante, indexada por su _rhfKey. Se sube
+  // recién después de guardar: hasta ese momento la variante puede no
+  // existir todavía en base y la imagen necesita un variante_id real.
+  const [imagenesVariante, setImagenesVariante] = useState({});
   const [tieneVariantes, setTieneVariantes] = useState(false);
   const [descuentoSimulado, setDescuentoSimulado] = useState(0);
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
@@ -116,7 +349,7 @@ export default function ProductForm() {
       beneficios: [],
       confianza: [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
       faq_titulo: '',
-      ficha_rubro: '',
+      ficha_rubro: 'basico',
       ficha_datos: {},
       tags: '',
       precio_base: '',
@@ -130,7 +363,10 @@ export default function ProductForm() {
       descuento_fin: '',
       impuestos_incluidos: true,
       cantidad_disponible: 0,
+      stock_salon: 0,
+      stock_deposito: 0,
       stock_minimo: 0,
+      stock_minimo_salon: '',
       unidad_medida: 'unidad',
       activo: true,
       estado_venta: 'en_venta',
@@ -146,13 +382,20 @@ export default function ProductForm() {
   const { fields: variantesFields, append: appendVariante, remove: removeVariante, replace: replaceVariantes } =
     useFieldArray({ control, name: 'variantes', keyName: '_rhfKey' });
 
-  const { fields: beneficiosFields, append: appendBeneficio, remove: removeBeneficio } = 
+  const { fields: beneficiosFields, append: appendBeneficio, remove: removeBeneficio, replace: replaceBeneficios } = 
     useFieldArray({ control, name: 'beneficios', keyName: '_rhfKey' });
 
-  const { fields: confianzaFields, append: appendConfianza, remove: removeConfianza } = 
+  const { fields: confianzaFields, append: appendConfianza, remove: removeConfianza, replace: replaceConfianza } = 
     useFieldArray({ control, name: 'confianza', keyName: '_rhfKey' });
 
   const nombre = watch('nombre');
+  const fichaRubroVal = watch('ficha_rubro') || 'basico';
+
+  useEffect(() => {
+    if (!cargando && tabActiva === 'marketing' && !fichaRubroVal) {
+      setTabActiva('basica');
+    }
+  }, [cargando, tabActiva, fichaRubroVal]);
 
   // ── Cargar datos ──────────────────────────────────────────
   // Todo en una sola oleada de Promise.all: ninguna de estas 5 llamadas
@@ -187,7 +430,7 @@ export default function ProductForm() {
           // rechaza el guardado con 403).
           const esAdminSesion = sesion?.rol === 'administrador';
           if (sesion && !esAdminSesion && p.creado_por !== sesion.id) {
-            navigate('/products', { replace: true });
+            navigate('/mi-catalogo', { replace: true });
             return;
           }
           reset({
@@ -210,7 +453,10 @@ export default function ProductForm() {
             descuento_fin: p.descuento_fin ? p.descuento_fin.slice(0, 10) : '',
             impuestos_incluidos: p.impuestos_incluidos,
             cantidad_disponible: p.cantidad_disponible || 0,
+            stock_salon: p.stock_salon || 0,
+            stock_deposito: p.stock_deposito || 0,
             stock_minimo: p.stock_minimo || 0,
+            stock_minimo_salon: p.stock_minimo_salon ?? '',
             unidad_medida: p.unidad_medida || 'unidad',
             activo: p.activo,
             estado_venta: p.estado_venta || 'en_venta',
@@ -221,7 +467,7 @@ export default function ProductForm() {
             confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
             preguntas_frecuentes: p.preguntas_frecuentes || [],
             sobre_este_producto: p.sobre_este_producto || '',
-            ficha_rubro: p.ficha_rubro || '',
+            ficha_rubro: p.ficha_rubro || 'basico',
             ficha_datos: p.ficha_datos || {},
           });
           if (vars?.length > 0) setTieneVariantes(true);
@@ -250,7 +496,6 @@ export default function ProductForm() {
   const rentabilidad = React.useMemo(() => {
     if (!config) return null;
 
-    // El CPA y los costos totales se calculan siempre sobre el precio base,
     // igual que en combos y en la plantilla original: el CPA no depende del
     // descuento que se aplique (es el costo de adquisición, no de venta).
     const result = calcularPrincipal({ salePrice: precioBaseVal, cost: precioCostoVal }, {
@@ -270,9 +515,13 @@ export default function ProductForm() {
     // Simulamos sobre el precio base completo, usando los mismos escenarios de
     // descuento configurados en Configuración económica de combos — antes esto
     // tenía [0,10,20,30,40] hardcodeado, ignorando lo que se configure ahí.
-    const escenarios = Array.isArray(config.escenarios_descuento) && config.escenarios_descuento.length > 0
-      ? config.escenarios_descuento
+    const escenariosBase = Array.isArray(config.escenarios_descuento) && config.escenarios_descuento.length > 0
+      ? config.escenarios_descuento.map(Number).filter(n => Number.isFinite(n))
       : [0, 10, 20, 30, 40];
+    // El descuento real del producto tiene que estar sí o sí en la matriz: si no
+    // coincide con ninguno de los escenarios configurados, la fila "(actual)"
+    // nunca aparece y el admin no ve el escenario que de verdad está vendiendo.
+    const escenarios = [...new Set([...escenariosBase, descuentoPctVal])].sort((a, b) => a - b);
     const simulador = simularDescuentosPrincipal(precioBaseVal, result.totalCosts, escenarios);
 
     return { ...result, finalPrice, profit, margin, simulador };
@@ -299,6 +548,39 @@ export default function ProductForm() {
   }, [esDolarVal, provIdVal, precioDolarVal, proveedores, setValue, watch]);
 
   // ── Submit ────────────────────────────────────────────────
+
+  /**
+   * Sube las imágenes que el usuario eligió por variante. Corre DESPUÉS de
+   * guardar porque una variante recién creada no tiene id hasta que el
+   * backend la inserta, y la imagen se asocia por variante_id.
+   *
+   * Se releen las variantes ya guardadas y se emparejan por nombre — es la
+   * clave con la que el backend sincroniza (ver ProductoVarianteService), y
+   * la fila del formulario todavía no conoce el id de una variante nueva.
+   */
+  const subirImagenesDeVariantes = async (productoId, variantesDelForm) => {
+    const pendientes = variantesFields
+      .map((field, i) => ({ archivo: imagenesVariante[field._rhfKey]?.file, nombre: (variantesDelForm[i]?.nombre || '').trim() }))
+      .filter(v => v.archivo && v.nombre);
+    if (!pendientes.length) return;
+
+    const guardadas = await productService.variantes(productoId).catch(() => []);
+    const porNombre = new Map(guardadas.map(v => [String(v.nombre).trim().toLowerCase(), v.id]));
+
+    for (const { archivo, nombre } of pendientes) {
+      const varianteId = porNombre.get(nombre.toLowerCase());
+      if (!varianteId) continue;
+      try {
+        const fd = new FormData();
+        fd.append('imagen', archivo);
+        fd.append('variante_id', varianteId);
+        await productService.subirImagen(productoId, fd);
+      } catch (e) {
+        console.error(`Error subiendo la imagen de la variante "${nombre}"`, e);
+      }
+    }
+  };
+
   const onSubmit = async (data) => {
     setGuardando(true);
     setError(null);
@@ -325,8 +607,14 @@ export default function ProductForm() {
         descuento_inicio: data.descuento_inicio || null,
         descuento_fin: data.descuento_fin || null,
         impuestos_incluidos: data.impuestos_incluidos,
-        cantidad_disponible: parseInt(data.cantidad_disponible) || 0,
+        // El total lo recalcula el backend como salón + depósito; no se
+        // manda cantidad_disponible para que no queden dos fuentes de verdad.
+        stock_salon: parseInt(data.stock_salon) || 0,
+        stock_deposito: parseInt(data.stock_deposito) || 0,
         stock_minimo: parseInt(data.stock_minimo) || 0,
+        stock_minimo_salon: data.stock_minimo_salon === '' || data.stock_minimo_salon == null
+          ? null
+          : parseInt(data.stock_minimo_salon),
         unidad_medida: data.unidad_medida,
         activo: data.activo,
         estado_venta: data.estado_venta,
@@ -335,11 +623,14 @@ export default function ProductForm() {
         sobre_este_producto: data.sobre_este_producto || null,
         beneficios: data.beneficios || [],
         confianza: data.confianza || [],
-        ficha_rubro: data.ficha_rubro || null,
+        ficha_rubro: data.ficha_rubro === 'basico' ? null : (data.ficha_rubro || null),
         ficha_datos: data.ficha_datos || {},
+        // El total no se manda: el backend lo recalcula como salón + depósito
+        // para que no pueda quedar desincronizado con el desglose.
         variantes: data.variantes.map(v => ({
           ...v,
-          stock: parseInt(v.stock) || 0,
+          stock_salon: parseInt(v.stock_salon, 10) || 0,
+          stock_deposito: parseInt(v.stock_deposito, 10) || 0,
           precio_diferencial: v.precio_diferencial ? parseFloat(v.precio_diferencial) : 0,
         })),
       };
@@ -351,7 +642,8 @@ export default function ProductForm() {
           fd.append('imagen', file);
           await productService.subirImagen(id, fd);
         }
-        navigate('/products');
+        await subirImagenesDeVariantes(id, data.variantes);
+        navigate('/mi-catalogo?filtro=mios');
       } else {
         const nuevo = await productService.crear(payload);
         for (const imgObj of imagenesNuevas) {
@@ -363,7 +655,8 @@ export default function ProductForm() {
             console.error('Error subiendo imagen', e);
           }
         }
-        navigate('/products');
+        await subirImagenesDeVariantes(nuevo.id, data.variantes);
+        navigate('/mi-catalogo?filtro=mios');
       }
     } catch (err) {
       const errores = err.response?.data?.errores;
@@ -489,7 +782,13 @@ export default function ProductForm() {
     }
   };
 
-  const stockActualVal = parseInt(watch('cantidad_disponible'), 10) || 0;
+  const valoresProducto = watch();
+  // El disponible se deriva del desglose en vivo, no se lee del formulario:
+  // así el número y la barra de abajo reaccionan mientras se tipea, sin
+  // esperar a guardar. El backend vuelve a hacer la misma suma al persistir.
+  const stockSalonVal = parseInt(watch('stock_salon'), 10) || 0;
+  const stockDepositoVal = parseInt(watch('stock_deposito'), 10) || 0;
+  const stockActualVal = stockSalonVal + stockDepositoVal;
   const stockMinimoVal = parseInt(watch('stock_minimo'), 10) || 0;
   const unidadVal = watch('unidad_medida') || 'unidad';
   const estadoVentaVal = watch('estado_venta') || 'en_venta';
@@ -497,6 +796,9 @@ export default function ProductForm() {
   const destacadoVal = watch('destacado');
   const tagsVal = watch('tags') || '';
   const precioFinalVal = precioBaseVal * (1 - (descuentoPctVal / 100));
+  const effectiveAnclaVal = precioAnclaVal > precioFinalVal 
+    ? precioAnclaVal 
+    : (precioBaseVal > precioFinalVal ? precioBaseVal : 0);
   const gananciaSimpleVal = precioFinalVal - precioCostoVal;
   const margenSimpleVal = precioFinalVal > 0 ? gananciaSimpleVal / precioFinalVal : 0;
   const stockRatio = stockMinimoVal > 0
@@ -512,6 +814,71 @@ export default function ProductForm() {
     || imagenesNuevas.find(img => img.es_principal)
     || imagenesNuevas[0];
   const imagenPrincipalUrl = imagenPrincipal?.url ? getMediaUrl(imagenPrincipal.url) : null;
+  const tieneTextoProducto = Boolean(
+    (valoresProducto.descripcion_corta || '').trim()
+    || (valoresProducto.descripcion_larga || '').trim()
+  );
+  const tieneMarketing = Boolean(
+    (valoresProducto.propuesta_valor || '').trim()
+    || (fichaRubroVal === 'basico' && (valoresProducto.sobre_este_producto || '').trim())
+    || hayContenido(valoresProducto.ficha_datos?.beneficios_rapidos)
+    || (valoresProducto.ficha_datos?.cta_principal_texto || '').trim()
+    || beneficiosFields.length
+    || faq.length
+  );
+  const totalImagenes = imagenes.length + imagenesNuevas.length;
+  const estadoSecciones = {
+    basica: nombre?.trim() && fichaRubroVal && (tieneTextoProducto || totalImagenes > 0) ? 'ok' : (nombre?.trim() || fichaRubroVal ? 'warn' : 'todo'),
+    comercial: precioBaseVal > 0 ? 'ok' : 'todo',
+    stock: tieneVariantes ? (variantesFields.length ? 'ok' : 'warn') : (stockActualVal > 0 ? 'ok' : 'warn'),
+    venta: esEdicion ? 'warn' : 'todo',
+    marketing: fichaRubroVal ? (tieneMarketing ? 'ok' : 'warn') : 'todo',
+    publicacion: estadoVentaVal && activoVal !== undefined ? 'ok' : 'todo',
+  };
+
+  useEffect(() => {
+    if (cargando || tabActiva !== 'marketing' || !fichaRubroVal || muestrasAplicadas[fichaRubroVal]) return;
+
+    const muestra = MUESTRAS_VISTA_PRODUCTO[fichaRubroVal] || MUESTRAS_VISTA_PRODUCTO.basico;
+
+    if (!hayContenido(valoresProducto.propuesta_valor)) {
+      setValue('propuesta_valor', muestra.propuesta_valor, { shouldDirty: false });
+    }
+    if (fichaRubroVal === 'basico' && !hayContenido(valoresProducto.sobre_este_producto)) {
+      setValue('sobre_este_producto', muestra.sobre_este_producto, { shouldDirty: false });
+    }
+    if (!hayContenido(valoresProducto.beneficios)) {
+      replaceBeneficios(muestra.beneficios || []);
+    }
+    if (!hayContenido(valoresProducto.confianza)) {
+      replaceConfianza([
+        { texto: 'Envío a todo el país', icono: 'truck' },
+        { texto: 'Pago seguro', icono: 'shield-check' },
+        { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' },
+        { texto: 'Soporte 24/7', icono: 'headphones' },
+      ]);
+    }
+    if (!hayContenido(faq)) {
+      setFaq(muestra.faq || []);
+    }
+
+    const datosMuestra = mezclarDatosMuestra(valoresProducto.ficha_datos, muestra.ficha_datos);
+    if (JSON.stringify(datosMuestra) !== JSON.stringify(valoresProducto.ficha_datos || {})) {
+      setValue('ficha_datos', datosMuestra, { shouldDirty: false });
+    }
+
+    setMuestrasAplicadas(prev => ({ ...prev, [fichaRubroVal]: true }));
+  }, [
+    cargando,
+    tabActiva,
+    fichaRubroVal,
+    muestrasAplicadas,
+    valoresProducto,
+    faq,
+    replaceBeneficios,
+    replaceConfianza,
+    setValue,
+  ]);
 
   if (cargando) return (
     <div className="prod-page"><div className="prod-loading"><div className="spinner" /></div></div>
@@ -522,7 +889,7 @@ export default function ProductForm() {
 
       <div className="prod-header">
         <div className="prod-header-left">
-          <button className="btn-back" onClick={() => navigate('/products')}
+          <button className="btn-back" onClick={() => navigate('/mi-catalogo')}
             type="button" aria-label="Volver al listado">
             <ChevronLeft size={18} />
           </button>
@@ -552,25 +919,47 @@ export default function ProductForm() {
         </div>
       )}
 
-      <div className="prod-tabs" role="tablist">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={tabActiva === tab.id}
-            className={`prod-tab ${tabActiva === tab.id ? 'active' : ''}`}
-            onClick={() => setTabActiva(tab.id)}
-            type="button"
-          >
-            {tab.icon} {tab.label}
-          </button>
-        ))}
-      </div>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className={`prod-form prod-workspace ${tabActiva === 'marketing' ? 'product-view-mode' : ''}`}
+        noValidate
+      >
+        <nav className="prod-step-nav" aria-label="Flujo de configuracion del producto">
+          {TABS.map(tab => {
+            const estado = estadoSecciones[tab.id] || 'todo';
+            const bloqueada = tab.id === 'marketing' && !fichaRubroVal;
+            const StatusIcon = estado === 'ok' ? CheckCircle2 : estado === 'warn' ? AlertTriangle : Circle;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={tabActiva === tab.id}
+                aria-disabled={bloqueada}
+                className={`prod-step ${tabActiva === tab.id ? 'active' : ''} ${estado} ${bloqueada ? 'disabled' : ''}`}
+                onClick={() => {
+                  if (bloqueada) return;
+                  setTabActiva(tab.id);
+                }}
+                title={bloqueada ? 'Elegí el tipo de ficha en Identidad para habilitar Vista del producto.' : undefined}
+                type="button"
+              >
+                <span className="prod-step-icon">{tab.icon}</span>
+                <span className="prod-step-copy">
+                  <span>{tab.label}</span>
+                  <small>{tab.desc}</small>
+                </span>
+                <span className={`prod-step-state ${estado}`} title={estado === 'ok' ? 'Completo' : estado === 'warn' ? 'Revisar' : 'Pendiente'}>
+                  <StatusIcon size={14} />
+                </span>
+                <em>{tab.level}</em>
+              </button>
+            );
+          })}
+        </nav>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="prod-form prod-workspace" noValidate>
         <div className="prod-workspace-main">
 
-        <div className={`tab-content ${tabActiva === 'general' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'basica' ? 'active' : ''}`}>
           <div className="form-grid-2">
             <div className="form-group full">
               <label htmlFor="prod-nombre">Nombre <span className="req">*</span></label>
@@ -618,6 +1007,7 @@ export default function ProductForm() {
                   </button>
                 </div>
               )}
+              <p className="field-hint">Define la familia comercial y ayuda a ordenar catálogo, relacionados y filtros.</p>
             </div>
 
             <div className="form-group">
@@ -656,7 +1046,28 @@ export default function ProductForm() {
                   </button>
                 </div>
               )}
+              <p className="field-hint">Si el costo está en USD, el proveedor también puede definir la cotización usada para calcularlo.</p>
             </div>
+
+            <Controller
+              control={control}
+              name="ficha_rubro"
+              render={({ field: campoRubro }) => (
+                <Controller
+                  control={control}
+                  name="ficha_datos"
+                  render={({ field: campoDatos }) => (
+                    <FichaRubroTab
+                      rubro={campoRubro.value}
+                      datos={campoDatos.value}
+                      onRubro={(v) => campoRubro.onChange(v || '')}
+                      onDatos={campoDatos.onChange}
+                      modo="selector"
+                    />
+                  )}
+                />
+              )}
+            />
 
             <div className="form-group">
               <label htmlFor="prod-tags">
@@ -696,7 +1107,7 @@ export default function ProductForm() {
 
         </div>
 
-        <div className={`tab-content ${tabActiva === 'precio' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'comercial' ? 'active' : ''}`}>
           {esAdmin && (
             <div className="form-group" style={{ marginBottom: '1rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', padding: '0.75rem', borderRadius: 8 }}>
               <label htmlFor="prod-precio-dolar">
@@ -843,7 +1254,14 @@ export default function ProductForm() {
             <div className="commercial-summary">
               <div className="final">
                 <span>Precio final</span>
-                <strong>{fmtGs(precioFinalVal)}</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                  {effectiveAnclaVal > precioFinalVal && (
+                    <span style={{ textDecoration: 'line-through', fontSize: '0.8rem', color: 'var(--color-text-mut)', lineHeight: 1 }}>
+                      {fmtGs(effectiveAnclaVal)}
+                    </span>
+                  )}
+                  <strong>{fmtGs(precioFinalVal)}</strong>
+                </div>
               </div>
               <div className="costo">
                 <span>Costo</span>
@@ -961,7 +1379,7 @@ export default function ProductForm() {
             const maxDiscountTarget = precioBaseVal > 0 ? Math.max(0, 1 - (minPriceTarget / precioBaseVal)) * 100 : 0;
 
             return (
-              <div className="combo-section" style={{ marginTop: '2rem', background: 'transparent', padding: 0, border: 'none' }}>
+              <div className="combo-section" style={{ marginTop: '2rem' }}>
                 <h2 className="combo-section-title"><Activity size={16} /> Rentabilidad y descuentos</h2>
                 <p className="combo-section-desc">
                   Base de simulación: Los descuentos comerciales se calculan sobre el precio base de <strong>{fmtGs(precioBaseVal)}</strong>. El precio actual del producto con tu descuento ({descuentoPctVal}%) es {fmtGs(sBase.finalPrice)}.
@@ -969,7 +1387,7 @@ export default function ProductForm() {
                 </p>
 
                 {/* 1. Resumen ejecutivo (3 tarjetas) */}
-                <div className="combo-metrics-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                <div className="combo-metrics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                   <div className="combo-metric-card">
                     <span className="combo-metric-label">Precio Actual</span>
                     <span className="combo-metric-value">{fmtGs(sBase.finalPrice)}</span>
@@ -979,121 +1397,199 @@ export default function ProductForm() {
                     <span className="combo-metric-value">{fmtGs(utilityBase)}</span>
                   </div>
                   <div className={`combo-metric-card profit-${healthBase.class}`}>
-                    <span className="combo-metric-label">Margen</span>
+                    <span className="combo-metric-label">Margen Neto</span>
                     <span className="combo-metric-value">{fmtPct(marginBase)}</span>
+                    <span className={`combo-health-badge ${healthBase.class}`}>{healthBase.label}</span>
                   </div>
                 </div>
 
-                <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: healthBase.color, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {healthBase.label}.
-                  {maxDiscountTarget > 0 && ` Podés aplicar hasta ${Math.floor(maxDiscountTarget)}% de descuento manteniendo un margen superior al ${(targetMargin*100).toFixed(0)}%.`}
+                {marginBase < targetMargin && (
+                  <p className="combo-alert warning" style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertTriangle size={15} /> El margen actual (<strong>{fmtPct(marginBase)}</strong>) está por debajo del objetivo configurado (<strong>{config.margen_minimo}%</strong>).
+                  </p>
+                )}
+
+                {/* 2. Tarjeta del Simulador Interactivo */}
+                <div style={{
+                  background: 'var(--color-surface-2)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: '12px',
+                  padding: '1.25rem 1.5rem',
+                  marginTop: '1.5rem',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                }}>
+                  <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Activity size={16} style={{ color: 'var(--color-primary)' }} /> SIMULAR DESCUENTO SOBRE PRECIO BASE
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'center' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '0.5rem', fontWeight: 500 }}>
+                        Descuento a simular (%): <strong style={{ color: 'var(--color-text)', fontSize: '1rem' }}>{descuentoSimulado}%</strong>
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="80"
+                        step="5"
+                        value={descuentoSimulado}
+                        onChange={(e) => setDescuentoSimulado(Number(e.target.value))}
+                        style={{ width: '100%', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                      />
+                    </div>
+                    <div style={{ background: 'var(--color-surface)', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Precio simulado: <strong style={{ color: 'var(--color-text)' }}>{fmtGs(simulatedPrice)}</strong></div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.35rem' }}>
+                        Utilidad simulada: <strong style={{ color: healthSimulated.color }}>{fmtGs(simulatedUtility)}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: '0.35rem' }}>
+                        Margen simulado: <strong style={{ color: healthSimulated.color }}>{fmtPct(simulatedMargin)}</strong> ({healthSimulated.label})
+                      </div>
+                    </div>
+                  </div>
+
+                  {maxDiscountTarget > 0 && (
+                    <p className="field-hint" style={{ marginTop: '1rem', marginBottom: 0, fontSize: '0.825rem', color: 'var(--color-text-muted)' }}>
+                      💡 Descuento máximo para mantener el margen objetivo de {config.margen_minimo}%: <strong>{maxDiscountTarget.toFixed(1)}%</strong>
+                    </p>
+                  )}
                 </div>
 
-                {/* 2. Simulador (Number Input) */}
-                <div style={{ marginTop: '2rem', padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
-                  <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>SIMULAR DESCUENTO SOBRE PRECIO BASE</div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                    <input 
-                      type="number"
-                      min="0" max="100"
-                      value={descuentoSimulado}
-                      onChange={(e) => setDescuentoSimulado(Number(e.target.value))}
-                      style={{ width: '80px', padding: '0.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)' }}
-                    />
-                    <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--primary)' }}>%</span>
-                  </div>
+                {/* 3. Botón y Contenedor de Escenarios Detallados con Bordes Espaciosos */}
+                {Array.isArray(sBase.simulador) && sBase.simulador.length > 0 && (
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setMostrarDetalleEscenarios(!mostrarDetalleEscenarios)}
+                      style={{
+                        background: 'var(--color-surface-2)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '8px',
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        color: 'var(--color-primary)',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      {mostrarDetalleEscenarios ? '▴ Ocultar escenarios detallados' : '▾ Ver escenarios detallados'}
+                    </button>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Precio final</div>
-                      <div style={{ fontWeight: 'bold' }}>{fmtGs(simulatedPrice)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Utilidad</div>
-                      <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{fmtGs(simulatedUtility)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Margen</div>
-                      <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{fmtPct(simulatedMargin)}</div>
-                    </div>
-                  </div>
-
-                  {descuentoSimulado > 0 && descuentoSimulado !== descuentoPctVal && (
-                    <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                      <button type="button" className="btn-primary" onClick={() => {
-                        setValue('descuento_porcentaje', descuentoSimulado);
+                    {mostrarDetalleEscenarios && (
+                      <div style={{
+                        marginTop: '1.25rem',
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '12px',
+                        padding: '1.25rem 1.5rem',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        overflowX: 'auto'
                       }}>
-                        Aplicar este descuento
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. Tabla Detalles Toggleable */}
-                <div style={{ marginTop: '1.5rem' }}>
-                  <button 
-                    type="button" 
-                    onClick={() => setMostrarDetalleEscenarios(!mostrarDetalleEscenarios)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}
-                  >
-                    {mostrarDetalleEscenarios ? '▴ Ocultar' : '▾ Ver escenarios detallados'}
-                  </button>
-                  
-                  {mostrarDetalleEscenarios && (
-                    <div style={{ overflowX: 'auto', marginTop: '1rem', background: 'rgba(0,0,0,0.1)', padding: '0.5rem', borderRadius: '4px' }}>
-                      <table className="combo-sensitivity-table">
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: 'left' }}>Descuento</th>
-                            <th className="text-right">Precio Final</th>
-                            <th className="text-right">Utilidad Unitaria</th>
-                            <th className="text-right">Margen</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {rentabilidad.simulador.map(sim => {
-                            const h = getHealth(sim.margin);
-                            return (
-                              <tr key={sim.discountPercentage}>
-                                <td>
-                                  {sim.discountPercentage}% 
-                                  {sim.discountPercentage === descuentoPctVal ? <span className="badge-primary" style={{marginLeft: '8px', fontSize: '10px'}}>ACTUAL</span> : null}
-                                </td>
-                                <td className="text-right">{fmtGs(sim.finalPrice)}</td>
-                                <td className="text-right" style={{ color: h.color }}>{fmtGs(sim.profit)}</td>
-                                <td className="text-right" style={{ color: h.color }}>{fmtPct(sim.margin)}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
+                        <h5 style={{ margin: '0 0 1rem 0', fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                          Análisis de Sensibilidad (Matriz de Descuentos)
+                        </h5>
+                        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '0.85rem' }}>
+                          <thead>
+                            <tr style={{ background: 'var(--color-surface-2)', textAlign: 'left' }}>
+                              <th style={{ padding: '0.75rem 1rem', borderTopLeftRadius: '8px', borderBottomLeftRadius: '8px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Descuento</th>
+                              <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Precio Final</th>
+                              <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>Utilidad</th>
+                              <th style={{ padding: '0.75rem 1rem', borderTopRightRadius: '8px', borderBottomRightRadius: '8px', color: 'var(--color-text-muted)', fontWeight: 600 }}>Margen Neto</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sBase.simulador.map((esc, idx) => {
+                              const hEsc = getHealth(esc.margin);
+                              const escDiscount = Number(esc.discountPercentage) || 0;
+                              const isSelected = escDiscount === descuentoPctVal;
+                              return (
+                                <tr
+                                  key={idx}
+                                  style={{
+                                    borderBottom: idx < sBase.simulador.length - 1 ? '1px solid var(--color-border)' : 'none',
+                                    background: isSelected ? 'rgba(13, 27, 61, 0.04)' : 'transparent'
+                                  }}
+                                >
+                                  <td style={{ padding: '0.75rem 1rem', fontWeight: isSelected ? 700 : 500, color: 'var(--color-text)' }}>
+                                    {escDiscount}% {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--color-primary)', marginLeft: '0.25rem' }}>(actual)</span>}
+                                  </td>
+                                  <td style={{ padding: '0.75rem 1rem', color: 'var(--color-text)' }}>{fmtGs(esc.finalPrice)}</td>
+                                  <td style={{ padding: '0.75rem 1rem', color: hEsc.color, fontWeight: 600 }}>{fmtGs(esc.profit)}</td>
+                                  <td style={{ padding: '0.75rem 1rem' }}>
+                                    <span className={`combo-health-badge ${hEsc.class}`} style={{ display: 'inline-block' }}>
+                                      {fmtPct(esc.margin)} — {hEsc.label}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })()}
         </div>
 
-        <div className={`tab-content ${tabActiva === 'inventario' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'stock' ? 'active' : ''}`}>
           <div className="form-grid-3">
+            {/* Salón y depósito se cargan por separado; el disponible es la
+                suma y por eso es de solo lectura. Online se vende el TOTAL:
+                tener la mercadería guardada no frena una venta. Lo que sí
+                define el desglose es de dónde sale — primero el salón. */}
             <div className="form-group">
-              <label htmlFor="prod-stock">
-                Cantidad disponible
+              <label htmlFor="prod-stock-salon">
+                Stock en salón
                 {tieneVariantes && <span className="hint"> (calculado)</span>}
               </label>
               <input
-                id="prod-stock"
+                id="prod-stock-salon"
                 type="number"
                 min="0"
-                {...register('cantidad_disponible')}
+                {...register('stock_salon')}
                 disabled={tieneVariantes}
               />
             </div>
             <div className="form-group">
-              <label htmlFor="prod-stock-min">Stock mínimo (alerta)</label>
+              <label htmlFor="prod-stock-deposito">
+                Stock en depósito
+                {tieneVariantes && <span className="hint"> (calculado)</span>}
+              </label>
+              <input
+                id="prod-stock-deposito"
+                type="number"
+                min="0"
+                {...register('stock_deposito')}
+                disabled={tieneVariantes}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="prod-stock">
+                Cantidad disponible <span className="hint">(salón + depósito)</span>
+              </label>
+              <input
+                id="prod-stock"
+                type="number"
+                value={stockActualVal}
+                readOnly
+                disabled
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="prod-stock-min">Stock mínimo total (alerta)</label>
               <input id="prod-stock-min" type="number" min="0" {...register('stock_minimo')} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="prod-stock-min-salon">
+                Mínimo en salón <span className="hint">(reponer desde depósito)</span>
+              </label>
+              <input id="prod-stock-min-salon" type="number" min="0" placeholder="Opcional" {...register('stock_minimo_salon')} />
             </div>
             <div className="form-group">
               <label htmlFor="prod-sku">SKU</label>
@@ -1125,9 +1621,7 @@ export default function ProductForm() {
               <span style={{ width: `${stockRatio}%` }} />
             </div>
           </div>
-        </div>
 
-        <div className={`tab-content ${tabActiva === 'variantes' ? 'active' : ''}`}>
           <div className="form-section-title">
             <Layers size={14} /> Variantes
             <label className="check-label" style={{ marginLeft: 'auto', fontSize: '0.85rem' }}>
@@ -1149,14 +1643,48 @@ export default function ProductForm() {
           {tieneVariantes ? (
             <>
               <div className="variantes-header">
+                <span>Foto</span>
                 <span>Nombre de variante</span>
                 <span>SKU</span>
-                <span>Stock</span>
+                <span>Stock salón</span>
+                <span>Stock depósito</span>
+                <span>Total</span>
                 <span>Precio diferencial</span>
                 <span></span>
               </div>
-              {variantesFields.map((field, i) => (
+              {variantesFields.map((field, i) => {
+                const salonFila = parseInt(watch(`variantes.${i}.stock_salon`), 10) || 0;
+                const depositoFila = parseInt(watch(`variantes.${i}.stock_deposito`), 10) || 0;
+                // La imagen recién elegida gana sobre la ya guardada: es lo
+                // que se va a subir cuando el usuario apriete Guardar.
+                const imagenGuardada = field.id ? imagenes.find(img => img.variante_id === field.id) : null;
+                const imagenElegida = imagenesVariante[field._rhfKey];
+                const previewVariante = imagenElegida?.url || imagenGuardada?.url || null;
+                return (
                 <div key={field._rhfKey} className="variante-row variante-row-3">
+                  <label className="variante-foto" title="Foto de esta variante">
+                    {previewVariante
+                      ? <img src={previewVariante} alt="" />
+                      : <span className="variante-foto-vacia"><ImageIcon size={15} /></span>}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        if (file.size > MAX_IMAGEN_BYTES) {
+                          setError('La imagen de la variante supera el máximo permitido de 1MB.');
+                          return;
+                        }
+                        setError(null);
+                        setImagenesVariante(prev => ({
+                          ...prev,
+                          [field._rhfKey]: { file, url: URL.createObjectURL(file) },
+                        }));
+                      }}
+                    />
+                  </label>
                   <input
                     placeholder="Ej: Talle M - Rojo"
                     {...register(`variantes.${i}.nombre`)}
@@ -1169,8 +1697,17 @@ export default function ProductForm() {
                     type="number"
                     min="0"
                     placeholder="0"
-                    {...register(`variantes.${i}.stock`)}
+                    {...register(`variantes.${i}.stock_salon`)}
                   />
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    {...register(`variantes.${i}.stock_deposito`)}
+                  />
+                  <span className="variante-total" title="Salón + depósito. Es el stock que se vende online.">
+                    {salonFila + depositoFila}
+                  </span>
                   <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
                     <Controller
                       name={`variantes.${i}.precio_diferencial`}
@@ -1189,22 +1726,34 @@ export default function ProductForm() {
                   <button
                     type="button"
                     className="btn-icon danger"
-                    onClick={() => removeVariante(i)}
+                    onClick={() => {
+                      setImagenesVariante(prev => {
+                        const resto = { ...prev };
+                        delete resto[field._rhfKey];
+                        return resto;
+                      });
+                      removeVariante(i);
+                    }}
                     aria-label="Quitar variante"
                   >
                     <Trash2 size={14} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
               <button
                 type="button"
                 className="btn-ghost"
-                onClick={() => appendVariante({ nombre: '', sku_variante: '', stock: 0, precio_diferencial: 0 })}
+                onClick={() => appendVariante({ nombre: '', sku_variante: '', stock_salon: 0, stock_deposito: 0, precio_diferencial: 0 })}
               >
                 <Plus size={14} /> Agregar variante
               </button>
               <p className="field-hint" style={{ marginTop: '0.75rem' }}>
                 Cuando hay variantes, el stock del producto se calcula automáticamente como la suma de todas las variantes.
+                Salón y depósito se cargan por separado para saber dónde está la mercadería, pero online se vende el total de los dos.
+              </p>
+              <p className="field-hint">
+                La foto de cada variante se sube al guardar el producto y es la que ve el cliente en la landing cuando elige esa opción.
               </p>
             </>
           ) : (
@@ -1215,7 +1764,7 @@ export default function ProductForm() {
           )}
         </div>
 
-        <div className={`tab-content ${tabActiva === 'multimedia' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'basica' ? 'active' : ''}`}>
           <div className="form-section-title">
             <ImageIcon size={14} /> Fotos del producto
           </div>
@@ -1290,136 +1839,173 @@ export default function ProductForm() {
         </div>
 
         <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
-          <div className="form-group full">
-            <label>Propuesta de valor</label>
-            <textarea
-              {...register('propuesta_valor')}
-              placeholder="Ej: Definí tus cejas y barba con precisión y conseguí un acabado profesional en segundos."
-              rows={3}
-            />
-            <p className="field-hint">Una frase: producto → beneficio principal → acción. Aparece debajo del nombre en el embudo.</p>
-          </div>
-
-          <div className="form-group full">
-            <label>Sobre este producto</label>
-            <textarea
-              {...register('sobre_este_producto')}
-              placeholder="Descripción detallada para la sección 'Sobre este producto' del embudo."
-              rows={5}
-            />
-            <p className="field-hint">Si se deja vacío, el embudo usará la Descripción Larga.</p>
-          </div>
-
-          <div className="form-group full">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <label style={{ margin: 0 }}>Beneficios</label>
-              <button type="button" className="btn-secondary btn-small" onClick={() => appendBeneficio({ titulo: '', texto: '' })}>
-                <Plus size={14} /> Agregar beneficio
-              </button>
-            </div>
-            {beneficiosFields.length === 0 ? (
-              <p className="field-hint">No hay beneficios cargados. El embudo no mostrará esta sección.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {beneficiosFields.map((field, index) => (
-                  <div key={field._rhfKey} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', background: 'var(--bg-card)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <Controller
-                      control={control}
-                      name={`beneficios.${index}.icono`}
-                      render={({ field: controllerField }) => (
-                        <SelectorIcono
-                          valor={controllerField.value || 'star'}
-                          onChange={controllerField.onChange}
-                        />
-                      )}
-                    />
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <input {...register(`beneficios.${index}.titulo`)} placeholder="Título corto (ej: Fácil de usar)" />
-                      <textarea {...register(`beneficios.${index}.texto`)} placeholder="Breve descripción del beneficio..." rows={2} />
-                    </div>
-                    <button type="button" className="btn-icon" onClick={() => removeBeneficio(index)} style={{ color: 'var(--text-muted)' }}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+          <div className="product-view-workspace">
+            <div className="product-view-editor">
+              <div className="form-section-title">
+                <Eye size={14} /> Contenido público
               </div>
-            )}
-          </div>
 
-          <div className="form-group full">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <label style={{ margin: 0 }}>Confianza (Garantías) <span className="req">*mínimo 4 recomendados</span></label>
-              <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ texto: '', icono: 'ShieldCheck' })}>
-                <Plus size={14} /> Agregar
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {confianzaFields.map((field, index) => (
-                <div key={field._rhfKey} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <Controller
-                    control={control}
-                    name={`confianza.${index}.icono`}
-                    render={({ field: controllerField }) => (
-                      <SelectorIcono
-                        valor={controllerField.value || 'shield-check'}
-                        onChange={controllerField.onChange}
-                      />
-                    )}
-                  />
-                  <input {...register(`confianza.${index}.texto`)} placeholder="Ej: Envío gratis" style={{ flex: 1 }} />
-                  <button type="button" className="btn-icon" onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+              <div className="form-group full">
+                <label>Propuesta de valor</label>
+                <textarea
+                  {...register('propuesta_valor')}
+                  placeholder="Ej: Definí tus cejas y barba con precisión y conseguí un acabado profesional en segundos."
+                  rows={3}
+                />
+                <p className="field-hint">Una frase: producto, beneficio principal y acción. Aparece debajo del nombre en la página pública.</p>
+              </div>
 
-        <div className={`tab-content ${tabActiva === 'ficha' ? 'active' : ''}`}>
-          {/* El rubro decide qué campos se piden: no son los mismos para un
-              suplemento que para un auricular. Lo genérico (propuesta de
-              valor, beneficios, confianza) sigue en Marketing & Embudo. */}
-          <Controller
-            control={control}
-            name="ficha_rubro"
-            render={({ field: campoRubro }) => (
               <Controller
                 control={control}
                 name="ficha_datos"
                 render={({ field: campoDatos }) => (
-                  <FichaRubroTab
-                    rubro={campoRubro.value}
+                  <EncabezadoProductoFields
                     datos={campoDatos.value}
-                    onRubro={(v) => campoRubro.onChange(v || '')}
                     onDatos={campoDatos.onChange}
                   />
                 )}
               />
-            )}
-          />
-        </div>
 
-        <div className={`tab-content ${tabActiva === 'faq' ? 'active' : ''}`}>
-          <div className="form-group">
-            <label htmlFor="prod-faq-titulo">Título de la sección</label>
-            <input
-              id="prod-faq-titulo"
-              type="text"
-              placeholder="Ej: Todo lo que necesitas saber"
-              {...register('faq_titulo')}
+              {fichaRubroVal === 'basico' && (
+                <div className="form-group full">
+                  <label>Sobre este producto</label>
+                  <textarea
+                    {...register('sobre_este_producto')}
+                    placeholder="Descripción amplia que aparece en la ficha genérica."
+                    rows={5}
+                  />
+                  <p className="field-hint">Solo aparece en el template genérico. En los otros tipos se usan sus campos dinámicos propios.</p>
+                </div>
+              )}
+
+              <div className="form-group full">
+                <div className="inline-section-head">
+                  <label>Beneficios</label>
+                  <button type="button" className="btn-secondary btn-small" onClick={() => appendBeneficio({ titulo: '', texto: '' })}>
+                    <Plus size={14} /> Agregar beneficio
+                  </button>
+                </div>
+                {beneficiosFields.length === 0 ? (
+                  <p className="field-hint">No hay beneficios cargados. La página pública no mostrará esta sección.</p>
+                ) : (
+                  <div className="repeat-stack">
+                    {beneficiosFields.map((field, index) => (
+                      <div key={field._rhfKey} className="repeat-card">
+                        <Controller
+                          control={control}
+                          name={`beneficios.${index}.icono`}
+                          render={({ field: controllerField }) => (
+                            <SelectorIcono
+                              valor={controllerField.value || 'star'}
+                              onChange={controllerField.onChange}
+                            />
+                          )}
+                        />
+                        <div className="repeat-fields">
+                          <input {...register(`beneficios.${index}.titulo`)} placeholder="Título corto (ej: Fácil de usar)" />
+                          <textarea {...register(`beneficios.${index}.texto`)} placeholder="Breve descripción del beneficio..." rows={2} />
+                        </div>
+                        <button type="button" className="btn-icon" onClick={() => removeBeneficio(index)} style={{ color: 'var(--text-muted)' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Controller
+                control={control}
+                name="ficha_rubro"
+                render={({ field: campoRubro }) => (
+                  <Controller
+                    control={control}
+                    name="ficha_datos"
+                    render={({ field: campoDatos }) => (
+                      <FichaRubroTab
+                        rubro={campoRubro.value}
+                        datos={campoDatos.value}
+                        onRubro={(v) => campoRubro.onChange(v || '')}
+                        onDatos={campoDatos.onChange}
+                        modo="campos"
+                      />
+                    )}
+                  />
+                )}
+              />
+              <div className="form-group">
+                <label htmlFor="prod-faq-titulo">Título de la sección</label>
+                <input
+                  id="prod-faq-titulo"
+                  type="text"
+                  placeholder="Ej: Todo lo que necesitás saber"
+                  {...register('faq_titulo')}
+                />
+                <p className="field-hint">
+                  Se muestra en la página pública del producto. Dejalo vacío para usar el título por defecto.
+                </p>
+              </div>
+              <div className="form-group">
+                <label>Preguntas frecuentes propias de este producto</label>
+                <FaqPanel faq={faq} onChange={setFaq} />
+              </div>
+
+              <div className="form-group full">
+                <div className="inline-section-head">
+                  <label>Confianza (Garantías) <span className="req">*mínimo 4 recomendados</span></label>
+                  <button type="button" className="btn-secondary btn-small" onClick={() => appendConfianza({ texto: '', icono: 'ShieldCheck' })}>
+                    <Plus size={14} /> Agregar
+                  </button>
+                </div>
+                <div className="repeat-stack">
+                  {confianzaFields.map((field, index) => (
+                    <div key={field._rhfKey} className="repeat-card repeat-card--compact">
+                      <Controller
+                        control={control}
+                        name={`confianza.${index}.icono`}
+                        render={({ field: controllerField }) => (
+                          <SelectorIcono
+                            valor={controllerField.value || 'shield-check'}
+                            onChange={controllerField.onChange}
+                          />
+                        )}
+                      />
+                      <input {...register(`confianza.${index}.texto`)} placeholder="Ej: Envío gratis" />
+                      <button type="button" className="btn-icon" onClick={() => removeConfianza(index)} style={{ color: 'var(--text-muted)' }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              
+
+              {/* {esEdicion && (
+                <Link to={`/mi-landing/producto/${id}/funnel-selector`} className="btn-secondary product-view-funnel-link">
+                  <Eye size={15} /> Configurar funnel dedicado
+                </Link>
+              )} */}
+            </div>
+
+            <ProductLandingPreview
+              productoId={esEdicion ? id : null}
+              producto={valoresProducto}
+              categoriaNombre={categoriaActual?.nombre}
+              imagenes={imagenes}
+              imagenesNuevas={imagenesNuevas}
+              variantes={valoresProducto.variantes || []}
+              tieneVariantes={tieneVariantes}
+              faq={faq}
+              precioFinal={precioFinalVal}
+              precioAncla={effectiveAnclaVal}
+              device={previewDevice}
+              onDeviceChange={setPreviewDevice}
             />
-            <p className="field-hint">
-              Se muestra en la página pública del producto, dentro de la landing. Dejalo vacío para usar el título por defecto.
-            </p>
-          </div>
-          <div className="form-group">
-            <label>Preguntas frecuentes propias de este producto</label>
-            <FaqPanel faq={faq} onChange={setFaq} />
           </div>
         </div>
 
-        <div className={`tab-content ${tabActiva === 'ofertas' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'venta' ? 'active' : ''}`}>
           {esEdicion ? (
             <OfertasProductoTab
               productoId={id}
@@ -1435,7 +2021,7 @@ export default function ProductForm() {
           )}
         </div>
 
-        <div className={`tab-content ${tabActiva === 'configuracion' ? 'active' : ''}`}>
+        <div className={`tab-content ${tabActiva === 'publicacion' ? 'active' : ''}`}>
           <div className="form-grid-2">
             <div className="form-group">
               <label htmlFor="prod-estado-venta">Estado de venta</label>
@@ -1460,31 +2046,9 @@ export default function ProductForm() {
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════
-            TAB 5: DISEÑO DE PÁGINA PROPIO
-        ══════════════════════════════════════════════════════ */}
-        <div className={`tab-content ${tabActiva === 'diseno' ? 'active' : ''}`}>
-          {esEdicion ? (
-            <div className="variantes-empty">
-              <ImageIcon size={32} opacity={0.2} />
-              <p>
-                Este producto se mostrará con el diseño estándar de tu tienda.
-                Si querés crear un <b>Embudo de Venta (Funnel)</b> de alta conversión exclusivo para este producto, ingresá al selector de plantillas.
-              </p>
-              <Link to={`/mi-landing/producto/${id}/funnel-selector`} className="lb-btn-primary" style={{ marginTop: '0.75rem', display: 'inline-flex' }}>
-                <Monitor size={16} style={{ marginRight: '6px' }} /> Configurar Funnel
-              </Link>
-            </div>
-          ) : (
-            <div className="variantes-empty">
-              <ImageIcon size={32} opacity={0.2} />
-              <p>Guardá el producto primero para poder darle un diseño propio.</p>
-            </div>
-          )}
         </div>
 
-        </div>
-
+        {tabActiva !== 'marketing' && (
         <aside className="prod-summary-panel" aria-label="Resumen del producto">
           <div className="summary-media">
             {imagenPrincipalUrl
@@ -1499,7 +2063,7 @@ export default function ProductForm() {
           </div>
 
           <div className="summary-price">
-            {precioAnclaVal > precioFinalVal && <span>{fmtGs(precioAnclaVal)}</span>}
+            {effectiveAnclaVal > precioFinalVal && <span>{fmtGs(effectiveAnclaVal)}</span>}
             <strong>{fmtGs(precioFinalVal)}</strong>
           </div>
 
@@ -1535,6 +2099,7 @@ export default function ProductForm() {
 
           {destacadoVal && <span className="summary-featured"><Star size={12} /> Destacado</span>}
         </aside>
+        )}
 
       </form>
 

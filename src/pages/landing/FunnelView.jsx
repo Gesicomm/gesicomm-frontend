@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
-import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, crearCheckoutLanding, recalcularCarritoLanding } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, crearCheckoutLanding, recalcularCarritoLanding, validarCuponLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA, trackearEventoGA } from '../../lib/googleAnalytics';
@@ -386,6 +386,18 @@ export default function FunnelView({ data, slug, productId }) {
    *   se vacía en ese caso: es una compra directa, aparte de lo que el
    *   visitante ya tenga juntando para otro pedido.
    */
+  /** Mismos items que confirmarPedido: el descuento se calcula sobre lo que
+   *  realmente se va a cobrar. */
+  function validarCupon(codigo, itemsOverride = null) {
+    const items = itemsOverride || Array.from(carrito.values());
+    return validarCuponLanding(slug, codigo, items.map(it => ({
+      content_id: it.contentId,
+      variante_id: it.varianteId || undefined,
+      oferta_id: it.ofertaId || undefined,
+      cantidad: it.cantidad,
+    })));
+  }
+
   async function confirmarPedido(datosFormulario, itemsOverride = null) {
     const items = itemsOverride || Array.from(carrito.values());
     if (!items.length) throw new Error('Tu carrito está vacío.');
@@ -721,6 +733,7 @@ export default function FunnelView({ data, slug, productId }) {
           onCantidad={cambiarCantidadCarrito}
           onQuitar={quitarDelCarrito}
           onConfirmarPedido={confirmarPedido}
+          onValidarCupon={validarCupon}
           pasarelas={data?.checkout?.pasarelas || []}
         />
       </>

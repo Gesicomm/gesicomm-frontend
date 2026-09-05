@@ -23,10 +23,10 @@
  *   1. Defaults de fábrica (DEFAULTS_FICHA, acá abajo).
  *   2. Defaults de la landing (content.ficha_fitness) — lo que el comercio
  *      carga una vez en el armador y vale para todas sus fichas.
- *   3. Marketing del PRODUCTO (pestaña "Marketing & Embudo" de la carga de
- *      productos: propuesta_valor, beneficios, confianza, sobre_este_
- *      producto). Es la fuente natural: ese contenido ya se carga ahí para
- *      el embudo, no tiene sentido volver a escribirlo en cada landing.
+ *   3. Vista del producto (propuesta_valor, CTA, beneficios rápidos,
+ *      beneficios, confianza y ficha_datos). Es la fuente natural: ese
+ *      contenido ya se carga ahí y no tiene sentido volver a escribirlo en
+ *      cada landing.
  *   4. Lo que el comercio escribió para ESTE producto EN ESTA landing
  *      (content.productos[id].ficha).
  *
@@ -45,13 +45,13 @@ export const SECCIONES_FICHA = [
   { key: 'anuncio',      numero: 1,  label: 'Barra de anuncio',      ambito: 'landing',  ayuda: 'Franja fija arriba de todo: envío, garantía y pago seguro.' },
   { key: 'hero',         numero: 2,  label: 'Encabezado',            ambito: 'producto', ayuda: 'Título, promesa, lista de beneficios rápidos y botón principal.' },
   { key: 'prueba_social',numero: 3,  label: 'Prueba social rápida',  ambito: 'landing',  ayuda: 'Calificación, cantidad de reseñas y clientes satisfechos.' },
-  { key: 'ofertas',      numero: 4,  label: 'Ofertas y paquetes',    ambito: 'producto', ayuda: 'Usa los paquetes que ya cargaste en "Checkout y Ofertas".' },
+  { key: 'ofertas',      numero: 4,  label: 'Ofertas y paquetes',    ambito: 'producto', ayuda: 'Usa los paquetes que ya cargaste en "Venta".' },
   { key: 'beneficios',   numero: 5,  label: 'Beneficios clave',      ambito: 'producto', ayuda: 'Cuatro beneficios con ícono.' },
   { key: 'ingredientes', numero: 6,  label: 'Ingredientes y ciencia',ambito: 'producto', ayuda: 'Ingrediente, dosis y para qué sirve.' },
   { key: 'opiniones',    numero: 7,  label: 'Opiniones de clientes', ambito: 'producto', ayuda: 'Testimonios con estrellas y nombre.' },
   { key: 'como_funciona',numero: 8,  label: 'Cómo funciona',         ambito: 'landing',  ayuda: 'Los pasos desde que lo toma hasta que ve resultados.' },
   { key: 'garantias',    numero: 9,  label: 'Garantías y confianza',ambito: 'landing',  ayuda: 'Devolución, fabricación, pago seguro.' },
-  { key: 'faq',          numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en la pestaña "Detalles".' },
+  { key: 'faq',          numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
   { key: 'upsells',      numero: 11, label: 'Productos complementarios', ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'cta_final',    numero: 12, label: 'Cierre y urgencia',     ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
 ];
@@ -269,33 +269,31 @@ const ICONO_CONFIANZA_A_CATALOGO = {
 };
 
 /**
- * Lo que la ficha puede armar sola a partir de la pestaña "Marketing &
- * Embudo" del producto. Solo devuelve las claves que realmente tiene
+ * Lo que la ficha puede armar sola a partir de Vista del producto. Solo devuelve las claves que realmente tiene
  * contenido: una lista vacía no debe pisar el default de la landing con
  * nada.
  *
- * @param {object|null} producto con propuesta_valor / sobre_este_producto /
+ * @param {object|null} producto con propuesta_valor / ficha_datos /
  *   beneficios [{titulo,texto}] / confianza [{texto,icono}], tal cual los
  *   guarda ProductForm.jsx y los publica landing.service.js.
  */
 export function fichaDesdeMarketing(producto) {
   if (!producto) return {};
   const ficha = {};
+  const datos = (producto.ficha_datos && typeof producto.ficha_datos === 'object' && !Array.isArray(producto.ficha_datos))
+    ? producto.ficha_datos : {};
 
   const beneficios = (producto.beneficios || []).filter(b => b?.titulo?.trim());
   const confianza = (producto.confianza || []).filter(c => c?.texto?.trim());
   const promesa = (producto.propuesta_valor || '').trim();
-  const sobre = (producto.sobre_este_producto || '').trim();
+  const beneficiosRapidos = (datos.beneficios_rapidos || []).filter(t => typeof t === 'string' && t.trim());
+  const ctaPrincipal = (datos.cta_principal_texto || '').trim();
 
-  if (promesa || sobre || beneficios.length) {
+  if (promesa || beneficiosRapidos.length || ctaPrincipal) {
     ficha.hero = {};
-    // propuesta_valor es la frase corta que en el embudo va debajo del
-    // nombre; sobre_este_producto es el texto largo. Si están las dos, la
-    // frase corta encabeza y la larga queda para la descripción de abajo.
-    if (promesa || sobre) ficha.hero.lead = promesa || sobre;
-    // El diseño repite los beneficios como checklist del encabezado — es la
-    // misma información y no se le pide al comercio cargarla dos veces.
-    if (beneficios.length) ficha.hero.checklist = beneficios.map(b => b.titulo.trim());
+    if (promesa) ficha.hero.lead = promesa;
+    if (beneficiosRapidos.length) ficha.hero.checklist = beneficiosRapidos.map(t => t.trim());
+    if (ctaPrincipal) ficha.hero.cta_texto = ctaPrincipal;
   }
 
   if (beneficios.length) {
@@ -319,10 +317,8 @@ export function fichaDesdeMarketing(producto) {
   }
 
   // Propio del rubro "suplementos" (Producto.ficha_datos, cargado en Mis
-  // Productos → Ficha del rubro). Es del producto, así que sirve en todas
+  // Productos → Vista del producto). Es del producto, así que sirve en todas
   // sus landings sin volver a escribirlo en cada una.
-  const datos = (producto.ficha_datos && typeof producto.ficha_datos === 'object' && !Array.isArray(producto.ficha_datos))
-    ? producto.ficha_datos : {};
   const ingredientes = (datos.ingredientes || []).filter(i => i?.nombre?.trim());
   if (ingredientes.length) {
     ficha.ingredientes = {
@@ -336,6 +332,34 @@ export function fichaDesdeMarketing(producto) {
         dosis: (i.dosis || '').trim(),
         texto: (i.texto || '').trim(),
       })),
+    };
+  }
+
+  const opiniones = (datos.fitness_opiniones || []).filter(o => o?.nombre?.trim() || o?.comentario?.trim());
+  if (opiniones.length) {
+    ficha.opiniones = {
+      activo: true,
+      items: opiniones.map(o => ({
+        nombre: (o.nombre || '').trim(),
+        comentario: (o.comentario || o.testimonio || '').trim(),
+        calificacion: numeroEntre(o.calificacion, 1, 5, 5),
+        foto: (o.foto || '').trim(),
+      })),
+    };
+  }
+
+  const pasos = (datos.fitness_pasos || []).filter(p => p?.titulo?.trim());
+  const modoUso = (datos.modo_uso || '').trim();
+  if (pasos.length || modoUso) {
+    ficha.como_funciona = {
+      activo: true,
+      pasos: pasos.length
+        ? pasos.map((p, i) => ({
+          paso: (p.paso || String(i + 1)).trim(),
+          titulo: p.titulo.trim(),
+          texto: (p.texto || p.descripcion || '').trim(),
+        }))
+        : [{ paso: '1', titulo: 'Modo de uso', texto: modoUso }],
     };
   }
 
@@ -365,7 +389,7 @@ export function fuenteDeSeccion(key, { fichaProducto, fichaLanding, fichaMarketi
 
 export const ETIQUETA_FUENTE = {
   'landing-producto': 'Escrito para este producto acá',
-  'marketing': 'Tomado de Marketing & Embudo del producto',
+  'marketing': 'Tomado de Vista del producto',
   'landing': 'Heredado de la landing',
   'fabrica': 'Texto sugerido — todavía sin cargar',
 };

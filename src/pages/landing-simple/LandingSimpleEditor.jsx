@@ -333,7 +333,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // Ficha rediseñada: `productoFicha` es SOLO lo que este producto pisa en
   // esta landing (content.productos[id].ficha) — puede quedar null entero si
   // hereda todo. `productoMarketing` es el detalle del producto, del que sale
-  // la capa "Marketing & Embudo". Ver fichaFitness.js.
+  // la capa "Vista del producto". Ver fichaFitness.js.
   const [productoFicha, setProductoFicha] = useState(null);
   const [productoMarketing, setProductoMarketing] = useState(null);
   // Override de la ficha de Tecnología para este producto en esta landing.
@@ -445,8 +445,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       // no ofrecer un botón que el backend va a rechazar igual.
       setProductoImagenesEditables(pDetail?.puede_editar === true);
       // Detalle completo: de acá salen propuesta_valor / beneficios /
-      // confianza / sobre_este_producto, o sea la pestaña "Marketing &
-      // Embudo" de la carga de productos. La ficha los usa como fuente antes
+      // confianza / sobre_este_producto, o sea la pestaña "Vista del producto"
+      // de la carga de productos. La ficha los usa como fuente antes
       // de caer en los defaults de la landing.
       setProductoMarketing(pDetail || null);
 

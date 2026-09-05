@@ -454,7 +454,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <p className="text-[10px] text-amber-400/80 leading-relaxed">
-        Conviene cargarlos en <b>Mis Productos → Ficha del rubro</b>: son del producto y sirven en todas tus
+        Conviene cargarlos en <b>Mis Productos → Vista del producto</b>: son del producto y sirven en todas tus
         landings. Lo que escribas acá vale solo para esta.
       </p>
       <ListaEditable
@@ -478,7 +478,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <p className="text-[10px] text-amber-400/80 leading-relaxed">
-        Conviene cargarlos en <b>Mis Productos → Ficha del rubro</b>. Lo que escribas acá vale solo para esta landing.
+        Conviene cargarlos en <b>Mis Productos → Vista del producto</b>. Lo que escribas acá vale solo para esta landing.
       </p>
       <ListaEditable
         items={d.items} campo="items" lista={lista} max={LIMITES.resultados_items}
@@ -510,7 +510,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <p className="text-[10px] text-amber-400/80 leading-relaxed">
-        Conviene cargarlos en <b>Mis Productos → Ficha del rubro</b>. Lo que escribas acá vale solo para esta landing.
+        Conviene cargarlos en <b>Mis Productos → Vista del producto</b>. Lo que escribas acá vale solo para esta landing.
       </p>
       <ListaEditable
         items={d.pasos} campo="pasos" lista={lista} max={LIMITES.como_funciona_pasos}

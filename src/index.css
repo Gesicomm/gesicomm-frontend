@@ -77,61 +77,62 @@
    Tailwind v4 (bg-canvas, text-fg, …) apuntan a var(--color-*), así que
    heredan el valor del tema activo sin duplicar ninguna clase. */
 :root[data-theme='light'] {
-    /* Papel, no blanco de laboratorio: un gris levemente frío, como el
-       formulario impreso en papel de oficina. El blanco puro queda
-       reservado para las superficies elevadas, así el contraste entre
-       fondo y tarjeta lo da el papel y no una sombra. */
-    --color-canvas: #f7f7f5;
+    /* Marfil Claro de marca: #F7F7F8 */
+    --color-canvas: #f7f7f8;
     --color-surface: #ffffff;
-    --color-surface-2: #eeeeea;
-    --color-surface-3: #e2e2dc;
-    --color-border: #d8d8d0;
-    --color-border-strong: #c0c0b6;
+    --color-surface-2: #f1f2f4;
+    --color-surface-3: #e5e7eb;
+    --color-border: #e5e7eb;
+    --color-border-strong: #d1d5db;
 
-    --color-fg: #0b1d3d;
-    --color-fg-muted: #4b5568;
-    --color-fg-subtle: #5f6775;
+    /* Azul Profundo de marca: #0D1B3D */
+    --color-fg: #0d1b3d;
+    /* Gris Pizarra de marca: #6B7280 */
+    --color-fg-muted: #6b7280;
+    --color-fg-subtle: #4b5563;
 
-    /* Azul Profundo de marca: ~19:1 sobre el lienzo marfil, así que no
-       hace falta oscurecerlo para texto como pasaba con el violeta
-       anterior — ya rinde AA de sobra en cualquier tamaño. */
-    --color-primary: #0b1d3d;
-    --color-primary-hover: #15295a;
-    --color-primary-active: #081527;
-    --color-primary-text: #0b1d3d;
+    /* Azul Profundo para elementos primarios */
+    --color-primary: #0d1b3d;
+    --color-primary-hover: #172a54;
+    --color-primary-active: #08122c;
+    --color-primary-text: #0d1b3d;
 
-    /* El dorado tal cual (#ffc107) da ~1,5:1 sobre el lienzo marfil —
-       casi invisible como texto. Este es el mismo dorado oscurecido lo
-       justo para leerse (~5,2:1) sin dejar de reconocerse como el acento
-       de marca. --color-accent-fg no cambia acá: sigue siendo #0b1d3d
-       porque el dorado de FONDO no se oscurece, solo el de texto. */
+    /* Oro Digital de marca: #FFC107 */
+    --color-accent: #ffc107;
+    --color-accent-hover: #ffcf4d;
+    --color-accent-fg: #0d1b3d;
     --color-accent-text: #8a6100;
 
     --color-success: #047857;
-    --color-warning: #b45309;
+    --color-warning: #d97706;
     --color-danger: #dc2626;
     --color-info: #1d4ed8;
 
     color-scheme: light;
 }
 
-/* data-theme sólo existe mientras está montado PublicLayout, así que este
-   bloque es "el oscuro del sitio público" y no toca al panel.
-
-   El negro neutro del panel (#08080a) acá se corre hacia el azul: es la
-   diferencia entre un fondo apagado y uno con temperatura de tinta. Sobre
-   ese fondo el violeta de marca deja de leerse como un neón sobre negro. */
 :root[data-theme='dark'] {
-    --color-canvas: #0c1224;
-    --color-surface: #131a30;
-    --color-surface-2: #1a2140;
-    --color-surface-3: #212a4e;
-    --color-border: #2b3558;
-    --color-border-strong: #3c4870;
+    /* Fondo oscuro basado en Azul Profundo (#0D1B3D) con tono de tinta */
+    --color-canvas: #090e1a;
+    --color-surface: #0d1527;
+    --color-surface-2: #141f38;
+    --color-surface-3: #1c2a4a;
+    --color-border: #243459;
+    --color-border-strong: #324675;
 
-    --color-fg: #f5f6f8;
-    --color-fg-muted: #a8adbc;
-    --color-fg-subtle: #868ea0;
+    --color-fg: #f8fafc;
+    --color-fg-muted: #94a3b8;
+    --color-fg-subtle: #64748b;
+
+    --color-primary: #1e3a75;
+    --color-primary-hover: #294c96;
+    --color-primary-active: #152b57;
+    --color-primary-text: #7d9bd6;
+
+    --color-accent: #ffc107;
+    --color-accent-hover: #ffcf4d;
+    --color-accent-fg: #0d1b3d;
+    --color-accent-text: #ffc107;
 
     color-scheme: dark;
 }

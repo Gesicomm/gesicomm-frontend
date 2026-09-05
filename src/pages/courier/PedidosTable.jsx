@@ -276,7 +276,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    productService.buscar({}).then((res) => {
+    productService.buscar({ sin_limite: true }).then((res) => {
       const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
       setProductos(prods);
     }).catch(() => setProductos([]));

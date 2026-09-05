@@ -164,6 +164,7 @@ export default function PoliticaReembolsoPublica() {
         onCantidad={cartState.cambiarCantidadCarrito}
         onQuitar={cartState.quitarDelCarrito}
         onConfirmarPedido={cartState.confirmarPedido}
+        onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
       />
 

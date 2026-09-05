@@ -405,7 +405,7 @@ const CAMPOS = {
         )}
       </ListaEditable>
       <p className="text-[10px] text-fg/35 leading-relaxed">
-        Si los cargaste en <b className="text-fg/60">Marketing &amp; Embudo</b> del producto, aparecen solos acá.
+        Si los cargaste en <b className="text-fg/60">Vista del producto</b>, aparecen solos acá.
       </p>
     </>
   ),
@@ -504,7 +504,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <p className="text-[10px] text-fg/35 leading-relaxed">
-        Las preguntas se cargan en la pestaña <b className="text-fg/60">Detalles</b> de este producto.
+        Las preguntas se cargan en <b className="text-fg/60">Vista del producto</b>.
       </p>
     </>
   ),

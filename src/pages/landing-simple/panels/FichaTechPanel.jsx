@@ -80,8 +80,8 @@ export default function FichaTechPanel({
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-fg/40 leading-relaxed">
         {esProducto
-          ? 'La ficha toma lo que ya cargaste en el producto (Marketing & Embudo y la pestaña del rubro Tecnología). Lo que escribas acá vale solo para este producto en esta landing.'
-          : 'Estos valores los heredan todas las fichas de producto de esta landing. Cada producto puede pisarlos desde su propia pestaña Ficha.'}
+          ? 'La ficha toma lo que ya cargaste en Vista del producto. Lo que escribas acá vale solo para este producto en esta landing.'
+          : 'Estos valores los heredan todas las fichas de producto de esta landing. Cada producto puede pisarlos desde su Vista del producto.'}
       </p>
 
       {SECCIONES_TECH.map(sec => {
@@ -509,7 +509,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <p className="text-[10px] text-amber-400/70 leading-relaxed">
-        Conviene cargarlas en <b>Mis Productos → Ficha técnica</b>: son del producto y sirven en todas tus
+        Conviene cargarlas en <b>Mis Productos → Vista del producto</b>: son del producto y sirven en todas tus
         landings. Lo que escribas acá vale solo para esta.
       </p>
       <div>

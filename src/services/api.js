@@ -21,6 +21,10 @@ const API = axios.create({
 const backendOrigin = apiURL.replace(/\/api$/, '');
 export function getMediaUrl(url) {
   if (!url) return url;
+  if (typeof url !== 'string') {
+    url = url.url || url.ruta || url.path || url.src || '';
+    if (!url || typeof url !== 'string') return '';
+  }
   if (/^https?:\/\//.test(url) || url.startsWith('blob:') || url.startsWith('data:')) return url;
   return backendOrigin + url;
 }

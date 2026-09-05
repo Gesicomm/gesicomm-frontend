@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Eye, MessageCircle, ShoppingCart, CreditCard, ArrowRight, Loader, Table2, BarChart3, Store,
-  FileText, Clock, CheckCircle2, PackageCheck, Wallet, Truck, ChevronDown,
+  Eye, MessageCircle, CreditCard, ArrowRight, Loader, Table2, BarChart3, Store,
+  FileText, Clock, CheckCircle2, PackageCheck, Wallet, Truck, ChevronDown, HelpCircle,
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
@@ -30,6 +30,24 @@ const PRESETS = [
   { id: 'este_anio', label: 'Este año' },
   { id: 'personalizado_mes', label: 'Por mes' },
 ];
+
+/**
+ * Ícono de ayuda con explicación al pasar el mouse o al enfocar con el
+ * teclado. El dashboard lo usa un comerciante, no un contador: cada número
+ * tiene que poder explicarse solo, sin manual y sin saber contabilidad.
+ *
+ * Es un <button> y no un <span> para que se pueda llegar con Tab y para que
+ * el lector de pantalla lo anuncie; el texto vive en aria-label además de
+ * en el tooltip visual, porque un tooltip en CSS no lo lee nadie.
+ */
+function Ayuda({ texto }) {
+  return (
+    <button type="button" className="md-ayuda" aria-label={texto}>
+      <HelpCircle size={13} aria-hidden="true" />
+      <span className="md-ayuda-burbuja" role="tooltip">{texto}</span>
+    </button>
+  );
+}
 
 /** Gs sin depender de que el valor ya venga como number — corta de raíz el
  * bug de "NaN%" en anchos de barra si algún día una API devuelve un
@@ -249,25 +267,32 @@ function useEmbudoPorProducto(ventas, pixel) {
     (pixel?.productos_mas_consultados || []).forEach(p => {
       const clave = normalizar(p.nombre);
       if (!clave) return;
-      mapa.set(clave, { nombre: p.nombre, leads: p.consultas, confirmados: 0 });
+      mapa.set(clave, { nombre: p.nombre, leads: p.consultas, confirmados: 0, compras: 0 });
     });
 
-    // "confirmados" = pedidos ENTREGADOS que incluyeron este producto — mismo
-    // criterio que usa el hero de arriba ("Ventas confirmadas" = entregados),
-    // no pedidos_confirmados en tránsito ni unidades (un pedido de 2 unidades
-    // sigue siendo 1 venta).
+    // Confirmado y comprado NO son lo mismo, y mezclarlos escondía justo el
+    // paso donde se cae la plata: un pedido confirmado que nunca se entrega
+    // no es una venta. Por eso son dos columnas separadas:
+    //   confirmados = el cliente dijo que sí (pedido confirmado)
+    //   compras     = el pedido llegó a sus manos (entregado)
     (ventas?.ranking_productos || []).forEach(p => {
       const clave = normalizar(p.nombre);
       if (!clave) return;
       const previo = mapa.get(clave);
-      if (previo) previo.confirmados = p.entregados;
-      else mapa.set(clave, { nombre: p.nombre, leads: 0, confirmados: p.entregados });
+      if (previo) {
+        previo.confirmados = p.confirmados;
+        previo.compras = p.entregados;
+      } else {
+        mapa.set(clave, { nombre: p.nombre, leads: 0, confirmados: p.confirmados, compras: p.entregados });
+      }
     });
 
     return [...mapa.values()]
-      .filter(p => p.leads > 0 || p.confirmados > 0)
-      .map(p => ({ ...p, conversion: p.leads > 0 ? (p.confirmados / p.leads) * 100 : null }))
-      .sort((a, b) => b.leads - a.leads || b.confirmados - a.confirmados);
+      .filter(p => p.leads > 0 || p.confirmados > 0 || p.compras > 0)
+      // La conversión mide el embudo completo: de los interesados, cuántos
+      // terminaron con el producto en la mano. No contra los confirmados.
+      .map(p => ({ ...p, conversion: p.leads > 0 ? (p.compras / p.leads) * 100 : null }))
+      .sort((a, b) => b.leads - a.leads || b.compras - a.compras);
   }, [ventas, pixel]);
 }
 
@@ -285,9 +310,10 @@ function TablaEmbudoProductos({ filas }) {
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Leads</th>
-            <th>Confirmados</th>
-            <th>Conversión</th>
+            <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu landing: hizo clic en consultar o lo puso en el carrito." /></th>
+            <th>Confirmados <Ayuda texto="De esos interesados, a cuántos les tomaste el pedido y lo confirmaron. Todavía no es una venta cobrada." /></th>
+            <th>Compras <Ayuda texto="De esos pedidos confirmados, cuántos llegaron a manos del cliente. Esta sí es la venta concretada." /></th>
+            <th>Conversión <Ayuda texto="De cada 100 interesados, cuántos terminaron con el producto en la mano. Si es bajo, el producto llama la atención pero algo frena la compra." /></th>
           </tr>
         </thead>
         <tbody>
@@ -296,6 +322,7 @@ function TablaEmbudoProductos({ filas }) {
               <td>{p.nombre}</td>
               <td>{p.leads}</td>
               <td>{p.confirmados}</td>
+              <td>{p.compras}</td>
               <td>{p.conversion === null ? '—' : `${p.conversion.toFixed(1).replace(/\.0$/, '')}%`}</td>
             </tr>
           ))}
@@ -522,10 +549,10 @@ function TablaRendimientoCanal({ filas }) {
         <thead>
           <tr>
             <th>Canal</th>
-            <th>Total</th>
-            <th>Confirmados</th>
-            <th>Entregados</th>
-            <th>Efectividad</th>
+            <th>Total <Ayuda texto="Cuántos pedidos entraron por este canal, sin importar cómo terminaron." /></th>
+            <th>Confirmados <Ayuda texto="De esos pedidos, cuántos el cliente confirmó que quería." /></th>
+            <th>Entregados <Ayuda texto="De esos pedidos, cuántos llegaron a manos del cliente." /></th>
+            <th>Efectividad <Ayuda texto="De cada 100 pedidos que entraron por este canal, cuántos terminaron entregados." /></th>
           </tr>
         </thead>
         <tbody>
@@ -544,11 +571,17 @@ function TablaRendimientoCanal({ filas }) {
   );
 }
 
-/** Más Vendidos: Producto/Unidades/Facturación/Utilidad Neta/% Rentabilidad.
- * Las unidades son las ENTREGADAS, no las de todos los pedidos: es la única
- * cifra comparable con la facturación y la utilidad de la misma fila, que
- * también cuentan solo entregados. `utilidad_neta` ya viene con el
- * prorrateo aplicado (ver pedidosAnalyticsService.getAnalyticsCompleto). */
+/**
+ * Más Vendidos: Producto / Unidades / Venta / Costo / Ganancia / Pérdida /
+ * Rentabilidad — la pregunta que se hace el comerciante, en ese orden.
+ *
+ * El prorrateo de los costos comunes ya viene absorbido dentro de `costo`
+ * desde el backend: acá no aparece ni como columna ni como concepto, porque
+ * es mecanismo de cálculo, no información de negocio.
+ *
+ * `perdida` va aparte y NO se descuenta de la ganancia — descontarla otra
+ * vez sería contar dos veces la misma plata.
+ */
 function TablaMasVendidos({ filas }) {
   if (filas.length === 0) {
     return <p className="md-empty-hint">Todavía no hay pedidos entregados en este período — en cuanto confirmes uno, aparece acá.</p>;
@@ -559,26 +592,26 @@ function TablaMasVendidos({ filas }) {
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Unidades</th>
-            <th>Facturación</th>
-            <th>Prorrateo</th>
-            <th>Utilidad Neta</th>
-            <th>% Rentabilidad</th>
+            <th>Unidades Vendidas<Ayuda texto="Cuántas unidades de este producto llegaron a manos del cliente, o sea de pedidos ya entregados." /></th>
+            <th>Venta <Ayuda texto="La plata que entró por este producto: lo que pagaron los clientes en los pedidos entregados." /></th>
+            <th>Costo <Ayuda texto="Lo que te costó vender este producto: la mercadería más la parte que le corresponde de los gastos de venta y operación (envíos, comisiones, IVA, publicidad y costos fijos)." /></th>
+            <th>Ganancia <Ayuda texto="Lo que te quedó: la venta menos el costo." /></th>
+            <th>Pérdida <Ayuda texto="Plata perdida en mercadería: unidades que no volvieron o volvieron dañadas, valuadas a lo que te costaron. Lo que se devolvió en buen estado no cuenta, porque vuelve al stock y se puede vender de nuevo." /></th>
+            <th>Rentabilidad <Ayuda texto="De cada 100 guaraníes vendidos, cuántos te quedaron de ganancia." /></th>
           </tr>
         </thead>
         <tbody>
           {filas.map(p => (
             <tr key={p.producto_id || p.nombre}>
               <td>{p.nombre}</td>
-              <td>{p.unidades_entregadas ?? '—'}</td>
-              <td>{gs(p.facturacion_total)}</td>
-              {/* La parte de los costos comunes (envíos, comisión, IVA,
-                  Meta/Ads y costos fijos) que le toca a este producto.
-                  Antes se aplicaba dentro de la utilidad pero no se veía,
-                  así que no había forma de auditar el reparto. */}
-              <td>{gs(p.costo_prorrateado)}</td>
-              <td className={p.utilidad_neta < 0 ? 'md-valor-negativo' : ''}>{gs(p.utilidad_neta)}</td>
-              <td className={p.pct_rentabilidad < 0 ? 'md-valor-negativo' : ''}>{p.pct_rentabilidad}%</td>
+              <td>{p.unidades ?? '—'}</td>
+              <td>{gs(p.venta)}</td>
+              <td>{gs(p.costo)}</td>
+              <td className={p.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(p.ganancia)}</td>
+              {/* La pérdida solo grita cuando hay algo que mirar: en la
+                  mayoría de las filas es cero y no debe robar atención. */}
+              <td className={p.perdida > 0 ? 'md-valor-negativo' : 'md-valor-neutro'}>{gs(p.perdida)}</td>
+              <td className={p.rentabilidad < 0 ? 'md-valor-negativo' : ''}>{p.rentabilidad}%</td>
             </tr>
           ))}
         </tbody>
@@ -599,9 +632,9 @@ function TablaCouriers({ filas }) {
         <thead>
           <tr>
             <th>Courier</th>
-            <th>Pedidos Asignados</th>
-            <th>Pedidos Entregados</th>
-            <th>Efectividad</th>
+            <th>Pedidos Asignados <Ayuda texto="Cuántos pedidos se le dieron a este courier para repartir." /></th>
+            <th>Pedidos Entregados <Ayuda texto="De esos, cuántos entregó efectivamente." /></th>
+            <th>Efectividad <Ayuda texto="De cada 100 pedidos que le diste, cuántos entregó. Cuanto más bajo, más problemas de reparto." /></th>
           </tr>
         </thead>
         <tbody>
@@ -733,11 +766,16 @@ export default function MiDashboard() {
   // "Más vendidos" se ordena por unidades entregadas — que es lo que el
   // título promete. La facturación desempata, para que dos productos con
   // las mismas unidades queden ordenados por lo que dejaron.
+  // Los `??` a los nombres viejos no son decoración: si el backend queda un
+  // paso atrás del frontend, filtrar por un campo que todavía no existe
+  // descarta TODAS las filas y el reporte desaparece como si el comercio no
+  // hubiera vendido nada — un vacío que miente en vez de avisar.
   const productosVendidos = useMemo(() => {
-    const lista = (ventas?.ranking_productos || []).filter(p => Number(p.facturacion_total) > 0);
-    return [...lista]
-      .sort((a, b) => (Number(b.unidades_entregadas) || 0) - (Number(a.unidades_entregadas) || 0)
-        || Number(b.facturacion_total) - Number(a.facturacion_total))
+    const venta = (p) => Number(p.venta ?? p.facturacion_total) || 0;
+    const unidades = (p) => Number(p.unidades ?? p.unidades_entregadas) || 0;
+    return (ventas?.ranking_productos || [])
+      .filter(p => venta(p) > 0)
+      .sort((a, b) => unidades(b) - unidades(a) || venta(b) - venta(a))
       .slice(0, 5);
   }, [ventas]);
 
@@ -784,16 +822,23 @@ export default function MiDashboard() {
       ],
       pieFinal: <>Efectividad (Leads a Entregados): <strong>{canalWhatsapp.efectividad}%</strong></>,
     },
+    // Sin "Al carrito": desde la ficha de producto se puede ir derecho a
+    // pagar sin pasar por el carrito, y ese camino no dispara AddToCart. El
+    // paso mostraba 0 al carrito y 1 checkout — imposible de leer y falso:
+    // el carrito no es una etapa obligatoria de este embudo.
     pago: {
       pasos: [
         { label: 'Visitas', valor: pixel?.visitas ?? 0, icono: <Eye size={18} />, tono: 'visitas' },
-        { label: 'Al carrito', valor: pixel?.añadidos_carrito ?? 0, icono: <ShoppingCart size={18} />, tono: 'carrito' },
         { label: 'Checkout', valor: pixel?.checkouts_iniciados ?? 0, icono: <CreditCard size={18} />, tono: 'checkout' },
         { label: 'Pagos Realizados', valor: pagosOnline.pagos_realizados, icono: <Wallet size={18} />, tono: 'contactos' },
       ],
       pieFinal: (
         <>
           % conversión (Visitas a Pagos): <strong>{(pixel?.visitas || 0) > 0 ? ((pagosOnline.pagos_realizados / pixel.visitas) * 100).toFixed(1) : 0}%</strong>
+          <span className="md-funnel-div" />
+          {/* El carrito no se pierde: deja de ser una etapa obligatoria del
+              embudo y pasa acá, donde es un dato más y no rompe la lectura. */}
+          Agregados al carrito: <strong>{pixel?.añadidos_carrito ?? 0}</strong>
           <span className="md-funnel-div" />
           Monto cobrado: <strong>{gs(pagosOnline.monto_pagado)}</strong>
         </>
@@ -846,6 +891,7 @@ export default function MiDashboard() {
                 type="button"
                 className={`md-tab ${periodo === p.id ? 'activo' : ''}`}
                 onClick={() => setPeriodo(p.id)}
+                disabled={loading}
               >
                 {p.label}
               </button>
@@ -853,14 +899,14 @@ export default function MiDashboard() {
           </div>
           <div className="md-selects">
             {periodo === 'personalizado_mes' && (
-              <select className="md-select" value={mes} onChange={e => setMes(Number(e.target.value))}>
+              <select className="md-select" value={mes} onChange={e => setMes(Number(e.target.value))} disabled={loading}>
                 {MESES.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
               </select>
             )}
-            <select className="md-select" value={anio} onChange={e => setAnio(Number(e.target.value))}>
+            <select className="md-select" value={anio} onChange={e => setAnio(Number(e.target.value))} disabled={loading}>
               {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
-            <select className="md-select" value={productoId} onChange={e => setProductoId(e.target.value)}>
+            <select className="md-select" value={productoId} onChange={e => setProductoId(e.target.value)} disabled={loading}>
               <option value="TODOS">Todos los productos</option>
               {productosDisponibles.map(p => (
                 <option key={p.producto_id} value={p.producto_id}>{p.nombre}</option>
@@ -870,37 +916,48 @@ export default function MiDashboard() {
         </div>
       </header>
 
-      {/* ── Resumen Ejecutivo: plata confirmada + los 5 indicadores que
-          antes vivían dispersos (pedidos/ticket ya no se repiten abajo) ── */}
-      <section className="md-hero">
-        <div className="md-hero-top">
-          <span className="md-eyebrow">Facturación Real · {rangoLabel}</span>
-          <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
-        </div>
-        <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
-      </section>
+      <div className={`md-bento ${loading ? 'md-updating' : ''}`}>
+        {loading && ventas && (
+          <div className="md-updating-overlay">
+            <Loader size={20} className="md-spin" />
+            <span>Actualizando datos...</span>
+          </div>
+        )}
+        
+        {/* ── Resumen Ejecutivo: plata confirmada + los 5 indicadores que
+            antes vivían dispersos (pedidos/ticket ya no se repiten abajo) ── */}
+        <section className="md-hero md-span-4">
+          <div className="md-hero-top">
+            <span className="md-eyebrow">Facturación Real · {rangoLabel}</span>
+            <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
+          </div>
+          <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
+        </section>
 
-      <section className="md-card">
-        <h3 className="md-card-title">Resumen Ejecutivo</h3>
+        <section className="md-card">
+          <h3 className="md-card-title">
+          Resumen Ejecutivo
+          <Ayuda texto="Los números principales del período que elegiste arriba. Todo lo demás del dashboard explica de dónde salen estos." />
+        </h3>
         <div className="md-rentabilidad-grid">
           <div className="md-rent-item">
-            <span className="md-rent-label">Pedidos</span>
+            <span className="md-rent-label">Pedidos <Ayuda texto="Cuántos pedidos llegaron a manos del cliente en este período." /></span>
             <span className="md-rent-valor">{funnel.entregados}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Ticket Promedio</span>
+            <span className="md-rent-label">Ticket Promedio <Ayuda texto="Cuánto gastó en promedio cada cliente por pedido entregado." /></span>
             <span className="md-rent-valor">{gs(kpis.ticket_promedio)}</span>
           </div>
           <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Utilidad Neta</span>
+            <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: la facturación menos todos los costos y gastos del período." /></span>
             <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Margen</span>
+            <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes que facturaste, cuántos te quedaron limpios." /></span>
             <span className="md-rent-valor">{kpis.pct_margen_neto}%</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Conversión</span>
+            <span className="md-rent-label">Conversión <Ayuda texto="De cada 100 pedidos que entraron, cuántos lograste confirmar." /></span>
             <span className="md-rent-valor">{funnel.tasa_confirmacion}%</span>
           </div>
         </div>
@@ -911,27 +968,31 @@ export default function MiDashboard() {
 
       {/* ── Rentabilidad: agregado del período + detalle por producto ──── */}
       <section className="md-card md-rentabilidad-card">
-        <h3 className="md-card-title">Rentabilidad</h3>
+        <h3 className="md-card-title">
+          Rentabilidad
+          <Ayuda texto="La cuenta completa del período, de arriba hacia abajo: arrancás con lo que facturaste y le vas descontando cada costo hasta llegar a lo que te quedó." />
+        </h3>
         {/* Mismo orden y mismos nombres que la planilla del comercio, para
             que la cuenta se pueda seguir de arriba a abajo:
             Facturación − Meta − Producto − Envíos − Costos Fijos − IVA
             (− Comisión, si hubo) = Utilidad Neta. */}
         <div className="md-rentabilidad-grid">
           <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Facturación Real</span>
+            <span className="md-rent-label">Facturación Real <Ayuda texto="Toda la plata que entró por pedidos entregados en este período. De acá se descuenta todo lo de abajo." /></span>
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Meta <small>(ads)</small></span>
+            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en publicidad. Sale de Costos y Gastos, de las categorías Publicidad y Marketing." /></span>
             <span className="md-rent-valor">{gs(gastoPublicidad)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Producto</span>
+            <span className="md-rent-label">Producto <Ayuda texto="Lo que te costó la mercadería que vendiste, al precio que te costó cuando la vendiste." /></span>
             <span className="md-rent-valor">{gs(kpis.costo_mercaderia_entregada)}</span>
           </div>
           <div className="md-rent-item">
             <span className="md-rent-label">
               Envíos
+              <Ayuda texto="Lo que pagaste de flete por los pedidos que se entregaron." />
               {kpis.costo_logistico_total > (kpis.costo_logistico_entregados ?? kpis.costo_logistico_total) && (
                 <small> (Gs {Math.round(kpis.costo_logistico_total).toLocaleString('es-PY')} con no entregados)</small>
               )}
@@ -939,21 +1000,24 @@ export default function MiDashboard() {
             <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados ?? kpis.costo_logistico_total)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Costos Fijos</span>
+            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos del negocio que se pagan vendas o no: alquiler, salarios, servicios. Se cargan en Costos y Gastos." /></span>
             <span className="md-rent-valor">{gs(costosFijos)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">IVA</span>
+            <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. No es tuyo: lo cobrás y lo entregás." /></span>
             <span className="md-rent-valor">{gs(kpis.iva_facturado_total)}</span>
           </div>
           {kpis.costo_comision_total > 0 && (
             <div className="md-rent-item">
-              <span className="md-rent-label">Comisión</span>
+              <span className="md-rent-label">Comisión <Ayuda texto="Lo que se queda el medio de pago por cobrarte." /></span>
               <span className="md-rent-valor">{gs(kpis.costo_comision_total)}</span>
             </div>
           )}
           <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Utilidad Neta <small>({kpis.pct_margen_neto}%)</small></span>
+            <span className="md-rent-label">
+              Utilidad Neta <small>({kpis.pct_margen_neto}%)</small>
+              <Ayuda texto="Lo que te quedó limpio después de descontar todo lo de arriba. Si está en rojo, el período cerró en pérdida." />
+            </span>
             <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
           </div>
         </div>
@@ -968,12 +1032,20 @@ export default function MiDashboard() {
           </details>
         )}
         <p className="md-card-title-sub md-subsection-label">Más Vendidos</p>
+        <p className="md-empty-hint md-subsection-ayuda">
+          Cuánto vendiste, cuánto te costó, cuánto ganaste y cuánto perdiste con
+          cada producto. Pasá el mouse por el signo de pregunta de cada columna
+          para ver qué significa.
+        </p>
         <TablaMasVendidos filas={productosVendidos} />
       </section>
 
       {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
       <section className="md-card md-funnel-card">
-        <h3 className="md-card-title">Embudo de Conversión</h3>
+        <h3 className="md-card-title">
+          Embudo de Conversión
+          <Ayuda texto="El camino que recorre una persona hasta comprarte. En cada paso se pierde gente: el porcentaje entre paso y paso te muestra dónde se te caen más." />
+        </h3>
         <div className="md-tabs md-tabs-embudo">
           {EMBUDOS_TABS.map(t => (
             <button
@@ -992,12 +1064,18 @@ export default function MiDashboard() {
       {/* ── Rendimiento por canal + Couriers: comparación, no detalle ──── */}
       <div className="md-cols-2">
         <section className="md-card">
-          <h3 className="md-card-title">Rendimiento por canal</h3>
+          <h3 className="md-card-title">
+            Rendimiento por canal
+            <Ayuda texto="Por dónde te entran los pedidos y cuál de esos caminos te funciona mejor." />
+          </h3>
           <TablaRendimientoCanal filas={rendimientoCanales} />
         </section>
 
         <section className="md-card">
-          <h3 className="md-card-title"><Truck size={15} /> Desempeño Couriers</h3>
+          <h3 className="md-card-title">
+            <Truck size={15} /> Desempeño Couriers
+            <Ayuda texto="Qué tan bien está entregando cada repartidor los pedidos que le asignaste." />
+          </h3>
           <TablaCouriers filas={couriers} />
         </section>
       </div>
@@ -1008,6 +1086,7 @@ export default function MiDashboard() {
           <h3 className="md-card-title">
             Leads vs. Confirmados por producto
             <span className="md-card-title-sub">pixel + confirmado a mano</span>
+            <Ayuda texto="Compara la intención de compra en la landing (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto." />
           </h3>
           <TablaEmbudoProductos filas={embudoProductosVisibles} />
           {embudoProductos.length > 5 && (
@@ -1018,7 +1097,11 @@ export default function MiDashboard() {
         </section>
 
         <section className="md-card">
-          <h3 className="md-card-title">Más consultados <span className="md-card-title-sub">pixel</span></h3>
+          <h3 className="md-card-title">
+            Más consultados
+            <span className="md-card-title-sub">pixel</span>
+            <Ayuda texto="Los productos que más miran en tu landing. Si uno se consulta mucho pero vende poco, algo lo está frenando: precio, fotos o falta de stock." />
+          </h3>
           {productosConsultados.length === 0 ? (
             <p className="md-empty-hint">Todavía no hay clics en "Consultar" en este período.</p>
           ) : (
@@ -1062,6 +1145,8 @@ export default function MiDashboard() {
           Ver Centro de Inteligencia Comercial completo <ArrowRight size={14} />
         </Link>
       </div>
+      </div>
     </div>
   );
 }
+

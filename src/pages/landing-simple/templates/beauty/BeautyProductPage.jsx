@@ -305,7 +305,7 @@ export default function BeautyProductPage({
             <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
             {beneficios.length === 0 ? (
               <p className="bpp-vacio">
-                Se cargan en <b>Marketing &amp; Embudo</b> del producto, o acá desde la pestaña <b>Ficha</b>.
+                Se cargan en <b>Vista del producto</b>.
               </p>
             ) : (
               <div className="bpp-beneficios">
@@ -331,7 +331,7 @@ export default function BeautyProductPage({
           <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} vars={vars} centrado />
           {ingredientes.length === 0 ? (
             <p className="bpp-vacio">
-              Se cargan en <b>Mis Productos → Ficha del rubro</b> (Beauty), y sirven en todas tus landings.
+              Se cargan en <b>Mis Productos → Vista del producto</b> (Beauty), y sirven en todas tus landings.
             </p>
           ) : (
             <div className="bpp-ingredientes">
@@ -356,7 +356,7 @@ export default function BeautyProductPage({
             <TituloSeccion numero={7} texto={ficha.resultados.titulo} vars={vars} centrado />
             {resultados.length === 0 ? (
               <p className="bpp-vacio">
-                Cargá los testimonios en <b>Mis Productos → Ficha del rubro</b>, o acá desde la pestaña <b>Ficha</b>.
+                Cargá los testimonios en <b>Mis Productos → Vista del producto</b>.
               </p>
             ) : (
               <div className="bpp-resultados">
@@ -395,7 +395,7 @@ export default function BeautyProductPage({
           <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} vars={vars} centrado />
           {pasos.length === 0 ? (
             <p className="bpp-vacio">
-              La rutina paso a paso se carga en <b>Mis Productos → Ficha del rubro</b> (Beauty).
+              La rutina paso a paso se carga en <b>Mis Productos → Vista del producto</b> (Beauty).
             </p>
           ) : (
             <div className="bpp-pasos">
@@ -434,7 +434,7 @@ export default function BeautyProductPage({
         <section className="bpp-seccion bpp-wrap">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
           {item.faq.length === 0 ? (
-            <p className="bpp-vacio">Las preguntas se cargan en la pestaña <b>Detalles</b> de este producto.</p>
+            <p className="bpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="bpp-faq-grid">
               {item.faq.map((f, i) => (

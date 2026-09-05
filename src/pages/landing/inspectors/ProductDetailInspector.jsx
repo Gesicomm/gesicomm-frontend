@@ -74,7 +74,7 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
   useEffect(() => {
     if (!productoId) return;
     recargarOfertas();
-    productService.buscar({}).then(res => {
+    productService.buscar({ sin_limite: true }).then(res => {
       const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
       setProductosDisponibles(prods.filter(p => p.activo !== false && String(p.id) !== String(productoId)));
       const actual = prods.find(p => String(p.id) === String(productoId));

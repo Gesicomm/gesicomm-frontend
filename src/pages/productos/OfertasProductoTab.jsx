@@ -5,6 +5,8 @@ import { ofertaService } from '../../services/ofertaService';
 import OfertaImagenPicker, { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import { productService } from '../../services/productService';
 import { comboAdminService } from '../../services/comboAdminService';
+import ProductPicker from '../landing/ProductPicker';
+import '../landing/landing.css';
 import { getMediaUrl } from '../../services/api';
 import { verificarSesion } from '../../utils/auth';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
@@ -119,7 +121,11 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
   useEffect(() => {
     cargar();
-    productService.buscar({}).then(res => {
+    // `sin_limite` no es opcional acá: sin él, ProductoService.buscar aplica
+    // su paginación por defecto (limit 10) y el selector de productos del
+    // combo mostraba solo los 10 primeros del catálogo, como si fueran los
+    // únicos que existen.
+    productService.buscar({ sin_limite: true }).then(res => {
       const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
       setProductosDisponibles(prods.filter(p => p.activo !== false));
     }).catch(() => {});
@@ -375,6 +381,57 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
    * Por eso acá no hay dónde elegirlo ni cambiarlo — para armar un pack de
    * otro producto hay que entrar a ese producto.
    */
+  /**
+   * El catálogo, en la forma que espera ProductPicker (el mismo selector
+   * visual que usa el editor de la landing). Se arma sobre la respuesta de
+   * productService — no sobre vitrinaService, que no expone `precio_costo`
+   * y dejaría el análisis de sensibilidad de abajo calculando con costo 0.
+   *
+   * `combos: []` a propósito: un componente de oferta apunta siempre a un
+   * producto (OfertaComponente.producto_id), no a otro combo.
+   */
+  const catalogoPicker = useMemo(() => ({
+    productos: productosDisponibles.map(p => ({
+      id: p.id,
+      nombre: p.nombre,
+      imagen: p.imagen || p.imagenes?.[0]?.url || p.imagenes?.[0] || null,
+      precio_efectivo: Number(p.precio_efectivo ?? p.precio_base) || 0,
+      stock: p.cantidad_disponible ?? p.stock ?? null,
+      categoria: p.categoria?.nombre || (typeof p.categoria === 'string' ? p.categoria : null),
+      marca: p.marca?.nombre || (typeof p.marca === 'string' ? p.marca : null),
+      destacado: p.destacado,
+    })),
+    combos: [],
+  }), [productosDisponibles]);
+
+  // Los componentes ya elegidos, en el Map que ProductPicker usa para saber
+  // qué tarjetas van marcadas.
+  const seleccionPicker = useMemo(() => {
+    const map = new Map();
+    (form.componentes || []).forEach(c => {
+      if (c.producto_id) map.set(`producto:${Number(c.producto_id)}`, { id: Number(c.producto_id), tipo: 'producto' });
+    });
+    return map;
+  }, [form.componentes]);
+
+  /** Marcar/desmarcar una tarjeta agrega o saca esa fila del combo. Al
+   *  agregar arranca en cantidad 1 y sin descuento; al sacar, se pierde lo
+   *  que se hubiera cargado en esa fila (es lo mismo que hacía el botón de
+   *  borrar de siempre). */
+  function togglePicker(item) {
+    const id = Number(item.id);
+    setForm(f => {
+      const yaEsta = f.componentes.some(c => Number(c.producto_id) === id);
+      if (yaEsta) {
+        return { ...f, componentes: f.componentes.filter(c => Number(c.producto_id) !== id) };
+      }
+      // Se reemplazan las filas vacías que hayan quedado de un "+" previo,
+      // para no dejar una fila sin producto colgando debajo.
+      const sinVacias = f.componentes.filter(c => c.producto_id);
+      return { ...f, componentes: [...sinVacias, { producto_id: id, cantidad: 1, descuento_porcentaje: 0 }] };
+    });
+  }
+
   const esPack = form.estrategia === 'normal';
 
   const productoBase = useMemo(() => {
@@ -762,33 +819,38 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 </div>
               </div>
             ) : (
-              form.componentes.map((c, i) => {
+              <>
+              <ProductPicker
+                catalogo={catalogoPicker}
+                seleccion={seleccionPicker}
+                onToggle={togglePicker}
+                max={20}
+                mostrarLista={false}
+                /* Por encima del modal de ofertas (.modal-overlay, z-index 1000). */
+                zIndexModal={1100}
+              />
+              {form.componentes.filter(c => c.producto_id).length === 0 && (
+                <p className="field-hint">Todavía no elegiste ningún producto para el combo.</p>
+              )}
+              {form.componentes.map((c, i) => {
                 const esAncla = c.producto_id && Number(c.producto_id) === Number(productoId);
-                const selectedIdsElsewhere = form.componentes
-                  .filter((comp, idx) => idx !== i && comp.producto_id)
-                  .map(comp => Number(comp.producto_id));
-                
-                const isAnclaSelectedElsewhere = selectedIdsElsewhere.includes(Number(productoId));
 
                 return (
                 <div key={i} className="form-group" style={{ flexDirection: 'row', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
-                  <select
-                    value={c.producto_id}
-                    onChange={e => updateComponente(i, 'producto_id', e.target.value)}
-                    style={{ flex: 2 }}
-                    required
-                  >
-                    <option value="">-- Producto --</option>
-                    {(!isAnclaSelectedElsewhere || esAncla) && (
-                      <option value={productoId}>{productoNombre} (este producto)</option>
-                    )}
-                    {productosDisponibles
-                      .filter(p => p.id !== Number(productoId))
-                      .filter(p => !selectedIdsElsewhere.includes(p.id))
-                      .map(p => (
-                        <option key={p.id} value={p.id}>{p.nombre}</option>
-                    ))}
-                  </select>
+                  {/* Antes acá había un <select> con TODO el catálogo en una
+                      lista plana, sin imagen ni filtros: con muchos productos
+                      era imposible encontrar uno. La elección pasó al
+                      ProductPicker de arriba (el mismo del editor de landing)
+                      y esta fila solo muestra qué producto quedó elegido. */}
+                  <div style={{ flex: 2, display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                    <Layers size={14} style={{ opacity: 0.5, flexShrink: 0 }} />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {nombreProducto(c.producto_id)}
+                      {esAncla && (
+                        <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: '6px' }}>(este producto)</span>
+                      )}
+                    </span>
+                  </div>
                   <input
                     type="number"
                     min="1"
@@ -817,7 +879,8 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                   </button>
                 </div>
                 );
-              })
+              })}
+              </>
             )}
             {!esPack && (
               <p className="field-hint">
@@ -947,37 +1010,64 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                       </div>
 
                       {/* 2. Simulador (Slider) */}
-                      <div style={{ marginTop: '2rem', padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', borderRadius: '6px', border: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
-                        <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem' }}>SIMULAR DESCUENTO SOBRE EL PRECIO BASE</div>
+                      <div style={{
+                        marginTop: '1.75rem',
+                        padding: '1.25rem 1.5rem',
+                        background: 'var(--color-surface-2)',
+                        borderRadius: '12px',
+                        border: '1px solid var(--color-border)',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.02)'
+                      }}>
+                        <div className="form-section-title" style={{ fontSize: '0.75rem', marginBottom: '1rem', border: 'none', margin: 0, padding: 0 }}>
+                          SIMULAR DESCUENTO SOBRE EL PRECIO BASE
+                        </div>
                         
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem', marginBottom: '1.25rem' }}>
                           <input 
                             type="number"
                             min="0" max="100"
                             value={descuentoSimulado}
                             onChange={(e) => setDescuentoSimulado(Number(e.target.value))}
-                            style={{ width: '80px', padding: '0.5rem', textAlign: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)' }}
+                            style={{
+                              width: '90px',
+                              padding: '0.55rem 0.75rem',
+                              textAlign: 'center',
+                              fontSize: '1.1rem',
+                              fontWeight: 'bold',
+                              color: 'var(--color-primary)',
+                              background: 'var(--color-surface)',
+                              border: '1.5px solid var(--color-border)',
+                              borderRadius: '8px'
+                            }}
                           />
-                          <span style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--primary)' }}>%</span>
+                          <span style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--color-primary)' }}>%</span>
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '1rem 1.25rem',
+                          background: 'var(--color-surface)',
+                          borderRadius: '10px',
+                          border: '1px solid var(--color-border)'
+                        }}>
                           <div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Precio final</div>
-                            <div style={{ fontWeight: 'bold' }}>{formatMoney(simulatedPrice)}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Precio final</div>
+                            <div style={{ fontWeight: '700', fontSize: '1.05rem', marginTop: '0.2rem', color: 'var(--color-fg)' }}>{formatMoney(simulatedPrice)}</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Utilidad</div>
-                            <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{formatMoney(simulatedUtility)}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Utilidad</div>
+                            <div style={{ fontWeight: '700', fontSize: '1.05rem', marginTop: '0.2rem', color: healthSimulated.color }}>{formatMoney(simulatedUtility)}</div>
                           </div>
                           <div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--fg-muted)', textTransform: 'uppercase' }}>Margen</div>
-                            <div style={{ fontWeight: 'bold', color: healthSimulated.color }}>{fmtPct(simulatedMargin)}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Margen</div>
+                            <div style={{ fontWeight: '700', fontSize: '1.05rem', marginTop: '0.2rem', color: healthSimulated.color }}>{fmtPct(simulatedMargin)}</div>
                           </div>
                         </div>
 
                         {descuentoSimulado > 0 && (
-                          <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                          <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
                             <button type="button" className="btn-primary" onClick={() => {
                               setForm(f => ({ ...f, precio: simulatedPrice }));
                               setDescuentoSimulado(0);
@@ -986,7 +1076,6 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                             </button>
                           </div>
                         )}
-
                         {/* 4. Mini Gráfico CSS */}
                         <div style={{ marginTop: '2rem', position: 'relative', height: '100px', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderLeft: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', margin: '1rem 1rem 2rem 2rem' }}>
                            <div style={{ position: 'absolute', top: '-20px', left: '-20px', fontSize: '0.65rem', color: 'var(--fg-muted)' }}>Utilidad</div>

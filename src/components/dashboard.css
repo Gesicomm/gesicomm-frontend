@@ -556,16 +556,16 @@
 
 .btn-primary {
     display: flex; align-items: center; gap: 0.4rem;
-    background: linear-gradient(135deg, #3d5fa3, #2e4a85);
-    color: var(--color-primary-fg);
+    background: linear-gradient(135deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 82%, #000));
+    color: var(--color-primary-fg, #ffffff);
     border: none; border-radius: 8px;
     padding: 0.55rem 1.1rem;
     font-size: 0.875rem; font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(61, 95, 163, 0.3);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--color-primary) 30%, transparent);
 }
-.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(61, 95, 163, 0.4); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px color-mix(in srgb, var(--color-primary) 40%, transparent); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 .btn-secondary {

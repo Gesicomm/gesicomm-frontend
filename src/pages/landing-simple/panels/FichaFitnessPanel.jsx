@@ -16,7 +16,7 @@ const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-f
  *
  * Dos modos, el mismo componente:
  *   modo="producto" → edita content.productos["<id>"].ficha. Cada sección
- *     puede estar heredada (de la landing o de Marketing & Embudo del
+ *     puede estar heredada (de la landing o de Vista del producto)
  *     producto) o escrita acá. El primer cambio sobre una sección heredada
  *     la clona tal cual se está viendo y la vuelve propia — el comercio
  *     nunca arranca de un formulario en blanco ni pierde lo que veía.
@@ -86,8 +86,8 @@ export default function FichaFitnessPanel({
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-fg/40 leading-relaxed">
         {esProducto
-          ? 'La ficha toma lo que ya cargaste en Marketing & Embudo del producto. Lo que escribas acá vale solo para este producto en esta landing.'
-          : 'Estos valores los heredan todas las fichas de producto de esta landing. Cada producto puede pisarlos desde su propia pestaña Ficha.'}
+          ? 'La ficha toma lo que ya cargaste en Vista del producto. Lo que escribas acá vale solo para este producto en esta landing.'
+          : 'Estos valores los heredan todas las fichas de producto de esta landing. Cada producto puede pisarlos desde su Vista del producto.'}
       </p>
 
       {SECCIONES_FICHA.map(sec => {
@@ -378,7 +378,7 @@ const CAMPOS = {
         <label className={ETIQUETA}>Cintillo de cada paquete</label>
         {packs.length === 0 ? (
           <p className="text-[11px] text-fg/35 leading-relaxed">
-            Todavía no hay paquetes. Se crean en la pestaña <b className="text-fg/60">Checkout y Ofertas</b> como
+            Todavía no hay paquetes. Se crean en la pestaña <b className="text-fg/60">Venta</b> como
             “Paquete — más unidades del mismo producto”, y acá les ponés el cintillo (“Más vendido”, “Mejor valor”).
           </p>
         ) : (
@@ -531,8 +531,7 @@ const CAMPOS = {
     <>
       <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.faqTitulo} onChange={v => set({ titulo: v })} />
       <p className="text-[11px] text-fg/35 leading-relaxed">
-        Las preguntas se cargan en la pestaña <b className="text-fg/60">Detalles</b> de este producto, o en
-        Marketing &amp; Embudo si querés que valgan para todas las landings.
+        Las preguntas se cargan en <b className="text-fg/60">Vista del producto</b>.
       </p>
     </>
   ),

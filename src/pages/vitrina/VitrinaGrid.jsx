@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
-  ChevronRight, Box,
+  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket,
 } from 'lucide-react';
 import { vitrinaService } from '../../services/vitrinaService';
+import CuponesModal from './CuponesModal';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
+import { verificarSesion } from '../../utils/auth';
 import './vitrina.css';
 
 /* ─── Constantes ─────────────────────────────────────────────────────── */
@@ -16,6 +18,7 @@ const FILTROS = [
   { valor: 'todos',    label: 'Todos' },
   { valor: 'producto', label: 'Productos' },
   { valor: 'combo',    label: 'Combos' },
+  { valor: 'mios',     label: 'Mis productos' },
 ];
 
 const ORDEN_OPTIONS = [
@@ -128,10 +131,13 @@ function PrecioEditable({ item, onGuardar }) {
 }
 
 /* ─── Componente: card ────────────────────────────────────────────────── */
-function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion }) {
+function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro }) {
   const esCombo = item.tipo === 'combo';
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
+  const esAdmin = usuarioActual?.rol === 'administrador';
+  const esMio = filtro === 'mios' || item.creado_por == null || (usuarioActual?.id != null && Number(item.creado_por) === Number(usuarioActual.id));
+  const esEditable = item.tipo === 'producto' && (esAdmin || esMio);
 
   return (
     <div
@@ -225,15 +231,31 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
 
         <div className="vit-card-divider" />
 
-        {/* Acción ghost: Analizar margen */}
-        <button
-          className="vit-card-action"
-          onClick={(e) => { e.stopPropagation(); onVerSensibilidad(item); }}
-        >
-          <BarChart3 size={13} />
-          Analizar margen
-          <ChevronRight size={13} className="vit-card-action-arrow" />
-        </button>
+        {/* Acciones principales de la tarjeta */}
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="vit-card-action"
+            onClick={(e) => { e.stopPropagation(); onVerSensibilidad(item); }}
+          >
+            <BarChart3 size={13} />
+            Analizar margen
+            <ChevronRight size={13} className="vit-card-action-arrow" />
+          </button>
+
+          {esEditable && (
+            <button
+              type="button"
+              className="vit-card-action"
+              style={{ flexShrink: 0, color: 'var(--color-primary, #2563eb)', fontWeight: 600 }}
+              onClick={(e) => { e.stopPropagation(); onEditarProducto(item.id); }}
+              title="Editar producto"
+            >
+              <Edit2 size={13} />
+              Editar
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -244,7 +266,6 @@ export default function VitrinaGrid() {
   const [items, setItems] = useState([]);
   const [cargando, setCargando]   = useState(true);
   const [error, setError]         = useState(null);
-  const [filtro, setFiltro]       = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('');
   const [filtroProveedor, setFiltroProveedor] = useState('');
   const [busqueda, setBusqueda]   = useState('');
@@ -252,10 +273,18 @@ export default function VitrinaGrid() {
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
   const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+
+  const [searchParams] = useSearchParams();
+  const [filtro, setFiltro] = useState(() => searchParams.get('filtro') === 'mios' ? 'mios' : 'todos');
   
   const [page, setPage] = useState(1);
   const [seleccionados, setSeleccionados] = useState(new Set());
   const navigate = useNavigate();
+
+  useEffect(() => {
+    verificarSesion().then(u => setUsuarioActual(u));
+  }, []);
   
   const toggleSeleccion = (item) => {
     setSeleccionados(prev => {
@@ -280,12 +309,30 @@ export default function VitrinaGrid() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  // El selector de productos del cupón necesita el catálogo COMPLETO, no la
+  // página de 10 que muestra la grilla. Se pide recién al abrir el modal
+  // para no cargarlo en cada visita a la vitrina.
+  const [cuponesAbierto, setCuponesAbierto] = useState(false);
+  const [catalogoCompleto, setCatalogoCompleto] = useState({ productos: [], combos: [] });
+
+  async function abrirCupones() {
+    setCuponesAbierto(true);
+    try {
+      setCatalogoCompleto(await vitrinaService.catalogo());
+    } catch {
+      setCatalogoCompleto({ productos: [], combos: [] });
+    }
+  }
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
+      const solamenteMios = filtro === 'mios';
+      const tipoQuery = filtro === 'mios' ? 'todos' : filtro;
+
       const data = await vitrinaService.catalogoPaginado({
-        page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: filtro
+        page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: tipoQuery, solamenteMios
       });
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
@@ -322,12 +369,11 @@ export default function VitrinaGrid() {
 
   /* Items ya filtrados por el backend */
   const itemsFiltrados = items;
-  const totalMostrado = items.length;
 
   return (
     <div className="vit-page">
       {/* ── Encabezado ── */}
-      <div className="vit-header">
+      <div className="vit-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div className="vit-header-text">
           <h1 className="vit-title">Mi catálogo</h1>
           <p className="vit-subtitle">
@@ -338,6 +384,25 @@ export default function VitrinaGrid() {
               <Package size={11} /> {totalItems} resultados
             </span>
           </div>
+        </div>
+
+        <div className="vit-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={abrirCupones}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Ticket size={16} /> Generar cupón
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => navigate('/products/nuevo')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Plus size={16} /> Agregar Mis Productos
+          </button>
         </div>
       </div>
 
@@ -373,7 +438,7 @@ export default function VitrinaGrid() {
           />
         </div>
 
-        {/* Filtros de tipo */}
+        {/* Filtros de tipo y filtro de Mis Productos */}
         <div className="vit-filters">
           {FILTROS.map(f => (
             <button
@@ -381,6 +446,7 @@ export default function VitrinaGrid() {
               className={`vit-filter-btn ${filtro === f.valor ? 'active' : ''}`}
               onClick={() => setFiltro(f.valor)}
             >
+              {f.valor === 'mios' && <UserCheck size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.label}
             </button>
           ))}
@@ -447,11 +513,13 @@ export default function VitrinaGrid() {
           <p>
             {busqueda
               ? `Sin resultados para "${busqueda}"`
-              : filtro === 'combo'
-                ? 'Todavía no hay combos disponibles.'
-                : filtro === 'producto'
-                  ? 'Todavía no hay productos disponibles.'
-                  : 'Todavía no hay productos ni combos disponibles.'}
+              : filtro === 'mios'
+                ? 'No tenés productos cargados por tu cuenta.'
+                : filtro === 'combo'
+                  ? 'Todavía no hay combos disponibles.'
+                  : filtro === 'producto'
+                    ? 'Todavía no hay productos disponibles.'
+                    : 'Todavía no hay productos ni combos disponibles.'}
           </p>
         </div>
       ) : (
@@ -464,6 +532,9 @@ export default function VitrinaGrid() {
               item={item}
               onGuardarPrecio={handleGuardarPrecio}
               onVerSensibilidad={setSeleccionSensibilidad}
+              usuarioActual={usuarioActual}
+              onEditarProducto={(id) => navigate(`/products/${id}/editar`)}
+              filtro={filtro}
             />
           ))}
         </div>
@@ -491,6 +562,12 @@ export default function VitrinaGrid() {
           onClose={() => setSeleccionSensibilidad(null)}
         />
       )}
+
+      <CuponesModal
+        abierto={cuponesAbierto}
+        onCerrar={() => setCuponesAbierto(false)}
+        catalogo={catalogoCompleto}
+      />
     </div>
   );
 }

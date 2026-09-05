@@ -69,7 +69,12 @@ export default function TechProductPage({
   const precioUnitario = variante?.precio_efectivo ?? item?.precio;
   const precio = pack ? (pack.precio_efectivo ?? pack.precio) : precioUnitario;
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
+  // Si la variante elegida tiene fotos propias, manda la variante: es la que
+  // el cliente está mirando. Si no cargaron ninguna, se sigue viendo la
+  // galería del producto en vez de dejar el escenario vacío.
+  const galeria = variante?.imagenes?.length ? variante.imagenes : (item?.imagenes || []);
+
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, varianteId]);
 
   useEffect(() => {
     if (!videoAbierto) return undefined;
@@ -100,7 +105,7 @@ export default function TechProductPage({
   // botón. Sin handler, el botón directamente no se muestra.
   const agregar = () => onAgregar && onAgregar({ variante, pack, precio });
 
-  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
+  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
 
   // Mismo criterio que la ficha de Fitness: el CSS no puede medir el texto
   // y los nombres del catálogo son descriptivos, no titulares cortos.
@@ -155,15 +160,15 @@ export default function TechProductPage({
             precio y el botón más abajo del pliegue. En pantallas angostas
             vuelven a una fila horizontal debajo (ver el CSS). */}
         <div className="tpp-galeria">
-          {item.imagenes.length > 1 && (
+          {galeria.length > 1 && (
             <div className="tpp-miniaturas" role="tablist" aria-label="Fotos del producto">
-              {item.imagenes.map((url, i) => (
+              {galeria.map((url, i) => (
                 <button
                   type="button"
                   key={url + i}
                   role="tab"
                   aria-selected={i === indiceImagen}
-                  aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
+                  aria-label={`Foto ${i + 1} de ${galeria.length}`}
                   className={`tpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
@@ -283,6 +288,11 @@ export default function TechProductPage({
                     disabled={v.stock != null && v.stock <= 0}
                     title={v.stock != null && v.stock <= 0 ? 'Sin stock' : undefined}
                   >
+                    {/* La foto de la variante, si el comercio la cargó: se
+                        elige mucho más rápido un color viéndolo que leyéndolo. */}
+                    {v.imagenes?.[0] && (
+                      <img className="tpp-variante-foto" src={getMediaUrl(v.imagenes[0])} alt="" loading="lazy" />
+                    )}
                     {v.nombre}
                     {v.precio_efectivo != null && <small>{formatPrecio(v.precio_efectivo)}</small>}
                   </button>
@@ -364,8 +374,7 @@ export default function TechProductPage({
           <div className="tpp-wrap">
             {ficha.beneficios.items.length === 0 ? (
               <p className="tpp-vacio" style={{ marginBlock: 28 }}>
-                Beneficios activos y sin contenido. Se cargan en <b>Marketing &amp; Embudo</b> del producto,
-                o acá desde la pestaña <b>Ficha</b>.
+                Beneficios activos y sin contenido. Se cargan en <b>Vista del producto</b>.
               </p>
             ) : (
               <div className="tpp-beneficios">
@@ -426,7 +435,7 @@ export default function TechProductPage({
           <div className="tpp-wrap">
             <TituloSeccion numero={8} texto={ficha.multimedia.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
             {multimedia.length === 0 ? (
-              <p className="tpp-vacio">Agregá imágenes o videos adicionales desde la pestaña <b>Ficha</b>.</p>
+              <p className="tpp-vacio">Agregá imágenes o videos adicionales desde <b>Vista del producto</b>.</p>
             ) : (
               <div className="tpp-media">
                 {multimedia.map((m, i) => {
@@ -506,7 +515,7 @@ export default function TechProductPage({
           <TituloSeccion numero={9} texto={ficha.comparativa.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
           {comparativa.length === 0 ? (
             <p className="tpp-vacio">
-              La comparativa se carga en <b>Mis Productos</b> (rubro Tecnología) o acá desde la pestaña <b>Ficha</b>.
+              La comparativa se carga en <b>Mis Productos → Vista del producto</b> (rubro Tecnología).
             </p>
           ) : (
             <div className="tpp-comparativa">
@@ -566,7 +575,7 @@ export default function TechProductPage({
           <div className="tpp-wrap">
             <TituloSeccion numero={10} texto={ficha.resenas.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
             {ficha.resenas.items.length === 0 ? (
-              <p className="tpp-vacio">Cargá las opiniones de tus clientes desde la pestaña <b>Ficha</b>.</p>
+              <p className="tpp-vacio">Cargá las opiniones de tus clientes desde <b>Vista del producto</b>.</p>
             ) : (
               <div className="tpp-resenas">
                 {ficha.resenas.items.map((o, i) => (
@@ -593,7 +602,7 @@ export default function TechProductPage({
         <section className="tpp-seccion tpp-wrap" id="tpp-faq">
           <TituloSeccion numero={11} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
           {item.faq.length === 0 ? (
-            <p className="tpp-vacio">Las preguntas se cargan en la pestaña <b>Detalles</b> de este producto.</p>
+            <p className="tpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="tpp-faq-grid">
               {item.faq.map((f, i) => (

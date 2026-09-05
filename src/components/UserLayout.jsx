@@ -195,8 +195,6 @@ const UserLayout = ({ children }) => {
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Vitrina B2B', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
               
-              {renderLink({ path: '/products', label: 'Mis Productos', icon: <Package size={14} />, prefix: '/products', menuKey: 'products' })}
-              
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/configuracion-economica', label: 'Config. económica', icon: <Settings size={14} />, menuKey: 'configuracion-economica' })}
               
               {renderLink({ path: '/mis-pedidos', label: 'Mis pedidos & Couriers', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}

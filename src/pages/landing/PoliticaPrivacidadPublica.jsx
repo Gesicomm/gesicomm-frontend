@@ -193,6 +193,7 @@ export default function PoliticaPrivacidadPublica() {
         onCantidad={cartState.cambiarCantidadCarrito}
         onQuitar={cartState.quitarDelCarrito}
         onConfirmarPedido={cartState.confirmarPedido}
+        onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
       />
 

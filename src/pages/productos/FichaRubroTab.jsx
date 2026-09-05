@@ -1,155 +1,288 @@
 import React from 'react';
-import { Plus, Trash2, Cpu, Leaf, Package, Sparkles } from 'lucide-react';
+import { Plus, Trash2, Cpu, Leaf, Package, Sparkles, LockKeyhole } from 'lucide-react';
 
 /**
- * Pestaña "Ficha del rubro" de la carga de productos.
+ * Tipo de ficha + campos propios del rubro.
  *
- * Existe porque la página de producto de cada template rígido pide
- * información distinta: Suplementos necesita ingredientes con su dosis,
- * Electrónica necesita especificaciones técnicas, "en la caja" y una
- * comparativa. Pedir todos los campos a todos los productos sería un
- * formulario enorme lleno de secciones que no aplican, así que el rubro
- * (Producto.ficha_rubro) decide cuáles se muestran.
- *
- * Todo esto es DEL PRODUCTO, no de una landing: se carga una vez y lo usan
- * todas las landings donde ese producto aparezca (ver
- * templates/tech/fichaTech.js → fichaTechDesdeProducto).
- *
- * Lo genérico (beneficios, confianza, propuesta de valor, preguntas) sigue
- * viviendo en "Marketing & Embudo" porque sirve para cualquier rubro; acá
- * solo está lo que es propio de uno.
+ * El selector vive en Identidad. Los campos editables viven en Vista del
+ * producto para que lo que se carga y lo que se ve queden en el mismo lugar.
  */
 
 const RUBROS = [
   {
-    value: '',
-    label: 'Genérico',
+    value: 'basico',
+    label: 'Genérico / ficha básica',
     Icon: Package,
-    ayuda: 'Sin campos extra. La ficha usa lo de Marketing & Embudo.',
+    ayuda: 'Descripción, usos y comparación simple.',
   },
   {
     value: 'suplementos',
     label: 'Suplementos y fitness',
     Icon: Leaf,
-    ayuda: 'Ingredientes con su dosis y modo de uso.',
+    ayuda: 'Ingredientes, dosis, opiniones y pasos de uso.',
   },
   {
     value: 'tecnologia',
     label: 'Electrónica y tecnología',
     Icon: Cpu,
-    ayuda: 'Especificaciones técnicas, qué trae la caja y comparativa.',
+    ayuda: 'Especificaciones, contenido de la caja y comparación visual.',
   },
   {
     value: 'beauty',
     label: 'Beauty y Skin Care',
     Icon: Sparkles,
-    ayuda: 'Ingredientes, cómo funciona y resultados (antes y después).',
+    ayuda: 'Ingredientes, resultados antes/después y rutina de uso.',
   },
 ];
 
 const LIMITES = {
+  basico_destacados: 4,
+  basico_usos: 4,
+  basico_comparacion: 8,
   ingredientes: 8,
+  fitness_pasos: 5,
+  fitness_opiniones: 9,
   especificaciones: 14,
   en_la_caja: 10,
+  tech_multimedia: 6,
   comparativa: 8,
+  tech_resenas: 9,
   beauty_ingredientes: 5,
   beauty_pasos: 4,
   beauty_resultados: 3,
 };
 
-export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
-  const actual = RUBROS.find(r => r.value === (rubro || '')) || RUBROS[0];
+export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = 'completo' }) {
+  const rubroActual = rubro || 'basico';
+  const actual = RUBROS.find(r => r.value === rubroActual) || null;
+  const mostrarSelector = modo === 'selector' || modo === 'completo';
+  const mostrarCampos = modo === 'campos' || modo === 'completo';
 
-  /** Escribe una clave de ficha_datos sin pisar las de otros rubros. */
   const set = (clave, valor) => onDatos({ ...(datos || {}), [clave]: valor });
-
   const listaDe = (clave) => (Array.isArray(datos?.[clave]) ? datos[clave] : []);
 
   return (
     <>
-      <div className="form-group full">
-        <label>Tipo de ficha</label>
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '0.35rem' }}>
-          {RUBROS.map(r => {
-            const activo = (rubro || '') === r.value;
-            return (
-              <button
-                key={r.value || 'generico'}
-                type="button"
-                onClick={() => onRubro(r.value || null)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  padding: '0.7rem 0.95rem', borderRadius: '9px',
-                  border: `1px solid ${activo ? 'var(--vit-accent, #7c5cff)' : 'color-mix(in srgb, currentColor 18%, transparent)'}`,
-                  background: activo ? 'color-mix(in srgb, currentColor 8%, transparent)' : 'transparent',
-                  color: 'inherit', font: 'inherit', fontSize: '0.82rem',
-                  fontWeight: activo ? 700 : 500, cursor: 'pointer',
-                }}
-              >
-                <r.Icon size={16} style={{ opacity: activo ? 1 : 0.6 }} />
-                {r.label}
-              </button>
-            );
-          })}
-        </div>
-        <p className="field-hint">{actual.ayuda}</p>
-      </div>
-
-      {actual.value === '' && (
-        <div className="form-group full">
+      {mostrarSelector && (
+        <div className="form-group full rubro-selector">
+          <div className="rubro-section-heading">
+            <label>Selecciona en que tipo de ficha cae mejor tu producto <span className="req">*</span></label>
+          </div>
+          <div className="rubro-options">
+            {RUBROS.map(r => {
+              const activo = rubroActual === r.value;
+              return (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => onRubro(r.value)}
+                  className={`rubro-option ${activo ? 'active' : ''}`}
+                >
+                  <r.Icon size={16} />
+                  <span>{r.label}</span>
+                </button>
+              );
+            })}
+          </div>
           <p className="field-hint">
-            Elegí un tipo de ficha arriba para cargar los campos propios de ese rubro. Sin rubro, la página de
-            producto usa solo lo genérico (propuesta de valor, beneficios, confianza y preguntas frecuentes).
+            {actual?.ayuda || 'Elegí un tipo para habilitar la Vista del producto y sus campos dinámicos.'}
           </p>
         </div>
       )}
 
-      {/* ── Suplementos ────────────────────────────────────────────── */}
-      {actual.value === 'suplementos' && (
+      {mostrarCampos && !actual && (
+        <div className="rubro-empty-lock">
+          <LockKeyhole size={18} />
+          <div>
+            <strong>Elegí primero el tipo de ficha</strong>
+            <p>Volvé a Identidad y seleccioná el rubro del producto para habilitar estos campos.</p>
+          </div>
+        </div>
+      )}
+
+      {mostrarCampos && actual?.value === 'basico' && (
+        <>
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Descripción del producto</label>
+                <p>Titular y puntos destacados de la ficha básica. El texto principal se edita en “Sobre este producto”.</p>
+              </div>
+            </div>
+            <div className="rubro-row-main">
+              <CampoDato
+                label="Titular"
+                value={datos?.basico_descripcion_encabezado || ''}
+                placeholder="Diseñado para funcionar, creado para durar"
+                onChange={valor => set('basico_descripcion_encabezado', valor)}
+              />
+              <ListaTextos
+                label="Puntos destacados"
+                ayuda="Aparecen como checks debajo de la descripción."
+                items={listaDe('basico_descripcion_destacados')}
+                max={LIMITES.basico_destacados}
+                placeholder="Diseño inteligente"
+                onChange={l => set('basico_descripcion_destacados', l)}
+                textoAgregar="Agregar punto"
+              />
+            </div>
+          </div>
+
+          <ListaObjetos
+            label="Usos y aplicaciones"
+            ayuda="Pasos o situaciones de uso, en el mismo orden de la página."
+            items={listaDe('basico_usos')}
+            max={LIMITES.basico_usos}
+            nuevo={() => ({ paso: '', titulo: '', texto: '' })}
+            onChange={l => set('basico_usos', l)}
+            textoAgregar="Agregar uso"
+            campos={[
+              { clave: 'paso', label: 'Paso', placeholder: '1' },
+              { clave: 'titulo', label: 'Título', placeholder: 'Elegí' },
+            ]}
+            areaClave="texto"
+            areaLabel="Detalle"
+            areaPlaceholder="Seleccioná la opción ideal para vos."
+          />
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Comparación</label>
+                <p>Tu producto frente a otras opciones.</p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary btn-small"
+                disabled={listaDe('basico_comparacion').length >= LIMITES.basico_comparacion}
+                onClick={() => set('basico_comparacion', [...listaDe('basico_comparacion'), { caracteristica: '', nosotros: true, otros: false }])}
+              >
+                <Plus size={14} /> Agregar característica
+              </button>
+            </div>
+
+            <div className="rubro-image-grid">
+              <CampoDato
+                label="Imagen de mi producto"
+                value={datos?.basico_comparacion_imagen_nosotros || ''}
+                placeholder="Vacío = foto principal del producto"
+                onChange={valor => set('basico_comparacion_imagen_nosotros', valor)}
+              />
+              <CampoDato
+                label="Imagen de otras opciones"
+                value={datos?.basico_comparacion_imagen_otros || ''}
+                placeholder="URL de imagen de referencia"
+                onChange={valor => set('basico_comparacion_imagen_otros', valor)}
+              />
+            </div>
+
+            {listaDe('basico_comparacion').length === 0 ? (
+              <p className="field-hint">Sin características cargadas, la página no muestra la comparación.</p>
+            ) : (
+              <div className="rubro-list">
+                {listaDe('basico_comparacion').map((c, i) => {
+                  const actualizar = (cambios) => set('basico_comparacion', listaDe('basico_comparacion').map((x, j) => (j === i ? { ...x, ...cambios } : x)));
+                  return (
+                    <div key={i} className="rubro-row">
+                      <div className="rubro-row-main">
+                        <CampoDato
+                          label="Característica"
+                          value={c.caracteristica || ''}
+                          placeholder="Garantía incluida"
+                          onChange={valor => actualizar({ caracteristica: valor })}
+                        />
+                        <div className="rubro-checks">
+                          <label className="check-label">
+                            <input type="checkbox" checked={c.nosotros !== false} onChange={e => actualizar({ nosotros: e.target.checked })} />
+                            Mi producto
+                          </label>
+                          <label className="check-label">
+                            <input type="checkbox" checked={c.otros === true} onChange={e => actualizar({ otros: e.target.checked })} />
+                            Otras opciones
+                          </label>
+                        </div>
+                      </div>
+                      <button type="button" className="btn-icon" onClick={() => set('basico_comparacion', listaDe('basico_comparacion').filter((_, j) => j !== i))}>
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {mostrarCampos && actual?.value === 'suplementos' && (
         <>
           <ListaObjetos
             label="Ingredientes"
-            ayuda="Aparecen en la sección de ingredientes de la página de producto, con su dosis."
+            ayuda="Se muestran en la sección de ingredientes de la página del producto."
             items={listaDe('ingredientes')}
             max={LIMITES.ingredientes}
             nuevo={() => ({ nombre: '', dosis: '', texto: '' })}
             onChange={l => set('ingredientes', l)}
             textoAgregar="Agregar ingrediente"
             campos={[
-              { clave: 'nombre', placeholder: 'L-Teanina', ancho: '38%' },
-              { clave: 'dosis', placeholder: '200mg', ancho: '90px' },
+              { clave: 'nombre', label: 'Ingrediente', placeholder: 'L-Teanina' },
+              { clave: 'dosis', label: 'Dosis', placeholder: '200mg' },
             ]}
             areaClave="texto"
+            areaLabel="Beneficio"
             areaPlaceholder="Relaja la mente sin causar somnolencia."
           />
 
-          <div className="form-group full">
-            <label>Modo de uso</label>
-            <textarea
-              rows={2}
-              value={datos?.modo_uso || ''}
-              onChange={e => set('modo_uso', e.target.value)}
-              placeholder="Ej: 2 cápsulas al día con el desayuno."
-            />
-            <p className="field-hint">Una línea corta. Se muestra junto a los ingredientes.</p>
-          </div>
+          <ListaObjetos
+            label="Opiniones de clientes"
+            ayuda="Testimonios con nombre, estrellas y foto opcional."
+            items={listaDe('fitness_opiniones')}
+            max={LIMITES.fitness_opiniones}
+            nuevo={() => ({ nombre: '', comentario: '', calificacion: 5, foto: '' })}
+            onChange={l => set('fitness_opiniones', l)}
+            textoAgregar="Agregar opinión"
+            campos={[
+              { clave: 'nombre', label: 'Nombre', placeholder: 'Carlos M.' },
+              { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 1, max: 5 },
+              { clave: 'foto', label: 'Foto', placeholder: 'URL de foto opcional' },
+            ]}
+            areaClave="comentario"
+            areaLabel="Comentario"
+            areaPlaceholder="Noté más energía y constancia desde la segunda semana."
+          />
+
+          <ListaObjetos
+            label="Cómo funciona"
+            ayuda="Pasos desde que lo toma hasta que ve resultados."
+            items={listaDe('fitness_pasos')}
+            max={LIMITES.fitness_pasos}
+            nuevo={() => ({ paso: '', titulo: '', texto: '' })}
+            onChange={l => set('fitness_pasos', l)}
+            textoAgregar="Agregar paso"
+            campos={[
+              { clave: 'paso', label: 'Paso', placeholder: '1' },
+              { clave: 'titulo', label: 'Título', placeholder: 'Tomalo con agua' },
+            ]}
+            areaClave="texto"
+            areaLabel="Detalle"
+            areaPlaceholder="Ej: Tomá 2 cápsulas con el desayuno."
+          />
         </>
       )}
 
-      {/* ── Tecnología ─────────────────────────────────────────────── */}
-      {actual.value === 'tecnologia' && (
+      {mostrarCampos && actual?.value === 'tecnologia' && (
         <>
           <ListaObjetos
             label="Especificaciones técnicas"
-            ayuda="La tabla de specs de la página de producto. Una fila por dato."
+            ayuda="Tabla de specs de la página del producto."
             items={listaDe('especificaciones')}
             max={LIMITES.especificaciones}
             nuevo={() => ({ clave: '', valor: '' })}
             onChange={l => set('especificaciones', l)}
             textoAgregar="Agregar especificación"
             campos={[
-              { clave: 'clave', placeholder: 'Batería', ancho: '38%' },
-              { clave: 'valor', placeholder: '50 horas de reproducción', ancho: '1' },
+              { clave: 'clave', label: 'Dato', placeholder: 'Batería' },
+              { clave: 'valor', label: 'Valor', placeholder: '50 horas de reproducción' },
             ]}
           />
 
@@ -163,9 +296,27 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
             textoAgregar="Agregar ítem"
           />
 
-          <div className="form-group full">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <label style={{ margin: 0 }}>Comparativa contra otras marcas</label>
+          <ListaObjetos
+            label="Contenido visual"
+            ayuda="Imágenes o videos adicionales del producto."
+            items={listaDe('tech_multimedia')}
+            max={LIMITES.tech_multimedia}
+            nuevo={() => ({ titulo: '', url: '', imagen: '' })}
+            onChange={l => set('tech_multimedia', l)}
+            textoAgregar="Agregar contenido"
+            campos={[
+              { clave: 'titulo', label: 'Título', placeholder: 'Detalle del producto' },
+              { clave: 'url', label: 'Video o link', placeholder: 'URL de video opcional' },
+              { clave: 'imagen', label: 'Imagen', placeholder: 'URL de imagen' },
+            ]}
+          />
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Comparativa contra otras marcas</label>
+                <p>Imagen de tu producto, imagen del otro producto y hechos comparables.</p>
+              </div>
               <button
                 type="button"
                 className="btn-secondary btn-small"
@@ -175,28 +326,48 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
                 <Plus size={14} /> Agregar característica
               </button>
             </div>
+
+            <div className="rubro-image-grid">
+              <CampoDato
+                label="Imagen de mi producto"
+                value={datos?.comparativa_imagen_nosotros || ''}
+                placeholder="URL de imagen para la comparación"
+                onChange={valor => set('comparativa_imagen_nosotros', valor)}
+              />
+              <CampoDato
+                label="Imagen de otros productos"
+                value={datos?.comparativa_imagen_otros || ''}
+                placeholder="URL de imagen de referencia"
+                onChange={valor => set('comparativa_imagen_otros', valor)}
+              />
+            </div>
+
             {listaDe('comparativa').length === 0 ? (
               <p className="field-hint">Sin características cargadas, la página no muestra la comparativa.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div className="rubro-list">
                 {listaDe('comparativa').map((c, i) => {
                   const actualizar = (cambios) => set('comparativa', listaDe('comparativa').map((x, j) => (j === i ? { ...x, ...cambios } : x)));
                   return (
-                    <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input
-                        style={{ flex: 1, minWidth: '180px' }}
-                        value={c.caracteristica || ''}
-                        placeholder="Cancelación de ruido ANC"
-                        onChange={e => actualizar({ caracteristica: e.target.value })}
-                      />
-                      <label className="check-label" style={{ whiteSpace: 'nowrap' }}>
-                        <input type="checkbox" checked={c.nosotros !== false} onChange={e => actualizar({ nosotros: e.target.checked })} />
-                        Nosotros
-                      </label>
-                      <label className="check-label" style={{ whiteSpace: 'nowrap' }}>
-                        <input type="checkbox" checked={c.otros === true} onChange={e => actualizar({ otros: e.target.checked })} />
-                        Otras marcas
-                      </label>
+                    <div key={i} className="rubro-row">
+                      <div className="rubro-row-main">
+                        <CampoDato
+                          label="Característica"
+                          value={c.caracteristica || ''}
+                          placeholder="Cancelación de ruido ANC"
+                          onChange={valor => actualizar({ caracteristica: valor })}
+                        />
+                        <div className="rubro-checks">
+                          <label className="check-label">
+                            <input type="checkbox" checked={c.nosotros !== false} onChange={e => actualizar({ nosotros: e.target.checked })} />
+                            Mi producto
+                          </label>
+                          <label className="check-label">
+                            <input type="checkbox" checked={c.otros === true} onChange={e => actualizar({ otros: e.target.checked })} />
+                            Otros productos
+                          </label>
+                        </div>
+                      </div>
                       <button type="button" className="btn-icon" onClick={() => set('comparativa', listaDe('comparativa').filter((_, j) => j !== i))}>
                         <Trash2 size={16} />
                       </button>
@@ -205,48 +376,69 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
                 })}
               </div>
             )}
-            <p className="field-hint">
-              Compará con hechos verificables: afirmar algo falso sobre la competencia es publicidad engañosa.
-            </p>
+            <p className="field-hint">Compará con hechos verificables para evitar publicidad engañosa.</p>
           </div>
+
+          <ListaObjetos
+            label="Reseñas y testimonios"
+            ayuda="Opiniones reales de clientes para la ficha de tecnología."
+            items={listaDe('tech_resenas')}
+            max={LIMITES.tech_resenas}
+            nuevo={() => ({ nombre: '', comentario: '', calificacion: 5, foto: '' })}
+            onChange={l => set('tech_resenas', l)}
+            textoAgregar="Agregar reseña"
+            campos={[
+              { clave: 'nombre', label: 'Nombre', placeholder: 'Laura P.' },
+              { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 1, max: 5 },
+              { clave: 'foto', label: 'Foto', placeholder: 'URL de foto opcional' },
+            ]}
+            areaClave="comentario"
+            areaLabel="Comentario"
+            areaPlaceholder="La batería dura mucho más de lo que esperaba."
+          />
         </>
       )}
 
-      {/* ── Beauty ─────────────────────────────────────────────── */}
-      {actual.value === 'beauty' && (
+      {mostrarCampos && actual?.value === 'beauty' && (
         <>
           <ListaObjetos
             label="Ingredientes premium"
-            ayuda="Aparecen con su ícono y beneficio para la piel (ej: Hidratación)."
+            ayuda="Aparecen con su ícono y beneficio para la piel."
             items={listaDe('beauty_ingredientes')}
             max={LIMITES.beauty_ingredientes}
             nuevo={() => ({ icono: '💧', nombre: '', descripcion: '' })}
             onChange={l => set('beauty_ingredientes', l)}
             textoAgregar="Agregar ingrediente"
             campos={[
-              { clave: 'icono', placeholder: '💧', ancho: '50px' },
-              { clave: 'nombre', placeholder: 'Ácido hialurónico', ancho: '38%' },
-              { clave: 'descripcion', placeholder: 'Hidratación profunda y rellena arrugas', ancho: '1' },
+              { clave: 'icono', label: 'Ícono', placeholder: '💧' },
+              { clave: 'nombre', label: 'Ingrediente', placeholder: 'Ácido hialurónico' },
+              { clave: 'descripcion', label: 'Beneficio', placeholder: 'Hidratación profunda y rellena arrugas' },
             ]}
           />
 
           <ListaObjetos
-            label="Resultados (Antes/Después)"
-            ayuda="Testimonios reales de clientas mostrando cómo mejoró su piel."
+            label="Resultados antes/después"
+            ayuda="Testimonios reales con imágenes comparativas opcionales."
             items={listaDe('beauty_resultados')}
             max={LIMITES.beauty_resultados}
-            nuevo={() => ({ nombre: '', testimonio: '' })}
+            nuevo={() => ({ nombre: '', testimonio: '', calificacion: 5, antes: '', despues: '' })}
             onChange={l => set('beauty_resultados', l)}
             textoAgregar="Agregar testimonio"
             campos={[
-              { clave: 'nombre', placeholder: 'Ana M.', ancho: '38%' },
+              { clave: 'nombre', label: 'Nombre', placeholder: 'Ana M.' },
+              { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 1, max: 5 },
+            ]}
+            extraCampos={[
+              { clave: 'antes', label: 'Imagen antes', placeholder: 'URL de imagen antes' },
+              { clave: 'despues', label: 'Imagen después', placeholder: 'URL de imagen después' },
             ]}
             areaClave="testimonio"
+            areaLabel="Testimonio"
             areaPlaceholder="Mi piel se ve más luminosa, hidratada y suave."
           />
 
           <ListaObjetos
-            label="Cómo funciona (Pasos)"
+            label="Cómo funciona"
             ayuda="Guía paso a paso de uso o cómo actúa el producto en la piel."
             items={listaDe('beauty_pasos')}
             max={LIMITES.beauty_pasos}
@@ -254,9 +446,9 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
             onChange={l => set('beauty_pasos', l)}
             textoAgregar="Agregar paso"
             campos={[
-              { clave: 'paso', placeholder: '1', ancho: '50px' },
-              { clave: 'titulo', placeholder: 'LIMPIA', ancho: '38%' },
-              { clave: 'descripcion', placeholder: 'Limpia tu rostro completamente', ancho: '1' },
+              { clave: 'paso', label: 'Paso', placeholder: '1' },
+              { clave: 'titulo', label: 'Título', placeholder: 'Limpia' },
+              { clave: 'descripcion', label: 'Detalle', placeholder: 'Limpia tu rostro completamente' },
             ]}
           />
         </>
@@ -265,14 +457,44 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos }) {
   );
 }
 
-/* ── Piezas ───────────────────────────────────────────────────────── */
+function CampoDato({ label, value, placeholder, onChange, type = 'text', min, max }) {
+  return (
+    <label className="rubro-field">
+      <span>{label}</span>
+      <input
+        type={type}
+        min={min}
+        max={max}
+        value={value}
+        placeholder={placeholder}
+        onChange={e => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
 
-function ListaObjetos({ label, ayuda, items, max, nuevo, onChange, textoAgregar, campos, areaClave, areaPlaceholder }) {
+function ListaObjetos({
+  label,
+  ayuda,
+  items,
+  max,
+  nuevo,
+  onChange,
+  textoAgregar,
+  campos,
+  extraCampos,
+  areaClave,
+  areaLabel,
+  areaPlaceholder,
+}) {
   const actualizar = (i, cambios) => onChange(items.map((x, j) => (j === i ? { ...x, ...cambios } : x)));
   return (
-    <div className="form-group full">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-        <label style={{ margin: 0 }}>{label}</label>
+    <div className="rubro-field-card">
+      <div className="rubro-card-header">
+        <div>
+          <label>{label}</label>
+          {ayuda && <p>{ayuda}</p>}
+        </div>
         <button type="button" className="btn-secondary btn-small" disabled={items.length >= max} onClick={() => onChange([...items, nuevo()])}>
           <Plus size={14} /> {items.length >= max ? `Máximo ${max}` : textoAgregar}
         </button>
@@ -280,28 +502,47 @@ function ListaObjetos({ label, ayuda, items, max, nuevo, onChange, textoAgregar,
       {items.length === 0 ? (
         <p className="field-hint">Sin datos cargados, la página de producto no muestra esta sección.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+        <div className="rubro-list">
           {items.map((it, i) => (
-            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div key={i} className="rubro-row">
+              <div className="rubro-row-main">
+                <div className="rubro-row-fields">
                   {campos.map(c => (
-                    <input
+                    <CampoDato
                       key={c.clave}
-                      style={c.ancho === '1' ? { flex: 1 } : { width: c.ancho, flexShrink: 0 }}
+                      label={c.label}
+                      type={c.tipo || 'text'}
+                      min={c.min}
+                      max={c.max}
                       value={it[c.clave] || ''}
                       placeholder={c.placeholder}
-                      onChange={e => actualizar(i, { [c.clave]: e.target.value })}
+                      onChange={valor => actualizar(i, { [c.clave]: valor })}
                     />
                   ))}
                 </div>
+                {extraCampos?.length > 0 && (
+                  <div className="rubro-image-grid">
+                    {extraCampos.map(c => (
+                      <CampoDato
+                        key={c.clave}
+                        label={c.label}
+                        value={it[c.clave] || ''}
+                        placeholder={c.placeholder}
+                        onChange={valor => actualizar(i, { [c.clave]: valor })}
+                      />
+                    ))}
+                  </div>
+                )}
                 {areaClave && (
-                  <textarea
-                    rows={2}
-                    value={it[areaClave] || ''}
-                    placeholder={areaPlaceholder}
-                    onChange={e => actualizar(i, { [areaClave]: e.target.value })}
-                  />
+                  <label className="rubro-field">
+                    <span>{areaLabel}</span>
+                    <textarea
+                      rows={2}
+                      value={it[areaClave] || ''}
+                      placeholder={areaPlaceholder}
+                      onChange={e => actualizar(i, { [areaClave]: e.target.value })}
+                    />
+                  </label>
                 )}
               </div>
               <button type="button" className="btn-icon" onClick={() => onChange(items.filter((_, j) => j !== i))}>
@@ -311,16 +552,18 @@ function ListaObjetos({ label, ayuda, items, max, nuevo, onChange, textoAgregar,
           ))}
         </div>
       )}
-      {ayuda && <p className="field-hint">{ayuda}</p>}
     </div>
   );
 }
 
 function ListaTextos({ label, ayuda, items, max, placeholder, onChange, textoAgregar }) {
   return (
-    <div className="form-group full">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-        <label style={{ margin: 0 }}>{label}</label>
+    <div className="rubro-field-card">
+      <div className="rubro-card-header">
+        <div>
+          <label>{label}</label>
+          {ayuda && <p>{ayuda}</p>}
+        </div>
         <button type="button" className="btn-secondary btn-small" disabled={items.length >= max} onClick={() => onChange([...items, ''])}>
           <Plus size={14} /> {items.length >= max ? `Máximo ${max}` : textoAgregar}
         </button>
@@ -328,14 +571,14 @@ function ListaTextos({ label, ayuda, items, max, placeholder, onChange, textoAgr
       {items.length === 0 ? (
         <p className="field-hint">Sin ítems cargados, la página de producto no muestra esta caja.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div className="rubro-list">
           {items.map((linea, i) => (
-            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <input
-                style={{ flex: 1 }}
+            <div key={i} className="rubro-row rubro-row--line">
+              <CampoDato
+                label={`Ítem ${i + 1}`}
                 value={linea}
                 placeholder={placeholder}
-                onChange={e => onChange(items.map((x, j) => (j === i ? e.target.value : x)))}
+                onChange={valor => onChange(items.map((x, j) => (j === i ? valor : x)))}
               />
               <button type="button" className="btn-icon" onClick={() => onChange(items.filter((_, j) => j !== i))}>
                 <Trash2 size={16} />
@@ -344,7 +587,6 @@ function ListaTextos({ label, ayuda, items, max, placeholder, onChange, textoAgr
           ))}
         </div>
       )}
-      {ayuda && <p className="field-hint">{ayuda}</p>}
     </div>
   );
 }

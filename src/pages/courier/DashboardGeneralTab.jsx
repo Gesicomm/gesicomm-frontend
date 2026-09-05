@@ -40,7 +40,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    productService.buscar({}).then((res) => {
+    productService.buscar({ sin_limite: true }).then((res) => {
       const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
       setProductos(prods);
     }).catch(() => setProductos([]));

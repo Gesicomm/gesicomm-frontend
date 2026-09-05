@@ -1021,3 +1021,15 @@
   .tpp-barra-movil { display: flex; }
   .tpp-barra { font-size: 9px; gap: 8px 14px; }
 }
+
+/* Miniatura de la variante dentro de su botón de selección. */
+.tpp-variante-foto {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  /* Bloque centrado arriba del nombre: no toca el layout de los botones
+     que no tienen foto, que siguen siendo texto + precio como antes. */
+  display: block;
+  margin: 0 auto 5px;
+}
