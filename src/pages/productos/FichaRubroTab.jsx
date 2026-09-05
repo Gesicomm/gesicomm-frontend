@@ -1,11 +1,11 @@
 import React from 'react';
-import { Plus, Trash2, Cpu, Leaf, Package, Sparkles, LockKeyhole } from 'lucide-react';
+import { Plus, Trash2, Cpu, Leaf, Package, Sparkles } from 'lucide-react';
 
 /**
  * Tipo de ficha + campos propios del rubro.
  *
- * El selector vive en Identidad. Los campos editables viven en Vista del
- * producto para que lo que se carga y lo que se ve queden en el mismo lugar.
+ * El selector y los campos editables viven en Vista del producto para que el
+ * usuario pueda cambiar el tipo y ver al instante qué campos habilita.
  */
 
 const RUBROS = [
@@ -66,7 +66,7 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
       {mostrarSelector && (
         <div className="form-group full rubro-selector">
           <div className="rubro-section-heading">
-            <label>Selecciona en que tipo de ficha cae mejor tu producto <span className="req">*</span></label>
+            <label>Seleccioná qué tipo de ficha muestra mejor tu producto</label>
           </div>
           <div className="rubro-options">
             {RUBROS.map(r => {
@@ -85,18 +85,8 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             })}
           </div>
           <p className="field-hint">
-            {actual?.ayuda || 'Elegí un tipo para habilitar la Vista del producto y sus campos dinámicos.'}
+            {actual?.ayuda || 'Cambiá el tipo para ver los campos disponibles de cada ficha.'}
           </p>
-        </div>
-      )}
-
-      {mostrarCampos && !actual && (
-        <div className="rubro-empty-lock">
-          <LockKeyhole size={18} />
-          <div>
-            <strong>Elegí primero el tipo de ficha</strong>
-            <p>Volvé a Identidad y seleccioná el rubro del producto para habilitar estos campos.</p>
-          </div>
         </div>
       )}
 

@@ -186,13 +186,14 @@ test('edita Vista del producto y agrega el producto guardado a la landing', asyn
   await expect(page.getByRole('heading', { name: 'Editar producto' })).toBeVisible();
   await expect(page.locator('#prod-nombre')).toHaveValue('Lentes Amarillos Anti Luz Azul QA');
 
-  await page.getByRole('button', { name: 'Beauty y Skin Care' }).click();
   await page.getByRole('tab', { name: /Vista del producto/ }).click();
+  await expect(page.getByRole('button', { name: 'Genérico / ficha básica' })).toBeVisible();
+  await expect(page.getByText('Sobre este producto', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Beauty y Skin Care' }).click();
   await expect(page.locator('textarea[name="sobre_este_producto"]')).toHaveCount(0);
 
-  await page.getByRole('tab', { name: /Identidad/ }).click();
   await page.getByRole('button', { name: 'Genérico / ficha básica' }).click();
-  await page.getByRole('tab', { name: /Vista del producto/ }).click();
   await expect(page.getByText('Sobre este producto', { exact: true })).toBeVisible();
   await expect(page.getByText('Texto del botón principal', { exact: true })).toBeVisible();
 

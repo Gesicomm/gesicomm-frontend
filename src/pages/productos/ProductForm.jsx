@@ -391,12 +391,6 @@ export default function ProductForm() {
   const nombre = watch('nombre');
   const fichaRubroVal = watch('ficha_rubro') || 'basico';
 
-  useEffect(() => {
-    if (!cargando && tabActiva === 'marketing' && !fichaRubroVal) {
-      setTabActiva('basica');
-    }
-  }, [cargando, tabActiva, fichaRubroVal]);
-
   // ── Cargar datos ──────────────────────────────────────────
   // Todo en una sola oleada de Promise.all: ninguna de estas 5 llamadas
   // depende del resultado de otra (todas solo necesitan el `id` de la URL),
@@ -927,20 +921,14 @@ export default function ProductForm() {
         <nav className="prod-step-nav" aria-label="Flujo de configuracion del producto">
           {TABS.map(tab => {
             const estado = estadoSecciones[tab.id] || 'todo';
-            const bloqueada = tab.id === 'marketing' && !fichaRubroVal;
             const StatusIcon = estado === 'ok' ? CheckCircle2 : estado === 'warn' ? AlertTriangle : Circle;
             return (
               <button
                 key={tab.id}
                 role="tab"
                 aria-selected={tabActiva === tab.id}
-                aria-disabled={bloqueada}
-                className={`prod-step ${tabActiva === tab.id ? 'active' : ''} ${estado} ${bloqueada ? 'disabled' : ''}`}
-                onClick={() => {
-                  if (bloqueada) return;
-                  setTabActiva(tab.id);
-                }}
-                title={bloqueada ? 'Elegí el tipo de ficha en Identidad para habilitar Vista del producto.' : undefined}
+                className={`prod-step ${tabActiva === tab.id ? 'active' : ''} ${estado}`}
+                onClick={() => setTabActiva(tab.id)}
                 type="button"
               >
                 <span className="prod-step-icon">{tab.icon}</span>
@@ -1048,26 +1036,6 @@ export default function ProductForm() {
               )}
               <p className="field-hint">Si el costo está en USD, el proveedor también puede definir la cotización usada para calcularlo.</p>
             </div>
-
-            <Controller
-              control={control}
-              name="ficha_rubro"
-              render={({ field: campoRubro }) => (
-                <Controller
-                  control={control}
-                  name="ficha_datos"
-                  render={({ field: campoDatos }) => (
-                    <FichaRubroTab
-                      rubro={campoRubro.value}
-                      datos={campoDatos.value}
-                      onRubro={(v) => campoRubro.onChange(v || '')}
-                      onDatos={campoDatos.onChange}
-                      modo="selector"
-                    />
-                  )}
-                />
-              )}
-            />
 
             <div className="form-group">
               <label htmlFor="prod-tags">
@@ -1841,6 +1809,26 @@ export default function ProductForm() {
         <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
           <div className="product-view-workspace">
             <div className="product-view-editor">
+              <Controller
+                control={control}
+                name="ficha_rubro"
+                render={({ field: campoRubro }) => (
+                  <Controller
+                    control={control}
+                    name="ficha_datos"
+                    render={({ field: campoDatos }) => (
+                      <FichaRubroTab
+                        rubro={campoRubro.value}
+                        datos={campoDatos.value}
+                        onRubro={(v) => campoRubro.onChange(v || 'basico')}
+                        onDatos={campoDatos.onChange}
+                        modo="selector"
+                      />
+                    )}
+                  />
+                )}
+              />
+
               <div className="form-section-title">
                 <Eye size={14} /> Contenido público
               </div>
