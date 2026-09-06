@@ -31,6 +31,8 @@ export function esEntornoLocal(hostname = window.location.hostname) {
 export function urlPublicaLanding(tienda, landing) {
   const slug = landing?.slug || '';
   if (esEntornoLocal() || !tienda?.subdominio) return `/l/${slug}`;
-  const base = `https://${tienda.subdominio}.gesicomm.com`;
+  const base = tienda?.dominio_propio_verificado 
+    ? `https://${tienda.dominio_propio}`
+    : `https://${tienda.subdominio}.gesicomm.com`;
   return landing?.es_home ? base : `${base}/l/${slug}`;
 }

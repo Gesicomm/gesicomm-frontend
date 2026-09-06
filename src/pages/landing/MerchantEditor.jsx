@@ -99,9 +99,12 @@ export default function MerchantEditor() {
   // App.jsx y deploy/nginx/tiendas.gesicomm.com), pero no es la ruta
   // canónica: la que se muestra y se comparte es esta.
   const urlPublica = useMemo(() => {
-    if (!tienda?.subdominio || !landing?.slug) return null;
-    return `https://${tienda.subdominio}.gesicomm.com/${landing.slug}`;
-  }, [tienda?.subdominio, landing?.slug]);
+    if (!tienda || !landing?.slug) return null;
+    const base = tienda.dominio_propio_verificado 
+      ? `https://${tienda.dominio_propio}` 
+      : (tienda.subdominio ? `https://${tienda.subdominio}.gesicomm.com` : null);
+    return base ? `${base}/${landing.slug}` : null;
+  }, [tienda?.subdominio, tienda?.dominio_propio, tienda?.dominio_propio_verificado, landing?.slug]);
 
   // El producto real del funnel, con la forma que espera LandingPreview.
   // Sin esto el bloque product_detail caía en el mock interno ("Producto
@@ -341,7 +344,9 @@ export default function MerchantEditor() {
         {editandoSlug ? (
           <>
             <span className="text-[var(--vit-muted)]">
-              {tienda?.subdominio ? `${tienda.subdominio}.gesicomm.com/` : '/'}
+              {tienda?.dominio_propio_verificado 
+                ? `${tienda.dominio_propio}/` 
+                : (tienda?.subdominio ? `${tienda.subdominio}.gesicomm.com/` : '/')}
             </span>
             <input
               type="text"

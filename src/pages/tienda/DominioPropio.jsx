@@ -71,6 +71,7 @@ export default function DominioPropio({ tienda, onActualizado }) {
   }
 
   const txt = registroTxt || estado?.registro_txt;
+  const dcvDelegation = estado?.dcv_delegation || null;
 
   const getCnameName = (domain) => {
     if (!domain) return '@';
@@ -123,13 +124,29 @@ export default function DominioPropio({ tienda, onActualizado }) {
               <div className="dp-txt-row"><span>Valor</span><code>cname.gesicomm.com</code></div>
             </div>
             
-            {txt && (
+            {(txt || dcvDelegation) && (
               <div className="dp-txt-box" style={{ marginTop: 0 }}>
                 <p style={{ fontWeight: 600, color: 'var(--color-fg)', marginBottom: '0.25rem' }}>Paso 2: Activar el candadito verde de seguridad</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-subtle)', marginBottom: '0.75rem', marginTop: 0 }}>Vuelve a darle a "Agregar registro" en tu proveedor. Esta vez en "Tipo" selecciona la opción <strong>TXT</strong> y pega esto:</p>
-                <div className="dp-txt-row"><span>Tipo</span><code>TXT</code></div>
-                <div className="dp-txt-row"><span>Nombre</span><code>{txt.name}</code></div>
-                <div className="dp-txt-row"><span>Valor</span><code>{txt.value}</code></div>
+                {dcvDelegation ? (
+                  <>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-subtle)', marginBottom: '0.75rem', marginTop: 0 }}>
+                      Tu dominio está gestionado en Cloudflare. Vuelve a darle a "Agregar registro". Esta vez en "Tipo" seleccioná <strong>CNAME</strong> y pegá esto exactamente:
+                    </p>
+                    <div className="dp-txt-row"><span>Tipo</span><code>CNAME</code></div>
+                    <div className="dp-txt-row"><span>Nombre</span><code>{dcvDelegation.cname}</code></div>
+                    <div className="dp-txt-row"><span>Valor</span><code>{dcvDelegation.cname_target}</code></div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-fg-subtle)', marginTop: '0.5rem', marginBottom: 0, fontStyle: 'italic' }}>
+                      ⚠️ Asegurate de que el Proxy Status de este CNAME quede en <strong>DNS only</strong> (nube gris, no naranja).
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-subtle)', marginBottom: '0.75rem', marginTop: 0 }}>Vuelve a darle a "Agregar registro" en tu proveedor. Esta vez en "Tipo" seleccioná la opción <strong>TXT</strong> y pegá esto:</p>
+                    <div className="dp-txt-row"><span>Tipo</span><code>TXT</code></div>
+                    <div className="dp-txt-row"><span>Nombre</span><code>{txt.name}</code></div>
+                    <div className="dp-txt-row"><span>Valor</span><code>{txt.value}</code></div>
+                  </>
+                )}
               </div>
             )}
 
@@ -157,13 +174,29 @@ export default function DominioPropio({ tienda, onActualizado }) {
               <div className="dp-txt-row"><span>Valor</span><code>cname.gesicomm.com</code></div>
             </div>
 
-            {txt && (
+            {(txt || dcvDelegation) && (
               <div className="dp-txt-box" style={{ marginTop: 0 }}>
                 <p style={{ fontWeight: 600, color: 'var(--color-fg)', marginBottom: '0.25rem' }}>Paso 2: Activar el candadito verde de seguridad</p>
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-subtle)', marginBottom: '0.75rem', marginTop: 0 }}>Vuelve a darle a "Agregar registro" en tu proveedor. Esta vez en "Tipo" selecciona la opción <strong>TXT</strong> y pega esto:</p>
-                <div className="dp-txt-row"><span>Tipo</span><code>TXT</code></div>
-                <div className="dp-txt-row"><span>Nombre</span><code>{txt.name}</code></div>
-                <div className="dp-txt-row"><span>Valor</span><code>{txt.value}</code></div>
+                {dcvDelegation ? (
+                  <>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-subtle)', marginBottom: '0.75rem', marginTop: 0 }}>
+                      Tu dominio está gestionado en Cloudflare. Vuelve a darle a "Agregar registro". Esta vez en "Tipo" seleccioná <strong>CNAME</strong> y pegá esto exactamente:
+                    </p>
+                    <div className="dp-txt-row"><span>Tipo</span><code>CNAME</code></div>
+                    <div className="dp-txt-row"><span>Nombre</span><code>{dcvDelegation.cname}</code></div>
+                    <div className="dp-txt-row"><span>Valor</span><code>{dcvDelegation.cname_target}</code></div>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-fg-subtle)', marginTop: '0.5rem', marginBottom: 0, fontStyle: 'italic' }}>
+                      ⚠️ Asegurate de que el Proxy Status de este CNAME quede en <strong>DNS only</strong> (nube gris, no naranja).
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-subtle)', marginBottom: '0.75rem', marginTop: 0 }}>Vuelve a darle a "Agregar registro" en tu proveedor. Esta vez en "Tipo" seleccioná la opción <strong>TXT</strong> y pegá esto:</p>
+                    <div className="dp-txt-row"><span>Tipo</span><code>TXT</code></div>
+                    <div className="dp-txt-row"><span>Nombre</span><code>{txt.name}</code></div>
+                    <div className="dp-txt-row"><span>Valor</span><code>{txt.value}</code></div>
+                  </>
+                )}
               </div>
             )}
           </div>
