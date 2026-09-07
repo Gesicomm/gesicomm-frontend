@@ -116,6 +116,7 @@ export default function ContactoPublico() {
         onConfirmarPedido={cartState.confirmarPedido}
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
+        deliveryCiudades={data?.delivery_ciudades || []}
       />
 
       {/* Mismo pie que el home y el catálogo — consistente en las 3 páginas. */}

@@ -3,6 +3,7 @@ import { X, Check, Loader, ImageOff, Gift, Sparkles } from 'lucide-react';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
+import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -29,8 +30,9 @@ function precioEnCheckout(oferta) {
   return oferta?.precio_normal ?? oferta?.precio ?? 0;
 }
 
-export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null, pasarelas = [] }) {
+export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null, pasarelas = [], deliveryCiudades = [] }) {
   const [form, setForm] = useState(FORM_VACIO);
+  const [ciudadDeliveryInput, setCiudadDeliveryInput] = useState('');
   const [acepta, setAcepta] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
@@ -39,6 +41,14 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   const [seleccionadas, setSeleccionadas] = useState(() => new Set());
 
   const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
+  const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
+  const productoConEnvioIncluido = itemOriginal?.envio_incluido === true || itemOriginal?.envioIncluido === true;
+  const opcionDeliverySeleccionada = opcionesDelivery.find(op =>
+    op.ciudad === form.ciudad && (op.departamento || '') === (form.departamento || '')
+  );
+  const detalleDelivery = opcionDeliverySeleccionada
+    ? descripcionDelivery(opcionDeliverySeleccionada, productoConEnvioIncluido, formatPrecio)
+    : null;
 
   const ofertasCheckout = useMemo(() => {
     if (!itemOriginal?.ofertas?.length || !ofertasLanding?.length) return [];
@@ -59,6 +69,10 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     const o = ofertasCheckout.find(x => x.id === id);
     return sum + (o ? precioEnCheckout(o) : 0);
   }, 0);
+  const costoEnvioVisible = opcionDeliverySeleccionada && !productoConEnvioIncluido
+    ? Number(opcionDeliverySeleccionada.costo) || 0
+    : 0;
+  const totalConDelivery = total + costoEnvioVisible;
 
   function alternarOferta(ofertaId, elegida) {
     setSeleccionadas(prev => {
@@ -84,6 +98,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     // la próxima apertura arranca limpia.
     setTimeout(() => {
       setForm(FORM_VACIO);
+      setCiudadDeliveryInput('');
       setAcepta(false);
       setError(null);
       setConfirmado(null);
@@ -110,6 +125,16 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
       setError(err?.message || 'No se pudo enviar el pedido. Probá de nuevo.');
     } finally {
       setEnviando(false);
+    }
+  }
+
+  function actualizarCiudadDelivery(valor) {
+    setCiudadDeliveryInput(valor);
+    const opcion = buscarOpcionDelivery(opcionesDelivery, valor);
+    if (opcion) {
+      setForm(prev => ({ ...prev, ciudad: opcion.ciudad, departamento: opcion.departamento || '' }));
+    } else {
+      setForm(prev => ({ ...prev, ciudad: '', departamento: '' }));
     }
   }
 
@@ -308,8 +333,31 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               </div>
             </div>
             <div>
-              <label style={labelStyle}>Ciudad *</label>
-              <input required value={form.ciudad} onChange={e => campo('ciudad', e.target.value)} placeholder="Ciudad" style={inputStyle} />
+              <label style={labelStyle}>{opcionesDelivery.length > 0 ? 'Ciudad y departamento *' : 'Ciudad *'}</label>
+              {opcionesDelivery.length > 0 ? (
+                <>
+                  <input
+                    required
+                    list="funnel-delivery-ciudades"
+                    value={ciudadDeliveryInput}
+                    onChange={e => actualizarCiudadDelivery(e.target.value)}
+                    placeholder="Buscá tu ciudad..."
+                    style={inputStyle}
+                  />
+                  <datalist id="funnel-delivery-ciudades">
+                    {opcionesDelivery.map(op => (
+                      <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio) || undefined} />
+                    ))}
+                  </datalist>
+                  {detalleDelivery && (
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.76rem', color: hexToRgba(tema.texto, 0.58), lineHeight: 1.35 }}>
+                      {etiquetaDelivery(opcionDeliverySeleccionada)} · {detalleDelivery}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <input required value={form.ciudad} onChange={e => campo('ciudad', e.target.value)} placeholder="Ciudad" style={inputStyle} />
+              )}
             </div>
             <div>
               <label style={labelStyle}>Dirección *</label>
@@ -373,7 +421,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
             >
               {enviando
                 ? <><Loader size={17} className="animate-spin" /> Enviando...</>
-                : `Confirmar pedido — ${formatPrecio(total)}`}
+                : `Confirmar pedido — ${formatPrecio(totalConDelivery)}`}
             </button>
           </form>
         )}

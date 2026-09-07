@@ -240,6 +240,7 @@ export default function FunnelView({ data, slug, productId }) {
         cantidad: nuevaCantidad,
         imagen: item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
+        envioIncluido: item.envio_incluido === true,
       });
       return copia;
     });
@@ -483,6 +484,7 @@ export default function FunnelView({ data, slug, productId }) {
       cantidad,
       imagen: item.imagenes?.[0] || item.imagen || null,
       stockMax: variante ? variante.stock : (oferta ? null : item.stock),
+      envioIncluido: item.envio_incluido === true,
     };
 
     // El precio que se arma acá es solo para el tracking y el mensaje de
@@ -501,6 +503,7 @@ export default function FunnelView({ data, slug, productId }) {
       cantidad: 1,
       imagen: of.producto_complementario?.imagen || item.imagen || null,
       stockMax: null,
+      envioIncluido: item.envio_incluido === true,
     }));
 
     return confirmarPedido(datosFormulario, [itemCarrito, ...lineasOferta]);
@@ -709,6 +712,7 @@ export default function FunnelView({ data, slug, productId }) {
           } : null}
           ofertasLanding={data?.content?.ofertas_producto_vista || []}
           itemOriginal={itemSeleccionado}
+          deliveryCiudades={data?.delivery_ciudades || []}
           onConfirmar={(form, ofertasCheckout = []) => comprarAhora(
             itemSeleccionado,
             compraFunnel.variante,
@@ -735,6 +739,7 @@ export default function FunnelView({ data, slug, productId }) {
           onConfirmarPedido={confirmarPedido}
           onValidarCupon={validarCupon}
           pasarelas={data?.checkout?.pasarelas || []}
+          deliveryCiudades={data?.delivery_ciudades || []}
         />
       </>
     );

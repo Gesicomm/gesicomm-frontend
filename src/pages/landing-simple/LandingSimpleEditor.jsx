@@ -65,23 +65,48 @@ const SLUG_FICHA_BEAUTY = 'beauty-skincare';
 // campos de rubro: sirve para cualquier producto.
 const SLUG_FICHA_BASICO = 'basico';
 
-const TABS = [
-  { key: 'marca', label: 'Marca', seccionId: 'header' },
-  { key: 'contenido', label: 'Contenido', seccionId: 'hero' },
-  { key: 'colores', label: 'Colores', seccionId: null },
-  { key: 'catalogo', label: 'Catálogo', seccionId: null },
-  { key: 'destacados', label: 'Destacados', seccionId: 'productos' },
-  { key: 'beneficios', label: 'Beneficios', seccionId: 'beneficios' },
-  { key: 'contacto', label: 'Contacto', seccionId: null },
-  { key: 'redes', label: 'Redes sociales', seccionId: 'contacto' },
-  { key: 'faq', label: 'Preguntas', seccionId: 'faq' },
-  // Solo en el template Fitness — se filtra por `soloFicha` al renderizar.
-  { key: 'ficha', label: 'Ficha producto', seccionId: null, soloFicha: true },
+const PANEL_GROUPS = [
+  { key: 'marca', label: 'Marca', defaultTab: 'marca', tabs: ['marca'] },
+  { key: 'contacto', label: 'Contacto', defaultTab: 'contacto', tabs: ['contacto'], requerido: true },
+  { key: 'redes', label: 'Redes', defaultTab: 'redes', tabs: ['redes'] },
+  { key: 'landing', label: 'Landing', defaultTab: 'contenido', tabs: ['contenido', 'destacados', 'beneficios', 'faq'] },
+  { key: 'estilo', label: 'Estilo', defaultTab: 'colores', tabs: ['colores'] },
+  { key: 'catalogo', label: 'Catálogo', defaultTab: 'catalogo', tabs: ['catalogo', 'ficha'] },
 ];
+
+const SUBTABS = {
+  landing: [
+    { key: 'contenido', label: 'Portada', seccionId: 'hero' },
+    { key: 'destacados', label: 'Destacados', seccionId: 'productos' },
+    { key: 'beneficios', label: 'Beneficios', seccionId: 'beneficios' },
+    { key: 'faq', label: 'Preguntas', seccionId: 'faq' },
+  ],
+  catalogo: [
+    { key: 'catalogo', label: 'Productos', seccionId: null },
+    { key: 'ficha', label: 'Ficha por defecto', seccionId: null, soloFicha: true },
+  ],
+};
+
+const TAB_SECCIONES = {
+  marca: 'header',
+  contenido: 'hero',
+  destacados: 'productos',
+  beneficios: 'beneficios',
+  faq: 'faq',
+  contacto: null,
+  redes: 'contacto',
+  colores: null,
+  catalogo: null,
+  ficha: null,
+};
+
+function grupoActivoDe(tabActual) {
+  return PANEL_GROUPS.find(g => g.tabs.includes(tabActual)) || PANEL_GROUPS[0];
+}
 
 /**
  * Configurador de la landing rígida — NO es un Page Builder: panel de
- * config a la izquierda (Marca/Contenido/Productos/Contacto/Preguntas) +
+ * config a la izquierda (Marca/Contacto/Redes/Landing/Estilo/Catálogo) +
  * preview en vivo a la derecha, sin canvas de edición estructural ni
  * botones "+ Agregar sección/bloque" (spec puntos 3 y 10). El preview usa
  * el MISMO componente de template que la landing pública
@@ -129,12 +154,20 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         }
       } catch(e){}
 
-      const currentItems = (l.items || []).map(it => ({ tipo: it.tipo, referencia_id: it.referencia_id, etiqueta: it.etiqueta, orden: it.orden, precio_ancla: it.precio_ancla, mostrar_en_inicio: it.mostrar_en_inicio !== false }));
+      const currentItems = (l.items || []).map(it => ({
+        tipo: it.tipo,
+        referencia_id: it.referencia_id,
+        etiqueta: it.etiqueta,
+        orden: it.orden,
+        precio_ancla: it.precio_ancla,
+        envio_incluido: it.envio_incluido === true,
+        mostrar_en_inicio: it.mostrar_en_inicio !== false,
+      }));
       const newItems = [...currentItems];
       
       prefilledItems.forEach(pi => {
         if (!newItems.find(it => it.tipo === pi.tipo && Number(it.referencia_id) === Number(pi.referencia_id))) {
-          newItems.push({ tipo: pi.tipo, referencia_id: pi.referencia_id, etiqueta: '', orden: newItems.length, precio_ancla: null, mostrar_en_inicio: true });
+          newItems.push({ tipo: pi.tipo, referencia_id: pi.referencia_id, etiqueta: '', orden: newItems.length, precio_ancla: null, envio_incluido: false, mostrar_en_inicio: true });
         }
       });
       
@@ -159,16 +192,13 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   function cambiarTab(nuevoTab) {
     setTab(nuevoTab);
     setProductoPreview(null);
-    // El panel "Productos" gestiona TODOS los items de la landing (no solo
-    // los destacados del home) — mostrar ahí la landing de inicio confundía
-    // (parecía que no pasaba nada al entrar a la pestaña). Ahora la derecha
-    // sigue a la pestaña activa: Productos → vista de Catálogo completo
-    // (clickeable para editar cada producto), Redes sociales → vista de
-    // Contacto, cualquier otra → la landing de inicio de siempre.
+    // La derecha sigue el contexto mental del panel: Catálogo abre la
+    // página de catálogo, Contacto/Redes abren la página de contacto, y
+    // Landing vuelve al inicio.
     setVistaCatalogo(nuevoTab === 'catalogo');
-    setVistaContacto(nuevoTab === 'contacto');
-    const seccionId = TABS.find(t => t.key === nuevoTab)?.seccionId;
-    if (!seccionId || nuevoTab === 'catalogo' || nuevoTab === 'contacto') return;
+    setVistaContacto(nuevoTab === 'contacto' || nuevoTab === 'redes');
+    const seccionId = TAB_SECCIONES[nuevoTab];
+    if (!seccionId || nuevoTab === 'catalogo' || nuevoTab === 'contacto' || nuevoTab === 'redes') return;
     // El preview vive en el mismo árbol de React (no un iframe), así que
     // alcanza con buscar el id dentro del contenedor con scroll propio.
     requestAnimationFrame(() => {
@@ -315,11 +345,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // "Catálogo"/"Contacto" DENTRO del preview (no desde el sidebar) —
   // sincronizan la pestaña activa del sidebar para que ambos lados nunca
   // queden mostrando cosas distintas.
-  function abrirInicio() { setVistaCatalogo(false); setVistaContacto(false); setProductoPreview(null); setTab('marca'); }
+  function abrirInicio() { setVistaCatalogo(false); setVistaContacto(false); setProductoPreview(null); setTab('contenido'); }
   function abrirCatalogo() { setVistaCatalogo(true); setVistaContacto(false); setProductoPreview(null); setTab('catalogo'); }
-  function cerrarCatalogo() { setVistaCatalogo(false); setTab('marca'); }
+  function cerrarCatalogo() { setVistaCatalogo(false); setTab('contenido'); }
   function abrirContacto() { setVistaContacto(true); setVistaCatalogo(false); setProductoPreview(null); setTab('contacto'); }
-  function cerrarContacto() { setVistaContacto(false); setTab('marca'); }
+  function cerrarContacto() { setVistaContacto(false); setTab('contenido'); }
 
   const [productoCargando, setProductoCargando] = useState(false);
   const [productoImagenes, setProductoImagenes] = useState([]);
@@ -594,12 +624,26 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     return itemDeLanding(producto)?.precio_ancla ?? null;
   }
 
+  function envioIncluidoDe(producto) {
+    return itemDeLanding(producto)?.envio_incluido === true;
+  }
+
   function cambiarPrecioAncla(valor) {
     if (!productoPreview) return;
     const limpio = valor === '' || valor === null || valor === undefined ? null : Number(valor);
     setItems(prev => prev.map(i => (
       Number(i.referencia_id) === Number(productoPreview.id) && i.tipo === (productoPreview.tipo || 'producto')
         ? { ...i, precio_ancla: Number.isFinite(limpio) ? limpio : null }
+        : i
+    )));
+    setProductoAviso('');
+  }
+
+  function cambiarEnvioIncluido(valor) {
+    if (!productoPreview) return;
+    setItems(prev => prev.map(i => (
+      Number(i.referencia_id) === Number(productoPreview.id) && i.tipo === (productoPreview.tipo || 'producto')
+        ? { ...i, envio_incluido: valor === true }
         : i
     )));
     setProductoAviso('');
@@ -710,7 +754,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     : null;
     
   // Una sola bandera para lo que es común a las tres: mostrar la pestaña
-  // "Ficha" en el panel del producto y la de defaults en el sidebar.
+  // "Ficha" en el panel del producto y el subapartado de defaults dentro
+  // de Catálogo.
   const fichaBasicoActiva = templateSlug === SLUG_FICHA_BASICO;
   const fichaBasicoLanding = draft?.content?.ficha_basico || null;
   const fichaBasicoDelProducto = fichaBasicoDesdeProducto(productoMarketing);
@@ -742,12 +787,15 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     catalogoPorIdMapeado.set(finalId, {
       ...c,
       precio_ancla: item.precio_ancla ?? null,
+      envio_incluido: item.envio_incluido === true,
       etiqueta: item.etiqueta || null,
     });
   });
   // Raíz del subdominio en producción, "/l/:slug" en local — ver
   // urlPublicaLanding.js, compartido con el editor del lienzo en blanco.
   const publicUrl = urlPublicaLanding(tienda, landing);
+  const activeGroup = grupoActivoDe(tab);
+  const subtabs = (SUBTABS[activeGroup.key] || []).filter(t => !t.soloFicha || algunaFichaActiva);
 
   return (
     <div className="flex flex-col h-full">
@@ -850,6 +898,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               onOfertasChange={setProductoOfertas}
               precioAncla={precioAnclaDe(productoPreview)}
               onPrecioAncla={itemDeLanding(productoPreview) ? cambiarPrecioAncla : null}
+              envioIncluido={envioIncluidoDe(productoPreview)}
+              onEnvioIncluido={itemDeLanding(productoPreview) ? cambiarEnvioIncluido : null}
               precioActual={productoPreview?.precio_efectivo ?? productoPreview?.precio_base ?? productoPreview?.precio ?? null}
               fichaActiva={fichaActiva}
               ficha={productoFicha}
@@ -895,18 +945,43 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             />
           ) : (
             <>
-              <div className="grid grid-cols-4 gap-1 p-2 border-b border-fg/10">
-                {TABS.filter(t => !t.soloFicha || algunaFichaActiva).map(t => (
+              <div className="p-3 border-b border-fg/10">
+                <div className="grid grid-cols-2 gap-1.5">
+                  {PANEL_GROUPS.map(g => (
+                    <button
+                      key={g.key}
+                      type="button"
+                      onClick={() => cambiarTab(g.defaultTab)}
+                      className={`min-h-10 px-2.5 py-2 rounded-lg text-xs font-semibold text-left transition-colors ${activeGroup.key === g.key ? 'bg-fg text-canvas' : 'text-fg/55 hover:bg-fg/10 hover:text-fg'}`}
+                    >
+                      <span className="flex items-center justify-between gap-2">
+                        <span>{g.label}</span>
+                        {g.requerido && (
+                          <span className={`text-[9px] font-bold uppercase ${activeGroup.key === g.key ? 'text-canvas/60' : 'text-fg/35'}`}>
+                            Req.
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {subtabs.length > 0 && (
+                <div className="flex gap-1 overflow-x-auto px-3 py-2 border-b border-fg/10">
+                  {subtabs.map(t => (
                   <button
                     key={t.key}
                     type="button"
                     onClick={() => cambiarTab(t.key)}
-                    className={`px-2 py-2 rounded-lg text-[11px] font-semibold text-center transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10'}`}
+                    className={`shrink-0 px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${tab === t.key ? 'bg-fg/12 text-fg' : 'text-fg/45 hover:bg-fg/8 hover:text-fg/70'}`}
                   >
                     {t.label}
                   </button>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
+
               <div className="p-5">
                 {tab === 'marca' && (
                   <MarcaPanel

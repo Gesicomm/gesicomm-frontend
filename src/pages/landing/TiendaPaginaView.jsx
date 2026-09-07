@@ -242,6 +242,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         cantidad: nuevaCantidad,
         imagen: item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
+        envioIncluido: item.envio_incluido === true,
       });
       return copia;
     });
@@ -488,6 +489,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       cantidad,
       imagen: item.imagenes?.[0] || item.imagen || null,
       stockMax: variante ? variante.stock : (oferta ? null : item.stock),
+      envioIncluido: item.envio_incluido === true,
     };
 
     // El precio que se arma acá es solo para el tracking y el mensaje de
@@ -506,6 +508,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       cantidad: 1,
       imagen: of.producto_complementario?.imagen || item.imagen || null,
       stockMax: null,
+      envioIncluido: item.envio_incluido === true,
     }));
 
     return confirmarPedido(datosFormulario, [itemCarrito, ...lineasOferta]);
@@ -685,6 +688,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       onConfirmarPedido: confirmarPedido,
       onValidarCupon: validarCupon,
       pasarelas: data?.checkout?.pasarelas || [],
+      deliveryCiudades: data?.delivery_ciudades || [],
     };
 
     // Armar el objeto `tema` compatible con calcularEstiloLanding a partir
@@ -762,6 +766,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
               relacionados={data?.relacionados}
+              deliveryCiudades={data?.delivery_ciudades || []}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
               onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
@@ -782,6 +787,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
               relacionados={data?.relacionados}
+              deliveryCiudades={data?.delivery_ciudades || []}
               onAgregar={(datos) => {
                 // Agregar al carrito es SOLO agregar: nunca abre el
                 // checkout. Se abre el carrito para que el cliente vea que
@@ -809,6 +815,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
               relacionados={data?.relacionados}
+              deliveryCiudades={data?.delivery_ciudades || []}
               onAgregar={(datos) => {
                 // Agregar al carrito es SOLO agregar: nunca abre el
                 // checkout. Se abre el carrito para que la clienta vea que
@@ -836,6 +843,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
               relacionados={data?.relacionados}
+              deliveryCiudades={data?.delivery_ciudades || []}
               onAgregar={(datos) => {
                 // Agregar al carrito es SOLO agregar: nunca abre el
                 // checkout. Se abre el carrito para que se vea que pasó algo.
@@ -862,6 +870,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             tema={temaResuelto}
             landingConfig={data.content || {}}
             nombreComercio={datosProductoPublico.nombreComercio}
+            deliveryCiudades={data?.delivery_ciudades || []}
             onContactar={contactar}
             slug={slug}
             relacionados={data?.relacionados}
@@ -996,6 +1005,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         onQuitar={quitarDelCarrito}
         onConfirmarPedido={confirmarPedido}
         onValidarCupon={validarCupon}
+        deliveryCiudades={data?.delivery_ciudades || []}
       />
     </div>
   );

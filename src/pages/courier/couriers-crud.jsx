@@ -61,7 +61,7 @@ export function CouriersCrud({
   function addTarifa() {
     setForm(f => ({
       ...f,
-      tarifas: [...f.tarifas, { ciudad_zona: "", tipo_pago: "Anticipado", rango_min: 0, rango_max: "", costo: 0, tiempo_entrega_hs: "En el día" }]
+      tarifas: [...f.tarifas, { departamento: "", ciudad_zona: "", tipo_pago: "Anticipado", rango_min: 0, rango_max: "", costo: 0, tiempo_entrega_hs: "En el día" }]
     }))
   }
 
@@ -283,7 +283,7 @@ export function CouriersCrud({
                 </button>
               </div>
               <p style={{ margin: '0 0 1rem 0', fontSize: '0.8rem', color: 'var(--color-fg-subtle)' }}>
-                Configura los costos por ciudad, tipo de pago y cantidad de envíos.
+                Configura los departamentos, ciudades y costos que después aparecen como opciones en el checkout público.
               </p>
 
               {form.tarifas.length === 0 ? (
@@ -308,9 +308,10 @@ export function CouriersCrud({
                 </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
-                  <table className="prod-table" style={{ margin: 0, minWidth: '650px' }}>
+                  <table className="prod-table" style={{ margin: 0, minWidth: '780px' }}>
                     <thead>
                       <tr>
+                        <th>Departamento</th>
                         <th>Ciudad/Zona</th>
                         <th>Pago</th>
                         <th>Rango Min</th>
@@ -326,7 +327,15 @@ export function CouriersCrud({
                           <td>
                             <input
                               className="form-input" style={{ padding: '0.3rem 0.5rem' }}
-                              placeholder="Ej. Asunción"
+                              placeholder="Ej. Central"
+                              value={t.departamento || ""}
+                              onChange={(e) => updateTarifa(i, 'departamento', e.target.value)}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="form-input" style={{ padding: '0.3rem 0.5rem' }}
+                              placeholder="Ej. Luque"
                               value={t.ciudad_zona}
                               onChange={(e) => updateTarifa(i, 'ciudad_zona', e.target.value)}
                               required

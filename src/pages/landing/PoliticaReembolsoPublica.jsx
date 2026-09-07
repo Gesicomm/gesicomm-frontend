@@ -166,6 +166,7 @@ export default function PoliticaReembolsoPublica() {
         onConfirmarPedido={cartState.confirmarPedido}
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
+        deliveryCiudades={data?.delivery_ciudades || []}
       />
 
       <StoreFooterLegal tema={tema} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={false} />

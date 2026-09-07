@@ -313,6 +313,7 @@ export default function CatalogoPublico() {
         onConfirmarPedido={cartState.confirmarPedido}
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
+        deliveryCiudades={data?.delivery_ciudades || []}
       />
 
       {/* Mismo pie que el home (BasicTemplate.jsx y hermanos): primero las

@@ -22,13 +22,14 @@ function clave(tipo, id) { return `${tipo}:${id}`; }
  * (mostrar_en_inicio arranca en false).
  *
  * "items" entra/sale en el shape de LandingItem:
- * [{tipo, referencia_id, etiqueta, precio_ancla, orden, mostrar_en_inicio}].
+ * [{tipo, referencia_id, etiqueta, precio_ancla, envio_incluido, orden, mostrar_en_inicio}].
  */
 export default function CatalogoPanel({ items, catalogo, onChange, draft, onCampo, onEditarProducto }) {
   const [seleccion, setSeleccion] = useState(() => {
     const map = new Map();
     (items || []).forEach(it => map.set(clave(it.tipo, it.referencia_id), {
       id: it.referencia_id, tipo: it.tipo, etiqueta: it.etiqueta || '', precio_ancla: it.precio_ancla != null ? it.precio_ancla : '',
+      envio_incluido: it.envio_incluido === true,
       mostrar_en_inicio: it.mostrar_en_inicio === true,
     }));
     return map;
@@ -52,7 +53,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
         if (!isNaN(parsed)) ancla = parsed;
       }
       return {
-        tipo: v.tipo, referencia_id: v.id, etiqueta: v.etiqueta || null, precio_ancla: ancla, orden: idx,
+        tipo: v.tipo, referencia_id: v.id, etiqueta: v.etiqueta || null, precio_ancla: ancla, envio_incluido: v.envio_incluido === true, orden: idx,
         mostrar_en_inicio: v.mostrar_en_inicio === true,
       };
     }));
@@ -67,7 +68,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
       // mostrar_en_inicio en false a propósito: agregar un producto al
       // catálogo NO debe publicarlo automáticamente en la página de inicio
       // (antes sí pasaba y aparecía solo). Eso se elige en "Destacados".
-      else copia.set(k, { id: item.id, tipo: item.tipo, etiqueta: '', precio_ancla: item.precio_tachado || '', mostrar_en_inicio: false });
+      else copia.set(k, { id: item.id, tipo: item.tipo, etiqueta: '', precio_ancla: item.precio_tachado || '', envio_incluido: false, mostrar_en_inicio: false });
       return copia;
     });
   }

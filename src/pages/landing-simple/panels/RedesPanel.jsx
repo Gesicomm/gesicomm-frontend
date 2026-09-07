@@ -1,5 +1,5 @@
 import React from 'react';
-import { InstagramIcon, FacebookIcon, TikTokIcon, WhatsappIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
+import { InstagramIcon, FacebookIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg pl-9 pr-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 const LABEL = 'block text-xs font-semibold text-fg/60 mb-1.5';
@@ -8,7 +8,6 @@ const LABEL = 'block text-xs font-semibold text-fg/60 mb-1.5';
 // (RedesSocialesFooter en sections.jsx) — así el comercio reconoce de un
 // vistazo qué campo es cada uno.
 const CAMPOS = [
-  { key: 'contacto_whatsapp', label: 'WhatsApp', placeholder: '+595 xxx xxx xxx', Icon: WhatsappIcon },
   { key: 'contacto_instagram', label: 'Instagram', placeholder: '@miempresa', Icon: InstagramIcon },
   { key: 'contacto_facebook', label: 'Facebook', placeholder: 'miempresa', Icon: FacebookIcon },
   { key: 'contacto_tiktok', label: 'TikTok', placeholder: '@miempresa', Icon: TikTokIcon },
@@ -26,8 +25,7 @@ export default function RedesPanel({ draft, onCampo }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-fg/40 leading-relaxed">
-        Aparecen en el pie de todas las páginas. El WhatsApp además se usa para el botón
-        <strong className="text-fg/70"> "Consultar por WhatsApp"</strong> de cada producto.
+        Perfiles visibles en el pie de la tienda y en la página de contacto. WhatsApp se carga en Contacto.
       </p>
       {CAMPOS.map(({ key, label, placeholder, Icon }) => (
         <div key={key}>

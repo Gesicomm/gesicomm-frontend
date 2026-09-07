@@ -29,6 +29,7 @@ export default function TechProductPagePublica({
   onComprarAhora,
   onClickRelacionado,
   onVolver,
+  deliveryCiudades = [],
 }) {
   const [enCompra, setEnCompra] = useState({ variante: null, pack: null });
   const [comprando, setComprando] = useState(false);
@@ -99,6 +100,7 @@ export default function TechProductPagePublica({
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}
         itemOriginal={item}
+        deliveryCiudades={deliveryCiudades}
         onConfirmar={(form, ofertasCheckout = []) => {
           if (!onComprarAhora) return undefined;
           // La variante elegida y las ofertas del checkout (order bumps) son

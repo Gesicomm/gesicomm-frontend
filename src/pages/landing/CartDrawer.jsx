@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
+import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -15,9 +16,10 @@ const FORM_VACIO = {
  * opcional que decide la propia landing (ver checkout.redirigir_whatsapp
  * en LandingPublica.jsx).
  */
-export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [] }) {
+export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades = [] }) {
   const [paso, setPaso] = useState('carrito'); // 'carrito' | 'formulario' | 'confirmado'
   const [form, setForm] = useState(FORM_VACIO);
+  const [ciudadDeliveryInput, setCiudadDeliveryInput] = useState('');
   const [acepta, setAcepta] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
@@ -60,10 +62,24 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
     && form.ciudad.trim() && form.direccion.trim() && acepta;
 
   const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
+  const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
+  const pedidoConEnvioIncluido = items.length > 0 && items.every(it => it.envioIncluido === true || it.envio_incluido === true);
+  const opcionDeliverySeleccionada = opcionesDelivery.find(op =>
+    op.ciudad === form.ciudad && (op.departamento || '') === (form.departamento || '')
+  );
+  const detalleDelivery = opcionDeliverySeleccionada
+    ? descripcionDelivery(opcionDeliverySeleccionada, pedidoConEnvioIncluido, formatPrecio)
+    : null;
+  const costoEnvioVisible = opcionDeliverySeleccionada && !pedidoConEnvioIncluido
+    ? Number(opcionDeliverySeleccionada.costo) || 0
+    : 0;
+  const descuentoVisible = cupon ? (Number(cupon.descuento) || 0) : 0;
+  const totalVisible = Math.max(0, subtotal - descuentoVisible) + costoEnvioVisible;
 
   function reiniciar() {
     setPaso('carrito');
     setForm(FORM_VACIO);
+    setCiudadDeliveryInput('');
     setAcepta(false);
     setResultado(null);
     setError(null);
@@ -78,6 +94,16 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
 
   function actualizarCampo(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
+  }
+
+  function actualizarCiudadDelivery(valor) {
+    setCiudadDeliveryInput(valor);
+    const opcion = buscarOpcionDelivery(opcionesDelivery, valor);
+    if (opcion) {
+      setForm(prev => ({ ...prev, ciudad: opcion.ciudad, departamento: opcion.departamento || '' }));
+    } else {
+      setForm(prev => ({ ...prev, ciudad: '', departamento: '' }));
+    }
   }
 
   async function enviarFormulario(e) {
@@ -246,24 +272,49 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                     </div>
                   </label>
 
-                  <label className="lp-checkout-field">
-                    <span>Ciudad <em>*</em></span>
-                    <input
-                      required
-                      value={form.ciudad}
-                      onChange={e => actualizarCampo('ciudad', e.target.value)}
-                      placeholder="Ciudad"
-                    />
-                  </label>
+                  {opcionesDelivery.length > 0 ? (
+                    <label className="lp-checkout-field">
+                      <span>Ciudad y departamento <em>*</em></span>
+                      <input
+                        required
+                        list="lp-delivery-ciudades"
+                        value={ciudadDeliveryInput}
+                        onChange={e => actualizarCiudadDelivery(e.target.value)}
+                        placeholder="Buscá tu ciudad..."
+                      />
+                      <datalist id="lp-delivery-ciudades">
+                        {opcionesDelivery.map(op => (
+                          <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio) || undefined} />
+                        ))}
+                      </datalist>
+                      {detalleDelivery && (
+                        <small className="lp-checkout-delivery-hint">
+                          {etiquetaDelivery(opcionDeliverySeleccionada)} · {detalleDelivery}
+                        </small>
+                      )}
+                    </label>
+                  ) : (
+                    <>
+                      <label className="lp-checkout-field">
+                        <span>Ciudad <em>*</em></span>
+                        <input
+                          required
+                          value={form.ciudad}
+                          onChange={e => actualizarCampo('ciudad', e.target.value)}
+                          placeholder="Ciudad"
+                        />
+                      </label>
 
-                  <label className="lp-checkout-field">
-                    <span>Departamento</span>
-                    <input
-                      value={form.departamento}
-                      onChange={e => actualizarCampo('departamento', e.target.value)}
-                      placeholder="Departamento"
-                    />
-                  </label>
+                      <label className="lp-checkout-field">
+                        <span>Departamento</span>
+                        <input
+                          value={form.departamento}
+                          onChange={e => actualizarCampo('departamento', e.target.value)}
+                          placeholder="Departamento"
+                        />
+                      </label>
+                    </>
+                  )}
 
                   <label className="lp-checkout-field">
                     <span>Dirección <em>*</em></span>
@@ -366,6 +417,13 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                     <strong>{formatPrecio(subtotal)}</strong>
                   </div>
 
+                  {opcionDeliverySeleccionada && (
+                    <div className="lp-cart-subtotal lp-cart-delivery">
+                      <span>Delivery</span>
+                      <strong>{pedidoConEnvioIncluido ? 'Incluido' : formatPrecio(costoEnvioVisible)}</strong>
+                    </div>
+                  )}
+
                   {cupon && (
                     <>
                       <div className="lp-cart-subtotal lp-cart-descuento">
@@ -373,10 +431,17 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                         <strong>− {formatPrecio(cupon.descuento)}</strong>
                       </div>
                       <div className="lp-cart-subtotal lp-cart-total-final">
-                        <span>Total con descuento</span>
-                        <strong>{formatPrecio(Math.max(0, subtotal - cupon.descuento))}</strong>
+                        <span>Total estimado</span>
+                        <strong>{formatPrecio(totalVisible)}</strong>
                       </div>
                     </>
+                  )}
+
+                  {!cupon && opcionDeliverySeleccionada && !pedidoConEnvioIncluido && (
+                    <div className="lp-cart-subtotal lp-cart-total-final">
+                      <span>Total estimado</span>
+                      <strong>{formatPrecio(totalVisible)}</strong>
+                    </div>
                   )}
 
                   <button type="submit" className="lp-cart-checkout" disabled={!formularioValido || enviando}>

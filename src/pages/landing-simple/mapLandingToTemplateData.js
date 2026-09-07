@@ -65,6 +65,7 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
         // (ver ImagenProductoHover). `imagen` sigue siendo la principal.
         imagenes: galeriaDeItem(c),
         etiqueta: item.etiqueta || null,
+        envioIncluido: item.envio_incluido === true,
         // stock y tieneOpciones deciden qué botón dibuja la tarjeta (ver
         // AccionesProducto en templates/sections.jsx). Sin ellos el preview
         // mostraba "Agregar al carrito" en productos que en la publicada
@@ -160,6 +161,7 @@ export function mapPublicDtoToTemplateData(dto) {
       imagen: i.imagen ? getMediaUrl(i.imagen) : null,
       imagenes: galeriaDeItem(i),
       etiqueta: i.etiqueta || null,
+      envioIncluido: i.envio_incluido === true,
       stock: i.stock,
       // Con variantes u ofertas hay que elegir una opción antes de agregar
       // al carrito — el botón de la tarjeta lleva al detalle en ese caso

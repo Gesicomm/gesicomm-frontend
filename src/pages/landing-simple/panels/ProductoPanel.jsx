@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft, Loader, Lock, Save, Star, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Loader, Lock, Save, Star, Trash2, Truck, Upload } from 'lucide-react';
 import { getMediaUrl } from '../../../services/api';
 import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
@@ -37,6 +37,7 @@ export default function ProductoPanel({
   // Precio tachado de ESTE producto en ESTA landing (LandingItem.precio_ancla).
   // `precioActual` es solo para calcular el descuento que se muestra al lado.
   precioAncla = null, onPrecioAncla = null, precioActual = null,
+  envioIncluido = false, onEnvioIncluido = null,
   packs = [],
   imagenes, imagenesEditables = true, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
   faqTitulo, onFaqTitulo,
@@ -50,7 +51,14 @@ export default function ProductoPanel({
 }) {
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
   // un Map con clave "producto:id" para reutilizar ProductPicker sin cambios.
-  const [tab, setTab] = React.useState('detalles');
+  const [tab, setTab] = React.useState('contenido');
+  const hayFichaAvanzada = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva;
+  const tabs = [
+    { key: 'contenido', label: 'Contenido' },
+    { key: 'venta', label: 'Venta' },
+    { key: 'relacionados', label: 'Relacionados' },
+    hayFichaAvanzada ? { key: 'ficha', label: 'Ficha avanzada' } : null,
+  ].filter(Boolean);
 
   const seleccionRelacionados = useMemo(() => {
     const map = new Map();
@@ -95,19 +103,24 @@ export default function ProductoPanel({
         <span className="text-sm font-semibold">Volver a la landing</span>
       </button>
 
-      <div className="flex bg-fg/5 border-b border-fg/10 shrink-0">
-        <button type="button" onClick={() => setTab('detalles')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'detalles' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Detalles</button>
-        <button type="button" onClick={() => setTab('relacionados')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'relacionados' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Relacionados</button>
-        <button type="button" onClick={() => setTab('ofertas')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ofertas' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ofertas</button>
-        {(fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva) && (
-          <button type="button" onClick={() => setTab('ficha')} className={`flex-1 py-2.5 text-xs font-semibold text-center border-b-2 transition-colors ${tab === 'ficha' ? 'border-primary text-primary-text' : 'border-transparent text-fg/50 hover:text-fg'}`}>Ficha</button>
-        )}
+      <div className="flex gap-1 overflow-x-auto bg-fg/5 border-b border-fg/10 shrink-0 px-2 py-2">
+        {tabs.map(t => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`shrink-0 px-3 py-2 rounded-lg text-xs font-semibold text-center transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10 hover:text-fg'}`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
         <div>
-          <p className="text-xs text-fg/40 mb-0.5">Editando producto</p>
+          <p className="text-xs text-fg/40 mb-0.5">Producto en esta landing</p>
           <p className="text-sm font-bold text-fg truncate">{producto?.nombre}</p>
+          <p className="text-[11px] text-fg/35 mt-1 leading-relaxed">Los cambios se guardan solo para esta landing.</p>
         </div>
 
         {!editable ? (
@@ -116,7 +129,7 @@ export default function ProductoPanel({
           <div className="flex items-center gap-2 text-fg/40 text-xs"><Loader size={14} className="animate-spin" /> Cargando...</div>
         ) : (
           <>
-            {tab === 'detalles' && (
+            {tab === 'contenido' && (
               <div className="flex flex-col gap-5">
             {/* ─── Imágenes ─────────────────────────────────────────── */}
             <div>
@@ -159,20 +172,6 @@ export default function ProductoPanel({
               )}
             </div>
 
-            {/* ─── Precio tachado ───────────────────────────────────── */}
-            {onPrecioAncla && (
-              <div>
-                <label className="block text-xs font-semibold text-fg/60 mb-1.5">Precio tachado</label>
-                <CurrencyInput
-                  value={precioAncla ?? ''}
-                  onChange={onPrecioAncla}
-                  placeholder="Sin precio tachado"
-                  className={CAMPO}
-                />
-                <ResumenAncla ancla={precioAncla} actual={precioActual} />
-              </div>
-            )}
-
             {/* ─── Descripción ──────────────────────────────────────── */}
             <div>
               <label className="block text-xs font-semibold text-fg/60 mb-1.5">Descripción</label>
@@ -203,6 +202,53 @@ export default function ProductoPanel({
               <FaqPanel faq={faq} onChange={onFaqChange} />
             </div>
             </div>
+            )}
+
+            {tab === 'venta' && (
+              <div className="flex flex-col gap-5">
+                <div>
+                  <label className="block text-xs font-semibold text-fg/60 mb-1.5">Precio actual</label>
+                  <div className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm font-semibold text-fg">
+                    {precioActual ? formatPrecio(precioActual) : 'Sin precio'}
+                  </div>
+                  <p className="text-[11px] text-fg/30 mt-1.5 leading-relaxed">
+                    Se toma del catálogo. En esta landing solo ajustás cómo se comunica la oferta.
+                  </p>
+                </div>
+
+                {onPrecioAncla && (
+                  <div>
+                    <label className="block text-xs font-semibold text-fg/60 mb-1.5">Precio tachado</label>
+                    <CurrencyInput
+                      value={precioAncla ?? ''}
+                      onChange={onPrecioAncla}
+                      placeholder="Sin precio tachado"
+                      className={CAMPO}
+                    />
+                    <ResumenAncla ancla={precioAncla} actual={precioActual} />
+                  </div>
+                )}
+
+                {onEnvioIncluido && (
+                  <label className="flex items-start gap-3 rounded-lg border border-fg/10 bg-fg/[0.03] px-3 py-3 cursor-pointer hover:bg-fg/[0.06] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={envioIncluido}
+                      onChange={e => onEnvioIncluido(e.target.checked)}
+                      className="mt-1 shrink-0 cursor-pointer"
+                    />
+                    <Truck size={16} className="mt-0.5 shrink-0 text-fg/50" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold text-fg">Envío incluido</span>
+                      <span className="block text-[11px] text-fg/35 leading-relaxed mt-0.5">
+                        El delivery queda incluido en el precio del producto para los pedidos de esta landing.
+                      </span>
+                    </span>
+                  </label>
+                )}
+
+                <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
+              </div>
             )}
 
             {tab === 'relacionados' && (
@@ -244,12 +290,6 @@ export default function ProductoPanel({
               />
             </div>
             </div>
-            )}
-
-            {tab === 'ofertas' && (
-              <div className="flex flex-col gap-5">
-              <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
-              </div>
             )}
 
             {tab === 'ficha' && fichaTechActiva && fichaTechResuelta && (

@@ -27,6 +27,7 @@ export default function FitnessProductPagePublica({
   onComprarAhora,
   onClickRelacionado,
   onVolver,
+  deliveryCiudades = [],
 }) {
   const [packEnCompra, setPackEnCompra] = useState(null);
   const [comprando, setComprando] = useState(false);
@@ -81,6 +82,7 @@ export default function FitnessProductPagePublica({
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}
         itemOriginal={item}
+        deliveryCiudades={deliveryCiudades}
         onConfirmar={(form, ofertasCheckout = []) => {
           if (!onComprarAhora) return undefined;
           // El paquete elegido en la ficha y las ofertas del checkout (order

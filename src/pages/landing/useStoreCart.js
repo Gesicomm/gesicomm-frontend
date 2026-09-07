@@ -84,6 +84,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         cantidad: nuevaCantidad,
         imagen: item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
+        envioIncluido: item.envio_incluido === true,
       });
       return copia;
     });
@@ -167,14 +168,11 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       variante_id: i.varianteId,
       oferta_id: i.ofertaId,
     }));
-    // Mismo primer argumento que recalcularCarritoLanding/crearCheckoutLanding
-    // acá al lado — si este endpoint recibiera algo distinto, resolvería otra
-    // landing que la que está cobrando.
-    return validarCuponLanding(data.id, codigo, itemsPayload);
+    return validarCuponLanding(slug, codigo, itemsPayload);
   }
 
-  function confirmarPedido() {
-    if (carrito.size === 0) return;
+  async function confirmarPedido(datosFormulario = {}) {
+    if (carrito.size === 0) throw new Error('Tu carrito está vacío.');
     const itemsCrudos = Array.from(carrito.values());
     const itemsPayload = itemsCrudos.map(i => ({
       tipo: i.tipo,
@@ -184,58 +182,54 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       oferta_id: i.ofertaId,
     }));
 
-    recalcularCarritoLanding(data.id, itemsPayload)
-      .then(res => {
-        const urlParams = new URLSearchParams();
-        if (slug) urlParams.set('tienda', slug);
-        try {
-          const eventId = generarEventId();
-          const { fbc, fbp } = leerCookiesFacebook();
-          const valorTotal = res.total || itemsCrudos.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
-          
-          const trackPayload = {
-            fbp, fbc, user_agent: navigator.userAgent, event_source_url: window.location.href, event_id: eventId,
-            custom_data: {
-              content_ids: itemsCrudos.map(i => i.contentId),
-              contents: itemsCrudos.map(i => ({ id: i.contentId, quantity: i.cantidad })),
-              content_type: 'product',
-              value: valorTotal,
-              currency: 'PYG',
-              num_items: itemsCrudos.reduce((sum, item) => sum + item.cantidad, 0)
-            }
-          };
-          trackearEvento('InitiateCheckout', trackPayload.custom_data, eventId);
-          trackearEventoGA('begin_checkout', {
-            currency: 'PYG',
-            value: valorTotal,
-            items: itemsCrudos.map(i => ({ item_id: i.contentId, item_name: i.nombre, price: i.precio, quantity: i.cantidad }))
-          });
-          trackearEventoTikTok('InitiateCheckout', {
-            contents: itemsCrudos.map(i => ({ content_id: i.contentId, content_name: i.nombre, quantity: i.cantidad, price: i.precio })),
-            value: valorTotal,
-            currency: 'PYG'
-          });
-          registrarEventoLanding(data.id, 'InitiateCheckout', trackPayload).catch(() => {});
-        } catch (e) {
-          console.error('Error trackeando InitiateCheckout:', e);
-        }
+    const res = await recalcularCarritoLanding(slug, itemsPayload);
+    const checkout = await crearCheckoutLanding(slug, {
+      ...datosFormulario,
+      items: itemsPayload,
+      descuentos: res.descuentos_aplicados || [],
+      origen: slug ? 'landing' : 'tienda_directa',
+      utm_source: new URLSearchParams(window.location.search).get('utm_source') || undefined,
+      utm_medium: new URLSearchParams(window.location.search).get('utm_medium') || undefined,
+      utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign') || undefined,
+    });
 
-        return crearCheckoutLanding(data.id, {
-          items: itemsPayload,
-          descuentos: res.descuentos_aplicados || [],
-          origen: slug ? 'landing' : 'tienda_directa',
-          utm_source: new URLSearchParams(window.location.search).get('utm_source') || undefined,
-          utm_medium: new URLSearchParams(window.location.search).get('utm_medium') || undefined,
-          utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign') || undefined,
-        });
-      })
-      .then(checkout => {
-        window.location.href = checkout.url;
-      })
-      .catch(err => {
-        console.error('Error al iniciar checkout:', err);
-        alert('Hubo un error al preparar el pedido. Por favor intentá de nuevo.');
+    try {
+      const eventId = generarEventId();
+      const { fbc, fbp } = leerCookiesFacebook();
+      const valorTotal = res.total || itemsCrudos.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+      const customData = {
+        content_ids: itemsCrudos.map(i => i.contentId),
+        contents: itemsCrudos.map(i => ({ id: i.contentId, quantity: i.cantidad })),
+        content_type: 'product',
+        value: valorTotal,
+        currency: 'PYG',
+        num_items: itemsCrudos.reduce((sum, item) => sum + item.cantidad, 0)
+      };
+      trackearEvento('InitiateCheckout', eventId, customData);
+      trackearEventoGA('begin_checkout', {
+        currency: 'PYG',
+        value: valorTotal,
+        items: itemsCrudos.map(i => ({ item_id: i.contentId, item_name: i.nombre, price: i.precio, quantity: i.cantidad }))
       });
+      trackearEventoTikTok('InitiateCheckout', {
+        contents: itemsCrudos.map(i => ({ content_id: i.contentId, content_name: i.nombre, quantity: i.cantidad, price: i.precio })),
+        value: valorTotal,
+        currency: 'PYG'
+      });
+      registrarEventoLanding(slug, {
+        event_name: 'InitiateCheckout',
+        event_id: eventId,
+        event_source_url: window.location.href,
+        fbc,
+        fbp,
+        custom_data: customData,
+      }).catch(() => {});
+    } catch (e) {
+      console.error('Error trackeando InitiateCheckout:', e);
+    }
+
+    setCarrito(new Map());
+    return { redirigido: false, pedido_id: checkout.pedido_id, payment_data: checkout.payment_data };
   }
 
   return {

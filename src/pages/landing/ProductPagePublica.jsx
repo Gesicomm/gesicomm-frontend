@@ -13,7 +13,7 @@ import FunnelCheckout from '../funnel/FunnelCheckout';
  * Página de producto dedicada a pantalla completa para la landing pública.
  * Sustituye al antiguo ProductDetailModal.
  */
-export default function ProductPagePublica({ item, onAgregar, onComprarAhora, landingConfig, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado }) {
+export default function ProductPagePublica({ item, onAgregar, onComprarAhora, landingConfig, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado, deliveryCiudades = [] }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   /**
@@ -312,6 +312,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
               }}
               ofertasLanding={landingConfig?.ofertas_producto_vista || []}
               itemOriginal={item}
+              deliveryCiudades={deliveryCiudades}
               onConfirmar={(form, ofertasCheckout = []) => {
                 if (!onComprarAhora) return;
                 // `oferta` (el pack/combo elegido en la ficha) y las ofertas

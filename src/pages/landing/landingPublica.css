@@ -1733,6 +1733,11 @@ button.lp-tier-card--imagen {
 .lp-checkout-field input:focus {
   border-color: var(--l-primary);
 }
+.lp-checkout-delivery-hint {
+  color: var(--l-text-muted, #94a3b8);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
 .lp-checkout-tel {
   display: flex;
   align-items: stretch;
@@ -2522,5 +2527,6 @@ button.lp-tier-card--imagen {
 /* El descuento en verde y el total final destacado: la persona tiene que
    ver cuánto se ahorró, no solo el número nuevo. */
 .lp-cart-descuento strong { color: #10b981; font-size: 1rem; }
+.lp-cart-delivery strong { font-size: 1rem; }
 .lp-cart-total-final { margin-top: 0.15rem; }
 .lp-cart-total-final strong { color: var(--l-accent, #10b981); }

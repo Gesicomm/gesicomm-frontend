@@ -230,26 +230,36 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     if (form.courier_id) return;
     if (!form.ciudad || couriers.length === 0 || metodosPago.length === 0) return;
     const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
-    const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa);
+    const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
     if (resultado) {
       setForm(prev => (prev.courier_id ? prev : { ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, modoCompletar, couriers, metodosPago, form.ciudad]);
+  }, [open, modoCompletar, couriers, metodosPago, form.ciudad, form.departamento]);
 
   // Opciones de ciudades (únicamente configuradas en los couriers del usuario)
   const optionsCiudades = useMemo(() => {
-    const setCiudades = new Set();
+    const ciudades = new Map();
 
     couriers.forEach(c => {
       if (c.tarifas && Array.isArray(c.tarifas)) {
         c.tarifas.forEach(t => {
-          if (t.ciudad_zona) setCiudades.add(t.ciudad_zona.trim());
+          const ciudad = t.ciudad_zona?.trim();
+          if (!ciudad) return;
+          const departamento = t.departamento?.trim() || "";
+          const key = `${departamento.toLowerCase()}::${ciudad.toLowerCase()}`;
+          if (!ciudades.has(key)) {
+            ciudades.set(key, {
+              value: ciudad,
+              label: departamento ? `${ciudad} - ${departamento}` : ciudad,
+              departamento,
+            });
+          }
         });
       }
     });
 
-    return Array.from(setCiudades).sort().map(c => ({ value: c, label: c }));
+    return Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
   }, [couriers]);
 
   const productoPorId = useMemo(() => {
@@ -288,16 +298,20 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   };
 
   // Al cambiar la ciudad, buscar tarifa configurada de delivery
-  const handleCiudadChange = (valCiudad) => {
+  const handleCiudadChange = (valCiudad, departamentoSeleccionado) => {
     setForm(prev => {
       const nextForm = { ...prev, ciudad: valCiudad };
+      if (departamentoSeleccionado !== undefined) {
+        nextForm.departamento = departamentoSeleccionado || "";
+      }
+      const departamentoParaTarifa = departamentoSeleccionado !== undefined ? departamentoSeleccionado : prev.departamento;
 
       if (valCiudad) {
         const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
 
         // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
         if (prev.courier_id) {
-          const costo = obtenerTarifaPara(couriers, valCiudad, prev.courier_id, esAnticipado, itemsParaTarifa);
+          const costo = obtenerTarifaPara(couriers, valCiudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
           if (costo !== null) {
             nextForm.costo_envio = costo;
             return nextForm;
@@ -305,7 +319,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
         }
 
         // Si no hay courier o el seleccionado no cubre la nueva ciudad, buscar el primero que la cubra
-        const resultado = buscarCourierYTarifa(couriers, valCiudad, esAnticipado, itemsParaTarifa);
+        const resultado = buscarCourierYTarifa(couriers, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -327,7 +341,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
       const nextForm = { ...prev, courier_id: courierId };
       if (courierId && prev.ciudad) {
         const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
-        const costo = obtenerTarifaPara(couriers, prev.ciudad, courierId, esAnticipado, itemsParaTarifa);
+        const costo = obtenerTarifaPara(couriers, prev.ciudad, courierId, esAnticipado, itemsParaTarifa, prev.departamento);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
@@ -342,16 +356,39 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     setForm(prev => {
       const nextForm = { ...prev, metodo_pago_id: metodoPagoId, metodo_pago: metodo ? metodo.nombre : prev.metodo_pago };
       if (prev.ciudad && prev.courier_id) {
-        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa);
+        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, prev.departamento);
         if (costo !== null) {
           nextForm.costo_envio = costo;
         }
       } else if (prev.ciudad) {
-        const resultado = buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa);
+        const resultado = buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa, prev.departamento);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
         }
+      }
+      return nextForm;
+    });
+  };
+
+  const handleDepartamentoChange = (departamento) => {
+    setForm(prev => {
+      const nextForm = { ...prev, departamento };
+      if (!prev.ciudad) return nextForm;
+
+      const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+      if (prev.courier_id) {
+        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamento);
+        if (costo !== null) {
+          nextForm.costo_envio = costo;
+          return nextForm;
+        }
+      }
+
+      const resultado = buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa, departamento);
+      if (resultado) {
+        nextForm.courier_id = resultado.courierId;
+        nextForm.costo_envio = resultado.costo;
       }
       return nextForm;
     });
@@ -377,12 +414,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     if (!form.ciudad) return;
     const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
     if (form.courier_id) {
-      const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems);
+      const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems, form.departamento);
       if (nuevoCosto !== null) {
         setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
       }
     } else {
-      const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems);
+      const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems, form.departamento);
       if (resultado) {
         setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
       }
@@ -682,7 +719,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                   className="form-input"
                   placeholder="Ej. Central"
                   value={form.departamento}
-                  onChange={e => setForm({ ...form, departamento: e.target.value })}
+                  onChange={e => handleDepartamentoChange(e.target.value)}
                 />
               </div>
 
@@ -693,10 +730,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
                   placeholder="Escribe o selecciona ciudad..."
                   styles={selectStyles}
                   options={optionsCiudades}
-                  value={form.ciudad ? { value: form.ciudad, label: form.ciudad } : null}
+                  value={form.ciudad ? (
+                    optionsCiudades.find(o => o.value === form.ciudad && (o.departamento || "") === (form.departamento || ""))
+                    || { value: form.ciudad, label: [form.ciudad, form.departamento].filter(Boolean).join(" - ") }
+                  ) : null}
                   onChange={(newValue) => {
                     const val = newValue ? newValue.value : "";
-                    handleCiudadChange(val);
+                    handleCiudadChange(val, newValue?.departamento);
                   }}
                   onCreateOption={(inputValue) => {
                     handleCiudadChange(inputValue);

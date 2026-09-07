@@ -12,6 +12,14 @@ function cantidadEvaluada(items) {
   return total > 0 ? total : 1;
 }
 
+function normalizar(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
 /**
  * Costo de delivery de UN courier puntual para una ciudad+tipo de
  * pago+cantidad, o null si ese courier no cubre la ciudad.
@@ -19,39 +27,42 @@ function cantidadEvaluada(items) {
  * cantidad → cualquier tarifa de la ciudad con ese tipo de pago → cualquier
  * tarifa de la ciudad sin importar el tipo de pago.
  */
-export function obtenerTarifaPara(couriers, ciudad, courierId, esAnticipado, items) {
+export function obtenerTarifaPara(couriers, ciudad, courierId, esAnticipado, items, departamento = '') {
   if (!ciudad || !courierId || !couriers?.length) return null;
   const c = couriers.find(curr => curr.id === Number(courierId));
   if (!c?.tarifas?.length) return null;
 
   const targetTipoPago = esAnticipado ? 'Anticipado' : 'Al Recibir';
   const cantEval = cantidadEvaluada(items);
-  const ciudadNorm = ciudad.toLowerCase().trim();
+  const ciudadNorm = normalizar(ciudad);
+  const departamentoNorm = normalizar(departamento);
+  const mismaZona = (t) => normalizar(t.ciudad_zona) === ciudadNorm
+    && (!departamentoNorm || normalizar(t.departamento) === departamentoNorm);
 
   let tarifa = c.tarifas.find(t => {
     const rMin = Number(t.rango_min) || 0;
     const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === '') ? Infinity : Number(t.rango_max);
-    return t.ciudad_zona.toLowerCase().trim() === ciudadNorm
+    return mismaZona(t)
       && (t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago)
       && cantEval >= rMin && cantEval <= rMax;
   });
 
   if (!tarifa) {
-    tarifa = c.tarifas.find(t => t.ciudad_zona.toLowerCase().trim() === ciudadNorm
+    tarifa = c.tarifas.find(t => mismaZona(t)
       && (t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago));
   }
   if (!tarifa) {
-    tarifa = c.tarifas.find(t => t.ciudad_zona.toLowerCase().trim() === ciudadNorm);
+    tarifa = c.tarifas.find(mismaZona);
   }
 
   return tarifa ? tarifa.costo : null;
 }
 
 /** Primer courier (en el orden que vino la lista) que cubra la ciudad, con su tarifa. */
-export function buscarCourierYTarifa(couriers, ciudad, esAnticipado, items) {
+export function buscarCourierYTarifa(couriers, ciudad, esAnticipado, items, departamento = '') {
   if (!ciudad || !couriers?.length) return null;
   for (const c of couriers) {
-    const costo = obtenerTarifaPara(couriers, ciudad, c.id, esAnticipado, items);
+    const costo = obtenerTarifaPara(couriers, ciudad, c.id, esAnticipado, items, departamento);
     if (costo !== null) return { courierId: c.id, costo };
   }
   return null;

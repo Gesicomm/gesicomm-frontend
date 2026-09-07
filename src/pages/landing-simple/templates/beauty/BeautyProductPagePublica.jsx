@@ -29,6 +29,7 @@ export default function BeautyProductPagePublica({
   onComprarAhora,
   onClickRelacionado,
   onVolver,
+  deliveryCiudades = [],
 }) {
   const [enCompra, setEnCompra] = useState({ variante: null, pack: null });
   const [comprando, setComprando] = useState(false);
@@ -95,6 +96,7 @@ export default function BeautyProductPagePublica({
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}
         itemOriginal={item}
+        deliveryCiudades={deliveryCiudades}
         onConfirmar={(form, ofertasCheckout = []) => {
           if (!onComprarAhora) return undefined;
           // El paquete elegido y las ofertas del checkout (order bumps) son
