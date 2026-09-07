@@ -28,6 +28,7 @@ import FunnelEditor from './pages/funnel/FunnelEditor';
 import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Planes from './pages/planes/Planes';
+import ResultadoPago from './pages/planes/ResultadoPago';
 import AdminPlanes from './pages/planes/AdminPlanes';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
@@ -302,9 +303,12 @@ function App() {
         {/* Planes: /planes es la pantalla que ve el comercio (catálogo de
             lib/planesCatalogo.js); /admin/planes es donde el admin edita ese
             catálogo. Sin backend todavía — ver el aviso del editor. */}
-        <Route path="/planes" element={
-          <RequireTienda><DynamicLayout><Planes /></DynamicLayout></RequireTienda>
-        } />
+        {/* Publicas a proposito: el flujo es elegir plan -> pagar -> recien
+            ahi registrarse, asi que quien las usa todavia no tiene cuenta.
+            /planes/resultado/:hash es la URL DE REDIRECCIONAMIENTO que se
+            configura en el panel de PagoPar. */}
+        <Route path="/planes" element={<Planes />} />
+        <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
         <Route path="/admin/planes" element={
           <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>
         } />

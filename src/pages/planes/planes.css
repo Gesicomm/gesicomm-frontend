@@ -445,3 +445,50 @@
   .pl-editor-grid { grid-template-columns: minmax(0, 1fr); }
   .pl-admin-acciones { width: 100%; }
 }
+
+/* ─── Checkout (modal) ────────────────────────────────────────────────── */
+.pl-modal-fondo {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.pl-modal {
+  width: 100%; max-width: 420px;
+  display: flex; flex-direction: column; gap: 0.85rem;
+  padding: 1.6rem;
+  background: var(--vit-surface);
+  border: 1px solid var(--vit-border);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+.pl-modal h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--vit-text); }
+.pl-modal-precio { margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--vit-text); letter-spacing: -0.03em; }
+.pl-modal-precio span { font-size: 0.75rem; font-weight: 400; color: var(--vit-muted-2); }
+.pl-modal-ayuda { margin: 0; font-size: 0.78rem; line-height: 1.5; color: var(--vit-muted); }
+.pl-modal-error {
+  display: flex; align-items: center; gap: 0.4rem; margin: 0;
+  font-size: 0.78rem; color: #ef4444;
+}
+.pl-modal-acciones { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 0.4rem; }
+
+/* ─── Pantalla de resultado ───────────────────────────────────────────── */
+.pl-resultado { min-height: 70vh; justify-content: center; }
+
+.pl-estado {
+  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+  text-align: center;
+  max-width: 520px; margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+.pl-estado h1 { margin: 0.25rem 0 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.03em; color: var(--vit-text); }
+.pl-estado p { margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--vit-muted); }
+.pl-estado .pl-cta { margin-top: 0.75rem; display: inline-flex; align-items: center; gap: 0.4rem; }
+.pl-estado.ok > svg { color: #10b981; }
+.pl-estado.pendiente > svg { color: #f59e0b; }
+.pl-estado.error > svg { color: #ef4444; }
+
+.pl-referencia { margin-top: 1rem !important; font-size: 0.72rem !important; color: var(--vit-muted-2) !important; }
+.pl-referencia code { font-family: var(--font-mono); word-break: break-all; }
