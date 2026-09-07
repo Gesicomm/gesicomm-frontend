@@ -3,7 +3,7 @@ import { X, Check, Loader, ImageOff, Gift, Sparkles } from 'lucide-react';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
-import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
+import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery, resolverReglaDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -46,8 +46,13 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   const opcionDeliverySeleccionada = opcionesDelivery.find(op =>
     op.ciudad === form.ciudad && (op.departamento || '') === (form.departamento || '')
   );
+  const itemsDelivery = [{ cantidad: resumen?.cantidad || 1 }];
+  const reglaDeliverySeleccionada = resolverReglaDelivery(opcionDeliverySeleccionada, {
+    items: itemsDelivery,
+    paymentMethod: form.payment_method,
+  });
   const detalleDelivery = opcionDeliverySeleccionada
-    ? descripcionDelivery(opcionDeliverySeleccionada, productoConEnvioIncluido, formatPrecio)
+    ? descripcionDelivery(opcionDeliverySeleccionada, productoConEnvioIncluido, formatPrecio, { items: itemsDelivery, paymentMethod: form.payment_method })
     : null;
 
   const ofertasCheckout = useMemo(() => {
@@ -70,7 +75,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     return sum + (o ? precioEnCheckout(o) : 0);
   }, 0);
   const costoEnvioVisible = opcionDeliverySeleccionada && !productoConEnvioIncluido
-    ? Number(opcionDeliverySeleccionada.costo) || 0
+    ? Number(reglaDeliverySeleccionada?.costo) || 0
     : 0;
   const totalConDelivery = total + costoEnvioVisible;
 
@@ -346,7 +351,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                   />
                   <datalist id="funnel-delivery-ciudades">
                     {opcionesDelivery.map(op => (
-                      <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio) || undefined} />
+                      <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio, { items: itemsDelivery, paymentMethod: form.payment_method }) || undefined} />
                     ))}
                   </datalist>
                   {detalleDelivery && (

@@ -708,6 +708,7 @@ export default function FunnelView({ data, slug, productId }) {
             nombre: itemSeleccionado.nombre,
             variante: compraFunnel.variante?.nombre || null,
             precio: compraFunnel.precio,
+            cantidad: 1,
             imagen: datosFunnel.producto?.imagenes?.[0] || null,
           } : null}
           ofertasLanding={data?.content?.ofertas_producto_vista || []}

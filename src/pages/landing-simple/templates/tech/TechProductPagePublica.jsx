@@ -96,6 +96,7 @@ export default function TechProductPagePublica({
           ].filter(Boolean).join(' '),
           variante: enCompra.variante?.nombre || null,
           precio: precioDe(enCompra),
+          cantidad: 1,
           imagen: item.imagenes?.[0] || null,
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}

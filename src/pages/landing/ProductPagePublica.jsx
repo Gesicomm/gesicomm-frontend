@@ -308,6 +308,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
                 nombre: item.nombre,
                 variante: variante?.nombre || null,
                 precio: precio * cantidad,
+                cantidad,
                 imagen: galeria[0] || null,
               }}
               ofertasLanding={landingConfig?.ofertas_producto_vista || []}

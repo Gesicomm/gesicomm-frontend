@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
-import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
+import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery, resolverReglaDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -67,11 +67,15 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
   const opcionDeliverySeleccionada = opcionesDelivery.find(op =>
     op.ciudad === form.ciudad && (op.departamento || '') === (form.departamento || '')
   );
+  const reglaDeliverySeleccionada = resolverReglaDelivery(opcionDeliverySeleccionada, {
+    items,
+    paymentMethod: form.payment_method,
+  });
   const detalleDelivery = opcionDeliverySeleccionada
-    ? descripcionDelivery(opcionDeliverySeleccionada, pedidoConEnvioIncluido, formatPrecio)
+    ? descripcionDelivery(opcionDeliverySeleccionada, pedidoConEnvioIncluido, formatPrecio, { items, paymentMethod: form.payment_method })
     : null;
   const costoEnvioVisible = opcionDeliverySeleccionada && !pedidoConEnvioIncluido
-    ? Number(opcionDeliverySeleccionada.costo) || 0
+    ? Number(reglaDeliverySeleccionada?.costo) || 0
     : 0;
   const descuentoVisible = cupon ? (Number(cupon.descuento) || 0) : 0;
   const totalVisible = Math.max(0, subtotal - descuentoVisible) + costoEnvioVisible;
@@ -284,7 +288,7 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                       />
                       <datalist id="lp-delivery-ciudades">
                         {opcionesDelivery.map(op => (
-                          <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio) || undefined} />
+                          <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio, { items, paymentMethod: form.payment_method }) || undefined} />
                         ))}
                       </datalist>
                       {detalleDelivery && (

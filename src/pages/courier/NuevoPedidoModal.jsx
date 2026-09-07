@@ -4,7 +4,7 @@ import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago } from "../../services/courierApi";
 import { canalVentaService } from "../../services/canalVentaService";
-import { obtenerTarifaPara, buscarCourierYTarifa } from "../../lib/tarifaCourier";
+import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
 import CurrencyInput from "../../components/CurrencyInput";
 import CreatableSelect from "react-select/creatable";
@@ -151,7 +151,7 @@ function buildFormFromEnvio(envio) {
  * "completar" los ítems y la fecha/hora original no son editables (ya
  * comprometieron stock/registro), todo lo demás sí.
  */
-export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
+export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [] }) {
   const modoCompletar = !!envio;
 
   const [form, setForm] = useState(() => buildFormFromEnvio(null));
@@ -228,39 +228,46 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   useEffect(() => {
     if (!open || !modoCompletar) return;
     if (form.courier_id) return;
-    if (!form.ciudad || couriers.length === 0 || metodosPago.length === 0) return;
+    if (!form.ciudad || metodosPago.length === 0) return;
     const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
-    const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
+    const resultado = buscarZonaDelivery(deliveryZonas, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento)
+      || buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
     if (resultado) {
       setForm(prev => (prev.courier_id ? prev : { ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, modoCompletar, couriers, metodosPago, form.ciudad, form.departamento]);
+  }, [open, modoCompletar, couriers, deliveryZonas, metodosPago, form.ciudad, form.departamento]);
 
-  // Opciones de ciudades (únicamente configuradas en los couriers del usuario)
+  // Opciones de ciudades: matriz nueva de delivery + tarifas legacy dentro
+  // de couriers, para no perder zonas ya cargadas.
   const optionsCiudades = useMemo(() => {
     const ciudades = new Map();
+    const agregar = ({ ciudad, departamento }) => {
+      const city = ciudad?.trim();
+      if (!city) return;
+      const depto = departamento?.trim() || "";
+      const key = `${depto.toLowerCase()}::${city.toLowerCase()}`;
+      if (!ciudades.has(key)) {
+        ciudades.set(key, {
+          value: city,
+          label: depto ? `${city} - ${depto}` : city,
+          departamento: depto,
+        });
+      }
+    };
+
+    deliveryZonas.forEach(z => agregar({ ciudad: z.ciudad, departamento: z.departamento }));
 
     couriers.forEach(c => {
       if (c.tarifas && Array.isArray(c.tarifas)) {
         c.tarifas.forEach(t => {
-          const ciudad = t.ciudad_zona?.trim();
-          if (!ciudad) return;
-          const departamento = t.departamento?.trim() || "";
-          const key = `${departamento.toLowerCase()}::${ciudad.toLowerCase()}`;
-          if (!ciudades.has(key)) {
-            ciudades.set(key, {
-              value: ciudad,
-              label: departamento ? `${ciudad} - ${departamento}` : ciudad,
-              departamento,
-            });
-          }
+          agregar({ ciudad: t.ciudad_zona, departamento: t.departamento });
         });
       }
     });
 
     return Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }, [couriers]);
+  }, [couriers, deliveryZonas]);
 
   const productoPorId = useMemo(() => {
     const map = new Map();
@@ -308,6 +315,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
 
       if (valCiudad) {
         const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+        const resultadoZona = buscarZonaDelivery(deliveryZonas, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
+        if (resultadoZona) {
+          nextForm.courier_id = resultadoZona.courierId || "";
+          nextForm.costo_envio = resultadoZona.costo;
+          return nextForm;
+        }
 
         // Si ya hay un courier seleccionado, intentar buscar su tarifa para la nueva ciudad
         if (prev.courier_id) {
@@ -355,7 +368,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
     const esAnticipado = !!(metodo && metodo.es_anticipado);
     setForm(prev => {
       const nextForm = { ...prev, metodo_pago_id: metodoPagoId, metodo_pago: metodo ? metodo.nombre : prev.metodo_pago };
-      if (prev.ciudad && prev.courier_id) {
+      const resultadoZona = prev.ciudad
+        ? buscarZonaDelivery(deliveryZonas, prev.ciudad, esAnticipado, itemsParaTarifa, prev.departamento)
+        : null;
+      if (resultadoZona) {
+        nextForm.courier_id = resultadoZona.courierId || "";
+        nextForm.costo_envio = resultadoZona.costo;
+      } else if (prev.ciudad && prev.courier_id) {
         const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, prev.departamento);
         if (costo !== null) {
           nextForm.costo_envio = costo;
@@ -385,7 +404,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
         }
       }
 
-      const resultado = buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa, departamento);
+      const resultado = buscarZonaDelivery(deliveryZonas, prev.ciudad, esAnticipado, itemsParaTarifa, departamento)
+        || buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa, departamento);
       if (resultado) {
         nextForm.courier_id = resultado.courierId;
         nextForm.costo_envio = resultado.costo;
@@ -413,7 +433,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null }) {
   const aplicarTarifaConItems = (nuevosItems) => {
     if (!form.ciudad) return;
     const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
-    if (form.courier_id) {
+    const resultadoZona = buscarZonaDelivery(deliveryZonas, form.ciudad, esAnticipado, nuevosItems, form.departamento);
+    if (resultadoZona) {
+      setForm(prev => ({ ...prev, courier_id: resultadoZona.courierId || "", costo_envio: resultadoZona.costo }));
+    } else if (form.courier_id) {
       const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems, form.departamento);
       if (nuevoCosto !== null) {
         setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));

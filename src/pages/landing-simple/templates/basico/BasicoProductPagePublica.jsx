@@ -91,6 +91,7 @@ export default function BasicoProductPagePublica({
           nombre: enCompra.pack ? `${item.nombre} — ${enCompra.pack.nombre}` : item.nombre,
           variante: null,
           precio: precioDe(enCompra),
+          cantidad: 1,
           imagen: item.imagenes?.[0] || null,
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}

@@ -20,6 +20,16 @@ export const deleteCourier = async (id) => {
   return data;
 };
 
+export const getDeliveryZonas = async () => {
+  const { data } = await api.get('/couriers/zonas-delivery');
+  return data;
+};
+
+export const replaceDeliveryZonas = async (zonas) => {
+  const { data } = await api.put('/couriers/zonas-delivery', { zonas });
+  return data;
+};
+
 export const getEnvios = async (filtros = {}) => {
   const { data } = await api.post('/envios/list', filtros);
   return data;

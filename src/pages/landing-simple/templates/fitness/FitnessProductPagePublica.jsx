@@ -78,6 +78,7 @@ export default function FitnessProductPagePublica({
           nombre: packEnCompra ? `${item.nombre} — ${packEnCompra.nombre}` : item.nombre,
           variante: null,
           precio: precioDe(packEnCompra),
+          cantidad: 1,
           imagen: item.imagenes?.[0] || null,
         }}
         ofertasLanding={landingConfig?.ofertas_producto_vista || []}

@@ -20,6 +20,25 @@ function normalizar(valor) {
     .trim();
 }
 
+function tarifaCoincide(t, ciudadNorm, departamentoNorm) {
+  return normalizar(t.ciudad || t.ciudad_zona) === ciudadNorm
+    && (!departamentoNorm || normalizar(t.departamento) === departamentoNorm);
+}
+
+function elegirTarifa(tarifas, targetTipoPago, cantEval) {
+  const ordenadas = [...(tarifas || [])].sort((a, b) => (Number(a.costo) || 0) - (Number(b.costo) || 0));
+  const enRango = (t) => {
+    const rMin = Number(t.rango_min) || 0;
+    const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === '') ? Infinity : Number(t.rango_max);
+    return cantEval >= rMin && cantEval <= rMax;
+  };
+  const pagoCompatible = (t) => t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago;
+  return ordenadas.find(t => pagoCompatible(t) && enRango(t))
+    || ordenadas.find(pagoCompatible)
+    || ordenadas[0]
+    || null;
+}
+
 /**
  * Costo de delivery de UN courier puntual para una ciudad+tipo de
  * pago+cantidad, o null si ese courier no cubre la ciudad.
@@ -36,24 +55,11 @@ export function obtenerTarifaPara(couriers, ciudad, courierId, esAnticipado, ite
   const cantEval = cantidadEvaluada(items);
   const ciudadNorm = normalizar(ciudad);
   const departamentoNorm = normalizar(departamento);
-  const mismaZona = (t) => normalizar(t.ciudad_zona) === ciudadNorm
-    && (!departamentoNorm || normalizar(t.departamento) === departamentoNorm);
-
-  let tarifa = c.tarifas.find(t => {
-    const rMin = Number(t.rango_min) || 0;
-    const rMax = (t.rango_max === null || t.rango_max === undefined || t.rango_max === '') ? Infinity : Number(t.rango_max);
-    return mismaZona(t)
-      && (t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago)
-      && cantEval >= rMin && cantEval <= rMax;
-  });
-
-  if (!tarifa) {
-    tarifa = c.tarifas.find(t => mismaZona(t)
-      && (t.tipo_pago === 'Ambos' || t.tipo_pago === targetTipoPago));
-  }
-  if (!tarifa) {
-    tarifa = c.tarifas.find(mismaZona);
-  }
+  const tarifa = elegirTarifa(
+    c.tarifas.filter(t => tarifaCoincide(t, ciudadNorm, departamentoNorm)),
+    targetTipoPago,
+    cantEval
+  );
 
   return tarifa ? tarifa.costo : null;
 }
@@ -66,4 +72,18 @@ export function buscarCourierYTarifa(couriers, ciudad, esAnticipado, items, depa
     if (costo !== null) return { courierId: c.id, costo };
   }
   return null;
+}
+
+export function buscarZonaDelivery(zonas, ciudad, esAnticipado, items, departamento = '') {
+  if (!ciudad || !zonas?.length) return null;
+  const targetTipoPago = esAnticipado ? 'Anticipado' : 'Al Recibir';
+  const cantEval = cantidadEvaluada(items);
+  const ciudadNorm = normalizar(ciudad);
+  const departamentoNorm = normalizar(departamento);
+  const tarifa = elegirTarifa(
+    zonas.filter(t => t.activo !== false && tarifaCoincide(t, ciudadNorm, departamentoNorm)),
+    targetTipoPago,
+    cantEval
+  );
+  return tarifa ? { courierId: tarifa.courier_id || null, costo: tarifa.costo, tarifa } : null;
 }

@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, HandCoins } from "lucide-react";
+import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, HandCoins, MapPin } from "lucide-react";
 import { PedidosTable } from "./PedidosTable";
 import { CouriersCrud } from "./couriers-crud";
+import { DeliveryZonasCrud } from "./DeliveryZonasCrud";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
@@ -20,13 +21,15 @@ import {
   createCourier,
   updateCourier,
   deleteCourier,
+  getDeliveryZonas,
+  replaceDeliveryZonas,
   createEnvio,
   registrarDevolucion,
   registrarPerdida,
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "couriers", "rendicion", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "couriers", "ciudades", "rendicion", "analitica"]);
 
 export function ControlCourier() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -35,6 +38,7 @@ export function ControlCourier() {
   const [fechaDesde, setFechaDesde] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [fechaHasta, setFechaHasta] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [couriers, setCouriers] = useState([]);
+  const [deliveryZonas, setDeliveryZonas] = useState([]);
   const [envios, setEnvios] = useState([]);
   const [openNuevoPedido, setOpenNuevoPedido] = useState(false);
   const [openImprimir, setOpenImprimir] = useState(false);
@@ -78,11 +82,13 @@ export function ControlCourier() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      const [couriersData, enviosData] = await Promise.all([
+      const [couriersData, zonasData, enviosData] = await Promise.all([
         getCouriers(),
+        getDeliveryZonas(),
         getEnvios({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta })
       ]);
       setCouriers(couriersData);
+      setDeliveryZonas(zonasData);
       setEnvios(enviosData);
     } catch (err) {
       console.error("Error al cargar datos logísticos:", err);
@@ -220,6 +226,9 @@ export function ControlCourier() {
           <TabButton active={tab === "couriers"} onClick={() => seleccionarTab("couriers")} icon={<Users size={16} />}>
             Couriers
           </TabButton>
+          <TabButton active={tab === "ciudades"} onClick={() => seleccionarTab("ciudades")} icon={<MapPin size={16} />}>
+            Ciudades
+          </TabButton>
           <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
             Rendición
           </TabButton>
@@ -259,6 +268,15 @@ export function ControlCourier() {
               setCouriers(prev => prev.filter(x => x.id !== id));
             }}
           />
+        ) : tab === "ciudades" ? (
+          <DeliveryZonasCrud
+            zonas={deliveryZonas}
+            couriers={couriers}
+            onSave={async (zonas) => {
+              const res = await replaceDeliveryZonas(zonas);
+              setDeliveryZonas(res);
+            }}
+          />
         ) : tab === "rendicion" ? (
           <RendicionTab couriers={couriers} />
         ) : (
@@ -272,6 +290,7 @@ export function ControlCourier() {
         envio={envioParaCompletar}
         onClose={() => { setOpenNuevoPedido(false); setEnvioParaCompletar(null); }}
         onSubmit={handleModalSubmit}
+        deliveryZonas={deliveryZonas}
       />
 
       {/* Modal de Impresión de Pedidos */}
