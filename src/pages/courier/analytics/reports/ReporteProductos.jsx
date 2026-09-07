@@ -63,11 +63,11 @@ export default function ReporteProductos({ filters }) {
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            TOTAL INGRESOS
+            TOTAL INGRESOS NETOS
             <TrendingUp size={16} color="var(--color-success)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ingresos)}</div>
-          <div className="cic-kpi-sub">Ingreso bruto generado por catálogo</div>
+          <div className="cic-kpi-sub">Venta entregada menos costo de producto</div>
         </div>
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)' }}>
@@ -96,7 +96,7 @@ export default function ReporteProductos({ filters }) {
                 <th style={{ textAlign: 'right' }}>P. Costo Unid.</th>
                 <th style={{ textAlign: 'right' }}>P. Venta Base</th>
                 <th style={{ textAlign: 'right' }}>Costo Total</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ingresos Generados</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ingresos Netos</th>
                 <th style={{ textAlign: 'right', color: 'var(--color-primary-text)' }}>Tasa Devolución</th>
               </tr>
             </thead>
