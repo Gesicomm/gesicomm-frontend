@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { irALoginPorSesionPerdida, renovarSesion } from '../utils/sesion';
 
 let apiURL = import.meta.env.VITE_API_URL || '';
 if (!apiURL) {
@@ -29,60 +30,46 @@ export function getMediaUrl(url) {
   return backendOrigin + url;
 }
 
+// ─────────────────────────────────────────────────────────────────────────
 // Interceptor para manejo global de errores (especialmente 401)
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
+//
+// Flujo: 401 → renovar el access token con el refresh token (una sola vez,
+// compartida entre todas las peticiones en vuelo — ver utils/sesion.js) →
+// reintentar. Si la renovación falla, la sesión está realmente vencida: se
+// va al login con el aviso, nunca se deja al usuario mirando un spinner.
+// ─────────────────────────────────────────────────────────────────────────
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // Sin config no hay nada que reintentar (error de red antes de salir,
+    // request cancelada). Antes esto reventaba al leer originalRequest.url.
+    if (!originalRequest?.url) return Promise.reject(error);
+
     // Ignorar requests de login/refresh/me para evitar loops
-    if (originalRequest.url.includes('/auth/login') || 
+    if (originalRequest.url.includes('/auth/login') ||
         originalRequest.url.includes('/auth/refresh') ||
         originalRequest.url.includes('/auth/me')) {
       return Promise.reject(error);
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise(function(resolve, reject) {
-          failedQueue.push({ resolve, reject });
-        }).then(() => {
-          return API(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
-      try {
-        // Intentar renovar el token
-        await axios.post(`${apiURL}/auth/refresh`, {}, { withCredentials: true });
-        isRefreshing = false;
-        processQueue(null);
-        return API(originalRequest);
-      } catch (refreshError) {
-        // Si falla el refresh, forzar cierre de sesión
-        isRefreshing = false;
-        processQueue(refreshError, null);
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      }
+      const renovado = await renovarSesion();
+      if (renovado) return API(originalRequest);
+
+      // Refresh token vencido o inexistente: sesión terminada de verdad.
+      irALoginPorSesionPerdida();
+      return Promise.reject(error);
+    }
+
+    // Un 401 en el reintento significa que ni con el token nuevo alcanza
+    // (cookie de otra sesión, permisos revocados): tampoco hay que dejar a la
+    // pantalla esperando.
+    if (error.response?.status === 401 && originalRequest._retry) {
+      irALoginPorSesionPerdida();
     }
 
     return Promise.reject(error);

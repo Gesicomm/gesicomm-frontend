@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { verificarSesion } from '../utils/auth';
+import useSesion from '../hooks/useSesion';
+import {
+  PantallaErrorConexion,
+  PantallaVerificandoSesion,
+  RedirigirALogin,
+} from './EstadoSesion';
 import { tiendaService } from '../services/tiendaService';
 
 /**
@@ -16,32 +21,29 @@ import { tiendaService } from '../services/tiendaService';
  *    devuelve 409 en las rutas que dependen de una tienda si no existe.
  */
 export default function RequireTienda({ children }) {
-  const [estado, setEstado] = useState('verificando'); // 'verificando' | 'ok' | 'sin-tienda' | 'no-autenticado'
+  const { estado, usuario, reintentar } = useSesion();
+  // 'pendiente' | 'ok' | 'sin-tienda'
+  const [tienda, setTienda] = useState('pendiente');
 
   useEffect(() => {
-    verificarSesion().then(async (usuario) => {
-      if (!usuario) return setEstado('no-autenticado');
-      if (usuario.rol !== 'usuario') return setEstado('ok');
-      const tienda = await tiendaService.obtener().catch(() => null);
-      setEstado(tienda ? 'ok' : 'sin-tienda');
-    });
-  }, []);
+    if (estado !== 'autenticado') return;
+    if (usuario?.rol !== 'usuario') { setTienda('ok'); return; }
 
-  if (estado === 'verificando') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-canvas">
-        <div className="loader"></div>
-      </div>
-    );
-  }
+    let vigente = true;
+    setTienda('pendiente');
+    tiendaService.obtener()
+      .then((t) => { if (vigente) setTienda(t ? 'ok' : 'sin-tienda'); })
+      .catch(() => { if (vigente) setTienda('sin-tienda'); });
 
-  if (estado === 'no-autenticado') {
-    return <Navigate to="/login" replace />;
-  }
+    return () => { vigente = false; };
+  }, [estado, usuario]);
 
-  if (estado === 'sin-tienda') {
-    return <Navigate to="/onboarding" replace />;
-  }
+  if (estado === 'verificando') return <PantallaVerificandoSesion onReintentar={reintentar} />;
+  if (estado === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
+  if (estado === 'sin-sesion') return <RedirigirALogin />;
+
+  if (tienda === 'pendiente') return <PantallaVerificandoSesion onReintentar={reintentar} />;
+  if (tienda === 'sin-tienda') return <Navigate to="/onboarding" replace />;
 
   return children;
 }

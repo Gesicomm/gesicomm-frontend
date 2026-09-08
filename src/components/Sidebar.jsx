@@ -6,6 +6,7 @@ import {
   GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign
 } from 'lucide-react';
 import Logo from './public/Logo';
+import { cerrarSesion } from '../utils/auth';
 import ThemeToggle from './public/ThemeToggle';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
@@ -17,6 +18,16 @@ const ICON_WRAP = 'flex h-4 w-4 items-center justify-center [&>svg]:h-4 [&>svg]:
 
 const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const location = useLocation();
+
+  // 'Salir' antes solo navegaba a /login: las cookies de sesión quedaban
+  // vivas (el refresh token dura 7 días), así que el usuario seguía logueado
+  // y con volver a cualquier ruta privada entraba de nuevo — o peor, al
+  // iniciar sesión con otra cuenta se arrastraba la anterior. Hay que pedirle
+  // al backend que borre las cookies antes de irse.
+  const handleLogout = async () => {
+    await cerrarSesion();
+    window.location.href = '/login'; // recarga completa: limpia el estado en memoria
+  };
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias')
   );
@@ -154,7 +165,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             <li>
               <button
                 type="button"
-                onClick={() => { window.location.href = '/login'; }}
+                onClick={handleLogout}
                 className={`${NAV_LINK} w-full cursor-pointer border-none bg-transparent text-left hover:bg-danger/10 hover:text-danger`}
               >
                 <span className={ICON_WRAP}><LogOut /></span>

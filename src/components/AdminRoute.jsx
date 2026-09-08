@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { verificarSesion } from '../utils/auth';
+import useSesion from '../hooks/useSesion';
+import {
+  PantallaErrorConexion,
+  PantallaVerificandoSesion,
+  RedirigirALogin,
+} from './EstadoSesion';
 
 /**
  * Igual que ProtectedRoute, pero además exige rol 'administrador'.
@@ -11,30 +15,13 @@ import { verificarSesion } from '../utils/auth';
  *    el backend validando permisos en cada petición a la API.
  */
 export default function AdminRoute({ children }) {
-  const [estado, setEstado] = useState('verificando'); // 'verificando' | 'admin' | 'otro-rol' | 'no-autenticado'
+  const { estado, usuario, reintentar } = useSesion();
 
-  useEffect(() => {
-    verificarSesion().then((usuario) => {
-      if (!usuario) return setEstado('no-autenticado');
-      setEstado(usuario.rol === 'administrador' ? 'admin' : 'otro-rol');
-    });
-  }, []);
+  if (estado === 'verificando') return <PantallaVerificandoSesion onReintentar={reintentar} />;
+  if (estado === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
+  if (estado === 'sin-sesion') return <RedirigirALogin />;
 
-  if (estado === 'verificando') {
-    return (
-      <div className="flex h-screen items-center justify-center bg-canvas">
-        <div className="loader"></div>
-      </div>
-    );
-  }
-
-  if (estado === 'no-autenticado') {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (estado === 'otro-rol') {
-    return <Navigate to="/mi-catalogo" replace />;
-  }
+  if (usuario?.rol !== 'administrador') return <Navigate to="/mi-catalogo" replace />;
 
   return children;
 }

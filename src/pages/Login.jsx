@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, CheckCircle2, Mail, RotateCcw, ShieldCheck } from 'lucide-react';
 import { api } from '../utils/api';
 import Logo from '../components/public/Logo';
+import { AvisoSesionExpirada } from '../components/EstadoSesion';
+import { AVISO_SESION_EXPIRADA, tomarAvisoSesion } from '../utils/sesion';
 
 const INPUT_CLASS = 'w-full rounded-md border border-border bg-surface-2 px-3 py-2.5 text-sm text-fg outline-none transition-colors placeholder:text-fg-subtle focus:border-primary';
 const LABEL_CLASS = 'mb-1.5 block text-sm font-medium text-fg-muted';
@@ -95,6 +97,14 @@ export default function Login() {
   const [success, setSuccess] = useState(null);
 
   const navigate = useNavigate();
+
+  // Aviso de sesión vencida: lo deja anotado el guard que expulsó al usuario
+  // (ver components/EstadoSesion.jsx). Se consume una sola vez, así no vuelve
+  // a aparecer si la persona recarga el login más tarde.
+  const [sesionExpirada, setSesionExpirada] = useState(false);
+  useEffect(() => {
+    setSesionExpirada(tomarAvisoSesion() === AVISO_SESION_EXPIRADA);
+  }, []);
 
   // Countdown del OTP
   useEffect(() => {
@@ -299,6 +309,8 @@ export default function Login() {
         <Link to="/" className="mb-8 flex justify-center text-fg">
           <Logo size={30} />
         </Link>
+
+        {sesionExpirada && !error && activeForm === 'login' && <AvisoSesionExpirada />}
 
         {error && (
           <div className="mb-6 flex items-start gap-3 rounded-md border border-danger/20 bg-danger/10 p-3.5 text-sm leading-snug text-danger">
