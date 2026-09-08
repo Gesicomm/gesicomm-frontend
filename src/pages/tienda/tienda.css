@@ -966,3 +966,61 @@
   .tn-embed .combo-section,
   .tn-embed-pagopar > div { padding: 1rem; }
 }
+
+/* --- Dominio propio: instrucciones DNS ---------------------------------
+   Antes estas reglas iban como style={{...}} inline y duplicadas en las dos
+   ramas del componente (con proveedor detectado y sin él). */
+.dp-instrucciones {
+  background: var(--vit-surface-2, var(--vit-bg));
+  border: 1px solid var(--vit-border);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dp-instrucciones h4 { margin: 0; font-size: 0.9rem; color: var(--vit-text); }
+.dp-intro { margin: 0; font-size: 0.8rem; line-height: 1.55; color: var(--vit-muted); }
+.dp-link-panel { display: inline-flex; align-items: center; gap: 0.5rem; align-self: flex-start; }
+
+.dp-paso { font-weight: 600; color: var(--vit-text) !important; font-size: 0.8rem !important; }
+.dp-paso-detalle { margin-bottom: 0.3rem !important; }
+.dp-nota { font-size: 0.72rem !important; font-style: italic; line-height: 1.45; }
+
+/* El dominio raíz es el motivo nº1 de que la conexión falle en GoDaddy,
+   Hostinger y compañía: no dejan crear un CNAME en la raíz. */
+.dp-aviso {
+  display: flex;
+  gap: 0.6rem;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--vit-text);
+}
+.dp-aviso svg { flex-shrink: 0; color: #b45309; margin-top: 0.1rem; }
+.dp-aviso p { margin: 0.35rem 0 0; color: var(--vit-muted); }
+.dp-aviso ul { margin: 0.4rem 0 0; padding-left: 1.1rem; color: var(--vit-muted); }
+.dp-aviso li + li { margin-top: 0.3rem; }
+.dp-aviso code {
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+}
+
+.dp-tip {
+  font-size: 0.76rem;
+  color: var(--vit-muted);
+  white-space: pre-line;
+  padding: 0.75rem;
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+.dp-tip strong { display: block; margin-bottom: 0.25rem; color: var(--vit-text); }
