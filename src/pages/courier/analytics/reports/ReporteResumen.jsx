@@ -76,7 +76,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-primary)' }}>
           <div className="cic-kpi-header"><span>Facturación Entregada</span><DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} /></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>{formatGs(kpis.facturacion_entregada)}</div>
-          <div className="cic-kpi-sub">Ingreso real bruto</div>
+          <div className="cic-kpi-sub">Ingreso real de producto, sin el delivery</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-warning)' }}>
           <div className="cic-kpi-header"><span>Margen Bruto Est.</span><TrendingUp size={16} style={{ color: 'var(--color-warning)' }} /></div>

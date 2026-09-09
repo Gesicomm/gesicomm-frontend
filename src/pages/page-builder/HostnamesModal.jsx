@@ -131,17 +131,21 @@ export default function HostnamesModal({ target, onCerrar }) {
                       className="text-[11px]"
                       style={{ color: h.activo ? 'var(--color-success)' : 'var(--color-warning)' }}
                     >
-                      {h.activo ? 'Activa' : 'Pendiente'}
+                      {h.habilitado === false ? 'Desactivada' : (h.activo ? 'Activa' : 'Pendiente')}
                     </span>
                   </div>
 
-                  {!h.activo && h.verificacion_dns?.valor && (
+                  {!h.activo && h.registros?.length > 0 && (
                     <div className="mt-2 rounded bg-surface-2 p-2 text-[11px] text-fg-muted">
                       <p className="mb-1 font-medium text-fg">
                         Cargá este registro en el DNS de tu dominio:
                       </p>
-                      <p className="font-mono break-all">TXT {h.verificacion_dns.nombre}</p>
-                      <p className="font-mono break-all">{h.verificacion_dns.valor}</p>
+                      {h.registros.map((r, i) => (
+                        <p key={i} className="font-mono break-all">
+                          {r.tipo} {r.nombre} → {r.valor}
+                          {!r.obligatorio && ' (opcional)'}
+                        </p>
+                      ))}
                     </div>
                   )}
 
@@ -152,6 +156,17 @@ export default function HostnamesModal({ target, onCerrar }) {
                         onClick={() => accion(() => pageBuilderService.verificarHostname(h.id), 'No se pudo verificar.')}
                       >
                         <RefreshCw size={13} /> Verificar
+                      </button>
+                    )}
+                    {h.tipo === 'dominio_propio' && (
+                      <button
+                        type="button" className="btn-ghost" disabled={ocupado}
+                        onClick={() => accion(
+                          () => pageBuilderService.habilitarHostname(h.id, h.habilitado === false),
+                          'No se pudo cambiar el estado.',
+                        )}
+                      >
+                        {h.habilitado === false ? 'Reactivar' : 'Desactivar'}
                       </button>
                     )}
                     {!h.es_principal && (

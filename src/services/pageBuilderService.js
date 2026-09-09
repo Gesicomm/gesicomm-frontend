@@ -134,6 +134,9 @@ export const pageBuilderService = {
   verificarHostname: (id) =>
     API.post(`/page-builder/hostnames/${id}/verificar`).then(r => r.data),
 
+  habilitarHostname: (id, habilitado) =>
+    API.patch(`/page-builder/hostnames/${id}/habilitado`, { habilitado }).then(r => r.data),
+
   definirHostnamePrincipal: (id) =>
     API.put(`/page-builder/hostnames/${id}/principal`).then(r => r.data),
 

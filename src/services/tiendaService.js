@@ -8,6 +8,8 @@ export const tiendaService = {
 
   guardarDominioPropio: (dominio) => API.post('/mi-tienda/dominio-propio', { dominio }).then(r => r.data),
   estadoDominioPropio: () => API.get('/mi-tienda/dominio-propio/estado').then(r => r.data),
+  habilitarDominioPropio: (habilitado) =>
+    API.patch('/mi-tienda/dominio-propio/habilitado', { habilitado }).then(r => r.data),
   eliminarDominioPropio: () => API.delete('/mi-tienda/dominio-propio').then(r => r.data),
   consultarWhois: (domain) => API.post('/mi-tienda/dominio/whois', { domain }).then(r => r.data),
 };

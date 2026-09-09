@@ -57,6 +57,123 @@ function gs(valor) {
   return `Gs ${Math.round(n).toLocaleString('es-PY')}`;
 }
 
+/**
+ * Variación contra el mismo número del período anterior (`ventas.comparativo`,
+ * que el backend calcula sobre un rango de la misma duración justo antes del
+ * elegido). Un importe solo no dice si el negocio va bien: Gs 335.138 puede
+ * ser un récord o la mitad de lo de la semana pasada.
+ *
+ * Sin base con la que comparar (período anterior en cero) no se inventa un
+ * "+100%": se muestra "sin dato antes", que es lo que realmente pasó.
+ */
+function Variacion({ actual, previo, invertirColor = false }) {
+  const a = Number(actual) || 0;
+  const p = Number(previo) || 0;
+  if (p === 0) {
+    if (a === 0) return null;
+    return <span className="md-var md-var-neutro">sin dato antes</span>;
+  }
+  const pct = ((a - p) / Math.abs(p)) * 100;
+  const sube = pct >= 0;
+  // `invertirColor` para los renglones donde subir es malo (un costo).
+  const bueno = invertirColor ? !sube : sube;
+  const signo = sube ? '+' : '';
+  return (
+    <span className={`md-var ${bueno ? 'md-var-bien' : 'md-var-mal'}`}>
+      {signo}{pct.toFixed(1).replace(/\.0$/, '')}% vs. período anterior
+    </span>
+  );
+}
+
+/**
+ * Fila de detalle que se abre debajo de un producto y muestra de qué está
+ * hecho su Costo.
+ *
+ * Va como FILA de la tabla y no como burbuja flotante por dos razones duras:
+ *  - `.md-table-wrap` tiene `overflow-x: auto` para poder scrollear la tabla
+ *    en pantallas chicas, y eso hace que `overflow-y` compute a `auto`: una
+ *    burbuja posicionada se recorta contra el borde de la tabla y encima le
+ *    inventa scroll vertical (medido: la burbuja terminaba 187px por debajo
+ *    del contenedor).
+ *  - en celular no hay mouse: un desglose que solo existe al pasar el cursor
+ *    no existe para la mitad de la gente.
+ *
+ * Los conceptos en cero no se listan: un desglose de cuatro renglones donde
+ * tres dicen Gs 0 esconde el que importa.
+ */
+function DetalleCosto({ producto, columnas }) {
+  const d = producto.costo_detalle || {};
+  // Mismo orden que el estado de resultados de la tarjeta de Rentabilidad:
+  // primero lo que costó la mercadería, después lo que costó venderla y
+  // entregarla, y al final la parte de los gastos generales. Si las dos
+  // vistas ordenaran distinto, el comerciante tendría que traducir.
+  const costosVenta = [
+    { label: 'Delivery que pagaste vos', valor: d.envio_absorbido, ayuda: 'flete que no le cobraste al cliente' },
+    { label: 'Comisión de pago', valor: d.comision, ayuda: 'lo que se queda la pasarela' },
+    { label: 'IVA', valor: d.iva, ayuda: 'de los pedidos con factura' },
+  ].filter(r => Number(r.valor) > 0);
+
+  return (
+    <tr className="md-detalle-fila">
+      <td colSpan={columnas}>
+        <div className="md-detalle-caja">
+          <div className="md-detalle-cuenta">
+            <span className="md-detalle-titulo">Costos de venta</span>
+            <div className="md-detalle-linea">
+              <span className="md-detalle-label">Costo de productos<small>lo que pagaste por la mercadería</small></span>
+              <span className="md-detalle-valor">{gs(d.mercaderia)}</span>
+            </div>
+            {costosVenta.map(r => (
+              <div key={r.label} className="md-detalle-linea">
+                <span className="md-detalle-label">{r.label}<small>{r.ayuda}</small></span>
+                <span className="md-detalle-valor">{gs(r.valor)}</span>
+              </div>
+            ))}
+            {Number(d.fijos) > 0 && (
+              <div className="md-detalle-linea">
+                <span className="md-detalle-label">Gastos operativos<small>la parte que le toca de publicidad y fijos</small></span>
+                <span className="md-detalle-valor">{gs(d.fijos)}</span>
+              </div>
+            )}
+            <div className="md-detalle-linea md-detalle-total">
+              <span className="md-detalle-label">Costo total</span>
+              <span className="md-detalle-valor">{gs(producto.costo)}</span>
+            </div>
+          </div>
+
+          <div className="md-detalle-cuenta">
+            <span className="md-detalle-titulo">Cómo se llega a la ganancia</span>
+            <div className="md-detalle-linea">
+              <span className="md-detalle-label">Venta<small>el precio del producto</small></span>
+              <span className="md-detalle-valor">{gs(producto.venta)}</span>
+            </div>
+            <div className="md-detalle-linea">
+              <span className="md-detalle-label">− Costo total</span>
+              <span className="md-detalle-valor">{gs(producto.costo)}</span>
+            </div>
+            <div className="md-detalle-linea md-detalle-total">
+              <span className="md-detalle-label">= Ganancia</span>
+              <span className={`md-detalle-valor ${producto.ganancia < 0 ? 'md-valor-negativo' : ''}`}>{gs(producto.ganancia)}</span>
+            </div>
+            {Number(producto.envio_de_sus_pedidos) > 0 && (
+              <p className="md-detalle-nota">
+                Además hubo {gs(producto.envio_de_sus_pedidos)} de delivery que pagó el
+                cliente. Esa plata entra y sale, por eso no está en la cuenta.
+              </p>
+            )}
+            {Number(d.envio_absorbido) > 0 && (
+              <p className="md-detalle-nota md-detalle-nota-alerta">
+                De este producto pusiste vos {gs(d.envio_absorbido)} de delivery. Si se lo
+                cobraras al cliente, tu ganancia sería {gs(producto.ganancia + Number(d.envio_absorbido))}.
+              </p>
+            )}
+          </div>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 function formatFechaCorta(iso) {
   const [, mes, dia] = iso.split('-');
   return `${dia}/${mes}`;
@@ -255,8 +372,8 @@ function GraficoTendencia({ serie, className = '' }) {
           {hover !== null && serie[hover] && (
             <div className="md-chart-tooltip" style={tooltipStyle}>
               <strong>{formatFechaCorta(serie[hover].fecha)}</strong>
-              <span><i className="md-dot-visitas" /> {serie[hover].visitas} visitas</span>
-              <span><i className="md-dot-contactos" /> {serie[hover].contactos} contactos</span>
+              <span className="md-tt-fila"><i className="md-dot-visitas" /><span className="md-tt-nombre">Visitas</span><span className="md-tt-valor">{serie[hover].visitas}</span></span>
+              <span className="md-tt-fila"><i className="md-dot-contactos" /><span className="md-tt-nombre">Contactos WhatsApp</span><span className="md-tt-valor">{serie[hover].contactos}</span></span>
               {serie[hover].valor_carritos > 0 && <small>{gs(serie[hover].valor_carritos)} en carritos</small>}
             </div>
           )}
@@ -586,12 +703,23 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
               </text>
             ))}
           </svg>
+          {/* Se recorre CAMPOS en vez de escribir las tres filas a mano: así el
+              color, el nombre y el orden del tooltip son SIEMPRE los mismos que
+              los de la leyenda y los de las líneas. Escritas a mano, alcanzaba
+              con cambiar un color en la leyenda para que el tooltip mintiera. */}
           {hover !== null && serie[hover] && (
             <div className="md-chart-tooltip" style={tooltipStyle}>
               <strong>{formatFechaCorta(serie[hover].fecha)}</strong>
-              <span><i className="md-dot-ventas" /> {gs(serie[hover].monto)} ventas</span>
-              <span><i className="md-dot-costos" /> {gs(serie[hover].costo)} costos</span>
-              <span><i className="md-dot-ganancia" /> {gs(serie[hover].ganancia)} ganancia</span>
+              {CAMPOS.map(c => {
+                const valor = valorDe(serie[hover], c.campo);
+                return (
+                  <span key={c.campo} className="md-tt-fila">
+                    <i className={`md-dot-${c.clase}`} />
+                    <span className="md-tt-nombre">{c.label}</span>
+                    <span className={`md-tt-valor ${valor < 0 ? 'md-valor-negativo' : ''}`}>{gs(valor)}</span>
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
@@ -666,8 +794,8 @@ function TablaRankingLandings({ ranking }) {
             <th>Visitas <Ayuda texto="Cuánta gente entró a esa página en el período." /></th>
             <th>Pedidos <Ayuda texto="Cuántos pedidos salieron de esa página, sin importar cómo terminaron." /></th>
             <th>Entregados <Ayuda texto="De esos pedidos, cuántos llegaron a manos del cliente. Es lo único que factura." /></th>
-            <th>Facturación <Ayuda texto="La plata que entró por esa página: la suma de sus pedidos entregados." /></th>
-            <th>Ganancia <Ayuda texto="Lo que dejó esa página: facturación menos el costo del producto, el envío, la comisión y el IVA. No le descuenta los costos fijos del negocio (alquiler, sueldos, publicidad), porque esos no son de una landing en particular." /></th>
+            <th>Facturación <Ayuda texto="La plata que entró por esa página: la suma de sus pedidos entregados, sin contar el delivery." /></th>
+            <th>Ganancia <Ayuda texto="Lo que dejó esa página: su facturación menos la mercadería, la comisión y el IVA. No le descuenta los costos fijos del negocio (alquiler, sueldos, publicidad) porque esos no son de una landing en particular, ni el delivery porque lo paga el cliente." /></th>
             <th>Conversión <Ayuda texto="De cada 100 personas que entraron a esa página, cuántas terminaron comprando y recibiendo el pedido." /></th>
           </tr>
         </thead>
@@ -718,7 +846,24 @@ function TablaRankingLandings({ ranking }) {
  * `perdida` va aparte y NO se descuenta de la ganancia — descontarla otra
  * vez sería contar dos veces la misma plata.
  */
+/** Margen bruto con red: si el backend todavía no lo manda, se reconstruye
+ * con el desglose de costo en vez de mostrar "Gs NaN". Mismo criterio que
+ * los `??` del ranking de productos. */
+const margenBruto = (p) => Number(
+  p.margen_bruto ?? ((Number(p.venta) || 0) - (Number(p.costo_detalle?.mercaderia) || 0)),
+) || 0;
+const pctMargenBruto = (p) => {
+  if (p.pct_margen_bruto != null) return p.pct_margen_bruto;
+  const venta = Number(p.venta) || 0;
+  return venta > 0 ? Number(((margenBruto(p) / venta) * 100).toFixed(1)) : 0;
+};
+
 function TablaMasVendidos({ filas }) {
+  // Qué producto tiene el desglose abierto. Uno solo a la vez: la tabla es
+  // para comparar productos, no para leer cuatro detalles apilados.
+  const [abierto, setAbierto] = useState(null);
+  const COLUMNAS = 8;
+
   if (filas.length === 0) {
     return <p className="md-empty-hint">Todavía no hay pedidos entregados en este período — en cuanto confirmes uno, aparece acá.</p>;
   }
@@ -728,28 +873,60 @@ function TablaMasVendidos({ filas }) {
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Unidades Vendidas<Ayuda texto="Cuántas unidades de este producto llegaron a manos del cliente, o sea de pedidos ya entregados." /></th>
-            <th>Venta <Ayuda texto="La plata que entró por este producto: lo que pagaron los clientes en los pedidos entregados." /></th>
-            <th>Costo <Ayuda texto="Lo que te costó vender este producto: la mercadería más la parte que le corresponde de los gastos de venta y operación (envíos, comisiones, IVA, publicidad y costos fijos)." /></th>
-            <th>Ganancia <Ayuda texto="Lo que te quedó: la venta menos el costo." /></th>
-            <th>Pérdida <Ayuda texto="Plata perdida en mercadería: unidades que no volvieron o volvieron dañadas, valuadas a lo que te costaron. Lo que se devolvió en buen estado no cuenta, porque vuelve al stock y se puede vender de nuevo." /></th>
-            <th>Rentabilidad <Ayuda texto="De cada 100 guaraníes vendidos, cuántos te quedaron de ganancia." /></th>
+            <th>Unidades Vendidas<Ayuda texto="Cuántas unidades de este producto entregaste al cliente." /></th>
+            <th>Venta <Ayuda texto="El precio del producto en los pedidos entregados. El delivery no está acá: lo paga el cliente aparte." /></th>
+            <th>Margen Bruto <Ayuda texto="La Venta menos lo que te costó la mercadería, sin contar nada más. Te dice si el producto está bien pescado: si acá ya estás en cero, ningún gasto que recortes lo va a salvar." /></th>
+            <th>Costo <Ayuda texto="Todo lo que te costó este producto. Tocá el número para abrir el desglose renglón por renglón." /></th>
+            <th>Ganancia <Ayuda texto="La Venta menos el Costo. Es la plata que te dejó este producto." /></th>
+            <th>Pérdida <Ayuda texto="Mercadería que se perdió o volvió rota, contada a lo que te costó. Lo que se devolvió en buen estado no cuenta porque vuelve al stock. No se resta de la Ganancia para no descontarla dos veces." /></th>
+            <th>Rentabilidad <Ayuda texto="De cada Gs 100 que vendiste, cuántos te quedaron de ganancia." /></th>
           </tr>
         </thead>
         <tbody>
-          {filas.map(p => (
-            <tr key={p.producto_id || p.nombre}>
-              <td>{p.nombre}</td>
+          {filas.map(p => {
+            const clave = p.producto_id || p.nombre;
+            const estaAbierto = abierto === clave;
+            return (
+            <React.Fragment key={clave}>
+            <tr className={estaAbierto ? 'md-fila-abierta' : ''}>
+              <td>
+                {p.nombre}
+                {/* La alerta va pegada al nombre, no en una columna aparte:
+                    un producto que se vende sin margen bruto hay que verlo
+                    de una, no encontrarlo comparando dos celdas. */}
+                {p.alerta === 'sin_margen' && (
+                  <span className="md-badge-alerta">
+                    sin margen
+                    <Ayuda texto="Lo estás vendiendo a lo que te cuesta, o menos. No es un problema de gastos: es el precio de venta o el costo cargado del producto." />
+                  </span>
+                )}
+              </td>
               <td>{p.unidades ?? '—'}</td>
               <td>{gs(p.venta)}</td>
-              <td>{gs(p.costo)}</td>
+              <td className={margenBruto(p) <= 0 ? 'md-valor-negativo' : ''}>
+                {gs(margenBruto(p))} <small className="md-valor-pct">{pctMargenBruto(p)}%</small>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  className="md-btn-desglose"
+                  aria-expanded={estaAbierto}
+                  onClick={() => setAbierto(estaAbierto ? null : clave)}
+                >
+                  {gs(p.costo)}
+                  <ChevronDown size={12} className={estaAbierto ? 'md-chevron-abierto' : ''} aria-hidden="true" />
+                </button>
+              </td>
               <td className={p.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(p.ganancia)}</td>
               {/* La pérdida solo grita cuando hay algo que mirar: en la
                   mayoría de las filas es cero y no debe robar atención. */}
               <td className={p.perdida > 0 ? 'md-valor-negativo' : 'md-valor-neutro'}>{gs(p.perdida)}</td>
               <td className={p.rentabilidad < 0 ? 'md-valor-negativo' : ''}>{p.rentabilidad}%</td>
             </tr>
-          ))}
+            {estaAbierto && <DetalleCosto producto={p} columnas={COLUMNAS} />}
+            </React.Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -771,6 +948,9 @@ function TablaCouriers({ filas }) {
             <th>Pedidos Asignados <Ayuda texto="Cuántos pedidos se le dieron a este courier para repartir." /></th>
             <th>Pedidos Entregados <Ayuda texto="De esos, cuántos entregó efectivamente." /></th>
             <th>Efectividad <Ayuda texto="De cada 100 pedidos que le diste, cuántos entregó. Cuanto más bajo, más problemas de reparto." /></th>
+            <th>Cobró <Ayuda texto="La plata total de los pedidos que entregó, incluido el delivery que le cobró al cliente." /></th>
+            <th>Fletes <Ayuda texto="Lo que le corresponde cobrar a él por los viajes de este período." /></th>
+            <th>Rendición <Ayuda texto="Lo que queda entre ustedes dos: si es positivo, él te tiene que transferir esa plata; si es negativo, vos le tenés que pagar. Solo cuenta como suya la plata que quedó en su mano (efectivo contra entrega); si el cliente pagó por POS o transferencia, ese dinero ya entró a tu cuenta." /></th>
           </tr>
         </thead>
         <tbody>
@@ -780,6 +960,17 @@ function TablaCouriers({ filas }) {
               <td>{c.total_asignados}</td>
               <td>{c.entregados}</td>
               <td>{c.tasa_entrega}%</td>
+              <td>{gs(c.monto_recaudado)}</td>
+              <td>{gs(c.costo_fletes)}</td>
+              {/* El saldo se lee solo: el signo no alcanza, hay que decir
+                  quién le paga a quién o cada rendición arranca con una
+                  discusión sobre qué significa el número. */}
+              <td className={c.saldo_rendicion < 0 ? 'md-valor-negativo' : ''}>
+                {gs(Math.abs(c.saldo_rendicion ?? 0))}
+                <small className="md-rendicion-quien">
+                  {(c.saldo_rendicion ?? 0) > 0 ? 'te transfiere' : (c.saldo_rendicion ?? 0) < 0 ? 'le pagás' : 'sin saldo'}
+                </small>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -872,6 +1063,19 @@ export default function MiDashboard() {
 
   const kpis = ventas?.kpis || { facturacion_entregada: 0, ticket_promedio: 0 };
   const funnel = ventas?.funnel || { entregados: 0 };
+  // Mismos KPIs del período inmediatamente anterior y de la misma duración.
+  // Puede no venir (backend viejo): todo lo que lo usa tolera undefined.
+  const comparativo = ventas?.comparativo || null;
+  // Estado de resultados en tres niveles. El fallback no es paranoia: si el
+  // backend queda un paso atrás, leer `er.costos_venta.producto` de undefined
+  // rompe la pantalla entera en vez de mostrar ceros.
+  const er = kpis.estado_resultados || {
+    ingresos: kpis.facturacion_entregada || 0,
+    costos_venta: { producto: 0, delivery: 0, comision: 0, iva: 0, total: 0 },
+    utilidad_venta: kpis.margen_bruto_estimado || 0,
+    gastos_operativos: { total: 0, por_categoria: [] },
+    utilidad_neta: kpis.ganancia_neta_estimada || 0,
+  };
   const rangoLabel = ventas?.rango_fechas
     ? `${formatFechaCorta(ventas.rango_fechas.desde)} — ${formatFechaCorta(ventas.rango_fechas.hasta)}`
     : '';
@@ -1116,6 +1320,7 @@ export default function MiDashboard() {
             <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
           </div>
           <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
+          <Variacion actual={kpis.facturacion_entregada} previo={comparativo?.facturacion_entregada} />
         </section>
 
         <section className="md-card md-summary-card md-span-4">
@@ -1134,7 +1339,10 @@ export default function MiDashboard() {
             </div>
             <div className="md-rent-item md-rent-destacado">
               <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: la facturación menos todos los costos y gastos del período." /></span>
-              <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
+              <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>
+                {gs(kpis.ganancia_neta_estimada)}
+                <Variacion actual={kpis.ganancia_neta_estimada} previo={comparativo?.ganancia_neta_estimada} />
+              </span>
             </div>
             <div className="md-rent-item">
               <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes que facturaste, cuántos te quedaron limpios." /></span>
@@ -1154,57 +1362,142 @@ export default function MiDashboard() {
       <section className="md-card md-rentabilidad-card md-span-4">
         <h3 className="md-card-title">
           Rentabilidad
-          <Ayuda texto="La cuenta completa del período, de arriba hacia abajo: arrancás con lo que facturaste y le vas descontando cada costo hasta llegar a lo que te quedó." />
+          <Ayuda texto="Se arranca con toda la plata que cobraste y se le va restando cada gasto, uno por uno. Lo que sobra abajo de todo es tu ganancia." />
         </h3>
-        {/* Mismo orden y mismos nombres que la planilla del comercio, para
-            que la cuenta se pueda seguir de arriba a abajo:
-            Facturación − Meta − Producto − Envíos − Costos Fijos − IVA
-            (− Comisión, si hubo) = Utilidad Neta. */}
-        <div className="md-rentabilidad-grid">
-          <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Facturación Real <Ayuda texto="Toda la plata que entró por pedidos entregados en este período. De acá se descuenta todo lo de abajo." /></span>
-            <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
+        {/* Estado de resultados en tres niveles, que es como se lee un
+            negocio y no como se leia antes (una lista plana de restas):
+
+              INGRESOS
+              - COSTOS DE VENTA    producto, delivery, comision, IVA
+              = UTILIDAD DE LA VENTA
+              - GASTOS OPERATIVOS  publicidad, sueldos, alquiler...
+              = UTILIDAD NETA
+
+            El delivery vive en COSTOS DE VENTA y NO adentro del costo del
+            producto: no encarece la mercaderia (eso es el precio de compra),
+            es lo que costo llevarle al cliente algo ya vendido. Y tampoco va
+            con los gastos generales, porque nace de una venta concreta. */}
+        <div className="md-er">
+          <div className="md-er-fila md-er-ingresos">
+            <span className="md-er-label">Ingresos <Ayuda texto="Lo que cobraste de PRODUCTO en los pedidos que ya entregaste. El delivery no está acá: se cuenta aparte más abajo. Los pedidos pendientes o cancelados tampoco entran." /></span>
+            <span className="md-er-valor">{gs(er.ingresos)}</span>
           </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en publicidad. Sale de Costos y Gastos, de las categorías Publicidad y Marketing." /></span>
-            <span className="md-rent-valor">{gs(gastoPublicidad)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Producto <Ayuda texto="Lo que te costó la mercadería que vendiste, al precio que te costó cuando la vendiste." /></span>
-            <span className="md-rent-valor">{gs(kpis.costo_mercaderia_entregada)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">
-              Envíos
-              <Ayuda texto="Lo que pagaste de flete por los pedidos que se entregaron." />
-              {kpis.costo_logistico_total > (kpis.costo_logistico_entregados ?? kpis.costo_logistico_total) && (
-                <small> (Gs {Math.round(kpis.costo_logistico_total).toLocaleString('es-PY')} con no entregados)</small>
-              )}
-            </span>
-            <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados ?? kpis.costo_logistico_total)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos del negocio que se pagan vendas o no: alquiler, salarios, servicios. Se cargan en Costos y Gastos." /></span>
-            <span className="md-rent-valor">{gs(costosFijos)}</span>
-          </div>
-          <div className="md-rent-item">
-            <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. No es tuyo: lo cobrás y lo entregás." /></span>
-            <span className="md-rent-valor">{gs(kpis.iva_facturado_total)}</span>
-          </div>
-          {kpis.costo_comision_total > 0 && (
-            <div className="md-rent-item">
-              <span className="md-rent-label">Comisión <Ayuda texto="Lo que se queda el medio de pago por cobrarte." /></span>
-              <span className="md-rent-valor">{gs(kpis.costo_comision_total)}</span>
+
+          <div className="md-er-bloque">
+            <span className="md-er-titulo">Costos de venta <Ayuda texto="Todo lo que costó concretar estas ventas: la mercadería y lo que hizo falta para cobrarla y entregarla. No incluye los gastos que pagás vendas o no." /></span>
+            <div className="md-er-fila">
+              <span className="md-er-label">Costo de productos <Ayuda texto="Lo que pagaste por la mercadería que entregaste. Se usa el costo que tenía el producto el día de la venta, no el de hoy." /></span>
+              <span className="md-er-valor">−{gs(er.costos_venta.producto)}</span>
             </div>
-          )}
-          <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">
-              Utilidad Neta <small>({kpis.pct_margen_neto}%)</small>
-              <Ayuda texto="Lo que te quedó limpio después de descontar todo lo de arriba. Si está en rojo, el período cerró en pérdida." />
+            {/* El delivery aparece SIEMPRE, aunque sea Gs 0: es lo primero que
+                el comerciante quiere ver, y esconderlo cuando lo pagó el
+                cliente daría a entender que el sistema no lo está mirando. */}
+            <div className={`md-er-fila ${er.costos_venta.delivery > 0 ? 'md-er-fila-alerta' : ''}`}>
+              <span className="md-er-label">
+                Delivery <small>{er.costos_venta.delivery > 0 ? '(lo pagaste vos)' : '(lo pagó el cliente)'}</small>
+                <Ayuda texto="Solo el flete que salió de tu bolsillo. Cuando se lo cobrás al cliente esa plata entra y sale y no te cuesta nada; cuando lo absorbe el negocio, es un costo de la venta como cualquier otro." />
+              </span>
+              <span className="md-er-valor">−{gs(er.costos_venta.delivery)}</span>
+            </div>
+            {er.costos_venta.comision > 0 && (
+              <div className="md-er-fila">
+                <span className="md-er-label">Comisión de pago <Ayuda texto="Lo que se queda la pasarela de pago por cobrarte." /></span>
+                <span className="md-er-valor">−{gs(er.costos_venta.comision)}</span>
+              </div>
+            )}
+            <div className="md-er-fila">
+              <span className="md-er-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda." /></span>
+              <span className="md-er-valor">−{gs(er.costos_venta.iva)}</span>
+            </div>
+            <div className="md-er-fila md-er-subtotal">
+              <span className="md-er-label">Total costos de venta</span>
+              <span className="md-er-valor">−{gs(er.costos_venta.total)}</span>
+            </div>
+          </div>
+
+          <div className="md-er-fila md-er-resultado">
+            <span className="md-er-label">
+              Utilidad de la venta <small>({kpis.pct_contribucion}%)</small>
+              <Ayuda texto="Lo que deja el negocio de vender, antes de los gastos que pagás vendas o no. Es la plata con la que tenés que cubrir sueldos, alquiler y publicidad." />
             </span>
-            <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
+            <span className={`md-er-valor ${er.utilidad_venta < 0 ? 'md-valor-negativo' : ''}`}>{gs(er.utilidad_venta)}</span>
+          </div>
+
+          <div className="md-er-bloque">
+            <span className="md-er-titulo">Gastos operativos <Ayuda texto="Los gastos que pagás vendas o no: publicidad, sueldos, alquiler, software, servicios. Se cargan en Finanzas → Costos y Gastos." /></span>
+            <div className="md-er-fila">
+              <span className="md-er-label">Publicidad y marketing <Ayuda texto="Lo que gastaste en anuncios en este período. Sale de Costos y Gastos, de las categorías Publicidad y Marketing." /></span>
+              <span className="md-er-valor">−{gs(gastoPublicidad)}</span>
+            </div>
+            <div className="md-er-fila">
+              <span className="md-er-label">Otros gastos fijos <Ayuda texto="Sueldos, alquiler, software, servicios y todo lo demás que se paga vendas o no." /></span>
+              <span className="md-er-valor">−{gs(costosFijos)}</span>
+            </div>
+          </div>
+
+          <div className="md-er-fila md-er-resultado md-er-final">
+            <span className="md-er-label">
+              Utilidad neta <small>({kpis.pct_margen_neto}%)</small>
+              <Ayuda texto="La plata que te queda limpia. En rojo significa que el período cerró con pérdida." />
+            </span>
+            <span className={`md-er-valor ${er.utilidad_neta < 0 ? 'md-valor-negativo' : ''}`}>{gs(er.utilidad_neta)}</span>
           </div>
         </div>
+
+        {/* Delivery abierto en sus dos mitades. Va debajo del resultado y no
+            adentro, porque solo una de las dos (la absorbida) entra en la
+            cuenta — pero las dos son plata que el comerciante mueve y que
+            necesita para rendir cuentas con el courier. */}
+        <div className="md-delivery-resumen">
+          <span className="md-er-titulo">Delivery del período <Ayuda texto="El flete abierto según quién lo pagó. Solo la parte que pagaste vos baja la utilidad; la que pagó el cliente entra y sale." /></span>
+          <div className="md-delivery-grid">
+            <div className="md-delivery-item">
+              <span className="md-delivery-label">Lo pagó el cliente</span>
+              <span className="md-delivery-valor md-rent-valor-neutral">{gs(kpis.envio_cobrado_al_cliente)}</span>
+            </div>
+            <div className="md-delivery-item">
+              <span className="md-delivery-label">Lo pagaste vos</span>
+              <span className={`md-delivery-valor ${kpis.envio_absorbido_por_negocio > 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.envio_absorbido_por_negocio)}</span>
+            </div>
+            <div className="md-delivery-item">
+              <span className="md-delivery-label">Total al courier</span>
+              <span className="md-delivery-valor">{gs(kpis.envio_pagado_al_courier)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Punto de equilibrio: solo aparece si hay gastos fijos cargados.
+            Sin gastos que cubrir no hay equilibrio del que hablar, y un
+            renglón que siempre dice Gs 0 es ruido. */}
+        {kpis.punto_equilibrio !== undefined && (kpis.gastos_operativos > 0 || kpis.costos_operativos_adicionales > 0) && (
+          <div className={`md-equilibrio ${kpis.punto_equilibrio === null ? 'md-equilibrio-alerta' : (kpis.falta_para_equilibrio > 0 ? 'md-equilibrio-falta' : 'md-equilibrio-ok')}`}>
+            {kpis.punto_equilibrio === null ? (
+              <>
+                <strong>No hay punto de equilibrio</strong>
+                <span>
+                  Estás vendiendo por debajo de lo que te cuesta la mercadería, así que vender
+                  más no cubre los gastos fijos: los agranda. Hay que corregir precios o costos.
+                </span>
+              </>
+            ) : kpis.falta_para_equilibrio > 0 ? (
+              <>
+                <strong>Te faltan {gs(kpis.falta_para_equilibrio)} para cubrir los gastos fijos</strong>
+                <span>
+                  Con este margen ({kpis.pct_contribucion}% de cada venta queda para gastos),
+                  el equilibrio está en {gs(kpis.punto_equilibrio)} de facturación.
+                </span>
+              </>
+            ) : (
+              <>
+                <strong>Gastos fijos cubiertos</strong>
+                <span>
+                  Pasaste el punto de equilibrio ({gs(kpis.punto_equilibrio)}). De acá en
+                  adelante, {kpis.pct_contribucion}% de cada venta es ganancia.
+                </span>
+              </>
+            )}
+          </div>
+        )}
         {kpis.gastos_por_categoria?.length > 0 && (
           <details className="md-rent-desglose">
             <summary>Ver gastos operativos por categoría <ChevronDown size={13} /></summary>

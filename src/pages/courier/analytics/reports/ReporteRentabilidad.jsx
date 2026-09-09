@@ -74,7 +74,7 @@ export function ReporteRentabilidad({ filters }) {
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-primary)' }}>
           <div className="cic-kpi-header"><span>Margen Bruto</span><Wallet size={16} style={{ color: 'var(--color-accent-text)' }} /></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>{formatGs(kpis.margen_bruto_estimado)}</div>
-          <div className="cic-kpi-sub">{kpis.pct_margen_bruto}% — ya neto de COGS, comisión, logística e IVA</div>
+          <div className="cic-kpi-sub">{kpis.pct_margen_bruto}% — ya neto de mercadería, comisión e IVA (el delivery lo paga el cliente)</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-danger)' }}>
           <div className="cic-kpi-header"><span>Costos y Gastos</span><TrendingDown size={16} style={{ color: 'var(--color-danger)' }} /></div>

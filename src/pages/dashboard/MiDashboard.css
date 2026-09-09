@@ -500,10 +500,17 @@
   color: var(--md-ink-muted);
   font-weight: 600;
 }
-.md-dot-visitas, .md-dot-contactos {
+/* El cuadradito de color de leyendas y tooltips. Las tres series del
+   gráfico financiero (ventas/costos/ganancia) tenían `background` pero no
+   tamaño ni `display`: un <i> vacío en línea mide 0×0, así que el color
+   nunca se veía y la leyenda quedaba en "Ventas Costos Ganancia" sin forma
+   de saber cuál línea era cuál. */
+.md-dot-visitas, .md-dot-contactos,
+.md-dot-ventas, .md-dot-costos, .md-dot-ganancia {
   width: 8px; height: 8px;
   border-radius: 2px;
   display: inline-block;
+  flex-shrink: 0;
 }
 .md-dot-visitas { background: var(--md-visitas); }
 .md-dot-contactos { background: var(--md-contactos); }
@@ -594,6 +601,13 @@
 }
 .md-chart-tooltip strong { margin-bottom: 0.1rem; color: var(--color-fg); font-size: 0.78rem; }
 .md-chart-tooltip span { display: flex; align-items: center; gap: 0.4rem; color: var(--md-ink-muted); }
+/* Fila "● Ventas ....... Gs 199.000": el nombre pegado al color y el importe
+   alineado a la derecha. Antes era "Gs 199.000 ventas" en texto corrido, con
+   el cuadradito invisible: había que adivinar qué línea era cada número. */
+.md-chart-tooltip .md-tt-fila { display: flex; align-items: center; gap: 0.45rem; }
+.md-chart-tooltip .md-tt-nombre { color: var(--md-ink-muted); }
+.md-chart-tooltip .md-tt-valor { margin-left: auto; padding-left: 0.9rem; font-weight: 700; color: var(--md-ink); font-variant-numeric: tabular-nums; }
+.md-chart-tooltip .md-tt-valor.md-valor-negativo { color: var(--md-negativo); }
 .md-chart-tooltip small { color: var(--md-carrito); margin-top: 0.1rem; font-weight: 500; }
 
 .md-table-wrap {
@@ -810,12 +824,17 @@
   text-align: left;
   white-space: normal;
   opacity: 0;
-  visibility: hidden;
+  /* `display: none` y no solo `visibility: hidden`: un elemento oculto pero
+     presente sigue contando para el alto scrolleable, y como `.md-table-wrap`
+     tiene `overflow-x: auto` (que hace computar `overflow-y: auto`), esas
+     burbujas le metían una barra de scroll vertical a la tabla aunque no
+     hubiera nada que scrollear. Es la barrita que se veía al costado de
+     "Más Vendidos" sin motivo. */
+  display: none;
   pointer-events: none;
-  transition: opacity 0.12s;
 }
 .md-ayuda:hover .md-ayuda-burbuja,
-.md-ayuda:focus-visible .md-ayuda-burbuja { opacity: 1; visibility: visible; }
+.md-ayuda:focus-visible .md-ayuda-burbuja { opacity: 1; display: block; }
 
 /* Ajustes de alineación horizontal en tablas para evitar desbordes */
 .md-table th:first-child .md-ayuda-burbuja,
@@ -881,3 +900,284 @@
     max-height: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Comparativa, desglose de costo y punto de equilibrio.
+
+   Las tres piezas responden a la misma queja: los números estaban bien
+   calculados pero no se podían auditar ni interpretar. Un importe solo no
+   dice si vas mejor o peor (Variación), un total no dice de qué está hecho
+   (desglose) y una utilidad no dice si alcanza para vivir (equilibrio).
+═══════════════════════════════════════════════════════════════════════ */
+
+.md-var {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.md-var-bien { color: var(--md-confirmado); }
+.md-var-mal { color: var(--md-negativo); }
+.md-var-neutro { color: var(--md-ink-faint); font-weight: 500; }
+
+/* El delivery en la tarjeta de Rentabilidad: está en la lista pero no en la
+   cuenta. Se apaga visualmente para que no se lea como un costo más. */
+.md-rent-neutral { opacity: 0.72; }
+.md-rent-valor-neutral { color: var(--md-ink-muted) !important; }
+.md-rent-valor-neutral small {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--md-ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.md-valor-pct { color: var(--md-ink-faint); font-weight: 500; margin-left: 0.15rem; }
+
+.md-badge-alerta {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.45rem;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-negativo);
+  background: color-mix(in srgb, var(--md-negativo) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--md-negativo) 32%, transparent);
+  white-space: nowrap;
+}
+.md-badge-alerta .md-ayuda { color: var(--md-negativo); margin-left: 0.15rem; }
+
+/* Botón que abre el desglose del costo. Es un <button> real: se llega con
+   Tab, dice si está abierto (aria-expanded) y funciona con el dedo — un
+   desglose que solo aparece al pasar el mouse no existe en celular. */
+.md-btn-desglose {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.35rem 0.1rem 0.4rem;
+  margin-left: -0.4rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.md-btn-desglose:hover {
+  background: var(--md-confirmado-soft);
+  border-color: color-mix(in srgb, var(--md-confirmado) 30%, transparent);
+  color: var(--md-confirmado);
+}
+.md-btn-desglose:focus-visible { outline: 2px solid var(--md-confirmado); outline-offset: 2px; }
+.md-btn-desglose svg { transition: transform 0.15s; opacity: 0.6; }
+.md-btn-desglose .md-chevron-abierto { transform: rotate(180deg); opacity: 1; }
+.md-btn-desglose[aria-expanded='true'] { color: var(--md-confirmado); }
+
+.md-fila-abierta > td { border-bottom-color: transparent; }
+
+.md-detalle-fila > td { padding: 0 0.6rem 0.7rem; }
+.md-detalle-caja {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem 2rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 9px;
+  border: 1px solid var(--md-border);
+  background: var(--md-surface-alt);
+  animation: md-detalle-abrir 0.16s ease both;
+}
+@keyframes md-detalle-abrir {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .md-detalle-caja { animation: none; }
+}
+
+.md-detalle-cuenta { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.md-detalle-titulo {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--md-ink-faint);
+  margin-bottom: 0.15rem;
+}
+.md-detalle-linea { display: flex; align-items: baseline; gap: 1rem; font-size: 0.78rem; }
+.md-detalle-label { display: flex; flex-direction: column; color: var(--md-ink-muted); }
+.md-detalle-label small { font-size: 0.67rem; color: var(--md-ink-faint); }
+.md-detalle-valor {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--md-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.md-detalle-total {
+  margin-top: 0.2rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--md-border);
+}
+.md-detalle-total .md-detalle-label { color: var(--md-ink); font-weight: 700; }
+.md-detalle-nota,
+.md-detalle-vacio {
+  margin: 0.45rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--md-ink-faint);
+}
+
+.md-equilibrio {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 9px;
+  border: 1px solid var(--md-border);
+  background: var(--md-surface-alt);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.md-equilibrio strong { font-size: 0.8rem; color: var(--md-ink); }
+.md-equilibrio span { color: var(--md-ink-muted); }
+.md-equilibrio-ok {
+  border-color: color-mix(in srgb, var(--md-confirmado) 35%, var(--md-border));
+  background: var(--md-confirmado-soft);
+}
+.md-equilibrio-ok strong { color: var(--md-confirmado); }
+.md-equilibrio-falta { border-color: color-mix(in srgb, var(--md-confirmado) 22%, var(--md-border)); }
+.md-equilibrio-alerta {
+  border-color: color-mix(in srgb, var(--md-negativo) 38%, var(--md-border));
+  background: color-mix(in srgb, var(--md-negativo) 8%, transparent);
+}
+.md-equilibrio-alerta strong { color: var(--md-negativo); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Estado de resultados en tres niveles.
+
+   La tarjeta de Rentabilidad era una lista plana de restas: facturación,
+   meta, producto, envíos, fijos, IVA, utilidad. Todo al mismo peso visual,
+   así que no se veía la diferencia entre lo que cuesta VENDER (mercadería,
+   delivery, comisión) y lo que se paga vendas o no (alquiler, sueldos).
+   Agrupar es lo que convierte una lista en una cuenta que se puede leer.
+═══════════════════════════════════════════════════════════════════════ */
+
+.md-er { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.9rem; }
+
+.md-er-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 9px;
+  border: 1px solid var(--md-border);
+  background: var(--md-surface-alt);
+}
+.md-er-titulo {
+  display: flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--md-ink-faint);
+  margin-bottom: 0.25rem;
+}
+
+.md-er-fila {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.2rem 0;
+  font-size: 0.8rem;
+}
+.md-er-label { display: flex; align-items: center; color: var(--md-ink-muted); }
+.md-er-label small { margin-left: 0.3rem; color: var(--md-ink-faint); font-size: 0.68rem; }
+.md-er-valor {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--md-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Los dos extremos de la cuenta — lo que entra y lo que queda — con el
+   mismo tratamiento del hero, para que se lean sin buscar. */
+.md-er-ingresos,
+.md-er-resultado {
+  padding: 0.6rem 0.7rem;
+  border-radius: 9px;
+  border: 1px solid var(--md-border);
+  background: var(--md-surface-2);
+  font-size: 0.86rem;
+}
+.md-er-ingresos .md-er-label,
+.md-er-resultado .md-er-label { color: var(--md-ink); font-weight: 600; }
+.md-er-ingresos .md-er-valor,
+.md-er-resultado .md-er-valor { font-size: 0.98rem; }
+.md-er-final {
+  border-color: color-mix(in srgb, var(--md-confirmado) 38%, var(--md-border));
+  background: var(--md-confirmado-soft);
+}
+.md-er-final .md-er-valor { color: var(--md-confirmado); font-size: 1.08rem; }
+.md-er-final .md-er-valor.md-valor-negativo { color: var(--md-negativo); }
+
+.md-er-subtotal {
+  margin-top: 0.2rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--md-border);
+}
+.md-er-subtotal .md-er-label { color: var(--md-ink); font-weight: 700; }
+
+/* Un renglón de costo que salió de tu caja cuando podría no haber salido:
+   se marca, pero sin gritar — es información, no un error. */
+.md-er-fila-alerta .md-er-label,
+.md-er-fila-alerta .md-er-valor { color: var(--md-negativo); }
+
+/* ── Delivery abierto por quién lo pagó ─────────────────────────────── */
+.md-delivery-resumen {
+  margin-top: 0.85rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 9px;
+  border: 1px dashed var(--md-border-strong);
+}
+.md-delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 0.5rem 0.8rem;
+}
+.md-delivery-item { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.md-delivery-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.68rem;
+  color: var(--md-ink-faint);
+  line-height: 1.3;
+}
+.md-delivery-valor {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--md-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Quién le paga a quién, debajo del importe de rendición. Sin esto el
+   número es ambiguo y cada rendición arranca discutiendo el signo. */
+.md-rendicion-quien {
+  display: block;
+  font-size: 0.63rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--md-ink-faint);
+}
+
+.md-detalle-nota-alerta { color: var(--md-negativo); }
