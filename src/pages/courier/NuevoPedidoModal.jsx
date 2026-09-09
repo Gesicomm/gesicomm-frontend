@@ -159,10 +159,10 @@ function buildFormFromEnvio(envio) {
     observaciones: envio.observaciones || "",
     courier_id: envio.courier_id || "",
     incluye_delivery: envio.delivery_a_cargo === "negocio",
-    // No se guarda en ningún lado (nunca se persistió, ni siquiera antes de
-    // esto): al editar un pedido no hay de dónde leerlo, así que arranca en
-    // "contra entrega", el caso normal.
-    pago_anticipado: false,
+    // NULL en pedidos anteriores a esta columna (no se registró, ver
+    // migración 20260909170000) — se lee como contra entrega, igual que
+    // el default de la columna.
+    pago_anticipado: envio.pago_anticipado === true,
     costo_envio: envio.costo_envio || 0
   };
 }
@@ -448,12 +448,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
         nextForm.costo_envio = resultadoZona.costo;
       } else if (prev.courier_id) {
         const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, nuevoValor, itemsParaTarifa, prev.departamento);
-        if (costo !== null) nextForm.costo_envio = costo;
+        nextForm.costo_envio = costo !== null ? costo : 0;
       } else {
         const resultado = buscarCourierYTarifa(couriers, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
+        } else {
+          nextForm.costo_envio = 0;
         }
       }
       return nextForm;
@@ -479,6 +481,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       if (resultado) {
         nextForm.courier_id = resultado.courierId;
         nextForm.costo_envio = resultado.costo;
+      } else {
+        nextForm.costo_envio = 0;
       }
       return nextForm;
     });
@@ -508,13 +512,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       setForm(prev => ({ ...prev, courier_id: resultadoZona.courierId || "", costo_envio: resultadoZona.costo }));
     } else if (form.courier_id) {
       const nuevoCosto = obtenerTarifaPara(couriers, form.ciudad, form.courier_id, esAnticipado, nuevosItems, form.departamento);
-      if (nuevoCosto !== null) {
-        setForm(prev => ({ ...prev, costo_envio: nuevoCosto }));
-      }
+      setForm(prev => ({ ...prev, costo_envio: nuevoCosto !== null ? nuevoCosto : 0 }));
     } else {
       const resultado = buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, nuevosItems, form.departamento);
       if (resultado) {
         setForm(prev => ({ ...prev, courier_id: resultado.courierId, costo_envio: resultado.costo }));
+      } else {
+        setForm(prev => ({ ...prev, costo_envio: 0 }));
       }
     }
   };
@@ -696,6 +700,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       comision_pct_aplicada: metodoSeleccionado ? Number(metodoSeleccionado.comision_porcentaje) : 0,
       costo_envio: Number(form.costo_envio) || 0,
       delivery_a_cargo: deliveryLoPagaNegocio ? "negocio" : "cliente",
+      pago_anticipado: form.pago_anticipado === true,
       monto: precioTotalVendido
     };
 

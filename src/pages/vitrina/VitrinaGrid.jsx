@@ -6,6 +6,7 @@ import {
   ChevronRight, Box, Plus, Edit2, UserCheck, Ticket,
 } from 'lucide-react';
 import { vitrinaService } from '../../services/vitrinaService';
+import { landingSimpleService } from '../../services/landingSimpleService';
 import CuponesModal from './CuponesModal';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -274,8 +275,11 @@ export default function VitrinaGrid() {
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
   const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
+  const [generandoLanding, setGenerandoLanding] = useState(false);
+  const [errorGenerarLanding, setErrorGenerarLanding] = useState(null);
 
   const [searchParams] = useSearchParams();
+  const enOnboarding = searchParams.get('onboarding') === 'productos';
   const [filtro, setFiltro] = useState(() => searchParams.get('filtro') === 'mios' ? 'mios' : 'todos');
   
   const [page, setPage] = useState(1);
@@ -296,12 +300,30 @@ export default function VitrinaGrid() {
     });
   };
   
-  const generarLanding = () => {
+  const generarLanding = async () => {
     if (seleccionados.size === 0) return;
+    setErrorGenerarLanding(null);
     const arrayItems = Array.from(seleccionados).map(k => {
       const [tipo, id] = k.split(':');
       return { tipo, referencia_id: parseInt(id) };
     });
+
+    if (enOnboarding) {
+      setGenerandoLanding(true);
+      try {
+        const templateSlug = sessionStorage.getItem('gesicomm:onboardingTemplateSlug') || 'basico';
+        const landing = await landingSimpleService.crearDesdeOnboarding(templateSlug, arrayItems);
+        sessionStorage.removeItem('gesicomm:onboardingTemplateSlug');
+        sessionStorage.removeItem('gesicomm:prefilledLandingItems');
+        navigate(`/landing/${landing.id}`, { replace: true });
+      } catch (err) {
+        setErrorGenerarLanding(err.response?.data?.message || err.message || 'No se pudo generar la landing.');
+      } finally {
+        setGenerandoLanding(false);
+      }
+      return;
+    }
+
     sessionStorage.setItem('gesicomm:prefilledLandingItems', JSON.stringify(arrayItems));
     navigate('/landing');
   };
@@ -377,7 +399,9 @@ export default function VitrinaGrid() {
         <div className="vit-header-text">
           <h1 className="vit-title">Mi catálogo</h1>
           <p className="vit-subtitle">
-            Gestioná los precios personalizados de venta. El precio nunca puede ser menor al mínimo configurado.
+            {enOnboarding
+              ? 'Seleccioná los productos que querés vender. Con esa selección armamos tu landing inicial.'
+              : 'Gestioná los precios personalizados de venta. El precio nunca puede ser menor al mínimo configurado.'}
           </p>
           <div className="vit-header-stats">
             <span className="vit-header-stat">
@@ -417,10 +441,17 @@ export default function VitrinaGrid() {
             <button type="button" className="vit-seleccion-cancelar" onClick={() => setSeleccionados(new Set())}>
               Quitar selección
             </button>
-            <button type="button" className="vit-seleccion-cta" onClick={generarLanding}>
-              Generar mi landing <ChevronRight size={15} />
+            <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
+              {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}
+              {enOnboarding ? 'Generar landing' : 'Generar mi landing'} <ChevronRight size={15} />
             </button>
           </div>
+        </div>
+      )}
+
+      {errorGenerarLanding && (
+        <div className="vit-inline-error" role="alert">
+          <AlertCircle size={16} /> {errorGenerarLanding}
         </div>
       )}
 

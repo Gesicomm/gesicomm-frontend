@@ -169,4 +169,34 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0][0].costo_envio).toBe(35000);
   });
+
+  it('sin tarifa para ese tipo de pago deja el flete en cero para cargarlo a mano', async () => {
+    // Luque solo tiene tarifa contra entrega. Al pasar a anticipado no hay
+    // coincidencia exacta: antes degradaba a la tarifa más barata de la
+    // ciudad y cobraba un precio que nadie configuró para ese caso.
+    const zonas = [
+      { ciudad: 'Luque', departamento: 'Central', tipo_pago: 'Al Recibir', rango_min: 1, rango_max: 3, costo: 20000, activo: true },
+    ];
+    const onSubmit = vi.fn().mockResolvedValue({});
+    render(<NuevoPedidoModal open envio={pedidoEntregado} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={zonas} />);
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Pago anticipado/i }));
+    await waitFor(() => expect(screen.getByLabelText(/Costo del envío/i).value).toBe('0'));
+  });
+
+  it('manda pago_anticipado en el payload para que quede guardado', async () => {
+    // Se persiste para reportería (envios.pago_anticipado, migración
+    // 20260909170000) — antes de esto era puramente local, solo para
+    // elegir tarifa, y nunca llegaba al backend.
+    const onSubmit = vi.fn().mockResolvedValue({});
+    await abrir(pedidoEntregado, onSubmit);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Pago anticipado/i }));
+    await guardar();
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    expect(onSubmit.mock.calls[0][0].pago_anticipado).toBe(true);
+  });
 });

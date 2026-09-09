@@ -1,9 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Users, Plus, Printer, TrendingUp, HandCoins, MapPin } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck } from "lucide-react";
 import { PedidosTable } from "./PedidosTable";
-import { CouriersCrud } from "./couriers-crud";
-import { DeliveryZonasCrud } from "./DeliveryZonasCrud";
+import { DeliveryPanel } from "./DeliveryPanel";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
@@ -29,12 +28,24 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "couriers", "ciudades", "rendicion", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "delivery", "rendicion", "analitica"]);
+const CLAVE_TAB = "gesicomm:pedidosTab";
+
+// La pestaña activa nunca viaja por query string: llega como router state
+// desde otra pantalla y se recuerda en sessionStorage para el refresh.
+function tabInicial(estadoNavegacion) {
+  if (TABS_VALIDOS.has(estadoNavegacion)) return estadoNavegacion;
+  try {
+    const guardada = window.sessionStorage.getItem(CLAVE_TAB);
+    if (TABS_VALIDOS.has(guardada)) return guardada;
+  } catch { /* sin storage */ }
+  return "tablero";
+}
 
 export function ControlCourier() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const tabInicial = searchParams.get("tab");
-  const [tab, setTab] = useState(TABS_VALIDOS.has(tabInicial) ? tabInicial : "tablero");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState(() => tabInicial(location.state?.tab));
   const [fechaDesde, setFechaDesde] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [fechaHasta, setFechaHasta] = useState(() => new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }));
   const [couriers, setCouriers] = useState([]);
@@ -52,27 +63,16 @@ export function ControlCourier() {
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
 
+  // El state de navegación se consume una sola vez: si no, un refresh volvería
+  // a forzar la pestaña que pidió la pantalla anterior.
   useEffect(() => {
-    if (!tabInicial) return;
-    if (TABS_VALIDOS.has(tabInicial)) {
-      if (tabInicial !== tab) setTab(tabInicial);
-      return;
-    }
-    setTab("tablero");
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("tab", "tablero");
-      return next;
-    }, { replace: true });
-  }, [tabInicial, tab, setSearchParams]);
+    if (!location.state?.tab) return;
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, navigate]);
 
   function seleccionarTab(tabId) {
     setTab(tabId);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      next.set("tab", tabId);
-      return next;
-    }, { replace: true });
+    try { window.sessionStorage.setItem(CLAVE_TAB, tabId); } catch { /* sin storage */ }
   }
 
   useEffect(() => {
@@ -223,11 +223,8 @@ export function ControlCourier() {
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
           </TabButton>
-          <TabButton active={tab === "couriers"} onClick={() => seleccionarTab("couriers")} icon={<Users size={16} />}>
-            Couriers
-          </TabButton>
-          <TabButton active={tab === "ciudades"} onClick={() => seleccionarTab("ciudades")} icon={<MapPin size={16} />}>
-            Ciudades
+          <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
+            Delivery
           </TabButton>
           <TabButton active={tab === "rendicion"} onClick={() => seleccionarTab("rendicion")} icon={<HandCoins size={16} />}>
             Rendición
@@ -251,30 +248,28 @@ export function ControlCourier() {
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             refrescarKey={refrescarKey}
           />
-        ) : tab === "couriers" ? (
-          <CouriersCrud
-            couriers={couriers}
-            enviosCountByCourier={enviosCountByCourier}
-            onCreate={async (c) => {
-              const res = await createCourier(c);
-              setCouriers(prev => [...prev, res]);
-            }}
-            onUpdate={async (c) => {
-              const res = await updateCourier(c.id, c);
-              setCouriers(prev => prev.map(x => x.id === c.id ? res : x));
-            }}
-            onDelete={async (id) => {
-              await deleteCourier(id);
-              setCouriers(prev => prev.filter(x => x.id !== id));
-            }}
-          />
-        ) : tab === "ciudades" ? (
-          <DeliveryZonasCrud
+        ) : tab === "delivery" ? (
+          <DeliveryPanel
             zonas={deliveryZonas}
             couriers={couriers}
-            onSave={async (zonas) => {
+            enviosCountByCourier={enviosCountByCourier}
+            onSaveZonas={async (zonas) => {
               const res = await replaceDeliveryZonas(zonas);
               setDeliveryZonas(res);
+            }}
+            onCreateCourier={async (c) => {
+              const res = await createCourier(c);
+              setCouriers(prev => [...prev, res]);
+              return res;
+            }}
+            onUpdateCourier={async (c) => {
+              const res = await updateCourier(c.id, c);
+              setCouriers(prev => prev.map(x => x.id === c.id ? res : x));
+              return res;
+            }}
+            onDeleteCourier={async (id) => {
+              await deleteCourier(id);
+              setCouriers(prev => prev.filter(x => x.id !== id));
             }}
           />
         ) : tab === "rendicion" ? (

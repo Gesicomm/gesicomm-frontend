@@ -1593,7 +1593,7 @@ export default function MiDashboard() {
       )}
 
       <div className="md-footer-link md-span-12">
-        <Link to="/mis-pedidos?tab=analitica" className="md-btn-ghost">
+        <Link to="/mis-pedidos" state={{ tab: "analitica" }} className="md-btn-ghost">
           Ver Centro de Inteligencia Comercial completo <ArrowRight size={14} />
         </Link>
       </div>

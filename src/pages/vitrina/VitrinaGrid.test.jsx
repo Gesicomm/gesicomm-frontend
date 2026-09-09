@@ -8,8 +8,15 @@ import { BrowserRouter } from 'react-router-dom';
 vi.mock('../../services/vitrinaService', () => ({
   vitrinaService: {
     catalogoPaginado: vi.fn(),
+    catalogo: vi.fn(),
     guardarPrecioProducto: vi.fn(),
     guardarPrecioCombo: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/landingSimpleService', () => ({
+  landingSimpleService: {
+    crearDesdeOnboarding: vi.fn(),
   },
 }));
 

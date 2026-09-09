@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, Loader, ArrowRight, ArrowLeft, Store, Sparkles, Crown } from 'lucide-react';
+import { Check, X, Loader, ArrowRight, ArrowLeft, Store, Dumbbell, Sparkles, Cpu, LayoutTemplate } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
+import { planesService } from '../../services/planesService';
 import { useDebounce } from '../../hooks/useDebounce';
 import '../vitrina/vitrina.css';
 import '../tienda/tienda.css';
@@ -17,43 +18,72 @@ function slugifyLigero(texto) {
     .slice(0, 63);
 }
 
-const PLANES = [
+const FICHAS = [
   {
-    id: 'free',
-    icono: Sparkles,
-    titulo: 'Free',
-    precio: 'Gratis',
-    detalle: 'Tu tienda, tus landings y tu catálogo — sin costo, para arrancar.',
+    id: 'tech-electronica',
+    titulo: 'Electrónica / Tecnología',
+    detalle: 'Ideal para gadgets, accesorios, celulares, computadoras y productos con especificaciones.',
+    icono: Cpu,
   },
   {
-    id: 'pago',
-    icono: Crown,
-    titulo: 'Pago',
-    precio: 'Próximamente',
-    detalle: 'Un asesor te va a contactar para activar los beneficios del plan pago.',
+    id: 'fitness-suplementos',
+    titulo: 'Fitness y Suplementos',
+    detalle: 'Pensada para suplementos, bienestar, entrenamiento, packs y beneficios claros.',
+    icono: Dumbbell,
+  },
+  {
+    id: 'beauty-skincare',
+    titulo: 'Skin Care',
+    detalle: 'Para rutinas, cosmética, belleza, resultados, ingredientes y cuidado personal.',
+    icono: Sparkles,
+  },
+  {
+    id: 'basico',
+    titulo: 'Básico / Otros',
+    detalle: 'Una ficha flexible para vender cualquier otro tipo de producto.',
+    icono: LayoutTemplate,
   },
 ];
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const [verificandoTienda, setVerificandoTienda] = useState(true);
+  const [verificando, setVerificando] = useState(true);
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');
-  const [plan, setPlan] = useState(null);
+  const [ficha, setFicha] = useState('');
   const [disponibilidad, setDisponibilidad] = useState(null);
   const [creando, setCreando] = useState(false);
+  const [accionCreando, setAccionCreando] = useState(null);
   const [error, setError] = useState(null);
   const ultimaConsulta = useRef(0);
 
   const subdominio = slugifyLigero(nombre);
   const subdominioDebounced = useDebounce(subdominio, 500);
 
-  // Si el usuario ya tiene tienda (volvió a /onboarding por error, o con
-  // el botón "atrás" del navegador), no tiene sentido re-onboardearlo.
   useEffect(() => {
-    tiendaService.obtener()
-      .then(t => { if (t) navigate('/mi-catalogo', { replace: true }); })
-      .finally(() => setVerificandoTienda(false));
+    let activo = true;
+
+    async function verificarEntrada() {
+      try {
+        const estadoCuenta = await planesService.miEstado();
+        if (!activo) return;
+        if (!estadoCuenta?.tiene_suscripcion_activa) {
+          navigate('/planes', { replace: true });
+          return;
+        }
+
+        const tienda = await tiendaService.obtener();
+        if (!activo) return;
+        if (tienda) navigate('/mi-dashboard', { replace: true });
+      } catch {
+        if (activo) setError('No pudimos verificar tu plan. Probá de nuevo.');
+      } finally {
+        if (activo) setVerificando(false);
+      }
+    }
+
+    verificarEntrada();
+    return () => { activo = false; };
   }, [navigate]);
 
   useEffect(() => {
@@ -78,21 +108,28 @@ export default function Onboarding() {
     setPaso(2);
   }
 
-  async function crear(planElegido) {
-    setPlan(planElegido);
+  async function crearTienda({ continuarProductos }) {
+    if (continuarProductos && !ficha) return;
     setError(null);
     setCreando(true);
+    setAccionCreando(continuarProductos ? 'productos' : 'despues');
     try {
-      await tiendaService.crear({ nombre: nombre.trim(), subdominio, plan: planElegido });
-      navigate('/mi-catalogo', { replace: true });
+      if (continuarProductos) {
+        sessionStorage.setItem('gesicomm:onboardingTemplateSlug', ficha);
+      } else {
+        sessionStorage.removeItem('gesicomm:onboardingTemplateSlug');
+        sessionStorage.removeItem('gesicomm:prefilledLandingItems');
+      }
+      await tiendaService.crear({ nombre: nombre.trim(), subdominio });
+      navigate(continuarProductos ? '/mi-catalogo?onboarding=productos' : '/mi-dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo crear tu tienda. Probá de nuevo.');
       setCreando(false);
-      setPlan(null);
+      setAccionCreando(null);
     }
   }
 
-  if (verificandoTienda) {
+  if (verificando) {
     return (
       <div className="onb-page">
         <Loader size={22} className="spin-icon" />
@@ -115,8 +152,8 @@ export default function Onboarding() {
 
         {paso === 1 && (
           <form onSubmit={irAPaso2} className="onb-step-content">
-            <h1>¿Cómo se llama tu tienda?</h1>
-            <p className="onb-subtitle">Con esto armamos tu URL pública — la vas a poder compartir por WhatsApp o en tus anuncios.</p>
+            <h1>Bienvenido a Gesicomm</h1>
+            <p className="onb-subtitle">Vamos a configurar tu tienda en unos minutos. Primero elegimos el nombre público.</p>
 
             <label className="onb-label">Nombre de tu tienda
               <input
@@ -143,6 +180,8 @@ export default function Onboarding() {
               )}
             </div>
 
+            {error && <div className="land-alert-error">{error}</div>}
+
             <button type="submit" className="land-btn-primary onb-btn-full" disabled={!nombreValido || !subdominioOk}>
               Continuar <ArrowRight size={15} />
             </button>
@@ -151,31 +190,39 @@ export default function Onboarding() {
 
         {paso === 2 && (
           <div className="onb-step-content">
-            <h1>Elegí tu plan</h1>
-            <p className="onb-subtitle">Podés cambiarlo después desde Mi tienda.</p>
+            <h1>Elegí el tipo de tienda</h1>
+            <p className="onb-subtitle">Esta ficha define cómo se va a presentar tu landing y la vista de tus productos.</p>
 
             <div className="onb-planes">
-              {PLANES.map(p => {
-                const Icono = p.icono;
+              {FICHAS.map(opcion => {
+                const Icono = opcion.icono;
                 return (
                   <button
-                    key={p.id}
+                    key={opcion.id}
                     type="button"
-                    className={`onb-plan-card ${plan === p.id ? 'selected' : ''}`}
+                    className={`onb-plan-card ${ficha === opcion.id ? 'selected' : ''}`}
                     disabled={creando}
-                    onClick={() => crear(p.id)}
+                    onClick={() => setFicha(opcion.id)}
                   >
                     <Icono size={22} />
-                    <h3>{p.titulo}</h3>
-                    <span className="onb-plan-precio">{p.precio}</span>
-                    <p>{p.detalle}</p>
-                    {creando && plan === p.id && <Loader size={16} className="spin-icon" />}
+                    <h3>{opcion.titulo}</h3>
+                    <p>{opcion.detalle}</p>
                   </button>
                 );
               })}
             </div>
 
             {error && <div className="land-alert-error">{error}</div>}
+
+            <button type="button" className="land-btn-primary onb-btn-full" disabled={!ficha || creando} onClick={() => crearTienda({ continuarProductos: true })}>
+              {accionCreando === 'productos' ? <Loader size={15} className="spin-icon" /> : <ArrowRight size={15} />}
+              Seleccionar productos
+            </button>
+
+            <button type="button" className="onb-btn-secondary" onClick={() => crearTienda({ continuarProductos: false })} disabled={creando}>
+              {accionCreando === 'despues' && <Loader size={15} className="spin-icon" />}
+              Configurar más tarde
+            </button>
 
             <button type="button" className="onb-btn-back" onClick={() => setPaso(1)} disabled={creando}>
               <ArrowLeft size={14} /> Volver

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   ONBOARDING — nombre de tienda + plan, primer paso de una cuenta nueva
+   ONBOARDING — nombre de tienda + ficha, primer paso de una cuenta nueva
    Reutiliza --vit-* (vitrina.css) y .tn-url-readonly/.tn-check (tienda.css)
 ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -70,6 +70,30 @@
 }
 
 .onb-btn-full { justify-content: center; width: 100%; }
+
+.onb-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  color: var(--vit-text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.onb-btn-secondary:hover:not(:disabled) {
+  border-color: rgba(61, 95, 163, 0.4);
+  background: color-mix(in srgb, var(--color-fg) 7%, transparent);
+}
+.onb-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
 
 .onb-planes {
   display: grid;
