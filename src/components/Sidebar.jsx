@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
 import ThemeToggle from './public/ThemeToggle';
+import { authTrackingService } from '../services/authTrackingService';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
 const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary-text hover:bg-primary/10 hover:text-primary-text before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
@@ -31,11 +32,27 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias')
   );
+  const [alertasSeguridad, setAlertasSeguridad] = useState(0);
+
+  useEffect(() => {
+    let cancelado = false;
+    const cargarAlertas = () => authTrackingService.resumen(7)
+      .then((datos) => {
+        if (!cancelado) setAlertasSeguridad(Number(datos.notificaciones_no_leidas) || 0);
+      })
+      .catch(() => {});
+    cargarAlertas();
+    window.addEventListener('auth-tracking:updated', cargarAlertas);
+    return () => {
+      cancelado = true;
+      window.removeEventListener('auth-tracking:updated', cargarAlertas);
+    };
+  }, [location.pathname]);
 
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
 
-  const renderLink = ({ path, label, icon }) => {
+  const renderLink = ({ path, label, icon, badge }) => {
     const active = isActive(path);
     return (
       <li key={path}>
@@ -47,6 +64,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         >
           <span className={ICON_WRAP}>{icon}</span>
           {label}
+          {badge ? <span className="ml-auto rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-extrabold text-accent-fg">{badge}</span> : null}
         </Link>
       </li>
     );
@@ -141,6 +159,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store /> })}
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
+            {renderLink({ path: '/admin/seguridad', label: 'Seguridad', icon: <ShieldCheck />, badge: alertasSeguridad > 0 ? alertasSeguridad : null })}
           </ul>
 
           <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">

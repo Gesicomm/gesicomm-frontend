@@ -204,6 +204,10 @@
 .pl-features svg { flex-shrink: 0; margin-top: 0.15rem; color: #10b981; }
 
 .pl-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   margin-top: 0.4rem;
   padding: 0.7rem 1rem;
   border-radius: 10px;
@@ -281,6 +285,16 @@
 }
 .pl-aviso svg { flex-shrink: 0; margin-top: 0.1rem; }
 .pl-aviso strong { display: block; margin-bottom: 0.15rem; }
+.pl-aviso-ok {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.09);
+  color: #10b981;
+}
+.pl-aviso-error {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.09);
+  color: #ef4444;
+}
 
 .pl-editor-grid {
   display: grid;

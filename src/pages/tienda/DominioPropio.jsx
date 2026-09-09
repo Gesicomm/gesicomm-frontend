@@ -1,17 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, Trash2, Loader, AlertCircle, ExternalLink, Clock, PowerOff } from 'lucide-react';
+import {
+  Check, Trash2, Loader, AlertCircle, ExternalLink, Clock, PowerOff, Copy,
+} from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 
 /**
- * Conectar un dominio propio. Todo el flujo es:
+ * Conectar un dominio propio.
  *
- *   1. el cliente escribe su dominio
- *   2. carga UN registro A en su proveedor de DNS
- *   3. aprieta "Verificar dominio"
+ * Las instrucciones están escritas para alguien que nunca tocó un DNS. El
+ * registro en sí es idéntico en todos los proveedores —tipo, nombre y
+ * valor— pero cada panel llama distinto a las casillas y esconde el botón
+ * en otro lado, así que se nombran los alias de cada campo en vez de asumir
+ * el vocabulario de uno solo.
  *
- * Los registros a crear los arma el backend (src/utils/dominios.js) y acá
- * solo se renderizan: qué hay que cargar depende de la forma del dominio y
- * de la IP del servidor, y no tiene sentido tener esa lógica duplicada.
+ * Los dos pasos que más rompen en la práctica, y por eso tienen su propio
+ * lugar acá: un registro viejo con el mismo nombre que hay que borrar
+ * antes, y el proxy naranja de Cloudflare, que hace que el dominio resuelva
+ * a las IPs de Cloudflare y la verificación nunca cierre.
+ *
+ * Los registros a crear los arma el backend (src/utils/dominios.js).
  *
  * Estados que devuelve el backend:
  *   pendiente      el DNS todavía no apunta a nuestro servidor
@@ -19,8 +26,51 @@ import { tiendaService } from '../../services/tiendaService';
  *   activo         además ya sirve por HTTPS
  *   deshabilitado  apagado a propósito, sin perder el dominio
  */
-function FilaRegistro({ etiqueta, valor }) {
-  return <div className="dp-txt-row"><span>{etiqueta}</span><code>{valor}</code></div>;
+
+/** Alias con los que cada panel llama a la misma casilla. */
+const ALIAS = {
+  tipo: 'Type · Record type',
+  nombre: 'Host · Name · Nombre del registro · Subdominio',
+  valor: 'Value · Content · Points to · Apunta a · IPv4 address · Destino',
+};
+
+function CampoCopiable({ etiqueta, valor, alias }) {
+  const [copiado, setCopiado] = useState(false);
+  // Sin valor no hay nada que copiar: antes el botón escribía el string
+  // "undefined" en el portapapeles.
+  const vacio = valor === undefined || valor === null || valor === '';
+
+  async function copiar() {
+    if (vacio) return;
+    try {
+      await navigator.clipboard.writeText(valor);
+    } catch (err) {
+      // Sin permiso de portapapeles (http, navegador viejo): el valor
+      // igual está a la vista para seleccionarlo a mano.
+      return;
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 1500);
+  }
+
+  return (
+    <div className="dp-campo">
+      <div className="dp-campo-cab">
+        <span className="dp-campo-nombre">{etiqueta}</span>
+        {alias && <span className="dp-campo-alias">{alias}</span>}
+      </div>
+      <div className="dp-campo-valor">
+        <code className={vacio ? 'dp-campo-vacio' : undefined}>
+          {vacio ? 'no disponible' : valor}
+        </code>
+        {!vacio && (
+          <button type="button" className="dp-copiar" onClick={copiar} title={`Copiar ${etiqueta}`}>
+            {copiado ? <><Check size={13} /> Copiado</> : <><Copy size={13} /> Copiar</>}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function DominioPropio({ tienda, onActualizado }) {
@@ -39,7 +89,13 @@ export default function DominioPropio({ tienda, onActualizado }) {
     }
     try {
       setEstado(await tiendaService.estadoDominioPropio());
-    } catch (err) {}
+      setError(null);
+    } catch (err) {
+      // Tragarse esto dejaba la pantalla dibujada pero vacía, sin ninguna
+      // pista de que la consulta había fallado.
+      setError(err.response?.data?.message
+        || 'No pudimos consultar el estado de tu dominio. Reintentá en unos segundos.');
+    }
     try {
       const info = await tiendaService.consultarWhois(tienda.dominio_propio);
       setProveedorInfo(info?.proveedor || null);
@@ -165,27 +221,24 @@ export default function DominioPropio({ tienda, onActualizado }) {
 
   // ── Pendiente: falta que cargue el DNS ─────────────────────────────────
   const registros = estado?.registros || [];
+  const principal = registros.find(r => r.obligatorio) || registros[0];
+  const opcionales = registros.filter(r => r !== principal);
+  const enCloudflare = proveedorInfo?.nombre === 'Cloudflare';
+  const nombreRegistro = principal?.nombre;
 
   return (
     <div className="dp-pending">
-      <p>Configuraste <strong>{tienda.dominio_propio}</strong>, pero todavía no está verificado.</p>
-
       <div className="dp-instrucciones">
-        <h4>
-          {proveedorInfo
-            ? `Creá este registro en ${proveedorInfo.nombre}`
-            : 'Creá este registro en tu proveedor de DNS'}
-        </h4>
+        <h4>Falta un paso: apuntar {tienda.dominio_propio} a tu tienda</h4>
 
         <p className="dp-intro">
           {proveedorInfo?.fuente === 'ns' ? (
-            <>El DNS de <strong>{tienda.dominio_propio}</strong> lo administra <strong>{proveedorInfo.nombre}</strong>: el registro va creado ahí.</>
+            <>El DNS de tu dominio lo administra <strong>{proveedorInfo.nombre}</strong>. Todo esto se hace ahí.</>
           ) : proveedorInfo ? (
-            <>Tu dominio figura comprado en <strong>{proveedorInfo.nombre}</strong>. Si moviste el DNS a otro servicio, creá el registro en ese otro panel.</>
+            <>Tu dominio figura comprado en <strong>{proveedorInfo.nombre}</strong>, así que probablemente se administre ahí. Si moviste el DNS a otro servicio, hacelo en ese otro panel.</>
           ) : (
-            <>Entrá al panel donde se administra el DNS de tu dominio (normalmente la empresa donde lo compraste: GoDaddy, Hostinger, Namecheap, Cloudflare…).</>
+            <>Esto se hace en el panel de la empresa donde administrás tu dominio — normalmente donde lo compraste.</>
           )}
-          {' '}Buscá la sección <strong>DNS</strong> y usá <strong>Agregar registro</strong>.
         </p>
 
         {proveedorInfo?.url_login && (
@@ -194,26 +247,93 @@ export default function DominioPropio({ tienda, onActualizado }) {
           </a>
         )}
 
-        {registros.map((registro, i) => (
-          <div className="dp-txt-box" key={i}>
-            {!registro.obligatorio && (
-              <p className="dp-paso">Opcional — para que también funcione con www</p>
-            )}
-            <FilaRegistro etiqueta="Tipo" valor={registro.tipo} />
-            <FilaRegistro etiqueta="Nombre" valor={registro.nombre} />
-            <FilaRegistro etiqueta="Valor" valor={registro.valor} />
-            {registro.nombre === '@' && (
+        <ol className="dp-pasos">
+          <li>
+            <strong>Entrá a la sección de DNS.</strong>
+            <p>
+              Según el proveedor puede llamarse <em>DNS</em>, <em>Zona DNS</em>,
+              <em> Administrar DNS</em>, <em>Editor de zona</em> o <em>DNS Records</em>.
+              Es la pantalla donde aparece una lista de registros.
+            </p>
+          </li>
+
+          <li>
+            <strong>Fijate si ya existe un registro llamado «{nombreRegistro}».</strong>
+            <p>
+              Si ves uno (de tipo <code>A</code>, <code>CNAME</code> o <code>AAAA</code>) con ese
+              nombre, <strong>borralo antes de seguir</strong>. No pueden convivir dos registros
+              con el mismo nombre, y el que quede viejo gana.
+            </p>
+          </li>
+
+          <li>
+            <strong>Creá un registro nuevo</strong> con el botón «Agregar registro», «Add record»
+            o «Añadir nuevo», y cargá estos tres datos:
+            <div className="dp-registro">
+              <CampoCopiable etiqueta="Tipo" valor={principal?.tipo} alias={ALIAS.tipo} />
+              <CampoCopiable etiqueta="Nombre" valor={nombreRegistro} alias={ALIAS.nombre} />
+              <CampoCopiable etiqueta="Valor" valor={principal?.valor} alias={ALIAS.valor} />
+              <div className="dp-campo">
+                <div className="dp-campo-cab">
+                  <span className="dp-campo-nombre">TTL</span>
+                  <span className="dp-campo-alias">Time to live</span>
+                </div>
+                <div className="dp-campo-valor">
+                  <code>Automático</code>
+                  <span className="dp-campo-aclaracion">o <code>3600</code> si te obliga a poner un número</span>
+                </div>
+              </div>
+            </div>
+
+            {nombreRegistro === '@' && (
               <p className="dp-nota">
-                «@» significa la raíz del dominio. Según el proveedor, la casilla puede pedirse
-                vacía o con el dominio completo.
+                <strong>«@» significa la raíz del dominio.</strong> Algunos paneles piden
+                exactamente <code>@</code>, otros quieren la casilla <strong>vacía</strong> y
+                otros el dominio completo (<code>{tienda.dominio_propio}</code>). Las tres formas
+                significan lo mismo — usá la que acepte el tuyo.
               </p>
             )}
-          </div>
-        ))}
+
+            {enCloudflare && (
+              <p className="dp-nota dp-nota-alerta">
+                <AlertCircle size={14} />
+                <span>
+                  <strong>En Cloudflare, poné el «Proxy status» en DNS only (nube gris).</strong> Si
+                  lo dejás en naranja, tu dominio va a resolver a las IPs de Cloudflare en vez de a
+                  la nuestra y la verificación no va a cerrar nunca.
+                </span>
+              </p>
+            )}
+          </li>
+
+          {opcionales.length > 0 && (
+            <li>
+              <strong>Opcional: que también funcione con «www».</strong>
+              <p>Mismo procedimiento, con estos datos:</p>
+              <div className="dp-registro">
+                {opcionales.map((r, i) => (
+                  <React.Fragment key={i}>
+                    <CampoCopiable etiqueta="Tipo" valor={r.tipo} />
+                    <CampoCopiable etiqueta="Nombre" valor={r.nombre} />
+                    <CampoCopiable etiqueta="Valor" valor={r.valor} />
+                  </React.Fragment>
+                ))}
+              </div>
+            </li>
+          )}
+
+          <li>
+            <strong>Guardá y volvé acá a apretar «Verificar dominio».</strong>
+            <p>
+              El cambio puede tardar desde unos minutos hasta unas horas en propagarse. Si no
+              verifica a la primera, esperá un rato y probá de nuevo.
+            </p>
+          </li>
+        </ol>
 
         <p className="dp-nota">
-          No hay nada más que configurar: el certificado HTTPS lo emitimos nosotros
-          automáticamente.
+          El certificado de seguridad (HTTPS) no lo tenés que configurar: lo emitimos nosotros
+          automáticamente apenas el dominio quede verificado.
         </p>
 
         {proveedorInfo?.instrucciones && (
@@ -231,7 +351,14 @@ export default function DominioPropio({ tienda, onActualizado }) {
         <button type="button" className="btn-secondary" onClick={eliminar}>Quitar dominio</button>
       </div>
 
-      {estado?.detalle && <p className="dp-hint">{estado.detalle}</p>}
+      {/* El detalle explica QUÉ está mal (a dónde apunta hoy), no solo que
+          falló: es la diferencia entre reintentar a ciegas y corregir. */}
+      {estado?.detalle && (
+        <div className="dp-diagnostico">
+          <AlertCircle size={14} />
+          <span>{estado.detalle}</span>
+        </div>
+      )}
       {error && <div className="land-alert-error"><AlertCircle size={14} /> {error}</div>}
     </div>
   );

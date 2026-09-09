@@ -11,6 +11,9 @@ export default function PagoParConfig() {
 
   // Form state
   const [publicKey, setPublicKey] = useState('');
+  // Guardamos la pública tal como vino del servidor: si el usuario la cambia
+  // sin reemplazar la privada, el par queda roto (ver aviso más abajo).
+  const [publicKeyOriginal, setPublicKeyOriginal] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [environment, setEnvironment] = useState('sandbox');
   const [isActive, setIsActive] = useState(false);
@@ -25,6 +28,7 @@ export default function PagoParConfig() {
       const data = await paymentGatewayService.obtenerPagopar();
       setConfig(data);
       setPublicKey(data.public_key || '');
+      setPublicKeyOriginal(data.public_key || '');
       setEnvironment(data.environment || 'sandbox');
       setIsActive(data.is_active || false);
     } catch (err) {
@@ -47,10 +51,15 @@ export default function PagoParConfig() {
         is_active: isActive
       };
 
-      if (eliminarKey) {
-        payload.private_key = null;
-      } else if (privateKey.trim()) {
+      // El orden importa: lo tipeado GANA sobre `eliminarKey`. Antes se
+      // evaluaba `eliminarKey` primero, asi que "Reemplazar o Eliminar" +
+      // pegar una clave nueva mandaba private_key: null y descartaba lo
+      // escrito — borraba en silencio en vez de reemplazar.
+      // `eliminarKey` solo significa borrar cuando el campo quedo vacio.
+      if (privateKey.trim()) {
         payload.private_key = privateKey.trim();
+      } else if (eliminarKey) {
+        payload.private_key = null;
       }
 
       await paymentGatewayService.guardarPagopar(payload);
@@ -78,6 +87,14 @@ export default function PagoParConfig() {
       setProbando(false);
     }
   };
+
+  // El par queda roto si se editó la pública pero la privada sigue siendo la
+  // guardada (no se está reemplazando ni escribiendo una nueva).
+  const parImposible =
+    !!config?.has_private_key &&
+    !eliminarKey &&
+    !privateKey.trim() &&
+    publicKey.trim() !== publicKeyOriginal.trim();
 
   if (cargando) {
     return <div className="text-[var(--vit-muted)] py-4">Cargando configuración...</div>;
@@ -185,7 +202,11 @@ export default function PagoParConfig() {
                 className="w-full bg-[var(--vit-card-bg)] text-[var(--vit-text)] border border-[var(--vit-border)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors placeholder:text-[var(--vit-muted)]"
                 placeholder="Pegá tu private key aquí..."
                 value={privateKey}
-                onChange={e => setPrivateKey(e.target.value)}
+                onChange={e => {
+                  setPrivateKey(e.target.value);
+                  // Escribir algo deja de ser un borrado: es un reemplazo.
+                  if (e.target.value.trim() && eliminarKey) setEliminarKey(false);
+                }}
               />
               <p className="text-xs text-[var(--vit-muted)] mt-2">
                 La clave se cifrará con encriptación de grado militar antes de ser almacenada en la base de datos.
@@ -193,6 +214,19 @@ export default function PagoParConfig() {
             </div>
           )}
         </div>
+
+        {parImposible && (
+          <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-600 text-sm flex gap-3">
+            <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>
+              Cambiaste el <strong>Public Key</strong> pero seguís con la clave privada anterior.
+              Los dos tokens son un par: si no reemplazás también la privada, PagoPar va a
+              rechazar todo con <em>"Token no coincide"</em>. Tocá <strong>Reemplazar o Eliminar</strong> y pegá la privada nueva.
+            </span>
+          </div>
+        )}
 
         <div className="pt-6 flex items-center justify-between border-t border-[var(--vit-border)]">
           <button
@@ -214,7 +248,8 @@ export default function PagoParConfig() {
           <button
             type="button"
             onClick={handleGuardar}
-            disabled={guardando}
+            disabled={guardando || parImposible}
+            title={parImposible ? 'Reemplazá también la clave privada: los dos tokens son un par.' : undefined}
             className="px-6 py-2.5 rounded-xl text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 transition-colors flex items-center gap-2"
           >
             {guardando ? (

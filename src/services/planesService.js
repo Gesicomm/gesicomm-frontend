@@ -9,6 +9,12 @@ export const planesService = {
   /** Catálogo activo, ordenado. Reemplaza al catálogo hardcodeado del front. */
   listar: () => API.get('/planes').then(r => r.data),
 
+  /** Estado de suscripción de la cuenta logueada. */
+  miEstado: () => API.get('/suscripciones/mi-estado').then(r => r.data),
+
+  /** PagoPar dummy: simula pago acreditado para habilitar onboarding. */
+  pagarDummyPagopar: (payload) => API.post('/suscripciones/pagopar-dummy', payload).then(r => r.data),
+
   /**
    * Arranca el pago de un plan.
    * @returns {{ payment_url, hash_pedido, suscripcion_id, referencia }}

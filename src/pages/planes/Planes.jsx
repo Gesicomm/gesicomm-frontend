@@ -1,168 +1,178 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Loader, Sparkles, AlertCircle } from 'lucide-react';
-import { tiendaService } from '../../services/tiendaService';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, CreditCard, Loader, Sparkles, AlertCircle } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { cargarPlanes, PERIODICIDAD } from '../../lib/planesCatalogo';
+import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
 import './planes.css';
 
-/**
- * Pantalla de planes. Muestra el catálogo de lib/planesCatalogo.js y marca
- * cuál es el plan actual de la cuenta comparando `equivale` contra el
- * Usuario.plan que devuelve /mi-tienda ('free' | 'pago').
- *
- * Contratar todavía no hace nada: no hay pasarela de suscripciones ni
- * endpoint de cambio de plan, y el botón lo dice en vez de simular una
- * compra que no ocurre.
- */
+function formatPrecioPlan(plan) {
+  if (plan.moneda === 'USD') {
+    return `$${Number(plan.precio || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+  }
+  return formatMoneda(plan.precio);
+}
+
+function normalizarPlanes(planes) {
+  return (Array.isArray(planes) ? planes : [])
+    .filter(plan => Number(plan.precio) > 0)
+    .map(plan => ({
+      ...plan,
+      id: plan.id || plan.codigo,
+      codigo: plan.codigo || plan.id,
+      cta: plan.cta || 'Activar plan',
+      moneda: plan.moneda || 'PYG',
+      features: Array.isArray(plan.features) ? plan.features : [],
+    }));
+}
+
 export default function Planes() {
   const navigate = useNavigate();
-  // Los planes ahora viven en la base (tabla `planes`). El catálogo del
-  // front queda solo como respaldo si la API no responde.
   const [planes, setPlanes] = useState([]);
-  const [planActual, setPlanActual] = useState(null);
+  const [usuario, setUsuario] = useState(null);
+  const [estadoCuenta, setEstadoCuenta] = useState(null);
   const [cargando, setCargando] = useState(true);
-
-  // Checkout: quién compra. Antes de pagar no hay cuenta, así que lo único
-  // que se pide es el correo — es la identidad de la suscripción hasta que
-  // la persona se registra.
-  const [comprando, setComprando] = useState(null);   // plan elegido
-  const [email, setEmail] = useState('');
-  const [nombre, setNombre] = useState('');
-  const [enviando, setEnviando] = useState(false);
+  const [simulandoCodigo, setSimulandoCodigo] = useState(null);
   const [errorPago, setErrorPago] = useState(null);
+  const [exito, setExito] = useState(null);
 
   useEffect(() => {
-    planesService.listar()
-      .then(data => setPlanes(Array.isArray(data) && data.length ? data : cargarPlanes()))
-      .catch(() => setPlanes(cargarPlanes()))
-      .finally(() => setCargando(false));
+    let activo = true;
 
-    // Puede no haber sesión: esta pantalla es pública.
-    tiendaService.obtener()
-      .then(t => setPlanActual(t?.plan || null))
-      .catch(() => setPlanActual(null));
+    async function cargar() {
+      setCargando(true);
+      try {
+        const [planesApi, sesion] = await Promise.all([
+          planesService.listar().catch(() => cargarPlanes()),
+          verificarSesionDetallada({ permitirRenovar: true }),
+        ]);
+
+        if (!activo) return;
+        setPlanes(normalizarPlanes(planesApi));
+
+        if (sesion.estado === 'autenticado') {
+          setUsuario(sesion.usuario);
+          const estado = await planesService.miEstado().catch(() => null);
+          if (!activo) return;
+          setEstadoCuenta(estado);
+        } else {
+          setUsuario(null);
+          setEstadoCuenta(null);
+        }
+      } finally {
+        if (activo) setCargando(false);
+      }
+    }
+
+    cargar();
+    return () => { activo = false; };
   }, []);
 
-  async function iniciarPago(e) {
-    e.preventDefault();
+  useEffect(() => {
+    if (!estadoCuenta?.tiene_suscripcion_activa) return;
+    const destino = estadoCuenta.requiere_onboarding ? '/onboarding' : '/mi-dashboard';
+    const t = setTimeout(() => navigate(destino, { replace: true }), 900);
+    return () => clearTimeout(t);
+  }, [estadoCuenta, navigate]);
+
+  const yaTienePlan = !!estadoCuenta?.tiene_suscripcion_activa;
+  const planesOrdenados = useMemo(() => [...planes].sort((a, b) => (a.orden || 0) - (b.orden || 0)), [planes]);
+
+  async function simularPago(plan) {
+    if (!usuario) {
+      navigate('/login');
+      return;
+    }
+
     setErrorPago(null);
-    setEnviando(true);
+    setExito(null);
+    setSimulandoCodigo(plan.codigo);
     try {
-      const { payment_url } = await planesService.checkout({
-        plan_codigo: comprando.codigo,
-        email: email.trim(),
-        nombre: nombre.trim(),
-      });
-      // Salimos del SPA hacia el checkout de PagoPar.
-      window.location.href = payment_url;
+      const resultado = await planesService.pagarDummyPagopar({ plan_codigo: plan.codigo });
+      setEstadoCuenta(resultado.estado_cuenta);
+      setExito('PagoPar dummy acreditó tu plan. Te llevamos al onboarding.');
     } catch (err) {
-      setErrorPago(err.response?.data?.error || 'No pudimos iniciar el pago. Probá de nuevo.');
-      setEnviando(false);
+      setErrorPago(err.response?.data?.message || err.message || 'No pudimos simular el pago con PagoPar.');
+    } finally {
+      setSimulandoCodigo(null);
     }
   }
 
-  const destacados = planes.filter(p => p.destacado).length;
-
   return (
     <div className="pl-page">
-      <button type="button" className="pl-volver" onClick={() => navigate('/mi-tienda')}>
-        <ArrowLeft size={14} /> Volver a Mi tienda
+      <button type="button" className="pl-volver" onClick={() => navigate(usuario ? '/mi-dashboard' : '/login')}>
+        <ArrowLeft size={14} /> Volver
       </button>
 
       <header className="pl-hero">
-        <span className="pl-hero-eyebrow"><Sparkles size={13} /> Planes</span>
-        <h1>Vendé más, con menos vueltas</h1>
+        <span className="pl-hero-eyebrow"><Sparkles size={13} /> Planes Gesicomm</span>
+        <h1>Elegí un plan pago para activar tu tienda</h1>
         <p>
-          Todos los planes incluyen tu catálogo online y pedidos por WhatsApp.
-          Los de pago suman dominio propio, cobros online, medición y automatizaciones.
+          No hay plan gratis. Después de acreditar el pago, Gesicomm te lleva al onboarding para configurar
+          el nombre de tu tienda, la ficha y los productos que vas a vender.
         </p>
       </header>
 
-      {cargando ? (
-        <div className="pl-cargando"><Loader size={20} className="spin-icon" /><span>Cargando tu plan...</span></div>
-      ) : (
-        <div className={`pl-grid ${destacados ? 'con-destacado' : ''}`}>
-          {planes.map(plan => {
-            const esActual = planActual !== null && plan.equivale === planActual;
-            return (
-              <article key={plan.id} className={`pl-card ${plan.destacado ? 'destacado' : ''} ${esActual ? 'actual' : ''}`}>
-                {plan.etiqueta && <span className="pl-cinta">{plan.etiqueta}</span>}
-
-                <header className="pl-card-head">
-                  <h2>{plan.nombre}</h2>
-                  {esActual && <span className="pl-badge-actual">Tu plan actual</span>}
-                </header>
-
-                <p className="pl-resumen">{plan.resumen}</p>
-
-                <div className="pl-precio">
-                  {plan.precio > 0 ? (
-                    <>
-                      <strong>{formatMoneda(plan.precio)}</strong>
-                      <span>{PERIODICIDAD}</span>
-                    </>
-                  ) : (
-                    <strong className="pl-precio-gratis">Gratis</strong>
-                  )}
-                </div>
-
-                <ul className="pl-features">
-                  {plan.features.map((f, i) => (
-                    <li key={i}><Check size={14} /> <span>{f}</span></li>
-                  ))}
-                </ul>
-
-                <button
-                  type="button"
-                  className={`pl-cta ${plan.destacado ? 'primario' : ''}`}
-                  disabled={esActual || plan.precio <= 0}
-                  onClick={() => { setComprando(plan); setErrorPago(null); }}
-                  title={esActual ? 'Ya tenés este plan' : undefined}
-                >
-                  {esActual ? 'Tu plan actual' : plan.cta}
-                </button>
-              </article>
-            );
-          })}
+      {exito && (
+        <div className="pl-aviso pl-aviso-ok">
+          <CheckCircle2 size={17} />
+          <span>{exito}</span>
         </div>
       )}
 
-      {comprando && (
-        <div className="pl-modal-fondo" onClick={() => !enviando && setComprando(null)}>
-          <form className="pl-modal" onClick={e => e.stopPropagation()} onSubmit={iniciarPago}>
-            <h3>Contratar {comprando.nombre}</h3>
-            <p className="pl-modal-precio">{formatMoneda(comprando.precio)} <span>{PERIODICIDAD}</span></p>
-            <p className="pl-modal-ayuda">
-              Con este correo vas a crear tu cuenta después de pagar, así que asegurate de tenerlo a mano.
-            </p>
+      {errorPago && (
+        <div className="pl-aviso pl-aviso-error">
+          <AlertCircle size={17} />
+          <span>{errorPago}</span>
+        </div>
+      )}
 
-            <label className="pl-campo">
-              <span>Tu correo</span>
-              <input
-                type="email" required value={email} autoFocus
-                onChange={e => setEmail(e.target.value)}
-                placeholder="vos@tunegocio.com"
-              />
-            </label>
-            <label className="pl-campo">
-              <span>Tu nombre <em>(opcional)</em></span>
-              <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Nombre y apellido" />
-            </label>
+      {cargando ? (
+        <div className="pl-cargando"><Loader size={20} className="spin-icon" /><span>Cargando planes...</span></div>
+      ) : yaTienePlan ? (
+        <div className="pl-estado ok">
+          <CheckCircle2 size={44} />
+          <h1>Tu plan ya está activo</h1>
+          <p>Vamos a continuar con la configuración de tu tienda.</p>
+        </div>
+      ) : (
+        <div className="pl-grid con-destacado">
+          {planesOrdenados.map(plan => (
+            <article key={plan.codigo} className={`pl-card ${plan.destacado ? 'destacado' : ''}`}>
+              {plan.etiqueta && <span className="pl-cinta">{plan.etiqueta}</span>}
 
-            {errorPago && <p className="pl-modal-error"><AlertCircle size={14} /> {errorPago}</p>}
+              <header className="pl-card-head">
+                <h2>{plan.nombre}</h2>
+              </header>
 
-            <div className="pl-modal-acciones">
-              <button type="button" className="pl-btn" onClick={() => setComprando(null)} disabled={enviando}>
-                Cancelar
+              <p className="pl-resumen">{plan.resumen}</p>
+
+              <div className="pl-precio">
+                <strong>{formatPrecioPlan(plan)}</strong>
+                <span>{PERIODICIDAD}</span>
+              </div>
+
+              <ul className="pl-features">
+                {plan.features.map((f, i) => (
+                  <li key={i}><Check size={14} /> <span>{f}</span></li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                className={`pl-cta ${plan.destacado ? 'primario' : ''}`}
+                disabled={!!simulandoCodigo}
+                onClick={() => simularPago(plan)}
+              >
+                {simulandoCodigo === plan.codigo ? (
+                  <><Loader size={14} className="spin-icon" /> Simulando PagoPar...</>
+                ) : (
+                  <><CreditCard size={15} /> Simular pago con PagoPar <ArrowRight size={15} /></>
+                )}
               </button>
-              <button type="submit" className="pl-btn primario" disabled={enviando || !email.trim()}>
-                {enviando ? <Loader size={14} className="spin-icon" /> : null}
-                Ir a pagar
-              </button>
-            </div>
-          </form>
+            </article>
+          ))}
         </div>
       )}
     </div>

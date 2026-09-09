@@ -697,30 +697,6 @@
 
 .dp-pending > p { margin: 0; font-size: 0.82rem; color: var(--vit-text); }
 
-.dp-txt-box {
-  background: var(--vit-bg);
-  border: 1px solid var(--vit-border);
-  border-radius: 10px;
-  padding: 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-.dp-txt-box p { margin: 0; font-size: 0.75rem; color: var(--vit-muted); }
-.dp-txt-row { display: flex; gap: 0.5rem; align-items: baseline; flex-wrap: wrap; }
-.dp-txt-row span { font-size: 0.72rem; color: var(--vit-muted-2); min-width: 50px; }
-.dp-txt-row code {
-  background: color-mix(in srgb, var(--color-fg) 5%, transparent);
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.78rem;
-  font-family: var(--font-mono);
-  color: var(--vit-accent-fg);
-  word-break: break-all;
-}
-
 .dp-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .dp-hint { margin: 0; font-size: 0.75rem; color: var(--vit-muted-2); }
 
@@ -985,8 +961,6 @@
 .dp-intro { margin: 0; font-size: 0.8rem; line-height: 1.55; color: var(--vit-muted); }
 .dp-link-panel { display: inline-flex; align-items: center; gap: 0.5rem; align-self: flex-start; }
 
-.dp-paso { font-weight: 600; color: var(--vit-text) !important; font-size: 0.8rem !important; }
-.dp-paso-detalle { margin-bottom: 0.3rem !important; }
 .dp-nota { font-size: 0.72rem !important; font-style: italic; line-height: 1.45; }
 
 .dp-tip {
@@ -1033,4 +1007,104 @@
   align-items: center;
   gap: 0.4rem;
   text-decoration: none;
+}
+
+/* --- Dominio propio: instrucciones paso a paso ------------------------- */
+.dp-pasos {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-size: 0.82rem;
+  color: var(--vit-text);
+}
+.dp-pasos > li { line-height: 1.55; }
+.dp-pasos p { margin: 0.3rem 0 0; color: var(--vit-muted); }
+.dp-pasos em { font-style: normal; color: var(--vit-text); }
+.dp-pasos code {
+  background: color-mix(in srgb, var(--color-fg) 7%, transparent);
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+/* Los datos del registro. Cada campo lleva su botón de copiar: escribir a
+   mano una IP es la forma más común de que esto falle. */
+.dp-registro {
+  margin-top: 0.6rem;
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 10px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.dp-campo { display: flex; flex-direction: column; gap: 0.2rem; }
+.dp-campo-cab { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem; }
+.dp-campo-nombre { font-weight: 600; font-size: 0.78rem; color: var(--vit-text); }
+/* Cada panel llama distinto a la misma casilla; nombrarlas todas evita el
+   "no encuentro ese campo". */
+.dp-campo-alias { font-size: 0.68rem; color: var(--vit-muted-2); }
+.dp-campo-valor { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.dp-campo-valor code {
+  background: color-mix(in srgb, var(--color-fg) 7%, transparent);
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--vit-accent-fg);
+  word-break: break-all;
+}
+.dp-campo-aclaracion { font-size: 0.72rem; color: var(--vit-muted); }
+.dp-copiar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 1px solid var(--vit-border);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  color: var(--vit-muted);
+  cursor: pointer;
+}
+.dp-copiar:hover { color: var(--vit-text); border-color: var(--vit-muted-2); }
+
+.dp-nota-alerta {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem !important;
+  padding: 0.6rem 0.7rem;
+  border-radius: 8px;
+  font-style: normal !important;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
+  color: var(--vit-text) !important;
+}
+.dp-nota-alerta svg { flex-shrink: 0; color: #b45309; margin-top: 0.15rem; }
+
+/* Dice a dónde apunta HOY el dominio, no solo que falló: es la diferencia
+   entre reintentar a ciegas y corregir el registro. */
+.dp-diagnostico {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--vit-muted);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+}
+.dp-diagnostico svg { flex-shrink: 0; margin-top: 0.15rem; }
+
+/* Un dato que el backend no pudo calcular (típicamente falta ORIGIN_IP en
+   el entorno). Se muestra como hueco explícito y sin botón de copiar, en
+   vez de una casilla vacía que parece un problema de estilos. */
+.dp-campo-vacio {
+  color: var(--vit-muted-2) !important;
+  font-style: italic;
 }

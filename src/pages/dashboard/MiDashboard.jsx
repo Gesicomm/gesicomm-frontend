@@ -1066,16 +1066,7 @@ export default function MiDashboard() {
   // Mismos KPIs del período inmediatamente anterior y de la misma duración.
   // Puede no venir (backend viejo): todo lo que lo usa tolera undefined.
   const comparativo = ventas?.comparativo || null;
-  // Estado de resultados en tres niveles. El fallback no es paranoia: si el
-  // backend queda un paso atrás, leer `er.costos_venta.producto` de undefined
-  // rompe la pantalla entera en vez de mostrar ceros.
-  const er = kpis.estado_resultados || {
-    ingresos: kpis.facturacion_entregada || 0,
-    costos_venta: { producto: 0, delivery: 0, comision: 0, iva: 0, total: 0 },
-    utilidad_venta: kpis.margen_bruto_estimado || 0,
-    gastos_operativos: { total: 0, por_categoria: [] },
-    utilidad_neta: kpis.ganancia_neta_estimada || 0,
-  };
+
   const rangoLabel = ventas?.rango_fechas
     ? `${formatFechaCorta(ventas.rango_fechas.desde)} — ${formatFechaCorta(ventas.rango_fechas.hasta)}`
     : '';
@@ -1364,105 +1355,65 @@ export default function MiDashboard() {
           Rentabilidad
           <Ayuda texto="Se arranca con toda la plata que cobraste y se le va restando cada gasto, uno por uno. Lo que sobra abajo de todo es tu ganancia." />
         </h3>
-        {/* Estado de resultados en tres niveles, que es como se lee un
-            negocio y no como se leia antes (una lista plana de restas):
+        {/* La cuenta del período, de arriba hacia abajo y en el orden en que
+            el comercio la lee: arrancás con lo que facturaste y le vas
+            restando cada gasto hasta llegar a lo que te quedó.
 
-              INGRESOS
-              - COSTOS DE VENTA    producto, delivery, comision, IVA
-              = UTILIDAD DE LA VENTA
-              - GASTOS OPERATIVOS  publicidad, sueldos, alquiler...
-              = UTILIDAD NETA
+              Facturación Real
+              - Meta (ads)
+              - Producto
+              - Envíos
+              - Costos fijos
+              (- Comisión, si hubo)
+              = Utilidad Neta
+              - IVA
 
-            El delivery vive en COSTOS DE VENTA y NO adentro del costo del
-            producto: no encarece la mercaderia (eso es el precio de compra),
-            es lo que costo llevarle al cliente algo ya vendido. Y tampoco va
-            con los gastos generales, porque nace de una venta concreta. */}
-        <div className="md-er">
-          <div className="md-er-fila md-er-ingresos">
-            <span className="md-er-label">Ingresos <Ayuda texto="Lo que cobraste de PRODUCTO en los pedidos que ya entregaste. El delivery no está acá: se cuenta aparte más abajo. Los pedidos pendientes o cancelados tampoco entran." /></span>
-            <span className="md-er-valor">{gs(er.ingresos)}</span>
+            "Envíos" es SIEMPRE el costo real pagado al courier, tildado o
+            no "Incluye delivery" — al courier se le paga igual. Cuando el
+            cliente cubre el flete, esa misma plata ya está sumada en
+            Facturación Real, así que el renglón de Envíos no le pega a la
+            Utilidad (entra y sale); cuando lo absorbe el negocio, Facturación
+            Real no la tiene y Envíos sí la resta — ahí es un costo real. */}
+        <div className="md-rentabilidad-grid">
+          <div className="md-rent-item md-rent-destacado">
+            <span className="md-rent-label">Facturación Real <Ayuda texto="Toda la plata que cobraste en los pedidos entregados: el pedido completo, tal como lo cargaste. Los pedidos pendientes o cancelados no entran." /></span>
+            <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
-
-          <div className="md-er-bloque">
-            <span className="md-er-titulo">Costos de venta <Ayuda texto="Todo lo que costó concretar estas ventas: la mercadería y lo que hizo falta para cobrarla y entregarla. No incluye los gastos que pagás vendas o no." /></span>
-            <div className="md-er-fila">
-              <span className="md-er-label">Costo de productos <Ayuda texto="Lo que pagaste por la mercadería que entregaste. Se usa el costo que tenía el producto el día de la venta, no el de hoy." /></span>
-              <span className="md-er-valor">−{gs(er.costos_venta.producto)}</span>
-            </div>
-            {/* El delivery aparece SIEMPRE, aunque sea Gs 0: es lo primero que
-                el comerciante quiere ver, y esconderlo cuando lo pagó el
-                cliente daría a entender que el sistema no lo está mirando. */}
-            <div className={`md-er-fila ${er.costos_venta.delivery > 0 ? 'md-er-fila-alerta' : ''}`}>
-              <span className="md-er-label">
-                Delivery <small>{er.costos_venta.delivery > 0 ? '(lo pagaste vos)' : '(lo pagó el cliente)'}</small>
-                <Ayuda texto="Solo el flete que salió de tu bolsillo. Cuando se lo cobrás al cliente esa plata entra y sale y no te cuesta nada; cuando lo absorbe el negocio, es un costo de la venta como cualquier otro." />
-              </span>
-              <span className="md-er-valor">−{gs(er.costos_venta.delivery)}</span>
-            </div>
-            {er.costos_venta.comision > 0 && (
-              <div className="md-er-fila">
-                <span className="md-er-label">Comisión de pago <Ayuda texto="Lo que se queda la pasarela de pago por cobrarte." /></span>
-                <span className="md-er-valor">−{gs(er.costos_venta.comision)}</span>
-              </div>
-            )}
-            <div className="md-er-fila">
-              <span className="md-er-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda." /></span>
-              <span className="md-er-valor">−{gs(er.costos_venta.iva)}</span>
-            </div>
-            <div className="md-er-fila md-er-subtotal">
-              <span className="md-er-label">Total costos de venta</span>
-              <span className="md-er-valor">−{gs(er.costos_venta.total)}</span>
-            </div>
+          <div className="md-rent-item">
+            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en publicidad en este período. Se toma de Costos y Gastos, de las categorías Publicidad y Marketing." /></span>
+            <span className="md-rent-valor">{gs(gastoPublicidad)}</span>
           </div>
-
-          <div className="md-er-fila md-er-resultado">
-            <span className="md-er-label">
-              Utilidad de la venta <small>({kpis.pct_contribucion}%)</small>
-              <Ayuda texto="Lo que deja el negocio de vender, antes de los gastos que pagás vendas o no. Es la plata con la que tenés que cubrir sueldos, alquiler y publicidad." />
+          <div className="md-rent-item">
+            <span className="md-rent-label">Producto <Ayuda texto="Lo que pagaste por la mercadería que entregaste. Se usa el costo que tenía el producto el día de la venta, no el de hoy." /></span>
+            <span className="md-rent-valor">{gs(kpis.costo_mercaderia_entregada)}</span>
+          </div>
+          <div className="md-rent-item">
+            <span className="md-rent-label">
+              Envíos
+              <Ayuda texto="La suma de lo que se le pagó al courier por los pedidos entregados de este período." />
             </span>
-            <span className={`md-er-valor ${er.utilidad_venta < 0 ? 'md-valor-negativo' : ''}`}>{gs(er.utilidad_venta)}</span>
+            <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados)}</span>
           </div>
-
-          <div className="md-er-bloque">
-            <span className="md-er-titulo">Gastos operativos <Ayuda texto="Los gastos que pagás vendas o no: publicidad, sueldos, alquiler, software, servicios. Se cargan en Finanzas → Costos y Gastos." /></span>
-            <div className="md-er-fila">
-              <span className="md-er-label">Publicidad y marketing <Ayuda texto="Lo que gastaste en anuncios en este período. Sale de Costos y Gastos, de las categorías Publicidad y Marketing." /></span>
-              <span className="md-er-valor">−{gs(gastoPublicidad)}</span>
-            </div>
-            <div className="md-er-fila">
-              <span className="md-er-label">Otros gastos fijos <Ayuda texto="Sueldos, alquiler, software, servicios y todo lo demás que se paga vendas o no." /></span>
-              <span className="md-er-valor">−{gs(costosFijos)}</span>
-            </div>
+          <div className="md-rent-item">
+            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios, software. Se cargan en Finanzas → Costos y Gastos." /></span>
+            <span className="md-rent-valor">{gs(costosFijos)}</span>
           </div>
-
-          <div className="md-er-fila md-er-resultado md-er-final">
-            <span className="md-er-label">
-              Utilidad neta <small>({kpis.pct_margen_neto}%)</small>
-              <Ayuda texto="La plata que te queda limpia. En rojo significa que el período cerró con pérdida." />
+          {kpis.costo_comision_total > 0 && (
+            <div className="md-rent-item">
+              <span className="md-rent-label">Comisión <Ayuda texto="Lo que se queda la pasarela de pago por cobrarte." /></span>
+              <span className="md-rent-valor">{gs(kpis.costo_comision_total)}</span>
+            </div>
+          )}
+          <div className="md-rent-item md-rent-destacado">
+            <span className="md-rent-label">
+              Utilidad Neta <small>({kpis.pct_margen_neto}%)</small>
+              <Ayuda texto="Lo que te queda después de descontar todo lo de arriba, el IVA incluido. En rojo significa que el período cerró con pérdida." />
             </span>
-            <span className={`md-er-valor ${er.utilidad_neta < 0 ? 'md-valor-negativo' : ''}`}>{gs(er.utilidad_neta)}</span>
+            <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
           </div>
-        </div>
-
-        {/* Delivery abierto en sus dos mitades. Va debajo del resultado y no
-            adentro, porque solo una de las dos (la absorbida) entra en la
-            cuenta — pero las dos son plata que el comerciante mueve y que
-            necesita para rendir cuentas con el courier. */}
-        <div className="md-delivery-resumen">
-          <span className="md-er-titulo">Delivery del período <Ayuda texto="El flete abierto según quién lo pagó. Solo la parte que pagaste vos baja la utilidad; la que pagó el cliente entra y sale." /></span>
-          <div className="md-delivery-grid">
-            <div className="md-delivery-item">
-              <span className="md-delivery-label">Lo pagó el cliente</span>
-              <span className="md-delivery-valor md-rent-valor-neutral">{gs(kpis.envio_cobrado_al_cliente)}</span>
-            </div>
-            <div className="md-delivery-item">
-              <span className="md-delivery-label">Lo pagaste vos</span>
-              <span className={`md-delivery-valor ${kpis.envio_absorbido_por_negocio > 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.envio_absorbido_por_negocio)}</span>
-            </div>
-            <div className="md-delivery-item">
-              <span className="md-delivery-label">Total al courier</span>
-              <span className="md-delivery-valor">{gs(kpis.envio_pagado_al_courier)}</span>
-            </div>
+          <div className="md-rent-item">
+            <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda. Ya está descontado de la Utilidad Neta de arriba." /></span>
+            <span className="md-rent-valor">{gs(kpis.iva_facturado_total)}</span>
           </div>
         </div>
 

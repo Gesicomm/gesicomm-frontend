@@ -7,6 +7,7 @@ import {
   RedirigirALogin,
 } from './EstadoSesion';
 import { tiendaService } from '../services/tiendaService';
+import { planesService } from '../services/planesService';
 
 /**
  * Igual que ProtectedRoute, pero además exige que el usuario (rol
@@ -22,18 +23,30 @@ import { tiendaService } from '../services/tiendaService';
  */
 export default function RequireTienda({ children }) {
   const { estado, usuario, reintentar } = useSesion();
-  // 'pendiente' | 'ok' | 'sin-tienda'
-  const [tienda, setTienda] = useState('pendiente');
+  // 'pendiente' | 'ok' | 'sin-plan' | 'sin-tienda'
+  const [acceso, setAcceso] = useState('pendiente');
 
   useEffect(() => {
     if (estado !== 'autenticado') return;
-    if (usuario?.rol !== 'usuario') { setTienda('ok'); return; }
+    if (usuario?.rol !== 'usuario') { setAcceso('ok'); return; }
 
     let vigente = true;
-    setTienda('pendiente');
-    tiendaService.obtener()
-      .then((t) => { if (vigente) setTienda(t ? 'ok' : 'sin-tienda'); })
-      .catch(() => { if (vigente) setTienda('sin-tienda'); });
+    setAcceso('pendiente');
+
+    planesService.miEstado()
+      .then((estadoCuenta) => {
+        if (!vigente) return null;
+        if (!estadoCuenta?.tiene_suscripcion_activa) {
+          setAcceso('sin-plan');
+          return null;
+        }
+        return tiendaService.obtener().then(tienda => ({ tienda }));
+      })
+      .then((resultado) => {
+        if (!vigente || resultado === null) return;
+        setAcceso(resultado.tienda ? 'ok' : 'sin-tienda');
+      })
+      .catch(() => { if (vigente) setAcceso('sin-tienda'); });
 
     return () => { vigente = false; };
   }, [estado, usuario]);
@@ -42,8 +55,9 @@ export default function RequireTienda({ children }) {
   if (estado === 'error') return <PantallaErrorConexion onReintentar={reintentar} />;
   if (estado === 'sin-sesion') return <RedirigirALogin />;
 
-  if (tienda === 'pendiente') return <PantallaVerificandoSesion onReintentar={reintentar} />;
-  if (tienda === 'sin-tienda') return <Navigate to="/onboarding" replace />;
+  if (acceso === 'pendiente') return <PantallaVerificandoSesion onReintentar={reintentar} />;
+  if (acceso === 'sin-plan') return <Navigate to="/planes" replace />;
+  if (acceso === 'sin-tienda') return <Navigate to="/onboarding" replace />;
 
   return children;
 }

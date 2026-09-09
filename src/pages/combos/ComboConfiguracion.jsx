@@ -168,7 +168,7 @@ export default function ComboConfiguracion({ asTab = false }) {
             </div>
           </div>
           <div>
-            <div className="combo-section-label">Costo de envío</div>
+            <div className="combo-section-label">Costo de envío promedio</div>
             <CurrencyInput style={inputStyle} value={envio} onChange={setEnvio} />
           </div>
           <div>

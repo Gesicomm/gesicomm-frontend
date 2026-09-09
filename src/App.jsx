@@ -30,6 +30,7 @@ import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Planes from './pages/planes/Planes';
 import ResultadoPago from './pages/planes/ResultadoPago';
 import AdminPlanes from './pages/planes/AdminPlanes';
+import AuthTracking from './pages/admin/AuthTracking';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
 import EducacionView from './pages/educacion/EducacionView';
@@ -311,6 +312,9 @@ function App() {
         <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
         <Route path="/admin/planes" element={
           <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/admin/seguridad" element={
+          <AdminRoute><DashboardLayout><AuthTracking /></DashboardLayout></AdminRoute>
         } />
         {/* Cada tienda tiene 3 páginas fijas (Inicio/Catálogo/Contacto, ver
             landing.service.js asegurarPaginasFijas). /mi-landing garantiza

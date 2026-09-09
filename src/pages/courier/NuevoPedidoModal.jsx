@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save } from "lucide-react";
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago } from "../../services/courierApi";
@@ -33,11 +33,12 @@ const selectStyles = {
   option: (base, state) => ({
     ...base,
     background: state.isSelected ? 'var(--color-primary)' : state.isFocused ? 'color-mix(in srgb, var(--color-fg) 8%, transparent)' : 'var(--color-canvas)',
-    color: 'var(--color-fg)',
+    color: state.isSelected ? '#fff' : 'var(--color-fg)',
     cursor: 'pointer',
     fontSize: '0.85rem',
     '&:active': {
-      background: 'var(--color-primary)'
+      background: 'var(--color-primary)',
+      color: '#fff'
     }
   }),
   singleValue: (base) => ({
@@ -64,6 +65,20 @@ const precioProducto = (producto) => (
 const imagenProducto = (producto) => (
   producto?.imagen || producto?.imagenes?.[0]?.url || producto?.imagenes?.[0] || null
 );
+
+const PASOS_PEDIDO = [
+  { id: "cliente", label: "Cliente", icon: User },
+  { id: "entrega", label: "Entrega", icon: MapPin },
+  { id: "productos", label: "Productos", icon: ShoppingBag },
+  { id: "revision", label: "Revisión", icon: ClipboardCheck },
+];
+
+const ERROR_KEYS_POR_PASO = {
+  cliente: ["nombre_cliente", "telefono"],
+  entrega: ["ciudad", "direccion", "link_maps"],
+  productos: ["items"],
+  revision: ["ruc"],
+};
 
 function buildFormFromEnvio(envio) {
   const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
@@ -92,7 +107,11 @@ function buildFormFromEnvio(envio) {
       nro_comprobante: "",
       observaciones: "",
       courier_id: "",
-      incluye_delivery: true,
+      incluye_delivery: false,
+      // Si el cliente paga cuando recibe (contra entrega, el caso normal)
+      // o si ya pagó antes (anticipado). Es independiente del método de
+      // pago puntual que se elija — no se deriva de él ni lo condiciona.
+      pago_anticipado: false,
       costo_envio: 0
     };
   }
@@ -139,7 +158,11 @@ function buildFormFromEnvio(envio) {
     nro_comprobante: envio.nro_comprobante || "",
     observaciones: envio.observaciones || "",
     courier_id: envio.courier_id || "",
-    incluye_delivery: envio.incluye_delivery !== false,
+    incluye_delivery: envio.delivery_a_cargo === "negocio",
+    // No se guarda en ningún lado (nunca se persistió, ni siquiera antes de
+    // esto): al editar un pedido no hay de dónde leerlo, así que arranca en
+    // "contra entrega", el caso normal.
+    pago_anticipado: false,
     costo_envio: envio.costo_envio || 0
   };
 }
@@ -153,6 +176,10 @@ function buildFormFromEnvio(envio) {
  */
 export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [] }) {
   const modoCompletar = !!envio;
+  // Confirmar solo aplica a un pedido Pendiente. Sobre uno que ya avanzó, el
+  // modal es un editor: guarda datos y no toca el estado. El título y el
+  // botón lo dicen, para no prometer una acción que el backend va a rechazar.
+  const vaAConfirmar = modoCompletar && envio.estado === "Pendiente";
 
   const [form, setForm] = useState(() => buildFormFromEnvio(null));
   const [items, setItems] = useState([]);
@@ -164,18 +191,55 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   const [errors, setErrors] = useState({});
   const [guardando, setGuardando] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [pasoActivo, setPasoActivo] = useState(0);
+  const modalRef = useRef(null);
+  /**
+   * Foto de los campos que determinan el precio, tomada al abrir el pedido.
+   *
+   * Editar un pedido existente NO tiene que moverle el importe: abrirlo para
+   * corregir un teléfono y guardar recalculaba el monto como `subtotales +
+   * flete`, y en un pedido cuyo monto no traía el flete adentro eso lo subía
+   * solo (el #385 pasaba de Gs 166.138 a Gs 216.138 sin que nadie tocara
+   * nada). El monto solo se recalcula si de verdad cambió algo que lo afecta.
+   *
+   * Los ítems no entran en la foto porque en modo edición no son editables
+   * (ver el JSDoc del componente). Si algún día lo son, tienen que sumarse
+   * acá o vuelve el mismo problema.
+   */
+  const precioAlAbrirRef = useRef(null);
 
   useEffect(() => {
     if (open) {
-      setForm(buildFormFromEnvio(envio));
+      const inicial = buildFormFromEnvio(envio);
+      setForm(inicial);
+      precioAlAbrirRef.current = envio
+        ? {
+            monto: Number(envio.monto) || 0,
+            costo_envio: Number(inicial.costo_envio) || 0,
+            incluye_delivery: inicial.incluye_delivery === true,
+          }
+        : null;
       setItems([]);
       setOfertasPorProducto({});
       setErrors({});
       setSubmitError(null);
+      setPasoActivo(0);
       cargarDatosIniciales();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, envio]);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      const panelActivo = modalRef.current?.querySelector(".np-step-panel.is-active");
+      const primerControl = panelActivo?.querySelector(
+        "input:not([type='hidden']):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      );
+      (primerControl || modalRef.current)?.focus?.();
+    }, 40);
+    return () => window.clearTimeout(t);
+  }, [open, pasoActivo]);
 
   const cargarDatosIniciales = async () => {
     try {
@@ -229,7 +293,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     if (!open || !modoCompletar) return;
     if (form.courier_id) return;
     if (!form.ciudad || metodosPago.length === 0) return;
-    const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
+    const esAnticipado = form.pago_anticipado;
     const resultado = buscarZonaDelivery(deliveryZonas, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento)
       || buscarCourierYTarifa(couriers, form.ciudad, esAnticipado, itemsParaTarifa, form.departamento);
     if (resultado) {
@@ -297,13 +361,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     return map;
   }, [items]);
 
-  // El tipo de pago que espera la tarifa de courier ("Anticipado"/"Al Recibir")
-  // se deriva del flag es_anticipado configurado en el ABM de Métodos de Pago.
-  const esMetodoAnticipado = (metodoPagoId) => {
-    const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
-    return !!(metodo && metodo.es_anticipado);
-  };
-
   // Al cambiar la ciudad, buscar tarifa configurada de delivery
   const handleCiudadChange = (valCiudad, departamentoSeleccionado) => {
     setForm(prev => {
@@ -314,7 +371,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       const departamentoParaTarifa = departamentoSeleccionado !== undefined ? departamentoSeleccionado : prev.departamento;
 
       if (valCiudad) {
-        const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+        const esAnticipado = prev.pago_anticipado;
         const resultadoZona = buscarZonaDelivery(deliveryZonas, valCiudad, esAnticipado, itemsParaTarifa, departamentoParaTarifa);
         if (resultadoZona) {
           nextForm.courier_id = resultadoZona.courierId || "";
@@ -353,7 +410,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     setForm(prev => {
       const nextForm = { ...prev, courier_id: courierId };
       if (courierId && prev.ciudad) {
-        const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+        const esAnticipado = prev.pago_anticipado;
         const costo = obtenerTarifaPara(couriers, prev.ciudad, courierId, esAnticipado, itemsParaTarifa, prev.departamento);
         if (costo !== null) {
           nextForm.costo_envio = costo;
@@ -363,24 +420,37 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     });
   };
 
+  // Solo fija QUIÉN cobra y a nombre de qué método — ya no toca la tarifa
+  // de delivery. Eso ahora depende de "Pago anticipado" (ver más abajo),
+  // no de qué método puntual se elija.
   const handleMetodoPagoChange = (metodoPagoId) => {
     const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
-    const esAnticipado = !!(metodo && metodo.es_anticipado);
+    setForm(prev => ({
+      ...prev,
+      metodo_pago_id: metodoPagoId,
+      metodo_pago: metodo ? metodo.nombre : prev.metodo_pago,
+    }));
+  };
+
+  // "¿Contra entrega o ya pagó?" — nada que ver con qué método puntual se
+  // use. Es lo que decide qué tarifa de courier/zona buscar (algunas zonas
+  // cobran distinto según si el courier va a cobrar en el momento o el
+  // envío ya viene pago), así que al cambiarlo se recalcula igual que al
+  // cambiar de ciudad o de courier.
+  const handlePagoAnticipadoChange = (nuevoValor) => {
     setForm(prev => {
-      const nextForm = { ...prev, metodo_pago_id: metodoPagoId, metodo_pago: metodo ? metodo.nombre : prev.metodo_pago };
-      const resultadoZona = prev.ciudad
-        ? buscarZonaDelivery(deliveryZonas, prev.ciudad, esAnticipado, itemsParaTarifa, prev.departamento)
-        : null;
+      const nextForm = { ...prev, pago_anticipado: nuevoValor };
+      if (!prev.ciudad) return nextForm;
+
+      const resultadoZona = buscarZonaDelivery(deliveryZonas, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento);
       if (resultadoZona) {
         nextForm.courier_id = resultadoZona.courierId || "";
         nextForm.costo_envio = resultadoZona.costo;
-      } else if (prev.ciudad && prev.courier_id) {
-        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, prev.departamento);
-        if (costo !== null) {
-          nextForm.costo_envio = costo;
-        }
-      } else if (prev.ciudad) {
-        const resultado = buscarCourierYTarifa(couriers, prev.ciudad, esAnticipado, itemsParaTarifa, prev.departamento);
+      } else if (prev.courier_id) {
+        const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, nuevoValor, itemsParaTarifa, prev.departamento);
+        if (costo !== null) nextForm.costo_envio = costo;
+      } else {
+        const resultado = buscarCourierYTarifa(couriers, prev.ciudad, nuevoValor, itemsParaTarifa, prev.departamento);
         if (resultado) {
           nextForm.courier_id = resultado.courierId;
           nextForm.costo_envio = resultado.costo;
@@ -395,7 +465,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       const nextForm = { ...prev, departamento };
       if (!prev.ciudad) return nextForm;
 
-      const esAnticipado = esMetodoAnticipado(prev.metodo_pago_id);
+      const esAnticipado = prev.pago_anticipado;
       if (prev.courier_id) {
         const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamento);
         if (costo !== null) {
@@ -432,7 +502,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
   const aplicarTarifaConItems = (nuevosItems) => {
     if (!form.ciudad) return;
-    const esAnticipado = esMetodoAnticipado(form.metodo_pago_id);
+    const esAnticipado = form.pago_anticipado;
     const resultadoZona = buscarZonaDelivery(deliveryZonas, form.ciudad, esAnticipado, nuevosItems, form.departamento);
     if (resultadoZona) {
       setForm(prev => ({ ...prev, courier_id: resultadoZona.courierId || "", costo_envio: resultadoZona.costo }));
@@ -518,30 +588,97 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     const sub = Number(curr.subtotal) || (pUnit * cant);
     return acc + (Number(sub) || 0);
   }, 0);
-  const precioTotalVendido = (Number(subtotalProductos) || 0) + (Number(form.costo_envio) || 0);
+  // "Incluye delivery" tildado = el envío va incluido en lo que ofrece el
+  // negocio, o sea que lo paga el negocio y NO se le cobra al cliente. Sin
+  // tildar, el flete se le suma al total del pedido.
+  //
+  // El tilde NO decide si hay delivery ni cuánto cuesta: el courier y el
+  // costo se cargan siempre, libres. Solo decide a quién se le cobra.
+  const deliveryLoPagaNegocio = form.incluye_delivery === true;
+  const fleteAlCliente = deliveryLoPagaNegocio ? 0 : (Number(form.costo_envio) || 0);
+  const montoRecalculado = (Number(subtotalProductos) || 0) + fleteAlCliente;
 
-  // Validaciones personalizadas en español (sin HTML native form tooltips)
-  const validarFormulario = () => {
+  // Sobre un pedido ya cargado se respeta su monto salvo que se toque el
+  // costo del envío o quién lo paga — que es justo lo que el usuario cambia
+  // cuando SÍ quiere mover el precio. El auto-completado de tarifa por zona
+  // también entra por acá: si rellena un flete que estaba en cero, el monto
+  // se actualiza, porque eso es un cambio real del envío.
+  const precioBase = precioAlAbrirRef.current;
+  const cambioAlgoDelPrecio = !precioBase
+    || (Number(form.costo_envio) || 0) !== precioBase.costo_envio
+    || deliveryLoPagaNegocio !== precioBase.incluye_delivery;
+  const precioTotalVendido = modoCompletar && !cambioAlgoDelPrecio
+    ? precioBase.monto
+    : montoRecalculado;
+
+  const erroresDePaso = (pasoId) => {
     const newErrors = {};
 
-    if (!form.nombre_cliente.trim()) {
-      newErrors.nombre_cliente = "Por favor, ingresa el nombre del cliente.";
+    if (pasoId === "cliente") {
+      if (!form.nombre_cliente.trim()) {
+        newErrors.nombre_cliente = "Por favor, ingresa el nombre del cliente.";
+      }
+      const telefonoLimpio = String(form.telefono || "").replace(/\D/g, "");
+      if (form.telefono.trim() && telefonoLimpio.length < 6) {
+        newErrors.telefono = "Revisa el teléfono: parece demasiado corto.";
+      }
     }
-    if (!form.ciudad.trim()) {
-      newErrors.ciudad = "Por favor, selecciona o ingresa la ciudad de destino.";
+
+    if (pasoId === "entrega") {
+      if (!form.ciudad.trim()) {
+        newErrors.ciudad = "Por favor, selecciona o ingresa la ciudad de destino.";
+      }
+      if (!form.direccion.trim()) {
+        newErrors.direccion = "Por favor, ingresa la dirección de entrega.";
+      }
+      if (form.link_maps.trim()) {
+        try {
+          new URL(form.link_maps.trim());
+        } catch {
+          newErrors.link_maps = "Pega un link válido de Google Maps o deja este campo vacío.";
+        }
+      }
     }
-    if (!form.direccion.trim()) {
-      newErrors.direccion = "Por favor, ingresa la dirección de entrega.";
-    }
-    if (!modoCompletar && items.length === 0) {
+
+    if (pasoId === "productos" && !modoCompletar && items.length === 0) {
       newErrors.items = "Debes agregar al menos un producto al pedido.";
     }
-    if (form.quiere_factura && !form.ruc.trim()) {
+
+    if (pasoId === "revision" && form.quiere_factura && !form.ruc.trim()) {
       newErrors.ruc = "El RUC es obligatorio cuando se solicita factura.";
     }
 
-    setErrors(newErrors);
+    return newErrors;
+  };
+
+  const setErroresDelPaso = (pasoId, nuevosErrores) => {
+    const keys = ERROR_KEYS_POR_PASO[pasoId] || [];
+    setErrors(prev => {
+      const next = { ...prev };
+      keys.forEach(key => delete next[key]);
+      return { ...next, ...nuevosErrores };
+    });
+  };
+
+  const validarPaso = (pasoId) => {
+    const newErrors = erroresDePaso(pasoId);
+    setErroresDelPaso(pasoId, newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Validaciones personalizadas en español (sin HTML native form tooltips)
+  const validarFormulario = () => {
+    const newErrors = PASOS_PEDIDO.reduce((acc, paso) => ({ ...acc, ...erroresDePaso(paso.id) }), {});
+    setErrors(newErrors);
+
+    const primerPasoConError = PASOS_PEDIDO.findIndex(paso =>
+      (ERROR_KEYS_POR_PASO[paso.id] || []).some(key => newErrors[key])
+    );
+    if (primerPasoConError >= 0) {
+      setPasoActivo(primerPasoConError);
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -558,11 +695,19 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       metodo_pago_id: form.metodo_pago_id ? Number(form.metodo_pago_id) : null,
       comision_pct_aplicada: metodoSeleccionado ? Number(metodoSeleccionado.comision_porcentaje) : 0,
       costo_envio: Number(form.costo_envio) || 0,
+      delivery_a_cargo: deliveryLoPagaNegocio ? "negocio" : "cliente",
       monto: precioTotalVendido
     };
 
+    // Confirmar es un PASO del pedido, no un efecto de guardar. Solo un
+    // pedido Pendiente puede pasar a Confirmado (ver TRANSICIONES_VALIDAS en
+    // envioController); mandar el estado en toda edición hacía que abrir un
+    // pedido ya entregado para corregirle un dato terminara en
+    // 'No se puede pasar de "Entregado" a "Confirmado"' y no dejara guardar
+    // nada. Si el pedido ya avanzó, se guardan los datos y el estado no se
+    // toca.
     const payload = modoCompletar
-      ? { ...comunes, id: envio.id, estado: "Confirmado" }
+      ? { ...comunes, id: envio.id, ...(vaAConfirmar ? { estado: "Confirmado" } : {}) }
       : { ...comunes, items };
 
     setGuardando(true);
@@ -583,21 +728,92 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     { label: "Productos", ok: itemsParaTarifa.length > 0 },
     { label: "Total", ok: precioTotalVendido > 0 },
   ];
+  const pasoActual = PASOS_PEDIDO[pasoActivo];
+  const esUltimoPaso = pasoActivo === PASOS_PEDIDO.length - 1;
+  const hayDatosSinGuardar = !modoCompletar && !guardando && (
+    items.length > 0 ||
+    form.nombre_cliente.trim() ||
+    form.telefono.trim() ||
+    form.ciudad.trim() ||
+    form.direccion.trim() ||
+    form.observaciones.trim()
+  );
+
+  const handleRequestClose = () => {
+    if (hayDatosSinGuardar && !window.confirm("Hay datos cargados en este pedido. ¿Querés cerrar y descartarlos?")) {
+      return;
+    }
+    onClose();
+  };
+
+  const irAlPaso = (index) => {
+    if (index === pasoActivo) return;
+    if (index < pasoActivo) {
+      setPasoActivo(index);
+      return;
+    }
+    if (validarPaso(pasoActual.id)) {
+      setPasoActivo(index);
+    }
+  };
+
+  const continuarPaso = () => {
+    if (!validarPaso(pasoActual.id)) return;
+    setPasoActivo(prev => Math.min(PASOS_PEDIDO.length - 1, prev + 1));
+  };
+
+  const volverPaso = () => {
+    setPasoActivo(prev => Math.max(0, prev - 1));
+  };
+
+  const handleFormKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      handleRequestClose();
+      return;
+    }
+
+    const tag = e.target?.tagName;
+    const role = e.target?.getAttribute?.("role");
+    const inputType = e.target?.getAttribute?.("type");
+    const estaEnPicker = e.target?.closest?.(".lb-modal-overlay, .lb-modal-panel, .lb-picker");
+    const dejarEnterAlControl =
+      tag === "TEXTAREA" ||
+      tag === "BUTTON" ||
+      tag === "SELECT" ||
+      role === "combobox" ||
+      inputType === "checkbox" ||
+      estaEnPicker;
+
+    if (e.key === "Enter" && !esUltimoPaso && !dejarEnterAlControl) {
+      e.preventDefault();
+      continuarPaso();
+    }
+  };
 
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleRequestClose}>
       <div
         className="modal-content np-modal-container"
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="nuevo-pedido-title"
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
       >
         <div className="np-header-banner">
           <div className="np-header-copy">
             <span className="np-brand-mark">Gesicom<span>.</span></span>
-            <h2>{modoCompletar ? `Completar pedido #${envio.id}` : "Nuevo pedido"}</h2>
+            <h2 id="nuevo-pedido-title">
+              {modoCompletar
+                ? `${vaAConfirmar ? "Completar" : "Editar"} pedido #${envio.id}`
+                : "Nuevo pedido"}
+            </h2>
           </div>
-          <button type="button" onClick={onClose} className="np-close-action" aria-label="Cerrar modal">
+          <button type="button" onClick={handleRequestClose} className="np-close-action" aria-label="Cerrar modal">
             <X size={20} />
             <span>Cerrar</span>
           </button>
@@ -636,11 +852,40 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="np-form" noValidate>
+        <form onSubmit={handleSubmit} className="np-form np-wizard-form" onKeyDown={handleFormKeyDown} noValidate>
+          <div className="np-stepper" role="tablist" aria-label="Pasos del pedido">
+            {PASOS_PEDIDO.map((paso, index) => {
+              const Icono = paso.icon;
+              const tieneError = (ERROR_KEYS_POR_PASO[paso.id] || []).some(key => errors[key]);
+              const completo = !tieneError && index < pasoActivo;
+              const actual = index === pasoActivo;
+              return (
+                <button
+                  type="button"
+                  key={paso.id}
+                  className={`np-stepper-item ${actual ? 'is-current' : ''} ${completo ? 'is-complete' : ''} ${tieneError ? 'has-error' : ''}`}
+                  onClick={() => irAlPaso(index)}
+                  role="tab"
+                  aria-selected={actual}
+                >
+                  <span className="np-stepper-icon">
+                    {completo ? <CheckCircle2 size={16} /> : <Icono size={16} />}
+                  </span>
+                  <span>
+                    <small>Paso {index + 1}</small>
+                    {paso.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="np-wizard-body">
+            <div className="np-wizard-main">
           <div className="np-grid">
 
             {/* Columna Izquierda: Datos del Cliente */}
-            <div className="np-section">
+            <div className={`np-section np-step-panel ${pasoActivo === 0 ? 'is-active' : ''}`}>
               <h3 className="np-section-title">
                 <User size={16} /> Datos del Cliente y Registro
               </h3>
@@ -709,28 +954,38 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   className={`form-input ${errors.nombre_cliente ? 'input-error' : ''}`}
                   placeholder="Ej. Juan Pérez"
                   value={form.nombre_cliente}
+                  autoComplete="name"
+                  aria-invalid={Boolean(errors.nombre_cliente)}
+                  aria-describedby={errors.nombre_cliente ? "np-nombre-error" : undefined}
                   onChange={e => {
                     setForm({ ...form, nombre_cliente: e.target.value });
                     if (errors.nombre_cliente) setErrors({ ...errors, nombre_cliente: null });
                   }}
                 />
-                {errors.nombre_cliente && <span className="field-error">{errors.nombre_cliente}</span>}
+                {errors.nombre_cliente && <span id="np-nombre-error" className="field-error">{errors.nombre_cliente}</span>}
               </div>
 
               <div className="np-row">
                 <label>Teléfono del cliente</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={`form-input ${errors.telefono ? 'input-error' : ''}`}
                   placeholder="0981 123 456"
                   value={form.telefono}
-                  onChange={e => setForm({ ...form, telefono: e.target.value })}
+                  autoComplete="tel"
+                  aria-invalid={Boolean(errors.telefono)}
+                  aria-describedby={errors.telefono ? "np-telefono-error" : undefined}
+                  onChange={e => {
+                    setForm({ ...form, telefono: e.target.value });
+                    if (errors.telefono) setErrors({ ...errors, telefono: null });
+                  }}
                 />
+                {errors.telefono && <span id="np-telefono-error" className="field-error">{errors.telefono}</span>}
               </div>
             </div>
 
             {/* Columna Derecha: Ubicación de Entrega y Delivery */}
-            <div className="np-section">
+            <div className={`np-section np-step-panel ${pasoActivo === 1 ? 'is-active' : ''}`}>
               <h3 className="np-section-title">
                 <MapPin size={16} /> Ubicación de Entrega y Courier
               </h3>
@@ -752,6 +1007,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   isClearable
                   placeholder="Escribe o selecciona ciudad..."
                   styles={selectStyles}
+                  aria-invalid={Boolean(errors.ciudad)}
+                  aria-describedby={errors.ciudad ? "np-ciudad-error" : undefined}
                   options={optionsCiudades}
                   value={form.ciudad ? (
                     optionsCiudades.find(o => o.value === form.ciudad && (o.departamento || "") === (form.departamento || ""))
@@ -765,7 +1022,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                     handleCiudadChange(inputValue);
                   }}
                 />
-                {errors.ciudad && <span className="field-error">{errors.ciudad}</span>}
+                {errors.ciudad && <span id="np-ciudad-error" className="field-error">{errors.ciudad}</span>}
               </div>
 
               <div className="np-row">
@@ -775,12 +1032,15 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   className={`form-input ${errors.direccion ? 'input-error' : ''}`}
                   placeholder="Calle y Nro de casa"
                   value={form.direccion}
+                  autoComplete="street-address"
+                  aria-invalid={Boolean(errors.direccion)}
+                  aria-describedby={errors.direccion ? "np-direccion-error" : undefined}
                   onChange={e => {
                     setForm({ ...form, direccion: e.target.value });
                     if (errors.direccion) setErrors({ ...errors, direccion: null });
                   }}
                 />
-                {errors.direccion && <span className="field-error">{errors.direccion}</span>}
+                {errors.direccion && <span id="np-direccion-error" className="field-error">{errors.direccion}</span>}
               </div>
 
               <div className="np-row">
@@ -798,17 +1058,44 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                 <label>Link ubicación Google Maps</label>
                 <input
                   type="url"
-                  className="form-input"
+                  className={`form-input ${errors.link_maps ? 'input-error' : ''}`}
                   placeholder="https://maps.google.com/..."
                   value={form.link_maps}
-                  onChange={e => setForm({ ...form, link_maps: e.target.value })}
+                  aria-invalid={Boolean(errors.link_maps)}
+                  aria-describedby={errors.link_maps ? "np-link-maps-error" : undefined}
+                  onChange={e => {
+                    setForm({ ...form, link_maps: e.target.value });
+                    if (errors.link_maps) setErrors({ ...errors, link_maps: null });
+                  }}
                 />
+                {errors.link_maps && <span id="np-link-maps-error" className="field-error">{errors.link_maps}</span>}
               </div>
 
-              {/* Asignación de Courier y Precio de Delivery Automático */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)' }}>
+              {/* El tilde dice UNA sola cosa: si el envío se suma o no al
+                  total del pedido. No hay "quién paga" atrás de esto — es
+                  solo eso. El courier y el costo se cargan siempre, libres,
+                  sin importar el tilde: antes destildarlo también los
+                  escondía y ponía el costo en cero, así que no había forma
+                  de cargar un envío que no se sumara al total. */}
+              <div className="np-row">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.incluye_delivery}
+                    onChange={e => setForm(prev => ({ ...prev, incluye_delivery: e.target.checked }))}
+                  />
+                  <span style={{ color: 'var(--color-primary-text)', fontSize: '0.85rem' }}>
+                    Incluye delivery
+                  </span>
+                </label>
+                <span className="np-hint" style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
+                  {deliveryLoPagaNegocio ? 'El envío no se suma al total del pedido.' : 'El envío se suma al total del pedido.'}
+                </span>
+              </div>
+
+              <div className="np-delivery-box">
                 <div className="np-row">
-                  <label style={{ color: 'var(--color-primary-text)' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier Asignado para el Envio</label>
+                  <label style={{ color: 'var(--color-primary-text)' }}><Truck size={14} style={{ display: 'inline', marginRight: '4px' }} /> Courier asignado</label>
                   <select
                     className="form-input"
                     value={form.courier_id}
@@ -822,39 +1109,53 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                 </div>
 
                 <div className="np-row">
-                  <label style={{ color: 'var(--color-success)' }}>Costo del Envio (Gs)</label>
+                  {/* htmlFor/id atados: sin eso el lector de pantalla anuncia
+                      una caja de números sin nombre, y el campo tampoco se
+                      puede alcanzar haciendo clic en su etiqueta. */}
+                  <label htmlFor="np-costo-envio" style={{ color: 'var(--color-success)' }}>Costo del envío (Gs)</label>
                   <CurrencyInput
+                    id="np-costo-envio"
                     className="form-input"
-                    style={{ fontFamily: 'monospace', fontWeight: 'bold', opacity: form.incluye_delivery ? 1 : 0.5 }}
+                    style={{ fontFamily: 'monospace', fontWeight: 'bold' }}
                     value={form.costo_envio}
-                    onChange={val => form.incluye_delivery && setForm({ ...form, costo_envio: val })}
-                    disabled={!form.incluye_delivery}
+                    onChange={val => setForm({ ...form, costo_envio: val })}
                     prefix=""
                   />
                 </div>
+
+                {/* Nada que ver con el método de pago: es sobre el MOMENTO
+                    del cobro. Algunas zonas/couriers cobran una tarifa
+                    distinta si van a cobrar en el momento (contra entrega)
+                    que si el envío ya viene pago — por eso, al tocarlo, se
+                    vuelve a buscar la tarifa igual que al cambiar de
+                    ciudad o de courier. */}
+                <div className="np-row">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.pago_anticipado}
+                      onChange={e => handlePagoAnticipadoChange(e.target.checked)}
+                    />
+                    <span>Pago anticipado</span>
+                  </label>
+                  <span className="np-hint" style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
+                    {form.pago_anticipado
+                      ? 'El cliente ya pagó. Sin tildar, se asume que paga contra entrega.'
+                      : 'Contra entrega: el cliente paga cuando recibe el pedido.'}
+                  </span>
+                </div>
               </div>
 
+              {/* Método de pago: qué método puntual se usó (o se espera usar).
+                  Estaba comentado — sin esto, el método quedaba en lo que
+                  haya elegido el auto-completado, o lo que se elija recién
+                  al marcar Entregado, dos pasos después de haber cargado el
+                  pedido. No decide la tarifa de delivery — eso es "Pago
+                  anticipado", arriba. */}
               <div className="np-row">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={form.incluye_delivery}
-                    onChange={e => {
-                      const nuevoIncluye = e.target.checked;
-                      setForm(prev => ({
-                        ...prev,
-                        incluye_delivery: nuevoIncluye,
-                        costo_envio: nuevoIncluye ? prev.costo_envio : 0
-                      }));
-                    }}
-                  />
-                  <span style={{ color: 'var(--color-primary-text)', fontSize: '0.85rem' }}>Incluye Delivery</span>
-                </label>
-              </div>
-
-              {/* <div className="np-row">
-                <label>Método de pago</label>
+                <label htmlFor="np-metodo-pago">Método de pago</label>
                 <select
+                  id="np-metodo-pago"
                   className="form-input"
                   value={form.metodo_pago_id}
                   onChange={e => handleMetodoPagoChange(e.target.value)}
@@ -864,66 +1165,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                     <option key={m.id} value={m.id}>{m.nombre}</option>
                   ))}
                 </select>
-              </div> */}
-
-              <div className="np-row">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
-                    checked={form.quiere_factura}
-                    onChange={e => setForm({ ...form, quiere_factura: e.target.checked })}
-                  />
-                  ¿Desea factura?
-                </label>
               </div>
 
-              {form.quiere_factura && (
-                <>
-                  <div className="np-row">
-                    <label>Razón social (Opcional)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Ej. Comercial Paraguaya S.A."
-                      value={form.razon_social}
-                      onChange={e => setForm({ ...form, razon_social: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="np-row">
-                    <label>RUC <span className="req">*</span></label>
-                    <input
-                      type="text"
-                      className={`form-input ${errors.ruc ? 'input-error' : ''}`}
-                      placeholder="Ej. 80012345-6"
-                      value={form.ruc}
-                      onChange={e => {
-                        setForm({ ...form, ruc: e.target.value });
-                        if (errors.ruc) setErrors({ ...errors, ruc: null });
-                      }}
-                    />
-                    {errors.ruc && <span className="field-error">{errors.ruc}</span>}
-                  </div>
-                </>
-              )}
-
-              <div className="np-row">
-                <label>Nro de comprobante (Opcional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Ej. 001-001-0000123"
-                  value={form.nro_comprobante}
-                  onChange={e => setForm({ ...form, nro_comprobante: e.target.value })}
-                />
-              </div>
             </div>
 
           </div>
 
           {/* Sección de Productos Vendidos */}
-          <div className="np-section np-full-width">
+          <div className={`np-section np-full-width np-step-panel ${pasoActivo === 2 ? 'is-active' : ''}`}>
             <h3 className="np-section-title">
               <ShoppingBag size={16} /> Productos Vendidos en el Pedido
             </h3>
@@ -1071,7 +1320,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
             <div className="np-total-row">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>
                 <span>Subtotal productos: Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</span>
-                <span>Costo Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
+                <span>Delivery: Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</span>
               </div>
               <strong className="np-total-amount">
                 Total: Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}
@@ -1079,23 +1328,177 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
             </div>
           </div>
 
-          {/* Observaciones */}
-          <div className="np-section np-full-width">
-            <label className="np-label-obs">Observaciones</label>
-            <textarea
-              className="form-input"
-              rows={2}
-              placeholder="Detalles adicionales para el courier o vendedor..."
-              value={form.observaciones}
-              onChange={e => setForm({ ...form, observaciones: e.target.value })}
-            />
+          <div className={`np-section np-full-width np-step-panel ${pasoActivo === 3 ? 'is-active' : ''}`}>
+            <h3 className="np-section-title">
+              <Receipt size={16} /> Revisar pedido
+            </h3>
+
+            <div className="np-review-grid">
+              <div className="np-review-card">
+                <div className="np-review-card-head">
+                  <strong>Cliente</strong>
+                  <button type="button" onClick={() => setPasoActivo(0)}>Editar</button>
+                </div>
+                <p>{form.nombre_cliente || "Sin nombre"}</p>
+                <span>{form.telefono || "Sin teléfono"} · {form.canal_venta_id ? canalesVenta.find(c => c.id === Number(form.canal_venta_id))?.nombre : "Sin canal"}</span>
+              </div>
+
+              <div className="np-review-card">
+                <div className="np-review-card-head">
+                  <strong>Entrega</strong>
+                  <button type="button" onClick={() => setPasoActivo(1)}>Editar</button>
+                </div>
+                <p>{form.ciudad || "Sin ciudad"}{form.departamento ? `, ${form.departamento}` : ""}</p>
+                <span>
+                  {form.direccion || "Sin dirección"}
+                  {Number(form.costo_envio) > 0
+                    ? ` · Delivery Gs. ${Number(form.costo_envio || 0).toLocaleString('es-PY')}`
+                    : " · Sin delivery"}
+                </span>
+              </div>
+
+              <div className="np-review-card np-review-card-wide">
+                <div className="np-review-card-head">
+                  <strong>Productos</strong>
+                  <button type="button" onClick={() => setPasoActivo(2)}>Editar</button>
+                </div>
+                {itemsParaTarifa.length > 0 ? (
+                  <div className="np-review-products">
+                    {itemsParaTarifa.map((it, idx) => (
+                      <div key={`${it.producto_id || idx}-review`}>
+                        <span>{it.nombre_producto}</span>
+                        <strong>{Number(it.cantidad) || 1} × Gs. {Number(it.precio_unitario || 0).toLocaleString('es-PY')}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span>Sin productos seleccionados.</span>
+                )}
+              </div>
+            </div>
+
+            <div className="np-review-options">
+              <div className="np-row">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
+                    checked={form.quiere_factura}
+                    onChange={e => setForm({ ...form, quiere_factura: e.target.checked })}
+                  />
+                  ¿Desea factura?
+                </label>
+              </div>
+
+              {form.quiere_factura && (
+                <div className="np-invoice-grid">
+                  <div className="np-row">
+                    <label>Razón social (Opcional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Ej. Comercial Paraguaya S.A."
+                      value={form.razon_social}
+                      onChange={e => setForm({ ...form, razon_social: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="np-row">
+                    <label>RUC <span className="req">*</span></label>
+                    <input
+                      type="text"
+                      className={`form-input ${errors.ruc ? 'input-error' : ''}`}
+                      placeholder="Ej. 80012345-6"
+                      value={form.ruc}
+                      aria-invalid={Boolean(errors.ruc)}
+                      aria-describedby={errors.ruc ? "np-ruc-error" : undefined}
+                      onChange={e => {
+                        setForm({ ...form, ruc: e.target.value });
+                        if (errors.ruc) setErrors({ ...errors, ruc: null });
+                      }}
+                    />
+                    {errors.ruc && <span id="np-ruc-error" className="field-error">{errors.ruc}</span>}
+                  </div>
+
+                  <div className="np-row">
+                    <label>Nro de comprobante (Opcional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Ej. 001-001-0000123"
+                      value={form.nro_comprobante}
+                      onChange={e => setForm({ ...form, nro_comprobante: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="np-label-obs">Observaciones</label>
+                <textarea
+                  className="form-input"
+                  rows={3}
+                  placeholder="Detalles adicionales para el courier o vendedor..."
+                  value={form.observaciones}
+                  onChange={e => setForm({ ...form, observaciones: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Botón de Confirmación verde al pie */}
+            </div>
+
+            <aside className="np-sticky-summary" aria-label="Resumen del pedido">
+              <div className="np-summary-card">
+                <span className="np-kicker">Resumen</span>
+                <strong>Gs. {(Number(precioTotalVendido) || 0).toLocaleString('es-PY')}</strong>
+                <div className="np-summary-lines">
+                  <div><span>Productos</span><b>Gs. {(Number(subtotalProductos) || 0).toLocaleString('es-PY')}</b></div>
+                  <div><span>Delivery</span><b>Gs. {(Number(form.costo_envio) || 0).toLocaleString('es-PY')}</b></div>
+                  <div><span>Ítems</span><b>{itemsParaTarifa.length}</b></div>
+                  <div><span>Unidades</span><b>{unidadesSeleccionadas}</b></div>
+                </div>
+              </div>
+
+              <div className="np-summary-card np-summary-status">
+                {resumenCarga.map(paso => (
+                  <span key={paso.label} className={paso.ok ? "is-ready" : ""}>
+                    <CheckCircle2 size={14} />
+                    {paso.label}
+                  </span>
+                ))}
+              </div>
+            </aside>
+          </div>
+
+          {/* Acciones del wizard */}
           <div className="np-footer">
-            <button type="submit" className="btn-confirmar-pedido" disabled={guardando}>
-              {guardando ? "Guardando..." : "CONFIRMAR PEDIDO"}
+            <button
+              type="button"
+              className="np-secondary-action"
+              disabled
+              title="Pendiente de soporte backend para guardar pedidos en borrador."
+            >
+              <Save size={16} /> Guardar borrador
             </button>
+
+            <div className="np-footer-nav">
+              {pasoActivo > 0 && (
+                <button type="button" className="np-nav-action" onClick={volverPaso}>
+                  <ChevronLeft size={16} /> Volver
+                </button>
+              )}
+
+              {!esUltimoPaso ? (
+                <button type="button" className="btn-confirmar-pedido" onClick={continuarPaso}>
+                  Continuar <ChevronRight size={16} />
+                </button>
+              ) : (
+                <button type="submit" className="btn-confirmar-pedido" disabled={guardando}>
+                  {guardando ? "Guardando..." : (modoCompletar && !vaAConfirmar ? "Guardar cambios" : "Confirmar pedido")}
+                </button>
+              )}
+            </div>
           </div>
         </form>
       </div>
