@@ -4,7 +4,7 @@ import ProductPicker from '../ProductPicker';
 import { renderInput } from './SchemaInspector';
 import { vitrinaService } from '../../../services/vitrinaService';
 
-export default function ProductosInspector({ seccion, schema, onUpdate, catalogo, onUploadImagen }) {
+export default function ProductosInspector({ seccion, schema, onUpdate, catalogo, onUploadImagen, onPrecioVentaGuardado }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   
   // seccion.contenido.productos = [ { id, tipo, etiqueta, precio_ancla } ] 
@@ -93,6 +93,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
     } else {
       await vitrinaService.guardarPrecioProducto(item.id, precio);
     }
+    onPrecioVentaGuardado?.(item.tipo, item.id, precio);
     setTempSeleccion(prev => {
       const clave = claveItem(item.tipo, item.id);
       if (!prev.has(clave)) return prev;
@@ -236,6 +237,7 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                   onPrecioAncla={handlePrecioAncla}
                   onQuitar={handleQuitar}
                   onReordenar={handleReordenar}
+                  refrescarCatalogoAlAbrir
                 />
              </div>
           </div>

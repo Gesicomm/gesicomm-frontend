@@ -8,7 +8,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Layers, Zap, Truck
+  ToggleLeft, ToggleRight, Loader, Tag, Layers
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ProductCombosDrawer from './ProductCombosDrawer';
@@ -384,19 +384,6 @@ export default function ProductList() {
                                 <Edit2 size={15} />
                               </button>
                             )}
-                            {/* Embudo del producto — módulo propio
-                                (pages/funnel/), NO el editor de landing ni el
-                                deprecado /mi-landing. El marketing/funnel de
-                                un producto del catálogo compartido sí lo
-                                puede armar cualquier revendedor. */}
-                            <button
-                              className="lb-btn-primary"
-                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', gap: '0.25rem', height: '28px', display: 'inline-flex', alignItems: 'center' }}
-                              onClick={(e) => { e.stopPropagation(); navigate(`/funnel/producto/${p.id}`); }}
-                              title="Embudo de venta de este producto"
-                            >
-                              <Zap size={14} /> Embudo
-                            </button>
                             <button
                               className="btn-icon"
                               onClick={(e) => { e.stopPropagation(); setComboProductoSeleccionado(p); }}

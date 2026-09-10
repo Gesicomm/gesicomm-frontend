@@ -1304,11 +1304,29 @@
   font-size: 0.78rem;
 }
 
+/* Flex con wrap, no grid de columnas fijas. El grid pedía
+   180px + 9.25rem + 8.5rem + gaps ≈ 488px como mínimo, y la columna
+   "Pedido" del modal es más angosta que eso: el Subtotal se desbordaba
+   fuera de la tarjeta y quedaba pisando el panel de la derecha. Así, cuando
+   no entra en una línea, baja a la siguiente en vez de salirse. */
 .np-order-item-controls {
-  display: grid;
-  grid-template-columns: minmax(180px, 1fr) 9.25rem auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   align-items: end;
+}
+
+/* "Presentación" es la que absorbe el espacio sobrante; "Cantidad" se queda
+   con el suyo. `min-width: 0` para que el select pueda encogerse en vez de
+   empujar (un select no se achica solo por debajo de su contenido). */
+.np-order-item-controls > label:first-child {
+  flex: 1 1 11rem;
+}
+.np-order-item-controls > label {
+  flex: 0 1 auto;
+}
+.np-order-item-controls > .np-line-subtotal {
+  margin-left: auto;
 }
 
 .np-order-item-controls label {
@@ -1364,7 +1382,9 @@
 }
 
 .np-line-subtotal {
-  min-width: 8.5rem;
+  /* min-width en vez de width fijo, y con `auto` de piso: en la columna
+     angosta del modal, 8.5rem forzaba el desborde. */
+  min-width: min(8.5rem, 100%);
   display: flex;
   flex-direction: column;
   align-items: flex-end;

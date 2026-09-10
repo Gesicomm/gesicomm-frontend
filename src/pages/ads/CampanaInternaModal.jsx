@@ -2,39 +2,34 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, Sparkles, Copy, Check, Loader2, ArrowLeft, ArrowRight, Search, MessageCircle, Globe, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
-import { landingService } from '../../services/landingService';
 import { categoriaService } from '../../services/catalogoService';
 import { getMediaUrl } from '../../services/api';
-import FunnelStrategyStep from './FunnelStrategyStep';
 
 const PASOS = [
   { id: 1, label: 'Nombre' },
   { id: 2, label: 'Productos' },
   { id: 3, label: 'Tipo' },
-  { id: 4, label: 'Funnel' },
 ];
 
 /**
- * Modal "Nueva Campaña" del módulo de Reportes de Meta Ads — wizard de 4
- * pasos: nombre -> productos (grilla visual) -> tipo de campaña (WhatsApp
- * / Web) -> funnel. Al final genera un nombre interno único (con un
- * código embebido) para copiar tal cual como nombre de la campaña real en
- * Meta Ads Manager. Cuando después se sube el reporte CSV, ese código es
- * lo que permite mapear automáticamente cada fila al producto correcto.
+ * Modal "Nueva Campaña" del módulo de Reportes de Meta Ads — wizard de 3
+ * pasos: nombre -> productos (grilla visual) -> tipo de campaña (Funnel
+ * / WhatsApp). Al final genera un nombre interno único (con un código embebido)
+ * para copiar tal cual como nombre de la campaña real en Meta Ads Manager.
+ * Cuando después se sube el reporte CSV, ese código es lo que permite
+ * mapear automáticamente cada fila al producto correcto.
  */
 export default function CampanaInternaModal({ open, onClose, onCreated, tiendas = [], campanaEditar = null }) {
   const [step, setStep] = useState(1);
 
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
-  const [funnels, setFunnels] = useState([]);
   const [cargandoOpciones, setCargandoOpciones] = useState(true);
 
   const [nombreDisplay, setNombreDisplay] = useState('');
   const [metaIntegrationId, setMetaIntegrationId] = useState(null);
   const [productoIds, setProductoIds] = useState([]);
   const [tipo, setTipo] = useState(null);
-  const [landingId, setLandingId] = useState(null);
 
   const [busquedaProducto, setBusquedaProducto] = useState('');
   const [filtroCategoria, setFiltroCategoria] = useState('ALL');
@@ -47,11 +42,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
 
   const esEdicion = !!campanaEditar;
 
-  // Con WhatsApp no hay landing/checkout propio — es "conversaciones /
-  // mensajes" (ver Paso 3 más abajo), así que el Paso 4 (Funnel) no aplica
-  // y se saca de la lista en vez de mostrarse vacío.
-  const pasosActivos = useMemo(() => (tipo === 'whatsapp' ? PASOS.filter(p => p.id !== 4) : PASOS), [tipo]);
-  const maxStep = pasosActivos[pasosActivos.length - 1]?.id || 1;
+  const maxStep = PASOS[PASOS.length - 1]?.id || 1;
 
   useEffect(() => {
     if (!open) return;
@@ -69,24 +60,20 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
       setNombreDisplay(campanaEditar.nombre_display || '');
       setProductoIds(campanaEditar.producto_ids || []);
       setTipo(campanaEditar.tipo || 'web');
-      setLandingId(campanaEditar.landing_id || null);
       setMetaIntegrationId(campanaEditar.meta_integration_id || null);
     } else {
       setNombreDisplay('');
       setProductoIds([]);
       setTipo(null);
-      setLandingId(null);
       setMetaIntegrationId(tiendas.length === 1 ? tiendas[0].id : null);
     }
 
     Promise.all([
       productService.buscar({ activo: true, sin_limite: true }),
       categoriaService.buscar({}).catch(() => ({ categorias: [] })),
-      landingService.listar().catch(() => []),
-    ]).then(([productosRes, categoriasRes, landingsRes]) => {
+    ]).then(([productosRes, categoriasRes]) => {
       setProductos(productosRes.productos || []);
       setCategorias(categoriasRes.categorias || []);
-      setFunnels((landingsRes || []).filter(l => l.tipo_pagina === 'funnel' && l.producto_id));
     }).catch((err) => {
       setError(err.message || 'No se pudieron cargar los datos.');
     }).finally(() => setCargandoOpciones(false));
@@ -116,10 +103,8 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
     return productosFiltrados.slice(inicio, inicio + TAMANO_PAGINA);
   }, [productosFiltrados, paginaProducto]);
 
-  // Si el canal cambia a WhatsApp mientras se estaba en el Paso 4, ese paso
-  // deja de existir — no dejar al wizard "parado" en un paso que ya no está.
-  // (Tiene que ir antes del "if (!open) return null" de abajo — los hooks
-  // no pueden ser condicionales.)
+  // No dejar al wizard parado más allá del último paso si cambia la
+  // configuración del flujo.
   useEffect(() => { setStep(s => Math.min(s, maxStep)); }, [maxStep]);
 
   if (!open) return null;
@@ -146,7 +131,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
         nombre_display: nombreDisplay.trim(),
         producto_ids: productoIds,
         tipo,
-        landing_id: landingId || null,
+        landing_id: null,
         meta_integration_id: metaIntegrationId || null,
       };
 
@@ -208,7 +193,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
           <>
             {/* Indicador de pasos */}
             <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem 1.25rem 0' }}>
-              {pasosActivos.map((p) => (
+              {PASOS.map((p) => (
                 <div key={p.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                   <div style={{ height: '3px', borderRadius: '2px', background: p.id <= step ? 'var(--bg-primary, #3d5fa3)' : 'color-mix(in srgb, var(--color-fg) 10%, transparent)' }} />
                   <span style={{ fontSize: '0.7rem', color: p.id === step ? 'var(--color-fg)' : 'var(--color-fg-muted)', fontWeight: p.id === step ? 600 : 400 }}>{p.id}. {p.label}</span>
@@ -407,7 +392,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿A qué canal apunta esta campaña?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
-                      { value: 'web', label: 'Web', desc: 'Landing / checkout propio', icon: <Globe size={22} color="#3b82f6" />, color: '#3b82f6' },
+                      { value: 'web', label: 'Funnel', desc: 'Solo clasificación para reportes', icon: <Globe size={22} color="#3b82f6" />, color: '#3b82f6' },
                       { value: 'whatsapp', label: 'WhatsApp', desc: 'Conversaciones / mensajes', icon: <MessageCircle size={22} color="#10b981" />, color: '#10b981' },
                     ].map(opt => (
                       <button
@@ -432,15 +417,6 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                 </div>
               )}
 
-              {/* Paso 4: Funnel — solo existe con tipo='web' (ver pasosActivos) */}
-              {step === 4 && (
-                <FunnelStrategyStep
-                  productos={productos}
-                  productoIds={productoIds}
-                  setLandingId={setLandingId}
-                  onError={setError}
-                />
-              )}
             </div>
 
             {/* Footer navegación */}

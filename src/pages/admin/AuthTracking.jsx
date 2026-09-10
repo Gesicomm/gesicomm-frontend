@@ -29,7 +29,12 @@ const EVENTOS = [
   { id: 'onboarding_store_created', label: 'Tienda creada' },
   { id: 'onboarding_landing_generated', label: 'Landing generada' },
   { id: 'onboarding_skipped', label: 'Saltados' },
-  { id: 'password_reset_requested', label: 'Recuperación' },
+  { id: 'password_reset_requested', label: 'Recuperación solicitada' },
+  { id: 'password_reset_email_sent', label: 'Email recuperación' },
+  { id: 'password_reset_email_failed', label: 'Email recuperación falló' },
+  { id: 'password_reset_email_skipped', label: 'Recuperación sin cuenta' },
+  { id: 'password_reset_failed', label: 'Recuperación fallida' },
+  { id: 'password_reset_completed', label: 'Contraseña cambiada' },
 ];
 
 const EVENTO_LABELS = {
@@ -39,7 +44,12 @@ const EVENTO_LABELS = {
   login_failed: 'Login fallido',
   logout: 'Logout',
   otp_resent: 'OTP reenviado',
-  password_reset_requested: 'Recuperación',
+  password_reset_requested: 'Recuperación solicitada',
+  password_reset_email_sent: 'Email recuperación',
+  password_reset_email_failed: 'Email recuperación falló',
+  password_reset_email_skipped: 'Recuperación sin cuenta',
+  password_reset_failed: 'Recuperación fallida',
+  password_reset_completed: 'Contraseña cambiada',
   onboarding_started: 'Onboarding iniciado',
   onboarding_store_created: 'Tienda creada',
   onboarding_landing_generated: 'Landing generada',

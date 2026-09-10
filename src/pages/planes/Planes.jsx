@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, CreditCard, Loader, Sparkles, AlertCircle } from 'lucide-react';
 import { planesService } from '../../services/planesService';
+import { afiliadosService, guardarRefAfiliado, leerRefAfiliado } from '../../services/afiliadosService';
 import { cargarPlanes, PERIODICIDAD } from '../../lib/planesCatalogo';
 import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
@@ -36,9 +37,17 @@ export default function Planes() {
   const [simulandoCodigo, setSimulandoCodigo] = useState(null);
   const [errorPago, setErrorPago] = useState(null);
   const [exito, setExito] = useState(null);
+  const [afiliadoRef, setAfiliadoRef] = useState(() => leerRefAfiliado());
 
   useEffect(() => {
     let activo = true;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      const guardado = guardarRefAfiliado(ref);
+      setAfiliadoRef(guardado);
+      afiliadosService.track({ codigo: guardado, landing_url: window.location.href }).catch(() => {});
+    }
 
     async function cargar() {
       setCargando(true);
@@ -89,7 +98,10 @@ export default function Planes() {
     setExito(null);
     setSimulandoCodigo(plan.codigo);
     try {
-      const resultado = await planesService.pagarDummyPagopar({ plan_codigo: plan.codigo });
+      const resultado = await planesService.pagarDummyPagopar({
+        plan_codigo: plan.codigo,
+        afiliado_codigo: afiliadoRef || leerRefAfiliado(),
+      });
       setEstadoCuenta(resultado.estado_cuenta);
       setExito('PagoPar dummy acreditó tu plan. Te llevamos al onboarding.');
     } catch (err) {

@@ -16,9 +16,9 @@ const LINK_CLASS = 'cursor-pointer font-semibold text-primary-text transition-co
 const OTP_TTL = 15 * 60; // 15 minutos en segundos
 
 const BENEFICIOS = [
-  { icono: Store, titulo: 'Tienda publicada', detalle: 'Catálogo, landings y URL pública desde el primer ingreso.' },
-  { icono: ShoppingBag, titulo: 'Pedidos en orden', detalle: 'Consultas, ventas y estados operativos en un solo panel.' },
-  { icono: BarChart3, titulo: 'Métricas listas', detalle: 'Reportes para saber qué productos y campañas empujan ventas.' },
+  { icono: Store, titulo: 'Crea tu tienda', detalle: 'Publicá tu catálogo, selecciona tus productos y compartí tu link en minutos.' },
+  { icono: ShoppingBag, titulo: 'Pedidos en orden', detalle: 'Consultas, ventas y estados operativos centralizados en un solo panel.' },
+  { icono: BarChart3, titulo: 'Métricas listas', detalle: 'Reportes para saber qué productos y campañas empujan tus ventas.' },
 ];
 
 function PasswordToggle({ visible, onClick, label }) {
@@ -408,10 +408,10 @@ export default function Login() {
             </div>
 
             <h1 className="m-0 text-5xl font-bold leading-[1.02] text-fg">
-              Tu tienda, pedidos y landings en una cuenta.
+              Crea tu tienda, selecciona los productos y vende.
             </h1>
             <p className="mt-5 max-w-lg text-base leading-7 text-fg-muted">
-              Entrá a Gesicom para administrar productos, recibir pedidos y preparar páginas que venden sin configurar todo desde cero.
+              Gestioná tu catálogo, recibí consultas y pedidos directos, y monitoreá tus ventas sin configuraciones complejas.
             </p>
 
             <div className="mt-9 grid gap-4">

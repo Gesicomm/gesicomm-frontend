@@ -2,10 +2,9 @@ import { getMediaUrl } from '../../services/api';
 
 /**
  * Forma canónica que consume VentaDirectaTemplate.jsx. Un único shape para
- * que el preview del editor y la página pública rendericen exactamente el
- * mismo componente con exactamente los mismos datos — nunca pueden
- * divergir. Mismo criterio que mapLandingToTemplateData.js del módulo de
- * landing.
+ * que la página pública legacy renderice VentaDirectaTemplate.jsx con una
+ * forma estable. Mismo criterio que mapLandingToTemplateData.js del módulo
+ * de landing.
  *
  * @typedef {object} FunnelTemplateData
  * @property {string} nombreComercio
@@ -18,83 +17,11 @@ import { getMediaUrl } from '../../services/api';
  * @property {Array<{pregunta:string, respuesta:string}>} faq
  */
 
-/** El tema del embudo: lo que eligió el comercio, o null para que el template use su default. */
-function temaDe(fuente) {
-  return {
-    fondo: fuente?.color_fondo || null,
-    texto: fuente?.color_texto || null,
-    acento: fuente?.color_primario || null,
-  };
-}
-
-/**
- * EDITOR — desde funnelService.obtener() + el detalle del producto
- * (productService.detalle/imagenes/variantes). El producto no vive en el
- * embudo: se lee de la ficha del producto, que es la única fuente de
- * verdad de fotos, precio y stock.
- */
-export function mapEditorDraftToFunnelData(draft, producto, imagenes, variantes, tienda) {
-  const precioBase = Number(producto?.precio_base) || 0;
-  const tachado = producto?.precio_tachado ? Number(producto.precio_tachado) : null;
-
-  return {
-    slug: draft?.slug,
-    // El nombre del COMERCIO, nunca el del producto: es lo que va en el
-    // header y en el "© 2026 …" del pie.
-    nombreComercio: tienda?.nombre || draft?.titulo || 'Mi tienda',
-    logo: tienda?.logo ? getMediaUrl(tienda.logo) : null,
-    tema: temaDe(draft),
-    templateSlug: draft?.template?.slug,
-    producto: producto ? {
-      id: producto.id,
-      nombre: producto.nombre,
-      descripcion_larga: producto.descripcion_larga || producto.descripcion_corta || '',
-      imagenes: (imagenes || []).map(i => getMediaUrl(i.url)),
-      precio: precioBase,
-      precio_antes: tachado,
-      descuento_pct: tachado && tachado > precioBase
-        ? Math.round((1 - precioBase / tachado) * 100)
-        : 0,
-      // Solo cuenta como oferta con vencimiento si hay un descuento activo
-      // Y una fecha real de fin — si no, el template no muestra countdown.
-      oferta_termina: (Number(producto.descuento_porcentaje) > 0 && producto.descuento_fin) || null,
-      stock: producto.cantidad_disponible,
-      variantes: (variantes || []).filter(v => v.activo !== false).map(v => ({
-        id: v.id,
-        nombre: v.nombre,
-        stock: v.stock,
-        precio_efectivo: precioBase + (Number(v.precio_diferencial) || 0),
-        imagenes: [],
-      })),
-      // Campos de marketing del producto (herencia para el embudo)
-      propuesta_valor: producto.propuesta_valor || null,
-      beneficios: producto.beneficios || [],
-      confianza: producto.confianza || [],
-      preguntas_frecuentes: producto.preguntas_frecuentes || [],
-      sobre_este_producto: producto.sobre_este_producto || null,
-    } : null,
-    contenido: draft?.content || {},
-    beneficios: (draft?.beneficios || []).map(b => ({ titulo: b.titulo, texto: b.texto })),
-    opiniones: (draft?.testimonios || []).map(t => ({
-      nombre: t.nombre, calificacion: t.calificacion, comentario: t.comentario,
-    })),
-    faq: (draft?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
-    contacto: { 
-      whatsapp: draft?.contacto_whatsapp || tienda?.whatsapp || '',
-      instagram: draft?.contacto_instagram || null,
-      facebook: draft?.contacto_facebook || null,
-      tiktok: draft?.contacto_tiktok || null,
-      youtube: draft?.contacto_youtube || null,
-      twitter: draft?.contacto_twitter || null,
-    },
-  };
-}
-
 /**
  * PÚBLICO — desde el DTO de obtenerLandingPublica(). El backend ya
  * resolvió precio efectivo, variantes, stock e imágenes (ver
- * landing.service.js#obtenerPublica, que sintetiza el item del embudo a
- * partir de Landing.producto_id), así que acá solo se reacomoda la forma.
+ * landing.service.js#obtenerPublica, que sintetiza el item legacy a partir
+ * de Landing.producto_id), así que acá solo se reacomoda la forma.
  */
 export function mapPublicDtoToFunnelData(dto) {
   const item = dto?.items?.[0] || null;

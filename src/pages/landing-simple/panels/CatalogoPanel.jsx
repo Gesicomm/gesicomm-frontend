@@ -25,7 +25,7 @@ function clave(tipo, id) { return `${tipo}:${id}`; }
  * "items" entra/sale en el shape de LandingItem:
  * [{tipo, referencia_id, etiqueta, precio_ancla, envio_incluido, orden, mostrar_en_inicio}].
  */
-export default function CatalogoPanel({ items, catalogo, onChange, draft, onCampo, onEditarProducto }) {
+export default function CatalogoPanel({ items, catalogo, onChange, draft, onCampo, onEditarProducto, onPrecioVentaGuardado }) {
   const [seleccion, setSeleccion] = useState(() => {
     const map = new Map();
     (items || []).forEach(it => map.set(clave(it.tipo, it.referencia_id), {
@@ -108,6 +108,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
     } else {
       await vitrinaService.guardarPrecioProducto(item.id, precio);
     }
+    onPrecioVentaGuardado?.(item.tipo, item.id, precio);
     const k = clave(item.tipo, item.id);
     setSeleccion(prev => {
       const copia = new Map(prev);
@@ -211,6 +212,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
           onReordenar={onReordenar}
           max={MAX_ITEMS}
           onEditar={onEditarProducto}
+          refrescarCatalogoAlAbrir
         />
       </div>
     </div>

@@ -57,6 +57,7 @@ export default function InspectorSeccion({
   onUploadImagen,
   previewCheckoutAbierto,
   onTogglePreviewCheckout,
+  onPrecioVentaGuardado,
 }) {
   const [activeTab, setActiveTab] = useState('contenido'); // 'contenido' | 'diseno'
 
@@ -120,6 +121,7 @@ export default function InspectorSeccion({
                onUploadImagen={onUploadImagen}
                previewCheckoutAbierto={previewCheckoutAbierto}
                onTogglePreviewCheckout={onTogglePreviewCheckout}
+               onPrecioVentaGuardado={onPrecioVentaGuardado}
              />
            )}
 

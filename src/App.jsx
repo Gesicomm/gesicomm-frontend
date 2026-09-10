@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Settings from './pages/Settings';
 import Ads from './pages/Ads';
 import ProductList from './pages/productos/ProductList';
@@ -19,12 +20,8 @@ import VitrinaGrid from './pages/vitrina/VitrinaGrid';
 import MiDashboard from './pages/dashboard/MiDashboard';
 import MiLandingEntry from './pages/landing/MiLandingEntry';
 import LandingEditor from './pages/landing/LandingEditor';
-import MerchantEditor from './pages/landing/MerchantEditor';
-import FunnelSelector from './pages/landing/FunnelSelector';
 import LandingPublica from './pages/landing/LandingPublica';
 import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
-import FunnelEntry from './pages/funnel/FunnelEntry';
-import FunnelEditor from './pages/funnel/FunnelEditor';
 import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Planes from './pages/planes/Planes';
@@ -192,6 +189,7 @@ function App() {
         <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Rutas protegidas — panel admin */}
         <Route path="/dashboard" element={
@@ -336,24 +334,6 @@ function App() {
         } />
         <Route path="/landing/:id" element={
           <RequireTienda><DynamicLayout><EditorSegunModo /></DynamicLayout></RequireTienda>
-        } />
-        {/* EMBUDOS — módulo propio (pages/funnel/). Una página por producto,
-            hecha para llevar al cliente al checkout. Nada que ver con
-            /mi-landing (deprecado) ni con /landing (la tienda). */}
-        <Route path="/funnel/producto/:productoId" element={
-          <RequireTienda><UserLayout><FunnelEntry /></UserLayout></RequireTienda>
-        } />
-        <Route path="/funnel/:id" element={
-          <RequireTienda><UserLayout><FunnelEditor /></UserLayout></RequireTienda>
-        } />
-        {/* Diseño de página propio de un producto — mismo editor, en modo
-            producto (ver esModoProducto en LandingEditor.jsx). */}
-        <Route path="/mi-landing/producto/:productoId/funnel-selector" element={
-          <RequireTienda><UserLayout><FunnelSelector /></UserLayout></RequireTienda>
-        } />
-        {/* Fase 4: Nuevo editor guiado por schema para productos */}
-        <Route path="/mi-landing/producto/:productoId" element={
-          <RequireTienda><UserLayout><MerchantEditor /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-anuncios" element={
           <RequireTienda><UserLayout><Ads /></UserLayout></RequireTienda>

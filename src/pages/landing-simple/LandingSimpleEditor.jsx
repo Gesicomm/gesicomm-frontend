@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
@@ -436,6 +436,18 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   function recargarCatalogo() {
     vitrinaService.catalogo().then(setCatalogo).catch(() => {});
   }
+
+  const actualizarPrecioCatalogo = useCallback((tipo, itemId, precio) => {
+    const campo = tipo === 'combo' ? 'combos' : 'productos';
+    setCatalogo(prev => ({
+      ...prev,
+      [campo]: (prev?.[campo] || []).map(item =>
+        String(item.id) === String(itemId)
+          ? { ...item, precio_usuario: precio, precio_efectivo: precio }
+          : item
+      ),
+    }));
+  }, []);
 
   function abrirProducto(p) {
     setProductoPreview(p);
@@ -1007,7 +1019,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   <ColoresPanel draft={draft} onCampo={campo} templateSlug={templateSlug} />
                 )}
                 {tab === 'catalogo' && (
-                  <CatalogoPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} onEditarProducto={abrirProducto} />
+                  <CatalogoPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} onEditarProducto={abrirProducto} onPrecioVentaGuardado={actualizarPrecioCatalogo} />
                 )}
                 {tab === 'destacados' && (
                   <DestacadosPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} />

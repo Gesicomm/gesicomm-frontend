@@ -36,9 +36,8 @@ const TABS = [
   { id: 'venta', label: 'Venta', desc: 'Packs, bumps y upsells', level: 'Avanzado', icon: <Tag size={15} /> },
   { id: 'marketing', label: 'Vista del producto', desc: 'Campos dinámicos, FAQ y preview', level: 'Recomendado', icon: <Eye size={15} /> },
   { id: 'publicacion', label: 'Publicacion', desc: 'Estado y visibilidad', level: 'Esencial', icon: <Settings size={15} /> },
-  // NO re-agregar una pestaña que apunte a /mi-landing: ese editor
-  // (FunnelSelector + MerchantEditor + page-builder) está deprecado. El
-  // funnel vive en su propio módulo, ver pages/funnel/.
+  // NO re-agregar una pestaña que apunte a /mi-landing/producto:
+  // ese editor de embudos legacy fue retirado.
 ];
 
 const TAB_ALIASES = {
@@ -1969,11 +1968,6 @@ export default function ProductForm() {
 
               
 
-              {/* {esEdicion && (
-                <Link to={`/mi-landing/producto/${id}/funnel-selector`} className="btn-secondary product-view-funnel-link">
-                  <Eye size={15} /> Configurar funnel dedicado
-                </Link>
-              )} */}
             </div>
 
             <ProductLandingPreview

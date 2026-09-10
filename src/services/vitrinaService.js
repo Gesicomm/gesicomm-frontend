@@ -1,7 +1,25 @@
 import API from './api';
 
+const LIMITE_CATALOGO_COMPLETO = 10000;
+
+async function catalogoCompletoDesdePaginado() {
+  const data = await API.post('/vitrina/catalogo-paginado', {
+    page: 1,
+    limit: LIMITE_CATALOGO_COMPLETO,
+    orden: 'nombre',
+    tipo: 'todos',
+    solamenteMios: false,
+  }).then(r => r.data);
+
+  const items = data?.items || [];
+  return {
+    productos: items.filter(item => item.tipo === 'producto'),
+    combos: items.filter(item => item.tipo === 'combo'),
+  };
+}
+
 export const vitrinaService = {
-  catalogo: () => API.get('/vitrina/catalogo').then(r => r.data),
+  catalogo: catalogoCompletoDesdePaginado,
   catalogoPaginado: (filtros = {}) => API.post('/vitrina/catalogo-paginado', filtros).then(r => r.data),
 
   guardarPrecioProducto: (id, precio) =>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Upload, Plus, Copy, Check, Loader2, Edit2, Link2, Trash2,
   Archive, AlertCircle, ChevronLeft, ChevronRight, Package,
-  MessageCircle, Globe, Play, Pause, Zap,
+  MessageCircle, Globe, Play, Pause,
 } from 'lucide-react';
 import { metaReportesService } from '../../services/metaReportesService';
 import { productService } from '../../services/productService';
@@ -213,7 +213,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
           <div>
             <h2 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-fg)' }}>Campañas internas</h2>
             <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
-              Generá un nombre para copiar en Meta Ads Manager, vinculado a tus productos y funnel.
+              Generá un nombre para copiar en Meta Ads Manager, vinculado a tus productos y tipo de campaña.
             </p>
           </div>
           <button type="button" className="btn-primary" onClick={() => { setCampanaEditar(null); setModalOpen(true); }}>
@@ -235,7 +235,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
                   <tr>
                     <th>Campaña</th>
                     <th>Productos</th>
-                    <th>Funnel</th>
+                    <th>Tipo</th>
                     <th>Estado</th>
                     <th className="text-right">Acciones</th>
                   </tr>
@@ -247,7 +247,7 @@ export default function MetaReportesTab({ tiendas = [] }) {
                       <tr key={c.id}>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {c.tipo === 'whatsapp' ? <MessageCircle size={16} color="#10b981" title="WhatsApp" /> : <Globe size={16} color="#3b82f6" title="Web" />}
+                            {c.tipo === 'whatsapp' ? <MessageCircle size={16} color="#10b981" title="WhatsApp" /> : <Globe size={16} color="#3b82f6" title="Funnel" />}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                             <span style={{ fontWeight: 600, color: 'var(--color-fg)', fontSize: '0.88rem' }}>{c.nombre_display}</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -267,29 +267,22 @@ export default function MetaReportesTab({ tiendas = [] }) {
                         <td style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
                           {(c.productos || []).map(p => p.nombre).join(', ') || '—'}
                         </td>
-                        <td style={{ fontSize: '0.8rem', color: 'var(--color-fg)' }}>
-                          {c.funnel?.titulo || c.funnel?.nombre || '—'}
+                        <td>
+                          <span
+                            className="badge"
+                            style={{
+                              background: c.tipo === 'whatsapp' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
+                              color: c.tipo === 'whatsapp' ? '#10b981' : '#3b82f6',
+                            }}
+                          >
+                            {c.tipo === 'whatsapp' ? 'WhatsApp' : 'Funnel'}
+                          </span>
                         </td>
                         <td>
                           <span className="badge" style={{ background: badge.bg, color: badge.color }}>{c.estado}</span>
                         </td>
                         <td className="text-right">
                           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
-                            {/* Solo si el funnel vinculado es un embudo real
-                                (template.kind==='funnel') — un link a la
-                                landing vieja de la tienda no tiene editor
-                                propio en /funnel/:id. */}
-                            {c.funnel?.template?.kind === 'funnel' && (
-                              <a
-                                href={`/funnel/${c.funnel.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn-icon"
-                                title="Ir al embudo"
-                              >
-                                <Zap size={15} />
-                              </a>
-                            )}
                             <button type="button" className="btn-icon" title="Editar" onClick={() => { setCampanaEditar(c); setModalOpen(true); }}>
                               <Edit2 size={15} />
                             </button>

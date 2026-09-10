@@ -1,6 +1,5 @@
 /**
- * Catálogo de planes — mismo patrón que pages/landing/landingTemplates.js:
- * los planes viven en el frontend, no hay tabla ni endpoint detrás.
+ * Catálogo de planes — fallback local para cuando /api/planes no responde.
  *
  * ⚠️ PROVISIONAL. Dos cosas que hay que saber antes de tocar esto:
  *
@@ -28,21 +27,22 @@ export const PERIODICIDAD = 'por mes';
 /** Placeholders — reemplazar por los planes reales. */
 export const PLANES_DEFAULT = [
   {
-    id: 'starter',
-    codigo: 'starter',
+    id: 'founders',
+    codigo: 'founders',
     equivale: 'pago',
     moneda: 'USD',
-    nombre: 'Starter',
+    nombre: 'Miembros Fundadores',
     precio: 47,
-    resumen: 'Para activar tu primera tienda online con catálogo, landing y pedidos desde el primer día.',
+    resumen: 'Oferta limitada para los primeros 300 clientes pagos en Paraguay, con precio fundador protegido mientras la suscripción permanezca activa.',
     destacado: true,
-    etiqueta: 'Para empezar',
-    cta: 'Activar Starter',
+    etiqueta: '300 cupos',
+    cta: 'Ser Fundador',
     features: [
-      'Tienda y catálogo online',
-      'Landing con ficha seleccionable',
-      'Selección de productos desde Gesicomm',
-      'Pedidos y contactos desde el panel',
+      'Precio Fundador protegido de USD 47/mes',
+      'Acceso al ecosistema Gesicom y mejoras del nivel Fundador',
+      'Onboarding, Academia, Biblioteca Operativa y comunidad privada',
+      'Programa de Afiliados con 40% recurrente sobre suscripciones elegibles',
+      '50% OFF para Gesicom Certified Partner',
     ],
   },
   {
@@ -57,7 +57,7 @@ export const PLANES_DEFAULT = [
     etiqueta: 'Más elegido',
     cta: 'Activar Growth',
     features: [
-      'Todo lo del plan Starter',
+      'Todo lo del plan Fundador',
       'Landings y embudos adicionales',
       'Configuración avanzada de productos',
       'Analítica comercial y píxeles',

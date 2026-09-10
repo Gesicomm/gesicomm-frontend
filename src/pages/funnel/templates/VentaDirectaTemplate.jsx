@@ -60,8 +60,8 @@ function calcularRestante(fechaFin) {
  * Sin order bump ni upsell: son mecanismos de otros embudos. Acá el
  * objetivo es que el cliente decida rápido.
  *
- * Se usa TAL CUAL en el editor y en la página pública (ver FunnelEditor.jsx
- * y LandingPublica.jsx) para que no puedan divergir.
+ * Se usa TAL CUAL en la página pública legacy (ver LandingPublica.jsx);
+ * mantenerlo compatible evita romper páginas ya publicadas.
  */
 export default function VentaDirectaTemplate({
   data,

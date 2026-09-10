@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
+import { vitrinaService } from '../../services/vitrinaService';
 
 /**
  * Selección visual de productos/combos para una landing.
@@ -29,18 +30,28 @@ const ORDENES = [
   { valor: 'recientes', label: 'Más recientes' },
 ];
 
-const PRECIOS_GUARDADOS = new Map();
-
 function formatGs(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 });
 }
 
+function primerNumero(...valores) {
+  for (const valor of valores) {
+    if (valor === null || valor === undefined || valor === '') continue;
+    const numero = Number(valor);
+    if (Number.isFinite(numero)) return numero;
+  }
+  return null;
+}
+
 function precioVentaItem(item) {
-  return item.precio_efectivo;
+  return primerNumero(item.precio_usuario, item.precio_efectivo, item.precio, item.precio_base);
 }
 
 function estadoGanancia(precio, costo) {
+  if (costo === null || costo === undefined) {
+    return { ganancia: null, margen: null, estado: 'sin-costo' };
+  }
   const ganancia = precio - costo;
   const margen = precio > 0 ? (ganancia / precio) * 100 : 0;
   const estado = ganancia > 0 ? 'ok' : ganancia < 0 ? 'perdida' : 'empate';
@@ -51,21 +62,43 @@ function claveItem(item) {
   return `${item.tipo}:${item.id}`;
 }
 
+function precioDesdeCatalogo(item) {
+  return primerNumero(item.precio_usuario, item.precio_efectivo);
+}
+
+function aplicarPrecioVenta(item, precio) {
+  return precio != null
+    ? { ...item, precio_usuario: precio, precio_efectivo: precio }
+    : item;
+}
+
+function fusionarSeleccionConCatalogo(item, seleccionData, preciosLocales) {
+  const precioLocal = preciosLocales.get(claveItem(item));
+  const precioCatalogo = precioDesdeCatalogo(item);
+  const precio = primerNumero(precioLocal, precioCatalogo);
+  const fusionado = seleccionData
+    ? { ...item, ...seleccionData, id: item.id, tipo: item.tipo }
+    : item;
+
+  return aplicarPrecioVenta(fusionado, precio);
+}
+
 function PrecioVentaCard({ item, onPrecioVenta }) {
-  const [valor, setValor] = useState(item.precio_efectivo ?? '');
+  const precioActual = precioVentaItem(item);
+  const [valor, setValor] = useState(precioActual ?? '');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [ok, setOk] = useState(false);
 
   React.useEffect(() => {
-    setValor(item.precio_efectivo ?? '');
+    setValor(precioActual ?? '');
     setError('');
     setOk(false);
-  }, [item.precio_efectivo]);
+  }, [precioActual]);
 
-  const cambio = Number(valor) !== Number(item.precio_efectivo);
+  const cambio = Number(valor) !== Number(precioActual);
   const precio = Number(valor) || 0;
-  const costo = Number(item.precio_base) || 0;
+  const costo = primerNumero(item.precio_base, item.precio_costo, item.costo_total, item.costo);
   const { ganancia, margen, estado } = estadoGanancia(precio, costo);
 
   async function guardar() {
@@ -98,16 +131,23 @@ function PrecioVentaCard({ item, onPrecioVenta }) {
         <CurrencyInput
           value={valor}
           onChange={setValor}
-          placeholder={`Gs ${formatGs(item.precio_efectivo)}`}
+          placeholder={`Gs ${formatGs(precioActual)}`}
         />
         <button type="button" onClick={guardar} disabled={!cambio || guardando}>
           {guardando ? '...' : ok ? 'OK' : 'Guardar'}
         </button>
       </div>
-      <div className={`lb-card-profit lb-card-profit--${estado}`}>
-        <span>{estado === 'perdida' ? 'Pérdida' : estado === 'empate' ? 'Sin ganancia' : 'Ganancia'}</span>
-        <strong>Gs {formatGs(ganancia)}{ganancia !== 0 ? ` · ${margen.toFixed(0)}%` : ''}</strong>
-      </div>
+      {estado === 'sin-costo' ? (
+        <div className="lb-card-profit lb-card-profit--empate">
+          <span>Costo no disponible</span>
+          <strong>Sin margen</strong>
+        </div>
+      ) : (
+        <div className={`lb-card-profit lb-card-profit--${estado}`}>
+          <span>{estado === 'perdida' ? 'Pérdida' : estado === 'empate' ? 'Sin ganancia' : 'Ganancia'}</span>
+          <strong>Gs {formatGs(ganancia)}{ganancia !== 0 ? ` · ${margen.toFixed(0)}%` : ''}</strong>
+        </div>
+      )}
       {error && <small>{error}</small>}
     </div>
   );
@@ -308,8 +348,13 @@ export default function ProductPicker({
   themeScopeClassName = '',
   triggerLabel = 'Elegir productos',
   modalTitle = 'Seleccionar productos',
+  refrescarCatalogoAlAbrir = false,
+  permitirCombos = true,
 }) {
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [catalogoFresco, setCatalogoFresco] = useState(null);
+  const [cargandoCatalogoFresco, setCargandoCatalogoFresco] = useState(false);
+  const [errorCatalogoFresco, setErrorCatalogoFresco] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('todos');
   const [categoria, setCategoria] = useState('');
@@ -318,25 +363,65 @@ export default function ProductPicker({
   const [orden, setOrden] = useState('nombre');
   const [soloSeleccionados, setSoloSeleccionados] = useState(false);
   const [pagina, setPagina] = useState(1);
-  const [preciosLocales, setPreciosLocales] = useState(() => new Map(PRECIOS_GUARDADOS));
+  const [preciosLocales, setPreciosLocales] = useState(() => new Map());
+  const catalogoActivo = catalogoFresco || catalogo;
+
+  React.useEffect(() => {
+    if (!modalAbierto || !refrescarCatalogoAlAbrir) return;
+    let activo = true;
+    setCargandoCatalogoFresco(true);
+    setErrorCatalogoFresco('');
+    vitrinaService.catalogo()
+      .then(data => {
+        if (activo) setCatalogoFresco(data);
+      })
+      .catch(() => {
+        if (activo) setErrorCatalogoFresco('No se pudo refrescar el catálogo.');
+      })
+      .finally(() => {
+        if (activo) setCargandoCatalogoFresco(false);
+      });
+    return () => { activo = false; };
+  }, [modalAbierto, refrescarCatalogoAlAbrir]);
+
+  React.useEffect(() => {
+    const proximos = new Map(preciosLocales);
+    let cambio = false;
+
+    [
+      ...(catalogoActivo?.productos || []).map(item => ({ ...item, tipo: 'producto' })),
+      ...(permitirCombos ? (catalogoActivo?.combos || []).map(item => ({ ...item, tipo: 'combo' })) : []),
+    ].forEach(item => {
+      const clave = claveItem(item);
+      const precio = precioDesdeCatalogo(item);
+      if (precio == null) return;
+      if (proximos.get(clave) !== precio) {
+        proximos.set(clave, precio);
+        cambio = true;
+      }
+    });
+
+    if (!cambio) return;
+    setPreciosLocales(proximos);
+  }, [catalogoActivo, permitirCombos]);
 
   const todos = useMemo(() => [
-    ...(catalogo?.productos || []).map(p => {
+    ...(catalogoActivo?.productos || []).map(p => {
       const precioLocal = preciosLocales.get(`producto:${p.id}`);
-      return { ...p, tipo: 'producto', ...(precioLocal != null ? { precio_usuario: precioLocal, precio_efectivo: precioLocal } : {}) };
+      return aplicarPrecioVenta({ ...p, tipo: 'producto' }, primerNumero(precioLocal, precioDesdeCatalogo(p)));
     }),
-    ...(catalogo?.combos || []).map(c => {
+    ...(permitirCombos ? (catalogoActivo?.combos || []) : []).map(c => {
       const precioLocal = preciosLocales.get(`combo:${c.id}`);
-      return { ...c, tipo: 'combo', ...(precioLocal != null ? { precio_usuario: precioLocal, precio_efectivo: precioLocal } : {}) };
+      return aplicarPrecioVenta({ ...c, tipo: 'combo' }, primerNumero(precioLocal, precioDesdeCatalogo(c)));
     }),
-  ], [catalogo, preciosLocales]);
+  ], [catalogoActivo, preciosLocales, permitirCombos]);
 
   const categorias = useMemo(() => [...new Set(todos.map(i => i.categoria).filter(Boolean))].sort(), [todos]);
   const marcas = useMemo(() => [...new Set(todos.map(i => i.marca).filter(Boolean))].sort(), [todos]);
 
   const visibles = useMemo(() => {
     let lista = todos;
-    const precioOrdenable = (item) => precioVentaItem({ ...item, ...(seleccion.get(claveItem(item)) || {}) });
+    const precioOrdenable = (item) => precioVentaItem(fusionarSeleccionConCatalogo(item, seleccion.get(claveItem(item)), preciosLocales));
 
     if (tipo !== 'todos') lista = lista.filter(i => i.tipo === tipo);
     if (categoria) lista = lista.filter(i => i.categoria === categoria);
@@ -381,6 +466,8 @@ export default function ProductPicker({
   const cantidad = seleccion.size;
   const lleno = cantidad >= max;
   const hayFiltroActivo = !!(busqueda || categoria || marca || tipo !== 'todos' || stock !== 'todos' || soloSeleccionados);
+  const esperandoCatalogoFresco = refrescarCatalogoAlAbrir && modalAbierto && cargandoCatalogoFresco && !catalogoFresco;
+  const falloCatalogoFrescoSinDatos = refrescarCatalogoAlAbrir && modalAbierto && !!errorCatalogoFresco && !catalogoFresco;
 
   function limpiarFiltros() {
     setBusqueda(''); setTipo('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false); setPagina(1);
@@ -389,13 +476,32 @@ export default function ProductPicker({
   async function guardarPrecioVenta(item, precio) {
     if (!onPrecioVenta) return;
     await onPrecioVenta(item, precio);
-    PRECIOS_GUARDADOS.set(claveItem(item), precio);
     setPreciosLocales(prev => {
       const copia = new Map(prev);
       copia.set(claveItem(item), precio);
       return copia;
     });
+    setCatalogoFresco(prev => {
+      if (!prev) return prev;
+      const campo = item.tipo === 'combo' ? 'combos' : 'productos';
+      return {
+        ...prev,
+        [campo]: (prev[campo] || []).map(actual =>
+          String(actual.id) === String(item.id)
+            ? { ...actual, precio_usuario: precio, precio_efectivo: precio }
+            : actual
+        ),
+      };
+    });
   }
+
+  const itemsOrdenadosEnriquecidos = useMemo(() => {
+    const porClave = new Map(todos.map(item => [claveItem(item), item]));
+    return (itemsOrdenados || []).map(item => {
+      const base = porClave.get(claveItem(item));
+      return base ? fusionarSeleccionConCatalogo(base, item, preciosLocales) : item;
+    });
+  }, [itemsOrdenados, todos, preciosLocales]);
 
   return (
     <div className={`lb-picker ${themeScopeClassName}`}>
@@ -476,7 +582,18 @@ export default function ProductPicker({
             )}
           </div>
 
-          {visibles.length === 0 ? (
+          {esperandoCatalogoFresco && (
+            <div className="lb-empty" style={{ padding: '0.8rem' }}>
+              <p>Actualizando precios...</p>
+            </div>
+          )}
+          {falloCatalogoFrescoSinDatos && (
+            <div className="lb-empty" style={{ padding: '0.8rem' }}>
+              <p>{errorCatalogoFresco}</p>
+            </div>
+          )}
+
+          {esperandoCatalogoFresco || falloCatalogoFrescoSinDatos ? null : visibles.length === 0 ? (
             <div className="lb-empty">
               <Box size={30} opacity={0.25} />
               <p>Ningún producto coincide con los filtros.</p>
@@ -524,9 +641,7 @@ export default function ProductPicker({
                 {visiblesPaginados.map(item => {
                   const seleccionadoData = seleccion.get(claveItem(item));
                   const seleccionado = !!seleccionadoData;
-                  const itemConSeleccion = seleccionado
-                    ? { ...item, ...seleccionadoData, id: item.id, tipo: item.tipo }
-                    : item;
+                  const itemConSeleccion = fusionarSeleccionConCatalogo(item, seleccionadoData, preciosLocales);
                   return (
                     <TarjetaProducto
                       key={claveItem(item)}
@@ -535,7 +650,7 @@ export default function ProductPicker({
                       deshabilitado={!seleccionado && lleno}
                       onToggle={onToggle}
                       onEditar={onEditar}
-                      onPrecioVenta={guardarPrecioVenta}
+                      onPrecioVenta={onPrecioVenta ? guardarPrecioVenta : null}
                     />
                   );
                 })}
@@ -590,7 +705,7 @@ export default function ProductPicker({
             </p>
           )}
           <ListaOrden
-            items={itemsOrdenados}
+            items={itemsOrdenadosEnriquecidos}
             onEtiqueta={onEtiqueta}
             onPrecioAncla={onPrecioAncla}
             onMostrarInicio={onMostrarInicio}

@@ -120,38 +120,7 @@ describe('NuevoPedidoModal · edición de un pedido existente', () => {
     expect(payload.monto).toBe(166138 + 80000);
   });
 
-  it('el selector de método de pago está visible y elegible (no comentado)', async () => {
-    // Quedó comentado en el JSX antes de esta conversación (no por algo que
-    // se tocara acá) — sin él, la única forma de fijar el método era en
-    // "Marcar Entregado", dos pasos después de cargar el pedido.
-    const onSubmit = vi.fn().mockResolvedValue({});
-    await abrir(pedidoEntregado, onSubmit);
 
-    const select = screen.getByLabelText(/Método de pago/i);
-    expect(select).toBeInTheDocument();
-    fireEvent.change(select, { target: { value: '3' } });
-    await guardar();
-
-    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(onSubmit.mock.calls[0][0].metodo_pago_id).toBe(3);
-  });
-
-  it('elegir un método de pago NO recalcula la tarifa de delivery', async () => {
-    // Antes la tarifa se buscaba con un tipo de pago derivado del método
-    // elegido. Ahora es independiente: cambiar el método no debe tocar
-    // costo_envio ni courier_id.
-    const zonas = [
-      { ciudad: 'Luque', departamento: 'Central', tipo_pago: 'Al Recibir', costo: 20000, activo: true },
-      { ciudad: 'Luque', departamento: 'Central', tipo_pago: 'Anticipado', costo: 35000, activo: true },
-    ];
-    const onSubmit = vi.fn().mockResolvedValue({});
-    render(<NuevoPedidoModal open envio={pedidoEntregado} onClose={() => {}} onSubmit={onSubmit} deliveryZonas={zonas} />);
-    await waitFor(() => expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument());
-
-    const costoAntes = screen.getByLabelText(/Costo del envío/i).value;
-    fireEvent.change(screen.getByLabelText(/Método de pago/i), { target: { value: '3' } });
-    expect(screen.getByLabelText(/Costo del envío/i).value).toBe(costoAntes);
-  });
 
   it('"Pago anticipado" busca la tarifa correspondiente, distinta de contra entrega', async () => {
     const zonas = [

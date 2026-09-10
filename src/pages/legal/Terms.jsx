@@ -64,6 +64,16 @@ const SECCIONES = [
             <strong>Suscripción:</strong> el plan contratado, con su alcance funcional, sus límites
             y su período de facturación.
           </li>
+          <li>
+            <strong>Oferta Miembros Fundadores:</strong> campaña de lanzamiento limitada que puede
+            otorgar precio y beneficios especiales a los primeros clientes pagos que cumplan las
+            condiciones comunicadas por Gesicom.
+          </li>
+          <li>
+            <strong>Programa de Afiliados:</strong> programa opcional mediante el cual ciertos
+            clientes o participantes autorizados pueden recomendar Gesicom y generar comisiones bajo
+            las reglas vigentes del programa.
+          </li>
         </ul>
       </>
     ),
@@ -494,6 +504,100 @@ const SECCIONES = [
     ),
   },
   {
+    id: 'fundadores-afiliados',
+    titulo: 'Ofertas especiales, Fundadores y Programa de Afiliados',
+    contenido: (
+      <>
+        <Subseccion titulo="10.1 Ofertas comerciales especiales">
+          <p>
+            Gesicom puede lanzar ofertas, descuentos, bonos, planes promocionales o beneficios
+            limitados por tiempo, cupo, territorio, canal comercial o segmento de clientes. Estas
+            condiciones especiales se aplican únicamente cuando hayan sido comunicadas por Gesicom y
+            aceptadas por el Cliente al momento de contratar.
+          </p>
+          <p>
+            Si existiera conflicto entre una comunicación comercial específica y estos Términos,
+            prevalecerán estos Términos salvo que Gesicom haya pactado expresamente una excepción
+            por escrito.
+          </p>
+        </Subseccion>
+
+        <Subseccion titulo="10.2 Miembros Fundadores">
+          <p>
+            La Oferta Miembros Fundadores, cuando esté disponible, está limitada a los cupos,
+            fechas, mercado y condiciones informadas en la campaña correspondiente. El precio
+            Fundador se conserva únicamente mientras la suscripción permanezca activa, al día y sin
+            cancelación.
+          </p>
+          <ul>
+            <li>Cancelar la suscripción implica renunciar a la condición de Miembro Fundador.</li>
+            <li>
+              La condición de Miembro Fundador, el precio protegido y los beneficios asociados no
+              se recuperan automáticamente si el Cliente vuelve a contratar más adelante.
+            </li>
+            <li>
+              El Cliente que regrese después de cancelar deberá contratar bajo los precios, planes
+              y condiciones vigentes en ese momento.
+            </li>
+            <li>
+              Los beneficios Fundadores no incluyen servicios profesionales, consultoría,
+              implementación individual, operación del e-commerce ni desarrollos personalizados,
+              salvo pacto expreso.
+            </li>
+          </ul>
+        </Subseccion>
+
+        <Subseccion titulo="10.3 Programa de Afiliados">
+          <p>
+            Los Miembros Fundadores y otros participantes autorizados podrán acceder al Programa de
+            Afiliados Gesicom conforme a las reglas vigentes publicadas o comunicadas por Gesicom.
+            Salvo que Gesicom indique una condición distinta, la comisión base del programa será del{' '}
+            <strong>40% recurrente</strong> sobre la suscripción SaaS elegible de cada cliente
+            referido.
+          </p>
+          <ul>
+            <li>
+              La comisión se calcula únicamente sobre pagos elegibles efectivamente cobrados por
+              Gesicom.
+            </li>
+            <li>
+              El cliente referido debe permanecer activo, con sus pagos al día y cumpliendo estos
+              Términos.
+            </li>
+            <li>
+              No se generan comisiones por autorreferidos, cuentas duplicadas, fraude, abuso,
+              tráfico engañoso o referencias que Gesicom considere inválidas.
+            </li>
+            <li>
+              Cancelaciones, devoluciones, descuentos, créditos, contracargos o pagos revertidos
+              podrán anular o ajustar las comisiones correspondientes.
+            </li>
+            <li>
+              Servicios adicionales, implementaciones, consumos, impuestos, cargos de terceros u
+              otros conceptos no SaaS pueden quedar excluidos de la base comisionable.
+            </li>
+          </ul>
+          <p>
+            Participar en el Programa de Afiliados no crea relación laboral, sociedad, franquicia,
+            mandato, agencia ni representación legal entre el participante y Gesicom. El afiliado no
+            está autorizado a asumir obligaciones, hacer garantías, modificar precios ni prometer
+            condiciones en nombre de Gesicom.
+          </p>
+        </Subseccion>
+
+        <Subseccion titulo="10.4 Cambios, suspensión y baja del programa">
+          <p>
+            Gesicom puede actualizar las reglas operativas del Programa de Afiliados, suspenderlo o
+            dar de baja a un participante cuando exista incumplimiento, fraude, abuso, conflicto de
+            intereses, daño reputacional o uso de prácticas comerciales engañosas. Las comisiones
+            válidamente devengadas antes de una modificación se tratarán conforme a las reglas
+            vigentes al momento de generarse, salvo fraude, contracargo o incumplimiento.
+          </p>
+        </Subseccion>
+      </>
+    ),
+  },
+  {
     id: 'disponibilidad',
     titulo: 'Disponibilidad, mantenimiento y soporte',
     contenido: (
@@ -907,8 +1011,8 @@ export default function Terms() {
       descripcion="Condiciones de uso del servicio Gesicom: registro y cuenta, responsabilidades, propiedad intelectual, integración con Meta para Facebook Ads, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
       resumen="Estas condiciones regulan la relación entre Gesicom y quienes usan la plataforma. Definen qué podés hacer, qué nos comprometemos a hacer y qué pasa cuando algo sale mal."
       ruta="/terms"
-      actualizado="2026-08-03"
-      vigenteDesde="2026-08-03"
+      actualizado="2026-09-10"
+      vigenteDesde="2026-09-10"
       secciones={SECCIONES}
     />
   );

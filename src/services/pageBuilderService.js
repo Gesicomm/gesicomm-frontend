@@ -3,9 +3,9 @@ import API from './api';
 /**
  * Cliente de la API privada del Page Builder (/api/page-builder).
  *
- * ⚠️ No confundir con funnelService.js, que es el módulo de EMBUDOS
- * (/api/mis-funnels): una landing de un solo producto con estructura
- * rígida. Acá los funnels son secuencias de páginas de código.
+ * ⚠️ No confundir con el embudo legacy de producto sobre `landings`.
+ * Ese flujo de creación fue retirado; acá los funnels son secuencias de
+ * páginas de código.
  *
  * Hoy el módulo es exclusivo del administrador (el backend lo corta con
  * soloAdministrador). Cuando se libere a los usuarios no hay que tocar

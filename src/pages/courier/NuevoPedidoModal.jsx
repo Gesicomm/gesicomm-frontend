@@ -554,7 +554,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       return;
     }
 
-    const producto = productoPorId.get(productoId) || item;
+    const producto = { ...(productoPorId.get(productoId) || {}), ...item };
     cargarOfertasProducto(productoId);
     actualizarItemsPedido([...items, crearItemPedido(producto)]);
   };
@@ -1151,26 +1151,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                 </div>
               </div>
 
-              {/* Método de pago: qué método puntual se usó (o se espera usar).
-                  Estaba comentado — sin esto, el método quedaba en lo que
-                  haya elegido el auto-completado, o lo que se elija recién
-                  al marcar Entregado, dos pasos después de haber cargado el
-                  pedido. No decide la tarifa de delivery — eso es "Pago
-                  anticipado", arriba. */}
-              <div className="np-row">
-                <label htmlFor="np-metodo-pago">Método de pago</label>
-                <select
-                  id="np-metodo-pago"
-                  className="form-input"
-                  value={form.metodo_pago_id}
-                  onChange={e => handleMetodoPagoChange(e.target.value)}
-                >
-                  <option value="">-- Seleccionar método --</option>
-                  {metodosPago.map(m => (
-                    <option key={m.id} value={m.id}>{m.nombre}</option>
-                  ))}
-                </select>
-              </div>
+
 
             </div>
 
@@ -1214,6 +1195,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                     themeScopeClassName="np-picker-theme"
                     triggerLabel="Abrir catálogo visual"
                     modalTitle="Agregar productos al pedido"
+                    refrescarCatalogoAlAbrir
+                    permitirCombos={false}
                   />
 
                   {errors.producto && <span className="field-error">{errors.producto}</span>}

@@ -26,4 +26,8 @@ export const planesService = {
 
   /** Valida el token de alta antes de mostrar el formulario de registro. */
   validarToken: (token) => API.get(`/suscripciones/token/${token}`).then(r => r.data),
+
+  /** Configuracion del programa de afiliados para el panel admin. */
+  afiliadosConfig: () => API.get('/config/payment-gateways/afiliados').then(r => r.data),
+  guardarAfiliadosConfig: (payload) => API.put('/config/payment-gateways/afiliados', payload).then(r => r.data),
 };

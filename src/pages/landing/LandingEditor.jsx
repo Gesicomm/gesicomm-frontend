@@ -386,6 +386,18 @@ export default function LandingEditor() {
     navigate(`/mi-landing/producto/${productoId}`);
   }
 
+  const actualizarPrecioCatalogo = useCallback((tipo, itemId, precio) => {
+    const campo = tipo === 'combo' ? 'combos' : 'productos';
+    setCatalogo(prev => ({
+      ...prev,
+      [campo]: (prev?.[campo] || []).map(item =>
+        String(item.id) === String(itemId)
+          ? { ...item, precio_usuario: precio, precio_efectivo: precio }
+          : item
+      ),
+    }));
+  }, []);
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -1649,6 +1661,7 @@ export default function LandingEditor() {
                       onUploadImagen={handleUploadSeccionImagen}
                       previewCheckoutAbierto={previewCheckoutAbierto}
                       onTogglePreviewCheckout={setPreviewCheckoutAbierto}
+                      onPrecioVentaGuardado={actualizarPrecioCatalogo}
                     />
                   ) : esModoProducto ? (
                     <div className="p-4 text-sm text-[var(--vit-muted)]">
