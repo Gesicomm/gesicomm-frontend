@@ -2,11 +2,12 @@ import React, { useState, useMemo } from 'react';
 import { Package, Plus, Edit } from 'lucide-react';
 import ProductPicker from '../ProductPicker';
 import { renderInput } from './SchemaInspector';
+import { vitrinaService } from '../../../services/vitrinaService';
 
 export default function ProductosInspector({ seccion, schema, onUpdate, catalogo, onUploadImagen }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   
-  // seccion.contenido.productos = [ { id, tipo, etiqueta } ] 
+  // seccion.contenido.productos = [ { id, tipo, etiqueta, precio_ancla } ] 
   const productosSeleccionados = seccion.contenido?.productos || [];
 
   // Temporary state for the modal
@@ -32,7 +33,13 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
     // Populate Map from array
     const mapa = new Map();
     productosSeleccionados.forEach(p => {
-       mapa.set(claveItem(p.tipo, p.id), { tipo: p.tipo, id: p.id, etiqueta: p.etiqueta });
+       const itemId = p.id || p.referencia_id;
+       mapa.set(claveItem(p.tipo, itemId), {
+         tipo: p.tipo,
+         id: itemId,
+         etiqueta: p.etiqueta || '',
+         precio_ancla: p.precio_ancla ?? '',
+       });
     });
     setTempSeleccion(mapa);
     setModalAbierto(true);
@@ -40,7 +47,12 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
 
   const guardarModal = () => {
     // Convert Map back to array in order
-    const array = Array.from(tempSeleccion.values());
+    const array = Array.from(tempSeleccion.values()).map(v => ({
+      tipo: v.tipo,
+      id: v.id,
+      etiqueta: v.etiqueta || '',
+      precio_ancla: v.precio_ancla ?? null,
+    }));
     handleUpdate('productos', array);
     setModalAbierto(false);
   };
@@ -53,7 +65,13 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
         copia.delete(clave);
       } else {
         if (copia.size >= 50) return prev; // max limit
-        copia.set(clave, { tipo: item.tipo, id: item.id, nombre: item.nombre, etiqueta: '' });
+        copia.set(clave, {
+          tipo: item.tipo,
+          id: item.id,
+          nombre: item.nombre,
+          etiqueta: '',
+          precio_ancla: item.precio_ancla ?? item.precio_tachado ?? '',
+        });
       }
       return copia;
     });
@@ -65,6 +83,31 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
       if (!prev.has(clave)) return prev;
       const copia = new Map(prev);
       copia.set(clave, { ...copia.get(clave), etiqueta });
+      return copia;
+    });
+  };
+
+  const handlePrecioVenta = async (item, precio) => {
+    if (item.tipo === 'combo') {
+      await vitrinaService.guardarPrecioCombo(item.id, precio);
+    } else {
+      await vitrinaService.guardarPrecioProducto(item.id, precio);
+    }
+    setTempSeleccion(prev => {
+      const clave = claveItem(item.tipo, item.id);
+      if (!prev.has(clave)) return prev;
+      const copia = new Map(prev);
+      copia.set(clave, { ...copia.get(clave), precio_usuario: precio, precio_efectivo: precio });
+      return copia;
+    });
+  };
+
+  const handlePrecioAncla = (item, precio_ancla) => {
+    setTempSeleccion(prev => {
+      const clave = claveItem(item.tipo, item.id);
+      if (!prev.has(clave)) return prev;
+      const copia = new Map(prev);
+      copia.set(clave, { ...copia.get(clave), precio_ancla });
       return copia;
     });
   };
@@ -95,20 +138,21 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
         <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">Productos seleccionados</h4>
         <div className="flex flex-col gap-2 mb-3">
           {productosSeleccionados.map((p, idx) => {
+            const itemId = p.id || p.referencia_id;
             // Find name from catalogo for display if not saved
             let name = p.nombre;
             if (!name) {
-               const catItem = p.tipo === 'combo' ? catalogo?.combos?.find(c => c.id === p.id) : catalogo?.productos?.find(pr => pr.id === p.id);
-               name = catItem ? catItem.nombre : `${p.tipo} ${p.id}`;
+               const catItem = p.tipo === 'combo' ? catalogo?.combos?.find(c => c.id === itemId) : catalogo?.productos?.find(pr => pr.id === itemId);
+               name = catItem ? catItem.nombre : `${p.tipo} ${itemId}`;
             }
             return (
-              <div key={`${p.tipo}-${p.id}-${idx}`} className="flex items-center justify-between p-2 rounded border border-[var(--vit-border)] bg-[var(--vit-surface)] text-sm group">
+              <div key={`${p.tipo}-${itemId}-${idx}`} className="flex items-center justify-between p-2 rounded border border-[var(--vit-border)] bg-[var(--vit-surface)] text-sm group">
                 <span className="truncate">{name}</span>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
                     type="button" 
                     onClick={() => {
-                      const url = p.tipo === 'combo' ? `/combos/${p.id}/editar` : `/mi-landing/producto/${p.id}`;
+                      const url = p.tipo === 'combo' ? `/combos/${itemId}/editar` : `/mi-landing/producto/${itemId}`;
                       window.open(url, '_blank');
                     }}
                     className="text-[var(--vit-muted)] hover:bg-[var(--vit-bg)] p-1.5 rounded"
@@ -188,6 +232,8 @@ export default function ProductosInspector({ seccion, schema, onUpdate, catalogo
                   max={50}
                   onToggle={handleToggle}
                   onEtiqueta={handleEtiqueta}
+                  onPrecioVenta={handlePrecioVenta}
+                  onPrecioAncla={handlePrecioAncla}
                   onQuitar={handleQuitar}
                   onReordenar={handleReordenar}
                 />

@@ -58,7 +58,7 @@ const nuevoRango = () => ({
   activo: true,
 });
 
-const nuevaCiudad = () => ({ departamento: "", ciudad: "", rangos: [nuevoRango()] });
+const nuevaCiudad = () => ({ _id: Math.random().toString(36).slice(2, 11), departamento: "", ciudad: "", rangos: [nuevoRango()] });
 
 function draftInicial(courier, reglas) {
   const ciudades = [];
@@ -66,7 +66,7 @@ function draftInicial(courier, reglas) {
     const key = `${String(regla.departamento || "").trim().toLowerCase()}::${String(regla.ciudad || "").trim().toLowerCase()}`;
     let destino = ciudades.find(c => c.key === key);
     if (!destino) {
-      destino = { key, departamento: regla.departamento || "", ciudad: regla.ciudad || "", rangos: [] };
+      destino = { _id: Math.random().toString(36).slice(2, 11), key, departamento: regla.departamento || "", ciudad: regla.ciudad || "", rangos: [] };
       ciudades.push(destino);
     }
     destino.rangos.push({
@@ -86,7 +86,7 @@ function draftInicial(courier, reglas) {
       vehiculo: courier?.vehiculo || "Moto",
       activo: courier?.activo !== false,
     },
-    ciudades: ciudades.length ? ciudades : [nuevaCiudad()],
+    ciudades: ciudades.length ? ciudades.slice().reverse() : [nuevaCiudad()],
   };
 }
 
@@ -131,7 +131,7 @@ export function CourierWizard({
   }
 
   function agregarCiudad() {
-    setDraft(prev => ({ ...prev, ciudades: [...prev.ciudades, nuevaCiudad()] }));
+    setDraft(prev => ({ ...prev, ciudades: [nuevaCiudad(), ...prev.ciudades] }));
   }
 
   function eliminarCiudad(indice) {
@@ -243,6 +243,25 @@ export function CourierWizard({
     }
   }
 
+  function irAlPaso(targetPaso) {
+    if (targetPaso === paso) return;
+
+    if (targetPaso === "ciudades") {
+      const probCourier = validarCourier();
+      if (probCourier) return setError(probCourier);
+    }
+
+    if (targetPaso === "resumen") {
+      const probCourier = validarCourier();
+      if (probCourier) return setError(probCourier);
+      const probCiudades = validarCiudades();
+      if (probCiudades) return setError(probCiudades);
+    }
+
+    setError("");
+    setPaso(targetPaso);
+  }
+
   function retroceder() {
     setError("");
     setPaso(paso === "resumen" ? "ciudades" : "courier");
@@ -273,12 +292,32 @@ export function CourierWizard({
           </div>
 
           <div style={styles.steps}>
-            {PASOS.map(([key, label], index) => (
-              <div key={key} style={{ ...styles.step, ...(index <= activeIndex ? styles.stepActive : {}) }}>
-                <span style={styles.stepDot}>{index + 1}</span>
-                {label}
-              </div>
-            ))}
+            {PASOS.map(([key, label], index) => {
+              const isPassedOrActive = index <= activeIndex;
+              const isCurrent = key === paso;
+              return (
+                <button
+                  type="button"
+                  key={key}
+                  onClick={() => irAlPaso(key)}
+                  style={{
+                    ...styles.step,
+                    ...(isPassedOrActive ? styles.stepActive : {}),
+                    ...(isCurrent ? styles.stepCurrent : {}),
+                  }}
+                  title={`Ir a ${label}`}
+                  aria-current={isCurrent ? "step" : undefined}
+                >
+                  <span style={{
+                    ...styles.stepDot,
+                    ...(isCurrent ? styles.stepDotCurrent : {}),
+                  }}>
+                    {index + 1}
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {error && <div style={styles.error}>{error}</div>}
@@ -363,7 +402,7 @@ export function CourierWizard({
                 </div>
 
                 {draft.ciudades.map((ciudad, ciudadIndice) => (
-                  <section key={ciudadIndice} style={styles.cityCard}>
+                  <section key={ciudad._id || ciudadIndice} style={styles.cityCard}>
                     <div style={styles.cityCardHeader}>
                       <span style={styles.cityBadge}>
                         <MapPin size={14} />
@@ -636,10 +675,20 @@ const styles = {
     fontWeight: 800,
     color: "var(--color-fg-muted)",
     background: "color-mix(in srgb, var(--color-fg) 4%, transparent)",
+    border: "1px solid transparent",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    padding: "0 0.5rem",
+    transition: "all 0.15s ease",
+    outline: "none",
   },
   stepActive: {
     color: "var(--color-fg)",
     background: "color-mix(in srgb, var(--color-success) 12%, transparent)",
+  },
+  stepCurrent: {
+    borderColor: "var(--color-primary)",
+    boxShadow: "0 0 0 1px var(--color-primary)",
   },
   stepDot: {
     display: "grid",
@@ -649,6 +698,11 @@ const styles = {
     borderRadius: 999,
     background: "color-mix(in srgb, var(--color-fg) 8%, transparent)",
     fontSize: "0.68rem",
+    transition: "all 0.15s ease",
+  },
+  stepDotCurrent: {
+    background: "var(--color-primary)",
+    color: "#fff",
   },
   error: {
     margin: "0.9rem 1.3rem 0",

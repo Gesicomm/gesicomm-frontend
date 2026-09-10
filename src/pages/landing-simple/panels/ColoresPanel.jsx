@@ -9,7 +9,7 @@ const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 const CAMPOS = [
   { key: 'color_fondo', temaKey: 'fondo', label: 'Fondo' },
   { key: 'color_texto', temaKey: 'texto', label: 'Texto' },
-  { key: 'color_primario', temaKey: 'acento', label: 'Acento' },
+  { key: 'color_primario', temaKey: 'acento', label: 'color de botones' },
 ];
 
 /**

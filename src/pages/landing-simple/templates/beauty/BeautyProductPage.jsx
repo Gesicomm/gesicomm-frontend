@@ -443,7 +443,7 @@ export default function BeautyProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={16} />
                   </button>
-                  {preguntaAbierta === i && <p>{f.respuesta}</p>}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
                 </div>
               ))}
             </div>

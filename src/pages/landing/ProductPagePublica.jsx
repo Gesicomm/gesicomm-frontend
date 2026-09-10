@@ -341,7 +341,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
                     {f.pregunta}
                     <ChevronDown size={16} className={`lp-product-faq-icono ${preguntaAbierta === idx ? 'abierta' : ''}`} />
                   </button>
-                  {preguntaAbierta === idx && <p className="lp-product-faq-respuesta">{f.respuesta}</p>}
+                  {preguntaAbierta === idx && <RichText text={f.respuesta} className="lp-product-faq-respuesta" />}
                 </div>
               ))}
             </div>

@@ -21,6 +21,7 @@ function normalizarItem(item, idx) {
     tipo,
     content_id: item.content_id || item.slug || `${tipo}-${item.id || idx}`,
     precio: precioItem(item),
+    precio_antes: item.precio_antes ?? item.precio_ancla ?? item.precio_tachado ?? null,
     imagen: item.imagen || item.imagen_principal || item.imagenes?.[0] || null,
     imagenes: item.imagenes || (item.imagen ? [item.imagen] : []),
     destacado: !!item.destacado,

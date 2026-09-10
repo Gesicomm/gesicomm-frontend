@@ -180,7 +180,7 @@ export default function ProductoPreview({ producto, ofertas, imagenes, descripci
                   <ChevronDown size={15} style={{ color: t.acento, transform: preguntaAbierta === idx ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
                 </button>
                 {preguntaAbierta === idx && (
-                  <p className="mt-2 text-sm" style={{ color: hexToRgba(t.texto, 0.6) }}>{f.respuesta}</p>
+                  <RichText text={f.respuesta} className="mt-2 text-sm" style={{ color: hexToRgba(t.texto, 0.6) }} />
                 )}
               </div>
               ))

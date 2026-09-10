@@ -1,5 +1,6 @@
 import React, { useId, useState } from 'react';
 import { ChevronDown, CheckSquare, ChevronRight, Circle } from 'lucide-react';
+import RichText from '../../components/RichText';
 
 
 function FaqItem({ pregunta, respuesta, abiertoInicial, icono }) {
@@ -50,7 +51,7 @@ function FaqItem({ pregunta, respuesta, abiertoInicial, icono }) {
         style={{ gridTemplateRows: abierto ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <p className="pb-5 pr-8 text-sm leading-relaxed" style={{ color: 'var(--l-text-muted)' }}>{respuesta}</p>
+          <RichText text={respuesta} className="pb-5 pr-8 text-sm leading-relaxed" style={{ color: 'var(--l-text-muted)' }} />
         </div>
       </div>
     </div>

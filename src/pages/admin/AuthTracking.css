@@ -116,7 +116,7 @@
 
 .at-kpis {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
   gap: 12px;
 }
 
@@ -214,6 +214,10 @@
 .at-bar-registros { background: var(--color-success); }
 .at-dot-logins,
 .at-bar-logins { background: var(--color-info); }
+.at-dot-onboarding,
+.at-bar-onboarding { background: #8b5cf6; }
+.at-dot-landings,
+.at-bar-landings { background: #10b981; }
 .at-dot-fallos,
 .at-bar-fallos { background: var(--color-danger); }
 
@@ -240,7 +244,7 @@
 }
 
 .at-bar {
-  width: 30%;
+  width: 18%;
   min-width: 2px;
   border-radius: 5px 5px 0 0;
   opacity: 0.9;
@@ -435,10 +439,6 @@
 }
 
 @media (max-width: 1180px) {
-  .at-kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .at-grid {
     grid-template-columns: 1fr;
   }
@@ -450,10 +450,6 @@
   .at-panel-head {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .at-kpis {
-    grid-template-columns: 1fr;
   }
 
   .at-actions select,

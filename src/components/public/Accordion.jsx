@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import RichText from '../RichText';
 
 /**
  * Acordeón accesible, usado en la sección de preguntas frecuentes.
@@ -57,7 +58,7 @@ function AccordionItem({ pregunta, respuesta, abiertoInicial = false }) {
         style={{ gridTemplateRows: abierto ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden">
-          <div className="pb-5 pr-8 text-sm leading-relaxed text-fg-muted">{respuesta}</div>
+          <RichText text={respuesta} className="pb-5 pr-8 text-sm leading-relaxed text-fg-muted" />
         </div>
       </div>
     </div>

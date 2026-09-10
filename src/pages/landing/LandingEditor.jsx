@@ -600,19 +600,43 @@ export default function LandingEditor() {
               id: item.referencia_id,
               referencia_id: item.referencia_id,
               etiqueta: item.etiqueta || '',
+              precio_ancla: item.precio_ancla ?? null,
+              envio_incluido: item.envio_incluido === true,
+              mostrar_en_inicio: item.mostrar_en_inicio !== false,
             });
           });
         setSeleccion(mapa);
 
         if (mapa.size > 0) {
            loadedSecciones = loadedSecciones.map(sec => {
-              if (sec.tipo === 'productos' && (!sec.contenido?.productos || sec.contenido.productos.length === 0)) {
+              if (sec.tipo === 'productos') {
+                 const actuales = sec.contenido?.productos || [];
+                 const productos = actuales.length > 0
+                   ? actuales.map(p => {
+                     const itemId = p.id || p.referencia_id;
+                     const guardado = mapa.get(claveItem(p.tipo, itemId));
+                     return {
+                       ...p,
+                       id: itemId,
+                       referencia_id: itemId,
+                       etiqueta: p.etiqueta ?? guardado?.etiqueta ?? '',
+                       precio_ancla: p.precio_ancla ?? guardado?.precio_ancla ?? null,
+                       envio_incluido: p.envio_incluido ?? guardado?.envio_incluido ?? false,
+                       mostrar_en_inicio: p.mostrar_en_inicio ?? guardado?.mostrar_en_inicio ?? true,
+                     };
+                   })
+                   : Array.from(mapa.values()).map(m => ({
+                     tipo: m.tipo,
+                     id: m.id,
+                     referencia_id: m.id,
+                     etiqueta: m.etiqueta,
+                     precio_ancla: m.precio_ancla,
+                     envio_incluido: m.envio_incluido === true,
+                     mostrar_en_inicio: m.mostrar_en_inicio !== false,
+                   }));
                  return { 
                    ...sec, 
-                   contenido: { 
-                     ...sec.contenido, 
-                     productos: Array.from(mapa.values()).map(m => ({ tipo: m.tipo, id: m.id, etiqueta: m.etiqueta, nombre: m.nombre })) 
-                   } 
+                   contenido: { ...sec.contenido, productos } 
                  };
               }
               return sec;
@@ -718,11 +742,20 @@ export default function LandingEditor() {
           tipo: sel.tipo,
           nombre: `${sel.tipo === 'combo' ? 'Combo' : 'Producto'} #${sel.id || sel.referencia_id} — ya no está disponible`,
           etiqueta: sel.etiqueta,
+          precio_ancla: sel.precio_ancla ?? null,
+          envio_incluido: sel.envio_incluido === true,
+          mostrar_en_inicio: sel.mostrar_en_inicio !== false,
           precio_efectivo: null,
           no_disponible: true,
         };
       }
-      return { ...base, etiqueta: sel.etiqueta };
+      return {
+        ...base,
+        etiqueta: sel.etiqueta,
+        precio_ancla: sel.precio_ancla ?? null,
+        envio_incluido: sel.envio_incluido === true,
+        mostrar_en_inicio: sel.mostrar_en_inicio !== false,
+      };
     });
   }, [secciones, catalogoPorClave]);
 
@@ -1082,6 +1115,9 @@ export default function LandingEditor() {
         tipo: item.tipo, 
         referencia_id: item.id || item.referencia_id, 
         etiqueta: item.etiqueta || '', 
+        precio_ancla: item.precio_ancla != null && item.precio_ancla !== '' ? Number(item.precio_ancla) : null,
+        envio_incluido: item.envio_incluido === true,
+        mostrar_en_inicio: item.mostrar_en_inicio !== false,
         orden: idx 
       })),
       testimonios: (secciones.find(s => s.tipo === 'testimonios')?.contenido?.items || []).map((t, idx) => ({

@@ -9,6 +9,7 @@ import {
   Loader,
   MailCheck,
   RefreshCw,
+  Rocket,
   Search,
   ShieldCheck,
   UserPlus,
@@ -24,6 +25,10 @@ const EVENTOS = [
   { id: 'email_verified', label: 'Verificados' },
   { id: 'login_success', label: 'Logins' },
   { id: 'login_failed', label: 'Fallidos' },
+  { id: 'onboarding_started', label: 'Onboarding iniciado' },
+  { id: 'onboarding_store_created', label: 'Tienda creada' },
+  { id: 'onboarding_landing_generated', label: 'Landing generada' },
+  { id: 'onboarding_skipped', label: 'Saltados' },
   { id: 'password_reset_requested', label: 'Recuperación' },
 ];
 
@@ -35,6 +40,10 @@ const EVENTO_LABELS = {
   logout: 'Logout',
   otp_resent: 'OTP reenviado',
   password_reset_requested: 'Recuperación',
+  onboarding_started: 'Onboarding iniciado',
+  onboarding_store_created: 'Tienda creada',
+  onboarding_landing_generated: 'Landing generada',
+  onboarding_skipped: 'Configurado más tarde',
 };
 
 function fechaHora(valor) {
@@ -83,18 +92,37 @@ function Kpi({ icon: Icon, label, value, note, tone = 'neutral' }) {
 }
 
 function BadgeEvento({ tipo, resultado }) {
-  const tone = resultado === 'fallo' ? 'danger' : tipo === 'register' ? 'success' : tipo === 'email_verified' ? 'info' : 'neutral';
+  const esOnboarding = tipo?.startsWith('onboarding_');
+  const tone = resultado === 'fallo'
+    ? 'danger'
+    : tipo === 'register' || tipo === 'onboarding_landing_generated'
+      ? 'success'
+      : tipo === 'email_verified' || esOnboarding
+        ? 'info'
+        : 'neutral';
   return <span className={`at-badge at-badge-${tone}`}>{EVENTO_LABELS[tipo] || tipo}</span>;
 }
 
 function MiniSerie({ serie }) {
-  const max = Math.max(1, ...serie.map((d) => Math.max(d.registros, d.logins, d.fallos)));
+  const max = Math.max(1, ...serie.map((d) => Math.max(
+    d.registros,
+    d.logins,
+    d.onboarding_started || 0,
+    d.onboarding_landing_generated || 0,
+    d.fallos,
+  )));
   return (
     <div className="at-serie" aria-label="Actividad de autenticación por día">
       {serie.map((dia) => (
-        <div className="at-serie-dia" key={dia.fecha} title={`${dia.fecha}: ${dia.registros} registros, ${dia.logins} logins, ${dia.fallos} fallos`}>
+        <div
+          className="at-serie-dia"
+          key={dia.fecha}
+          title={`${dia.fecha}: ${dia.registros} registros, ${dia.logins} logins, ${dia.onboarding_started || 0} onboarding, ${dia.onboarding_landing_generated || 0} landings, ${dia.fallos} fallos`}
+        >
           <span className="at-bar at-bar-registros" style={{ height: `${Math.max(4, (dia.registros / max) * 100)}%` }} />
           <span className="at-bar at-bar-logins" style={{ height: `${Math.max(4, (dia.logins / max) * 100)}%` }} />
+          <span className="at-bar at-bar-onboarding" style={{ height: `${Math.max(4, ((dia.onboarding_started || 0) / max) * 100)}%` }} />
+          <span className="at-bar at-bar-landings" style={{ height: `${Math.max(4, ((dia.onboarding_landing_generated || 0) / max) * 100)}%` }} />
           <span className="at-bar at-bar-fallos" style={{ height: `${dia.fallos > 0 ? Math.max(4, (dia.fallos / max) * 100) : 0}%` }} />
         </div>
       ))}
@@ -215,8 +243,8 @@ export default function AuthTracking() {
       <header className="at-header">
         <div>
           <span className="at-eyebrow"><ShieldCheck size={14} /> Seguridad gratis</span>
-          <h1>Tracking de login y registros</h1>
-          <p>Auditoría propia del sistema: usuarios conectados, eventos de acceso, registros y alertas internas.</p>
+          <h1>Tracking de login, registros y onboarding</h1>
+          <p>Auditoría propia del sistema: usuarios conectados, eventos de acceso, avance de onboarding y alertas internas.</p>
         </div>
         <div className="at-actions">
           <select value={dias} onChange={(e) => setDias(Number(e.target.value))} aria-label="Rango de días">
@@ -243,19 +271,23 @@ export default function AuthTracking() {
         <Kpi icon={Wifi} label="Conectados ahora" value={resumen?.sesiones_activas ?? 0} note="actividad en los últimos 15 min" tone="success" />
         <Kpi icon={UserPlus} label="Registros" value={resumen?.registros_periodo ?? 0} note={`${resumen?.nuevos_registros_24h ?? 0} en 24 h`} tone="info" />
         <Kpi icon={KeyRound} label="Logins" value={resumen?.logins_periodo ?? 0} note={`${resumen?.nuevos_logins_24h ?? 0} en 24 h`} />
+        <Kpi icon={Rocket} label="Onboarding iniciado" value={resumen?.onboarding_iniciados_periodo ?? 0} note={`${resumen?.nuevos_onboarding_24h ?? 0} en 24 h`} tone="info" />
+        <Kpi icon={CheckCircle2} label="Landings generadas" value={resumen?.onboarding_landings_periodo ?? 0} note={`${resumen?.onboarding_saltados_periodo ?? 0} configuraron más tarde`} tone="success" />
         <Kpi icon={AlertTriangle} label="Fallos" value={resumen?.fallos_periodo ?? 0} note="credenciales, OTP o sesión" tone="danger" />
-        <Kpi icon={Bell} label="Alertas sin leer" value={resumen?.notificaciones_no_leidas ?? noLeidas} note="registros y logins nuevos" tone="warning" />
+        <Kpi icon={Bell} label="Alertas sin leer" value={resumen?.notificaciones_no_leidas ?? noLeidas} note="registros, logins y onboarding" tone="warning" />
       </section>
 
       <section className="at-panel at-span-12">
         <div className="at-panel-head">
           <div>
             <h2>Actividad diaria</h2>
-            <p>Registros, verificaciones, logins y fallos del período.</p>
+            <p>Registros, logins, onboarding, landings generadas y fallos del período.</p>
           </div>
           <div className="at-legend">
             <span><i className="at-dot at-dot-registros" /> Registros</span>
             <span><i className="at-dot at-dot-logins" /> Logins</span>
+            <span><i className="at-dot at-dot-onboarding" /> Onboarding</span>
+            <span><i className="at-dot at-dot-landings" /> Landings</span>
             <span><i className="at-dot at-dot-fallos" /> Fallos</span>
           </div>
         </div>
@@ -312,7 +344,7 @@ export default function AuthTracking() {
               <div className="at-empty">No hay notificaciones todavía.</div>
             ) : notificaciones.map((n) => (
               <article key={n.id} className={`at-notificacion ${n.leida ? '' : 'at-notificacion-nueva'}`}>
-                <div className="at-noti-icon">{n.tipo === 'register' ? <UserPlus size={15} /> : n.tipo === 'email_verified' ? <MailCheck size={15} /> : <KeyRound size={15} />}</div>
+                <div className="at-noti-icon">{n.tipo?.startsWith('onboarding_') ? <Rocket size={15} /> : n.tipo === 'register' ? <UserPlus size={15} /> : n.tipo === 'email_verified' ? <MailCheck size={15} /> : <KeyRound size={15} />}</div>
                 <div>
                   <strong>{n.titulo}</strong>
                   <p>{n.mensaje}</p>
@@ -329,7 +361,7 @@ export default function AuthTracking() {
         <div className="at-panel-head">
           <div>
             <h2>Eventos de autenticación</h2>
-            <p>Historial técnico para investigar accesos, registros e intentos fallidos.</p>
+            <p>Historial técnico para investigar accesos, registros, onboarding e intentos fallidos.</p>
           </div>
           <div className="at-filtros">
             <label className="at-search">

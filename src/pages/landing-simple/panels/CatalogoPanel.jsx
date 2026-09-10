@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ProductPicker from '../../landing/ProductPicker';
+import { vitrinaService } from '../../../services/vitrinaService';
 import '../../landing/landing.css';
 
 // Mismo tope que el backend (MAX_ITEMS_POR_LANDING en landing.service.js,
@@ -28,7 +29,8 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
   const [seleccion, setSeleccion] = useState(() => {
     const map = new Map();
     (items || []).forEach(it => map.set(clave(it.tipo, it.referencia_id), {
-      id: it.referencia_id, tipo: it.tipo, etiqueta: it.etiqueta || '', precio_ancla: it.precio_ancla != null ? it.precio_ancla : '',
+      id: it.referencia_id, tipo: it.tipo, etiqueta: it.etiqueta || '',
+      precio_ancla: it.precio_ancla != null ? it.precio_ancla : '',
       envio_incluido: it.envio_incluido === true,
       mostrar_en_inicio: it.mostrar_en_inicio === true,
     }));
@@ -68,7 +70,14 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
       // mostrar_en_inicio en false a propósito: agregar un producto al
       // catálogo NO debe publicarlo automáticamente en la página de inicio
       // (antes sí pasaba y aparecía solo). Eso se elige en "Destacados".
-      else copia.set(k, { id: item.id, tipo: item.tipo, etiqueta: '', precio_ancla: item.precio_tachado || '', envio_incluido: false, mostrar_en_inicio: false });
+      else copia.set(k, {
+        id: item.id,
+        tipo: item.tipo,
+        etiqueta: '',
+        precio_ancla: item.precio_tachado || '',
+        envio_incluido: false,
+        mostrar_en_inicio: false,
+      });
       return copia;
     });
   }
@@ -89,6 +98,27 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
         return copia;
       }
       copia.set(k, { ...copia.get(k), etiqueta });
+      return copia;
+    });
+  }
+
+  async function onPrecioVenta(item, precio) {
+    if (item.tipo === 'combo') {
+      await vitrinaService.guardarPrecioCombo(item.id, precio);
+    } else {
+      await vitrinaService.guardarPrecioProducto(item.id, precio);
+    }
+    const k = clave(item.tipo, item.id);
+    setSeleccion(prev => {
+      const copia = new Map(prev);
+      if (!copia.has(k)) {
+        const entrada = [...copia.entries()].find(([, v]) => v.id === item.id && v.tipo === item.tipo);
+        if (!entrada) return prev;
+        const [kReal, vReal] = entrada;
+        copia.set(kReal, { ...vReal, precio_usuario: precio, precio_efectivo: precio });
+        return copia;
+      }
+      copia.set(k, { ...copia.get(k), precio_usuario: precio, precio_efectivo: precio });
       return copia;
     });
   }
@@ -132,7 +162,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
         precio_ancla: v.precio_ancla,
         nombre: entidad?.nombre || '(ya no disponible)',
         imagen: entidad?.imagen || null,
-        precio_efectivo: entidad?.precio_efectivo ?? entidad?.precio_base ?? null,
+        precio_efectivo: v.precio_efectivo ?? entidad?.precio_efectivo ?? entidad?.precio_base ?? null,
         no_disponible: !entidad,
       };
     });
@@ -176,6 +206,7 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
           itemsOrdenados={itemsOrdenados}
           onToggle={onToggle}
           onEtiqueta={onEtiqueta}
+          onPrecioVenta={onPrecioVenta}
           onPrecioAncla={onPrecioAncla}
           onReordenar={onReordenar}
           max={MAX_ITEMS}

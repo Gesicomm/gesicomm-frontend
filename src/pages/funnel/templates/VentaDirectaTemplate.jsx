@@ -508,9 +508,7 @@ export default function VentaDirectaTemplate({
                       </span>
                     </button>
                     {abierto && (
-                      <div className="px-5 pb-4 text-sm leading-relaxed" style={textoSuave(0.7)}>
-                        {f.respuesta}
-                      </div>
+                      <RichText text={f.respuesta} className="px-5 pb-4 text-sm leading-relaxed" style={textoSuave(0.7)} />
                     )}
                   </div>
                 );

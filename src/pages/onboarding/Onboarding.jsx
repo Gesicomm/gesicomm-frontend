@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, X, Loader, ArrowRight, ArrowLeft, Store, Dumbbell, Sparkles, Cpu, LayoutTemplate } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
+import { onboardingTrackingService } from '../../services/onboardingTrackingService';
 import { useDebounce } from '../../hooks/useDebounce';
 import '../vitrina/vitrina.css';
 import '../tienda/tienda.css';
@@ -56,6 +57,7 @@ export default function Onboarding() {
   const [accionCreando, setAccionCreando] = useState(null);
   const [error, setError] = useState(null);
   const ultimaConsulta = useRef(0);
+  const inicioTrackeado = useRef(false);
 
   const subdominio = slugifyLigero(nombre);
   const subdominioDebounced = useDebounce(subdominio, 500);
@@ -75,6 +77,10 @@ export default function Onboarding() {
         const tienda = await tiendaService.obtener();
         if (!activo) return;
         if (tienda) navigate('/mi-dashboard', { replace: true });
+        else if (!inicioTrackeado.current) {
+          inicioTrackeado.current = true;
+          onboardingTrackingService.registrarInicio({ paso: 'nombre_tienda' }).catch(() => null);
+        }
       } catch {
         if (activo) setError('No pudimos verificar tu plan. Probá de nuevo.');
       } finally {
@@ -120,7 +126,13 @@ export default function Onboarding() {
         sessionStorage.removeItem('gesicomm:onboardingTemplateSlug');
         sessionStorage.removeItem('gesicomm:prefilledLandingItems');
       }
-      await tiendaService.crear({ nombre: nombre.trim(), subdominio });
+      await tiendaService.crear({
+        nombre: nombre.trim(),
+        subdominio,
+        onboarding: true,
+        onboarding_ficha: continuarProductos ? ficha : null,
+        onboarding_accion: continuarProductos ? 'seleccionar_productos' : 'configurar_mas_tarde',
+      });
       navigate(continuarProductos ? '/mi-catalogo?onboarding=productos' : '/mi-dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo crear tu tienda. Probá de nuevo.');

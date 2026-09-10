@@ -611,7 +611,7 @@ export default function TechProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={17} />
                   </button>
-                  {preguntaAbierta === i && <p>{f.respuesta}</p>}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
                 </div>
               ))}
             </div>

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock, Check, MessageCircle } from 'lucide-react';
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
+import RichText from '../../../components/RichText';
 
 /** Tope de fotos que rota una tarjeta: más que esto marea y son bytes de más. */
 const MAX_FOTOS_TARJETA = 5;
@@ -317,7 +318,7 @@ export function FaqSection({ faq, acento, bordeSuave, textoSuave, tituloClase })
               {f.pregunta}
               <ChevronDown size={16} style={{ color: acento, transform: abierta === idx ? 'rotate(180deg)' : 'none' }} />
             </button>
-            {abierta === idx && <p className="mt-2 text-sm" style={textoSuave(0.6)}>{f.respuesta}</p>}
+            {abierta === idx && <RichText text={f.respuesta} className="mt-2 text-sm" style={textoSuave(0.6)} />}
           </div>
         ))}
       </div>

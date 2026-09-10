@@ -1095,6 +1095,90 @@
 }
 .lb-card-price .cur { font-size: 0.75rem; font-weight: 600; color: var(--vit-muted); }
 
+.lb-card-sale-price {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.55rem 0.65rem;
+  border-top: 1px solid var(--vit-border);
+  background: color-mix(in srgb, var(--vit-accent) 8%, transparent);
+}
+.lb-card-sale-price span {
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--vit-muted);
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+.lb-card-sale-price input {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--vit-accent) 35%, var(--vit-border));
+  border-radius: 7px;
+  background: var(--vit-bg);
+  color: var(--vit-text);
+  font-size: 0.82rem;
+  font-weight: 800;
+  font-family: inherit;
+  padding: 0 0.55rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.lb-card-sale-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem;
+  align-items: center;
+}
+.lb-card-sale-row button {
+  height: 30px;
+  border: 1px solid var(--vit-accent);
+  border-radius: 7px;
+  background: var(--vit-accent);
+  color: var(--color-primary-fg);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0 0.55rem;
+  cursor: pointer;
+}
+.lb-card-sale-row button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.lb-card-sale-price small {
+  color: #ef4444;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.lb-card-profit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-width: 0;
+  font-size: 0.68rem;
+}
+.lb-card-profit span {
+  color: var(--vit-muted);
+  text-transform: none;
+  font-size: 0.68rem;
+}
+.lb-card-profit strong {
+  min-width: 0;
+  color: var(--vit-text);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.lb-card-profit--ok strong { color: #16a34a; }
+.lb-card-profit--empate strong { color: #d97706; }
+.lb-card-profit--perdida strong { color: #dc2626; }
+.lb-card-sale-price input:focus {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--vit-accent) 18%, transparent);
+}
+
 /* ─── Lista ordenable ─────────────────────────────────────────────────── */
 .lb-orden-lista { display: flex; flex-direction: column; gap: 0.4rem; }
 

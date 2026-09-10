@@ -29,17 +29,92 @@ const ORDENES = [
   { valor: 'recientes', label: 'Más recientes' },
 ];
 
+const PRECIOS_GUARDADOS = new Map();
+
 function formatGs(n) {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return Number(n).toLocaleString('es-PY', { maximumFractionDigits: 0 });
+}
+
+function precioVentaItem(item) {
+  return item.precio_efectivo;
+}
+
+function estadoGanancia(precio, costo) {
+  const ganancia = precio - costo;
+  const margen = precio > 0 ? (ganancia / precio) * 100 : 0;
+  const estado = ganancia > 0 ? 'ok' : ganancia < 0 ? 'perdida' : 'empate';
+  return { ganancia, margen, estado };
 }
 
 function claveItem(item) {
   return `${item.tipo}:${item.id}`;
 }
 
+function PrecioVentaCard({ item, onPrecioVenta }) {
+  const [valor, setValor] = useState(item.precio_efectivo ?? '');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState('');
+  const [ok, setOk] = useState(false);
+
+  React.useEffect(() => {
+    setValor(item.precio_efectivo ?? '');
+    setError('');
+    setOk(false);
+  }, [item.precio_efectivo]);
+
+  const cambio = Number(valor) !== Number(item.precio_efectivo);
+  const precio = Number(valor) || 0;
+  const costo = Number(item.precio_base) || 0;
+  const { ganancia, margen, estado } = estadoGanancia(precio, costo);
+
+  async function guardar() {
+    if (!Number.isFinite(precio) || precio <= 0) {
+      setError('Precio inválido');
+      return;
+    }
+    if (item.precio_minimo && precio < Number(item.precio_minimo)) {
+      setError(`Mínimo Gs ${formatGs(item.precio_minimo)}`);
+      return;
+    }
+    setGuardando(true);
+    setError('');
+    try {
+      await onPrecioVenta(item, precio);
+      setValor(precio);
+      setOk(true);
+      setTimeout(() => setOk(false), 1400);
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'No se pudo guardar');
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="lb-card-sale-price" onClick={(e) => e.stopPropagation()}>
+      <span>Precio de venta</span>
+      <div className="lb-card-sale-row">
+        <CurrencyInput
+          value={valor}
+          onChange={setValor}
+          placeholder={`Gs ${formatGs(item.precio_efectivo)}`}
+        />
+        <button type="button" onClick={guardar} disabled={!cambio || guardando}>
+          {guardando ? '...' : ok ? 'OK' : 'Guardar'}
+        </button>
+      </div>
+      <div className={`lb-card-profit lb-card-profit--${estado}`}>
+        <span>{estado === 'perdida' ? 'Pérdida' : estado === 'empate' ? 'Sin ganancia' : 'Ganancia'}</span>
+        <strong>Gs {formatGs(ganancia)}{ganancia !== 0 ? ` · ${margen.toFixed(0)}%` : ''}</strong>
+      </div>
+      {error && <small>{error}</small>}
+    </div>
+  );
+}
+
 /* ─── Tarjeta seleccionable ───────────────────────────────────────────── */
-function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle, onEditar }) {
+function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle, onEditar, onPrecioVenta }) {
   const esCombo = item.tipo === 'combo';
   const sinStock = item.stock === 0;
 
@@ -82,10 +157,14 @@ function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle, onEditar
           )}
         </div>
         <div className="lb-card-price">
-          <span className="cur">Gs</span> {formatGs(item.precio_efectivo)}
+          <span className="cur">Gs</span> {formatGs(precioVentaItem(item))}
         </div>
       </div>
     </button>
+
+    {seleccionado && onPrecioVenta && (
+      <PrecioVentaCard item={item} onPrecioVenta={onPrecioVenta} />
+    )}
 
     {/* Fuera del <button> de arriba (no puede haber <button> anidado) —
         barra ancha y con texto, no un ícono chico en una esquina: eso se
@@ -165,7 +244,7 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
 
             <div className="lb-orden-info">
               <span className="lb-orden-nombre">{item.nombre}</span>
-              <span className="lb-orden-precio">Gs {formatGs(item.precio_efectivo)}</span>
+              <span className="lb-orden-precio">Gs {formatGs(precioVentaItem(item))}</span>
             </div>
 
             <button type="button" className="lb-orden-quitar" onClick={() => onQuitar(item)} title="Quitar">
@@ -185,12 +264,14 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
                 value={item.etiqueta || ''}
                 onChange={(e) => onEtiqueta(item, e.target.value)}
               />
-              <CurrencyInput
-                className="lb-orden-etiqueta"
-                placeholder="Precio ancla (tachado)"
-                value={item.precio_ancla || ''}
-                onChange={(val) => onPrecioAncla(item, val)}
-              />
+              {onPrecioAncla && (
+                <CurrencyInput
+                  className="lb-orden-etiqueta"
+                  placeholder="Precio ancla (tachado)"
+                  value={item.precio_ancla || ''}
+                  onChange={(val) => onPrecioAncla(item, val)}
+                />
+              )}
               {onMostrarInicio && (
                 <label className="lb-orden-inicio" title="Si está destildado, el producto solo aparece en la página de Catálogo completo, no en el inicio">
                   <input
@@ -218,7 +299,7 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
  *   esta no tiene).
  */
 export default function ProductPicker({
-  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar, mostrarInputs = true, mostrarLista = true,
+  catalogo, seleccion, itemsOrdenados, onToggle, onEtiqueta, onPrecioVenta, onPrecioAncla, onMostrarInicio, onReordenar, max, onEditar, mostrarInputs = true, mostrarLista = true,
   // Ambos modales se montan por portal en <body>, así que compiten en el
   // mismo contexto de apilado. Cuando el picker se usa DENTRO de otro modal
   // (ej. el formulario de ofertas, que va en z-index 1000) hay que subirlo
@@ -237,17 +318,25 @@ export default function ProductPicker({
   const [orden, setOrden] = useState('nombre');
   const [soloSeleccionados, setSoloSeleccionados] = useState(false);
   const [pagina, setPagina] = useState(1);
+  const [preciosLocales, setPreciosLocales] = useState(() => new Map(PRECIOS_GUARDADOS));
 
   const todos = useMemo(() => [
-    ...(catalogo?.productos || []).map(p => ({ ...p, tipo: 'producto' })),
-    ...(catalogo?.combos || []).map(c => ({ ...c, tipo: 'combo' })),
-  ], [catalogo]);
+    ...(catalogo?.productos || []).map(p => {
+      const precioLocal = preciosLocales.get(`producto:${p.id}`);
+      return { ...p, tipo: 'producto', ...(precioLocal != null ? { precio_usuario: precioLocal, precio_efectivo: precioLocal } : {}) };
+    }),
+    ...(catalogo?.combos || []).map(c => {
+      const precioLocal = preciosLocales.get(`combo:${c.id}`);
+      return { ...c, tipo: 'combo', ...(precioLocal != null ? { precio_usuario: precioLocal, precio_efectivo: precioLocal } : {}) };
+    }),
+  ], [catalogo, preciosLocales]);
 
   const categorias = useMemo(() => [...new Set(todos.map(i => i.categoria).filter(Boolean))].sort(), [todos]);
   const marcas = useMemo(() => [...new Set(todos.map(i => i.marca).filter(Boolean))].sort(), [todos]);
 
   const visibles = useMemo(() => {
     let lista = todos;
+    const precioOrdenable = (item) => precioVentaItem({ ...item, ...(seleccion.get(claveItem(item)) || {}) });
 
     if (tipo !== 'todos') lista = lista.filter(i => i.tipo === tipo);
     if (categoria) lista = lista.filter(i => i.categoria === categoria);
@@ -268,9 +357,9 @@ export default function ProductPicker({
 
     switch (orden) {
       case 'precio-asc':
-        return [...lista].sort((a, b) => (a.precio_efectivo ?? 0) - (b.precio_efectivo ?? 0));
+        return [...lista].sort((a, b) => (precioOrdenable(a) ?? 0) - (precioOrdenable(b) ?? 0));
       case 'precio-desc':
-        return [...lista].sort((a, b) => (b.precio_efectivo ?? 0) - (a.precio_efectivo ?? 0));
+        return [...lista].sort((a, b) => (precioOrdenable(b) ?? 0) - (precioOrdenable(a) ?? 0));
       case 'recientes':
         return [...lista].sort((a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0));
       default:
@@ -295,6 +384,17 @@ export default function ProductPicker({
 
   function limpiarFiltros() {
     setBusqueda(''); setTipo('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false); setPagina(1);
+  }
+
+  async function guardarPrecioVenta(item, precio) {
+    if (!onPrecioVenta) return;
+    await onPrecioVenta(item, precio);
+    PRECIOS_GUARDADOS.set(claveItem(item), precio);
+    setPreciosLocales(prev => {
+      const copia = new Map(prev);
+      copia.set(claveItem(item), precio);
+      return copia;
+    });
   }
 
   return (
@@ -422,15 +522,20 @@ export default function ProductPicker({
 
               <div className="lb-grid">
                 {visiblesPaginados.map(item => {
-                  const seleccionado = seleccion.has(claveItem(item));
+                  const seleccionadoData = seleccion.get(claveItem(item));
+                  const seleccionado = !!seleccionadoData;
+                  const itemConSeleccion = seleccionado
+                    ? { ...item, ...seleccionadoData, id: item.id, tipo: item.tipo }
+                    : item;
                   return (
                     <TarjetaProducto
                       key={claveItem(item)}
-                      item={item}
+                      item={itemConSeleccion}
                       seleccionado={seleccionado}
                       deshabilitado={!seleccionado && lleno}
                       onToggle={onToggle}
                       onEditar={onEditar}
+                      onPrecioVenta={guardarPrecioVenta}
                     />
                   );
                 })}
