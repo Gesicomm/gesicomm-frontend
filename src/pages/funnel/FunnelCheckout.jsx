@@ -3,7 +3,7 @@ import { X, Check, Loader, ImageOff, Gift, Sparkles } from 'lucide-react';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
-import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery, resolverReglaDelivery } from '../../lib/deliveryOptions';
+import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -47,10 +47,6 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     op.ciudad === form.ciudad && (op.departamento || '') === (form.departamento || '')
   );
   const itemsDelivery = [{ cantidad: resumen?.cantidad || 1 }];
-  const reglaDeliverySeleccionada = resolverReglaDelivery(opcionDeliverySeleccionada, {
-    items: itemsDelivery,
-    paymentMethod: form.payment_method,
-  });
   const detalleDelivery = opcionDeliverySeleccionada
     ? descripcionDelivery(opcionDeliverySeleccionada, productoConEnvioIncluido, formatPrecio, { items: itemsDelivery, paymentMethod: form.payment_method })
     : null;
@@ -74,10 +70,11 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     const o = ofertasCheckout.find(x => x.id === id);
     return sum + (o ? precioEnCheckout(o) : 0);
   }, 0);
-  const costoEnvioVisible = opcionDeliverySeleccionada && !productoConEnvioIncluido
-    ? Number(reglaDeliverySeleccionada?.costo) || 0
-    : 0;
-  const totalConDelivery = total + costoEnvioVisible;
+  // El delivery no se le cobra al comprador: su costo es interno (lo que el
+  // comercio le paga al courier) y el pedido se registra sin él — ver
+  // crearCheckout, donde el monto es subtotal − cupón. Sumarlo acá le
+  // prometía al comprador un total distinto al que quedaba grabado.
+  const totalConDelivery = total;
 
   function alternarOferta(ofertaId, elegida) {
     setSeleccionadas(prev => {

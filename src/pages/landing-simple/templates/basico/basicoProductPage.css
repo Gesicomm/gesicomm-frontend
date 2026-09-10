@@ -399,10 +399,10 @@
 }
 .bsc-relacionado-img {
   height: 110px; display: grid; place-items: center;
-  background: var(--bsc-accent-suave); color: var(--bsc-muted);
+  background: var(--bsc-card); color: var(--bsc-muted);
   margin-bottom: 10px;
 }
-.bsc-relacionado-img img { display: block; max-height: 110px; max-width: 100%; object-fit: contain; }
+.bsc-relacionado-img img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .bsc-relacionado b { font-size: 13px; }
 .bsc-relacionado p { color: var(--bsc-muted); font-size: 12px; margin: 4px 0; }
 .bsc-relacionado-precio { font-weight: 800; margin-top: auto; padding-top: 8px; }

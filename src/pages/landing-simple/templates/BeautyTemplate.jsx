@@ -14,7 +14,7 @@ const NOOP = () => {};
  * propia (paleta pastel/clara por defecto). Ver FitnessTemplate.jsx para
  * el criterio general (contrato de props en mapLandingToTemplateData.js).
  */
-export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, onAgregarProducto = null, linkWhatsappProducto = null, onContactarProducto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
+export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickInicio = null, onClickCatalogo = null, onClickContacto = null, onAgregarProducto = null, linkWhatsappProducto = null, onContactarProducto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
   const { nombreComercio, logo, hero, productos, productosTitulo, contacto, faq, beneficios, contenidoAdicional } = data;
   const tema = resolverTema(data.tema, DEFAULT_TEMA);
   const bordeSuave = hexToRgba(tema.texto, 0.12);
@@ -47,6 +47,7 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickCa
         linkInicio={linkInicio}
         linkCatalogo={linkCatalogo}
         linkContacto={linkContacto}
+        onClickInicio={onClickInicio}
         onClickCatalogo={onClickCatalogo}
         onClickContacto={onClickContacto}
         previewMode={previewMode}

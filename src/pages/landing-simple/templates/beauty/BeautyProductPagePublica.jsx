@@ -72,6 +72,7 @@ export default function BeautyProductPagePublica({
         tema={tema}
         contacto={contacto}
         nombreComercio={nombreComercio}
+        previewMode={false}
         onVolver={onVolver}
         onClickRelacionado={onClickRelacionado}
         onAgregar={(eleccion) => onAgregar && onAgregar({

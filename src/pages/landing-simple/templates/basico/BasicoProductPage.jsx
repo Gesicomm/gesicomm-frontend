@@ -20,9 +20,10 @@ import './basicoProductPage.css';
  * preview y publicada se desincronizaron por tener dos componentes
  * dibujando lo mismo. Si aparece un tercer lugar, llama a este componente.
  *
- * `previewMode` NO cambia el diseño: solo evita navegar fuera del editor y
- * muestra un cartel en las secciones que el comercio activó pero todavía no
- * cargó. Cualquier otra diferencia entre preview y publicada es un bug.
+ * `previewMode` solo muestra ayudas del editor: evita navegar fuera del
+ * editor, muestra carteles de secciones vacías y numera los títulos para
+ * orientar al usuario. La landing publicada conserva el mismo contenido sin
+ * esas guías.
  *
  * Estructura fija de 13 secciones + el footer de siempre, contenido 100%
  * editable — ver fichaBasico.js para de dónde sale cada una.
@@ -181,7 +182,7 @@ export default function BasicoProductPage({
       {/* 3 · Oferta y precio ──────────────────────────────────────── */}
       {ficha.precio.activo && item.precio != null && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={3} texto={ficha.precio.titulo} vars={vars} />
+          <TituloSeccion numero={3} texto={ficha.precio.titulo} vars={vars} mostrarNumero={previewMode} />
           <div className="bsc-precio-caja">
             <div>
               {ficha.precio.etiqueta_oferta && (
@@ -203,7 +204,7 @@ export default function BasicoProductPage({
       {/* 4 · Opciones de compra ───────────────────────────────────── */}
       {ficha.opciones.activo && (
         <section className="bsc-seccion bsc-wrap" id="bsc-opciones">
-          <TituloSeccion numero={4} texto={ficha.opciones.titulo} vars={vars} />
+          <TituloSeccion numero={4} texto={ficha.opciones.titulo} vars={vars} mostrarNumero={previewMode} />
 
           {packs.length === 0 && previewMode ? (
             <p className="bsc-vacio">
@@ -263,7 +264,7 @@ export default function BasicoProductPage({
       {ficha.beneficios.activo && (beneficios.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-seccion--fondo">
           <div className="bsc-wrap">
-            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
+            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado mostrarNumero={previewMode} />
             {beneficios.length === 0 ? (
               <p className="bsc-vacio">
                 Se cargan en <b>Vista del producto</b>.
@@ -289,7 +290,7 @@ export default function BasicoProductPage({
       {/* 6 · Descripción del producto ─────────────────────────────── */}
       {ficha.descripcion.activo && (descripcionTexto || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={6} texto={ficha.descripcion.titulo} vars={vars} />
+          <TituloSeccion numero={6} texto={ficha.descripcion.titulo} vars={vars} mostrarNumero={previewMode} />
           {!descripcionTexto ? (
             <p className="bsc-vacio">
               El texto sale de la descripción del producto, o se escribe en <b>Vista del producto</b>.
@@ -313,7 +314,7 @@ export default function BasicoProductPage({
       {/* 7 · Usos y aplicaciones ──────────────────────────────────── */}
       {ficha.usos.activo && (pasos.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={7} texto={ficha.usos.titulo} vars={vars} centrado />
+          <TituloSeccion numero={7} texto={ficha.usos.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {pasos.length === 0 ? (
             <p className="bsc-vacio">
               Los pasos de uso se cargan en <b>Vista del producto</b>.
@@ -348,7 +349,7 @@ export default function BasicoProductPage({
       {/* 9 · Comparación ──────────────────────────────────────────── */}
       {ficha.comparacion.activo && (comparaciones.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={9} texto={ficha.comparacion.titulo} vars={vars} centrado />
+          <TituloSeccion numero={9} texto={ficha.comparacion.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {comparaciones.length === 0 ? (
             <p className="bsc-vacio">
               Agregá las características a comparar en <b>Vista del producto</b>.
@@ -377,7 +378,7 @@ export default function BasicoProductPage({
       {/* 10 · Preguntas frecuentes ────────────────────────────────── */}
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
+          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
             <p className="bsc-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
@@ -400,7 +401,7 @@ export default function BasicoProductPage({
       {ficha.relacionados.activo && item.relacionados.length > 0 && (
         <section className="bsc-seccion bsc-seccion--fondo">
           <div className="bsc-wrap">
-            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.relacionados.titulo} vars={vars} centrado />
+            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.relacionados.titulo} vars={vars} centrado mostrarNumero={previewMode} />
             <div className="bsc-relacionados">
               {item.relacionados.map(r => {
                 const precioRel = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
@@ -413,7 +414,7 @@ export default function BasicoProductPage({
                         imagenes={(r.imagenes || []).map(getMediaUrl)}
                         imagen={r.imagen ? getMediaUrl(r.imagen) : null}
                         alt={r.nombre}
-                        imgClassName="transition-opacity duration-500 ease-out"
+                        imgClassName="w-full h-full object-contain transition-opacity duration-500 ease-out"
                         fallback={<ImageOff size={22} />}
                       />
                     </span>
@@ -441,7 +442,7 @@ export default function BasicoProductPage({
       {/* 12 · Garantía y devoluciones ─────────────────────────────── */}
       {ficha.garantias.activo && (garantias.length > 0 || ficha.garantias.texto) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={12} texto={ficha.garantias.titulo} vars={vars} centrado />
+          <TituloSeccion numero={12} texto={ficha.garantias.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {garantias.length > 0 && (
             <div className="bsc-garantias-grid">
               {garantias.map((g, i) => {
@@ -515,20 +516,22 @@ function nombreCategoria(categoria) {
   return typeof categoria === 'string' ? categoria : (categoria.nombre || '');
 }
 
-function TituloSeccion({ numero, texto, vars, centrado = false }) {
+function TituloSeccion({ numero, texto, vars, centrado = false, mostrarNumero = false }) {
   if (!texto) return null;
   return (
     <div className={`bsc-seccion-titulo ${centrado ? 'es-centrado' : ''}`}>
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'grid', placeItems: 'center', width: 28, height: 28,
-          borderRadius: '50%', background: vars['--bsc-accent'], color: vars['--bsc-on-accent'],
-          fontSize: 13, fontWeight: 900, flexShrink: 0,
-        }}
-      >
-        {numero}
-      </span>
+      {mostrarNumero && (
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'grid', placeItems: 'center', width: 28, height: 28,
+            borderRadius: '50%', background: vars['--bsc-accent'], color: vars['--bsc-on-accent'],
+            fontSize: 13, fontWeight: 900, flexShrink: 0,
+          }}
+        >
+          {numero}
+        </span>
+      )}
       <h2>{texto}</h2>
     </div>
   );

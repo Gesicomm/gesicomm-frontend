@@ -50,11 +50,19 @@ export function resolverReglaDelivery(opcion, { items = [], paymentMethod = 'efe
     || null;
 }
 
+/**
+ * Lo que ve el comprador debajo del selector de ciudad.
+ *
+ * NO muestra el costo del envío a propósito: al cliente no se le cobra el
+ * delivery — ese costo es interno, lo que el comercio le paga al courier, y
+ * se guarda en el pedido para el arqueo. Mostrárselo acá le hacía creer que
+ * se lo iban a sumar al total (y el checkout efectivamente se lo sumaba,
+ * mientras el pedido se registraba sin ese monto). Queda el tiempo de
+ * entrega, que sí es información para quien compra.
+ */
 export function descripcionDelivery(opcion, envioIncluido, formatPrecio, contexto = {}) {
   if (envioIncluido) return 'Envío incluido en el producto';
   const regla = resolverReglaDelivery(opcion, contexto);
   if (!regla) return null;
-  const costo = Number(regla.costo) || 0;
-  const costoLabel = costo > 0 ? formatPrecio(costo) : 'Sin costo';
-  return [costoLabel, regla.tiempo_entrega_hs].filter(Boolean).join(' · ');
+  return regla.tiempo_entrega_hs || null;
 }

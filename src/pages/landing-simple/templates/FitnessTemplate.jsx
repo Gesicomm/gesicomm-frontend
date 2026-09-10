@@ -18,7 +18,7 @@ const NOOP = () => {};
  * landing pública (carrito/checkout, ver LandingPublica.jsx) — en el
  * preview del editor no se pasan, quedan como no-op/0.
  */
-export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickCatalogo = null, onClickContacto = null, onAgregarProducto = null, linkWhatsappProducto = null, onContactarProducto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
+export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickInicio = null, onClickCatalogo = null, onClickContacto = null, onAgregarProducto = null, linkWhatsappProducto = null, onContactarProducto = null, cantidadCarrito = 0, onAbrirCarrito = NOOP, isMobile = false, previewMode = false }) {
   const { nombreComercio, logo, hero, productos, productosTitulo, contacto, faq, beneficios, contenidoAdicional } = data;
   const tema = resolverTema(data.tema, DEFAULT_TEMA);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
@@ -54,6 +54,7 @@ export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickC
         linkInicio={linkInicio}
         linkCatalogo={linkCatalogo}
         linkContacto={linkContacto}
+        onClickInicio={onClickInicio}
         onClickCatalogo={onClickCatalogo}
         onClickContacto={onClickContacto}
         previewMode={previewMode}

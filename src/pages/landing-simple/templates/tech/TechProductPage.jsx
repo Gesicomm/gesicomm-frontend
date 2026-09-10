@@ -24,9 +24,10 @@ import './techProductPage.css';
  * dos componentes distintos dibujando lo mismo. Si aparece un tercer lugar
  * donde mostrar la ficha, llama a este componente — no se escribe otro.
  *
- * `previewMode` NO cambia el diseño: solo evita navegar fuera del editor y
- * muestra un cartel en las secciones que el comercio activó pero todavía no
- * cargó. Cualquier otra diferencia entre preview y publicada es un bug.
+ * `previewMode` solo muestra ayudas del editor: evita navegar fuera del
+ * editor, muestra carteles de secciones vacías y numera los títulos para
+ * orientar al usuario. La landing publicada conserva el mismo contenido sin
+ * esas guías.
  *
  * Estructura fija de 14 secciones, contenido 100% editable — ver
  * fichaTech.js para de dónde sale cada una.
@@ -258,7 +259,7 @@ export default function TechProductPage({
       {/* 5 · Variantes + acciones de compra ───────────────────────── */}
       <section className="tpp-compra tpp-wrap" id="tpp-compra">
         <div className="tpp-panel">
-          <TituloSeccion numero={5} texto={ficha.variantes.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+          <TituloSeccion numero={5} texto={ficha.variantes.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           {variantes.length === 0 && packs.length === 0 ? (
             <p className="tpp-panel-label">
               {previewMode
@@ -398,7 +399,7 @@ export default function TechProductPage({
       {ficha.especificaciones.activo
         && (specs.length > 0 || enLaCaja.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-wrap" id="tpp-specs">
-          <TituloSeccion numero={7} texto={ficha.especificaciones.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+          <TituloSeccion numero={7} texto={ficha.especificaciones.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           {specs.length === 0 && enLaCaja.length === 0 ? (
             <p className="tpp-vacio">
               Las especificaciones y el "en la caja" se cargan en <b>Mis Productos</b>, en la pestaña del rubro
@@ -433,7 +434,7 @@ export default function TechProductPage({
       {ficha.multimedia.activo && (multimedia.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-seccion--fondo">
           <div className="tpp-wrap">
-            <TituloSeccion numero={8} texto={ficha.multimedia.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+            <TituloSeccion numero={8} texto={ficha.multimedia.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
             {multimedia.length === 0 ? (
               <p className="tpp-vacio">Agregá imágenes o videos adicionales desde <b>Vista del producto</b>.</p>
             ) : (
@@ -512,7 +513,7 @@ export default function TechProductPage({
       {/* 9 · Comparación ──────────────────────────────────────────── */}
       {ficha.comparativa.activo && (comparativa.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-wrap">
-          <TituloSeccion numero={9} texto={ficha.comparativa.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+          <TituloSeccion numero={9} texto={ficha.comparativa.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           {comparativa.length === 0 ? (
             <p className="tpp-vacio">
               La comparativa se carga en <b>Mis Productos → Vista del producto</b> (rubro Tecnología).
@@ -573,7 +574,7 @@ export default function TechProductPage({
       {ficha.resenas.activo && (ficha.resenas.items.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-seccion--fondo">
           <div className="tpp-wrap">
-            <TituloSeccion numero={10} texto={ficha.resenas.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+            <TituloSeccion numero={10} texto={ficha.resenas.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
             {ficha.resenas.items.length === 0 ? (
               <p className="tpp-vacio">Cargá las opiniones de tus clientes desde <b>Vista del producto</b>.</p>
             ) : (
@@ -600,7 +601,7 @@ export default function TechProductPage({
       {/* 11 · Preguntas frecuentes ────────────────────────────────── */}
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="tpp-seccion tpp-wrap" id="tpp-faq">
-          <TituloSeccion numero={11} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+          <TituloSeccion numero={11} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
             <p className="tpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
@@ -622,7 +623,7 @@ export default function TechProductPage({
       {/* 12 · Complementa tu compra ───────────────────────────────── */}
       {ficha.upsells.activo && item.relacionados.length > 0 && (
         <section className="tpp-seccion tpp-wrap">
-          <TituloSeccion numero={12} texto={item.relacionadosTitulo || ficha.upsells.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} />
+          <TituloSeccion numero={12} texto={item.relacionadosTitulo || ficha.upsells.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           <div className="tpp-upsells">
             {item.relacionados.map(r => {
               const precioRel = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
@@ -745,20 +746,22 @@ export default function TechProductPage({
 
 /* ── Piezas internas ──────────────────────────────────────────────── */
 
-function TituloSeccion({ numero, texto, acento, onAccent }) {
+function TituloSeccion({ numero, texto, acento, onAccent, mostrarNumero = false }) {
   if (!texto) return null;
   return (
     <div className="tpp-seccion-titulo">
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'grid', placeItems: 'center', width: 26, height: 26,
-          borderRadius: '50%', background: acento, color: onAccent,
-          fontSize: 12, fontWeight: 900, flexShrink: 0,
-        }}
-      >
-        {numero}
-      </span>
+      {mostrarNumero && (
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'grid', placeItems: 'center', width: 26, height: 26,
+            borderRadius: '50%', background: acento, color: onAccent,
+            fontSize: 12, fontWeight: 900, flexShrink: 0,
+          }}
+        >
+          {numero}
+        </span>
+      )}
       <h2>{texto}</h2>
     </div>
   );

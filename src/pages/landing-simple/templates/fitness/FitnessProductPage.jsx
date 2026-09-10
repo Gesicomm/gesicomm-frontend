@@ -27,10 +27,10 @@ import './fitnessProductPage.css';
  * lugar donde mostrar la ficha, llama a este componente — no se escribe
  * otro.
  *
- * `previewMode` NO cambia el diseño: solo (a) evita navegar fuera del
- * editor y (b) muestra un cartel en las secciones que el comercio activó
- * pero todavía no cargó, que en la landing publicada simplemente no se
- * dibujan. Cualquier otra diferencia entre preview y publicada es un bug.
+ * `previewMode` solo muestra ayudas del editor: evita navegar fuera del
+ * editor, muestra carteles de secciones vacías y numera los títulos para
+ * orientar al usuario. La landing publicada conserva el mismo contenido sin
+ * esas guías.
  *
  * La estructura es fija (12 secciones, en este orden) y el contenido es
  * todo editable — ver fichaFitness.js para de dónde sale cada sección.
@@ -222,7 +222,7 @@ export default function FitnessProductPage({
       {/* 4 · Ofertas y paquetes ───────────────────────────────────── */}
       {ficha.ofertas.activo && (
         <section className="fpp-seccion fpp-wrap" id="fpp-ofertas">
-          <TituloSeccion numero={4} texto={ficha.ofertas.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+          <TituloSeccion numero={4} texto={ficha.ofertas.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
 
           {packs.length === 0 ? (
             previewMode ? (
@@ -297,7 +297,7 @@ export default function FitnessProductPage({
           <div className="fpp-wrap">
             {ficha.beneficios.titulo && (
               <div style={{ paddingTop: 34 }}>
-                <TituloSeccion numero={5} texto={ficha.beneficios.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+                <TituloSeccion numero={5} texto={ficha.beneficios.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
               </div>
             )}
             {ficha.beneficios.items.length === 0 ? (
@@ -325,7 +325,7 @@ export default function FitnessProductPage({
       {/* 6 · Ingredientes y ciencia ───────────────────────────────── */}
       {ficha.ingredientes.activo && (ficha.ingredientes.items.length > 0 || previewMode) && (
         <section className="fpp-seccion fpp-wrap" id="fpp-ingredientes">
-          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
           {ficha.ingredientes.items.length === 0 ? (
             <p className="fpp-vacio">Agregá los ingredientes con su dosis desde <b>Vista del producto</b>.</p>
           ) : (
@@ -351,7 +351,7 @@ export default function FitnessProductPage({
       {ficha.opiniones.activo && (ficha.opiniones.items.length > 0 || previewMode) && (
         <section className="fpp-seccion fpp-seccion--fondo" id="fpp-opiniones">
           <div className="fpp-wrap">
-            <TituloSeccion numero={7} texto={ficha.opiniones.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+            <TituloSeccion numero={7} texto={ficha.opiniones.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
             {ficha.opiniones.items.length === 0 ? (
               <p className="fpp-vacio">Cargá las opiniones de tus clientes desde <b>Vista del producto</b>.</p>
             ) : (
@@ -377,7 +377,7 @@ export default function FitnessProductPage({
       {/* 8 · Cómo funciona ────────────────────────────────────────── */}
       {ficha.como_funciona.activo && (ficha.como_funciona.pasos.length > 0 || previewMode) && (
         <section className="fpp-seccion fpp-wrap" id="fpp-como-funciona">
-          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
           {ficha.como_funciona.pasos.length === 0 ? (
             <p className="fpp-vacio">Explicá el paso a paso desde <b>Vista del producto</b>.</p>
           ) : (
@@ -418,7 +418,7 @@ export default function FitnessProductPage({
       {/* 10 · Preguntas frecuentes ────────────────────────────────── */}
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="fpp-seccion fpp-wrap" id="fpp-faq">
-          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
             <p className="fpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
@@ -440,7 +440,7 @@ export default function FitnessProductPage({
       {/* 11 · Productos complementarios ───────────────────────────── */}
       {ficha.upsells.activo && item.relacionados.length > 0 && (
         <section className="fpp-seccion fpp-wrap" id="fpp-upsells">
-          <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} />
+          <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
           <div className="fpp-upsells">
             {item.relacionados.map(r => {
               const precio = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
@@ -520,10 +520,22 @@ export default function FitnessProductPage({
 
 /* ── Piezas internas ──────────────────────────────────────────────── */
 
-function TituloSeccion({ numero, texto, acento, onAccent }) {
+function TituloSeccion({ numero, texto, acento, onAccent, mostrarNumero = false }) {
   if (!texto) return null;
   return (
     <div className="fpp-seccion-titulo">
+      {mostrarNumero && (
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'grid', placeItems: 'center', width: 26, height: 26,
+            borderRadius: '50%', background: acento, color: onAccent,
+            fontSize: 12, fontWeight: 900, flexShrink: 0,
+          }}
+        >
+          {numero}
+        </span>
+      )}
       <h2>{texto}</h2>
     </div>
   );

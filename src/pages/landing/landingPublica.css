@@ -2527,6 +2527,5 @@ button.lp-tier-card--imagen {
 /* El descuento en verde y el total final destacado: la persona tiene que
    ver cuánto se ahorró, no solo el número nuevo. */
 .lp-cart-descuento strong { color: #10b981; font-size: 1rem; }
-.lp-cart-delivery strong { font-size: 1rem; }
 .lp-cart-total-final { margin-top: 0.15rem; }
 .lp-cart-total-final strong { color: var(--l-accent, #10b981); }

@@ -20,9 +20,10 @@ import './beautyProductPage.css';
  * preview y publicada se desincronizaron por tener dos componentes
  * dibujando lo mismo. Si aparece un tercer lugar, llama a este componente.
  *
- * `previewMode` NO cambia el diseño: solo evita navegar fuera del editor y
- * muestra un cartel en las secciones que el comercio activó pero todavía no
- * cargó. Cualquier otra diferencia entre preview y publicada es un bug.
+ * `previewMode` solo muestra ayudas del editor: evita navegar fuera del
+ * editor, muestra carteles de secciones vacías y numera los títulos para
+ * orientar al usuario. La landing publicada conserva el mismo contenido sin
+ * esas guías.
  *
  * Estructura fija de 12 secciones, contenido 100% editable — ver
  * fichaBeauty.js para de dónde sale cada una.
@@ -207,7 +208,7 @@ export default function BeautyProductPage({
       {ficha.precio.activo && (
         <section className="bpp-seccion bpp-wrap" id="bpp-ofertas">
           <div className="bpp-ofertas-encabezado">
-            <TituloSeccion numero={4} texto={ficha.precio.titulo} vars={vars} />
+            <TituloSeccion numero={4} texto={ficha.precio.titulo} vars={vars} mostrarNumero={previewMode} />
             {ficha.precio.suscripcion.activo && (
               <label className="bpp-suscripcion">
                 <span>{ficha.precio.suscripcion.titulo || 'Suscribite y ahorrá'}</span>
@@ -302,7 +303,7 @@ export default function BeautyProductPage({
       {ficha.beneficios.activo && (beneficios.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-seccion--fondo">
           <div className="bpp-wrap">
-            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
+            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado mostrarNumero={previewMode} />
             {beneficios.length === 0 ? (
               <p className="bpp-vacio">
                 Se cargan en <b>Vista del producto</b>.
@@ -328,7 +329,7 @@ export default function BeautyProductPage({
       {/* 6 · Ingredientes premium ─────────────────────────────────── */}
       {ficha.ingredientes.activo && (ingredientes.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} vars={vars} centrado />
+          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {ingredientes.length === 0 ? (
             <p className="bpp-vacio">
               Se cargan en <b>Mis Productos → Vista del producto</b> (Beauty), y sirven en todas tus landings.
@@ -353,7 +354,7 @@ export default function BeautyProductPage({
       {ficha.resultados.activo && (resultados.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-seccion--fondo">
           <div className="bpp-wrap">
-            <TituloSeccion numero={7} texto={ficha.resultados.titulo} vars={vars} centrado />
+            <TituloSeccion numero={7} texto={ficha.resultados.titulo} vars={vars} centrado mostrarNumero={previewMode} />
             {resultados.length === 0 ? (
               <p className="bpp-vacio">
                 Cargá los testimonios en <b>Mis Productos → Vista del producto</b>.
@@ -392,7 +393,7 @@ export default function BeautyProductPage({
       {/* 8 · Cómo funciona ────────────────────────────────────────── */}
       {ficha.como_funciona.activo && (pasos.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} vars={vars} centrado />
+          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {pasos.length === 0 ? (
             <p className="bpp-vacio">
               La rutina paso a paso se carga en <b>Mis Productos → Vista del producto</b> (Beauty).
@@ -432,7 +433,7 @@ export default function BeautyProductPage({
       {/* 10 · Preguntas frecuentes ────────────────────────────────── */}
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
+          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
             <p className="bpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
@@ -455,7 +456,7 @@ export default function BeautyProductPage({
       {ficha.upsells.activo && item.relacionados.length > 0 && (
         <section className="bpp-seccion bpp-seccion--fondo">
           <div className="bpp-wrap">
-            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} vars={vars} centrado />
+            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} vars={vars} centrado mostrarNumero={previewMode} />
             <div className="bpp-upsells">
               {item.relacionados.map(r => {
                 const precioRel = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
@@ -533,20 +534,22 @@ export default function BeautyProductPage({
 
 /* ── Piezas internas ──────────────────────────────────────────────── */
 
-function TituloSeccion({ numero, texto, vars, centrado = false }) {
+function TituloSeccion({ numero, texto, vars, centrado = false, mostrarNumero = false }) {
   if (!texto) return null;
   return (
     <div className={`bpp-seccion-titulo ${centrado ? 'es-centrado' : ''}`}>
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'grid', placeItems: 'center', width: 26, height: 26,
-          borderRadius: '50%', background: vars['--bpp-accent'], color: vars['--bpp-on-accent'],
-          fontSize: 12, fontWeight: 900, flexShrink: 0,
-        }}
-      >
-        {numero}
-      </span>
+      {mostrarNumero && (
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'grid', placeItems: 'center', width: 26, height: 26,
+            borderRadius: '50%', background: vars['--bpp-accent'], color: vars['--bpp-on-accent'],
+            fontSize: 12, fontWeight: 900, flexShrink: 0,
+          }}
+        >
+          {numero}
+        </span>
+      )}
       <h2>{texto}</h2>
     </div>
   );

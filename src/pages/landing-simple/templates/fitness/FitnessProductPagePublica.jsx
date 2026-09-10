@@ -65,6 +65,7 @@ export default function FitnessProductPagePublica({
         tema={tema}
         contacto={contacto}
         nombreComercio={nombreComercio}
+        previewMode={false}
         onVolver={onVolver}
         onClickRelacionado={onClickRelacionado}
         onComprar={(pack) => { setPackEnCompra(pack); setComprando(true); }}

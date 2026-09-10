@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
-import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery, resolverReglaDelivery } from '../../lib/deliveryOptions';
+import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -67,18 +67,15 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
   const opcionDeliverySeleccionada = opcionesDelivery.find(op =>
     op.ciudad === form.ciudad && (op.departamento || '') === (form.departamento || '')
   );
-  const reglaDeliverySeleccionada = resolverReglaDelivery(opcionDeliverySeleccionada, {
-    items,
-    paymentMethod: form.payment_method,
-  });
   const detalleDelivery = opcionDeliverySeleccionada
     ? descripcionDelivery(opcionDeliverySeleccionada, pedidoConEnvioIncluido, formatPrecio, { items, paymentMethod: form.payment_method })
     : null;
-  const costoEnvioVisible = opcionDeliverySeleccionada && !pedidoConEnvioIncluido
-    ? Number(reglaDeliverySeleccionada?.costo) || 0
-    : 0;
   const descuentoVisible = cupon ? (Number(cupon.descuento) || 0) : 0;
-  const totalVisible = Math.max(0, subtotal - descuentoVisible) + costoEnvioVisible;
+  // Exactamente lo que va a quedar registrado en el pedido: subtotal menos
+  // el cupón, sin el flete. Es el mismo cálculo que hace el backend
+  // (landing.service.js/crearCheckout), para que lo que ve el comprador y lo
+  // que se le cobra sean el mismo número.
+  const totalVisible = Math.max(0, subtotal - descuentoVisible);
 
   function reiniciar() {
     setPaso('carrito');
@@ -416,17 +413,17 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                   </div>
                   )}
 
+                  {/* El delivery NO se le cobra al cliente: su costo es
+                      interno (lo que el comercio le paga al courier) y viaja
+                      en el pedido solo para el arqueo. Antes se mostraba como
+                      un renglón más y se sumaba al total, pero el pedido se
+                      registraba SIN ese monto (ver crearCheckout: el monto es
+                      subtotal − cupón): al comprador se le prometía un total
+                      y se le grababa otro. */}
                   <div className="lp-cart-subtotal">
                     <span>Total</span>
                     <strong>{formatPrecio(subtotal)}</strong>
                   </div>
-
-                  {opcionDeliverySeleccionada && (
-                    <div className="lp-cart-subtotal lp-cart-delivery">
-                      <span>Delivery</span>
-                      <strong>{pedidoConEnvioIncluido ? 'Incluido' : formatPrecio(costoEnvioVisible)}</strong>
-                    </div>
-                  )}
 
                   {cupon && (
                     <>
@@ -439,13 +436,6 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                         <strong>{formatPrecio(totalVisible)}</strong>
                       </div>
                     </>
-                  )}
-
-                  {!cupon && opcionDeliverySeleccionada && !pedidoConEnvioIncluido && (
-                    <div className="lp-cart-subtotal lp-cart-total-final">
-                      <span>Total estimado</span>
-                      <strong>{formatPrecio(totalVisible)}</strong>
-                    </div>
                   )}
 
                   <button type="submit" className="lp-cart-checkout" disabled={!formularioValido || enviando}>

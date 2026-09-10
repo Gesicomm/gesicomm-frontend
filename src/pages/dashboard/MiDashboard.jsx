@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import {
   Eye, MessageCircle, CreditCard, ArrowRight, Loader, Table2, BarChart3, Store,
@@ -32,8 +33,6 @@ const PRESETS = [
 ];
 
 /**
- * Ícono de ayuda con explicación al pasar el mouse o al enfocar con el
- * teclado. El dashboard lo usa un comerciante, no un contador: cada número
  * tiene que poder explicarse solo, sin manual y sin saber contabilidad.
  *
  * Es un <button> y no un <span> para que se pueda llegar con Tab y para que
@@ -108,7 +107,7 @@ function DetalleCosto({ producto, columnas }) {
   // entregarla, y al final la parte de los gastos generales. Si las dos
   // vistas ordenaran distinto, el comerciante tendría que traducir.
   const costosVenta = [
-    { label: 'Delivery que pagaste vos', valor: d.envio_absorbido, ayuda: 'flete que no le cobraste al cliente' },
+    { label: 'Envío', valor: d.envio, ayuda: 'lo que se le pagó al courier' },
     { label: 'Comisión de pago', valor: d.comision, ayuda: 'lo que se queda la pasarela' },
     { label: 'IVA', valor: d.iva, ayuda: 'de los pedidos con factura' },
   ].filter(r => Number(r.valor) > 0);
@@ -144,7 +143,7 @@ function DetalleCosto({ producto, columnas }) {
           <div className="md-detalle-cuenta">
             <span className="md-detalle-titulo">Cómo se llega a la ganancia</span>
             <div className="md-detalle-linea">
-              <span className="md-detalle-label">Venta<small>el precio del producto</small></span>
+              <span className="md-detalle-label">Venta<small>lo que se cobró en estos pedidos</small></span>
               <span className="md-detalle-valor">{gs(producto.venta)}</span>
             </div>
             <div className="md-detalle-linea">
@@ -155,18 +154,6 @@ function DetalleCosto({ producto, columnas }) {
               <span className="md-detalle-label">= Ganancia</span>
               <span className={`md-detalle-valor ${producto.ganancia < 0 ? 'md-valor-negativo' : ''}`}>{gs(producto.ganancia)}</span>
             </div>
-            {Number(producto.envio_de_sus_pedidos) > 0 && (
-              <p className="md-detalle-nota">
-                Además hubo {gs(producto.envio_de_sus_pedidos)} de delivery que pagó el
-                cliente. Esa plata entra y sale, por eso no está en la cuenta.
-              </p>
-            )}
-            {Number(d.envio_absorbido) > 0 && (
-              <p className="md-detalle-nota md-detalle-nota-alerta">
-                De este producto pusiste vos {gs(d.envio_absorbido)} de delivery. Si se lo
-                cobraras al cliente, tu ganancia sería {gs(producto.ganancia + Number(d.envio_absorbido))}.
-              </p>
-            )}
           </div>
         </div>
       </td>
@@ -451,7 +438,7 @@ function TablaEmbudoProductos({ filas }) {
         <thead>
           <tr>
             <th>Producto</th>
-            <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu landing: hizo clic en consultar o lo puso en el carrito." /></th>
+            <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu landing: cuanta gente llego a whatsapp con ese producto." /></th>
             <th>Confirmados <Ayuda texto="De esos interesados, a cuántos les tomaste el pedido y lo confirmaron. Todavía no es una venta cobrada." /></th>
             <th>Compras <Ayuda texto="De esos pedidos confirmados, cuántos llegaron a manos del cliente. Esta sí es la venta concretada." /></th>
             <th>Conversión <Ayuda texto="De cada 100 interesados, cuántos terminaron con el producto en la mano. Si es bajo, el producto llama la atención pero algo frena la compra." /></th>
@@ -564,6 +551,7 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
   }, [serie.length]);
 
   const sinDatos = serie.every(d => valorDe(d, 'monto') === 0 && valorDe(d, 'costo') === 0 && valorDe(d, 'ganancia') === 0);
+  const hayPerdida = serie.some(d => valorDe(d, 'ganancia') < 0);
 
   const yFor = useCallback((v) => ALTO - ((v - min) / rango) * ALTO, [min, rango]);
   const xFor = useCallback((i) => i * grupoAncho + grupoAncho / 2, [grupoAncho]);
@@ -650,6 +638,24 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
                 <stop offset="72%" stopColor="var(--md-confirmado)" stopOpacity="0.03" />
                 <stop offset="100%" stopColor="var(--md-confirmado)" stopOpacity="0" />
               </linearGradient>
+              {/* La pérdida se pinta al revés que la ganancia: más fuerte
+                  abajo, porque crece hacia abajo. Con el mismo degradado
+                  dorado para los dos lados, un día de pérdida se veía igual
+                  que uno de poca ganancia. */}
+              <linearGradient id="md-area-perdida" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="var(--md-negativo)" stopOpacity="0" />
+                <stop offset="28%" stopColor="var(--md-negativo)" stopOpacity="0.06" />
+                <stop offset="100%" stopColor="var(--md-negativo)" stopOpacity="0.22" />
+              </linearGradient>
+              {/* Cortan el dibujo en dos: lo que está por encima del cero y
+                  lo que está por debajo. Así la MISMA curva se pinta dorada
+                  arriba y roja abajo, sin tener que calcular dónde cruza. */}
+              <clipPath id="md-clip-ganancia">
+                <rect x="0" y="0" width={ANCHO} height={Math.max(0, yFor(0))} />
+              </clipPath>
+              <clipPath id="md-clip-perdida">
+                <rect x="0" y={yFor(0)} width={ANCHO} height={Math.max(0, ALTO - yFor(0))} />
+              </clipPath>
               <filter id="md-line-glow" x="-8%" y="-18%" width="116%" height="136%">
                 <feGaussianBlur stdDeviation="2.2" result="blur" />
                 <feMerge>
@@ -664,7 +670,20 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
             {lineasGrid.map(f => (
               <line key={f} x1="0" y1={ALTO * (1 - f)} x2={ANCHO} y2={ALTO * (1 - f)} className="md-chart-grid" />
             ))}
-            <line x1="0" y1={yFor(0)} x2={ANCHO} y2={yFor(0)} className="md-chart-baseline" />
+            {/* Con valores negativos, la línea del cero deja de ser
+                decorativa: es la referencia que separa ganar de perder. Se
+                marca y se rotula solo en ese caso, para no ensuciar el
+                gráfico cuando todo está en positivo. */}
+            <line
+              x1="0"
+              y1={yFor(0)}
+              x2={ANCHO}
+              y2={yFor(0)}
+              className={hayPerdida ? 'md-chart-cero' : 'md-chart-baseline'}
+            />
+            {hayPerdida && (
+              <text x="4" y={yFor(0) - 4} className="md-chart-label md-chart-cero-label">0</text>
+            )}
 
             {hover !== null && (
               <line x1={xFor(hover)} y1={0} x2={xFor(hover)} y2={ALTO} className="md-chart-grid" style={{ pointerEvents: 'none' }} />
@@ -672,10 +691,22 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
 
             {CAMPOS.filter(c => c.campo !== 'costo').map(c => {
               const puntos = serie.map((d, i) => ({ x: xFor(i), y: yFor(valorDe(d, c.campo)) }));
+              const d = pathAreaSuave(puntos, yFor(0));
+              // La ganancia se dibuja dos veces con el mismo trazo: la parte
+              // de arriba del cero en dorado y la de abajo en rojo. Cada una
+              // recortada a su mitad, así el cruce se resuelve solo.
+              if (c.campo === 'ganancia') {
+                return (
+                  <g key="area-ganancia">
+                    <path d={d} className="md-area md-area-ganancia" clipPath="url(#md-clip-ganancia)" />
+                    <path d={d} className="md-area md-area-perdida" clipPath="url(#md-clip-perdida)" />
+                  </g>
+                );
+              }
               return (
                 <path
                   key={`area-${c.campo}`}
-                  d={pathAreaSuave(puntos, yFor(0))}
+                  d={d}
                   className={`md-area md-area-${c.clase}`}
                 />
               );
@@ -683,11 +714,22 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
 
             {CAMPOS.map(c => {
               const puntos = serie.map((d, i) => ({ x: xFor(i), y: yFor(valorDe(d, c.campo)) }));
+              const d = pathLineaSuave(puntos);
+              // Mismo criterio para el trazo: el tramo bajo cero va en rojo,
+              // para que la caída se lea como pérdida y no como "ganó menos".
+              if (c.campo === 'ganancia') {
+                return (
+                  <g key="linea-ganancia">
+                    <path fill="none" d={d} className="md-line md-line-ganancia" clipPath="url(#md-clip-ganancia)" />
+                    <path fill="none" d={d} className="md-line md-line-perdida" clipPath="url(#md-clip-perdida)" />
+                  </g>
+                );
+              }
               return (
                 <path
                   key={c.campo}
                   fill="none"
-                  d={pathLineaSuave(puntos)}
+                  d={d}
                   className={`md-line md-line-${c.clase}`}
                 />
               );
