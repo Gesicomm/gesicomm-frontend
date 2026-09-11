@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LayoutDashboard, RefreshCw } from "lucide-react";
+import { ArrowRight, LayoutDashboard, PackageCheck, RefreshCw } from "lucide-react";
 import { getDashboardGeneralPedidos } from "../../services/courierApi";
 import { productService } from "../../services/productService";
 
@@ -25,6 +25,13 @@ function Bloque({ titulo, children }) {
       {children}
     </div>
   );
+}
+
+function colorAccion(tono) {
+  if (tono === "danger") return "var(--color-danger)";
+  if (tono === "warning") return "var(--color-warning)";
+  if (tono === "success") return "var(--color-success)";
+  return "var(--color-info)";
 }
 
 /**
@@ -70,6 +77,7 @@ export function DashboardGeneralTab({ couriers = [] }) {
   const tp = data?.trabajo_pendiente;
   const ro = data?.resultado_operativo;
   const dc = data?.desempeno_courier || [];
+  const siguientesAcciones = data?.siguientes_acciones || [];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "1100px" }}>
@@ -112,6 +120,40 @@ export function DashboardGeneralTab({ couriers = [] }) {
         <p style={{ color: "var(--color-fg-muted)" }}>Cargando...</p>
       ) : !data ? null : (
         <>
+          <Bloque titulo="Siguiente acción sugerida">
+            {siguientesAcciones.length === 0 ? (
+              <p style={{ color: "var(--color-fg-subtle)", fontSize: "0.82rem", margin: 0 }}>No hay acciones operativas pendientes con estos filtros.</p>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: "0.75rem" }}>
+                {siguientesAcciones.slice(0, 4).map((a) => (
+                  <div
+                    key={a.tipo}
+                    style={{
+                      border: `1px solid color-mix(in srgb, ${colorAccion(a.tono)} 26%, transparent)`,
+                      background: `color-mix(in srgb, ${colorAccion(a.tono)} 9%, transparent)`,
+                      borderRadius: "0.65rem",
+                      padding: "0.85rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.45rem",
+                    }}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", color: colorAccion(a.tono), fontSize: "0.78rem", fontWeight: 800 }}>
+                      <PackageCheck size={15} /> {a.cantidad} pedido{a.cantidad === 1 ? "" : "s"}
+                    </span>
+                    <strong style={{ color: "var(--color-fg)", fontSize: "0.95rem", lineHeight: 1.25 }}>{a.titulo}</strong>
+                    <span style={{ color: "var(--color-fg-muted)", fontSize: "0.78rem", lineHeight: 1.4 }}>{a.descripcion}</span>
+                    {a.cta && (
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.3rem", color: colorAccion(a.tono), fontSize: "0.76rem", fontWeight: 800, marginTop: "auto" }}>
+                        {a.cta} <ArrowRight size={13} />
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Bloque>
+
           {/* Bloque 1 — Trabajo pendiente */}
           <Bloque titulo="Trabajo pendiente">
             <div style={{ display: "flex", flexWrap: "wrap", gap: "1.2rem" }}>

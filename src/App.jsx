@@ -26,6 +26,7 @@ import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Planes from './pages/planes/Planes';
 import ResultadoPago from './pages/planes/ResultadoPago';
+import ParametrosAdmin from './pages/admin/Parametros';
 import AdminPlanes from './pages/planes/AdminPlanes';
 import AuthTracking from './pages/admin/AuthTracking';
 import Onboarding from './pages/onboarding/Onboarding';
@@ -248,6 +249,11 @@ function App() {
           </AdminRoute>
         } />
 
+        {/* Parametros del sistema: credenciales de PagoPar de Gesicomm y
+            contacto del admin. Solo administradores. */}
+        <Route path="/admin/parametros" element={
+          <AdminRoute><DashboardLayout><ParametrosAdmin /></DashboardLayout></AdminRoute>
+        } />
         <Route path="/settings" element={
           <AdminRoute><DashboardLayout><Settings /></DashboardLayout></AdminRoute>
         } />

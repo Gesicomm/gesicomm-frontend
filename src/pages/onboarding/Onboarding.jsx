@@ -51,6 +51,10 @@ export default function Onboarding() {
   const [verificando, setVerificando] = useState(true);
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');
+  // PagoPar exige comprador.documento (la cedula) para cobrarle al comercio.
+  // El RUC es aparte y opcional: la doc dice que puede ir vacio.
+  const [documento, setDocumento] = useState('');
+  const [ruc, setRuc] = useState('');
   const [ficha, setFicha] = useState('');
   const [disponibilidad, setDisponibilidad] = useState(null);
   const [creando, setCreando] = useState(false);
@@ -105,6 +109,7 @@ export default function Onboarding() {
   }, [subdominioDebounced]);
 
   const nombreValido = nombre.trim().length >= 2 && subdominio.length >= 3;
+  const documentoValido = /^[0-9.\-]{5,20}$/.test(documento.trim());
   const subdominioOk = disponibilidad && disponibilidad !== 'cargando' && disponibilidad.valido && disponibilidad.disponible;
 
   function irAPaso2(e) {
@@ -128,6 +133,8 @@ export default function Onboarding() {
       }
       await tiendaService.crear({
         nombre: nombre.trim(),
+        documento: documento.trim(),
+        ruc: ruc.trim(),
         subdominio,
         onboarding: true,
         onboarding_ficha: continuarProductos ? ficha : null,
@@ -194,7 +201,28 @@ export default function Onboarding() {
 
             {error && <div className="land-alert-error">{error}</div>}
 
-            <button type="submit" className="land-btn-primary onb-btn-full" disabled={!nombreValido || !subdominioOk}>
+            <label className="onb-campo">
+              <span>Tu número de cédula</span>
+              <input
+                value={documento}
+                onChange={e => setDocumento(e.target.value)}
+                placeholder="Ej: 4123456"
+                inputMode="numeric"
+              />
+              <small>Lo pide la pasarela de pago para poder cobrarte. No se muestra a tus clientes.</small>
+            </label>
+
+            <label className="onb-campo">
+              <span>RUC <em>(opcional)</em></span>
+              <input
+                value={ruc}
+                onChange={e => setRuc(e.target.value)}
+                placeholder="Ej: 80012345-6"
+              />
+              <small>Solo si facturás. Podés dejarlo vacío.</small>
+            </label>
+
+            <button type="submit" className="land-btn-primary onb-btn-full" disabled={!nombreValido || !subdominioOk || !documentoValido}>
               Continuar <ArrowRight size={15} />
             </button>
           </form>

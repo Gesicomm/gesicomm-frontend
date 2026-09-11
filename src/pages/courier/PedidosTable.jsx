@@ -201,6 +201,20 @@ function formatFechaYHora(fecha, hora, createdAt) {
   return { fecha: fechaStr, hora: horaStr };
 }
 
+function normalizarTelefonoWhatsapp(telefono) {
+  const limpio = String(telefono || "").replace(/\D/g, "");
+  if (!limpio) return "";
+  return limpio.startsWith("0") ? `595${limpio.slice(1)}` : limpio;
+}
+
+function getWhatsappLink(envio, mensajePersonalizado) {
+  const numero = normalizarTelefonoWhatsapp(envio?.telefono);
+  if (!numero) return null;
+  const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
+  const mensaje = mensajePersonalizado || `Hola ${nombre}, te escribimos por tu pedido #${envio.id}.`;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}
+
 function ResumenItem({ label, value, color }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
@@ -226,13 +240,65 @@ const accionBtnStyle = {
   whiteSpace: "nowrap",
 };
 
-function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen }) {
+function AccionPrincipal({ envio, isAdmin, onAbrirDetalle, onAbrirResumen, onAccionSiguiente }) {
+  const accion = envio.accion_siguiente;
+  if (accion?.tipo === "abastecimiento_en_proceso") {
+    if (isAdmin) {
+      return (
+        <button
+          type="button"
+          className="pt-next-action pt-next-action--success"
+          title="Marcar que la mercadería ya llegó al depósito"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAccionSiguiente?.(envio, accion);
+          }}
+        >
+          <Package size={13} /> Marcar recibido
+        </button>
+      );
+    }
+    return (
+      <span className="pt-next-pill pt-next-pill--info" title={accion.descripcion}>
+        <Package size={13} /> {accion.titulo}
+      </span>
+    );
+  }
+  if (accion?.tipo === "pagar_abastecimiento") {
+    return (
+      <button
+        type="button"
+        className={`pt-next-action pt-next-action--${accion.tono || "danger"}`}
+        title={accion.descripcion}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAccionSiguiente?.(envio, accion);
+        }}
+      >
+        <CreditCard size={13} /> {isAdmin ? "Acreditar pago" : accion.cta}
+      </button>
+    );
+  }
+  if (accion?.cta && accion.siguiente_estado) {
+    return (
+      <button
+        type="button"
+        className={`pt-next-action pt-next-action--${accion.tono || "info"}`}
+        title={accion.descripcion}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAccionSiguiente?.(envio, accion);
+        }}
+      >
+        <Package size={13} /> {accion.cta}
+      </button>
+    );
+  }
+
   if (envio.estado === "Pendiente") {
-    const tel = (envio.telefono || "").replace(/\D/g, "");
     const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
-    if (!tel) return <span style={{ color: "var(--color-fg-subtle)", fontSize: "0.75rem" }}>Sin teléfono</span>;
-    const mensaje = `Hola ${nombre}, te escribimos por tu pedido #${envio.id}. ¿Confirmamos los datos de entrega?`;
-    const link = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
+    const link = getWhatsappLink(envio, `Hola ${nombre}, te escribimos por tu pedido #${envio.id}. ¿Confirmamos los datos de entrega?`);
+    if (!link) return <span style={{ color: "var(--color-fg-subtle)", fontSize: "0.75rem" }}>Sin teléfono</span>;
     return (
       <a href={link} target="_blank" rel="noopener noreferrer" style={accionBtnStyle} onClick={(e) => e.stopPropagation()}>
         <MessageCircle size={13} /> Contactar
@@ -258,7 +324,7 @@ function AccionPrincipal({ envio, onAbrirDetalle, onAbrirResumen }) {
  * Gestión de Pedidos, sección 38-42). Reemplaza el viejo MultiEstadoSelect:
  * la pestaña activa ES el filtro de estado, no hace falta un selector aparte.
  */
-export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, onAccionEspecial, onAbrirResumen, onAbrirHistorial, refrescarKey = 0 }) {
+export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimiento, onAdminAbastecimiento, onAbrirDetalle, onAccionEspecial, onAbrirResumen, onAbrirHistorial, refrescarKey = 0 }) {
   const [estadoActivo, setEstadoActivo] = useState("Pendiente");
   const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [page, setPage] = useState(1);
@@ -271,6 +337,8 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
   const [metodosPagoList, setMetodosPagoList] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
+  const [modalAbastecimientoOpen, setModalAbastecimientoOpen] = useState(false);
+  const [modalAbastecimientoDismissedKey, setModalAbastecimientoDismissedKey] = useState(null);
 
   // Modals
   const [modalOpen, setModalOpen] = useState(false);
@@ -379,11 +447,27 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
     setPage(1);
   };
 
+  const handleSelectEstado = (estado) => {
+    if (estado === "Confirmado") {
+      setModalAbastecimientoDismissedKey(null);
+    }
+    setEstadoActivo(estado);
+    setPage(1);
+  };
+
   const handleItemEstadoChange = (item, nuevoEstado) => {
     if (item.estado === nuevoEstado) return;
 
     if (nuevoEstado === "Confirmado") {
       onAbrirDetalle && onAbrirDetalle(item);
+      return;
+    }
+
+    // Saliendo de "Reprogramado" hacia cualquier destino: el viaje en falso
+    // ya se hizo y recién ahora se sabe cuánto costó — se pregunta antes de
+    // dejar avanzar la transición real. Ver CostoViajeModal.
+    if (item.estado === "Reprogramado") {
+      onAccionEspecial && onAccionEspecial("costo_viaje", item, { destino: nuevoEstado });
       return;
     }
 
@@ -407,12 +491,116 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
     }
   };
 
+  const handleAccionSiguiente = (item, accion) => {
+    if (accion.tipo === "pagar_abastecimiento") {
+      if (usuarioActual?.rol === "administrador") {
+        onAdminAbastecimiento?.(item, "acreditar_pago");
+      } else {
+        onPagarAbastecimiento?.(item);
+      }
+      return;
+    }
+    if (accion.tipo === "abastecimiento_en_proceso") {
+      if (usuarioActual?.rol === "administrador") {
+        onAdminAbastecimiento?.(item, "recibir");
+      }
+      return;
+    }
+    if (accion.siguiente_estado === "Confirmado") {
+      onAbrirDetalle?.(item);
+      return;
+    }
+    if (accion.siguiente_estado) {
+      handleItemEstadoChange(item, accion.siguiente_estado);
+    }
+  };
+
   const hayFiltros = Object.entries(filtros).some(([, v]) => v !== "" && v !== "TODOS");
 
   const envios = data.data || [];
+  const pagosAbastecimientoPendientes = envios.filter((e) => e.accion_siguiente?.tipo === "pagar_abastecimiento");
+  const totalAbastecimientoPendiente = pagosAbastecimientoPendientes.reduce(
+    (acc, e) => acc + (Number(e.abastecimiento_costo) || 0),
+    0
+  );
+  const abastecimientoModalKey = pagosAbastecimientoPendientes.map((e) => e.id).sort((a, b) => a - b).join("-");
+  const primerPagoPendiente = pagosAbastecimientoPendientes[0] || null;
+
+  useEffect(() => {
+    if (
+      estadoActivo === "Confirmado" &&
+      !loading &&
+      pagosAbastecimientoPendientes.length > 0 &&
+      abastecimientoModalKey &&
+      modalAbastecimientoDismissedKey !== abastecimientoModalKey
+    ) {
+      setModalAbastecimientoOpen(true);
+    }
+  }, [
+    estadoActivo,
+    loading,
+    pagosAbastecimientoPendientes.length,
+    abastecimientoModalKey,
+    modalAbastecimientoDismissedKey,
+  ]);
+
+  const cerrarModalAbastecimiento = () => {
+    setModalAbastecimientoDismissedKey(abastecimientoModalKey);
+    setModalAbastecimientoOpen(false);
+  };
+
+  const pagarDesdeModalAbastecimiento = () => {
+    if (!primerPagoPendiente) return;
+    cerrarModalAbastecimiento();
+    handleAccionSiguiente(primerPagoPendiente, primerPagoPendiente.accion_siguiente);
+  };
 
   return (
     <div className="pt-root">
+      {modalAbastecimientoOpen && primerPagoPendiente && (
+        <div className="pt-payment-modal-backdrop" role="presentation">
+          <div
+            className="pt-payment-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="pt-payment-modal-title"
+          >
+            <button
+              type="button"
+              className="pt-payment-modal__close"
+              onClick={cerrarModalAbastecimiento}
+              aria-label="Cerrar aviso de abastecimiento"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="pt-payment-modal__icon">
+              <CreditCard size={28} />
+            </div>
+
+            <div className="pt-payment-modal__content">
+              <span className="pt-payment-modal__eyebrow">Acción requerida</span>
+              <h2 id="pt-payment-modal-title">Tenés pedidos que pagar</h2>
+              <p>
+                Hay {pagosAbastecimientoPendientes.length} pedido{pagosAbastecimientoPendientes.length === 1 ? "" : "s"} confirmado{pagosAbastecimientoPendientes.length === 1 ? "" : "s"} con abastecimiento pendiente por {formatGs(totalAbastecimientoPendiente)}.
+              </p>
+              <p className="pt-payment-modal__warning">
+                Tenés 24 horas para pagar. Gesicom recién procesa el abastecimiento cuando el pago esté acreditado.
+              </p>
+            </div>
+
+            <div className="pt-payment-modal__actions">
+              <button type="button" className="pt-payment-modal__secondary" onClick={cerrarModalAbastecimiento}>
+                Ver pedidos
+              </button>
+              <button type="button" className="pt-payment-modal__primary" onClick={pagarDesdeModalAbastecimiento}>
+                {usuarioActual?.rol === "administrador" ? "Acreditar pago" : "Pagar abastecimiento"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Pestañas por estado con contador ── */}
       <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.3rem" }}>
         {STATUS_ORDER.map((st) => {
@@ -422,7 +610,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
             <button
               key={st}
               type="button"
-              onClick={() => { setEstadoActivo(st); setPage(1); }}
+              onClick={() => handleSelectEstado(st)}
               style={{
                 padding: "0.45rem 0.9rem",
                 borderRadius: "999px",
@@ -463,9 +651,9 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
           }}
         >
           <ResumenItem label="Entregado" value={`${resumenEntregados.entregado.cantidad} · ${formatGs(resumenEntregados.entregado.monto_total)}`} />
-          <ResumenItem label="En poder del courier" value={formatGs(resumenEntregados.dinero_courier)} />
+          <ResumenItem label="En poder del courier pendiente" value={formatGs(resumenEntregados.dinero_courier)} />
           <ResumenItem label="Cobrado por la tienda" value={formatGs(resumenEntregados.cobrado_directo)} />
-          <ResumenItem label="Costo de courier" value={formatGs(resumenEntregados.costo_total_courier)} />
+          <ResumenItem label="Costo de courier pendiente" value={formatGs(resumenEntregados.costo_total_courier)} />
           <ResumenItem
             label="Saldo de liquidación"
             value={
@@ -486,6 +674,20 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {estadoActivo === "Confirmado" && pagosAbastecimientoPendientes.length > 0 && (
+        <div className="pt-payment-alert" role="alert">
+          <div className="pt-payment-alert__icon">
+            <CreditCard size={18} />
+          </div>
+          <div className="pt-payment-alert__body">
+            <strong>Tenés que pagar abastecimiento para procesar estos pedidos.</strong>
+            <span>
+              {pagosAbastecimientoPendientes.length} pedido{pagosAbastecimientoPendientes.length === 1 ? "" : "s"} · {formatGs(totalAbastecimientoPendiente)} pendientes. Tenés 24 horas para pagar; Gesicom procesa el pedido recién cuando el pago esté acreditado.
+            </span>
+          </div>
         </div>
       )}
 
@@ -698,6 +900,8 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                   e.hora,
                   e.createdAt
                 );
+                const whatsappLink = getWhatsappLink(e);
+                const nombreCliente = [e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "cliente";
 
                 return (
                   <tr
@@ -724,7 +928,22 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                       </span>
                     </td>
                     <td className="pt-td">
-                      <span style={{ color: "var(--color-fg-muted)", fontSize: "0.82rem" }}>{e.telefono || "—"}</span>
+                      <span className="pt-phone-cell">
+                        <span>{e.telefono || "—"}</span>
+                        {whatsappLink && (
+                          <a
+                            href={whatsappLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="pt-whatsapp-action"
+                            title={`Escribir por WhatsApp a ${e.telefono}`}
+                            aria-label={`Escribir por WhatsApp a ${nombreCliente}`}
+                            onClick={(ev) => ev.stopPropagation()}
+                          >
+                            <MessageCircle size={14} />
+                          </a>
+                        )}
+                      </span>
                     </td>
                     <td className="pt-td pt-td-ciudad">
                       <span>{e.ciudad || "—"}</span>
@@ -757,7 +976,13 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                     </td>
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                        <AccionPrincipal envio={e} onAbrirDetalle={onAbrirDetalle} onAbrirResumen={onAbrirResumen} />
+                        <AccionPrincipal
+                          envio={e}
+                          isAdmin={usuarioActual?.rol === "administrador"}
+                          onAbrirDetalle={onAbrirDetalle}
+                          onAbrirResumen={onAbrirResumen}
+                          onAccionSiguiente={handleAccionSiguiente}
+                        />
                         {onAbrirHistorial && (
                           <button
                             type="button"
@@ -768,7 +993,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onAbrirDetalle, on
                             <History size={13} />
                           </button>
                         )}
-                        {usuarioActual?.rol === 'ADMIN' && (
+                        {usuarioActual?.rol === 'administrador' && (
                           <button
                             type="button"
                             title="Eliminar pedido permanentemente"

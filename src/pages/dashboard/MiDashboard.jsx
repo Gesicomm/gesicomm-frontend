@@ -39,12 +39,59 @@ const PRESETS = [
  * el lector de pantalla lo anuncie; el texto vive en aria-label además de
  * en el tooltip visual, porque un tooltip en CSS no lo lee nadie.
  */
-function Ayuda({ texto }) {
+function Ayuda({ texto, ariaLabel }) {
+  const etiquetaAccesible = ariaLabel || (typeof texto === 'string' ? texto : 'Ayuda contextual');
+  const [posicion, setPosicion] = useState(null);
+  const botonRef = useRef(null);
+
+  const mostrar = useCallback(() => {
+    const rect = botonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const ancho = Math.min(280, window.innerWidth - 32);
+    const margen = 16;
+    const topPreferido = rect.bottom + 10;
+    const leftCentrado = rect.left + (rect.width / 2) - (ancho / 2);
+
+    setPosicion({
+      top: topPreferido,
+      left: Math.max(margen, Math.min(leftCentrado, window.innerWidth - ancho - margen)),
+      width: ancho,
+    });
+  }, []);
+
+  const ocultar = useCallback(() => setPosicion(null), []);
+
   return (
-    <button type="button" className="md-ayuda" aria-label={texto}>
-      <HelpCircle size={13} aria-hidden="true" />
-      <span className="md-ayuda-burbuja" role="tooltip">{texto}</span>
-    </button>
+    <>
+      <button
+        ref={botonRef}
+        type="button"
+        className="md-ayuda"
+        aria-label={etiquetaAccesible}
+        onMouseEnter={mostrar}
+        onMouseLeave={ocultar}
+        onFocus={mostrar}
+        onBlur={ocultar}
+      >
+        <HelpCircle size={13} aria-hidden="true" />
+      </button>
+      {posicion && createPortal(
+        <span
+          className="md-ayuda-burbuja-portal"
+          role="tooltip"
+          style={{
+            position: 'fixed',
+            top: posicion.top,
+            left: posicion.left,
+            width: posicion.width,
+          }}
+        >
+          {texto}
+        </span>,
+        document.body
+      )}
+    </>
   );
 }
 
@@ -112,6 +159,23 @@ function DetalleCosto({ producto, columnas }) {
     { label: 'IVA', valor: d.iva, ayuda: 'de los pedidos con factura' },
   ].filter(r => Number(r.valor) > 0);
 
+  // Los gastos del negocio llegan al producto por cuatro caminos distintos,
+  // y cada uno se explica distinto: dos los eligió el usuario o su campaña
+  // de Meta (van enteros, sin repartir) y dos son plata del período
+  // repartida por unidades vendidas (fijos y variables, cada uno en su
+  // línea — solo el fijo entra al punto de equilibrio). Juntarlos en un
+  // solo renglón "Gastos operativos" escondía de dónde salía el número y
+  // era lo que hacía desconfiar de la tabla. Lo único que no aparece acá es
+  // la publicidad de Meta SIN campaña propia asignada — resta de la
+  // Ganancia Neta de arriba, no del costo de este producto en particular
+  // (ver la leyenda debajo de la tabla).
+  const gastosGenerales = [
+    { label: 'Gastos de este producto', valor: d.gastos_directos, ayuda: 'cargados en Finanzas y atados a este producto' },
+    { label: 'Publicidad de este producto', valor: d.publicidad_directa, ayuda: 'de una campaña de Meta Ads asignada a este producto en Ads & Campañas' },
+    { label: 'Gastos fijos', valor: d.fijos, ayuda: 'la parte que le toca de alquiler, sueldos y servicios' },
+    { label: 'Gastos variables', valor: d.variables, ayuda: 'la parte que le toca de comisiones y otros gastos variables sin producto asociado' },
+  ].filter(r => Number(r.valor) > 0);
+
   return (
     <tr className="md-detalle-fila">
       <td colSpan={columnas}>
@@ -128,12 +192,12 @@ function DetalleCosto({ producto, columnas }) {
                 <span className="md-detalle-valor">{gs(r.valor)}</span>
               </div>
             ))}
-            {Number(d.fijos) > 0 && (
-              <div className="md-detalle-linea">
-                <span className="md-detalle-label">Gastos operativos<small>la parte que le toca de publicidad y fijos</small></span>
-                <span className="md-detalle-valor">{gs(d.fijos)}</span>
+            {gastosGenerales.map(r => (
+              <div key={r.label} className="md-detalle-linea">
+                <span className="md-detalle-label">{r.label}<small>{r.ayuda}</small></span>
+                <span className="md-detalle-valor">{gs(r.valor)}</span>
               </div>
-            )}
+            ))}
             <div className="md-detalle-linea md-detalle-total">
               <span className="md-detalle-label">Costo total</span>
               <span className="md-detalle-valor">{gs(producto.costo)}</span>
@@ -415,9 +479,11 @@ function useEmbudoPorProducto(ventas, pixel) {
 
     return [...mapa.values()]
       .filter(p => p.leads > 0)
-      // La conversión mide el embudo completo: de los interesados, cuántos
-      // terminaron con el producto en la mano. No contra los confirmados.
-      .map(p => ({ ...p, conversion: p.leads > 0 ? (p.compras / p.leads) * 100 : null }))
+      // La conversión de esta tabla mide el tramo comercial real:
+      // pedidos confirmados -> compras entregadas. Los leads quedan como
+      // contexto de demanda, pero no son el denominador porque una compra
+      // puede venir de una conversación ya abierta o de otro camino.
+      .map(p => ({ ...p, conversion: p.confirmados > 0 ? (p.compras / p.confirmados) * 100 : null }))
       .sort((a, b) => b.leads - a.leads || b.compras - a.compras);
   }, [ventas, pixel]);
 }
@@ -441,7 +507,7 @@ function TablaEmbudoProductos({ filas }) {
             <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu landing: cuanta gente llego a whatsapp con ese producto." /></th>
             <th>Confirmados <Ayuda texto="De esos interesados, a cuántos les tomaste el pedido y lo confirmaron. Todavía no es una venta cobrada." /></th>
             <th>Compras <Ayuda texto="De esos pedidos confirmados, cuántos llegaron a manos del cliente. Esta sí es la venta concretada." /></th>
-            <th>Conversión <Ayuda texto="De cada 100 interesados, cuántos terminaron con el producto en la mano. Si es bajo, el producto llama la atención pero algo frena la compra." /></th>
+            <th>Conversión <Ayuda texto="De cada 100 pedidos confirmados de este producto, cuántos terminaron entregados. Es Compras dividido Confirmados." /></th>
           </tr>
         </thead>
         <tbody>
@@ -1118,18 +1184,37 @@ export default function MiDashboard() {
   // 'costo' (ver getGastosOperativos en pedidosAnalyticsService). Mostrar
   // solo `gastos_operativos` hacía que la tarjeta no cerrara: se veía la
   // mitad del importe que la Ganancia Neta descontaba.
-  const gastosOperativosTotal = Number(kpis.gastos_operativos || 0) + Number(kpis.costos_operativos_adicionales || 0);
+  // El gasto de Meta se suma acá porque el backend también lo resta para
+  // llegar a ganancia_neta_estimada: si el total de pantalla no lo incluye,
+  // la tarjeta deja de cerrar contra la Ganancia Neta.
+  const gastosOperativosTotal = Number(kpis.gastos_operativos || 0)
+    + Number(kpis.costos_operativos_adicionales || 0)
+    + Number(kpis.gasto_meta_ads || 0);
 
-  // "META" de la planilla = plata gastada en ads/anuncios. En el sistema eso
-  // no es un concepto propio: es un CostoGasto cargado bajo una categoría de
-  // publicidad. Se separa del resto de los gastos para que la tarjeta lea
-  // igual que la planilla (Facturación − Ads − Producto − Envíos − Fijos),
-  // sin duplicar importes: costos_fijos es el total menos lo de publicidad.
-  const CATEGORIAS_PUBLICIDAD = ['publicidad', 'marketing'];
-  const gastoPublicidad = (kpis.gastos_por_categoria || [])
-    .filter(c => CATEGORIAS_PUBLICIDAD.includes((c.categoria || '').trim().toLowerCase()))
-    .reduce((acc, c) => acc + Number(c.total || 0), 0);
-  const costosFijos = gastosOperativosTotal - gastoPublicidad;
+  // Los gastos del negocio son del PERÍODO y no se acotan al producto que
+  // estés mirando: el alquiler se paga igual. Con un producto filtrado, la
+  // tarjeta compara la facturación de ese producto contra el gasto de todo
+  // el mes, así que hay que decirlo en pantalla — si no, el usuario lee
+  // "este producto me cuesta 3.000.000 de fijos" y no es eso.
+  const filtrandoProducto = productoId !== 'TODOS';
+
+  // "META" de la planilla = plata gastada en ads. Sale de los CSV importados
+  // en Ads & Campañas, que es donde el usuario efectivamente lo carga. Se
+  // separa del resto para que la tarjeta lea igual que la planilla
+  // (Facturación − Ads − Producto − Envíos − Fijos − Variables).
+  const gastoMetaAds = Number(kpis.gasto_meta_ads || 0);
+
+  // Fijos y Variables van en dos renglones, no uno: antes "Costos Fijos"
+  // sumaba TODO el CostoGasto que no fuera Meta (fijo, variable y hasta lo
+  // atado a un producto puntual), así que un gasto de Marketing cargado
+  // como variable se leía como si fuera alquiler. Los dos vienen puros del
+  // backend, ya listos para mostrar: sin filtro son el total del período;
+  // con un producto filtrado, la parte que le toca a ESE producto (misma
+  // cuenta que costo_detalle.fijos/.variables en la tabla de abajo — ver
+  // `productoFiltrado` en getAnalyticsCompleto).
+  const costosFijos = Number(kpis.gastos_fijos_generales || 0);
+  const costosVariables = Number(kpis.gastos_variables_generales || 0);
+  const utilidadBruta = Number(kpis.margen_bruto_estimado || 0);
 
   const canalVacio = { total: 0, cancelados: 0, confirmados: 0, entregados: 0, efectividad: 0 };
   // Los embudos de WhatsApp y de la Web se leen por slug del catálogo.
@@ -1155,10 +1240,9 @@ export default function MiDashboard() {
       .slice(0, 5);
   }, [ventas]);
 
+  const embudoProductos = useEmbudoPorProducto(ventas, pixel);
   const productosConsultados = pixel?.productos_mas_consultados || [];
   const maxConsultados = productosConsultados[0]?.consultas || 0;
-
-  const embudoProductos = useEmbudoPorProducto(ventas, pixel);
 
   const ctrPct = pixel ? (pixel.ctr * 100).toFixed(1).replace(/\.0$/, '') : '0';
 
@@ -1235,12 +1319,9 @@ export default function MiDashboard() {
   };
 
   // Rendimiento por canal: compara SOLO canales de origen de pedido, todos
-  // con la misma forma (total → confirmados → entregados). Meta/CAPI no va
+  // con la misma forma (total -> confirmados -> entregados). Meta/CAPI no va
   // como fila propia porque no es un canal de pedidos: es el tracking de la
   // landing, o sea el tráfico que alimenta la fila "Formularios Web".
-  // Las filas salen del catálogo `canales_venta` que devuelve el backend,
-  // no de una lista fija acá: si mañana se carga un canal nuevo en la base,
-  // aparece solo. "Sin canal" solo se muestra si de verdad hay pedidos ahí.
   const canalesFunnel = ventas?.funnel?.canales || {};
   const rendimientoCanales = [
     ...(ventas?.canales_disponibles || []).map(c => ({
@@ -1367,7 +1448,19 @@ export default function MiDashboard() {
               <span className="md-rent-valor">{funnel.entregados}</span>
             </div>
             <div className="md-rent-item">
-              <span className="md-rent-label">Ticket Promedio <Ayuda texto="Cuánto gastó en promedio cada cliente por pedido entregado." /></span>
+              <span className="md-rent-label">
+                Venta Promedio
+                <Ayuda
+                  ariaLabel="Promedio cobrado por cada pedido entregado. Formula: facturacion real dividida por pedidos entregados."
+                  texto={(
+                    <>
+                      <strong>Promedio por pedido entregado.</strong>
+                      <span>Es cuánto cobraste, en promedio, por cada pedido que llegó al cliente.</span>
+                      <small>Facturación real ÷ pedidos entregados</small>
+                    </>
+                  )}
+                />
+              </span>
               <span className="md-rent-valor">{gs(kpis.ticket_promedio)}</span>
             </div>
             <div className="md-rent-item md-rent-destacado">
@@ -1406,8 +1499,9 @@ export default function MiDashboard() {
               - Producto
               - Envíos
               - Costos fijos
+              (- Costos variables, si hubo)
               (- Comisión, si hubo)
-              = Utilidad Neta
+              = Utilidad Bruta
               - IVA
 
             "Envíos" es SIEMPRE el costo real pagado al courier, tildado o
@@ -1422,8 +1516,8 @@ export default function MiDashboard() {
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en publicidad en este período. Se toma de Costos y Gastos, de las categorías Publicidad y Marketing." /></span>
-            <span className="md-rent-valor">{gs(gastoPublicidad)}</span>
+            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale de los reportes que importaste en Ads & Campañas, con IVA. Si un reporte abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Costos y Gastos no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
+            <span className="md-rent-valor">{gs(gastoMetaAds)}</span>
           </div>
           <div className="md-rent-item">
             <span className="md-rent-label">Producto <Ayuda texto="Lo que pagaste por la mercadería que entregaste. Se usa el costo que tenía el producto el día de la venta, no el de hoy." /></span>
@@ -1437,32 +1531,41 @@ export default function MiDashboard() {
             <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios, software. Se cargan en Finanzas → Costos y Gastos." /></span>
+            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Costos y Gastos con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
             <span className="md-rent-valor">{gs(costosFijos)}</span>
           </div>
-          {kpis.costo_comision_total > 0 && (
-            <div className="md-rent-item">
-              <span className="md-rent-label">Comisión <Ayuda texto="Lo que se queda la pasarela de pago por cobrarte." /></span>
-              <span className="md-rent-valor">{gs(kpis.costo_comision_total)}</span>
-            </div>
-          )}
+          <div className="md-rent-item">
+            <span className="md-rent-label">Costos Variables <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Costos y Gastos con clasificación 'Variable'." /></span>
+            <span className="md-rent-valor">{gs(costosVariables)}</span>
+          </div>
           <div className="md-rent-item md-rent-destacado">
             <span className="md-rent-label">
-              Utilidad Neta <small>({kpis.pct_margen_neto}%)</small>
-              <Ayuda texto="Lo que te queda después de descontar todo lo de arriba, el IVA incluido. En rojo significa que el período cerró con pérdida." />
+              Utilidad Bruta <small>({kpis.pct_margen_bruto}%)</small>
+              <Ayuda texto="Facturación real menos producto, envíos, comisiones e IVA. Todavía no descuenta Meta ni costos fijos." />
             </span>
-            <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>{gs(kpis.ganancia_neta_estimada)}</span>
+            <span className={`md-rent-valor ${utilidadBruta < 0 ? 'md-valor-negativo' : ''}`}>{gs(utilidadBruta)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda. Ya está descontado de la Utilidad Neta de arriba." /></span>
+            <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda." /></span>
             <span className="md-rent-valor">{gs(kpis.iva_facturado_total)}</span>
           </div>
         </div>
 
-        {/* Punto de equilibrio: solo aparece si hay gastos fijos cargados.
+        {/* Ya no hace falta aclarar "esto es del período completo, no de
+            este producto": Fijos, Variables, Meta y Utilidad ahora SÍ
+            prorratean cuando hay un producto filtrado (ver
+            getAnalyticsCompleto en pedidosAnalyticsService — usa
+            costo_detalle del producto filtrado, misma cuenta que la tabla
+            de abajo). Sin filtro, siguen siendo el total del negocio. */}
+
+        {/* Punto de equilibrio: solo aparece si hay gastos FIJOS cargados.
             Sin gastos que cubrir no hay equilibrio del que hablar, y un
-            renglón que siempre dice Gs 0 es ruido. */}
-        {kpis.punto_equilibrio !== undefined && (kpis.gastos_operativos > 0 || kpis.costos_operativos_adicionales > 0) && (
+            renglón que siempre dice Gs 0 es ruido. Se mira
+            `gastos_fijos_generales` y no el total: los variables se mueven
+            con las ventas y ya están adentro del margen de contribución, así
+            que un período con solo gastos variables no tiene punto de
+            equilibrio del que hablar. */}
+        {kpis.punto_equilibrio !== undefined && kpis.gastos_fijos_generales > 0 && (
           <div className={`md-equilibrio ${kpis.punto_equilibrio === null ? 'md-equilibrio-alerta' : (kpis.falta_para_equilibrio > 0 ? 'md-equilibrio-falta' : 'md-equilibrio-ok')}`}>
             {kpis.punto_equilibrio === null ? (
               <>
@@ -1501,16 +1604,32 @@ export default function MiDashboard() {
             </ul>
           </details>
         )}
+
       </section>
 
       <section className="md-card md-products-card md-span-12">
-        <p className="md-card-title-sub md-subsection-label">Más Vendidos</p>
+        <h3 className="md-card-title">Más Vendidos</h3>
         <p className="md-empty-hint md-subsection-ayuda">
           Cuánto vendiste, cuánto te costó, cuánto ganaste y cuánto perdiste con
           cada producto. Pasá el mouse por el signo de pregunta de cada columna
           para ver qué significa.
         </p>
         <TablaMasVendidos filas={productosVendidos} />
+        {/* Transparencia del reparto: si la suma de "Ganancia" de esta tabla
+            no cierra exacto contra la Utilidad Neta de arriba, es por esto
+            — plata real del período que resta de la Utilidad Neta pero no
+            se le carga a ningún producto en particular, porque no hay forma
+            honesta de saber a cuál corresponde: SOLO el gasto de Meta de
+            campañas sin vincular (los gastos variables generales SÍ se
+            reparten por unidades y ya están en la columna Costo de cada
+            producto). Mostrarlo acá evita que la diferencia se lea como un
+            error de la tabla. */}
+        {Number(kpis.gastos_sin_atribuir_a_producto) > 0 && (
+          <p className="md-empty-hint md-subsection-ayuda" style={{ marginTop: '0.5rem' }}>
+            No incluye {gs(kpis.gastos_sin_atribuir_a_producto)} en publicidad de Meta sin campaña propia asignada
+            — esa plata sí está descontada de la Utilidad Neta de arriba.
+          </p>
+        )}
       </section>
 
       {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
@@ -1534,18 +1653,6 @@ export default function MiDashboard() {
         <EmbudoPasos {...embudosPorTab[embudoTab]} />
       </section>
 
-      {/* ── Qué landing vende más. Va a lo ancho: son 7 columnas y la fila
-          de totales tiene que leerse alineada con ellas. ─────────────────── */}
-      <section className="md-card md-span-12">
-        <h3 className="md-card-title">
-          {/* Sin número en el título: con una sola landing, "Top 1 landings"
-              se lee mal. El recorte queda dicho en la fila de totales. */}
-          <Store size={15} /> Landings que más venden
-          <Ayuda texto="Cuál de tus páginas te está dejando más plata, y cuánta gente le llega. Compara siempre TODAS tus landings: no cambia con el selector de arriba, porque comparar una página contra sí misma no diría nada. Sí respeta el período y el filtro de producto." />
-        </h3>
-        <TablaRankingLandings ranking={ranking} />
-      </section>
-
       {/* ── Rendimiento por canal + Couriers: comparación, no detalle ──── */}
       <div className="md-cols-2 md-span-12">
         <section className="md-card">
@@ -1565,82 +1672,28 @@ export default function MiDashboard() {
         </section>
       </div>
 
-      {/* ── Productos: leads vs confirmados (compacto) + más consultados ── */}
-      <div className="md-cols-2 md-span-12">
-        <section className="md-card">
-          <h3 className="md-card-title">
-            Leads vs. Confirmados por producto
-            <span className="md-card-title-sub">pixel + confirmado a mano</span>
-            <Ayuda texto="Compara la intención de compra en la landing (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en la landing: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
-          </h3>
-          <TablaEmbudoProductos filas={embudoProductosVisibles} />
-          {embudoProductos.length > 5 && (
-            <button type="button" className="md-btn-ghost md-ver-todos" onClick={() => setVerTodosProductos(v => !v)}>
-              {verTodosProductos ? 'Ver menos' : `Ver todos (${embudoProductos.length})`}
-            </button>
-          )}
-        </section>
-
-        <section className="md-card">
-          <h3 className="md-card-title">
-            Más consultados
-            <span className="md-card-title-sub">pixel</span>
-            <Ayuda texto="Los productos que más miran en tu landing. Si uno se consulta mucho pero vende poco, algo lo está frenando: precio, fotos o falta de stock." />
-          </h3>
-          {productosConsultados.length === 0 ? (
-            <p className="md-empty-hint">Todavía no hay clics en "Consultar" en este período.</p>
-          ) : (
-            <div className="md-rank-lista">
-              {productosConsultados.map((p, i) => (
-                <FilaRanking
-                  key={p.nombre}
-                  posicion={i + 1}
-                  nombre={p.nombre}
-                  valor={p.consultas}
-                  valorLabel={`${p.consultas}`}
-                  max={maxConsultados}
-                  tono="intent"
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* ── Actividad: secundaria, ocupa solo lo necesario ──────────────── */}
-      {pixel ? (
-        <GraficoTendencia serie={pixel.serie} className="md-chart-secondary md-span-12" />
-      ) : (
-        <section className="md-card md-chart-card md-chart-secondary md-span-12">
-          <div className="md-empty">
-            <Store size={22} opacity={0.35} />
-            {/* Sin landings es un estado real; con landings, que no haya
-                tráfico significa que falló la consulta, no que falte crear
-                nada — decir "creá tu landing" ahí sería mentir. */}
-            {landingsDisponibles.length > 0 ? (
-              <p>No pudimos traer las visitas de esta página. Probá recargar en un momento.</p>
-            ) : (
-              <>
-                <p>Todavía no tenés una landing publicada.</p>
-                {/* Apunta al nuevo flujo de Landing simple (3 templates rígidos)
-                    — el editor flexible (/mi-landing) sigue existiendo pero ya
-                    no es un punto de entrada visible, ver UserLayout.jsx. */}
-                <Link to="/landing" className="md-btn-primary">
-                  Crear mi landing <ArrowRight size={14} />
-                </Link>
-              </>
-            )}
-          </div>
-        </section>
-      )}
+      {/* ── Productos: leads vs confirmados ─────────────────────────────── */}
+      <section className="md-card md-span-12">
+        <h3 className="md-card-title">
+          Leads vs. Confirmados por producto
+          <span className="md-card-title-sub">pixel + confirmado a mano</span>
+          <Ayuda texto="Compara la intención de compra en la landing (clics en consultar, carrito o pago) con las ventas reales entregadas de cada producto. Solo aparecen los productos que tuvieron interés en la landing: lo que vendés a mano o por WhatsApp no pasa por acá, se ve en Más Vendidos." />
+        </h3>
+        <TablaEmbudoProductos filas={embudoProductosVisibles} />
+        {embudoProductos.length > 5 && (
+          <button type="button" className="md-btn-ghost md-ver-todos" onClick={() => setVerTodosProductos(v => !v)}>
+            {verTodosProductos ? 'Ver menos' : `Ver todos (${embudoProductos.length})`}
+          </button>
+        )}
+      </section>
 
       <div className="md-footer-link md-span-12">
         <Link to="/mis-pedidos" state={{ tab: "analitica" }} className="md-btn-ghost">
           Ver Centro de Inteligencia Comercial completo <ArrowRight size={14} />
         </Link>
       </div>
+
       </div>
     </div>
   );
 }
-

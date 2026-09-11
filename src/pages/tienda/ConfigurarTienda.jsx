@@ -34,6 +34,8 @@ function slugifyLigero(texto) {
 // landings que no definen color propio los siguen heredando como default.
 const FORM_INICIAL = {
   nombre: '',
+  documento: '',
+  ruc: '',
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
@@ -148,6 +150,8 @@ export default function ConfigurarTienda() {
       if (data) {
         setForm({
           nombre: data.nombre || '',
+          documento: data.documento || '',
+          ruc: data.ruc || '',
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
@@ -376,6 +380,18 @@ export default function ConfigurarTienda() {
                         <label className="tn-field">
                           <span className="tn-field-label">Nombre de la tienda</span>
                           <input value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} />
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label">Cédula del titular</span>
+                          <input value={form.documento} onChange={e => handleChange('documento', e.target.value)} placeholder="Ej: 4123456" inputMode="numeric" />
+                          <span className="tn-field-hint">La pide la pasarela para poder cobrarte. No se muestra a tus clientes.</span>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label">RUC <em>(opcional)</em></span>
+                          <input value={form.ruc} onChange={e => handleChange('ruc', e.target.value)} placeholder="Ej: 80012345-6" />
+                          <span className="tn-field-hint">Solo si facturás. Podés dejarlo vacío.</span>
                         </label>
 
                         <div className="tn-field">

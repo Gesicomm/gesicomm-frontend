@@ -14,6 +14,8 @@ export const costosGastosService = {
     API.post(`/costos-gastos/${id}/comprobante`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
+  exportarExcel: (rango) => API.get('/costos-gastos/exportar/excel', { params: rango, responseType: 'blob' }).then(r => r.data),
+  exportarPdf: (rango) => API.get('/costos-gastos/exportar/pdf', { params: rango, responseType: 'blob' }).then(r => r.data),
 };
 
 export const categoriasCostosGastosService = {

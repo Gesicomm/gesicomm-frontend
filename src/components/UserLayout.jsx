@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Store, LogOut, Grid, Layers, ShoppingCart, Megaphone, Settings, User,
-  GraduationCap, Lock, Sparkles, X, ChevronRight, Menu, LayoutDashboard,
-  Package, BarChart3, Receipt, Truck, PanelLeftClose, Bot
+  Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
+  GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
+  Receipt, Truck, PanelLeftClose, Bot
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -172,8 +172,35 @@ const UserLayout = ({ children }) => {
         </header>
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
+          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>VENTAS</div>
+          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+            <ul className="sidebar-list">
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
+              {renderLink({ path: '/mis-pedidos', label: 'Pedidos', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })}
+            </ul>
+          </div>
+
           {usuario?.rol !== 'solo_pedidos' && (
             <>
+              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>MARKETING</div>
+              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                <ul className="sidebar-list">
+                  {renderLink({ path: '/landing', label: 'Páginas de venta', icon: <Sparkles size={14} />, menuKey: 'landing' })}
+                  {renderLink({ path: '/mis-anuncios', label: 'Publicidad', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
+                </ul>
+              </div>
+
+              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>ANÁLISIS</div>
+              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                <ul className="sidebar-list">
+                  {renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
+                  {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y gastos', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
+                  {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
+                </ul>
+              </div>
+
               <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>APRENDIZAJE</div>
               <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
                 <ul className="sidebar-list">
@@ -183,39 +210,6 @@ const UserLayout = ({ children }) => {
                     icon: <GraduationCap size={14} style={{ color: '#60a5fa' }} />,
                     badge: 'PRO'
                   })}
-                </ul>
-              </div>
-            </>
-          )}
-
-          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>GENERAL</div>
-          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-            <ul className="sidebar-list">
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Vitrina B2B', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
-              
-              {renderLink({ path: '/mis-pedidos', label: 'Mis pedidos & Couriers', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
-              
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles size={14} />, prefix: '/landing', menuKey: 'landing' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de Venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })}
-            </ul>
-          </div>
-
-          {usuario?.rol !== 'solo_pedidos' && (
-            <>
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>FINANZAS</div>
-              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                <ul className="sidebar-list">
-                  {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y Gastos', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
-                  {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
-                </ul>
-              </div>
-
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>META</div>
-              <div className="sidebar-nav" style={{ paddingTop: 0 }}>
-                <ul className="sidebar-list">
-                  {renderLink({ path: '/mis-anuncios', label: 'Ads & Campañas', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
                 </ul>
               </div>
             </>

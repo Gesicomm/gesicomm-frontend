@@ -236,7 +236,7 @@ export default function Landing() {
         operatingSystem: 'Web',
         url: SITIO,
         description:
-          'Plataforma SaaS de gestión de eCommerce: catálogo, pedidos, inventario, clientes, logística, CRM y métricas en un solo panel, con integración a Meta Business para el seguimiento de campañas de Facebook Ads.',
+          'Sistema para crear y gestionar tu e-commerce desde cero: tienda online, productos, pedidos, clientes, inventario, envíos, métricas y campañas en un solo lugar.',
         publisher: { '@id': `${SITIO}/#organizacion` },
       },
       {
@@ -258,8 +258,8 @@ export default function Landing() {
   return (
     <>
       <Seo
-        titulo="Gesicom · Gestión de eCommerce en un solo panel"
-        descripcion="Plataforma SaaS para administrar toda la operación de tu eCommerce: productos, pedidos, inventario, clientes, logística, CRM y métricas en un solo panel, con integración a Meta Business para seguir el rendimiento de tus campañas de Facebook Ads."
+        titulo="Gesicom | Creá y gestioná tu e-commerce en un solo lugar"
+        descripcion="Todo lo que necesitás para crear, organizar y gestionar tu negocio e-commerce de forma simple y profesional: tienda online, productos, pedidos, clientes, inventario, envíos y más."
         ruta="/"
         schema={schema}
       />
@@ -273,17 +273,16 @@ export default function Landing() {
       <section className="border-b border-border">
         <Container className="grid items-center gap-12 pb-14 pt-14 lg:grid-cols-[1fr_minmax(0,26rem)] lg:gap-16 lg:pb-16 lg:pt-18">
           <div className="animar-entrada">
-            <p className="etiqueta text-fg-subtle">ERP para eCommerce y Shopify</p>
+            <p className="etiqueta text-fg-subtle">Sistema para vender online</p>
 
             <h1 className="titular mt-5 text-[2.15rem] text-fg sm:text-5xl lg:text-6xl">
-              Toda la operación de tu eCommerce, en un solo lugar.
+              Tu e-commerce, desde cero y en un solo lugar.
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-relaxed text-fg-muted sm:text-lg">
-              Gesicom es un ERP y software SaaS para gestión de eCommerce que reúne catálogo, pedidos,
-              inventario, clientes, logística y campañas en un único panel. Ve el rendimiento de tus
-              anuncios de Facebook Ads al lado del margen real de cada producto. Ideal para tiendas en línea,
-              Shopify y negocios de venta por internet que necesitan control operativo real.
+              Creá tu tienda online, cargá tus productos y gestioná toda la operación desde un
+              mismo panel. Gesicom te ayuda a organizar pedidos, clientes, inventario, envíos y
+              métricas sin depender de planillas ni herramientas sueltas.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">

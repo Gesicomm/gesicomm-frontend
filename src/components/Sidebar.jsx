@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
@@ -181,6 +181,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
         <footer className="flex-shrink-0 border-t border-border p-2">
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {renderLink({ path: '/settings', label: 'Configuración', icon: <Settings /> })}
+            {renderLink({ path: '/admin/parametros', label: 'Parámetros del sistema', icon: <KeyRound /> })}
             <li>
               <button
                 type="button"

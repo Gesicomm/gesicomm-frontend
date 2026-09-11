@@ -1,10 +1,19 @@
 import { formatGs, STATUS_ORDER } from "../../lib/courier";
-import { Bike, Car, Truck, MapPin, Phone, ShoppingBag } from "lucide-react";
+import { Bike, Car, Truck, MapPin, Phone, ShoppingBag, MessageCircle } from "lucide-react";
 
 function VehiculoIcon({ v }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={13} />;
   if (v === "Camioneta") return <Truck size={13} />;
   return <Car size={13} />;
+}
+
+function getWhatsappLink(telefono, envio) {
+  const limpio = String(telefono || "").replace(/\D/g, "");
+  if (!limpio) return null;
+  const numero = limpio.startsWith("0") ? `595${limpio.slice(1)}` : limpio;
+  const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
+  const mensaje = `Hola ${nombre}, te escribimos por tu pedido #${envio.id}.`;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 
 export function OrderCard({
@@ -22,6 +31,7 @@ export function OrderCard({
   const ciudadLabel = envio.ciudad ? `Ciudad: ${envio.ciudad}` : '';
   const deptoLabel = envio.departamento ? `(${envio.departamento})` : '';
   const ubicacionLabel = [ciudadLabel, deptoLabel].filter(Boolean).join(' ') || envio.direccion;
+  const whatsappLink = getWhatsappLink(envio.telefono, envio);
 
   return (
     <article
@@ -79,9 +89,23 @@ export function OrderCard({
           </span>
         )}
         {envio.telefono && (
-          <span className="tag-badge" style={{ padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.72rem' }}>
+          <span className="tag-badge order-phone-badge" style={{ padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.72rem' }}>
             <Phone size={10} style={{ display: 'inline', marginRight: '3px' }} />
             {envio.telefono}
+            {whatsappLink && (
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="order-whatsapp-action"
+                title={`Escribir por WhatsApp a ${envio.telefono}`}
+                aria-label={`Escribir por WhatsApp a ${nombreCliente}`}
+                onClick={(e) => e.stopPropagation()}
+                draggable={false}
+              >
+                <MessageCircle size={13} />
+              </a>
+            )}
           </span>
         )}
       </div>

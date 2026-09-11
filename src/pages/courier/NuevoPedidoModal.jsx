@@ -685,8 +685,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e, { explicit = false } = {}) => {
+    e?.preventDefault();
+
+    if (!explicit) {
+      return;
+    }
 
     if (!validarFormulario()) {
       return;
@@ -793,6 +797,10 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     if (e.key === "Enter" && !esUltimoPaso && !dejarEnterAlControl) {
       e.preventDefault();
       continuarPaso();
+    }
+
+    if (e.key === "Enter" && esUltimoPaso && !dejarEnterAlControl) {
+      e.preventDefault();
     }
   };
 
@@ -1482,7 +1490,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   Continuar <ChevronRight size={16} />
                 </button>
               ) : (
-                <button type="submit" className="btn-confirmar-pedido" disabled={guardando}>
+                <button
+                  type="button"
+                  className="btn-confirmar-pedido"
+                  disabled={guardando}
+                  onClick={(e) => handleSubmit(e, { explicit: true })}
+                >
                   {guardando ? "Guardando..." : (modoCompletar && !vaAConfirmar ? "Guardar cambios" : "Confirmar pedido")}
                 </button>
               )}

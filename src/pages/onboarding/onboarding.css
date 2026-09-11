@@ -139,3 +139,34 @@
 @media (max-width: 480px) {
   .onb-planes { grid-template-columns: 1fr; }
 }
+
+/* ─── Campos extra del paso 1 (documento / RUC) ───────────────────────── */
+.onb-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.9rem;
+  text-align: left;
+}
+.onb-campo > span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--vit-text);
+}
+.onb-campo > span em { font-style: normal; font-weight: 400; color: var(--vit-muted-2); }
+.onb-campo input {
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 9px;
+  padding: 0.6rem 0.75rem;
+  color: var(--vit-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.onb-campo input:focus {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 2px var(--vit-accent-soft);
+}
+.onb-campo small { font-size: 0.72rem; line-height: 1.45; color: var(--vit-muted-2); }

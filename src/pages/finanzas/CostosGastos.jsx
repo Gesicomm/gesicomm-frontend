@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
-  Plus, Filter, Download, Settings, X, Receipt, TrendingDown,
+  Plus, Download, Settings, X, Receipt, TrendingDown, TrendingUp,
   Wallet, PiggyBank, Percent, MoreVertical, Calendar, CreditCard, Truck,
-  FileText, CheckCircle, Repeat, Package, ChevronLeft, ChevronRight,
+  FileText, CheckCircle, Repeat, Package, ChevronLeft, ChevronRight, HelpCircle, Scale,
 } from 'lucide-react';
 import { costosGastosService, categoriasCostosGastosService, proveedoresService } from '../../services/costosGastosService';
 import { formatMoneda } from '../../utils/currency';
@@ -88,6 +89,55 @@ function Badge({ children, className }) {
   return <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${className}`}>{children}</span>;
 }
 
+/** Tooltip accesible: botón (no span) para que llegue con Tab y lo anuncie
+ * el lector de pantalla; se posiciona con un portal para no quedar cortado
+ * por el overflow de las tarjetas. */
+function Ayuda({ texto }) {
+  const [posicion, setPosicion] = useState(null);
+  const botonRef = useRef(null);
+
+  const mostrar = useCallback(() => {
+    const rect = botonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const ancho = Math.min(260, window.innerWidth - 32);
+    const margen = 16;
+    const leftCentrado = rect.left + (rect.width / 2) - (ancho / 2);
+    setPosicion({
+      top: rect.bottom + 8,
+      left: Math.max(margen, Math.min(leftCentrado, window.innerWidth - ancho - margen)),
+      width: ancho,
+    });
+  }, []);
+  const ocultar = useCallback(() => setPosicion(null), []);
+
+  return (
+    <>
+      <button
+        ref={botonRef}
+        type="button"
+        aria-label={typeof texto === 'string' ? texto : 'Ayuda contextual'}
+        className="text-fg-subtle hover:text-fg-muted"
+        onMouseEnter={mostrar}
+        onMouseLeave={ocultar}
+        onFocus={mostrar}
+        onBlur={ocultar}
+      >
+        <HelpCircle size={12} aria-hidden="true" />
+      </button>
+      {posicion && createPortal(
+        <span
+          role="tooltip"
+          className="fixed z-50 rounded-md border border-border bg-surface-3 p-2.5 text-xs leading-snug text-fg shadow-xl"
+          style={{ top: posicion.top, left: posicion.left, width: posicion.width }}
+        >
+          {texto}
+        </span>,
+        document.body
+      )}
+    </>
+  );
+}
+
 function InfoChip({ icon, label, value }) {
   return (
     <div className="rounded-lg border border-border bg-surface-2 p-2.5">
@@ -97,7 +147,7 @@ function InfoChip({ icon, label, value }) {
   );
 }
 
-function CardResumen({ icon, label, valor, tono = 'default', sufijo }) {
+function CardResumen({ icon, label, valor, tono = 'default', sufijo, ayuda }) {
   const tonoClases = {
     default: 'text-fg',
     success: 'text-success',
@@ -106,11 +156,81 @@ function CardResumen({ icon, label, valor, tono = 'default', sufijo }) {
   };
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
-      <div className="mb-2 flex items-center gap-2 text-xs font-medium text-fg-subtle">
-        {icon}{label}
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-fg-subtle">
+        {icon}{label}{ayuda && <Ayuda texto={ayuda} />}
       </div>
       <div className={`text-xl font-bold ${tonoClases[tono]}`}>
         {valor}{sufijo}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Balance general del período: cuánto entró, cuánto salió y cuánto queda
+ * disponible. Reutiliza el mismo `resumen` del backend (mismos números que
+ * las tarjetas de abajo) pero en formato "gané / gasté / me sobra" que es
+ * como el usuario piensa su presupuesto, sin tener que interpretar
+ * "Resultado" o "Margen".
+ */
+function PresupuestoGeneral({ resumen }) {
+  if (!resumen) return null;
+  const ingresos = Number(resumen.ingresos) || 0;
+  const egresos = Number(resumen.total_egresos) || 0;
+  const saldo = Number(resumen.resultado) || 0;
+  const positivo = saldo >= 0;
+  const porcentajeGastado = ingresos > 0 ? Math.min(100, Math.round((egresos / ingresos) * 100)) : (egresos > 0 ? 100 : 0);
+
+  return (
+    <div className="mb-6 rounded-xl border border-border bg-surface p-4">
+      <div className="mb-3 flex items-center gap-1.5">
+        <Scale size={15} className="text-primary-text" />
+        <h2 className="m-0 text-sm font-bold text-fg">Presupuesto general del período</h2>
+        <Ayuda texto="Comparación simple entre lo que ingresó (solo pedidos ya Entregados del período — la plata que de verdad entró) y lo que salió (costos + gastos), para saber de un vistazo cuánto te queda disponible. Usa los mismos datos que las tarjetas de abajo." />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
+            <TrendingUp size={16} />
+          </div>
+          <div>
+            <div className="text-xs text-fg-subtle">Ganaste</div>
+            <div className="text-base font-bold text-success">{formatMoneda(ingresos)}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger">
+            <TrendingDown size={16} />
+          </div>
+          <div>
+            <div className="text-xs text-fg-subtle">Gastaste</div>
+            <div className="text-base font-bold text-danger">{formatMoneda(egresos)}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3">
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${positivo ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
+            <PiggyBank size={16} />
+          </div>
+          <div>
+            <div className="text-xs text-fg-subtle">{positivo ? 'Te sobra' : 'Te falta'}</div>
+            <div className={`text-base font-bold ${positivo ? 'text-success' : 'text-danger'}`}>{formatMoneda(Math.abs(saldo))}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3">
+        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
+          <div
+            className={`h-full rounded-full ${porcentajeGastado >= 100 ? 'bg-danger' : porcentajeGastado >= 80 ? 'bg-warning' : 'bg-success'}`}
+            style={{ width: `${porcentajeGastado}%` }}
+          />
+        </div>
+        <p className="mt-1.5 text-xs text-fg-subtle">
+          {ingresos > 0
+            ? `Gastaste el ${porcentajeGastado}% de lo que ganaste en este período.`
+            : 'Todavía no registraste ingresos en este período.'}
+        </p>
       </div>
     </div>
   );
@@ -124,7 +244,6 @@ export default function CostosGastos() {
   const [filtros, setFiltros] = useState({ tipo: '', categoria_id: '', estado: '', proveedor_id: '', frecuencia: '', metodo_pago_id: '', clasificacion: '' });
   const [busqueda, setBusqueda] = useState('');
   const busquedaDebounced = useDebounce(busqueda, 350);
-  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
 
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -229,6 +348,18 @@ export default function CostosGastos() {
     }
   };
 
+  const [exportando, setExportando] = useState(null);
+  const [menuExportarAbierto, setMenuExportarAbierto] = useState(false);
+
+  const descargarBlob = (blob, nombreArchivo) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportarCSV = () => {
     const encabezado = ['Concepto', 'Tipo', 'Categoría', 'Frecuencia', 'Fecha', 'Importe', 'Estado'];
     const filas = registros.map(r => [
@@ -238,12 +369,25 @@ export default function CostosGastos() {
     ]);
     const csv = [encabezado, ...filas].map(fila => fila.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `costos-gastos_${rango.fecha_desde}_${rango.fecha_hasta}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    descargarBlob(blob, `costos-gastos_${rango.fecha_desde}_${rango.fecha_hasta}.csv`);
+    setMenuExportarAbierto(false);
+  };
+
+  const exportarReporte = async (formato) => {
+    setMenuExportarAbierto(false);
+    setExportando(formato);
+    try {
+      const blob = formato === 'excel'
+        ? await costosGastosService.exportarExcel(rango)
+        : await costosGastosService.exportarPdf(rango);
+      const ext = formato === 'excel' ? 'xlsx' : 'pdf';
+      descargarBlob(blob, `reporte-financiero_${rango.fecha_desde}_${rango.fecha_hasta}.${ext}`);
+    } catch (err) {
+      console.error(err);
+      alert(`Error al generar el reporte en ${formato === 'excel' ? 'Excel' : 'PDF'}.`);
+    } finally {
+      setExportando(null);
+    }
   };
 
   const hayFiltrosOFecha = chipsActivos.length > 0 || busqueda;
@@ -262,20 +406,35 @@ export default function CostosGastos() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFiltrosAbiertos(o => !o)}
-            className={`flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium transition-colors ${filtrosAbiertos ? 'bg-primary/10 text-primary-text' : 'text-fg-muted hover:bg-surface-2 hover:text-fg'}`}
-          >
-            <Filter size={14} /> Filtros {chipsActivos.length > 0 && `(${chipsActivos.length})`}
-          </button>
-          <button
-            type="button"
-            onClick={exportarCSV}
-            className="flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
-          >
-            <Download size={14} /> Exportar
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuExportarAbierto(o => !o)}
+              disabled={!!exportando}
+              className="flex h-9 items-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-60"
+            >
+              <Download size={14} /> {exportando ? 'Generando…' : 'Exportar'}
+            </button>
+            {menuExportarAbierto && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setMenuExportarAbierto(false)} />
+                <div className="absolute right-0 z-20 mt-1 w-64 overflow-hidden rounded-md border border-border bg-surface shadow-xl">
+                  <button type="button" onClick={exportarCSV} className="block w-full px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2">
+                    <div className="font-medium">CSV — registros visibles</div>
+                    <div className="text-xs text-fg-subtle">Solo la tabla con los filtros actuales</div>
+                  </button>
+                  <button type="button" onClick={() => exportarReporte('excel')} className="block w-full border-t border-border px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2">
+                    <div className="font-medium">Excel — reporte financiero completo</div>
+                    <div className="text-xs text-fg-subtle">Resumen + todos los gastos e ingresos del período</div>
+                  </button>
+                  <button type="button" onClick={() => exportarReporte('pdf')} className="block w-full border-t border-border px-3 py-2.5 text-left text-sm text-fg hover:bg-surface-2">
+                    <div className="font-medium">PDF — reporte financiero completo</div>
+                    <div className="text-xs text-fg-subtle">Resumen + todos los gastos e ingresos del período</div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => setConfigAbierta(true)}
@@ -318,18 +477,28 @@ export default function CostosGastos() {
         )}
       </div>
 
+      {/* Presupuesto general: gané / gasté / me sobra */}
+      <PresupuestoGeneral resumen={resumen} />
+
       {/* Dashboard de resumen */}
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <CardResumen icon={<TrendingDown size={14} />} label="Gastos del período" valor={formatMoneda(resumen?.gastos_periodo)} />
         <CardResumen icon={<Package size={14} />} label="Costos del período" valor={formatMoneda(resumen?.costos_periodo)} />
         <CardResumen icon={<Wallet size={14} />} label="Total egresos" valor={formatMoneda(resumen?.total_egresos)} tono="danger" />
-        <CardResumen icon={<PiggyBank size={14} />} label="Resultado" valor={formatMoneda(resumen?.resultado)} tono={Number(resumen?.resultado) >= 0 ? 'success' : 'danger'} />
-        <CardResumen icon={<Percent size={14} />} label="Margen" valor={resumen ? resumen.margen : '—'} sufijo={resumen ? '%' : ''} tono={Number(resumen?.margen) >= 0 ? 'success' : 'danger'} />
+        <CardResumen
+          icon={<PiggyBank size={14} />} label="Ganancia del período" valor={formatMoneda(resumen?.resultado)}
+          tono={Number(resumen?.resultado) >= 0 ? 'success' : 'danger'}
+          ayuda="Ganancia del período = Ingresos (solo pedidos ya Entregados, la plata que realmente entró a la caja) menos Costos y Gastos del período. Es una ganancia aproximada: no descuenta comisiones de pago, IVA ni logística, por eso puede diferir del número del Dashboard principal."
+        />
+        <CardResumen
+          icon={<Percent size={14} />} label="Margen" valor={resumen ? resumen.margen : '—'} sufijo={resumen ? '%' : ''}
+          tono={Number(resumen?.margen) >= 0 ? 'success' : 'danger'}
+          ayuda="Margen = Resultado dividido por los Ingresos del período, en porcentaje. Ej.: 74.2% significa que por cada 100 Gs que entraron, sobraron 74,2 Gs después de pagar costos y gastos."
+        />
       </div>
 
-      {/* Panel de filtros */}
-      {filtrosAbiertos && (
-        <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-4 lg:grid-cols-7">
+      {/* Panel de filtros — siempre visible, sin necesidad de abrirlo */}
+      <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-surface p-4 md:grid-cols-4 lg:grid-cols-7">
           <input
             type="text" placeholder="Buscar concepto…" value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
@@ -371,8 +540,7 @@ export default function CostosGastos() {
             <option value="fijo">Fijo</option>
             <option value="variable">Variable</option>
           </select>
-        </div>
-      )}
+      </div>
 
       {/* Chips de filtros activos */}
       {chipsActivos.length > 0 && (
@@ -510,6 +678,20 @@ export default function CostosGastos() {
 
 function FilaTabla({ registro: r, activo, onClick, onEditar, onDuplicar, onMarcarPagado, onEliminar }) {
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [menuPosicion, setMenuPosicion] = useState({ top: 0, right: 0 });
+  const botonMenuRef = useRef(null);
+
+  const alternarMenu = () => {
+    const rect = botonMenuRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMenuPosicion({
+        top: Math.min(rect.bottom + 8, window.innerHeight - 180),
+        right: Math.max(window.innerWidth - rect.right, 12),
+      });
+    }
+    setMenuAbierto(o => !o);
+  };
+
   return (
     <tr onClick={onClick} className={`cursor-pointer border-t border-border transition-colors hover:bg-surface-2 ${activo ? 'bg-surface-2' : ''}`}>
       <td className="p-3">
@@ -529,13 +711,16 @@ function FilaTabla({ registro: r, activo, onClick, onEditar, onDuplicar, onMarca
       <td className="p-3 text-right font-semibold text-fg">{formatMoneda(r.importe)}</td>
       <td className="p-3"><Badge className={ESTADO_BADGE[r.estado]}>{ESTADO_LABEL[r.estado]}</Badge></td>
       <td className="relative p-3 text-right" onClick={e => e.stopPropagation()}>
-        <button type="button" onClick={() => setMenuAbierto(o => !o)} className="rounded p-1 text-fg-subtle hover:bg-surface-3 hover:text-fg">
+        <button ref={botonMenuRef} type="button" onClick={alternarMenu} className="rounded p-1 text-fg-subtle hover:bg-surface-3 hover:text-fg">
           <MoreVertical size={16} />
         </button>
         {menuAbierto && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuAbierto(false)} />
-            <div className="absolute right-3 top-9 z-20 w-44 overflow-hidden rounded-md border border-border bg-surface shadow-xl">
+            <div
+              className="fixed z-20 w-44 overflow-hidden rounded-md border border-border bg-surface shadow-xl"
+              style={{ top: menuPosicion.top, right: menuPosicion.right }}
+            >
               <MenuItem onClick={() => { setMenuAbierto(false); onEditar(); }}>Editar</MenuItem>
               <MenuItem onClick={() => { setMenuAbierto(false); onDuplicar(); }}>Duplicar</MenuItem>
               {r.estado !== 'pagado' && <MenuItem onClick={() => { setMenuAbierto(false); onMarcarPagado(); }}>Marcar como pagado</MenuItem>}

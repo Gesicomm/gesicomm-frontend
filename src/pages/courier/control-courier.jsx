@@ -7,6 +7,7 @@ import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import { ReprogramarModal } from "./ReprogramarModal";
+import { CostoViajeModal } from "./CostoViajeModal";
 import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
 import { DevolucionModal } from "./DevolucionModal";
 import { PerdidaModal } from "./PerdidaModal";
@@ -17,6 +18,8 @@ import {
   getCouriers,
   getEnvios,
   updateEstadoEnvio,
+  iniciarPagoAbastecimiento,
+  actualizarAbastecimientoManual,
   createCourier,
   updateCourier,
   deleteCourier,
@@ -128,6 +131,45 @@ export function ControlCourier() {
     }
   };
 
+  const handlePagarAbastecimiento = async (envio) => {
+    try {
+      const checkout = await iniciarPagoAbastecimiento(envio.id);
+      if (checkout?.payment_url) {
+        window.location.href = checkout.payment_url;
+        return;
+      }
+      throw new Error("PagoPar no devolvió un enlace de pago.");
+    } catch (err) {
+      console.error("Error iniciando pago de abastecimiento:", err);
+      alert(err.response?.data?.error || err.message || "No se pudo iniciar el pago de abastecimiento.");
+    }
+  };
+
+  const handleAdminAbastecimiento = async (envio, accion) => {
+    const esPago = accion === "acreditar_pago";
+    const metodo = esPago
+      ? window.prompt("Método de acreditación (ej: transferencia, contacto directo, efectivo)", "transferencia")
+      : "recepción en depósito";
+    if (metodo === null) return;
+
+    const nota = window.prompt("Nota interna opcional", "");
+    if (nota === null) return;
+
+    try {
+      const actualizado = await actualizarAbastecimientoManual(envio.id, {
+        accion,
+        metodo_acreditacion: metodo || "manual",
+        nota: nota || null,
+      });
+      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+      cargarDatos();
+      setRefrescarKey(k => k + 1);
+    } catch (err) {
+      console.error("Error actualizando abastecimiento manual:", err);
+      alert(err.response?.data?.error || err.message || "No se pudo actualizar el abastecimiento.");
+    }
+  };
+
   const handleConfirmarPedido = async (payload) => {
     const actualizado = await updateEstadoEnvio(payload.id, payload);
     setEnvios(prev => prev.map(e => e.id === payload.id ? actualizado : e));
@@ -148,11 +190,23 @@ export function ControlCourier() {
     modoCompletar ? handleConfirmarPedido(payload) : handleCreateNuevoPedido(payload)
   );
 
-  // Las 4 transiciones que necesitan datos adicionales (fecha, método de
+  // Con qué modal se completa cada destino que sale de "Reprogramado" —
+  // debe reflejar el mismo mapeo que ESTADOS_CON_MODAL en PedidosTable.
+  const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", Devuelto: "devolver", Perdido: "perder" };
+
+  // El costo del viaje que resuelve un "Reprogramado" (ver CostoViajeModal)
+  // se pidió aparte y viaja acá para sumarse al payload real de la
+  // transición, sea cual sea el modal (o ninguno) que la complete.
+  const costoIntentoPendiente = () => {
+    const costo = accionEspecial?.costoIntento;
+    return costo !== undefined ? { costo_intento: costo } : {};
+  };
+
+  // Las transiciones que necesitan datos adicionales (fecha, método de
   // pago, detalle por producto) se resuelven acá, en un modal dedicado por
   // tipo — nunca con un PATCH directo del dropdown de la bandeja.
   const handleReprogramarSubmit = async (id, datos) => {
-    const actualizado = await updateEstadoEnvio(id, { estado: "Reprogramado", ...datos });
+    const actualizado = await updateEstadoEnvio(id, { estado: "Reprogramado", ...datos, ...costoIntentoPendiente() });
     setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
     setAccionEspecial(null);
     cargarDatos();
@@ -160,7 +214,7 @@ export function ControlCourier() {
   };
 
   const handleEntregadoSubmit = async (id, datos) => {
-    const actualizado = await updateEstadoEnvio(id, { estado: "Entregado", ...datos });
+    const actualizado = await updateEstadoEnvio(id, { estado: "Entregado", ...datos, ...costoIntentoPendiente() });
     setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
     setAccionEspecial(null);
     cargarDatos();
@@ -168,7 +222,7 @@ export function ControlCourier() {
   };
 
   const handleDevolucionSubmit = async (id, datos) => {
-    const actualizado = await registrarDevolucion(id, datos);
+    const actualizado = await registrarDevolucion(id, { ...datos, ...costoIntentoPendiente() });
     setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
     setAccionEspecial(null);
     cargarDatos();
@@ -176,8 +230,27 @@ export function ControlCourier() {
   };
 
   const handlePerdidaSubmit = async (id, datos) => {
-    const actualizado = await registrarPerdida(id, datos);
+    const actualizado = await registrarPerdida(id, { ...datos, ...costoIntentoPendiente() });
     setEnvios((prev) => prev.map((e) => (e.id === id ? actualizado : e)));
+    setAccionEspecial(null);
+    cargarDatos();
+    setRefrescarKey((k) => k + 1);
+  };
+
+  // Paso previo cuando se sale de "Reprogramado": si el destino tiene su
+  // propio modal, se encadena guardando el costo para que el submit final lo
+  // incluya; si es una transición simple (Despachado, Cancelado) se aplica
+  // directo acá.
+  const handleCostoViajeSubmit = async (costoIntento) => {
+    const { envio, destino } = accionEspecial || {};
+    if (!envio || !destino) return;
+    const tipoModal = ESTADOS_CON_MODAL[destino];
+    if (tipoModal) {
+      setAccionEspecial({ tipo: tipoModal, envio, costoIntento });
+      return;
+    }
+    const actualizado = await updateEstadoEnvio(envio.id, { estado: destino, costo_intento: costoIntento });
+    setEnvios((prev) => prev.map((e) => (e.id === envio.id ? actualizado : e)));
     setAccionEspecial(null);
     cargarDatos();
     setRefrescarKey((k) => k + 1);
@@ -192,8 +265,8 @@ export function ControlCourier() {
               <PackageCheck size={22} />
             </div>
             <div>
-              <h1 className="prod-title">Control de Pedidos y Couriers</h1>
-              <p className="prod-subtitle">Módulo logístico centralizado</p>
+              <h1 className="prod-title">Pedidos</h1>
+              <p className="prod-subtitle">Confirmación, abastecimiento, despacho y rendición</p>
             </div>
           </div>
 
@@ -242,8 +315,10 @@ export function ControlCourier() {
           <PedidosTable
             couriers={couriers}
             onChangeEstado={handleChangeEstado}
+            onPagarAbastecimiento={handlePagarAbastecimiento}
+            onAdminAbastecimiento={handleAdminAbastecimiento}
             onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
-            onAccionEspecial={(tipo, envio) => setAccionEspecial({ tipo, envio })}
+            onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             refrescarKey={refrescarKey}
@@ -300,6 +375,12 @@ export function ControlCourier() {
       />
 
       {/* Modales de transición con datos adicionales — ver plan sección 42-47 */}
+      <CostoViajeModal
+        open={accionEspecial?.tipo === "costo_viaje"}
+        envio={accionEspecial?.envio}
+        onClose={() => setAccionEspecial(null)}
+        onSubmit={handleCostoViajeSubmit}
+      />
       <ReprogramarModal
         open={accionEspecial?.tipo === "reprogramar"}
         envio={accionEspecial?.envio}

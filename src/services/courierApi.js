@@ -61,6 +61,16 @@ export const updateEstadoEnvio = async (id, datos) => {
   return data;
 };
 
+export const iniciarPagoAbastecimiento = async (id) => {
+  const { data } = await api.post(`/envios/${id}/abastecimiento/pagopar`);
+  return data;
+};
+
+export const actualizarAbastecimientoManual = async (id, payload) => {
+  const { data } = await api.post(`/envios/${id}/abastecimiento/manual`, payload);
+  return data;
+};
+
 export const deleteEnvio = async (id) => {
   const { data } = await api.delete(`/envios/${id}`);
   return data;

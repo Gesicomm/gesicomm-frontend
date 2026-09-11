@@ -452,6 +452,16 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     registrarEventoLanding(slug, { ...basePayload, event_name: 'InitiateCheckout', event_id: eventId });
     registrarEventoLanding(slug, { ...basePayload, event_name: 'Contact', event_id: eventId + '-contact' });
 
+    // El cliente eligio pagar online pero la pasarela no devolvio link: NO
+    // caer a WhatsApp, porque le haria creer que su pedido siguio el curso
+    // normal cuando en realidad el cobro fallo. Se corta con el motivo real.
+    if (datosFormulario?.payment_method === 'pagopar' && !resultado.payment_data?.payment_url) {
+      throw new Error(
+        resultado.payment_data?.error
+          || 'No pudimos abrir el pago online. Probá de nuevo o elegí pagar en efectivo al recibir.',
+      );
+    }
+
     let redirigido = false;
     // No redirigir a WhatsApp si hay una pasarela de pago (pago online) seleccionada.
     if (!resultado.payment_data?.payment_url && resultado.redirigir_whatsapp && contacto?.whatsapp) {
@@ -748,7 +758,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         logo: datosProductoPublico.logo,
         tema: temaResuelto,
         cantidadCarrito: Array.from(carrito.values()).reduce((s, it) => s + it.cantidad, 0),
-        onAbrirCarrito: () => setIsCartOpen(true),
+        onAbrirCarrito: () => setCarritoAbierto(true),
         linkInicio,
         linkCatalogo,
         linkContacto,

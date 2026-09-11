@@ -767,6 +767,21 @@
   margin-top: 0;
 }
 
+/* Aclaración de alcance cuando hay un filtro de producto puesto: los gastos
+   del negocio siguen siendo del período completo. Va en tono secundario —
+   explica una cifra, no compite con ella. */
+.md-rent-aclaracion {
+  margin: 0.85rem 0 0;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--md-ink-muted);
+  background: var(--md-surface-2);
+  border-left: 2px solid var(--md-border);
+  border-radius: 0 4px 4px 0;
+}
+.md-rent-aclaracion strong { color: var(--md-ink); font-weight: 600; }
+
 .md-rent-desglose {
   margin-top: 1rem;
   font-size: 0.8rem;
@@ -825,14 +840,13 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
-  width: max-content;
-  max-width: 260px;
-  padding: 0.55rem 0.7rem;
-  background: var(--md-surface-2);
-  border: 1px solid var(--md-border-strong);
+  width: min(280px, calc(100vw - 32px));
+  padding: 0.7rem 0.8rem;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
-  color: var(--md-ink);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  color: #f8fafc;
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.45;
@@ -849,6 +863,26 @@
      "Más Vendidos" sin motivo. */
   display: none;
   pointer-events: none;
+}
+.md-ayuda-burbuja strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.md-ayuda-burbuja span {
+  display: block;
+  color: #dbe4f0;
+}
+.md-ayuda-burbuja small {
+  display: block;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #facc15;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 .md-ayuda:hover .md-ayuda-burbuja,
 .md-ayuda:focus-visible .md-ayuda-burbuja { opacity: 1; display: block; }
@@ -882,14 +916,13 @@
 }
 
 .md-ayuda-burbuja-portal {
-  width: max-content;
-  max-width: 280px;
-  padding: 0.55rem 0.75rem;
-  background: var(--md-surface-2, #1e293b);
-  border: 1px solid var(--md-border-strong, rgba(255, 255, 255, 0.15));
+  z-index: 10000;
+  padding: 0.7rem 0.8rem;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-  color: var(--md-ink, #f8fafc);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  color: #f8fafc;
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.45;
@@ -898,6 +931,26 @@
   text-align: left;
   white-space: normal;
   pointer-events: none;
+}
+.md-ayuda-burbuja-portal strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.md-ayuda-burbuja-portal span {
+  display: block;
+  color: #dbe4f0;
+}
+.md-ayuda-burbuja-portal small {
+  display: block;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #facc15;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 @media (prefers-reduced-motion: reduce) {
