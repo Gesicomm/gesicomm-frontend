@@ -5,7 +5,7 @@ import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 
 const FORM_VACIO = {
-  nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
+  nombre_cliente: '', documento: '', quiere_factura: false, ruc: '', razon_social: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
 };
 
 /**
@@ -58,8 +58,13 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
 
   const cantidadTotal = items.reduce((s, it) => s + it.cantidad, 0);
   const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
+  const pagaOnline = form.payment_method === 'pagopar';
   const formularioValido = form.nombre_cliente.trim() && form.telefono.trim()
-    && form.ciudad.trim() && form.direccion.trim() && acepta;
+    && form.ciudad.trim() && form.direccion.trim() && acepta
+    // PagoPar exige el documento del comprador para emitir el cobro.
+    && (!pagaOnline || form.documento.trim())
+    // Si pide factura, los datos fiscales dejan de ser opcionales.
+    && (!form.quiere_factura || (form.ruc.trim() && form.razon_social.trim()));
 
   const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
   const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
@@ -251,14 +256,67 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                     />
                   </label>
 
+                  {/* La cedula no tiene que ver con la factura: la pide la
+                      pasarela para poder cobrar online. Por eso es un campo
+                      aparte y solo es obligatorio si se paga por ahi. */}
                   <label className="lp-checkout-field">
-                    <span>RUC (Factura Virtual)</span>
+                    <span>Cédula {pagaOnline && <em>*</em>}</span>
                     <input
-                      value={form.ruc}
-                      onChange={e => actualizarCampo('ruc', e.target.value)}
-                      placeholder="Opcional"
+                      required={pagaOnline}
+                      value={form.documento}
+                      onChange={e => actualizarCampo('documento', e.target.value)}
+                      placeholder="Ej: 4123456"
+                      inputMode="numeric"
                     />
+                    {pagaOnline && (
+                      <small className="lp-checkout-ayuda">
+                        Obligatorio para compras online.
+                      </small>
+                    )}
                   </label>
+
+                  <label className="lp-checkout-check">
+                    <input
+                      type="checkbox"
+                      checked={form.quiere_factura}
+                      onChange={e => {
+                        const quiere = e.target.checked;
+                        actualizarCampo('quiere_factura', quiere);
+                        if (!quiere) {
+                          actualizarCampo('ruc', '');
+                          actualizarCampo('razon_social', '');
+                        }
+                      }}
+                    />
+                    <span>Quiero factura</span>
+                  </label>
+
+                  {form.quiere_factura && (
+                    <>
+                      <label className="lp-checkout-field">
+                        <span>Razón social <em>*</em></span>
+                        <input
+                          required
+                          value={form.razon_social}
+                          onChange={e => actualizarCampo('razon_social', e.target.value)}
+                          placeholder="Nombre o empresa que va en la factura"
+                        />
+                      </label>
+
+                      <label className="lp-checkout-field">
+                        <span>RUC <em>*</em></span>
+                        <input
+                          required
+                          value={form.ruc}
+                          onChange={e => actualizarCampo('ruc', e.target.value)}
+                          placeholder="Ej: 80012345-6"
+                        />
+                        <small className="lp-checkout-ayuda">
+                          Al facturar se aplica el IVA correspondiente.
+                        </small>
+                      </label>
+                    </>
+                  )}
 
                   <label className="lp-checkout-field">
                     <span>Celular <em>*</em></span>

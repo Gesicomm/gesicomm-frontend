@@ -2529,3 +2529,28 @@ button.lp-tier-card--imagen {
 .lp-cart-descuento strong { color: #10b981; font-size: 1rem; }
 .lp-cart-total-final { margin-top: 0.15rem; }
 .lp-cart-total-final strong { color: var(--l-accent, #10b981); }
+
+/* ─── Checkout: check de factura y ayudas ─────────────────────────────── */
+.lp-checkout-check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--l-text);
+}
+.lp-checkout-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--l-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.lp-checkout-ayuda {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--l-text-muted);
+}
