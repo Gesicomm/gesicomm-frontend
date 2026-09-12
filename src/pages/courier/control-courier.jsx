@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck, CreditCard } from "lucide-react";
+import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { DeliveryPanel } from "./DeliveryPanel";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
@@ -32,6 +33,7 @@ import {
 import "./courier.css";
 
 const TABS_VALIDOS = new Set(["tablero", "abastecimiento", "delivery", "rendicion", "analitica"]);
+const TABS_SOLO_ADMIN = new Set(["abastecimiento"]);
 const CLAVE_TAB = "gesicomm:pedidosTab";
 
 // La pestaña activa nunca viaja por query string: llega como router state
@@ -65,6 +67,8 @@ export function ControlCourier() {
   const [accionEspecial, setAccionEspecial] = useState(null);
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  const esAdmin = usuarioActual?.rol === "administrador";
 
   // El state de navegación se consume una sola vez: si no, un refresh volvería
   // a forzar la pestaña que pidió la pantalla anterior.
@@ -73,7 +77,17 @@ export function ControlCourier() {
     navigate(location.pathname, { replace: true, state: null });
   }, [location.state, location.pathname, navigate]);
 
+  useEffect(() => {
+    verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
+  }, []);
+
+  useEffect(() => {
+    if (usuarioActual === null || esAdmin || !TABS_SOLO_ADMIN.has(tab)) return;
+    seleccionarTab("tablero");
+  }, [usuarioActual, esAdmin, tab]);
+
   function seleccionarTab(tabId) {
+    if (!esAdmin && TABS_SOLO_ADMIN.has(tabId)) tabId = "tablero";
     setTab(tabId);
     try { window.sessionStorage.setItem(CLAVE_TAB, tabId); } catch { /* sin storage */ }
   }
@@ -296,9 +310,11 @@ export function ControlCourier() {
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
           </TabButton>
-          <TabButton active={tab === "abastecimiento"} onClick={() => seleccionarTab("abastecimiento")} icon={<CreditCard size={16} />}>
-            Abastecimiento
-          </TabButton>
+          {esAdmin && (
+            <TabButton active={tab === "abastecimiento"} onClick={() => seleccionarTab("abastecimiento")} icon={<CreditCard size={16} />}>
+              Abastecimiento
+            </TabButton>
+          )}
           <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
             Delivery
           </TabButton>
