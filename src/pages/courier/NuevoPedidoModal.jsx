@@ -10,6 +10,7 @@ import CurrencyInput from "../../components/CurrencyInput";
 import CreatableSelect from "react-select/creatable";
 import ProductPicker from "../landing/ProductPicker";
 import "../landing/landing.css";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -822,7 +823,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
             <span className="np-brand-mark">Gesicom<span>.</span></span>
             <h2 id="nuevo-pedido-title">
               {modoCompletar
-                ? `${vaAConfirmar ? "Completar" : "Editar"} pedido #${envio.id}`
+                ? `${vaAConfirmar ? "Completar" : "Editar"} pedido #${numeroPedidoVisible(envio)}`
                 : "Nuevo pedido"}
             </h2>
           </div>

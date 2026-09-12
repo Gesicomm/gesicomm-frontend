@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Info,
+  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Info, Mail,
 } from 'lucide-react';
 import { parametrosService } from '../../services/parametrosService';
 import './parametros.css';
@@ -36,6 +36,21 @@ const GRUPOS = [
     desc: 'A dónde escriben los comercios cuando tienen un problema de cobro o de plan.',
     campos: [
       { clave: 'ADMIN_TELEFONO_CONTACTO', label: 'WhatsApp / teléfono', placeholder: '595981234567', ayuda: 'Con código de país, sin espacios ni signos.' },
+    ],
+  },
+  {
+    id: 'notificaciones',
+    titulo: 'Notificaciones internas',
+    icono: Mail,
+    desc: 'Correos internos de Gesicom para avisos operativos del sistema.',
+    campos: [
+      {
+        clave: 'ABASTECIMIENTO_NOTIFICACION_EMAIL',
+        label: 'Email para abastecimiento',
+        placeholder: 'operaciones@gesicomm.com',
+        ayuda: 'A este correo llega el aviso cuando un pedido confirmado requiere pago o acreditación de abastecimiento.',
+        tipo: 'email',
+      },
     ],
   },
 ];
@@ -172,7 +187,7 @@ export default function Parametros() {
                       </span>
 
                       <input
-                        type={campo.secreto ? 'password' : 'text'}
+                        type={campo.secreto ? 'password' : (campo.tipo || 'text')}
                         value={valores[campo.clave] || ''}
                         onChange={e => cambiar(campo.clave, e.target.value)}
                         placeholder={campo.placeholder}

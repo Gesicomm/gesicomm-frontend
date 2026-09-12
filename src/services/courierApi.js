@@ -87,6 +87,12 @@ export const getConteoPorEstado = async (filtros = {}) => {
   return data;
 };
 
+/** Contador de abastecimientos por estado, respetando filtros dinámicos POST. */
+export const getConteoPorAbastecimiento = async (filtros = {}) => {
+  const { data } = await api.post('/envios/conteo-por-abastecimiento', filtros);
+  return data;
+};
+
 /** Resumen financiero minimalista de la pestaña Entregados (ver plan sección 22). */
 export const getResumenEntregados = async (filtros = {}) => {
   const { data } = await api.post('/envios/resumen-entregados', filtros);

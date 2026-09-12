@@ -110,6 +110,7 @@ import PoliticaReembolsoPublica from './pages/landing/PoliticaReembolsoPublica';
 import TerminosServicioPublica from './pages/landing/TerminosServicioPublica';
 import PoliticaEnvioPublica from './pages/landing/PoliticaEnvioPublica';
 import AvisoLegalPublico from './pages/landing/AvisoLegalPublico';
+import ResultadoPagoTienda from './pages/landing/ResultadoPagoTienda';
 import PaginaBuilderPublica from './pages/page-builder/publico/PaginaBuilderPublica';
 import PageBuilderHome from './pages/page-builder/PageBuilderHome';
 import ProyectoDetalle from './pages/page-builder/ProyectoDetalle';
@@ -363,6 +364,7 @@ function App() {
         <Route path="/terminos-servicio" element={<TerminosServicioSegunHostname />} />
         <Route path="/politica-envio" element={<PoliticaEnvioSegunHostname />} />
         <Route path="/aviso-legal" element={<AvisoLegalSegunHostname />} />
+        <Route path="/pagopar/resultado/:hash" element={<ResultadoPagoTienda />} />
         {/* Alias para pruebas locales o previsualización. En producción se usará el hostname. */}
         <Route path="/l/:slug/catalogo" element={<CatalogoPublico />} />
         <Route path="/l/:slug/contacto" element={<ContactoPublico />} />

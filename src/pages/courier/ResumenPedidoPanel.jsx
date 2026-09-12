@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Copy, Check } from "lucide-react";
 import { formatGs } from "../../lib/courier";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 function armarTextoResumen(envio) {
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "—";
@@ -10,7 +11,7 @@ function armarTextoResumen(envio) {
     : "—";
 
   const lineas = [
-    `Pedido #${envio.id}`,
+    `Pedido #${numeroPedidoVisible(envio)}`,
     `Ciudad: ${envio.ciudad || "—"}`,
     `Nombre: ${nombre}`,
     `Celular: ${envio.telefono || "—"}`,

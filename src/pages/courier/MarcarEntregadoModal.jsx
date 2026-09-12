@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, PackageCheck } from "lucide-react";
 import { getMetodosPago } from "../../services/courierApi";
 import CurrencyInput from "../../components/CurrencyInput";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 /** Fulfills la transición a "Entregado" — ver plan Gestión de Pedidos sección 44. */
 export function MarcarEntregadoModal({ open, envio, onClose, onSubmit }) {
@@ -46,7 +47,7 @@ export function MarcarEntregadoModal({ open, envio, onClose, onSubmit }) {
       <div className="modal-content" style={{ maxWidth: "420px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <PackageCheck size={18} color="var(--color-success)" /> Marcar Entregado #{envio.id}
+            <PackageCheck size={18} color="var(--color-success)" /> Marcar Entregado #{numeroPedidoVisible(envio)}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>

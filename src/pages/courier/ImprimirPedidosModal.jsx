@@ -4,6 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { X, Printer, Filter, Settings, Type, Calendar } from "lucide-react";
 import { STATUS_ORDER, formatGs } from "../../lib/courier";
 import "./impresion-pedidos.css";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, onChangeFechaDesde, fechaHasta, onChangeFechaHasta }) {
   // Título principal del encabezado personalizable
@@ -390,7 +391,7 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, men
         {/* Encabezado de la Etiqueta */}
         <div className="etiqueta-header">
           <h3 className="etiqueta-header-title">{tituloHeader || "LOGÍSTICA"}</h3>
-          <span className="etiqueta-header-date">{envio.fecha || envio.dispatchedAt}</span>
+          <span className="etiqueta-header-date">#{numeroPedidoVisible(envio)} · {envio.fecha || envio.dispatchedAt}</span>
         </div>
 
         {mensaje?.posicion === 'arriba' && blockMensaje}

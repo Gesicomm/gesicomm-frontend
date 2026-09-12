@@ -55,6 +55,11 @@ export default function Onboarding() {
   // El RUC es aparte y opcional: la doc dice que puede ir vacio.
   const [documento, setDocumento] = useState('');
   const [ruc, setRuc] = useState('');
+  const [depositoDepartamento, setDepositoDepartamento] = useState('');
+  const [depositoCiudad, setDepositoCiudad] = useState('');
+  const [depositoDireccion, setDepositoDireccion] = useState('');
+  const [depositoReferencia, setDepositoReferencia] = useState('');
+  const [depositoTelefono, setDepositoTelefono] = useState('');
   const [ficha, setFicha] = useState('');
   const [disponibilidad, setDisponibilidad] = useState(null);
   const [creando, setCreando] = useState(false);
@@ -111,12 +116,23 @@ export default function Onboarding() {
   const nombreValido = nombre.trim().length >= 2 && subdominio.length >= 3;
   const documentoValido = /^[0-9.\-]{5,20}$/.test(documento.trim());
   const subdominioOk = disponibilidad && disponibilidad !== 'cargando' && disponibilidad.valido && disponibilidad.disponible;
+  const depositoValido = depositoDepartamento.trim().length >= 2
+    && depositoCiudad.trim().length >= 2
+    && depositoDireccion.trim().length >= 5
+    && depositoTelefono.trim().length >= 6;
 
   function irAPaso2(e) {
     e.preventDefault();
     if (!nombreValido || !subdominioOk) return;
     setError(null);
     setPaso(2);
+  }
+
+  function irAPaso3(e) {
+    e.preventDefault();
+    if (!depositoValido) return;
+    setError(null);
+    setPaso(3);
   }
 
   async function crearTienda({ continuarProductos }) {
@@ -135,6 +151,11 @@ export default function Onboarding() {
         nombre: nombre.trim(),
         documento: documento.trim(),
         ruc: ruc.trim(),
+        deposito_departamento: depositoDepartamento.trim(),
+        deposito_ciudad: depositoCiudad.trim(),
+        deposito_direccion: depositoDireccion.trim(),
+        deposito_referencia: depositoReferencia.trim(),
+        deposito_telefono: depositoTelefono.trim(),
         subdominio,
         onboarding: true,
         onboarding_ficha: continuarProductos ? ficha : null,
@@ -164,9 +185,11 @@ export default function Onboarding() {
         </div>
 
         <div className="onb-steps">
-          <span className={`onb-step ${paso === 1 ? 'active' : 'done'}`}>1</span>
+          <span className={`onb-step ${paso === 1 ? 'active' : paso > 1 ? 'done' : ''}`}>1</span>
           <span className="onb-step-line" />
-          <span className={`onb-step ${paso === 2 ? 'active' : ''}`}>2</span>
+          <span className={`onb-step ${paso === 2 ? 'active' : paso > 2 ? 'done' : ''}`}>2</span>
+          <span className="onb-step-line" />
+          <span className={`onb-step ${paso === 3 ? 'active' : ''}`}>3</span>
         </div>
 
         {paso === 1 && (
@@ -229,6 +252,69 @@ export default function Onboarding() {
         )}
 
         {paso === 2 && (
+          <form onSubmit={irAPaso3} className="onb-step-content">
+            <h1>Dirección de tu depósito</h1>
+            <p className="onb-subtitle">Cuando vendas un producto que administra Gesicomm, te lo vamos a enviar acá. No es la dirección de entrega de tus clientes.</p>
+
+            <label className="onb-campo">
+              <span>Departamento</span>
+              <input
+                autoFocus
+                value={depositoDepartamento}
+                onChange={e => setDepositoDepartamento(e.target.value)}
+                placeholder="Ej: Central"
+              />
+            </label>
+
+            <label className="onb-campo">
+              <span>Ciudad</span>
+              <input
+                value={depositoCiudad}
+                onChange={e => setDepositoCiudad(e.target.value)}
+                placeholder="Ej: Luque"
+              />
+            </label>
+
+            <label className="onb-campo">
+              <span>Dirección</span>
+              <input
+                value={depositoDireccion}
+                onChange={e => setDepositoDireccion(e.target.value)}
+                placeholder="Calle, número, barrio"
+              />
+            </label>
+
+            <label className="onb-campo">
+              <span>Referencia <em>(opcional)</em></span>
+              <input
+                value={depositoReferencia}
+                onChange={e => setDepositoReferencia(e.target.value)}
+                placeholder="Ej: portón negro, casa de dos pisos"
+              />
+            </label>
+
+            <label className="onb-campo">
+              <span>Teléfono de contacto</span>
+              <input
+                value={depositoTelefono}
+                onChange={e => setDepositoTelefono(e.target.value)}
+                placeholder="Quien recibe el envío, si no sos vos"
+              />
+            </label>
+
+            {error && <div className="land-alert-error">{error}</div>}
+
+            <button type="submit" className="land-btn-primary onb-btn-full" disabled={!depositoValido}>
+              Continuar <ArrowRight size={15} />
+            </button>
+
+            <button type="button" className="onb-btn-back" onClick={() => setPaso(1)}>
+              <ArrowLeft size={14} /> Volver
+            </button>
+          </form>
+        )}
+
+        {paso === 3 && (
           <div className="onb-step-content">
             <h1>Elegí el tipo de tienda</h1>
             <p className="onb-subtitle">Esta ficha define cómo se va a presentar tu landing y la vista de tus productos.</p>
@@ -264,7 +350,7 @@ export default function Onboarding() {
               Configurar más tarde
             </button>
 
-            <button type="button" className="onb-btn-back" onClick={() => setPaso(1)} disabled={creando}>
+            <button type="button" className="onb-btn-back" onClick={() => setPaso(2)} disabled={creando}>
               <ArrowLeft size={14} /> Volver
             </button>
           </div>

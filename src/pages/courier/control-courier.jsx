@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck } from "lucide-react";
+import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck, CreditCard } from "lucide-react";
 import { PedidosTable } from "./PedidosTable";
 import { DeliveryPanel } from "./DeliveryPanel";
 import { NuevoPedidoModal } from "./NuevoPedidoModal";
@@ -31,7 +31,7 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "delivery", "rendicion", "analitica"]);
+const TABS_VALIDOS = new Set(["tablero", "abastecimiento", "delivery", "rendicion", "analitica"]);
 const CLAVE_TAB = "gesicomm:pedidosTab";
 
 // La pestaña activa nunca viaja por query string: llega como router state
@@ -296,6 +296,9 @@ export function ControlCourier() {
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
           </TabButton>
+          <TabButton active={tab === "abastecimiento"} onClick={() => seleccionarTab("abastecimiento")} icon={<CreditCard size={16} />}>
+            Abastecimiento
+          </TabButton>
           <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
             Delivery
           </TabButton>
@@ -322,6 +325,20 @@ export function ControlCourier() {
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             refrescarKey={refrescarKey}
+          />
+        ) : tab === "abastecimiento" ? (
+          <PedidosTable
+            couriers={couriers}
+            onChangeEstado={handleChangeEstado}
+            onPagarAbastecimiento={handlePagarAbastecimiento}
+            onAdminAbastecimiento={handleAdminAbastecimiento}
+            onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
+            onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
+            onAbrirResumen={(envio) => setResumenEnvio(envio)}
+            onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
+            refrescarKey={refrescarKey}
+            soloAbastecimiento
+            initialAbastecimientoEstado="en_proceso"
           />
         ) : tab === "delivery" ? (
           <DeliveryPanel

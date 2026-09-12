@@ -1,16 +1,29 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History,
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash,
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
-import { getEnviosPaginados, getConteoPorEstado, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
-import { productService } from "../../services/productService";
+import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
 import { canalVentaService } from "../../services/canalVentaService";
 import { verificarSesion } from "../../utils/auth";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 
 const LIMITE = 10;
+
+const ABASTECIMIENTO_TABS = [
+  { id: "en_proceso", label: "Pagados", description: "Pago acreditado, falta recibir mercadería" },
+  { id: "pendiente_pago", label: "Pendientes de pago", description: "La tienda todavía debe pagar" },
+  { id: "recibido", label: "Recibidos", description: "Mercadería recibida en depósito" },
+  { id: "TODOS", label: "Todos", description: "Todos los pedidos con abastecimiento" },
+];
+
+const ABASTECIMIENTO_META = {
+  pendiente_pago: { label: "Pendiente de pago", tone: "danger" },
+  en_proceso: { label: "Pagado", tone: "info" },
+  recibido: { label: "Recibido", tone: "success" },
+};
 
 // Transiciones que necesitan datos adicionales (fecha, método de pago,
 // detalle por producto) — se resuelven en un modal dedicado, nunca con un
@@ -30,6 +43,8 @@ const TRANSICIONES_VALIDAS_FRONTEND = {
 };
 
 const FILTROS_VACIOS = {
+  pedido_id: "",
+  envio_id: "",
   cliente: "",
   ciudad: "",
   fecha_desde: "",
@@ -37,7 +52,7 @@ const FILTROS_VACIOS = {
   courier_id: "TODOS",
   confirmador: "",
   canal_venta_id: "TODOS",
-  producto: "TODOS",
+  producto: "",
   metodo_pago_id: "TODOS",
 };
 
@@ -211,8 +226,39 @@ function getWhatsappLink(envio, mensajePersonalizado) {
   const numero = normalizarTelefonoWhatsapp(envio?.telefono);
   if (!numero) return null;
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
-  const mensaje = mensajePersonalizado || `Hola ${nombre}, te escribimos por tu pedido #${envio.id}.`;
+  const mensaje = mensajePersonalizado || `Hola ${nombre}, te escribimos por tu pedido #${numeroPedidoVisible(envio)}.`;
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
+}
+
+function formatFechaCorta(fecha) {
+  if (!fecha) return null;
+  const d = new Date(fecha);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("es-PY", {
+    timeZone: "America/Asuncion",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function AbastecimientoBadge({ envio }) {
+  const meta = ABASTECIMIENTO_META[envio?.abastecimiento_estado] || { label: "Sin abastecimiento", tone: "neutral" };
+  const fechaPago = formatFechaCorta(envio?.abastecimiento_pagado_at);
+  const fechaRecibido = formatFechaCorta(envio?.abastecimiento_recibido_at);
+  const detalleFecha = envio?.abastecimiento_estado === "recibido" ? fechaRecibido : fechaPago;
+
+  return (
+    <div className="pt-abastecimiento-cell">
+      <span className={`pt-abastecimiento-badge pt-abastecimiento-badge--${meta.tone}`}>
+        {meta.label}
+      </span>
+      <span className="pt-abastecimiento-meta">
+        {formatGs(envio?.abastecimiento_costo || 0)}
+        {detalleFecha ? ` · ${detalleFecha}` : ""}
+      </span>
+    </div>
+  );
 }
 
 function ResumenItem({ label, value, color }) {
@@ -297,7 +343,7 @@ function AccionPrincipal({ envio, isAdmin, onAbrirDetalle, onAbrirResumen, onAcc
 
   if (envio.estado === "Pendiente") {
     const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
-    const link = getWhatsappLink(envio, `Hola ${nombre}, te escribimos por tu pedido #${envio.id}. ¿Confirmamos los datos de entrega?`);
+    const link = getWhatsappLink(envio, `Hola ${nombre}, te escribimos por tu pedido #${numeroPedidoVisible(envio)}. ¿Confirmamos los datos de entrega?`);
     if (!link) return <span style={{ color: "var(--color-fg-subtle)", fontSize: "0.75rem" }}>Sin teléfono</span>;
     return (
       <a href={link} target="_blank" rel="noopener noreferrer" style={accionBtnStyle} onClick={(e) => e.stopPropagation()}>
@@ -324,16 +370,31 @@ function AccionPrincipal({ envio, isAdmin, onAbrirDetalle, onAbrirResumen, onAcc
  * Gestión de Pedidos, sección 38-42). Reemplaza el viejo MultiEstadoSelect:
  * la pestaña activa ES el filtro de estado, no hace falta un selector aparte.
  */
-export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimiento, onAdminAbastecimiento, onAbrirDetalle, onAccionEspecial, onAbrirResumen, onAbrirHistorial, refrescarKey = 0 }) {
-  const [estadoActivo, setEstadoActivo] = useState("Pendiente");
-  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
+export function PedidosTable({
+  couriers = [],
+  onChangeEstado,
+  onPagarAbastecimiento,
+  onAdminAbastecimiento,
+  onAbrirDetalle,
+  onAccionEspecial,
+  onAbrirResumen,
+  onAbrirHistorial,
+  refrescarKey = 0,
+  initialPedidoId = "",
+  initialEstado = "Pendiente",
+  soloAbastecimiento = false,
+  initialAbastecimientoEstado = "en_proceso",
+}) {
+  const filtrosBase = useMemo(() => ({ ...FILTROS_VACIOS, pedido_id: initialPedidoId || "" }), [initialPedidoId]);
+  const [estadoActivo, setEstadoActivo] = useState(initialEstado);
+  const [abastecimientoEstadoActivo, setAbastecimientoEstadoActivo] = useState(initialAbastecimientoEstado);
+  const [filtros, setFiltros] = useState(() => filtrosBase);
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
   const [conteos, setConteos] = useState({});
   const [resumenEntregados, setResumenEntregados] = useState(null);
   const [loading, setLoading] = useState(true);
   const [masFilters, setMasFilters] = useState(false);
-  const [productos, setProductos] = useState([]);
   const [metodosPagoList, setMetodosPagoList] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
@@ -344,17 +405,31 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    productService.buscar({ sin_limite: true }).then((res) => {
-      const prods = Array.isArray(res) ? res : (res.productos || res.rows || []);
-      setProductos(prods);
-    }).catch(() => setProductos([]));
     getMetodosPago().then((data) => setMetodosPagoList(data || [])).catch(() => setMetodosPagoList([]));
     canalVentaService.listar().then((data) => setCanalesVenta(data || [])).catch(() => setCanalesVenta([]));
     verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
   }, []);
 
-  const construirPayloadBase = useCallback((f) => {
+  useEffect(() => {
+    setFiltros((prev) => ({ ...prev, pedido_id: initialPedidoId || "" }));
+    if (initialPedidoId) setPage(1);
+  }, [initialPedidoId]);
+
+  useEffect(() => {
+    setEstadoActivo(initialEstado);
+    setPage(1);
+  }, [initialEstado]);
+
+  useEffect(() => {
+    setAbastecimientoEstadoActivo(initialAbastecimientoEstado);
+    setPage(1);
+  }, [initialAbastecimientoEstado]);
+
+  const construirPayloadBase = useCallback((f, opciones = {}) => {
+    const { incluirFiltroAbastecimiento = true } = opciones;
     const payload = {};
+    if (f.pedido_id.trim()) payload.pedido_id = f.pedido_id.replace(/#/g, "").trim();
+    if (f.envio_id.trim()) payload.envio_id = f.envio_id.replace(/#/g, "").trim();
     if (f.cliente.trim()) payload.cliente = f.cliente.trim();
     if (f.ciudad.trim()) payload.ciudad = f.ciudad.trim();
     if (f.fecha_desde) payload.fecha_desde = f.fecha_desde;
@@ -362,15 +437,25 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
     if (f.courier_id !== "TODOS") payload.courier_id = f.courier_id;
     if (f.confirmador.trim()) payload.confirmador = f.confirmador.trim();
     if (f.canal_venta_id !== "TODOS") payload.canal_venta_id = f.canal_venta_id;
-    if (f.producto !== "TODOS") payload.producto = f.producto;
+    if (f.producto.trim()) payload.producto_busqueda = f.producto.trim();
     if (f.metodo_pago_id !== "TODOS") payload.metodo_pago_id = f.metodo_pago_id;
+    if (soloAbastecimiento && incluirFiltroAbastecimiento) {
+      if (abastecimientoEstadoActivo && abastecimientoEstadoActivo !== "TODOS") {
+        payload.abastecimiento_estado = abastecimientoEstadoActivo;
+      } else {
+        payload.solo_abastecimiento = true;
+      }
+    }
     return payload;
-  }, []);
+  }, [soloAbastecimiento, abastecimientoEstadoActivo]);
 
   const cargar = useCallback(async (f, p, estado) => {
     setLoading(true);
     try {
-      const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE, estados: [estado] };
+      const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
+      if (!soloAbastecimiento && estado) {
+        payload.estados = [estado];
+      }
       const res = await getEnviosPaginados(payload);
       setData(res);
     } catch (err) {
@@ -378,7 +463,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
     } finally {
       setLoading(false);
     }
-  }, [construirPayloadBase]);
+  }, [construirPayloadBase, soloAbastecimiento]);
 
   const handleEliminarPedido = async (envio) => {
     if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el pedido de ${envio.cliente || "Cliente"}? Esta acción no se puede deshacer y liberará cualquier stock reservado.`)) {
@@ -395,12 +480,15 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
 
   const cargarConteos = useCallback(async (f) => {
     try {
-      const res = await getConteoPorEstado(construirPayloadBase(f));
+      const payload = construirPayloadBase(f, { incluirFiltroAbastecimiento: false });
+      const res = soloAbastecimiento
+        ? await getConteoPorAbastecimiento(payload)
+        : await getConteoPorEstado(payload);
       setConteos(res || {});
     } catch (err) {
       console.error("Error cargando conteo por estado:", err);
     }
-  }, [construirPayloadBase]);
+  }, [construirPayloadBase, soloAbastecimiento]);
 
   // Declarado después de cargarConteos: su dependency array la referencia,
   // y con const/TDZ eso revienta con "Cannot access before initialization"
@@ -443,7 +531,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
   };
 
   const resetFiltros = () => {
-    setFiltros(FILTROS_VACIOS);
+    setFiltros(filtrosBase);
     setPage(1);
   };
 
@@ -452,6 +540,12 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
       setModalAbastecimientoDismissedKey(null);
     }
     setEstadoActivo(estado);
+    setPage(1);
+  };
+
+  const handleSelectAbastecimientoEstado = (estado) => {
+    setAbastecimientoEstadoActivo(estado);
+    setModalAbastecimientoDismissedKey(null);
     setPage(1);
   };
 
@@ -516,8 +610,10 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
   };
 
   const hayFiltros = Object.entries(filtros).some(([, v]) => v !== "" && v !== "TODOS");
+  const esAdmin = usuarioActual?.rol === "administrador";
 
   const envios = data.data || [];
+  const tableColSpan = soloAbastecimiento ? 9 : 10;
   const pagosAbastecimientoPendientes = envios.filter((e) => e.accion_siguiente?.tipo === "pagar_abastecimiento");
   const totalAbastecimientoPendiente = pagosAbastecimientoPendientes.reduce(
     (acc, e) => acc + (Number(e.abastecimiento_costo) || 0),
@@ -528,6 +624,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
 
   useEffect(() => {
     if (
+      !soloAbastecimiento &&
       estadoActivo === "Confirmado" &&
       !loading &&
       pagosAbastecimientoPendientes.length > 0 &&
@@ -538,6 +635,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
     }
   }, [
     estadoActivo,
+    soloAbastecimiento,
     loading,
     pagosAbastecimientoPendientes.length,
     abastecimientoModalKey,
@@ -557,7 +655,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
 
   return (
     <div className="pt-root">
-      {modalAbastecimientoOpen && primerPagoPendiente && (
+      {!soloAbastecimiento && modalAbastecimientoOpen && primerPagoPendiente && (
         <div className="pt-payment-modal-backdrop" role="presentation">
           <div
             className="pt-payment-modal"
@@ -602,37 +700,64 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
       )}
 
       {/* ── Pestañas por estado con contador ── */}
-      <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.3rem" }}>
-        {STATUS_ORDER.map((st) => {
-          const cfg = STATUS[st] || {};
-          const active = estadoActivo === st;
-          return (
-            <button
-              key={st}
-              type="button"
-              onClick={() => handleSelectEstado(st)}
-              style={{
-                padding: "0.45rem 0.9rem",
-                borderRadius: "999px",
-                border: active ? `1px solid ${cfg.chipText}` : "1px solid var(--color-border)",
-                background: active ? cfg.chipBg : "var(--color-surface-2)",
-                color: active ? cfg.chipText : "var(--color-fg-muted)",
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                flexShrink: 0,
-              }}
-            >
-              {st}
-              <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos[st] ?? 0})</span>
-            </button>
-          );
-        })}
-      </div>
+      {soloAbastecimiento ? (
+        <div className="pt-abastecimiento-board">
+          <div className="pt-abastecimiento-board__copy">
+            <span>Abastecimiento Gesicom</span>
+            <strong>Pagos acreditados y recepción de mercadería</strong>
+          </div>
+          <div className="pt-abastecimiento-tabs" role="tablist" aria-label="Estados de abastecimiento">
+            {ABASTECIMIENTO_TABS.map((tab) => {
+              const active = abastecimientoEstadoActivo === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`pt-abastecimiento-tab ${active ? "active" : ""}`}
+                  title={tab.description}
+                  aria-selected={active}
+                  onClick={() => handleSelectAbastecimientoEstado(tab.id)}
+                >
+                  <span>{tab.label}</span>
+                  <strong>{conteos[tab.id] ?? 0}</strong>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.3rem" }}>
+          {STATUS_ORDER.map((st) => {
+            const cfg = STATUS[st] || {};
+            const active = estadoActivo === st;
+            return (
+              <button
+                key={st}
+                type="button"
+                onClick={() => handleSelectEstado(st)}
+                style={{
+                  padding: "0.45rem 0.9rem",
+                  borderRadius: "999px",
+                  border: active ? `1px solid ${cfg.chipText}` : "1px solid var(--color-border)",
+                  background: active ? cfg.chipBg : "var(--color-surface-2)",
+                  color: active ? cfg.chipText : "var(--color-fg-muted)",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  flexShrink: 0,
+                }}
+              >
+                {st}
+                <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos[st] ?? 0})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── Resumen financiero minimalista — solo en Entregados (plan sección 22) ── */}
       {estadoActivo === "Entregado" && resumenEntregados && (
@@ -677,7 +802,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
         </div>
       )}
 
-      {estadoActivo === "Confirmado" && pagosAbastecimientoPendientes.length > 0 && (
+      {!soloAbastecimiento && estadoActivo === "Confirmado" && pagosAbastecimientoPendientes.length > 0 && (
         <div className="pt-payment-alert" role="alert">
           <div className="pt-payment-alert__icon">
             <CreditCard size={18} />
@@ -693,6 +818,40 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
 
       {/* ── Toolbar de filtros principales ── */}
       <div className="pt-toolbar" style={{ marginTop: "0.75rem" }}>
+        <div className="pt-search-wrap" style={{ flex: "0 0 160px" }}>
+          <Package size={14} className="pt-search-icon" />
+          <input
+            type="text"
+            className="pt-search"
+            placeholder="Nro. pedido..."
+            value={filtros.pedido_id}
+            onChange={(e) => setFiltro("pedido_id", e.target.value)}
+          />
+          {filtros.pedido_id && (
+            <button className="pt-clear-btn" onClick={() => setFiltro("pedido_id", "")}>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        {esAdmin && (
+          <div className="pt-search-wrap" style={{ flex: "0 0 150px" }}>
+            <Hash size={14} className="pt-search-icon" />
+            <input
+              type="text"
+              className="pt-search"
+              placeholder="ID interno..."
+              value={filtros.envio_id}
+              onChange={(e) => setFiltro("envio_id", e.target.value)}
+            />
+            {filtros.envio_id && (
+              <button className="pt-clear-btn" onClick={() => setFiltro("envio_id", "")}>
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Búsqueda cliente */}
         <div className="pt-search-wrap">
           <Search size={14} className="pt-search-icon" />
@@ -757,7 +916,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
         >
           <Filter size={14} />
           Más
-          {(filtros.courier_id !== "TODOS" || filtros.canal_venta_id !== "TODOS" || filtros.confirmador || filtros.producto !== "TODOS" || filtros.metodo_pago_id !== "TODOS") && (
+          {(filtros.courier_id !== "TODOS" || filtros.canal_venta_id !== "TODOS" || filtros.confirmador || filtros.producto.trim() || filtros.metodo_pago_id !== "TODOS") && (
             <span className="pt-filter-dot" />
           )}
         </button>
@@ -823,17 +982,13 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
 
           <label className="pt-extra-label">
             <Package size={13} />
-            <select
-              className="pt-filter-select"
-              style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }}
+            <input
+              type="text"
+              className="pt-extra-input"
+              placeholder="Buscar producto u oferta..."
               value={filtros.producto}
               onChange={(e) => setFiltro("producto", e.target.value)}
-            >
-              <option value="TODOS">Todos los productos</option>
-              {productos.map((p) => (
-                <option key={p.id} value={p.id}>{p.nombre}</option>
-              ))}
-            </select>
+            />
           </label>
 
           <label className="pt-extra-label">
@@ -860,27 +1015,39 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
             <tr>
               <th className="pt-th pt-th-id">#</th>
               <th className="pt-th">Fecha</th>
-              <th className="pt-th">Cliente</th>
-              <th className="pt-th">Teléfono</th>
-              <th className="pt-th">Ciudad</th>
+              {soloAbastecimiento ? (
+                <>
+                  <th className="pt-th">Depósito</th>
+                  <th className="pt-th">Contacto depósito</th>
+                </>
+              ) : (
+                <>
+                  <th className="pt-th">Cliente</th>
+                  <th className="pt-th">Teléfono</th>
+                  <th className="pt-th">Ciudad</th>
+                </>
+              )}
               <th className="pt-th">Producto / Oferta</th>
               <th className="pt-th pt-th-num">Total</th>
-              <th className="pt-th">Courier</th>
+              {!soloAbastecimiento && <th className="pt-th">Courier</th>}
               <th className="pt-th">Estado</th>
+              {soloAbastecimiento && <th className="pt-th">Abastecimiento</th>}
               <th className="pt-th">Acción</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={10} className="pt-empty">
+                <td colSpan={tableColSpan} className="pt-empty">
                   <span className="pt-spinner" /> Cargando pedidos...
                 </td>
               </tr>
             ) : envios.length === 0 ? (
               <tr>
-                <td colSpan={10} className="pt-empty">
-                  No hay pedidos en "{estadoActivo}" que coincidan con los filtros.
+                <td colSpan={tableColSpan} className="pt-empty">
+                  {soloAbastecimiento
+                    ? "No hay pedidos de abastecimiento que coincidan con los filtros."
+                    : `No hay pedidos en "${estadoActivo}" que coincidan con los filtros.`}
                 </td>
               </tr>
             ) : (
@@ -909,7 +1076,14 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
                     className="pt-row"
                     onClick={() => onAbrirDetalle && onAbrirDetalle(e)}
                   >
-                    <td className="pt-td pt-td-id">#{e.id}</td>
+                    <td className="pt-td pt-td-id">
+                      <span>#{numeroPedidoVisible(e)}</span>
+                      {esAdmin && Number(e.id) !== Number(e.numero_pedido) && (
+                        <span style={{ display: "block", marginTop: "2px", color: "var(--color-fg-subtle)", fontSize: "0.68rem", fontWeight: 600 }}>
+                          ID {e.id}
+                        </span>
+                      )}
+                    </td>
                     <td className="pt-td pt-td-fecha">
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                         <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>{fechaVisual}</span>
@@ -920,35 +1094,51 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
                         )}
                       </div>
                     </td>
-                    <td className="pt-td">
-                      <span className="pt-cliente-nombre">
-                        {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
-                          e.cliente ||
-                          "—"}
-                      </span>
-                    </td>
-                    <td className="pt-td">
-                      <span className="pt-phone-cell">
-                        <span>{e.telefono || "—"}</span>
-                        {whatsappLink && (
-                          <a
-                            href={whatsappLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="pt-whatsapp-action"
-                            title={`Escribir por WhatsApp a ${e.telefono}`}
-                            aria-label={`Escribir por WhatsApp a ${nombreCliente}`}
-                            onClick={(ev) => ev.stopPropagation()}
-                          >
-                            <MessageCircle size={14} />
-                          </a>
-                        )}
-                      </span>
-                    </td>
-                    <td className="pt-td pt-td-ciudad">
-                      <span>{e.ciudad || "—"}</span>
-                      {e.departamento && <span className="pt-depto">{e.departamento}</span>}
-                    </td>
+                    {soloAbastecimiento ? (
+                      <>
+                        <td className="pt-td pt-td-ciudad">
+                          <span>{e.Usuario?.Tienda?.deposito_direccion || "Sin dirección cargada"}</span>
+                          <span className="pt-depto">
+                            {[e.Usuario?.Tienda?.deposito_ciudad, e.Usuario?.Tienda?.deposito_departamento].filter(Boolean).join(" · ") || "—"}
+                          </span>
+                        </td>
+                        <td className="pt-td">
+                          <span>{e.Usuario?.Tienda?.deposito_telefono || e.Usuario?.Tienda?.whatsapp || "—"}</span>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="pt-td">
+                          <span className="pt-cliente-nombre">
+                            {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
+                              e.cliente ||
+                              "—"}
+                          </span>
+                        </td>
+                        <td className="pt-td">
+                          <span className="pt-phone-cell">
+                            <span>{e.telefono || "—"}</span>
+                            {whatsappLink && (
+                              <a
+                                href={whatsappLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="pt-whatsapp-action"
+                                title={`Escribir por WhatsApp a ${e.telefono}`}
+                                aria-label={`Escribir por WhatsApp a ${nombreCliente}`}
+                                onClick={(ev) => ev.stopPropagation()}
+                              >
+                                <MessageCircle size={14} />
+                              </a>
+                            )}
+                          </span>
+                        </td>
+                        <td className="pt-td pt-td-ciudad">
+                          <span>{e.ciudad || "—"}</span>
+                          {e.departamento && <span className="pt-depto">{e.departamento}</span>}
+                        </td>
+                      </>
+                    )}
                     <td
                       className="pt-td pt-td-items"
                       title={items.map((i) => `${i.nombre_producto} x${i.cantidad}`).join(", ")}
@@ -961,6 +1151,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
                         <span className="pt-delivery">+{formatGs(e.costo_envio)}</span>
                       )}
                     </td>
+                    {!soloAbastecimiento && (
                     <td className="pt-td">
                       {e.Courier ? (
                         <span className="pt-courier">{e.Courier.nombre}</span>
@@ -968,17 +1159,23 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
                         <span className="pt-sin-courier">—</span>
                       )}
                     </td>
+                    )}
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
                       <EstadoBadgeDropdown
                         estado={e.estado}
                         onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
                       />
                     </td>
+                    {soloAbastecimiento && (
+                      <td className="pt-td">
+                        <AbastecimientoBadge envio={e} />
+                      </td>
+                    )}
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                         <AccionPrincipal
                           envio={e}
-                          isAdmin={usuarioActual?.rol === "administrador"}
+                          isAdmin={esAdmin}
                           onAbrirDetalle={onAbrirDetalle}
                           onAbrirResumen={onAbrirResumen}
                           onAccionSiguiente={handleAccionSiguiente}
@@ -993,7 +1190,7 @@ export function PedidosTable({ couriers = [], onChangeEstado, onPagarAbastecimie
                             <History size={13} />
                           </button>
                         )}
-                        {usuarioActual?.rol === 'administrador' && (
+                        {esAdmin && (
                           <button
                             type="button"
                             title="Eliminar pedido permanentemente"

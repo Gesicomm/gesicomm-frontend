@@ -1,5 +1,6 @@
 import { formatGs, STATUS_ORDER } from "../../lib/courier";
 import { Bike, Car, Truck, MapPin, Phone, ShoppingBag, MessageCircle } from "lucide-react";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 function VehiculoIcon({ v }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={13} />;
@@ -12,7 +13,7 @@ function getWhatsappLink(telefono, envio) {
   if (!limpio) return null;
   const numero = limpio.startsWith("0") ? `595${limpio.slice(1)}` : limpio;
   const nombre = [envio.nombre_cliente, envio.apellido_cliente].filter(Boolean).join(" ") || envio.cliente || "";
-  const mensaje = `Hola ${nombre}, te escribimos por tu pedido #${envio.id}.`;
+  const mensaje = `Hola ${nombre}, te escribimos por tu pedido #${numeroPedidoVisible(envio)}.`;
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 

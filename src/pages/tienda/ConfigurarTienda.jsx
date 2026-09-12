@@ -5,7 +5,7 @@ import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
-  ArrowRight
+  ArrowRight, MapPin
 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -39,6 +39,11 @@ const FORM_INICIAL = {
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
+  deposito_departamento: '',
+  deposito_ciudad: '',
+  deposito_direccion: '',
+  deposito_referencia: '',
+  deposito_telefono: '',
   plan: 'free',
   meta_pixel_id: '',
   meta_test_event_code: '',
@@ -67,6 +72,13 @@ const TABS = [
     icono: MessageCircle,
     titulo: 'Contacto',
     desc: 'Por dónde te escriben tus clientes y con qué mensaje te llegan.',
+  },
+  {
+    id: 'deposito',
+    label: 'Depósito',
+    icono: MapPin,
+    titulo: 'Dirección de depósito',
+    desc: 'Adónde te enviamos la mercadería vendida de productos que administra Gesicomm. No es la dirección de entrega de tus clientes.',
   },
   {
     id: 'pasarelas',
@@ -155,6 +167,11 @@ export default function ConfigurarTienda() {
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
+          deposito_departamento: data.deposito_departamento || '',
+          deposito_ciudad: data.deposito_ciudad || '',
+          deposito_direccion: data.deposito_direccion || '',
+          deposito_referencia: data.deposito_referencia || '',
+          deposito_telefono: data.deposito_telefono || '',
           plan: data.plan || 'free',
           meta_pixel_id: data.meta_pixel_id || '',
           meta_test_event_code: data.meta_test_event_code || '',
@@ -569,6 +586,42 @@ export default function ConfigurarTienda() {
                             )}
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* ═════════════════ TAB: DIRECCIÓN DE DEPÓSITO ═════════════ */}
+              {tab === 'deposito' && (
+                <div className="tn-tab-content" key="deposito">
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Dirección de depósito</h3>
+                      <p>Cuando vendés un producto que administra Gesicomm, te lo enviamos a esta dirección. No es la dirección de entrega de tus clientes — esa se carga en cada pedido.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Departamento</span>
+                          <input value={form.deposito_departamento} onChange={e => handleChange('deposito_departamento', e.target.value)} placeholder="Ej: Central" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Ciudad</span>
+                          <input value={form.deposito_ciudad} onChange={e => handleChange('deposito_ciudad', e.target.value)} placeholder="Ej: Luque" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Dirección</span>
+                          <input value={form.deposito_direccion} onChange={e => handleChange('deposito_direccion', e.target.value)} placeholder="Calle, número, barrio" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Referencia <em>(opcional)</em></span>
+                          <input value={form.deposito_referencia} onChange={e => handleChange('deposito_referencia', e.target.value)} placeholder="Ej: portón negro, casa de dos pisos" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Teléfono de contacto <em>(opcional)</em></span>
+                          <input value={form.deposito_telefono} onChange={e => handleChange('deposito_telefono', e.target.value)} placeholder="Quien recibe el envío, si no sos vos" />
+                        </label>
                       </div>
                     </div>
                   </section>

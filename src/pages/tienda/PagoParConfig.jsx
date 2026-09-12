@@ -18,6 +18,7 @@ export default function PagoParConfig() {
   const [environment, setEnvironment] = useState('sandbox');
   const [isActive, setIsActive] = useState(false);
   const [eliminarKey, setEliminarKey] = useState(false);
+  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
     cargarConfiguracion();
@@ -35,6 +36,22 @@ export default function PagoParConfig() {
       setError('Error al cargar la configuración de PagoPar.');
     } finally {
       setCargando(false);
+    }
+  };
+
+  // La URL a la que PagoPar avisa cuando se acredita un pago. Cada comercio
+  // tiene que cargarla en SU panel: sin esto el cobro se hace igual pero el
+  // pedido nunca se confirma de este lado — falla en silencio.
+  const URL_RESPUESTA = 'https://api.gesicomm.com/api/webhooks/pagopar';
+
+  const copiarUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(URL_RESPUESTA);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Sin permiso de portapapeles el texto igual esta a la vista para
+      // seleccionarlo a mano.
     }
   };
 
@@ -95,6 +112,16 @@ export default function PagoParConfig() {
     !eliminarKey &&
     !privateKey.trim() &&
     publicKey.trim() !== publicKeyOriginal.trim();
+  const urlRetorno = config?.pagopar_return_url || 'https://tu-tienda.gesicomm.com/pagopar/resultado/($hash)';
+  const copiarUrlRetorno = async () => {
+    try {
+      await navigator.clipboard.writeText(urlRetorno);
+      setMensaje('URL de redireccionamiento copiada.');
+      setError(null);
+    } catch (err) {
+      setError('No pudimos copiar la URL automáticamente.');
+    }
+  };
 
   if (cargando) {
     return <div className="text-[var(--vit-muted)] py-4">Cargando configuración...</div>;
@@ -133,6 +160,59 @@ export default function PagoParConfig() {
       )}
 
       <div className="space-y-6">
+        <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-3">
+          <p className="text-sm font-medium text-[var(--vit-text)]">
+            Antes de cobrar, configurá esto en tu panel de PagoPar
+          </p>
+          <p className="text-xs text-[var(--vit-muted)] leading-relaxed">
+            Pegar las claves acá no alcanza: PagoPar necesita saber a dónde avisarnos
+            cuando alguien te paga.
+          </p>
+
+          <ol className="space-y-3 text-xs text-[var(--vit-muted)] list-decimal list-inside">
+            <li>
+              <span className="text-[var(--vit-text)]">
+                En <strong>Integrar Pagopar con mi sitio web</strong>, pegá esto en
+                <strong> URL DE RESPUESTA</strong> y guardá con “Actualizar URLs”:
+              </span>
+              <div className="mt-2 flex items-center gap-2">
+                <code className="flex-1 px-3 py-2 rounded-lg bg-[var(--vit-bg)] border border-[var(--vit-border)] text-[var(--vit-text)] break-all text-[11px]">
+                  {URL_RESPUESTA}
+                </code>
+                <button
+                  type="button"
+                  onClick={copiarUrl}
+                  className="shrink-0 px-3 py-2 rounded-lg border border-[var(--vit-border)] text-[var(--vit-text)] hover:bg-[var(--vit-card-hover-bg)] transition-colors"
+                >
+                  {copiado ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+              <span className="block mt-1.5 text-[var(--vit-muted)]">
+                Si te la salteás, tus clientes van a poder pagar pero los pedidos
+                van a quedar en “Pendiente” para siempre.
+              </span>
+            </li>
+            <li>
+              <span className="text-[var(--vit-text)]">
+                Completá los <strong>3 pasos de Staging</strong> que te muestra PagoPar
+                y pedí el pase a Producción.
+              </span>
+              <span className="block mt-1 text-[var(--vit-muted)]">
+                Los exige para cada comercio, uno por uno.
+              </span>
+            </li>
+            <li>
+              <span className="text-[var(--vit-text)]">
+                Al pasar a Producción, PagoPar <strong>regenera las dos claves</strong>.
+                Volvé acá y cargá las nuevas.
+              </span>
+              <span className="block mt-1 text-[var(--vit-muted)]">
+                Son un par: si cambiás una sola, los cobros fallan con “Token no coincide”.
+              </span>
+            </li>
+          </ol>
+        </div>
+
         <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--vit-card-bg)] border border-[var(--vit-border)]">
           <div>
             <span className="block text-sm font-medium text-[var(--vit-text)]">Activar pasarela</span>
@@ -147,6 +227,27 @@ export default function PagoParConfig() {
             />
             <div className="w-11 h-6 bg-[var(--vit-border)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
           </label>
+        </div>
+
+        <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <span className="block text-sm font-medium text-[var(--vit-text)]">URL de redireccionamiento</span>
+              <span className="block text-xs text-[var(--vit-muted)] mt-1">
+                Pegá esta URL en PagoPar para que el comprador vuelva al resultado de pago de tu tienda.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={copiarUrlRetorno}
+              className="self-start px-3 py-1.5 rounded-lg text-xs font-medium border border-blue-500/30 text-blue-500 hover:bg-blue-500/10 transition-colors"
+            >
+              Copiar
+            </button>
+          </div>
+          <code className="mt-3 block break-all rounded-lg bg-[var(--vit-card-bg)] border border-[var(--vit-border)] px-3 py-2 text-xs text-[var(--vit-text)]">
+            {urlRetorno}
+          </code>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

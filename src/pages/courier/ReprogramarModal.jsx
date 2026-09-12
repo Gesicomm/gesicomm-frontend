@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X, CalendarClock } from "lucide-react";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 const MOTIVOS = [
   "Cliente no estaba",
@@ -59,7 +60,7 @@ export function ReprogramarModal({ open, envio, onClose, onSubmit }) {
       <div className="modal-content" style={{ maxWidth: "420px", background: "var(--color-canvas)", border: "1px solid color-mix(in srgb, var(--color-fg) 15%, transparent)", color: "var(--color-fg)" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <CalendarClock size={18} color="var(--color-warning)" /> Reprogramar pedido #{envio.id}
+            <CalendarClock size={18} color="var(--color-warning)" /> Reprogramar pedido #{numeroPedidoVisible(envio)}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>

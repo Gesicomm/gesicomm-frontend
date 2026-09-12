@@ -229,7 +229,12 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     }
 
     setCarrito(new Map());
-    return { redirigido: false, pedido_id: checkout.pedido_id, payment_data: checkout.payment_data };
+    return {
+      redirigido: false,
+      pedido_id: checkout.pedido_id,
+      numero_pedido: checkout.numero_pedido,
+      payment_data: checkout.payment_data,
+    };
   }
 
   return {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X, History, Loader } from "lucide-react";
 import { getHistorialPedido } from "../../services/courierApi";
+import { numeroPedidoVisible } from "./pedidoNumero";
 
 function formatFechaHora(iso) {
   const d = new Date(iso);
@@ -37,7 +38,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
       <div style={{ width: "380px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <History size={18} color="var(--color-primary-text)" /> Historial · Pedido #{envio.id}
+            <History size={18} color="var(--color-primary-text)" /> Historial · Pedido #{numeroPedidoVisible(envio)}
           </h2>
           <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
         </div>

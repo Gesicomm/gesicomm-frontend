@@ -60,7 +60,7 @@ export async function obtenerProductoLanding(slug, productoSlug) {
  * diferencia de registrarEventoLanding, esto SÍ propaga el error: el
  * visitante necesita saber si su pedido se creó o no (ej. stock
  * insuficiente), no es un pixel de tracking best-effort.
- * @returns {{pedido_id: number, monto: number, redirigir_whatsapp: boolean}}
+ * @returns {{pedido_id: number, numero_pedido: number, monto: number, redirigir_whatsapp: boolean}}
  * @throws {Error} con el mensaje que mandó el backend.
  */
 export async function crearCheckoutLanding(slug, payload) {
@@ -121,6 +121,15 @@ export async function validarCuponLanding(slug, codigo, items) {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(data?.message || 'No se pudo aplicar el cupón.');
+  }
+  return data;
+}
+
+export async function consultarResultadoPagoLanding(hash) {
+  const res = await fetch(`/api/l/pagopar/resultado/${encodeURIComponent(hash)}`);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || 'No se pudo consultar el resultado del pago.');
   }
   return data;
 }

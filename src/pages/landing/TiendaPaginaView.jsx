@@ -377,7 +377,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
    * después de que el backend confirma que el pedido se creó.
    *
    * @param {object} datosFormulario - lo que completó el visitante en CartDrawer.
-   * @returns {{redirigido: boolean, pedido_id: number}}
+   * @returns {{redirigido: boolean, pedido_id: number, numero_pedido: number}}
    * @throws {Error} si el backend rechaza el pedido (ej. sin stock) — CartDrawer lo muestra.
    */
   /**
@@ -473,7 +473,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     }
 
     if (!itemsOverride) setCarrito(new Map());
-    return { redirigido, pedido_id: resultado.pedido_id, payment_data: resultado.payment_data };
+    return { redirigido, pedido_id: resultado.pedido_id, numero_pedido: resultado.numero_pedido, payment_data: resultado.payment_data };
   }
 
   /**
