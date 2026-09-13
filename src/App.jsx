@@ -28,6 +28,7 @@ import Planes from './pages/planes/Planes';
 import CheckoutPlan from './pages/planes/CheckoutPlan';
 import ResultadoPago from './pages/planes/ResultadoPago';
 import ParametrosAdmin from './pages/admin/Parametros';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPlanes from './pages/planes/AdminPlanes';
 import MiAfiliado from './pages/afiliados/MiAfiliado';
 import AuthTracking from './pages/admin/AuthTracking';
@@ -198,7 +199,7 @@ function App() {
 
         {/* Rutas protegidas — panel admin */}
         <Route path="/dashboard" element={
-          <AdminRoute><DashboardLayout><div><h1>Dashboard</h1><p>Bienvenido a Gesicom.</p></div></DashboardLayout></AdminRoute>
+          <AdminRoute><DashboardLayout><AdminDashboard /></DashboardLayout></AdminRoute>
         } />
 
         {/* Productos */}

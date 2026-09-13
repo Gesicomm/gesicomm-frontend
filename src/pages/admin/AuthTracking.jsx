@@ -42,7 +42,7 @@ const EVENTOS = [
   { id: 'password_reset_completed', label: 'Contraseña cambiada' },
 ];
 
-const PAYMENT_EVENT_IDS = ['subscription_payment_paid', 'store_order_payment_paid', 'stock_payment_paid'];
+const PAYMENT_EVENT_IDS = ['subscription_payment_paid', 'stock_payment_paid'];
 const ACCESS_EVENT_IDS = EVENTOS
   .map(evento => evento.id)
   .filter(id => id !== 'todos' && !PAYMENT_EVENT_IDS.includes(id));
@@ -50,7 +50,6 @@ const EVENTOS_ACCESO = EVENTOS.filter(evento => evento.id === 'todos' || ACCESS_
 const EVENTOS_PAGOS = [
   { id: 'todos', label: 'Todos los pagos' },
   { id: 'subscription_payment_paid', label: 'Suscripciones' },
-  { id: 'store_order_payment_paid', label: 'Pedidos online' },
   { id: 'stock_payment_paid', label: 'Abastecimientos' },
 ];
 
@@ -108,6 +107,16 @@ function userAgentCorto(userAgent) {
   return userAgent.slice(0, 42);
 }
 
+function formatearMonto(valor) {
+  const numero = Number(valor);
+  if (!Number.isFinite(numero)) return valor || '-';
+  return new Intl.NumberFormat('es-PY', {
+    style: 'currency',
+    currency: 'PYG',
+    maximumFractionDigits: 0,
+  }).format(numero);
+}
+
 function Kpi({ icon: Icon, label, value, note, tone = 'neutral' }) {
   return (
     <section className={`at-kpi at-kpi-${tone}`}>
@@ -134,12 +143,17 @@ function BadgeEvento({ tipo, resultado }) {
   return <span className={`at-badge at-badge-${tone}`}>{EVENTO_LABELS[tipo] || tipo}</span>;
 }
 
+function BadgeEstadoPago({ estado }) {
+  const tone = estado === 'PAID' ? 'success' : estado === 'FAILED' ? 'danger' : 'info';
+  const label = estado === 'PAID' ? 'Pagado' : estado === 'FAILED' ? 'Fallido' : 'Pendiente';
+  return <span className={`at-badge at-badge-${tone}`}>{label}</span>;
+}
+
 function MiniSerie({ serie, modo = 'accesos' }) {
   const esPagos = modo === 'pagos';
   const max = Math.max(1, ...serie.map((d) => Math.max(
     ...(esPagos ? [
       d.subscription_payment_paid || 0,
-      d.store_order_payment_paid || 0,
       d.stock_payment_paid || 0,
     ] : [
       d.registros,
@@ -156,13 +170,12 @@ function MiniSerie({ serie, modo = 'accesos' }) {
           className="at-serie-dia"
           key={dia.fecha}
           title={esPagos
-            ? `${dia.fecha}: ${dia.subscription_payment_paid || 0} suscripciones, ${dia.store_order_payment_paid || 0} pedidos online, ${dia.stock_payment_paid || 0} abastecimientos`
+            ? `${dia.fecha}: ${dia.subscription_payment_paid || 0} suscripciones, ${dia.stock_payment_paid || 0} abastecimientos`
             : `${dia.fecha}: ${dia.registros} registros, ${dia.logins} logins, ${dia.onboarding_started || 0} onboarding, ${dia.onboarding_landing_generated || 0} landings, ${dia.fallos} fallos`}
         >
           {esPagos ? (
             <>
               <span className="at-bar at-bar-pagos" style={{ height: `${Math.max(4, ((dia.subscription_payment_paid || 0) / max) * 100)}%` }} />
-              <span className="at-bar at-bar-pedidos-pagos" style={{ height: `${Math.max(4, ((dia.store_order_payment_paid || 0) / max) * 100)}%` }} />
               <span className="at-bar at-bar-abastecimiento" style={{ height: `${Math.max(4, ((dia.stock_payment_paid || 0) / max) * 100)}%` }} />
             </>
           ) : (
@@ -222,11 +235,15 @@ export default function AuthTracking({ modo = 'accesos' }) {
   const [resultado, setResultado] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
   const [eventosPagina, setEventosPagina] = useState(1);
+  const [pagosSuscripcionPagina, setPagosSuscripcionPagina] = useState(1);
   const [sesionesPagina, setSesionesPagina] = useState(1);
   const [notificacionesPagina, setNotificacionesPagina] = useState(1);
   const [resumen, setResumen] = useState(null);
   const [eventos, setEventos] = useState([]);
   const [eventosPaginacion, setEventosPaginacion] = useState(paginaVacia());
+  const [resumenFinanciero, setResumenFinanciero] = useState(null);
+  const [pagosSuscripcion, setPagosSuscripcion] = useState([]);
+  const [pagosSuscripcionPaginacion, setPagosSuscripcionPaginacion] = useState(paginaVacia());
   const [sesiones, setSesiones] = useState([]);
   const [sesionesPaginacion, setSesionesPaginacion] = useState(paginaVacia());
   const [notificaciones, setNotificaciones] = useState([]);
@@ -234,12 +251,15 @@ export default function AuthTracking({ modo = 'accesos' }) {
   const [loading, setLoading] = useState(true);
   const [marcando, setMarcando] = useState(false);
   const [error, setError] = useState('');
+  const [consultandoPagoId, setConsultandoPagoId] = useState(null);
+  const [resultadoConsulta, setResultadoConsulta] = useState(null);
+  const [errorConsulta, setErrorConsulta] = useState('');
 
   const cargar = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [r, e, s, n] = await Promise.all([
+      const [r, e, s, n, p, ps] = await Promise.all([
         authTrackingService.resumen(dias),
         authTrackingService.eventos({
           pagina: eventosPagina,
@@ -253,11 +273,19 @@ export default function AuthTracking({ modo = 'accesos' }) {
           pagina: notificacionesPagina,
           filtros: { tipos: tiposVista },
         }),
+        esPagos ? authTrackingService.resumenPagosAdmin(dias) : Promise.resolve(null),
+        esPagos ? authTrackingService.pagosSuscripcion({
+          pagina: pagosSuscripcionPagina,
+          filtros: {},
+        }) : Promise.resolve({ items: [], paginacion: paginaVacia() }),
       ]);
       const eventosFiltrados = (e.items || []).filter(item => tiposVista.includes(item.tipo));
       const notificacionesFiltradas = (n.items || []).filter(item => tiposVista.includes(item.tipo));
       setResumen(r);
       setEventos(eventosFiltrados);
+      setResumenFinanciero(p);
+      setPagosSuscripcion(ps.items || []);
+      setPagosSuscripcionPaginacion(ps.paginacion || paginaVacia());
       setEventosPaginacion({
         ...(e.paginacion || paginaVacia()),
         total: eventosFiltrados.length,
@@ -280,7 +308,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
     } finally {
       setLoading(false);
     }
-  }, [busqueda, dias, eventosPagina, esPagos, notificacionesPagina, resultado, sesionesPagina, tipo, tiposVista]);
+  }, [busqueda, dias, eventosPagina, esPagos, notificacionesPagina, pagosSuscripcionPagina, resultado, sesionesPagina, tipo, tiposVista]);
 
   useEffect(() => {
     cargar();
@@ -288,12 +316,14 @@ export default function AuthTracking({ modo = 'accesos' }) {
 
   useEffect(() => {
     setEventosPagina(1);
+    setPagosSuscripcionPagina(1);
     setSesionesPagina(1);
     setNotificacionesPagina(1);
   }, [busqueda, resultado, tipo, modo]);
 
   const noLeidas = useMemo(() => notificaciones.filter((n) => !n.leida).length, [notificaciones]);
   const serie = resumen?.serie || [];
+  const pagosAdmin = resumenFinanciero?.totales?.estados || {};
 
   const marcarLeidas = async () => {
     setMarcando(true);
@@ -304,6 +334,28 @@ export default function AuthTracking({ modo = 'accesos' }) {
       window.dispatchEvent(new Event('auth-tracking:updated'));
     } finally {
       setMarcando(false);
+    }
+  };
+
+  const consultarPagoSuscripcion = async (pago) => {
+    if (!pago?.hash_pedido) {
+      setErrorConsulta('Ese pago todavía no tiene identificador de PagoPar para consultar.');
+      setResultadoConsulta(null);
+      return;
+    }
+
+    setConsultandoPagoId(pago.id);
+    setErrorConsulta('');
+    setResultadoConsulta(null);
+    try {
+      const estado = await authTrackingService.consultarPagoSuscripcionPagopar(pago.hash_pedido);
+      setResultadoConsulta(estado);
+      await cargar();
+      window.dispatchEvent(new Event('auth-tracking:updated'));
+    } catch (err) {
+      setErrorConsulta(err.response?.data?.message || 'No pudimos consultar ese pago en PagoPar.');
+    } finally {
+      setConsultandoPagoId(null);
     }
   };
 
@@ -323,7 +375,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
           <span className="at-eyebrow">{esPagos ? <CreditCard size={14} /> : <ShieldCheck size={14} />} {esPagos ? 'Pagos Gesicomm' : 'Onboarding y login'}</span>
           <h1>{esPagos ? 'Tracking de pagos' : 'Tracking de onboarding y login'}</h1>
           <p>{esPagos
-            ? 'Pagos acreditados de suscripciones, pedidos online y abastecimientos, con alertas internas para seguimiento comercial.'
+            ? 'Pagos de suscripciones y abastecimientos Gesicomm, con alertas internas para seguimiento administrativo.'
             : 'Auditoría propia del sistema: usuarios conectados, eventos de acceso, registros, avance de onboarding y alertas internas.'}</p>
         </div>
         <div className="at-actions">
@@ -349,9 +401,9 @@ export default function AuthTracking({ modo = 'accesos' }) {
       <section className="at-kpis">
         {esPagos ? (
           <>
-            <Kpi icon={CreditCard} label="Suscripciones pagadas" value={resumen?.pagos_plan_periodo ?? 0} note={`${resumen?.nuevos_pagos_plan_24h ?? 0} en 24 h`} tone="success" />
-            <Kpi icon={CreditCard} label="Pedidos online pagados" value={resumen?.pagos_pedidos_periodo ?? 0} note={`${resumen?.nuevos_pagos_pedidos_24h ?? 0} en 24 h`} tone="success" />
-            <Kpi icon={PackageCheck} label="Abastecimientos pagados" value={resumen?.pagos_abastecimiento_periodo ?? 0} note={`${resumen?.nuevos_pagos_abastecimiento_24h ?? 0} en 24 h`} tone="success" />
+            <Kpi icon={CreditCard} label="Neto Gesicomm" value={formatearMonto(pagosAdmin.PAID?.neto ?? 0)} note={`Bruto ${formatearMonto(pagosAdmin.PAID?.bruto ?? 0)} · comisión ${formatearMonto(pagosAdmin.PAID?.comision ?? 0)}`} tone="success" />
+            <Kpi icon={Clock3} label="Pendiente bruto" value={formatearMonto(pagosAdmin.PENDING?.bruto ?? 0)} note={`${pagosAdmin.PENDING?.cantidad ?? 0} pagos pendientes`} tone="warning" />
+            <Kpi icon={AlertTriangle} label="Fallido bruto" value={formatearMonto(pagosAdmin.FAILED?.bruto ?? 0)} note={`${pagosAdmin.FAILED?.cantidad ?? 0} pagos con error`} tone="danger" />
             <Kpi icon={Bell} label="Alertas de pago" value={notificaciones.length ? noLeidas : 0} note="notificaciones de pagos visibles" tone="warning" />
           </>
         ) : (
@@ -368,17 +420,129 @@ export default function AuthTracking({ modo = 'accesos' }) {
         )}
       </section>
 
+      {esPagos && resumenFinanciero && (
+        <section className="at-panel at-span-12">
+          <div className="at-panel-head">
+            <div>
+              <h2>Estado general de pagos Gesicomm</h2>
+              <p>Solo ingresos del sistema: suscripciones y abastecimiento. El neto descuenta comisión estimada de PagoPar.</p>
+            </div>
+            <span className="at-period-pill">{resumenFinanciero.periodo_dias} días</span>
+          </div>
+          <div className="at-money-grid">
+            {resumenFinanciero.tipos.map((tipoPago) => (
+              <article className="at-money-card" key={tipoPago.tipo}>
+                <div>
+                  <strong>{tipoPago.label}</strong>
+                  <small>{tipoPago.cantidad_total} movimientos</small>
+                </div>
+                <div className="at-money-main">{formatearMonto(tipoPago.estados.PAID?.neto ?? 0)}</div>
+                <div className="at-money-states">
+                  <span><i className="at-dot at-dot-pedidos-pagos" /> Bruto: {formatearMonto(tipoPago.estados.PAID?.bruto ?? 0)}</span>
+                  <span><i className="at-dot at-dot-abastecimiento" /> Comisión: {formatearMonto(tipoPago.estados.PAID?.comision ?? 0)}</span>
+                  <span><i className="at-dot at-dot-pagos" /> Pendiente: {tipoPago.estados.PENDING?.cantidad ?? 0}</span>
+                  <span><i className="at-dot at-dot-fallos" /> Fallido: {tipoPago.estados.FAILED?.cantidad ?? 0}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {esPagos && (
+        <section className="at-panel at-span-12">
+          <div className="at-panel-head">
+            <div>
+              <h2>Consultar pago de suscripción</h2>
+              <p>Consultá el estado real en PagoPar desde los pagos recientes, sin cargar datos técnicos.</p>
+            </div>
+            <CreditCard size={18} />
+          </div>
+          <div className="at-table-wrap">
+            <table className="at-table">
+              <thead>
+                <tr><th>Pago</th><th>Cliente</th><th>Plan</th><th>Bruto</th><th>Comisión</th><th>Neto</th><th>Estado</th><th>Fecha</th><th>Acción</th></tr>
+              </thead>
+              <tbody>
+                {pagosSuscripcion.length === 0 ? (
+                  <tr><td colSpan={9} className="at-empty-cell">Todavía no hay pagos de suscripción para consultar.</td></tr>
+                ) : pagosSuscripcion.map((pago) => (
+                  <tr key={pago.id}>
+                    <td>
+                      <strong>#{pago.id}</strong>
+                      <small>{pago.referencia || '-'}</small>
+                    </td>
+                    <td>
+                      <strong>{pago.Suscripcion?.nombre || pago.Suscripcion?.email || 'Cliente'}</strong>
+                      <small>{pago.Suscripcion?.email || '-'}</small>
+                    </td>
+                    <td>{pago.Suscripcion?.Plan?.nombre || '-'}</td>
+                    <td>{formatearMonto(pago.monto_bruto ?? pago.monto)}</td>
+                    <td>
+                      {formatearMonto(pago.comision_pasarela_monto ?? 0)}
+                      <small>{Number(pago.comision_pasarela_pct || 0).toFixed(2)}%</small>
+                    </td>
+                    <td><strong>{formatearMonto(pago.monto_neto ?? pago.monto)}</strong></td>
+                    <td><BadgeEstadoPago estado={pago.estado} /></td>
+                    <td>{fechaHora(pago.created_at)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="at-row-action"
+                        onClick={() => consultarPagoSuscripcion(pago)}
+                        disabled={consultandoPagoId === pago.id || !pago.hash_pedido}
+                      >
+                        {consultandoPagoId === pago.id ? <Loader className="at-spin" size={14} /> : <RefreshCw size={14} />}
+                        Consultar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Paginacion paginacion={pagosSuscripcionPaginacion} onChange={setPagosSuscripcionPagina} />
+          {errorConsulta && (
+            <div className="at-tool-error" role="alert">
+              <AlertTriangle size={15} />
+              {errorConsulta}
+            </div>
+          )}
+          {resultadoConsulta && (
+            <div className="at-payment-result">
+              <span className={`at-badge ${resultadoConsulta.estado_pago === 'PAID' ? 'at-badge-success' : resultadoConsulta.estado_pago === 'FAILED' ? 'at-badge-danger' : 'at-badge-info'}`}>
+                {resultadoConsulta.estado_pago}
+              </span>
+              <div>
+                <strong>{resultadoConsulta.plan?.nombre || 'Suscripción'}</strong>
+                <small>{resultadoConsulta.email || resultadoConsulta.nombre || 'Sin usuario asociado'}</small>
+              </div>
+              <div>
+                <span>Monto</span>
+                <strong>{formatearMonto(resultadoConsulta.monto)}</strong>
+              </div>
+              <div>
+                <span>Suscripción</span>
+                <strong>{resultadoConsulta.estado_suscripcion || '-'}</strong>
+              </div>
+              {resultadoConsulta.error_pago && (
+                <p className="at-payment-result-error">{resultadoConsulta.error_pago}</p>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="at-panel at-span-12">
         <div className="at-panel-head">
           <div>
             <h2>Actividad diaria</h2>
-            <p>{esPagos ? 'Suscripciones, pedidos online y abastecimientos pagados en el período.' : 'Registros, logins, onboarding, landings generadas y fallos del período.'}</p>
+            <p>{esPagos ? 'Suscripciones y abastecimientos pagados en el período.' : 'Registros, logins, onboarding, landings generadas y fallos del período.'}</p>
           </div>
           <div className="at-legend">
             {esPagos ? (
               <>
                 <span><i className="at-dot at-dot-pagos" /> Suscripciones</span>
-                <span><i className="at-dot at-dot-pedidos-pagos" /> Pedidos online</span>
                 <span><i className="at-dot at-dot-abastecimiento" /> Abastecimientos</span>
               </>
             ) : (
@@ -492,7 +656,7 @@ export default function AuthTracking({ modo = 'accesos' }) {
         <div className="at-panel-head">
           <div>
             <h2>{esPagos ? 'Eventos de pago' : 'Eventos de onboarding y login'}</h2>
-            <p>{esPagos ? 'Historial técnico de pagos acreditados por suscripciones, pedidos online y abastecimientos.' : 'Historial técnico para investigar accesos, registros, onboarding e intentos fallidos.'}</p>
+            <p>{esPagos ? 'Historial técnico de pagos acreditados por suscripciones y abastecimientos.' : 'Historial técnico para investigar accesos, registros, onboarding e intentos fallidos.'}</p>
           </div>
           <div className="at-filtros">
             <label className="at-search">
