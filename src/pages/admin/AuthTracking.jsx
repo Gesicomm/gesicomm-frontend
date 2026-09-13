@@ -5,9 +5,11 @@ import {
   Bell,
   CheckCircle2,
   Clock3,
+  CreditCard,
   KeyRound,
   Loader,
   MailCheck,
+  PackageCheck,
   RefreshCw,
   Rocket,
   Search,
@@ -29,12 +31,27 @@ const EVENTOS = [
   { id: 'onboarding_store_created', label: 'Tienda creada' },
   { id: 'onboarding_landing_generated', label: 'Landing generada' },
   { id: 'onboarding_skipped', label: 'Saltados' },
+  { id: 'subscription_payment_paid', label: 'Plan pagado' },
+  { id: 'store_order_payment_paid', label: 'Pedido pagado' },
+  { id: 'stock_payment_paid', label: 'Abastecimiento pagado' },
   { id: 'password_reset_requested', label: 'Recuperación solicitada' },
   { id: 'password_reset_email_sent', label: 'Email recuperación' },
   { id: 'password_reset_email_failed', label: 'Email recuperación falló' },
   { id: 'password_reset_email_skipped', label: 'Recuperación sin cuenta' },
   { id: 'password_reset_failed', label: 'Recuperación fallida' },
   { id: 'password_reset_completed', label: 'Contraseña cambiada' },
+];
+
+const PAYMENT_EVENT_IDS = ['subscription_payment_paid', 'store_order_payment_paid', 'stock_payment_paid'];
+const ACCESS_EVENT_IDS = EVENTOS
+  .map(evento => evento.id)
+  .filter(id => id !== 'todos' && !PAYMENT_EVENT_IDS.includes(id));
+const EVENTOS_ACCESO = EVENTOS.filter(evento => evento.id === 'todos' || ACCESS_EVENT_IDS.includes(evento.id));
+const EVENTOS_PAGOS = [
+  { id: 'todos', label: 'Todos los pagos' },
+  { id: 'subscription_payment_paid', label: 'Suscripciones' },
+  { id: 'store_order_payment_paid', label: 'Pedidos online' },
+  { id: 'stock_payment_paid', label: 'Abastecimientos' },
 ];
 
 const EVENTO_LABELS = {
@@ -54,6 +71,9 @@ const EVENTO_LABELS = {
   onboarding_store_created: 'Tienda creada',
   onboarding_landing_generated: 'Landing generada',
   onboarding_skipped: 'Configurado más tarde',
+  subscription_payment_paid: 'Plan pagado',
+  store_order_payment_paid: 'Pedido pagado',
+  stock_payment_paid: 'Abastecimiento pagado',
 };
 
 function fechaHora(valor) {
@@ -103,9 +123,10 @@ function Kpi({ icon: Icon, label, value, note, tone = 'neutral' }) {
 
 function BadgeEvento({ tipo, resultado }) {
   const esOnboarding = tipo?.startsWith('onboarding_');
+  const esPago = tipo?.includes('_payment_paid');
   const tone = resultado === 'fallo'
     ? 'danger'
-    : tipo === 'register' || tipo === 'onboarding_landing_generated'
+    : tipo === 'register' || tipo === 'onboarding_landing_generated' || esPago
       ? 'success'
       : tipo === 'email_verified' || esOnboarding
         ? 'info'
@@ -113,27 +134,46 @@ function BadgeEvento({ tipo, resultado }) {
   return <span className={`at-badge at-badge-${tone}`}>{EVENTO_LABELS[tipo] || tipo}</span>;
 }
 
-function MiniSerie({ serie }) {
+function MiniSerie({ serie, modo = 'accesos' }) {
+  const esPagos = modo === 'pagos';
   const max = Math.max(1, ...serie.map((d) => Math.max(
-    d.registros,
-    d.logins,
-    d.onboarding_started || 0,
-    d.onboarding_landing_generated || 0,
-    d.fallos,
+    ...(esPagos ? [
+      d.subscription_payment_paid || 0,
+      d.store_order_payment_paid || 0,
+      d.stock_payment_paid || 0,
+    ] : [
+      d.registros,
+      d.logins,
+      d.onboarding_started || 0,
+      d.onboarding_landing_generated || 0,
+      d.fallos,
+    ]),
   )));
   return (
-    <div className="at-serie" aria-label="Actividad de autenticación por día">
+    <div className="at-serie" aria-label={esPagos ? 'Pagos acreditados por día' : 'Actividad de onboarding y login por día'}>
       {serie.map((dia) => (
         <div
           className="at-serie-dia"
           key={dia.fecha}
-          title={`${dia.fecha}: ${dia.registros} registros, ${dia.logins} logins, ${dia.onboarding_started || 0} onboarding, ${dia.onboarding_landing_generated || 0} landings, ${dia.fallos} fallos`}
+          title={esPagos
+            ? `${dia.fecha}: ${dia.subscription_payment_paid || 0} suscripciones, ${dia.store_order_payment_paid || 0} pedidos online, ${dia.stock_payment_paid || 0} abastecimientos`
+            : `${dia.fecha}: ${dia.registros} registros, ${dia.logins} logins, ${dia.onboarding_started || 0} onboarding, ${dia.onboarding_landing_generated || 0} landings, ${dia.fallos} fallos`}
         >
-          <span className="at-bar at-bar-registros" style={{ height: `${Math.max(4, (dia.registros / max) * 100)}%` }} />
-          <span className="at-bar at-bar-logins" style={{ height: `${Math.max(4, (dia.logins / max) * 100)}%` }} />
-          <span className="at-bar at-bar-onboarding" style={{ height: `${Math.max(4, ((dia.onboarding_started || 0) / max) * 100)}%` }} />
-          <span className="at-bar at-bar-landings" style={{ height: `${Math.max(4, ((dia.onboarding_landing_generated || 0) / max) * 100)}%` }} />
-          <span className="at-bar at-bar-fallos" style={{ height: `${dia.fallos > 0 ? Math.max(4, (dia.fallos / max) * 100) : 0}%` }} />
+          {esPagos ? (
+            <>
+              <span className="at-bar at-bar-pagos" style={{ height: `${Math.max(4, ((dia.subscription_payment_paid || 0) / max) * 100)}%` }} />
+              <span className="at-bar at-bar-pedidos-pagos" style={{ height: `${Math.max(4, ((dia.store_order_payment_paid || 0) / max) * 100)}%` }} />
+              <span className="at-bar at-bar-abastecimiento" style={{ height: `${Math.max(4, ((dia.stock_payment_paid || 0) / max) * 100)}%` }} />
+            </>
+          ) : (
+            <>
+              <span className="at-bar at-bar-registros" style={{ height: `${Math.max(4, (dia.registros / max) * 100)}%` }} />
+              <span className="at-bar at-bar-logins" style={{ height: `${Math.max(4, (dia.logins / max) * 100)}%` }} />
+              <span className="at-bar at-bar-onboarding" style={{ height: `${Math.max(4, ((dia.onboarding_started || 0) / max) * 100)}%` }} />
+              <span className="at-bar at-bar-landings" style={{ height: `${Math.max(4, ((dia.onboarding_landing_generated || 0) / max) * 100)}%` }} />
+              <span className="at-bar at-bar-fallos" style={{ height: `${dia.fallos > 0 ? Math.max(4, (dia.fallos / max) * 100) : 0}%` }} />
+            </>
+          )}
         </div>
       ))}
     </div>
@@ -164,7 +204,19 @@ function Paginacion({ paginacion, onChange }) {
   );
 }
 
-export default function AuthTracking() {
+function IconoNotificacion({ tipo }) {
+  if (tipo?.startsWith('onboarding_')) return <Rocket size={15} />;
+  if (tipo === 'register') return <UserPlus size={15} />;
+  if (tipo === 'email_verified') return <MailCheck size={15} />;
+  if (tipo === 'subscription_payment_paid' || tipo === 'store_order_payment_paid') return <CreditCard size={15} />;
+  if (tipo === 'stock_payment_paid') return <PackageCheck size={15} />;
+  return <KeyRound size={15} />;
+}
+
+export default function AuthTracking({ modo = 'accesos' }) {
+  const esPagos = modo === 'pagos';
+  const eventosDisponibles = useMemo(() => (esPagos ? EVENTOS_PAGOS : EVENTOS_ACCESO), [esPagos]);
+  const tiposVista = useMemo(() => (esPagos ? PAYMENT_EVENT_IDS : ACCESS_EVENT_IDS), [esPagos]);
   const [dias, setDias] = useState(30);
   const [tipo, setTipo] = useState('todos');
   const [resultado, setResultado] = useState('todos');
@@ -191,30 +243,44 @@ export default function AuthTracking() {
         authTrackingService.resumen(dias),
         authTrackingService.eventos({
           pagina: eventosPagina,
-          filtros: { tipo, resultado, busqueda },
+          filtros: { tipo, tipos: tipo === 'todos' ? tiposVista : undefined, resultado, busqueda },
         }),
-        authTrackingService.sesiones({
+        esPagos ? Promise.resolve({ items: [], paginacion: paginaVacia() }) : authTrackingService.sesiones({
           pagina: sesionesPagina,
           filtros: { busqueda },
         }),
         authTrackingService.notificaciones({
           pagina: notificacionesPagina,
-          filtros: {},
+          filtros: { tipos: tiposVista },
         }),
       ]);
+      const eventosFiltrados = (e.items || []).filter(item => tiposVista.includes(item.tipo));
+      const notificacionesFiltradas = (n.items || []).filter(item => tiposVista.includes(item.tipo));
       setResumen(r);
-      setEventos(e.items || []);
-      setEventosPaginacion(e.paginacion || paginaVacia());
+      setEventos(eventosFiltrados);
+      setEventosPaginacion({
+        ...(e.paginacion || paginaVacia()),
+        total: eventosFiltrados.length,
+        paginas: Math.max(1, Math.ceil(eventosFiltrados.length / ((e.paginacion || paginaVacia()).limite || 10))),
+        tiene_siguiente: false,
+        tiene_anterior: false,
+      });
       setSesiones(s.items || []);
       setSesionesPaginacion(s.paginacion || paginaVacia());
-      setNotificaciones(n.items || []);
-      setNotificacionesPaginacion(n.paginacion || paginaVacia());
+      setNotificaciones(notificacionesFiltradas);
+      setNotificacionesPaginacion({
+        ...(n.paginacion || paginaVacia()),
+        total: notificacionesFiltradas.length,
+        paginas: Math.max(1, Math.ceil(notificacionesFiltradas.length / ((n.paginacion || paginaVacia()).limite || 10))),
+        tiene_siguiente: false,
+        tiene_anterior: false,
+      });
     } catch (err) {
-      setError(err.response?.data?.message || 'No pudimos cargar el tracking de seguridad.');
+      setError(err.response?.data?.message || `No pudimos cargar el ${esPagos ? 'tracking de pagos' : 'tracking de onboarding y login'}.`);
     } finally {
       setLoading(false);
     }
-  }, [busqueda, dias, eventosPagina, notificacionesPagina, resultado, sesionesPagina, tipo]);
+  }, [busqueda, dias, eventosPagina, esPagos, notificacionesPagina, resultado, sesionesPagina, tipo, tiposVista]);
 
   useEffect(() => {
     cargar();
@@ -223,7 +289,8 @@ export default function AuthTracking() {
   useEffect(() => {
     setEventosPagina(1);
     setSesionesPagina(1);
-  }, [busqueda, resultado, tipo]);
+    setNotificacionesPagina(1);
+  }, [busqueda, resultado, tipo, modo]);
 
   const noLeidas = useMemo(() => notificaciones.filter((n) => !n.leida).length, [notificaciones]);
   const serie = resumen?.serie || [];
@@ -231,7 +298,8 @@ export default function AuthTracking() {
   const marcarLeidas = async () => {
     setMarcando(true);
     try {
-      await authTrackingService.marcarNotificacionesLeidas();
+      const ids = notificaciones.filter((n) => !n.leida).map((n) => n.id);
+      await authTrackingService.marcarNotificacionesLeidas(ids);
       await cargar();
       window.dispatchEvent(new Event('auth-tracking:updated'));
     } finally {
@@ -243,7 +311,7 @@ export default function AuthTracking() {
     return (
       <div className="at-loading">
         <Loader className="at-spin" size={22} />
-        <span>Cargando seguridad...</span>
+        <span>{esPagos ? 'Cargando pagos...' : 'Cargando tracking...'}</span>
       </div>
     );
   }
@@ -252,9 +320,11 @@ export default function AuthTracking() {
     <div className="auth-tracking">
       <header className="at-header">
         <div>
-          <span className="at-eyebrow"><ShieldCheck size={14} /> Seguridad gratis</span>
-          <h1>Tracking de login, registros y onboarding</h1>
-          <p>Auditoría propia del sistema: usuarios conectados, eventos de acceso, avance de onboarding y alertas internas.</p>
+          <span className="at-eyebrow">{esPagos ? <CreditCard size={14} /> : <ShieldCheck size={14} />} {esPagos ? 'Pagos Gesicomm' : 'Onboarding y login'}</span>
+          <h1>{esPagos ? 'Tracking de pagos' : 'Tracking de onboarding y login'}</h1>
+          <p>{esPagos
+            ? 'Pagos acreditados de suscripciones, pedidos online y abastecimientos, con alertas internas para seguimiento comercial.'
+            : 'Auditoría propia del sistema: usuarios conectados, eventos de acceso, registros, avance de onboarding y alertas internas.'}</p>
         </div>
         <div className="at-actions">
           <select value={dias} onChange={(e) => setDias(Number(e.target.value))} aria-label="Rango de días">
@@ -277,34 +347,55 @@ export default function AuthTracking() {
       )}
 
       <section className="at-kpis">
-        <Kpi icon={Users} label="Usuarios totales" value={resumen?.usuarios_total ?? 0} note={`${resumen?.usuarios_verificados ?? 0} verificados`} />
-        <Kpi icon={Wifi} label="Conectados ahora" value={resumen?.sesiones_activas ?? 0} note="actividad en los últimos 15 min" tone="success" />
-        <Kpi icon={UserPlus} label="Registros" value={resumen?.registros_periodo ?? 0} note={`${resumen?.nuevos_registros_24h ?? 0} en 24 h`} tone="info" />
-        <Kpi icon={KeyRound} label="Logins" value={resumen?.logins_periodo ?? 0} note={`${resumen?.nuevos_logins_24h ?? 0} en 24 h`} />
-        <Kpi icon={Rocket} label="Onboarding iniciado" value={resumen?.onboarding_iniciados_periodo ?? 0} note={`${resumen?.nuevos_onboarding_24h ?? 0} en 24 h`} tone="info" />
-        <Kpi icon={CheckCircle2} label="Landings generadas" value={resumen?.onboarding_landings_periodo ?? 0} note={`${resumen?.onboarding_saltados_periodo ?? 0} configuraron más tarde`} tone="success" />
-        <Kpi icon={AlertTriangle} label="Fallos" value={resumen?.fallos_periodo ?? 0} note="credenciales, OTP o sesión" tone="danger" />
-        <Kpi icon={Bell} label="Alertas sin leer" value={resumen?.notificaciones_no_leidas ?? noLeidas} note="registros, logins y onboarding" tone="warning" />
+        {esPagos ? (
+          <>
+            <Kpi icon={CreditCard} label="Suscripciones pagadas" value={resumen?.pagos_plan_periodo ?? 0} note={`${resumen?.nuevos_pagos_plan_24h ?? 0} en 24 h`} tone="success" />
+            <Kpi icon={CreditCard} label="Pedidos online pagados" value={resumen?.pagos_pedidos_periodo ?? 0} note={`${resumen?.nuevos_pagos_pedidos_24h ?? 0} en 24 h`} tone="success" />
+            <Kpi icon={PackageCheck} label="Abastecimientos pagados" value={resumen?.pagos_abastecimiento_periodo ?? 0} note={`${resumen?.nuevos_pagos_abastecimiento_24h ?? 0} en 24 h`} tone="success" />
+            <Kpi icon={Bell} label="Alertas de pago" value={notificaciones.length ? noLeidas : 0} note="notificaciones de pagos visibles" tone="warning" />
+          </>
+        ) : (
+          <>
+            <Kpi icon={Users} label="Usuarios totales" value={resumen?.usuarios_total ?? 0} note={`${resumen?.usuarios_verificados ?? 0} verificados`} />
+            <Kpi icon={Wifi} label="Conectados ahora" value={resumen?.sesiones_activas ?? 0} note="actividad en los últimos 15 min" tone="success" />
+            <Kpi icon={UserPlus} label="Registros" value={resumen?.registros_periodo ?? 0} note={`${resumen?.nuevos_registros_24h ?? 0} en 24 h`} tone="info" />
+            <Kpi icon={KeyRound} label="Logins" value={resumen?.logins_periodo ?? 0} note={`${resumen?.nuevos_logins_24h ?? 0} en 24 h`} />
+            <Kpi icon={Rocket} label="Onboarding iniciado" value={resumen?.onboarding_iniciados_periodo ?? 0} note={`${resumen?.nuevos_onboarding_24h ?? 0} en 24 h`} tone="info" />
+            <Kpi icon={CheckCircle2} label="Landings generadas" value={resumen?.onboarding_landings_periodo ?? 0} note={`${resumen?.onboarding_saltados_periodo ?? 0} configuraron más tarde`} tone="success" />
+            <Kpi icon={AlertTriangle} label="Fallos" value={resumen?.fallos_periodo ?? 0} note="credenciales, OTP o sesión" tone="danger" />
+            <Kpi icon={Bell} label="Alertas sin leer" value={resumen?.notificaciones_no_leidas ?? noLeidas} note="registros, logins y onboarding" tone="warning" />
+          </>
+        )}
       </section>
 
       <section className="at-panel at-span-12">
         <div className="at-panel-head">
           <div>
             <h2>Actividad diaria</h2>
-            <p>Registros, logins, onboarding, landings generadas y fallos del período.</p>
+            <p>{esPagos ? 'Suscripciones, pedidos online y abastecimientos pagados en el período.' : 'Registros, logins, onboarding, landings generadas y fallos del período.'}</p>
           </div>
           <div className="at-legend">
-            <span><i className="at-dot at-dot-registros" /> Registros</span>
-            <span><i className="at-dot at-dot-logins" /> Logins</span>
-            <span><i className="at-dot at-dot-onboarding" /> Onboarding</span>
-            <span><i className="at-dot at-dot-landings" /> Landings</span>
-            <span><i className="at-dot at-dot-fallos" /> Fallos</span>
+            {esPagos ? (
+              <>
+                <span><i className="at-dot at-dot-pagos" /> Suscripciones</span>
+                <span><i className="at-dot at-dot-pedidos-pagos" /> Pedidos online</span>
+                <span><i className="at-dot at-dot-abastecimiento" /> Abastecimientos</span>
+              </>
+            ) : (
+              <>
+                <span><i className="at-dot at-dot-registros" /> Registros</span>
+                <span><i className="at-dot at-dot-logins" /> Logins</span>
+                <span><i className="at-dot at-dot-onboarding" /> Onboarding</span>
+                <span><i className="at-dot at-dot-landings" /> Landings</span>
+                <span><i className="at-dot at-dot-fallos" /> Fallos</span>
+              </>
+            )}
           </div>
         </div>
-        {serie.length > 0 ? <MiniSerie serie={serie} /> : <div className="at-empty">Todavía no hay eventos para este período.</div>}
+        {serie.length > 0 ? <MiniSerie serie={serie} modo={modo} /> : <div className="at-empty">Todavía no hay eventos para este período.</div>}
       </section>
 
-      <div className="at-grid">
+      {!esPagos && <div className="at-grid">
         <section className="at-panel">
           <div className="at-panel-head">
             <div>
@@ -354,7 +445,7 @@ export default function AuthTracking() {
               <div className="at-empty">No hay notificaciones todavía.</div>
             ) : notificaciones.map((n) => (
               <article key={n.id} className={`at-notificacion ${n.leida ? '' : 'at-notificacion-nueva'}`}>
-                <div className="at-noti-icon">{n.tipo?.startsWith('onboarding_') ? <Rocket size={15} /> : n.tipo === 'register' ? <UserPlus size={15} /> : n.tipo === 'email_verified' ? <MailCheck size={15} /> : <KeyRound size={15} />}</div>
+                <div className="at-noti-icon"><IconoNotificacion tipo={n.tipo} /></div>
                 <div>
                   <strong>{n.titulo}</strong>
                   <p>{n.mensaje}</p>
@@ -365,13 +456,43 @@ export default function AuthTracking() {
           </div>
           <Paginacion paginacion={notificacionesPaginacion} onChange={setNotificacionesPagina} />
         </section>
-      </div>
+      </div>}
+
+      {esPagos && (
+        <section className="at-panel at-span-12">
+          <div className="at-panel-head">
+            <div>
+              <h2>Notificaciones de pago</h2>
+              <p>Pagos acreditados que requieren seguimiento comercial o administrativo.</p>
+            </div>
+            <button type="button" onClick={marcarLeidas} disabled={marcando || noLeidas === 0}>
+              {marcando ? <Loader className="at-spin" size={14} /> : <CheckCircle2 size={14} />}
+              Marcar leídas
+            </button>
+          </div>
+          <div className="at-notificaciones">
+            {notificaciones.length === 0 ? (
+              <div className="at-empty">No hay notificaciones de pago todavía.</div>
+            ) : notificaciones.map((n) => (
+              <article key={n.id} className={`at-notificacion ${n.leida ? '' : 'at-notificacion-nueva'}`}>
+                <div className="at-noti-icon"><IconoNotificacion tipo={n.tipo} /></div>
+                <div>
+                  <strong>{n.titulo}</strong>
+                  <p>{n.mensaje}</p>
+                  <small><Clock3 size={12} /> {fechaHora(n.created_at)}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+          <Paginacion paginacion={notificacionesPaginacion} onChange={setNotificacionesPagina} />
+        </section>
+      )}
 
       <section className="at-panel at-span-12">
         <div className="at-panel-head">
           <div>
-            <h2>Eventos de autenticación</h2>
-            <p>Historial técnico para investigar accesos, registros, onboarding e intentos fallidos.</p>
+            <h2>{esPagos ? 'Eventos de pago' : 'Eventos de onboarding y login'}</h2>
+            <p>{esPagos ? 'Historial técnico de pagos acreditados por suscripciones, pedidos online y abastecimientos.' : 'Historial técnico para investigar accesos, registros, onboarding e intentos fallidos.'}</p>
           </div>
           <div className="at-filtros">
             <label className="at-search">
@@ -383,7 +504,7 @@ export default function AuthTracking() {
               />
             </label>
             <select value={tipo} onChange={(e) => setTipo(e.target.value)} aria-label="Filtrar eventos">
-              {EVENTOS.map((evento) => <option key={evento.id} value={evento.id}>{evento.label}</option>)}
+              {eventosDisponibles.map((evento) => <option key={evento.id} value={evento.id}>{evento.label}</option>)}
             </select>
             <select value={resultado} onChange={(e) => setResultado(e.target.value)} aria-label="Filtrar resultado">
               <option value="todos">Todos los resultados</option>

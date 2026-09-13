@@ -79,7 +79,7 @@ export default function TemplateSelector({ onCreada, onVolver }) {
       <h1 className="text-2xl font-bold text-fg mb-1">Elegí un template para comenzar</h1>
       <p className="text-fg/50 mb-8">Estructura y diseño ya definidos — vos solo cargás productos, contacto y preguntas frecuentes.</p>
 
-      {error && <div className="mb-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">{error}</div>}
+      {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {templates.map(template => {

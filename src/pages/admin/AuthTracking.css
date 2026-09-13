@@ -218,6 +218,12 @@
 .at-bar-onboarding { background: #8b5cf6; }
 .at-dot-landings,
 .at-bar-landings { background: #10b981; }
+.at-dot-pagos,
+.at-bar-pagos { background: #f59e0b; }
+.at-dot-pedidos-pagos,
+.at-bar-pedidos-pagos { background: #22c55e; }
+.at-dot-abastecimiento,
+.at-bar-abastecimiento { background: #14b8a6; }
 .at-dot-fallos,
 .at-bar-fallos { background: var(--color-danger); }
 

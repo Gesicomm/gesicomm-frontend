@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import Settings from './pages/Settings';
@@ -25,9 +25,11 @@ import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
 import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Planes from './pages/planes/Planes';
+import CheckoutPlan from './pages/planes/CheckoutPlan';
 import ResultadoPago from './pages/planes/ResultadoPago';
 import ParametrosAdmin from './pages/admin/Parametros';
 import AdminPlanes from './pages/planes/AdminPlanes';
+import MiAfiliado from './pages/afiliados/MiAfiliado';
 import AuthTracking from './pages/admin/AuthTracking';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
@@ -191,6 +193,7 @@ function App() {
         <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/registro" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Rutas protegidas — panel admin */}
@@ -314,12 +317,21 @@ function App() {
             /planes/resultado/:hash es la URL DE REDIRECCIONAMIENTO que se
             configura en el panel de PagoPar. */}
         <Route path="/planes" element={<Planes />} />
+        <Route path="/checkout/plan/:codigo" element={
+          <RequireTienda><UserLayout><CheckoutPlan /></UserLayout></RequireTienda>
+        } />
         <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
         <Route path="/admin/planes" element={
           <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>
         } />
         <Route path="/admin/seguridad" element={
+          <Navigate to="/admin/tracking-onboarding" replace />
+        } />
+        <Route path="/admin/tracking-onboarding" element={
           <AdminRoute><DashboardLayout><AuthTracking /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/admin/tracking-pagos" element={
+          <AdminRoute><DashboardLayout><AuthTracking modo="pagos" /></DashboardLayout></AdminRoute>
         } />
         {/* Cada tienda tiene 3 páginas fijas (Inicio/Catálogo/Contacto, ver
             landing.service.js asegurarPaginasFijas). /mi-landing garantiza
@@ -344,6 +356,9 @@ function App() {
         } />
         <Route path="/mis-anuncios" element={
           <RequireTienda><UserLayout><Ads /></UserLayout></RequireTienda>
+        } />
+        <Route path="/afiliados" element={
+          <RequireTienda><UserLayout><MiAfiliado /></UserLayout></RequireTienda>
         } />
         <Route path="/configuracion" element={
           <RequireTienda><UserLayout><Settings /></UserLayout></RequireTienda>

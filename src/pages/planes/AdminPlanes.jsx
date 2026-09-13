@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Save, Check, Plus, X, RotateCcw, AlertTriangle, Eye, BadgePercent, ListChecks, Settings2, Copy, Trash2, RefreshCw } from 'lucide-react';
+import { Save, Check, Plus, X, RotateCcw, AlertTriangle, Eye, EyeOff, BadgePercent, ListChecks, Settings2, Copy, Trash2, RefreshCw } from 'lucide-react';
 import {
-  cargarPlanes, guardarPlanes, restablecerPlanes, hayPersonalizacion,
+  cargarPlanes, guardarPlanes, restablecerPlanes, limpiarPlanesLocales,
   CAMPOS_EDITABLES,
 } from '../../lib/planesCatalogo';
 import { cargarAfiliadosLocal, guardarAfiliadosLocal, normalizarConfigAfiliados } from '../../lib/afiliadosPrograma';
@@ -10,14 +10,7 @@ import { afiliadosService } from '../../services/afiliadosService';
 import { planesService } from '../../services/planesService';
 import './planes.css';
 
-/**
- * Editor del catálogo de planes — el equivalente de landingTemplates.js pero
- * editable desde la UI.
- *
- * ⚠️ Sin backend: lo que se guarda acá va a localStorage, así que aplica
- *    solo a ESTE navegador. El aviso de arriba de la pantalla lo dice para
- *    que nadie asuma que cambió el precio para todos los comercios.
- */
+/** Editor del catálogo comercial que se publica en /planes. */
 export default function AdminPlanes() {
   const navigate = useNavigate();
   const [tabActiva, setTabActiva] = useState('planes');
@@ -25,21 +18,47 @@ export default function AdminPlanes() {
   const [afiliados, setAfiliados] = useState(() => cargarAfiliadosLocal());
   const [guardado, setGuardado] = useState(false);
   const [errorGuardado, setErrorGuardado] = useState(false);
-  const [personalizado, setPersonalizado] = useState(() => hayPersonalizacion());
+  const [cargandoPlanes, setCargandoPlanes] = useState(false);
+  const [guardandoPlanes, setGuardandoPlanes] = useState(false);
   const [guardandoAfiliados, setGuardandoAfiliados] = useState(false);
   const [afiliadosGuardados, setAfiliadosGuardados] = useState(false);
 const [errorAfiliados, setErrorAfiliados] = useState(null);
   const [listaAfiliados, setListaAfiliados] = useState([]);
   const [comisiones, setComisiones] = useState([]);
   const [cargandoOperativo, setCargandoOperativo] = useState(false);
-  const [formAfiliado, setFormAfiliado] = useState({
+  const formAfiliadoInicial = {
     nombre: '',
     email: '',
+    telefono: '',
     codigo: '',
     comision_pct: 40,
     estado: 'activo',
+    metodo_pago: 'transferencia',
+    entidad_pago: '',
+    titular_pago: '',
+    documento_pago: '',
+    cuenta_pago: '',
     notas: '',
-  });
+  };
+  const [formAfiliado, setFormAfiliado] = useState(formAfiliadoInicial);
+
+  useEffect(() => {
+    let activo = true;
+    setCargandoPlanes(true);
+    planesService.planesAdmin()
+      .then((catalogo) => {
+        if (!activo) return;
+        setPlanes(Array.isArray(catalogo) && catalogo.length ? catalogo : cargarPlanes());
+        setErrorGuardado(false);
+      })
+      .catch(() => {
+        if (activo) setErrorGuardado('No se pudo cargar el catálogo del servidor. Se muestra una copia local.');
+      })
+      .finally(() => {
+        if (activo) setCargandoPlanes(false);
+      });
+    return () => { activo = false; };
+  }, []);
 
   useEffect(() => {
     let activo = true;
@@ -106,28 +125,77 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     setGuardado(false);
   }
 
-  function handleGuardar() {
+  function cambiarVisibilidad(indice, visible) {
+    setPlanes(prev => prev.map((p, i) => (
+      i === indice ? { ...p, activo: visible, destacado: visible ? p.destacado : false } : p
+    )));
+    setGuardado(false);
+  }
+
+  async function handleGuardar() {
     const limpios = planes.map(p => ({
       ...p,
       precio: Number(p.precio) || 0,
+      moneda: ['PYG', 'USD'].includes(p.moneda) ? p.moneda : 'PYG',
       features: p.features.map(f => f.trim()).filter(Boolean),
     }));
     setPlanes(limpios);
-    const ok = guardarPlanes(limpios);
-    setErrorGuardado(!ok);
-    setGuardado(ok);
-    if (ok) {
-      setPersonalizado(true);
+    setGuardandoPlanes(true);
+    setErrorGuardado(false);
+    try {
+      const guardados = await planesService.guardarPlanesAdmin(limpios);
+      setPlanes(Array.isArray(guardados) && guardados.length ? guardados : limpios);
+      limpiarPlanesLocales();
+      setGuardado(true);
       setTimeout(() => setGuardado(false), 3500);
+    } catch (err) {
+      const okLocal = guardarPlanes(limpios);
+      setErrorGuardado(
+        okLocal
+          ? 'No se pudo guardar en el servidor. Dejé una copia local para que no pierdas los cambios.'
+          : (err.response?.data?.message || err.message || 'No se pudo guardar el catálogo de planes.'),
+      );
+    } finally {
+      setGuardandoPlanes(false);
     }
   }
 
-  function handleRestablecer() {
-    if (!window.confirm('¿Volver al catálogo de planes por defecto? Se pierden los cambios guardados en este navegador.')) return;
-    setPlanes(restablecerPlanes());
-    setPersonalizado(false);
+  async function handleRestablecer() {
+    if (!window.confirm('¿Volver al catálogo base de planes? Se reemplazará la configuración publicada.')) return;
+    const base = restablecerPlanes();
+    setPlanes(base);
     setGuardado(false);
     setErrorGuardado(false);
+    setGuardandoPlanes(true);
+    try {
+      const guardados = await planesService.guardarPlanesAdmin(base);
+      setPlanes(Array.isArray(guardados) && guardados.length ? guardados : base);
+      limpiarPlanesLocales();
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 3500);
+    } catch (err) {
+      setErrorGuardado(err.response?.data?.message || err.message || 'No se pudo restablecer el catálogo en el servidor.');
+    } finally {
+      setGuardandoPlanes(false);
+    }
+  }
+
+  async function eliminarPlan(plan) {
+    const nombre = plan.nombre || plan.codigo || plan.id || 'este plan';
+    if (!window.confirm(`¿Borrar ${nombre}? Si ya tiene suscripciones, el sistema te va a pedir ocultarlo para conservar el historial.`)) return;
+    setGuardandoPlanes(true);
+    setErrorGuardado(false);
+    try {
+      const guardados = await planesService.eliminarPlanAdmin(plan.codigo || plan.id);
+      setPlanes(prev => (Array.isArray(guardados) ? guardados : prev.filter(p => p.id !== plan.id)));
+      limpiarPlanesLocales();
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 3500);
+    } catch (err) {
+      setErrorGuardado(err.response?.data?.message || err.message || 'No se pudo borrar el plan.');
+    } finally {
+      setGuardandoPlanes(false);
+    }
   }
 
   function actualizarAfiliados(campo, valor) {
@@ -188,7 +256,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     try {
       const creado = await afiliadosService.crear(formAfiliado);
       setListaAfiliados(prev => [creado, ...prev]);
-      setFormAfiliado({ nombre: '', email: '', codigo: '', comision_pct: afiliados.comision_pct, estado: 'activo', notas: '' });
+      setFormAfiliado({ ...formAfiliadoInicial, comision_pct: afiliados.comision_pct });
     } catch (err) {
       setErrorAfiliados(err.response?.data?.message || err.message || 'No se pudo crear el afiliado.');
     }
@@ -234,33 +302,59 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
     }
   }
 
+  function formatUsd(valor) {
+    return `USD ${Number(valor || 0).toLocaleString('en-US')}`;
+  }
+
   function renderEditorPlanes() {
     return (
       <>
-        <div className="pl-aviso">
-          <AlertTriangle size={16} />
+        <div className="pl-aviso pl-aviso-ok">
+          <Check size={16} />
           <span>
-            <strong>Provisional: esto no viaja al servidor.</strong>
-            Los cambios se guardan en el almacenamiento de este navegador, así que los ves
-            solo vos — ningún comercio ni ningún otro admin los recibe. Los precios y features
-            que vienen cargados son de ejemplo, todavía sin validar comercialmente.
+            <strong>Catálogo publicado desde el servidor.</strong>
+            Los planes visibles aparecen en /planes y los ocultos no se ofrecen ni pueden contratarse por checkout directo.
           </span>
         </div>
 
         {errorGuardado && (
           <div className="pl-aviso" style={{ borderColor: 'rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)', color: '#ef4444' }}>
             <AlertTriangle size={16} />
-            <span>No se pudo guardar: el navegador está bloqueando el almacenamiento local (ventana privada o cookies deshabilitadas).</span>
+            <span>{errorGuardado}</span>
           </div>
         )}
 
+        {cargandoPlanes ? (
+          <div className="pl-cargando"><RefreshCw size={18} className="spin-icon" /><span>Cargando catálogo...</span></div>
+        ) : (
         <div className="pl-editor-grid">
           {planes.map((plan, i) => (
             <section key={plan.id} className="pl-editor-card">
               <div className="pl-editor-card-head">
-                <h3>{plan.nombre || 'Sin nombre'}</h3>
-                <span className="pl-editor-id">id: {plan.id} · plan real: {plan.equivale}</span>
+                <div>
+                  <h3>{plan.nombre || 'Sin nombre'}</h3>
+                  <span className="pl-editor-id">id: {plan.id} · plan real: {plan.equivale}</span>
+                </div>
+                <button
+                  type="button"
+                  className="pl-btn-icono pl-btn-danger"
+                  onClick={() => eliminarPlan(plan)}
+                  disabled={guardandoPlanes}
+                  title="Borrar plan"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
+
+              <label className="pl-campo pl-check pl-check-visibilidad">
+                <input
+                  type="checkbox"
+                  checked={plan.activo !== false}
+                  onChange={e => cambiarVisibilidad(i, e.target.checked)}
+                />
+                {plan.activo !== false ? <Eye size={14} /> : <EyeOff size={14} />}
+                Visible en /planes
+              </label>
 
               {CAMPOS_EDITABLES.map(({ campo, label, tipo, ayuda }) => (
                 <label key={campo} className="pl-campo">
@@ -271,6 +365,15 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                       onChange={e => actualizar(i, campo, e.target.value)}
                       rows={2}
                     />
+                  ) : tipo === 'select' ? (
+                    <select
+                      value={plan[campo] ?? 'PYG'}
+                      onChange={e => actualizar(i, campo, e.target.value)}
+                    >
+                      {(CAMPOS_EDITABLES.find(c => c.campo === campo)?.opciones || []).map(opcion => (
+                        <option key={opcion.value} value={opcion.value}>{opcion.label}</option>
+                      ))}
+                    </select>
                   ) : (
                     <input
                       type={tipo === 'numero' ? 'number' : 'text'}
@@ -313,6 +416,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                 <input
                   type="checkbox"
                   checked={!!plan.destacado}
+                  disabled={plan.activo === false}
                   onChange={e => marcarDestacado(i, e.target.checked)}
                 />
                 Destacar este plan (solo uno a la vez)
@@ -320,6 +424,7 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
             </section>
           ))}
         </div>
+        )}
       </>
     );
   }
@@ -442,25 +547,13 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
           </button>
         </div>
 
-        <form className="pl-affiliate-form" onSubmit={handleCrearAfiliado}>
-          <label className="pl-campo">
-            <span>Nombre</span>
-            <input value={formAfiliado.nombre} onChange={e => setFormAfiliado(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: Agencia ABC" />
-          </label>
-          <label className="pl-campo">
-            <span>Email</span>
-            <input value={formAfiliado.email} onChange={e => setFormAfiliado(f => ({ ...f, email: e.target.value }))} placeholder="afiliado@email.com" />
-          </label>
-          <label className="pl-campo">
-            <span>Código</span>
-            <input value={formAfiliado.codigo} onChange={e => setFormAfiliado(f => ({ ...f, codigo: e.target.value }))} placeholder="Se genera si queda vacío" />
-          </label>
-          <label className="pl-campo">
-            <span>Comisión %</span>
-            <input type="number" min="0" max="100" value={formAfiliado.comision_pct} onChange={e => setFormAfiliado(f => ({ ...f, comision_pct: e.target.value }))} />
-          </label>
-          <button type="submit" className="pl-btn primario"><Plus size={14} /> Crear afiliado</button>
-        </form>
+        <div className="pl-aviso pl-aviso-ok">
+          <Check size={16} />
+          <span>
+            Los afiliados se activan desde el panel del usuario en “Quiero ser afiliado”.
+            Desde acá se ajusta la comisión, el estado y la liquidación.
+          </span>
+        </div>
 
         <div className="pl-table-wrap">
           <table className="pl-admin-table">
@@ -469,18 +562,20 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                 <th>Afiliado</th>
                 <th>Código / link</th>
                 <th>Comisión</th>
+                <th>A liquidar</th>
+                <th>Datos de pago</th>
                 <th>Estado</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {listaAfiliados.length === 0 ? (
-                <tr><td colSpan="5">Todavía no hay afiliados creados.</td></tr>
+                <tr><td colSpan="7">Todavía no hay afiliados creados.</td></tr>
               ) : listaAfiliados.map(a => (
                 <tr key={a.id}>
                   <td>
                     <strong>{a.nombre}</strong>
-                    <span>{a.email || 'Sin email'}</span>
+                    <span>{a.email || 'Sin email'}{a.telefono ? ` · ${a.telefono}` : ''}</span>
                   </td>
                   <td>
                     <code>{a.codigo}</code>
@@ -495,6 +590,15 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                       defaultValue={a.comision_pct}
                       onBlur={e => actualizarAfiliado(a.id, { comision_pct: e.target.value })}
                     />
+                  </td>
+                  <td>
+                    <strong>{formatUsd(a.resumen_comisiones?.total_a_liquidar)}</strong>
+                    <span>Pagado: {formatUsd(a.resumen_comisiones?.pagada)}</span>
+                  </td>
+                  <td>
+                    <strong>{a.metodo_pago || 'Sin método'}</strong>
+                    <span>{[a.entidad_pago, a.titular_pago].filter(Boolean).join(' · ') || 'Sin entidad/titular'}</span>
+                    <small>{[a.documento_pago, a.cuenta_pago].filter(Boolean).join(' · ') || 'Sin cuenta cargada'}</small>
                   </td>
                   <td>
                     <select value={a.estado} onChange={e => actualizarAfiliado(a.id, { estado: e.target.value })}>
@@ -538,8 +642,8 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
                     <strong>{c.cliente_email || 'Cliente sin email'}</strong>
                     <span>{c.plan || `Suscripción #${c.suscripcion_id}`}</span>
                   </td>
-                  <td>USD {Number(c.monto_base || 0).toLocaleString('en-US')}</td>
-                  <td><strong>USD {Number(c.monto_comision || 0).toLocaleString('en-US')}</strong> <span>{c.comision_pct}%</span></td>
+                  <td>{formatUsd(c.monto_base)}</td>
+                  <td><strong>{formatUsd(c.monto_comision)}</strong> <span>{c.comision_pct}%</span></td>
                   <td>
                     <select value={c.estado} onChange={e => actualizarEstadoComision(c.id, e.target.value)}>
                       <option value="pendiente">Pendiente</option>
@@ -568,19 +672,19 @@ const [errorAfiliados, setErrorAfiliados] = useState(null);
           </p>
         </div>
         <div className="pl-admin-acciones">
-          <button type="button" className="pl-btn" onClick={() => navigate('/planes')}>
+          <button type="button" className="pl-btn" onClick={() => navigate('/planes?preview=admin')}>
             <Eye size={14} /> Ver como comercio
           </button>
-          {tabActiva === 'planes' && personalizado && (
-            <button type="button" className="pl-btn" onClick={handleRestablecer}>
+          {tabActiva === 'planes' && (
+            <button type="button" className="pl-btn" onClick={handleRestablecer} disabled={guardandoPlanes || cargandoPlanes}>
               <RotateCcw size={14} /> Restablecer
             </button>
           )}
           {tabActiva === 'planes' && guardado && <span className="pl-guardado"><Check size={14} /> Guardado</span>}
           {tabActiva === 'afiliados' && afiliadosGuardados && <span className="pl-guardado"><Check size={14} /> Guardado</span>}
           {tabActiva === 'planes' ? (
-            <button type="button" className="pl-btn primario" onClick={handleGuardar}>
-              <Save size={14} /> Guardar planes
+            <button type="button" className="pl-btn primario" onClick={handleGuardar} disabled={guardandoPlanes || cargandoPlanes}>
+              {guardandoPlanes ? <RefreshCw size={14} className="spin-icon" /> : <Save size={14} />} {guardandoPlanes ? 'Guardando...' : 'Guardar planes'}
             </button>
           ) : (
             <button type="button" className="pl-btn primario" onClick={handleGuardarAfiliados} disabled={guardandoAfiliados}>

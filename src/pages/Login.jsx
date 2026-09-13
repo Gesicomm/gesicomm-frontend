@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   AlertCircle, ArrowLeft, ArrowRight, BarChart3, Check, CheckCircle2,
   Eye, EyeOff, Lock, Mail, RotateCcw, ShieldCheck, ShoppingBag, Store, User
@@ -158,9 +158,17 @@ function OTPInput({ value, onChange, disabled }) {
 }
 
 export default function Login() {
-  const [activeForm, setActiveForm] = useState('login');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const paramsIniciales = new URLSearchParams(location.search);
+  const tokenSuscripcionInicial = paramsIniciales.get('token') || '';
+  const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1';
+  const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
   const [formData, setFormData] = useState({ nombre: '', email: '', password: '', confirmPassword: '' });
+  const [tokenSuscripcion, setTokenSuscripcion] = useState(tokenSuscripcionInicial);
+  const [suscripcionRegistro, setSuscripcionRegistro] = useState(null);
+  const [validandoSuscripcion, setValidandoSuscripcion] = useState(Boolean(tokenSuscripcionInicial));
   const [pendingEmail, setPendingEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(OTP_TTL);
@@ -172,8 +180,6 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  const navigate = useNavigate();
-
   // Aviso de sesión vencida: lo deja anotado el guard que expulsó al usuario
   // (ver components/EstadoSesion.jsx). Se consume una sola vez, así no vuelve
   // a aparecer si la persona recarga el login más tarde.
@@ -181,6 +187,44 @@ export default function Login() {
   useEffect(() => {
     setSesionExpirada(tomarAvisoSesion() === AVISO_SESION_EXPIRADA);
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token') || '';
+    const debeRegistrar = location.pathname === '/registro' || params.get('registro') === '1';
+
+    if (debeRegistrar) setActiveForm('register');
+    setTokenSuscripcion(token);
+    setSuscripcionRegistro(null);
+
+    if (!token) {
+      setValidandoSuscripcion(false);
+      return;
+    }
+
+    let activo = true;
+    setValidandoSuscripcion(true);
+    setError(null);
+    api.get(`/api/suscripciones/token/${token}`)
+      .then((data) => {
+        if (!activo) return;
+        setSuscripcionRegistro(data);
+        setFormData(prev => ({
+          ...prev,
+          nombre: prev.nombre || data.nombre || '',
+          email: data.email || prev.email,
+        }));
+        setPendingEmail(data.email || '');
+      })
+      .catch((err) => {
+        if (activo) setError(err.response?.data?.error || err.message || 'Ese enlace de registro no es válido.');
+      })
+      .finally(() => {
+        if (activo) setValidandoSuscripcion(false);
+      });
+
+    return () => { activo = false; };
+  }, [location.pathname, location.search]);
 
   // Countdown del OTP
   useEffect(() => {
@@ -280,6 +324,7 @@ export default function Login() {
         nombre: formData.nombre.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
+        token_suscripcion: tokenSuscripcion || undefined,
       });
       if (res.requiere_verificacion) {
         setPendingEmail(res.email || formData.email);
@@ -311,11 +356,13 @@ export default function Login() {
       });
       setSuccess(res.message);
       setTimeout(() => {
-        const rutaDestino = res.usuario?.rol === 'administrador' 
-          ? '/dashboard' 
-          : res.usuario?.rol === 'solo_pedidos' 
-            ? '/mis-pedidos' 
-            : '/mi-catalogo';
+        const rutaDestino = tokenSuscripcion
+          ? '/onboarding'
+          : res.usuario?.rol === 'administrador'
+            ? '/dashboard'
+            : res.usuario?.rol === 'solo_pedidos'
+              ? '/mis-pedidos'
+              : '/mi-catalogo';
         navigate(rutaDestino);
       }, 1000);
     } catch (err) {
@@ -528,8 +575,23 @@ export default function Login() {
               <form onSubmit={handleRegister} noValidate className="flex flex-col gap-4">
                 <div>
                   <h2 className="m-0 text-2xl font-bold">Crear cuenta</h2>
-                  <p className="mt-2 text-sm leading-6 text-fg-muted">Registrate con tu correo o Gmail. Después vas a preparar tu tienda sin cargar pagos ni píxeles ahora.</p>
+                  <p className="mt-2 text-sm leading-6 text-fg-muted">
+                    {tokenSuscripcion
+                      ? `Registrá tu cuenta para activar ${suscripcionRegistro?.plan?.nombre || 'tu plan'} y continuar al onboarding.`
+                      : 'Registrate con tu correo o Gmail. Después vas a preparar tu tienda sin cargar pagos ni píxeles ahora.'}
+                  </p>
                 </div>
+                {validandoSuscripcion && (
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg-muted">
+                    <RotateCcw size={14} className="animate-spin" />
+                    Validando tu pago...
+                  </div>
+                )}
+                {tokenSuscripcion && suscripcionRegistro?.documento && (
+                  <div className="rounded-lg border border-success/20 bg-success/10 px-3.5 py-3 text-sm leading-6 text-success">
+                    Cédula y teléfono ya cargados desde el pago. Los vamos a usar para completar el onboarding sin pedirlos dos veces.
+                  </div>
+                )}
                 <AuthField
                   id="nombre"
                   label="Nombre completo"
@@ -549,6 +611,7 @@ export default function Login() {
                   value={formData.email}
                   onChange={handleInputChange}
                   autoComplete="email"
+                  disabled={Boolean(tokenSuscripcion)}
                 />
                 <AuthField
                   id="password"
@@ -594,7 +657,7 @@ export default function Login() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || validandoSuscripcion}
                   className="group mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-fg shadow-[0_14px_34px_rgba(61,95,163,0.28)] transition-all hover:-translate-y-0.5 hover:bg-primary-hover disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60"
                 >
                   {loading ? 'Creando cuenta...' : 'Crear cuenta'}

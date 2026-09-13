@@ -34,7 +34,7 @@ export default function EditorSegunModo() {
   }, [id]);
 
   if (error) {
-    return <div className="p-10 text-red-300 text-sm">{error}</div>;
+    return <div className="m-10 rounded-lg border border-danger/40 bg-danger/10 px-4 py-3 text-danger text-sm font-medium">{error}</div>;
   }
 
   if (!landing) {

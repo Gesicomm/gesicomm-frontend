@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
-  Receipt, Truck, PanelLeftClose, Bot
+  Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
+import { planesService } from '../services/planesService';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import './dashboard.css';
@@ -15,6 +16,7 @@ import '../pages/educacion/EducacionView.css';
 
 const UserLayout = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
+  const [estadoCuenta, setEstadoCuenta] = useState(null);
   const [progresoSidebar, setProgresoSidebar] = useState({
     menusDesbloqueados: [],
     bloqueos: {},
@@ -40,8 +42,20 @@ const UserLayout = ({ children }) => {
   }, [isLandingRoute]);
 
   useEffect(() => {
-    verificarSesion().then(setUsuario);
+    let activo = true;
+    verificarSesion().then((sesion) => {
+      if (!activo) return;
+      setUsuario(sesion);
+      if (sesion?.rol === 'usuario') {
+        planesService.miEstado()
+          .then(estado => { if (activo) setEstadoCuenta(estado); })
+          .catch(() => { if (activo) setEstadoCuenta(null); });
+      } else {
+        setEstadoCuenta(null);
+      }
+    });
     cargarProgreso();
+    return () => { activo = false; };
   }, []);
 
   const cargarProgreso = async () => {
@@ -60,6 +74,7 @@ const UserLayout = ({ children }) => {
 
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
+  const esPlanFundador = estadoCuenta?.suscripcion?.plan?.codigo === 'founders';
 
   // Comprueba si una ruta está bloqueada por requerimientos pedagógicos
   const checkBloqueo = (menuKey) => {
@@ -212,6 +227,17 @@ const UserLayout = ({ children }) => {
                   })}
                 </ul>
               </div>
+
+              {esPlanFundador && (
+                <>
+                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>AFILIADOS</div>
+                  <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                    <ul className="sidebar-list">
+                      {renderLink({ path: '/afiliados', label: 'Quiero ser afiliado', icon: <BadgeDollarSign size={14} />, menuKey: 'afiliados' })}
+                    </ul>
+                  </div>
+                </>
+              )}
             </>
           )}
         </nav>

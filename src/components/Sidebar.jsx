@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
@@ -16,6 +16,25 @@ const SUB_LINK = 'flex items-center gap-2 rounded-md px-3 py-1.5 text-[13px] tra
 const SUB_LINK_ACTIVE = 'bg-primary/10 text-primary-text';
 const SUB_LINK_INACTIVE = 'text-fg-subtle hover:bg-surface-2 hover:text-fg';
 const ICON_WRAP = 'flex h-4 w-4 items-center justify-center [&>svg]:h-4 [&>svg]:w-4';
+const PAYMENT_EVENT_IDS = ['subscription_payment_paid', 'store_order_payment_paid', 'stock_payment_paid'];
+const ACCESS_EVENT_IDS = [
+  'register',
+  'email_verified',
+  'login_success',
+  'login_failed',
+  'logout',
+  'otp_resent',
+  'onboarding_started',
+  'onboarding_store_created',
+  'onboarding_landing_generated',
+  'onboarding_skipped',
+  'password_reset_requested',
+  'password_reset_email_sent',
+  'password_reset_email_failed',
+  'password_reset_email_skipped',
+  'password_reset_failed',
+  'password_reset_completed',
+];
 
 const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const location = useLocation();
@@ -32,13 +51,20 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const [productosOpen, setProductosOpen] = useState(
     location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias')
   );
-  const [alertasSeguridad, setAlertasSeguridad] = useState(0);
+  const [alertasAccesos, setAlertasAccesos] = useState(0);
+  const [alertasPagos, setAlertasPagos] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
-    const cargarAlertas = () => authTrackingService.resumen(7)
-      .then((datos) => {
-        if (!cancelado) setAlertasSeguridad(Number(datos.notificaciones_no_leidas) || 0);
+    const cargarAlertas = () => Promise.all([
+      authTrackingService.notificaciones({ filtros: { solo_no_leidas: true, tipos: ACCESS_EVENT_IDS } }),
+      authTrackingService.notificaciones({ filtros: { solo_no_leidas: true, tipos: PAYMENT_EVENT_IDS } }),
+    ])
+      .then(([accesos, pagos]) => {
+        if (!cancelado) {
+          setAlertasAccesos(Number(accesos?.paginacion?.total) || 0);
+          setAlertasPagos(Number(pagos?.paginacion?.total) || 0);
+        }
       })
       .catch(() => {});
     cargarAlertas();
@@ -159,7 +185,8 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store /> })}
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
-            {renderLink({ path: '/admin/seguridad', label: 'Seguridad', icon: <ShieldCheck />, badge: alertasSeguridad > 0 ? alertasSeguridad : null })}
+            {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}
+            {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
           </ul>
 
           <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">

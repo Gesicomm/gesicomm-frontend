@@ -887,7 +887,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         </div>
       </div>
 
-      {error && <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">{error}</div>}
+      {error && <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
       <div className="flex flex-1 min-h-0">
         {sidebarVisible && (

@@ -623,6 +623,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       <LandingCodigoPublica
         codigo={data.content?.codigo}
         titulo={data.seo?.titulo || data.titulo || data.tienda?.nombre}
+        data={data}
+        slug={slug}
       />
     );
   }

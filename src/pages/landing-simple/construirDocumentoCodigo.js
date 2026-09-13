@@ -80,6 +80,19 @@ window.addEventListener('unhandledrejection', function (e) {
 });
 </script>` : '';
 
+  const puenteGesicomm = `<script>
+document.addEventListener('click', function (e) {
+  var el = e.target && e.target.closest ? e.target.closest('[data-gesicomm-checkout]') : null;
+  if (!el) return;
+  e.preventDefault();
+  parent.postMessage({
+    tipo: 'gesicomm:checkout',
+    producto: String(el.getAttribute('data-gesicomm-checkout') || ''),
+    cantidad: Number(el.getAttribute('data-gesicomm-cantidad') || '1') || 1
+  }, '*');
+});
+</script>`;
+
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -99,6 +112,7 @@ ${escaparCierreStyle(css)}
 </head>
 <body>
 ${html || ''}
+${puenteGesicomm}
 ${puenteErrores}
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y
      sin envolverlo en nada: metido dentro de un try/catch o de una

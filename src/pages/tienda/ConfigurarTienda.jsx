@@ -8,6 +8,7 @@ import {
   ArrowRight, MapPin
 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
+import { planesService } from '../../services/planesService';
 import { useDebounce } from '../../hooks/useDebounce';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
 import PagoParConfig from './PagoParConfig';
@@ -44,7 +45,6 @@ const FORM_INICIAL = {
   deposito_direccion: '',
   deposito_referencia: '',
   deposito_telefono: '',
-  plan: 'free',
   meta_pixel_id: '',
   meta_test_event_code: '',
   meta_capi_activo: false,
@@ -126,6 +126,7 @@ export default function ConfigurarTienda() {
   const [tienda, setTienda] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [form, setForm] = useState(FORM_INICIAL);
+  const [estadoCuenta, setEstadoCuenta] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
   const [erroresValidacion, setErroresValidacion] = useState([]);
@@ -157,8 +158,12 @@ export default function ConfigurarTienda() {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const data = await tiendaService.obtener();
+      const [data, estadoSuscripcion] = await Promise.all([
+        tiendaService.obtener(),
+        planesService.miEstado().catch(() => null),
+      ]);
       setTienda(data);
+      setEstadoCuenta(estadoSuscripcion);
       if (data) {
         setForm({
           nombre: data.nombre || '',
@@ -172,7 +177,6 @@ export default function ConfigurarTienda() {
           deposito_direccion: data.deposito_direccion || '',
           deposito_referencia: data.deposito_referencia || '',
           deposito_telefono: data.deposito_telefono || '',
-          plan: data.plan || 'free',
           meta_pixel_id: data.meta_pixel_id || '',
           meta_test_event_code: data.meta_test_event_code || '',
           meta_capi_activo: !!data.meta_capi_activo,
@@ -282,6 +286,7 @@ export default function ConfigurarTienda() {
         actualizada = await tiendaService.crear(payload);
       }
       setTienda(actualizada);
+      setEstadoCuenta(actualizada.estado_cuenta || actualizada.estadoCuenta || estadoCuenta);
       setMetaTokenNuevo('');
       setEliminarMetaToken(false);
       setOk(true);
@@ -303,7 +308,10 @@ export default function ConfigurarTienda() {
     }
   }
 
-  const esPlanPago = form.plan === 'pago';
+  const suscripcionActiva = estadoCuenta?.suscripcion || tienda?.suscripcion || null;
+  const planActivo = suscripcionActiva?.plan || null;
+  const esPlanPago = Boolean(estadoCuenta?.tiene_suscripcion_activa || suscripcionActiva || tienda?.plan === 'pago');
+  const nombrePlanActivo = planActivo?.nombre || (esPlanPago ? 'plan de pago' : null);
 
   const tabActual = TABS.find(t => t.id === tab) || TABS[0];
   const tabGuardaAparte = TABS_CON_GUARDADO_PROPIO.includes(tab);
@@ -459,9 +467,8 @@ export default function ConfigurarTienda() {
                   </section>
 
                   {/* Suscripción — el plan dejó de elegirse acá con dos chips:
-                      se mira y se mejora desde /planes. form.plan sigue en el
-                      payload con el valor cargado, así que el guardado no
-                      cambia. */}
+                      se lee desde /suscripciones/mi-estado y se mejora desde
+                      /planes. Guardar la tienda no toca el plan de la cuenta. */}
                   <section className="tn-group">
                     <div className="tn-group-head">
                       <h3>Plan de tu cuenta</h3>
@@ -472,7 +479,7 @@ export default function ConfigurarTienda() {
                         <div className="tn-plan-actual">
                           <span className="tn-plan-actual-icono"><Crown size={18} /></span>
                           <div className="tn-plan-actual-texto">
-                            <strong>Estás en un plan de pago</strong>
+                            <strong>Estás en el {nombrePlanActivo}</strong>
                             <span>Tenés habilitadas todas las funciones de tu plan.</span>
                           </div>
                           <button type="button" className="tn-plan-link" onClick={() => navigate('/planes')}>
@@ -481,12 +488,12 @@ export default function ConfigurarTienda() {
                         </div>
                       ) : (
                         <div className="tn-upsell">
-                          <span className="tn-upsell-eyebrow"><Sparkles size={13} /> Estás en el plan Free</span>
-                          <h4>Tu tienda ya funciona. Ahora hacela vender sola.</h4>
+                          <span className="tn-upsell-eyebrow"><Sparkles size={13} /> Tu cuenta no tiene un plan activo</span>
+                          <h4>Activá un plan para publicar tu tienda.</h4>
                           <p>
-                            Con un plan de pago publicás bajo tu propio dominio, cobrás online desde el
-                            checkout y medís cada campaña con Meta, Google y TikTok — todo lo que hoy
-                            tenés a medias en esta misma pantalla.
+                            Gesicomm no tiene plan gratis. Elegí un plan para publicar bajo tu propio
+                            dominio, cobrar online desde el checkout y medir cada campaña con Meta,
+                            Google y TikTok.
                           </p>
                           <ul className="tn-upsell-lista">
                             <li><Check size={14} /> Dominio propio con certificado</li>

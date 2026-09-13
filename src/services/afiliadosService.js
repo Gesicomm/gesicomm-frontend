@@ -3,6 +3,8 @@ import API from './api';
 const STORAGE_KEY = 'gesicomm.afiliado.ref.v1';
 
 export const afiliadosService = {
+  miAfiliado: () => API.get('/afiliados/me').then(r => r.data),
+  solicitarMiAfiliado: (payload) => API.post('/afiliados/me', payload).then(r => r.data),
   listar: () => API.get('/afiliados').then(r => r.data),
   crear: (payload) => API.post('/afiliados', payload).then(r => r.data),
   actualizar: (id, payload) => API.put(`/afiliados/${id}`, payload).then(r => r.data),

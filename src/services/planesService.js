@@ -7,18 +7,16 @@ import API from './api';
  */
 export const planesService = {
   /** Catálogo activo, ordenado. Reemplaza al catálogo hardcodeado del front. */
-  listar: () => API.get('/planes').then(r => r.data),
+  listar: () => API.get('/planes', { headers: { 'Cache-Control': 'no-cache' } }).then(r => r.data),
 
   /** Estado de suscripción de la cuenta logueada. */
   miEstado: () => API.get('/suscripciones/mi-estado').then(r => r.data),
-
-  /** PagoPar dummy: simula pago acreditado para habilitar onboarding. */
-  pagarDummyPagopar: (payload) => API.post('/suscripciones/pagopar-dummy', payload).then(r => r.data),
 
   /**
    * Arranca el pago de un plan.
    * @returns {{ payment_url, hash_pedido, suscripcion_id, referencia }}
    */
+  crearCheckoutIntent: (payload) => API.post('/suscripciones/checkout-intents', payload).then(r => r.data),
   checkout: (payload) => API.post('/suscripciones/checkout', payload).then(r => r.data),
 
   /** Estado del cobro, para la pantalla a la que vuelve el comprador. */
@@ -30,4 +28,9 @@ export const planesService = {
   /** Configuracion del programa de afiliados para el panel admin. */
   afiliadosConfig: () => API.get('/config/payment-gateways/afiliados').then(r => r.data),
   guardarAfiliadosConfig: (payload) => API.put('/config/payment-gateways/afiliados', payload).then(r => r.data),
+
+  /** Catalogo completo de planes para el panel admin. */
+  planesAdmin: () => API.get('/config/payment-gateways/planes', { headers: { 'Cache-Control': 'no-cache' } }).then(r => r.data),
+  guardarPlanesAdmin: (planes) => API.put('/config/payment-gateways/planes', { planes }).then(r => r.data),
+  eliminarPlanAdmin: (codigo) => API.delete(`/config/payment-gateways/planes/${encodeURIComponent(codigo)}`).then(r => r.data),
 };

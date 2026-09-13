@@ -36,7 +36,7 @@ export default function ResultadoPago() {
         setEstado(data);
         setIntentos(n);
 
-        if (data.estado_pago !== 'PAID' && n < INTENTOS_MAX) {
+        if (data.estado_pago !== 'PAID' && data.estado_pago !== 'FAILED' && n < INTENTOS_MAX) {
           timer = setTimeout(() => consultar(n + 1), ESPERA_MS);
         }
       } catch (err) {
@@ -75,6 +75,23 @@ export default function ResultadoPago() {
   }
 
   const pagado = estado.estado_pago === 'PAID';
+  const fallido = estado.estado_pago === 'FAILED';
+
+  if (fallido) {
+    return (
+      <div className="pl-page pl-resultado">
+        <div className="pl-estado error">
+          <AlertCircle size={40} />
+          <h1>El pago no fue acreditado</h1>
+          <p>{estado.error_pago || 'PagoPar informó que la operación no quedó pagada.'}</p>
+          <button type="button" className="pl-cta primario" onClick={() => navigate('/planes')}>
+            Volver a intentar <ArrowRight size={16} />
+          </button>
+          <p className="pl-referencia">Referencia: <code>{hash}</code></p>
+        </div>
+      </div>
+    );
+  }
 
   if (!pagado) {
     const agotado = intentos >= INTENTOS_MAX;
@@ -117,9 +134,9 @@ export default function ResultadoPago() {
           </>
         ) : (
           <>
-            <p>Tu cuenta ya está creada. Podés iniciar sesión con <strong>{estado.email}</strong>.</p>
-            <button type="button" className="pl-cta primario" onClick={() => navigate('/login')}>
-              Iniciar sesión <ArrowRight size={16} />
+            <p>Tu cuenta ya está creada. Ya podés continuar con tu plan activo.</p>
+            <button type="button" className="pl-cta primario" onClick={() => navigate('/mi-dashboard')}>
+              Ir a mi panel <ArrowRight size={16} />
             </button>
           </>
         )}

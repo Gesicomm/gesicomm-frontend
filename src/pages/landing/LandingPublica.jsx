@@ -65,6 +65,8 @@ export default function LandingPublica() {
       <LandingCodigoPublica
         codigo={data.codigo}
         titulo={data.seo?.titulo || data.pagina?.nombre || ''}
+        data={data}
+        slug={slug}
       />
     );
   }

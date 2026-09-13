@@ -305,7 +305,18 @@ export default function VitrinaGrid() {
     setErrorGenerarLanding(null);
     const arrayItems = Array.from(seleccionados).map(k => {
       const [tipo, id] = k.split(':');
-      return { tipo, referencia_id: parseInt(id) };
+      const item = items.find(i => i.tipo === tipo && Number(i.id) === Number(id));
+      return {
+        tipo,
+        referencia_id: parseInt(id),
+        nombre: item?.nombre || '',
+        descripcion: item?.descripcion || '',
+        categoria: item?.categoria || '',
+        imagen: item?.imagen || null,
+        precio_efectivo: item?.precio_efectivo ?? item?.precio_usuario ?? item?.precio_total ?? item?.precio_base ?? item?.precio ?? null,
+        precio_base: item?.precio_base ?? null,
+        productos_incluidos: item?.productos_incluidos || [],
+      };
     });
 
     if (enOnboarding) {

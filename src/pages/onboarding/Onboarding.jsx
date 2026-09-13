@@ -54,6 +54,7 @@ export default function Onboarding() {
   // PagoPar exige comprador.documento (la cedula) para cobrarle al comercio.
   // El RUC es aparte y opcional: la doc dice que puede ir vacio.
   const [documento, setDocumento] = useState('');
+  const [documentoPrecargado, setDocumentoPrecargado] = useState(false);
   const [ruc, setRuc] = useState('');
   const [depositoDepartamento, setDepositoDepartamento] = useState('');
   const [depositoCiudad, setDepositoCiudad] = useState('');
@@ -81,6 +82,14 @@ export default function Onboarding() {
         if (!estadoCuenta?.tiene_suscripcion_activa) {
           navigate('/planes', { replace: true });
           return;
+        }
+        const datosSuscripcion = estadoCuenta.suscripcion || {};
+        if (datosSuscripcion.documento) {
+          setDocumento(datosSuscripcion.documento);
+          setDocumentoPrecargado(true);
+        }
+        if (datosSuscripcion.telefono) {
+          setDepositoTelefono(prev => prev || datosSuscripcion.telefono);
         }
 
         const tienda = await tiendaService.obtener();
@@ -114,7 +123,7 @@ export default function Onboarding() {
   }, [subdominioDebounced]);
 
   const nombreValido = nombre.trim().length >= 2 && subdominio.length >= 3;
-  const documentoValido = /^[0-9.\-]{5,20}$/.test(documento.trim());
+  const documentoValido = /^[0-9.\-]{5,24}$/.test(documento.trim());
   const subdominioOk = disponibilidad && disponibilidad !== 'cargando' && disponibilidad.valido && disponibilidad.disponible;
   const depositoValido = depositoDepartamento.trim().length >= 2
     && depositoCiudad.trim().length >= 2
@@ -231,8 +240,9 @@ export default function Onboarding() {
                 onChange={e => setDocumento(e.target.value)}
                 placeholder="Ej: 4123456"
                 inputMode="numeric"
+                disabled={documentoPrecargado}
               />
-              <small>Lo pide la pasarela de pago para poder cobrarte. No se muestra a tus clientes.</small>
+              <small>{documentoPrecargado ? 'Ya lo tomamos del pago con PagoPar.' : 'Lo pide la pasarela de pago para poder cobrarte. No se muestra a tus clientes.'}</small>
             </label>
 
             <label className="onb-campo">

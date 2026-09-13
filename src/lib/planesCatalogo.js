@@ -1,23 +1,7 @@
 /**
  * Catálogo de planes — fallback local para cuando /api/planes no responde.
- *
- * ⚠️ PROVISIONAL. Dos cosas que hay que saber antes de tocar esto:
- *
- * 1. Los precios y las features de PLANES_DEFAULT son **placeholders**.
- *    Nadie los validó comercialmente — están para poder maquetar y decidir
- *    el contenido real. Reemplazalos antes de mostrar esto a un cliente.
- *
- * 2. Lo que el admin edita se guarda en localStorage, así que vive solo en
- *    SU navegador: no lo ve ningún otro usuario ni sobrevive a un cambio de
- *    equipo. Cuando exista el endpoint, `cargarPlanes`/`guardarPlanes` son
- *    los dos únicos puntos que hay que reemplazar por llamadas al backend;
- *    el resto de las pantallas no se entera.
- *
- * El `plan` real de la cuenta sigue siendo el de siempre: Usuario.plan, que
- * el backend solo acepta como 'free' | 'pago' (PLANES_VALIDOS en
- * tienda.service.js). Por eso cada plan del catálogo declara `equivale`:
- * a cuál de esos dos estados corresponde. Contratar todavía no cambia nada
- * — no hay pasarela de suscripciones.
+ * La configuración publicada vive en el backend; estos valores solo permiten
+ * renderizar la pantalla si el servidor no está disponible durante desarrollo.
  */
 
 const STORAGE_KEY = 'gesicomm.planes.catalogo.v1';
@@ -35,6 +19,7 @@ export const PLANES_DEFAULT = [
     precio: 47,
     resumen: 'Oferta limitada para los primeros 300 clientes pagos en Paraguay, con precio fundador protegido mientras la suscripción permanezca activa.',
     destacado: true,
+    activo: true,
     etiqueta: '300 cupos',
     cta: 'Ser Fundador',
     features: [
@@ -54,6 +39,7 @@ export const PLANES_DEFAULT = [
     precio: 97,
     resumen: 'Para tiendas que quieren más landings, más medición y una operación comercial más completa.',
     destacado: false,
+    activo: false,
     etiqueta: 'Más elegido',
     cta: 'Activar Growth',
     features: [
@@ -72,6 +58,7 @@ export const PLANES_DEFAULT = [
     precio: 197,
     resumen: 'Para operaciones con catálogo grande, equipo y automatización comercial.',
     destacado: false,
+    activo: false,
     etiqueta: '',
     cta: 'Activar Scale',
     features: [
@@ -83,10 +70,29 @@ export const PLANES_DEFAULT = [
   },
 ];
 
+const ACTIVO_DEFAULT_POR_CODIGO = PLANES_DEFAULT.reduce((acc, plan) => ({
+  ...acc,
+  [plan.codigo]: plan.activo !== false,
+}), {});
+
+function normalizarPlanGuardado(plan) {
+  const codigo = plan.codigo || plan.id;
+  const activoDefault = ACTIVO_DEFAULT_POR_CODIGO[codigo];
+  return {
+    ...plan,
+    codigo,
+    activo: plan.activo !== undefined ? !!plan.activo : activoDefault !== false,
+  };
+}
+
 /** Campos que el editor del admin puede tocar, en el orden en que se muestran. */
 export const CAMPOS_EDITABLES = [
   { campo: 'nombre', label: 'Nombre del plan', tipo: 'texto' },
   { campo: 'precio', label: 'Precio mensual', tipo: 'numero' },
+  { campo: 'moneda', label: 'Moneda', tipo: 'select', opciones: [
+    { value: 'PYG', label: 'Guaraníes (PYG)' },
+    { value: 'USD', label: 'Dólares (USD)' },
+  ] },
   { campo: 'etiqueta', label: 'Etiqueta', tipo: 'texto', ayuda: 'Cinta sobre la tarjeta. Vacío = sin cinta.' },
   { campo: 'resumen', label: 'Resumen', tipo: 'area' },
   { campo: 'cta', label: 'Texto del botón', tipo: 'texto' },
@@ -112,7 +118,7 @@ export function cargarPlanes() {
     if (!Array.isArray(parseado) || !parseado.length || !parseado.every(esPlanValido)) {
       return PLANES_DEFAULT;
     }
-    return parseado;
+    return parseado.map(normalizarPlanGuardado);
   } catch {
     // localStorage puede fallar entero (modo privado, cookies bloqueadas).
     return PLANES_DEFAULT;
@@ -145,5 +151,14 @@ export function hayPersonalizacion() {
     return localStorage.getItem(STORAGE_KEY) !== null;
   } catch {
     return false;
+  }
+}
+
+/** Borra la copia local cuando el catálogo ya quedó publicado en el servidor. */
+export function limpiarPlanesLocales() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // No bloquea el guardado real.
   }
 }

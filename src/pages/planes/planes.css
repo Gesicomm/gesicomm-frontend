@@ -372,6 +372,7 @@
   color: var(--vit-muted-2);
 }
 .pl-campo input,
+.pl-campo select,
 .pl-campo textarea {
   width: 100%;
   box-sizing: border-box;
@@ -387,9 +388,201 @@
 }
 .pl-campo textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
 .pl-campo input:focus,
+.pl-campo select:focus,
 .pl-campo textarea:focus {
   border-color: var(--vit-accent);
   box-shadow: 0 0 0 2px var(--vit-accent-soft);
+}
+
+.pl-campo input:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+.pl-campo-error {
+  color: #ef4444;
+}
+
+.pl-checkout-card {
+  max-width: 860px;
+  margin: 0 auto 1.25rem;
+}
+.pl-checkout-card .pl-editor-card-head {
+  align-items: flex-start;
+}
+.pl-checkout-card .pl-editor-card-head p {
+  margin: 0.25rem 0 0;
+  color: var(--vit-muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.pl-checkout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+.pl-checkout-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Checkout de upgrade ─────────────────────────────────────────────── */
+.pl-checkout-page {
+  max-width: 1180px;
+}
+
+.pl-upgrade-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.pl-upgrade-main,
+.pl-upgrade-summary {
+  background: var(--vit-surface);
+  border: 1px solid var(--vit-border);
+  border-radius: 14px;
+}
+
+.pl-upgrade-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.pl-upgrade-main h1,
+.pl-upgrade-summary h2,
+.pl-upgrade-missing h2 {
+  margin: 0;
+  color: var(--vit-text);
+  letter-spacing: -0.02em;
+}
+
+.pl-upgrade-main h1 {
+  font-size: 1.65rem;
+  line-height: 1.15;
+}
+
+.pl-upgrade-main p,
+.pl-upgrade-summary p,
+.pl-upgrade-missing p {
+  margin: 0.35rem 0 0;
+  color: var(--vit-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.pl-upgrade-route {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  background: var(--vit-bg);
+}
+
+.pl-upgrade-route div,
+.pl-upgrade-details div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.pl-upgrade-route span,
+.pl-upgrade-details span,
+.pl-upgrade-data-grid span {
+  color: var(--vit-muted-2);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pl-upgrade-route strong,
+.pl-upgrade-details strong,
+.pl-upgrade-data-grid strong {
+  color: var(--vit-text);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.pl-upgrade-route svg {
+  color: var(--vit-accent-fg);
+}
+
+.pl-upgrade-data-grid,
+.pl-upgrade-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pl-upgrade-data-grid article,
+.pl-upgrade-details div {
+  padding: 0.9rem;
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vit-bg) 72%, transparent);
+}
+
+.pl-upgrade-data-grid article {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.pl-upgrade-data-grid svg {
+  flex-shrink: 0;
+  color: var(--vit-accent-fg);
+}
+
+.pl-upgrade-data-grid p {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.pl-upgrade-missing {
+  padding: 1rem;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.07);
+}
+
+.pl-upgrade-missing h2 {
+  font-size: 1rem;
+}
+
+.pl-upgrade-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.pl-upgrade-summary {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.5rem;
+}
+
+.pl-upgrade-summary .pl-cinta {
+  position: static;
+  transform: none;
+  align-self: flex-start;
+}
+
+.pl-upgrade-summary h2 {
+  font-size: 1.2rem;
 }
 
 .pl-features-editor { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -639,6 +832,8 @@
   .pl-page { padding: 1.5rem 1.25rem 3rem; }
   .pl-hero h1 { font-size: 1.6rem; }
   .pl-card.destacado { padding-top: 1.9rem; }
+  .pl-upgrade-shell { grid-template-columns: minmax(0, 1fr); }
+  .pl-upgrade-summary { position: static; }
   .pl-affiliates-summary,
   .pl-affiliates-grid { grid-template-columns: minmax(0, 1fr); }
   .pl-affiliate-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -649,6 +844,20 @@
   .pl-hero h1 { font-size: 1.4rem; }
   .pl-grid { grid-template-columns: minmax(0, 1fr); }
   .pl-editor-grid { grid-template-columns: minmax(0, 1fr); }
+  .pl-checkout-grid { grid-template-columns: minmax(0, 1fr); }
+  .pl-upgrade-main,
+  .pl-upgrade-summary { padding: 1rem; }
+  .pl-upgrade-main h1 { font-size: 1.32rem; }
+  .pl-upgrade-route,
+  .pl-upgrade-data-grid,
+  .pl-upgrade-details { grid-template-columns: minmax(0, 1fr); }
+  .pl-upgrade-route svg { transform: rotate(90deg); justify-self: center; }
+  .pl-upgrade-actions { justify-content: stretch; }
+  .pl-upgrade-actions .pl-btn,
+  .pl-upgrade-actions .pl-cta { width: 100%; justify-content: center; }
+  .pl-checkout-actions { justify-content: stretch; }
+  .pl-checkout-actions .pl-cta,
+  .pl-checkout-actions .pl-btn-texto { width: 100%; justify-content: center; }
   .pl-admin-acciones { width: 100%; }
   .pl-tabs { width: 100%; }
   .pl-tabs button { flex: 1; justify-content: center; }

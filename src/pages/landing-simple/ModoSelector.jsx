@@ -29,7 +29,12 @@ export default function ModoSelector({ onCreada }) {
     setError('');
     setCreando(true);
     try {
-      const landing = await landingSimpleService.crearLienzoBlanco();
+      let items = [];
+      try {
+        const stored = sessionStorage.getItem('gesicomm:prefilledLandingItems');
+        if (stored) items = JSON.parse(stored);
+      } catch (e) {}
+      const landing = await landingSimpleService.crearLienzoBlanco(items);
       if (onCreada) onCreada(landing);
       else navigate(`/landing/${landing.id}`, { replace: true });
     } catch (err) {
@@ -48,7 +53,7 @@ export default function ModoSelector({ onCreada }) {
       <h1 className="text-2xl font-bold text-fg mb-1">¿Cómo querés armar tu landing?</h1>
       <p className="text-fg/50 mb-8">Se elige una sola vez. Después podés cambiar de idea borrando la landing y empezando de nuevo.</p>
 
-      {error && <div className="mb-6 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">{error}</div>}
+      {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Opcion
