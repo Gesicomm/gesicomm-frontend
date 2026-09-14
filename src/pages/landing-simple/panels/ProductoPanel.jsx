@@ -313,7 +313,7 @@ export default function ProductoPanel({
             </div>
             )}
 
-            {tab === 'ficha' && fichaTechActiva && fichaTechResuelta && (
+            {tab === 'ficha' && !fichaComboActiva && fichaTechActiva && fichaTechResuelta && (
               <FichaTechPanel
                 packs={packs}
                 ficha={fichaTech}
@@ -332,7 +332,7 @@ export default function ProductoPanel({
               />
             )}
 
-            {tab === 'ficha' && fichaBeautyActiva && fichaBeautyResuelta && (
+            {tab === 'ficha' && !fichaComboActiva && fichaBeautyActiva && fichaBeautyResuelta && (
               <FichaBeautyPanel
                 packs={packs}
                 ficha={fichaBeauty}
@@ -351,7 +351,7 @@ export default function ProductoPanel({
               />
             )}
 
-            {tab === 'ficha' && fichaBasicoActiva && fichaBasicoResuelta && (
+            {tab === 'ficha' && !fichaComboActiva && fichaBasicoActiva && fichaBasicoResuelta && (
               <FichaBasicoPanel
                 packs={packs}
                 ficha={fichaBasico}
@@ -369,7 +369,7 @@ export default function ProductoPanel({
               />
             )}
 
-            {tab === 'ficha' && fichaActiva && fichaResuelta && (
+            {tab === 'ficha' && !fichaComboActiva && fichaActiva && fichaResuelta && (
               <FichaFitnessPanel
                 ficha={ficha}
                 fichaResuelta={fichaResuelta}
