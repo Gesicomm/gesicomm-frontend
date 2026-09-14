@@ -509,10 +509,10 @@ function calcularVariables(t) {
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
   const fondoPagina = fondoEsOscuro ? fondo : '#FFFFFF';
   const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
-  const band = fondoEsOscuro ? componer(texto, 0.10, fondoPagina) : '#FFFFFF';
+  const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
 
   return {
-    '--cmb-bg': fondoPagina,
+    '--cmb-bg': fondo,
     '--cmb-fg': texto,
     '--cmb-accent': acento,
     '--cmb-on-accent': sobre(acento),
