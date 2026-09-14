@@ -507,7 +507,7 @@ function calcularVariables(t) {
     '--cmb-border': hexToRgba(texto, 0.14),
     '--cmb-border-fuerte': hexToRgba(texto, 0.24),
     '--cmb-surface-suave': hexToRgba(texto, 0.03),
-    '--cmb-card': fondoEsOscuro ? componer(texto, 0.06, fondo) : componer('#FFFFFF', 0.85, fondo),
+    '--cmb-card': fondoEsOscuro ? componer(texto, 0.06, fondo) : '#FFFFFF',
     '--cmb-sombra': hexToRgba(texto, 0.1),
     '--cmb-band': band,
     '--cmb-on-band': sobre(band),
