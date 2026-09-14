@@ -474,14 +474,23 @@ function Contador({ desde }) {
     return () => clearInterval(id);
   }, [restante > 0]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const h = Math.floor(restante / 3600);
-  const m = Math.floor((restante % 3600) / 60);
-  const s = restante % 60;
+  const cajas = [
+    ['Horas', Math.floor(restante / 3600)],
+    ['Minutos', Math.floor((restante % 3600) / 60)],
+    ['Segundos', restante % 60],
+  ];
 
   return (
     <div className="cmb-contador">
-      <strong>{dosDigitos(h)} : {dosDigitos(m)} : {dosDigitos(s)}</strong>
-      <small>HORAS&nbsp;&nbsp;&nbsp;&nbsp;MIN&nbsp;&nbsp;&nbsp;&nbsp;SEG</small>
+      {cajas.map(([label, valor], i) => (
+        <React.Fragment key={label}>
+          {i > 0 && <span className="cmb-contador-sep">:</span>}
+          <span className="cmb-contador-caja">
+            <b>{dosDigitos(valor)}</b>
+            <small>{label}</small>
+          </span>
+        </React.Fragment>
+      ))}
     </div>
   );
 }
@@ -493,21 +502,22 @@ function Contador({ desde }) {
 function calcularVariables(t) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
+  const fondoPagina = fondoEsOscuro ? fondo : '#FFFFFF';
   const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
-  const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
+  const band = fondoEsOscuro ? componer(texto, 0.10, fondoPagina) : '#FFFFFF';
 
   return {
-    '--cmb-bg': fondo,
+    '--cmb-bg': fondoPagina,
     '--cmb-fg': texto,
     '--cmb-accent': acento,
     '--cmb-on-accent': sobre(acento),
     '--cmb-accent-suave': hexToRgba(acento, 0.10),
     '--cmb-accent-borde': hexToRgba(acento, 0.35),
-    '--cmb-muted': componer(texto, 0.60, fondo),
+    '--cmb-muted': componer(texto, 0.60, fondoPagina),
     '--cmb-border': hexToRgba(texto, 0.14),
     '--cmb-border-fuerte': hexToRgba(texto, 0.24),
     '--cmb-surface-suave': hexToRgba(texto, 0.03),
-    '--cmb-card': fondoEsOscuro ? componer(texto, 0.06, fondo) : '#FFFFFF',
+    '--cmb-card': fondoEsOscuro ? componer(texto, 0.06, fondoPagina) : '#FFFFFF',
     '--cmb-sombra': hexToRgba(texto, 0.1),
     '--cmb-band': band,
     '--cmb-on-band': sobre(band),

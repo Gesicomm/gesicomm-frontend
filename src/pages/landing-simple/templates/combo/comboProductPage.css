@@ -1,8 +1,8 @@
 /**
  * Ficha de detalle de un Combo.
  *
- * Mismo sistema de variables que las otras fichas (--cmb-* en vez de
- * --bsc-*/--fpp-*/etc., ver ComboProductPage.jsx#calcularVariables).
+ * Mismo sistema de variables que las otras fichas (prefijo --cmb- en vez
+ * de los prefijos de cada plantilla; ver ComboProductPage.jsx).
  * Diseño de tarjetas neutras (nunca superficies grandes teñidas del color
  * de acento — el acento se reserva para texto, bordes finos y botones) y
  * un hero de dos columnas donde la imagen y el precio tienen el peso
@@ -57,21 +57,40 @@
 /* ── Banda de oferta + contador ───────────────────────────────────── */
 .cmb-offer-timer {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-  gap: 14px 22px;
-  margin: 20px auto 0;
-  padding: 14px 28px;
-  max-width: 640px;
+  gap: 12px 24px;
+  margin: 24px auto 0;
+  padding: 12px 28px;
+  max-width: 680px;
   background: var(--cmb-card);
-  border: 1px solid var(--cmb-border);
+  border: 2px solid var(--cmb-accent-borde);
+  box-shadow: 0 4px 20px var(--cmb-sombra);
   border-radius: 999px;
 }
 .cmb-hero-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--cmb-accent-suave);
   color: var(--cmb-accent);
+  padding: 6px 14px;
+  border-radius: 999px;
   font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px;
 }
-.cmb-contador { display: flex; align-items: center; gap: 10px; }
-.cmb-contador strong { font-size: 19px; font-weight: 800; letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
-.cmb-contador small { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--cmb-muted); }
+.cmb-contador { display: flex; align-items: center; gap: 8px; }
+.cmb-contador-caja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 4px 8px;
+  background: var(--cmb-surface-suave);
+  border: 1px solid var(--cmb-border);
+  border-radius: 10px;
+}
+.cmb-contador-caja b { font-size: 20px; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--cmb-fg); }
+.cmb-contador-caja small { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cmb-muted); margin-top: 1px; }
+.cmb-contador-sep { font-size: 20px; font-weight: 900; color: var(--cmb-accent); opacity: 0.8; }
 
 /* ── Encabezados de sección ───────────────────────────────────────── */
 .cmb-seccion-titulo { text-align: center; max-width: 620px; margin: 0 auto 32px; position: relative; }
@@ -85,7 +104,7 @@
 }
 .cmb-seccion { padding-top: 56px; padding-bottom: 8px; }
 .cmb-seccion--fondo {
-  background: var(--cmb-card);
+  background: var(--cmb-bg);
   padding-top: 56px; padding-bottom: 56px;
   margin-top: 24px;
 }
