@@ -136,7 +136,7 @@
   padding-top: 30px;
   padding-bottom: 40px;
 }
-.cmb-hero-visual { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.cmb-hero-visual { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .cmb-hero-copy { text-align: left; }
 .cmb-hero-copy .cmb-eyebrow { margin-bottom: 8px; }
 .cmb-hero-copy h1 {
@@ -164,6 +164,25 @@
 }
 .cmb-hero-foto-vacio { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; text-align: center; }
 .cmb-hero-foto-vacio span { font-size: 11.5px; color: var(--cmb-muted); max-width: 160px; }
+.cmb-hero-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: calc(100% - 28px);
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--cmb-accent);
+  color: var(--cmb-on-accent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
 .cmb-miniaturas { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .cmb-miniatura {
   width: 54px; height: 54px; padding: 0; border-radius: 12px;
@@ -177,6 +196,16 @@
 .cmb-estrellas { display: inline-flex; gap: 1px; color: var(--cmb-estrella); }
 
 .cmb-lead { color: var(--cmb-muted); font-size: 16px; margin: 0 0 20px; max-width: 460px; }
+.cmb-hero-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  display: grid;
+  gap: 8px;
+  color: var(--cmb-text);
+  font-size: 14px;
+}
+.cmb-hero-checklist li { display: flex; align-items: flex-start; gap: 8px; }
 
 .cmb-precio-row { display: flex; align-items: baseline; gap: 12px; }
 .cmb-precio-antes { color: var(--cmb-muted); font-size: 17px; }
@@ -202,9 +231,15 @@
 }
 .cmb-cta:hover { filter: brightness(1.06); }
 
+.cmb-hero-accion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .cmb-hero-garantia {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: var(--cmb-muted); font-size: 12.5px; margin: 14px 0 0;
+  display: flex; align-items: center; gap: 6px;
+  color: var(--cmb-muted); font-size: 12.5px; margin: 10px 0 0;
 }
 .cmb-hero-garantia svg { color: var(--cmb-accent); }
 

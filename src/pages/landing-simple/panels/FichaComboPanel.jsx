@@ -205,6 +205,40 @@ function ListaEditable({ items = [], max, campo, lista, textoAgregar, nuevo, chi
   );
 }
 
+function ListaTextos({ valores = [], max, onCambio, textoAgregar, placeholder }) {
+  const lista = Array.isArray(valores) ? valores : [];
+  const actualizar = (i, valor) => {
+    const copia = [...lista];
+    copia[i] = valor;
+    onCambio(copia);
+  };
+  const quitar = (i) => onCambio(lista.filter((_, idx) => idx !== i));
+  const mover = (i, delta) => {
+    const destino = i + delta;
+    if (destino < 0 || destino >= lista.length) return;
+    const copia = [...lista];
+    [copia[i], copia[destino]] = [copia[destino], copia[i]];
+    onCambio(copia);
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      {lista.map((valor, i) => (
+        <div key={i} className="flex items-center gap-1.5">
+          <button type="button" onClick={() => mover(i, -1)} disabled={i === 0} className="text-fg/25 hover:text-fg disabled:opacity-10"><ChevronDown size={12} className="rotate-180" /></button>
+          <input className={`${MINI} flex-1 min-w-0`} value={valor || ''} placeholder={placeholder} onChange={e => actualizar(i, e.target.value)} />
+          <button type="button" onClick={() => mover(i, 1)} disabled={i === lista.length - 1} className="text-fg/25 hover:text-fg disabled:opacity-10"><ChevronDown size={12} /></button>
+          <button type="button" onClick={() => quitar(i)} className="text-fg/25 hover:text-red-400 p-1"><Trash2 size={12} /></button>
+        </div>
+      ))}
+      {lista.length < max && (
+        <button type="button" onClick={() => onCambio([...lista, ''])} className="inline-flex items-center justify-center gap-1.5 py-2 border border-dashed border-fg/20 rounded-lg text-[12px] font-medium text-fg/50 hover:text-fg hover:border-fg/40">
+          <Plus size={14} /> {textoAgregar} ({lista.length}/{max})
+        </button>
+      )}
+    </div>
+  );
+}
+
 function CamposContador({ d, set }) {
   const c = d.contador || {};
   const setC = (cambios) => set({ contador: { ...c, ...cambios } });
@@ -245,14 +279,34 @@ const CAMPOS = {
 
   hero: ({ d, set, respaldos }) => (
     <>
-      <Texto label="Etiqueta de oferta" valor={d.etiqueta_oferta} placeholder="Oferta por tiempo limitado" onChange={v => set({ etiqueta_oferta: v })} />
-      <CamposContador d={d} set={set} />
       <div className="grid grid-cols-2 gap-2">
         <Texto label="Sobre-título" valor={d.eyebrow} respaldo={respaldos.eyebrow} onChange={v => set({ eyebrow: v })} />
-        <Texto label="Remate del título (en color)" valor={d.titulo_destacado} placeholder="3 en 1" onChange={v => set({ titulo_destacado: v })} />
+        <Texto label="Etiqueta foto" valor={d.etiqueta} placeholder="Más vendido" onChange={v => set({ etiqueta: v })} />
       </div>
-      <Texto label="Título del combo" valor={d.titulo} respaldo={respaldos.titulo} onChange={v => set({ titulo: v })} />
-      <Texto label="Bajada (beneficio principal en una frase)" valor={d.lead} respaldo={respaldos.lead} area onChange={v => set({ lead: v })} />
+      <Texto label="Título principal" valor={d.titulo} respaldo={respaldos.titulo} area onChange={v => set({ titulo: v })} />
+      <Texto
+        label="Remate del título (en color)"
+        valor={d.titulo_destacado}
+        placeholder="mejor precio juntos."
+        onChange={v => set({ titulo_destacado: v })}
+      />
+      <Texto label="Bajada (Lead)" valor={d.lead} respaldo={respaldos.lead} area onChange={v => set({ lead: v })} />
+      <Texto label="Botón principal" valor={d.cta_texto} placeholder="Comprar ahora — envío gratis" onChange={v => set({ cta_texto: v })} />
+      <div>
+        <label className={ETIQUETA}>Puntos clave (los ✓ del encabezado)</label>
+        <ListaTextos
+          valores={d.caracteristicas}
+          max={LIMITES.hero_caracteristicas}
+          textoAgregar="Agregar"
+          placeholder="Combo completo y listo para usar"
+          onCambio={l => set({ caracteristicas: l })}
+        />
+      </div>
+
+      <div className="pt-2 border-t border-fg/10">
+        <Texto label="Etiqueta de oferta" valor={d.etiqueta_oferta} placeholder="Oferta por tiempo limitado" onChange={v => set({ etiqueta_oferta: v })} />
+        <CamposContador d={d} set={set} />
+      </div>
       <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer">
         <input type="checkbox" className="w-3.5 h-3.5 accent-primary" checked={d.rating_activo !== false} onChange={e => set({ rating_activo: e.target.checked })} />
         Mostrar calificación
@@ -263,7 +317,6 @@ const CAMPOS = {
           <input type="number" min="0" max="5" step="0.1" className={CAMPO} value={d.rating_valor} onChange={e => set({ rating_valor: Number(e.target.value) })} />
         </div>
       )}
-      <Texto label="Botón principal" valor={d.cta_texto} placeholder="Comprar ahora" onChange={v => set({ cta_texto: v })} />
       <div className="grid grid-cols-2 gap-2">
         <Texto label="Nota de stock" valor={d.nota_stock} placeholder="Stock limitado" onChange={v => set({ nota_stock: v })} />
         <Texto label="Nota de envío" valor={d.nota_envio} placeholder="Envío gratis" onChange={v => set({ nota_envio: v })} />

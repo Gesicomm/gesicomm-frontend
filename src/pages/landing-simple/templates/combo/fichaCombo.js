@@ -31,7 +31,7 @@ export { ETIQUETA_FUENTE, fuenteDeSeccion, seccionEsPropia } from '../fichaComun
 /** Orden de render y numeración — sigue el orden pedido para la landing de combo. */
 export const SECCIONES_COMBO = [
   { key: 'barra_superior',     numero: 1, label: 'Barra superior',           ambito: 'landing',  ayuda: 'Franja fija arriba: envío, garantía y pago seguro.' },
-  { key: 'hero',                numero: 2, label: 'Oferta y combo principal', ambito: 'producto', ayuda: 'Urgencia, contador, nombre del combo, precio y ahorro.' },
+  { key: 'hero',                numero: 2, label: 'Encabezado',               ambito: 'producto', ayuda: 'Título, promesa, puntos clave y botón principal del combo.' },
   { key: 'incluye',             numero: 3, label: '¿Qué incluye?',            ambito: 'producto', ayuda: 'Grilla con los productos del combo (se arma sola).' },
   { key: 'valor',                numero: 4, label: 'Valor del combo',         ambito: 'producto', ayuda: 'Precio por separado vs. precio del combo (se arma sola).' },
   { key: 'beneficio_principal', numero: 5, label: '¿Por qué este combo?',     ambito: 'producto', ayuda: 'El beneficio principal, con bullets cortos.' },
@@ -66,6 +66,8 @@ export const DEFAULTS_COMBO = {
     titulo: '',                // vacío = el nombre del combo
     titulo_destacado: '',
     lead: '',                  // vacío = la propuesta de valor / descripción del combo
+    etiqueta: 'Más vendido',
+    caracteristicas: ['Combo completo', 'Mejor precio juntos', 'Listo para recibir'],
     rating_activo: true,
     rating_valor: 4.8,
     cta_texto: 'Comprar ahora',
@@ -139,6 +141,7 @@ export const DEFAULTS_COMBO = {
 
 export const LIMITES = {
   barra_superior_items: 4,
+  hero_caracteristicas: 6,
   beneficio_principal_items: 6,
   prueba_social_testimonios: 6,
   confianza_items: 6,
@@ -164,6 +167,9 @@ function normalizarSeccion(key, s) {
       return {
         ...base,
         rating_valor: numeroEntre(base.rating_valor, 0, 5, 5),
+        caracteristicas: lista(base.caracteristicas, LIMITES.hero_caracteristicas)
+          .map(x => String(x || '').trim())
+          .filter(Boolean),
         contador: { ...CONTADOR_DEFAULT_HERO, ...(esObjeto(base.contador) ? base.contador : {}) },
       };
     case 'beneficio_principal':

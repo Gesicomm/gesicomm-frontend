@@ -126,6 +126,7 @@ export default function ComboProductPage({
 
           <section className="cmb-hero cmb-wrap" id="cmb-hero">
             <div className="cmb-hero-visual">
+              {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
               <div className={`cmb-hero-foto ${!imagenActual ? 'sin-imagen' : ''}`}>
                 {imagenActual
                   ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
@@ -171,6 +172,14 @@ export default function ComboProductPage({
 
               {leadTexto && <RichText text={leadTexto} className="cmb-lead" />}
 
+              {Array.isArray(ficha.hero.caracteristicas) && ficha.hero.caracteristicas.length > 0 && (
+                <ul className="cmb-hero-checklist">
+                  {ficha.hero.caracteristicas.map((linea, i) => (
+                    <li key={i}><span className="cmb-check"><Check size={12} strokeWidth={3} /></span> {linea}</li>
+                  ))}
+                </ul>
+              )}
+
               <div className="cmb-precio-row">
                 {item.precioAntes != null && <del className="cmb-precio-antes">{formatPrecio(item.precioAntes)}</del>}
                 <strong className="cmb-precio-valor">{formatPrecio(item.precio)}</strong>
@@ -186,13 +195,15 @@ export default function ComboProductPage({
                 </p>
               )}
 
-              <button type="button" className="cmb-cta" onClick={comprar}>
-                {ficha.hero.cta_texto || 'Comprar combo'} <ArrowRight size={16} />
-              </button>
+              <div className="cmb-hero-accion">
+                <button type="button" className="cmb-cta" onClick={comprar}>
+                  {ficha.hero.cta_texto || 'Comprar combo'} <ArrowRight size={16} />
+                </button>
 
-              {ficha.hero.nota_garantia && (
-                <p className="cmb-hero-garantia"><Check size={13} strokeWidth={3} /> {ficha.hero.nota_garantia}</p>
-              )}
+                {ficha.hero.nota_garantia && (
+                  <p className="cmb-hero-garantia"><Check size={13} strokeWidth={3} /> {ficha.hero.nota_garantia}</p>
+                )}
+              </div>
             </div>
           </section>
         </>
