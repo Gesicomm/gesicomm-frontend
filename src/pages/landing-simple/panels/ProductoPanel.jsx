@@ -10,6 +10,7 @@ import CurrencyInput from '../../../components/CurrencyInput';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import FichaBeautyPanel from './FichaBeautyPanel';
 import FichaBasicoPanel from './FichaBasicoPanel';
+import FichaComboPanel from './FichaComboPanel';
 import '../../landing/landing.css';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
@@ -33,6 +34,9 @@ export default function ProductoPanel({
   fichaTechLanding = null, fichaTechDelProducto = null, onFichaTech = null,
   fichaBeautyActiva = false, fichaBeauty = null, fichaBeautyResuelta = null, fichaBeautyLanding = null, fichaBeautyDelProducto = null, onFichaBeauty = null,
   fichaBasicoActiva = false, fichaBasico = null, fichaBasicoResuelta = null, fichaBasicoLanding = null, fichaBasicoDelProducto = null, onFichaBasico = null,
+  // Ídem para el template Combo — no depende de cuál de las cuatro de
+  // arriba esté activa: se activa siempre que `producto.tipo === 'combo'`.
+  fichaComboActiva = false, fichaCombo = null, fichaComboResuelta = null, fichaComboLanding = null, fichaComboDelProducto = null, onFichaCombo = null,
   descripcion, onDescripcion,
   // Precio tachado de ESTE producto en ESTA landing (LandingItem.precio_ancla).
   // `precioActual` es solo para calcular el descuento que se muestra al lado.
@@ -52,11 +56,15 @@ export default function ProductoPanel({
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
   // un Map con clave "producto:id" para reutilizar ProductPicker sin cambios.
   const [tab, setTab] = React.useState('contenido');
-  const hayFichaAvanzada = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva;
+  const esCombo = producto?.tipo === 'combo';
+  const hayFichaAvanzada = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva || fichaComboActiva;
   const tabs = [
     { key: 'contenido', label: 'Contenido' },
     { key: 'venta', label: 'Venta' },
-    { key: 'relacionados', label: 'Relacionados' },
+    // Un combo no tiene "productos relacionados" propio (ese concepto es
+    // por producto individual, ver ProductoService.listarRelacionados) —
+    // no tiene sentido ofrecer la pestaña.
+    esCombo ? null : { key: 'relacionados', label: 'Relacionados' },
     hayFichaAvanzada ? { key: 'ficha', label: 'Ficha avanzada' } : null,
   ].filter(Boolean);
 
@@ -123,9 +131,7 @@ export default function ProductoPanel({
           <p className="text-[11px] text-fg/35 mt-1 leading-relaxed">Los cambios se guardan solo para esta landing.</p>
         </div>
 
-        {!editable ? (
-          <p className="text-xs text-fg/40">Los combos se editan desde Mis Productos.</p>
-        ) : cargando ? (
+        {cargando ? (
           <div className="flex items-center gap-2 text-fg/40 text-xs"><Loader size={14} className="animate-spin" /> Cargando...</div>
         ) : (
           <>
@@ -167,27 +173,36 @@ export default function ProductoPanel({
                    botón que el backend va a rechazar. */
                 <p className="text-xs text-fg/40 flex items-start gap-1.5 bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5">
                   <Lock size={12} className="mt-0.5 shrink-0" />
-                  <span>Las imágenes son del producto del catálogo y las administra quien lo cargó. Todo lo demás de esta página sí lo podés editar.</span>
+                  <span>
+                    {esCombo
+                      ? 'Las imágenes del combo se administran desde Mis Productos → Combos. Todo lo demás de esta página sí lo podés editar.'
+                      : 'Las imágenes son del producto del catálogo y las administra quien lo cargó. Todo lo demás de esta página sí lo podés editar.'}
+                  </span>
                 </p>
               )}
             </div>
 
             {/* ─── Descripción ──────────────────────────────────────── */}
-            <div>
-              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Descripción</label>
-              <textarea
-                value={descripcion}
-                onChange={e => onDescripcion(e.target.value)}
-                rows={4}
-                placeholder="Contale al cliente de qué se trata este producto..."
-                className={CAMPO}
-              />
-            </div>
+            {/* Un combo todavía no tiene override de descripción por
+                landing (usa siempre la del combo) — no tiene sentido
+                mostrar un campo que el guardado no va a persistir. */}
+            {!esCombo && (
+              <div>
+                <label className="block text-xs font-semibold text-fg/60 mb-1.5">Descripción</label>
+                <textarea
+                  value={descripcion}
+                  onChange={e => onDescripcion(e.target.value)}
+                  rows={4}
+                  placeholder="Contale al cliente de qué se trata este producto..."
+                  className={CAMPO}
+                />
+              </div>
+            )}
 
             {/* ─── FAQ ──────────────────────────────────────────────── */}
             <div>
               <label className="block text-xs font-semibold text-fg/60 mb-1.5">Todo lo que necesitas saber</label>
-              <p className="text-xs text-fg/30 mb-2">Preguntas frecuentes propias de este producto.</p>
+              <p className="text-xs text-fg/30 mb-2">Preguntas frecuentes propias de este {esCombo ? 'combo' : 'producto'}.</p>
 
               <div className="mb-3">
                 <input
@@ -247,7 +262,13 @@ export default function ProductoPanel({
                   </label>
                 )}
 
-                <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
+                {/* Packs/order bump/upsell son ofertas atadas a un
+                    producto_ancla_id — un combo no tiene ese concepto, sus
+                    "productos incluidos" se configuran en Mis Productos →
+                    Combos. */}
+                {!esCombo && (
+                  <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
+                )}
               </div>
             )}
 
@@ -364,6 +385,22 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFicha}
+              />
+            )}
+
+            {tab === 'ficha' && fichaComboActiva && fichaComboResuelta && (
+              <FichaComboPanel
+                ficha={fichaCombo}
+                fichaResuelta={fichaComboResuelta}
+                fichaLanding={fichaComboLanding}
+                fichaDelProducto={fichaComboDelProducto}
+                respaldos={{
+                  titulo: producto?.nombre || '',
+                  eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
+                  lead: producto?.propuesta_valor || '',
+                }}
+                modo="producto"
+                onChange={onFichaCombo}
               />
             )}
 

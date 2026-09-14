@@ -157,17 +157,12 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
         </span>
 
         {/* Imagen o placeholder */}
-        {esCombo ? (
-          <div className="vit-card-media-placeholder combo">
-            <Layers size={32} />
-            <span>Combo</span>
-          </div>
-        ) : item.imagen ? (
+        {item.imagen ? (
           <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
         ) : (
-          <div className="vit-card-media-placeholder">
-            <ImageOff size={28} />
-            <span>Sin imagen</span>
+          <div className={`vit-card-media-placeholder ${esCombo ? 'combo' : ''}`}>
+            {esCombo ? <Layers size={32} /> : <ImageOff size={28} />}
+            <span>{esCombo ? 'Combo' : 'Sin imagen'}</span>
           </div>
         )}
 
@@ -339,6 +334,39 @@ export default function VitrinaGrid() {
     navigate('/landing');
   };
 
+  const itemsSeleccionados = useMemo(() => Array.from(seleccionados).map(k => {
+    const [tipo, id] = k.split(':');
+    return items.find(i => i.tipo === tipo && Number(i.id) === Number(id));
+  }).filter(Boolean), [seleccionados, items]);
+
+  const productosSeleccionados = useMemo(
+    () => itemsSeleccionados.filter(item => item.tipo === 'producto'),
+    [itemsSeleccionados]
+  );
+
+  function armarCombo(itemsBase = productosSeleccionados) {
+    const productos = (itemsBase || []).filter(item => item?.tipo === 'producto');
+    if (productos.length < 2) {
+      navigate('/combos/nuevo');
+      return;
+    }
+
+    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos.map(item => ({
+      id: item.id,
+      nombre: item.nombre,
+      // Para armar combos desde la tienda, `precio_base` es el costo de
+      // compra de la tienda frente al admin/mayorista. `precio_costo` puede
+      // existir en el DTO por compatibilidad, pero representa el costo interno
+      // del admin y NO debe usarse como costo de la tienda.
+      costo_tienda: item.precio_base ?? item.precio_efectivo ?? item.precio_usuario ?? 0,
+      precio_base: item.precio_base ?? item.precio_efectivo ?? item.precio_usuario ?? 0,
+      precio_venta: item.precio_efectivo ?? item.precio_usuario ?? item.precio_base ?? 0,
+      sku: item.sku || null,
+      creado_por: item.creado_por ?? null,
+    }))));
+    navigate('/combos/nuevo');
+  }
+
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
@@ -425,6 +453,22 @@ export default function VitrinaGrid() {
           <button
             type="button"
             className="btn-secondary"
+            onClick={() => navigate('/combos')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Layers size={16} /> Mis combos
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => armarCombo([])}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Layers size={16} /> Armar combo
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
             onClick={abrirCupones}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
           >
@@ -451,6 +495,16 @@ export default function VitrinaGrid() {
           <div className="vit-seleccion-acciones">
             <button type="button" className="vit-seleccion-cancelar" onClick={() => setSeleccionados(new Set())}>
               Quitar selección
+            </button>
+            <button
+              type="button"
+              className="vit-seleccion-cancelar vit-seleccion-combo"
+              onClick={() => armarCombo()}
+              disabled={productosSeleccionados.length < 2}
+              title={productosSeleccionados.length < 2 ? 'Seleccioná al menos 2 productos para armar un combo.' : 'Armar combo con los productos seleccionados'}
+            >
+              <Layers size={15} />
+              Armar combo
             </button>
             <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
               {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}

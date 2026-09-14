@@ -21,6 +21,21 @@ export const comboAdminService = {
   actualizar: (id, payload) =>
     API.put(`/combos/${id}`, payload).then(r => r.data),
 
+  // ─── Imágenes del combo ─────────────────────────────────────────────────
+  imagenes: (id) =>
+    API.get(`/combos/${id}/imagenes`).then(r => r.data),
+
+  subirImagen: (id, formData) =>
+    API.post(`/combos/${id}/imagenes`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+
+  actualizarImagen: (id, imgId, payload) =>
+    API.put(`/combos/${id}/imagenes/${imgId}`, payload).then(r => r.data),
+
+  eliminarImagen: (id, imgId) =>
+    API.delete(`/combos/${id}/imagenes/${imgId}`).then(r => r.data),
+
   // ─── Ciclo de vida ───────────────────────────────────────────────────────
   cambiarEstado: (id, estado) =>
     API.patch(`/combos/${id}/estado`, { estado }).then(r => r.data),

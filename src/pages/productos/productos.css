@@ -1132,13 +1132,15 @@
 .product-preview-surface .bsc-root,
 .product-preview-surface .fpp-root,
 .product-preview-surface .tpp-root,
-.product-preview-surface .bpp-root {
+.product-preview-surface .bpp-root,
+.product-preview-surface .cmb-root {
   min-height: 100%;
 }
 .product-preview-surface .bsc-barra-movil,
 .product-preview-surface .fpp-barra-movil,
 .product-preview-surface .tpp-barra-movil,
-.product-preview-surface .bpp-barra-movil {
+.product-preview-surface .bpp-barra-movil,
+.product-preview-surface .cmb-barra-movil {
   position: sticky;
   bottom: 0;
 }

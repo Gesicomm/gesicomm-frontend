@@ -143,6 +143,10 @@ export function armarItemFicha({
   faqTitulo = '',
   relacionados = [],
   relacionadosTitulo = '',
+  // Solo combos: los productos que lo componen, con imagen/precio/checks
+  // (ver landing.service.js, campo `productos_combo`). [] en un producto
+  // normal.
+  productosIncluidos = [],
 }) {
   const precioNum = precio == null ? null : Number(precio);
   const anteriorNum = precioAntes == null ? null : Number(precioAntes);
@@ -157,13 +161,14 @@ export function armarItemFicha({
     descuentoPct: hayDescuento ? Math.round((1 - precioNum / anteriorNum) * 100) : 0,
     ahorroAbsoluto: hayDescuento ? anteriorNum - precioNum : 0,
     imagenes: (imagenes || []).filter(Boolean),
-    // Solo paquetes del mismo producto. Los order bump son otra cosa y se
-    // ofrecen dentro del checkout, no en la ficha.
-    packs: (ofertas || []).filter(o => o.estrategia === 'normal' && o.tipo_contenido !== 'combo'),
+    // Formas de compra elegibles en la ficha: packs del mismo producto y
+    // combos normales. Los order bump/upsell viven en checkout/carrito.
+    packs: (ofertas || []).filter(o => o.estrategia === 'normal'),
     variantes: variantes || [],
     faq: (faq || []).filter(f => f?.pregunta),
     faqTitulo: faqTitulo || '',
     relacionados: relacionados || [],
     relacionadosTitulo: relacionadosTitulo || '',
+    productosIncluidos: productosIncluidos || [],
   };
 }

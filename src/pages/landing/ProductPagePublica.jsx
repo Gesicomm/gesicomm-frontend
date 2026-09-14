@@ -47,8 +47,9 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
 
   const galeria = useMemo(() => {
     const propia = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
-    return propia && propia.length ? propia : [];
-  }, [variante, item.imagenes]);
+    if (propia && propia.length) return propia;
+    return item.imagen ? [item.imagen] : [];
+  }, [variante, item.imagenes, item.imagen]);
 
   useEffect(() => { setIndiceImagen(0); }, [varianteId]);
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader, Sparkles, Gift } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
@@ -17,7 +17,7 @@ const FORM_VACIO = {
  * en LandingPublica.jsx).
  */
 export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades = [] }) {
-  const [paso, setPaso] = useState('carrito'); // 'carrito' | 'formulario' | 'confirmado'
+  const [paso, setPaso] = useState('carrito'); // carrito | upsell | formulario | confirmado
   const [form, setForm] = useState(FORM_VACIO);
   const [ciudadDeliveryInput, setCiudadDeliveryInput] = useState('');
   const [acepta, setAcepta] = useState(false);
@@ -32,6 +32,7 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
   const [cupon, setCupon] = useState(null);
   const [validandoCupon, setValidandoCupon] = useState(false);
   const [errorCupon, setErrorCupon] = useState(null);
+  const [upsellRevisado, setUpsellRevisado] = useState(false);
 
   async function aplicarCupon() {
     setValidandoCupon(true);
@@ -81,6 +82,12 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
   // (landing.service.js/crearCheckout), para que lo que ve el comprador y lo
   // que se le cobra sean el mismo número.
   const totalVisible = Math.max(0, subtotal - descuentoVisible);
+  // Momentos separados:
+  // - order bump: agregado chico dentro del carrito, con botón "+".
+  // - upsell: paso intermedio antes del formulario/confirmación.
+  // Mezclarlos hace que el upsell se vea repetido y pierda sentido comercial.
+  const orderBumps = sugerencias.filter(s => s.oferta?.estrategia === 'order_bump');
+  const upsells = sugerencias.filter(s => s.oferta?.estrategia === 'upsell');
 
   function reiniciar() {
     setPaso('carrito');
@@ -89,6 +96,7 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
     setAcepta(false);
     setResultado(null);
     setError(null);
+    setUpsellRevisado(false);
   }
 
   function cerrar() {
@@ -110,6 +118,19 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
     } else {
       setForm(prev => ({ ...prev, ciudad: '', departamento: '' }));
     }
+  }
+
+  function avanzarDesdeCarrito() {
+    if (upsells.length > 0 && !upsellRevisado) {
+      setPaso('upsell');
+      return;
+    }
+    setPaso('formulario');
+  }
+
+  function continuarDesdeUpsell() {
+    setUpsellRevisado(true);
+    setPaso('formulario');
   }
 
   async function enviarFormulario(e) {
@@ -191,31 +212,36 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                       ))}
                     </div>
 
-                    {sugerencias.length > 0 && (
+                    {orderBumps.length > 0 && (
                       <div className="lp-cart-sugerencias">
-                        {sugerencias.map(({ item, oferta }) => (
-                          <div key={oferta.id} className="lp-cart-sugerencia">
-                            <div className="lp-cart-item-media">
-                              {item.imagen ? <img src={getMediaUrl(item.imagen)} alt="" /> : <ImageOff size={16} />}
+                        {orderBumps.map(({ item, oferta }) => {
+                          const complementario = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
+                          const imagenOferta = oferta.imagen || complementario?.imagen || item.imagen;
+                          return (
+                            <div key={oferta.id} className="lp-cart-sugerencia">
+                              <div className="lp-cart-item-media">
+                                {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={16} />}
+                              </div>
+                              <div className="lp-cart-item-info">
+                                <span className="lp-cart-item-nombre">
+                                  Sumá ahora: {oferta.nombre}
+                                </span>
+                                {(oferta.descripcion || complementario?.nombre) && (
+                                  <span className="lp-cart-item-variante">{oferta.descripcion || complementario?.nombre}</span>
+                                )}
+                                {/* precio_efectivo = lo que el backend va a cobrar por esta
+                                    oferta; los fallbacks cubren el DTO anterior a que
+                                    precio normal y promocional fueran dos campos. */}
+                                <span className="lp-cart-item-precio">
+                                  {formatPrecio(oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio)}
+                                </span>
+                              </div>
+                              <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta)} title="Agregar">
+                                <Plus size={16} />
+                              </button>
                             </div>
-                            <div className="lp-cart-item-info">
-                              <span className="lp-cart-item-nombre">
-                                {oferta.estrategia === 'order_bump' ? '¿Agregás esto? ' : 'También te puede interesar: '}
-                                {item.nombre} — {oferta.nombre}
-                              </span>
-                              {oferta.descripcion && <span className="lp-cart-item-variante">{oferta.descripcion}</span>}
-                              {/* precio_efectivo = lo que el backend va a cobrar por esta
-                                  oferta; los fallbacks cubren el DTO anterior a que
-                                  precio normal y promocional fueran dos campos. */}
-                              <span className="lp-cart-item-precio">
-                                {formatPrecio(oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio)}
-                              </span>
-                            </div>
-                            <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta)} title="Agregar">
-                              <Plus size={16} />
-                            </button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -224,12 +250,59 @@ export default function CartDrawer({ items, sugerencias = [], onAgregarSugerenci
                         <span>Total</span>
                         <strong>{formatPrecio(subtotal)}</strong>
                       </div>
-                      <button type="button" className="lp-cart-checkout" onClick={() => setPaso('formulario')}>
+                      <button type="button" className="lp-cart-checkout" onClick={avanzarDesdeCarrito}>
                         Finalizar pedido
                       </button>
                     </footer>
                   </>
                 )}
+              </>
+            )}
+
+            {paso === 'upsell' && (
+              <>
+                <header className="lp-cart-head">
+                  <button type="button" className="lp-cart-back" onClick={() => setPaso('carrito')} title="Volver al carrito">
+                    <ArrowLeft size={18} />
+                  </button>
+                  <h3><Sparkles size={16} /> Mejorá tu pedido</h3>
+                  <button type="button" className="lp-cart-close" onClick={cerrar}><X size={18} /></button>
+                </header>
+
+                <div className="lp-cart-items">
+                  <div className="lp-cart-vacio" style={{ padding: '0.4rem 0 0.8rem' }}>
+                    <p style={{ margin: 0 }}>Antes de completar tus datos, podés sumar una mejora a este pedido.</p>
+                  </div>
+
+                  {upsells.map(({ item, oferta }) => {
+                    const complementario = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
+                    const imagenOferta = oferta.imagen || complementario?.imagen || item.imagen;
+                    const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
+                    return (
+                      <div key={oferta.id} className="lp-cart-sugerencia">
+                        <div className="lp-cart-item-media">
+                          {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <Gift size={16} />}
+                        </div>
+                        <div className="lp-cart-item-info">
+                          <span className="lp-cart-item-nombre">{oferta.nombre}</span>
+                          {(oferta.descripcion || complementario?.nombre) && (
+                            <span className="lp-cart-item-variante">{oferta.descripcion || complementario?.nombre}</span>
+                          )}
+                          <span className="lp-cart-item-precio">{formatPrecio(precio)}</span>
+                        </div>
+                        <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta)} title="Agregar">
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <footer className="lp-cart-footer">
+                  <button type="button" className="lp-cart-checkout" onClick={continuarDesdeUpsell}>
+                    Continuar con mi pedido
+                  </button>
+                </footer>
               </>
             )}
 

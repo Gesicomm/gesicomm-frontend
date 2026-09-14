@@ -13,11 +13,13 @@ const FORM_VACIO = {
  * Checkout del embudo: UNA sola pantalla, sin pasar por el carrito.
  */
 /**
- * Solo el order bump se ofrece DENTRO del checkout (ver Oferta.js). Un combo
- * se elige ANTES, en la ficha del producto, junto con la cantidad — acá ya
- * sería tarde para cambiar lo que se está comprando.
+ * El checkout tiene dos momentos comerciales distintos:
+ * - order_bump: se muestra como checkbox chico antes del formulario.
+ * - upsell: se muestra como paso de decisión después de que la persona ya
+ *   completó sus datos, pero antes de crear el pedido. Así no se pierde si
+ *   el cliente compra directo desde la ficha y nunca abre el carrito.
  */
-const ESTRATEGIAS_CHECKOUT = ['order_bump'];
+const ESTRATEGIAS_CHECKOUT = ['order_bump', 'upsell'];
 
 /**
  * Lo que se cobra si el visitante acepta la oferta acá. El backend ya manda
@@ -37,6 +39,9 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
+  const [paso, setPaso] = useState('formulario'); // formulario | upsell
+  const [formPendiente, setFormPendiente] = useState(null);
+  const [upsellRevisado, setUpsellRevisado] = useState(false);
   // Varias ofertas a la vez: son casillas independientes, no un radio.
   const [seleccionadas, setSeleccionadas] = useState(() => new Set());
 
@@ -52,14 +57,32 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     : null;
 
   const ofertasCheckout = useMemo(() => {
-    if (!itemOriginal?.ofertas?.length || !ofertasLanding?.length) return [];
+    if (!itemOriginal?.ofertas?.length) return [];
     // Se compara por número: la config de la landing guarda ids numéricos,
     // pero puede venir de un JSON donde quedaron como strings.
+    //
+    // Importante: la selección explícita es por estrategia. Si el comercio
+    // marcó un order bump en la landing, eso no debe apagar los upsells del
+    // mismo producto. Antes una lista con cualquier id hacía de filtro global
+    // y por eso el upsell podía estar creado, activo y aun así no aparecer.
     const habilitadas = new Set(ofertasLanding.map(Number));
-    return itemOriginal.ofertas.filter(o =>
-      ESTRATEGIAS_CHECKOUT.includes(o.estrategia) && habilitadas.has(Number(o.id))
+    const hayConfigParaEstrategia = estrategia => itemOriginal.ofertas.some(o =>
+      o.estrategia === estrategia && habilitadas.has(Number(o.id))
     );
+    return itemOriginal.ofertas.filter(o => {
+      if (!ESTRATEGIAS_CHECKOUT.includes(o.estrategia)) return false;
+      return !hayConfigParaEstrategia(o.estrategia) || habilitadas.has(Number(o.id));
+    });
   }, [itemOriginal, ofertasLanding]);
+
+  const orderBumps = useMemo(
+    () => ofertasCheckout.filter(o => o.estrategia === 'order_bump'),
+    [ofertasCheckout]
+  );
+  const upsells = useMemo(
+    () => ofertasCheckout.filter(o => o.estrategia === 'upsell'),
+    [ofertasCheckout]
+  );
 
   const ofertasElegidas = useMemo(
     () => ofertasCheckout.filter(o => seleccionadas.has(o.id)),
@@ -104,6 +127,9 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
       setAcepta(false);
       setError(null);
       setConfirmado(null);
+      setPaso('formulario');
+      setFormPendiente(null);
+      setUpsellRevisado(false);
       setSeleccionadas(new Set());
     }, 200);
   }
@@ -111,13 +137,23 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   async function enviar(e) {
     e.preventDefault();
     if (!valido) return;
+    if (upsells.length > 0 && !upsellRevisado) {
+      setFormPendiente(form);
+      setPaso('upsell');
+      setError(null);
+      return;
+    }
+    await confirmarConOfertas(form, ofertasElegidas);
+  }
+
+  async function confirmarConOfertas(formulario, ofertas = ofertasElegidas) {
     setError(null);
     setEnviando(true);
     try {
       // Las ofertas aceptadas van como líneas APARTE del producto principal.
       // Antes se mandaba la oferta del bump EN LUGAR de la del producto, así
       // que el backend cobraba todo el pedido al precio promocional del bump.
-      const res = await onConfirmar(form, ofertasElegidas);
+      const res = await onConfirmar(formulario, ofertas);
       if (res?.payment_data?.payment_url) {
         window.location.href = res.payment_data.payment_url;
         return;
@@ -128,6 +164,13 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     } finally {
       setEnviando(false);
     }
+  }
+
+  function confirmarUpsell(aceptado) {
+    const base = ofertasElegidas.filter(o => o.estrategia !== 'upsell');
+    const ofertas = aceptado ? [...base, ...upsells] : base;
+    setUpsellRevisado(true);
+    confirmarConOfertas(formPendiente || form, ofertas);
   }
 
   function actualizarCiudadDelivery(valor) {
@@ -216,6 +259,89 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               Cerrar
             </button>
           </div>
+        ) : paso === 'upsell' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <button
+              type="button"
+              onClick={() => setPaso('formulario')}
+              style={{ alignSelf: 'flex-start', fontSize: '0.85rem', color: hexToRgba(tema.texto, 0.65) }}
+            >
+              Volver
+            </button>
+            <p style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+              fontSize: '0.74rem', fontWeight: 800, letterSpacing: '0.04em',
+              textTransform: 'uppercase', color: tema.acento,
+            }}>
+              <Sparkles size={14} /> Oferta especial antes de confirmar
+            </p>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 900, lineHeight: 1.15 }}>
+              ¿Querés mejorar tu pedido?
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: hexToRgba(tema.texto, 0.66), lineHeight: 1.45 }}>
+              Podés sumar esta mejora ahora y recibir todo en el mismo pedido.
+            </p>
+
+            {upsells.map(oferta => {
+              const principal = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
+              const imgCruda = oferta.imagen || principal?.imagen;
+              const img = typeof imgCruda === 'string' ? imgCruda : (imgCruda?.url || imgCruda?.ruta || null);
+              const precio = precioEnCheckout(oferta);
+              return (
+                <div key={oferta.id} style={{
+                  display: 'grid', gridTemplateColumns: '76px 1fr', gap: '0.85rem',
+                  border: `1px solid ${bordeSuave}`, borderRadius: '0.85rem',
+                  padding: '0.85rem', backgroundColor: hexToRgba(tema.texto, 0.03),
+                }}>
+                  <div style={{
+                    width: 76, height: 76, borderRadius: '0.65rem', overflow: 'hidden',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: hexToRgba(tema.texto, 0.06),
+                  }}>
+                    {img ? <img src={getMediaUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={25} style={{ color: tema.acento }} />}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <strong style={{ display: 'block', fontSize: '0.95rem', lineHeight: 1.25 }}>{oferta.nombre}</strong>
+                    {(oferta.descripcion || principal?.nombre) && (
+                      <span style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.8rem', color: hexToRgba(tema.texto, 0.62), lineHeight: 1.35 }}>
+                        {oferta.descripcion || principal?.nombre}
+                      </span>
+                    )}
+                    <span style={{ display: 'block', marginTop: '0.45rem', fontWeight: 900, fontSize: '1rem' }}>
+                      {formatPrecio(precio)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {error && <p style={{ fontSize: '0.82rem', color: '#ef4444', fontWeight: 600 }}>{error}</p>}
+
+            <button
+              type="button"
+              disabled={enviando}
+              onClick={() => confirmarUpsell(true)}
+              style={{
+                width: '100%', padding: '0.9rem', borderRadius: '0.75rem',
+                fontWeight: 900, backgroundColor: tema.acento, color: tema.fondo,
+                opacity: enviando ? 0.55 : 1,
+              }}
+            >
+              {enviando ? 'Confirmando...' : 'Sí, agregar a mi pedido'}
+            </button>
+            <button
+              type="button"
+              disabled={enviando}
+              onClick={() => confirmarUpsell(false)}
+              style={{
+                width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
+                fontWeight: 800, border: `1px solid ${bordeSuave}`,
+                color: tema.texto, backgroundColor: 'transparent', opacity: enviando ? 0.55 : 1,
+              }}
+            >
+              No, confirmar sin agregar
+            </button>
+          </div>
         ) : (
           <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, marginBottom: '0.25rem' }}>Completá tu compra</h3>
@@ -255,7 +381,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                 cliente ya decidió qué compra y todavía no empezó a completar
                 datos, que es el momento en que sumar algo cuesta menos. No es
                 otra página de venta: es una decisión chica y contextual. */}
-            {ofertasCheckout.length > 0 && (
+            {orderBumps.length > 0 && (
               <div style={{ borderTop: `1px solid ${bordeSuave}`, paddingTop: '0.85rem', marginTop: '0.15rem' }}>
                 <p style={{
                   display: 'flex', alignItems: 'center', gap: '0.35rem',
@@ -266,7 +392,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                   <Sparkles size={13} style={{ color: tema.acento }} /> Completá tu compra
                 </p>
 
-                {ofertasCheckout.map(oferta => {
+                {orderBumps.map(oferta => {
                   const principal = oferta.producto_complementario || oferta.productos_incluidos?.[0] || null;
                   const imgCruda = principal?.imagen;
                   const img = typeof imgCruda === 'string' ? imgCruda : (imgCruda?.url || imgCruda?.ruta || null);

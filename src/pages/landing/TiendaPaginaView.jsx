@@ -14,6 +14,7 @@ import FitnessProductPagePublica from '../landing-simple/templates/fitness/Fitne
 import TechProductPagePublica from '../landing-simple/templates/tech/TechProductPagePublica';
 import BeautyProductPagePublica from '../landing-simple/templates/beauty/BeautyProductPagePublica';
 import BasicoProductPagePublica from '../landing-simple/templates/basico/BasicoProductPagePublica';
+import ComboProductPagePublica from '../landing-simple/templates/combo/ComboProductPagePublica';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
 import { useNavigate } from 'react-router-dom';
 import CartDrawer from './CartDrawer';
@@ -175,36 +176,39 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     [data]
   );
 
-  // Ofertas para mostrar como sugerencia en el carrito: order_bump siempre
-  // que no esté ya agregada, upsell solo si su producto ancla ya está en el
-  // carrito (mismo criterio que Oferta.estrategia documenta en el backend).
+  // Ofertas para mostrar como sugerencia en el carrito: solo las del producto
+  // ancla que ya está en el pedido. Un bump de otro producto no tiene por qué
+  // aparecer acá aunque exista en la misma landing.
   const sugerenciasCarrito = useMemo(() => {
     if (!data) return [];
     
-    // Si la landing tiene configuracion específica de ofertas de carrito,
-    // solo mostramos las ofertas listadas ahí. Si no tiene nada configurado,
-    // por defecto no muestra NINGUNA oferta (comportamiento opt-in).
-    // NOTA: Antes mostraba todas por defecto, pero el usuario pidió control total.
+    // Si la landing tiene configuración específica de ofertas de carrito,
+    // se respeta por estrategia. Marcar un order bump no debe apagar los
+    // upsells del mismo producto: son dos momentos distintos del checkout.
     const configOfertas = data?.content?.ofertas_carrito || [];
+    const idsConfigurados = new Set(configOfertas.map(Number));
     
-    const contentIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.contentId));
-    const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean));
+    const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean).map(Number));
     const sugerencias = [];
-    for (const item of catalogoCompleto) {
-      if (item.tipo !== 'producto' || !item.ofertas?.length) continue;
+    for (const itemCarrito of carrito.values()) {
+      const item = catalogoCompleto.find(i => i.content_id === itemCarrito.contentId);
+      if (!item || item.tipo !== 'producto' || !item.ofertas?.length) continue;
       for (const oferta of item.ofertas) {
-        if (ofertaIdsEnCarrito.has(oferta.id)) continue;
+        if (ofertaIdsEnCarrito.has(Number(oferta.id))) continue;
         
-        // Filtro estricto: la oferta DEBE estar seleccionada en la configuración
-        const estaEnConfiguracion = configOfertas.includes(String(oferta.id)) || configOfertas.includes(Number(oferta.id));
-        if (!estaEnConfiguracion) continue;
+        // Si el comercio eligió una lista explícita, se respeta. Si no hay
+        // lista, los bumps/upsells activos del producto funcionan por defecto:
+        // configurar la oferta en el producto ya tiene que producir una
+        // experiencia visible en la tienda publicada.
+        const hayConfigParaEstrategia = item.ofertas.some(o =>
+          o.estrategia === oferta.estrategia && idsConfigurados.has(Number(o.id))
+        );
+        if (hayConfigParaEstrategia && !idsConfigurados.has(Number(oferta.id))) continue;
 
-        // El order bump se sugiere siempre; el upsell solo cuando su producto
-        // ancla ya está en el carrito. Los combos no entran acá: se eligen en
-        // la ficha del producto, antes de agregar nada al carrito.
-        if (oferta.estrategia === 'order_bump') {
-          sugerencias.push({ item, oferta });
-        } else if (oferta.estrategia === 'upsell' && contentIdsEnCarrito.has(item.content_id)) {
+        const tieneComplemento = Boolean(oferta.producto_complementario || oferta.productos_incluidos?.length);
+        if (!tieneComplemento) continue;
+
+        if (oferta.estrategia === 'order_bump' || oferta.estrategia === 'upsell') {
           sugerencias.push({ item, oferta });
         }
       }
@@ -240,7 +244,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         ofertaNombre: oferta?.nombre || null,
         precio,
         cantidad: nuevaCantidad,
-        imagen: item.imagenes?.[0] || item.imagen || null,
+        imagen: oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
         envioIncluido: item.envio_incluido === true,
       });
@@ -292,6 +296,24 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     } catch (err) {
       console.warn('[tracking] AddToCart error:', err);
     }
+  }
+
+  function agregarRelacionadoAlCarrito(relacionado) {
+    const item = catalogoCompleto.find(i =>
+      i.content_id === relacionado?.slug
+      || String(i.content_id) === String(relacionado?.content_id)
+      || (i.tipo === 'producto' && Number(i.referencia_id) === Number(relacionado?.id))
+    );
+    if (!item) return;
+
+    agregarAlCarrito({
+      item,
+      variante: null,
+      oferta: null,
+      cantidad: 1,
+      precio: item.precio,
+    });
+    setCarritoAbierto(true);
   }
 
   // "La cantidad decide el precio" — al cambiar cantidad, el subtotal
@@ -767,6 +789,36 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         previewMode: false
       };
 
+      // Un combo tiene su propia ficha siempre, sin importar qué template
+      // rígido usa el resto de la landing — no tiene rubro, es otra
+      // entidad. Esta rama va ANTES de las de template.slug a propósito.
+      if (itemSeleccionado?.tipo === 'combo') {
+        return (
+          <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
+            <ComboProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={data.content || {}}
+              tema={temaResuelto}
+              templateSlug={data?.template?.slug}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              deliveryCiudades={data?.delivery_ciudades || []}
+              onAgregar={(datos) => {
+                // Agregar al carrito es SOLO agregar: nunca abre el
+                // checkout. Se abre el carrito para que se vea que pasó
+                // algo — mismo criterio que productos (Básico/Tech/Beauty).
+                agregarAlCarrito(datos);
+                setCarritoAbierto(true);
+              }}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
       if (data.template.slug === 'fitness-suplementos') {
         return (
           <div style={cssVarsRigido}>
@@ -781,7 +833,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               deliveryCiudades={data?.delivery_ciudades || []}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
-              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+              onClickRelacionado={agregarRelacionadoAlCarrito}
             />
             <CartDrawer {...cartDrawerProps} />
           </div>
@@ -809,7 +861,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               }}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
-              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+              onClickRelacionado={agregarRelacionadoAlCarrito}
             />
             <CartDrawer {...cartDrawerProps} />
           </div>
@@ -837,7 +889,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               }}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
-              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+              onClickRelacionado={agregarRelacionadoAlCarrito}
             />
             <CartDrawer {...cartDrawerProps} />
           </div>
@@ -864,7 +916,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
               }}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
-              onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+              onClickRelacionado={agregarRelacionadoAlCarrito}
             />
             <CartDrawer {...cartDrawerProps} />
           </div>
@@ -886,7 +938,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             onContactar={contactar}
             slug={slug}
             relacionados={data?.relacionados}
-            onClickRelacionado={(rel) => navigate(slug ? `/l/${slug}/${rel.slug}` : `/${rel.slug}`)}
+            onClickRelacionado={agregarRelacionadoAlCarrito}
           />
           <CartDrawer {...cartDrawerProps} />
         </div>

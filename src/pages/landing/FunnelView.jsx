@@ -173,36 +173,35 @@ export default function FunnelView({ data, slug, productId }) {
     [data]
   );
 
-  // Ofertas para mostrar como sugerencia en el carrito: order_bump siempre
-  // que no esté ya agregada, upsell solo si su producto ancla ya está en el
-  // carrito (mismo criterio que Oferta.estrategia documenta en el backend).
+  // Ofertas para mostrar como sugerencia en el carrito: solo las del producto
+  // ancla que ya está en el pedido. Un bump de otro producto no tiene por qué
+  // aparecer acá aunque exista en la misma landing.
   const sugerenciasCarrito = useMemo(() => {
     if (!data) return [];
     
-    // Si la landing tiene configuracion específica de ofertas de carrito,
-    // solo mostramos las ofertas listadas ahí. Si no tiene nada configurado,
-    // por defecto no muestra NINGUNA oferta (comportamiento opt-in).
-    // NOTA: Antes mostraba todas por defecto, pero el usuario pidió control total.
+    // Si la landing tiene configuración específica de ofertas de carrito,
+    // se respeta por estrategia. Elegir un order bump no debe esconder los
+    // upsells activos del mismo producto.
     const configOfertas = data?.content?.ofertas_carrito || [];
+    const idsConfigurados = new Set(configOfertas.map(Number));
     
-    const contentIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.contentId));
-    const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean));
+    const ofertaIdsEnCarrito = new Set(Array.from(carrito.values()).map(it => it.ofertaId).filter(Boolean).map(Number));
     const sugerencias = [];
-    for (const item of catalogoCompleto) {
-      if (item.tipo !== 'producto' || !item.ofertas?.length) continue;
+    for (const itemCarrito of carrito.values()) {
+      const item = catalogoCompleto.find(i => i.content_id === itemCarrito.contentId);
+      if (!item || item.tipo !== 'producto' || !item.ofertas?.length) continue;
       for (const oferta of item.ofertas) {
-        if (ofertaIdsEnCarrito.has(oferta.id)) continue;
+        if (ofertaIdsEnCarrito.has(Number(oferta.id))) continue;
         
-        // Filtro estricto: la oferta DEBE estar seleccionada en la configuración
-        const estaEnConfiguracion = configOfertas.includes(String(oferta.id)) || configOfertas.includes(Number(oferta.id));
-        if (!estaEnConfiguracion) continue;
+        const hayConfigParaEstrategia = item.ofertas.some(o =>
+          o.estrategia === oferta.estrategia && idsConfigurados.has(Number(o.id))
+        );
+        if (hayConfigParaEstrategia && !idsConfigurados.has(Number(oferta.id))) continue;
 
-        // El order bump se sugiere siempre; el upsell solo cuando su producto
-        // ancla ya está en el carrito. Los combos no entran acá: se eligen en
-        // la ficha del producto, antes de agregar nada al carrito.
-        if (oferta.estrategia === 'order_bump') {
-          sugerencias.push({ item, oferta });
-        } else if (oferta.estrategia === 'upsell' && contentIdsEnCarrito.has(item.content_id)) {
+        const tieneComplemento = Boolean(oferta.producto_complementario || oferta.productos_incluidos?.length);
+        if (!tieneComplemento) continue;
+
+        if (oferta.estrategia === 'order_bump' || oferta.estrategia === 'upsell') {
           sugerencias.push({ item, oferta });
         }
       }
@@ -238,7 +237,7 @@ export default function FunnelView({ data, slug, productId }) {
         ofertaNombre: oferta?.nombre || null,
         precio,
         cantidad: nuevaCantidad,
-        imagen: item.imagenes?.[0] || item.imagen || null,
+        imagen: oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
         envioIncluido: item.envio_incluido === true,
       });

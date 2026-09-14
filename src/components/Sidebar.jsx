@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
@@ -49,7 +49,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     window.location.href = '/login'; // recarga completa: limpia el estado en memoria
   };
   const [productosOpen, setProductosOpen] = useState(
-    location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias')
+    location.pathname.startsWith('/products') || location.pathname.startsWith('/categorias') || location.pathname.startsWith('/combos')
   );
   const [alertasAccesos, setAlertasAccesos] = useState(0);
   const [alertasPagos, setAlertasPagos] = useState(0);
@@ -168,6 +168,15 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
                       <Tag size={13} /> Categorías
                     </Link>
                   </li>
+                  <li>
+                    <Link
+                      to="/combos"
+                      onClick={onClose}
+                      className={`${SUB_LINK} ${isActive('/combos') || isActivePrefix('/combos/') ? SUB_LINK_ACTIVE : SUB_LINK_INACTIVE}`}
+                    >
+                      <Layers size={13} /> Combos
+                    </Link>
+                  </li>
                 </ul>
               )}
             </li>
@@ -175,10 +184,6 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/orders', label: 'Pedidos', icon: <ShoppingCart /> })}
             {renderLink({ path: '/customers', label: 'Clientes', icon: <Users /> })}
             {renderLink({ path: '/admin/educacion', label: 'Academia LMS', icon: <GraduationCap /> })}
-
-            {/* Combos (ProductoCombo) reemplazado por Ofertas comerciales,
-                dentro de la ficha de cada producto — los combos viejos
-                siguen en la base, solo se sacó el link del menú. */}
 
             {renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles /> })}
             {renderLink({ path: '/page-builder', label: 'Page Builder', icon: <Code2 /> })}

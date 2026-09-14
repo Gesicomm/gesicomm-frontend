@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layers, Plus, Edit, Power, PowerOff, AlertTriangle } from 'lucide-react';
+import { Layers, Plus, Edit, Power, PowerOff, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import './combos.css';
@@ -112,13 +112,18 @@ export default function ComboList() {
         <div className="combo-header-left">
           <div className="combo-icon-wrap"><Layers size={20} /></div>
           <div>
-            <h1 className="combo-title">Combos Promocionales</h1>
-            <p className="combo-subtitle">{combos.length} combo{combos.length !== 1 ? 's' : ''} en total</p>
+            <h1 className="combo-title">Mis combos</h1>
+            <p className="combo-subtitle">{combos.length} combo{combos.length !== 1 ? 's' : ''} creado{combos.length !== 1 ? 's' : ''} para vender en tu catálogo</p>
           </div>
         </div>
-        <Link to="/combos/nuevo" className="btn-primary" style={{ textDecoration: 'none' }}>
-          <Plus size={16} /> Nuevo combo
-        </Link>
+        <div className="combo-header-actions">
+          <Link to="/mi-catalogo" className="btn-secondary" style={{ textDecoration: 'none' }}>
+            <ArrowLeft size={16} /> Volver a catálogo
+          </Link>
+          <Link to="/combos/nuevo" className="btn-primary" style={{ textDecoration: 'none' }}>
+            <Plus size={16} /> Nuevo combo
+          </Link>
+        </div>
       </div>
 
       {/* Filtros */}

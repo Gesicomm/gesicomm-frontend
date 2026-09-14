@@ -129,17 +129,13 @@ export default function ProductDetailInspector({ seccion, onUpdate, productoId, 
         nombre: formBump.nombre.trim(),
         tipo_contenido: 'combo',
         estrategia: 'order_bump',
-        // Acá la oferta es el PAQUETE completo (producto ancla + extras, ver
-        // los componentes de abajo), así que este precio es el del paquete y
-        // va como precio_normal. Sin precio promocional propio se cobra ese
-        // mismo — este armador no ofrece todavía un precio de checkout aparte.
+        // El order bump viaja como una línea adicional del pedido. Por eso la
+        // receta contiene solo los extras, no el producto ancla otra vez: el
+        // principal ya está en su propia línea del checkout.
         precio_normal: Number(formBump.precio) || 0,
         precio_order_bump: null,
         activo: true,
-        componentes: [
-          { producto_id: Number(productoId), cantidad: 1, descuento_porcentaje: 0 },
-          ...validIds.map(pid => ({ producto_id: Number(pid), cantidad: 1, descuento_porcentaje: 0 }))
-        ],
+        componentes: validIds.map(pid => ({ producto_id: Number(pid), cantidad: 1, descuento_porcentaje: 0 })),
       });
       setFormBump({ nombre: '', productos_ids: [''], precio: '' });
       setCreandoBump(false);

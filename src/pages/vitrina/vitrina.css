@@ -413,6 +413,23 @@
   background: color-mix(in srgb, var(--color-fg) 6%, transparent);
 }
 
+.vit-seleccion-combo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--vit-border);
+}
+
+.vit-seleccion-combo:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.vit-seleccion-combo:disabled:hover {
+  color: var(--vit-muted);
+  background: transparent;
+}
+
 /* El dorado sobre texto azul profundo da ~10:1: es el uso correcto del
    acento — una sola acción, la más importante de la pantalla. */
 .vit-seleccion-cta {

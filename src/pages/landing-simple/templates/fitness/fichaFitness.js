@@ -494,11 +494,11 @@ export function armarItemFicha({
     precioAntes: hayDescuento ? anteriorNum : null,
     descuentoPct: hayDescuento ? Math.round((1 - precioNum / anteriorNum) * 100) : 0,
     imagenes: (imagenes || []).filter(Boolean),
-    // Solo paquetes del mismo producto. Los order bump son otra cosa y se
-    // ofrecen dentro del checkout, no acá (ver ProductCheckoutOfertas.jsx).
+    // Formas de compra elegibles en la ficha: packs del mismo producto y
+    // combos normales. Los order bump se ofrecen dentro del checkout.
     // `imagen` es la de la Oferta: se carga una vez (desde Mis Productos o
     // desde el armador) y manda sobre la foto del producto en esa tarjeta.
-    packs: (ofertas || []).filter(o => o.estrategia === 'normal' && o.tipo_contenido !== 'combo'),
+    packs: (ofertas || []).filter(o => o.estrategia === 'normal'),
     faq: (faq || []).filter(f => f?.pregunta),
     faqTitulo: faqTitulo || '',
     relacionados: relacionados || [],

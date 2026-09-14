@@ -2,14 +2,29 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Layers, Search, X, Save, Power, PowerOff, ChevronRight,
-  BarChart2, AlertTriangle, Package, Star, Zap, Info
+  BarChart2, AlertTriangle, Package, Star, Zap, Info, Upload, Image as ImageIcon,
+  Eye, Plus, Trash2
 } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import { productService } from '../../services/productService';
+import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { verificarSesion } from '../../utils/auth';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
+import SelectorIcono from '../../components/SelectorIcono';
+import FaqPanel from '../landing-simple/panels/FaqPanel';
+import FichaRubroTab from '../productos/FichaRubroTab';
+import ComboLandingPreview from './ComboLandingPreview';
 import './combos.css';
+
+const TABS_COMBO = [
+  { id: 'combo', label: 'Combo', desc: 'Productos, precio y rentabilidad', icon: <Layers size={15} /> },
+  { id: 'vista', label: 'Vista del combo', desc: 'Contenido de marketing y preview', icon: <Eye size={15} /> },
+];
+
+const MAX_COMBO_IMAGENES = 5;
+const MAX_COMBO_IMAGEN_BYTES = 5 * 1024 * 1024;
 
 // ─── Utilidades de formato ────────────────────────────────────────────────────
 
@@ -20,6 +35,71 @@ function fmt(n, decimals = 0) {
 function fmtGs(n)  { return n !== null && n !== undefined ? fmt(n) + ' Gs' : '—'; }
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 function fmtPctDirect(n) { return n !== null && n !== undefined ? Number(n).toFixed(2) + '%' : '—'; }
+
+function numeroValido(...valores) {
+  for (const valor of valores) {
+    if (valor === null || valor === undefined || valor === '') continue;
+    const num = Number(valor);
+    if (Number.isFinite(num)) return num;
+  }
+  return 0;
+}
+
+/**
+ * Regla económica del editor de combos.
+ *
+ * Admin:
+ * - costo = Producto.precio_costo, lo que el admin pagó al proveedor.
+ * - precio = Producto.precio_base, lo que el admin vende a las tiendas.
+ *
+ * Usuario/tienda:
+ * - si el producto viene del admin, costo = precio_base/costo_tienda, o sea
+ *   lo que la tienda paga al admin. Nunca se usa el precio_costo interno del
+ *   admin para calcular la rentabilidad de la tienda.
+ * - si el producto lo creó la propia tienda, precio_costo sí representa su
+ *   costo real y se puede usar como costo.
+ * - precio = precio_usuario/precio_efectivo/precio_venta si existe; si no,
+ *   arranca igual al costo para que la tienda defina su margen del combo.
+ */
+function normalizarEconomiaProducto(producto, { esAdmin = false, usuarioId = null } = {}) {
+  const creadoPor = producto?.creado_por ?? null;
+  const esProductoPropio = usuarioId != null && creadoPor != null && Number(creadoPor) === Number(usuarioId);
+  const costoAdmin = numeroValido(producto?.precio_costo);
+  const costoTienda = numeroValido(producto?.costo_tienda, producto?.precio_base, producto?.precio_efectivo, producto?.precio_usuario, producto?.precio);
+  const precioVentaTienda = numeroValido(producto?.precio_usuario, producto?.precio_efectivo, producto?.precio_venta, producto?.precio_base, producto?.precio);
+
+  if (esAdmin) {
+    return {
+      costo: costoAdmin,
+      precio: numeroValido(producto?.precio_base, producto?.precio_venta, producto?.precio_efectivo, producto?.precio_usuario),
+    };
+  }
+
+  return {
+    costo: esProductoPropio && costoAdmin > 0 ? costoAdmin : costoTienda,
+    precio: precioVentaTienda || costoTienda,
+  };
+}
+
+function productoParaCombo(producto, contexto = {}) {
+  const economia = normalizarEconomiaProducto(producto, contexto);
+  const imgs = Array.isArray(producto?.imagenes)
+    ? producto.imagenes.map(i => (typeof i === 'string' ? i : (i?.url || i?.path))).filter(Boolean)
+    : [];
+  const imagenPrincipal = producto?.imagen || imgs[0] || null;
+
+  return {
+    id: producto.id,
+    nombre: producto.nombre,
+    precio_base: economia.precio,
+    precio_costo: economia.costo,
+    sku: producto.sku,
+    creado_por: producto.creado_por ?? null,
+    imagen: imagenPrincipal,
+    imagenes: imgs,
+    beneficios: Array.isArray(producto?.beneficios) ? producto.beneficios : [],
+  };
+}
 
 // ─── Subcomponentes ───────────────────────────────────────────────────────────
 
@@ -168,21 +248,43 @@ export default function ComboEditor() {
   const [precioMinimo, setPrecioMinimo] = useState(''); // piso de venta, opcional
   const [config, setConfig] = useState(null);           // ComboConfiguracion del tenant
   const [estadoActual, setEstadoActual] = useState('BORRADOR');
+  const [usuarioActual, setUsuarioActual] = useState(null);
+  const [imagenes, setImagenes] = useState([]);
+  const [imagenesNuevas, setImagenesNuevas] = useState([]);
+
+  // ─── Vista del combo (misma idea que "Vista del producto" en Mis
+  // Productos) — feeds la ficha de 12 secciones del template Combo. ───────
+  const [propuestaValor, setPropuestaValor] = useState('');
+  const [beneficios, setBeneficios] = useState([]);       // [{titulo, texto}]
+  const [confianza, setConfianza] = useState([]);         // [{texto, icono}]
+  const [faq, setFaq] = useState([]);                     // [{pregunta, respuesta}]
+  const [faqTitulo, setFaqTitulo] = useState('');
+  const [fichaRubro, setFichaRubro] = useState('basico');
+  const [fichaDatos, setFichaDatos] = useState({});
+
+  const [tabActiva, setTabActiva] = useState('combo');
+  const [previewDevice, setPreviewDevice] = useState('desktop');
 
   // ─── Estado de UI ────────────────────────────────────────────────────────
   const [resultado, setResultado] = useState(null);     // Resultado local del motor
   const [loading, setLoading] = useState(false);
   const [loadingInit, setLoadingInit] = useState(isEditing);
   const [guardando, setGuardando] = useState(false);
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [estadoAConfirmar, setEstadoAConfirmar] = useState(null);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+  const esAdmin = usuarioActual?.rol === 'administrador';
+  const contextoPrecios = { esAdmin, usuarioId: usuarioActual?.id };
 
   // ─── Cargar configuración + combo existente ───────────────────────────────
   useEffect(() => {
     async function init() {
       try {
+        const sesion = await verificarSesion();
+        setUsuarioActual(sesion);
+        const contexto = { esAdmin: sesion?.rol === 'administrador', usuarioId: sesion?.id };
         const cfg = await comboAdminService.obtenerConfiguracion();
         setConfig(cfg);
 
@@ -193,26 +295,53 @@ export default function ComboEditor() {
           setPrecioTotal(String(combo.precio_total || ''));
           setPrecioMinimo(combo.precio_minimo ? String(combo.precio_minimo) : '');
           setEstadoActual(combo.estado || 'BORRADOR');
+          setImagenes(Array.isArray(combo.imagenes) ? combo.imagenes : []);
+          setPropuestaValor(combo.propuesta_valor || '');
+          setBeneficios(Array.isArray(combo.beneficios) ? combo.beneficios : []);
+          setConfianza(Array.isArray(combo.confianza) ? combo.confianza : []);
+          setFaq(Array.isArray(combo.preguntas_frecuentes) ? combo.preguntas_frecuentes : []);
+          setFaqTitulo(combo.faq_titulo || '');
+          setFichaRubro(combo.ficha_rubro || 'basico');
+          setFichaDatos(combo.ficha_datos && typeof combo.ficha_datos === 'object' ? combo.ficha_datos : {});
 
           if (combo.producto_padre) {
-            setPrincipal({
-              id: combo.producto_padre.id,
-              nombre: combo.producto_padre.nombre,
-              precio_base: Number(combo.producto_padre.precio_base),
-              precio_costo: Number(combo.producto_padre.precio_costo),
-              sku: combo.producto_padre.sku,
-            });
+            setPrincipal(productoParaCombo(combo.producto_padre, contexto));
           }
 
           if (combo.items?.length) {
             setUpsells(combo.items.map(it => ({
-              id: it.producto_incluido?.id,
-              nombre: it.producto_incluido?.nombre,
-              precio_base: Number(it.producto_incluido?.precio_base),
-              precio_costo: Number(it.producto_incluido?.precio_costo),
-              sku: it.producto_incluido?.sku,
+              ...productoParaCombo(it.producto_incluido || {}, contexto),
               descuento_porcentaje: Number(it.descuento_porcentaje),
             })));
+          }
+        } else {
+          const crudoPrefill = sessionStorage.getItem('gesicomm:comboPrefillItems');
+          if (crudoPrefill) {
+            sessionStorage.removeItem('gesicomm:comboPrefillItems');
+            try {
+              const productos = JSON.parse(crudoPrefill)
+                .filter(p => p?.id && p?.nombre)
+                .map(p => ({
+                  id: Number(p.id),
+                  nombre: p.nombre,
+                  precio_base: Number(p.precio_base) || 0,
+                  precio_costo: Number(p.costo_tienda ?? p.precio_base ?? p.precio_costo) || 0,
+                  precio_venta: Number(p.precio_venta ?? p.precio_efectivo ?? p.precio_usuario ?? p.precio_base) || 0,
+                  sku: p.sku || null,
+                  creado_por: p.creado_por ?? null,
+                }));
+
+              if (productos.length > 0) {
+                const productosNormalizados = productos.map(p => productoParaCombo(p, contexto));
+                const [primero, ...resto] = productosNormalizados;
+                setPrincipal(primero);
+                setUpsells(resto.map(p => ({ ...p, descuento_porcentaje: 0 })));
+                setNombre(`Combo ${productosNormalizados.slice(0, 2).map(p => p.nombre).join(' + ')}${productosNormalizados.length > 2 ? ` + ${productosNormalizados.length - 2} más` : ''}`);
+                setPrecioTotal(String(productosNormalizados.reduce((sum, p) => sum + (Number(p.precio_base) || 0), 0)));
+              }
+            } catch {
+              // Prefill inválido: se ignora y se abre el editor vacío.
+            }
           }
         }
       } catch (err) {
@@ -233,12 +362,18 @@ export default function ComboEditor() {
       principal: {
         id: principal.id,
         name: principal.nombre,
+        // precio_costo ya viene normalizado por productoParaCombo().
+        // Admin: costo interno del admin. Usuario: costo de compra de la
+        // tienda. No leer Producto.precio_costo directo acá.
         cost: principal.precio_costo || 0,
+        // precio_base también está normalizado: admin = precio mayorista;
+        // usuario = precio de venta inicial/sugerido de la tienda.
         salePrice: principal.precio_base || 0,
       },
       upsells: upsells.map(u => ({
         id: u.id,
         name: u.nombre,
+        // Misma regla: costo y precio ya están en semántica de la vista.
         cost: u.precio_costo || 0,
         salePrice: u.precio_base || 0,
         discountPercentage: u.descuento_porcentaje || 0,
@@ -264,11 +399,7 @@ export default function ComboEditor() {
     if (principal && prod.id === principal.id) return; // No puede ser el mismo que el principal
     if (upsells.find(u => u.id === prod.id)) return;   // No duplicados
     setUpsells(prev => [...prev, {
-      id: prod.id,
-      nombre: prod.nombre,
-      precio_base: Number(prod.precio_base),
-      precio_costo: Number(prod.precio_costo) || 0,
-      sku: prod.sku,
+      ...productoParaCombo(prod, contextoPrecios),
       descuento_porcentaje: 0,
     }]);
   };
@@ -303,7 +434,103 @@ export default function ComboEditor() {
     setPrecioTotal(String(Math.round(precio)));
   };
 
-  // ─── Calcular margen real del precio configurado por el admin ─────────────
+  const ordenarImagenes = (lista) => [...(lista || [])].sort((a, b) => {
+    if (a.es_principal && !b.es_principal) return -1;
+    if (!a.es_principal && b.es_principal) return 1;
+    return (Number(a.orden) || 0) - (Number(b.orden) || 0);
+  });
+
+  const validarArchivosImagen = (files) => {
+    const totalActual = imagenes.length + imagenesNuevas.length;
+    if (totalActual + files.length > MAX_COMBO_IMAGENES) {
+      setError(`Solo se permiten hasta ${MAX_COMBO_IMAGENES} imágenes por combo. Ya tenés ${totalActual}.`);
+      return false;
+    }
+    const pesado = files.find(file => file.size > MAX_COMBO_IMAGEN_BYTES);
+    if (pesado) {
+      setError(`Cada imagen puede pesar hasta 5MB. "${pesado.name}" pesa ${(pesado.size / 1024 / 1024).toFixed(2)}MB.`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleImagenesCombo = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length || !validarArchivosImagen(files)) return;
+
+    setError(null);
+
+    if (!isEditing) {
+      const nuevas = files.map((file, idx) => ({
+        id: `new-${Date.now()}-${idx}`,
+        file,
+        url: URL.createObjectURL(file),
+        es_principal: imagenes.length + imagenesNuevas.length === 0 && idx === 0,
+        pendiente: true,
+      }));
+      setImagenesNuevas(prev => [...prev, ...nuevas]);
+      return;
+    }
+
+    try {
+      setSubiendoImagen(true);
+      const subidas = [];
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('imagen', file);
+        const debeSerPrincipal = imagenes.length + subidas.length === 0;
+        if (debeSerPrincipal) fd.append('es_principal', 'true');
+        subidas.push(await comboAdminService.subirImagen(id, fd));
+      }
+      setImagenes(prev => ordenarImagenes([...prev, ...subidas]));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al subir imágenes del combo.');
+    } finally {
+      setSubiendoImagen(false);
+    }
+  };
+
+  const marcarImagenPrincipal = async (imagen) => {
+    if (imagen.pendiente) {
+      setImagenesNuevas(prev => prev.map(img => ({ ...img, es_principal: img.id === imagen.id })));
+      return;
+    }
+    try {
+      const actualizada = await comboAdminService.actualizarImagen(id, imagen.id, { es_principal: true });
+      setImagenes(prev => ordenarImagenes(prev.map(img => ({
+        ...img,
+        es_principal: Number(img.id) === Number(actualizada.id),
+      }))));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al marcar imagen principal.');
+    }
+  };
+
+  const eliminarImagenCombo = async (imagen) => {
+    if (imagen.pendiente) {
+      setImagenesNuevas(prev => prev.filter(img => img.id !== imagen.id));
+      return;
+    }
+    try {
+      await comboAdminService.eliminarImagen(id, imagen.id);
+      setImagenes(prev => ordenarImagenes(prev.filter(img => img.id !== imagen.id)));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al eliminar imagen del combo.');
+    }
+  };
+
+  const subirImagenesPendientes = async (comboId) => {
+    for (const img of imagenesNuevas) {
+      const fd = new FormData();
+      fd.append('imagen', img.file);
+      if (img.es_principal) fd.append('es_principal', 'true');
+      await comboAdminService.subirImagen(comboId, fd);
+    }
+    setImagenesNuevas([]);
+  };
+
+  // ─── Margen real del precio configurado para vender este combo ────────────
   const margenReal = resultado && precioTotal
     ? (() => {
         const p = parseFloat(precioTotal);
@@ -319,13 +546,20 @@ export default function ComboEditor() {
 
   // ─── Guardar ──────────────────────────────────────────────────────────────
   async function handleGuardar(activar = false) {
-    if (!nombre.trim()) return alert('El nombre del combo es obligatorio.');
-    if (!principal) return alert('Marcá un producto de la lista como principal (⭐) antes de guardar.');
+    if (!nombre.trim()) {
+      setError('El nombre del combo es obligatorio.');
+      return;
+    }
+    if (!principal) {
+      setError('Marcá un producto de la lista como principal antes de guardar.');
+      return;
+    }
 
     const precioTotalNum = parseFloat(precioTotal) || 0;
-    const precioMinimoNum = precioMinimo ? parseFloat(precioMinimo) : null;
+    const precioMinimoNum = esAdmin && precioMinimo ? parseFloat(precioMinimo) : null;
     if (precioMinimoNum && precioTotalNum < precioMinimoNum) {
-      return alert(`El precio del combo (${fmtGs(precioTotalNum)}) no puede ser menor al precio mínimo configurado (${fmtGs(precioMinimoNum)}).`);
+      setError(`El precio del combo (${fmtGs(precioTotalNum)}) no puede ser menor al precio mínimo configurado (${fmtGs(precioMinimoNum)}).`);
+      return;
     }
 
     const payload = {
@@ -335,6 +569,14 @@ export default function ComboEditor() {
       precio_minimo: precioMinimoNum,
       principalProductId: principal.id,
       upsells: upsells.map(u => ({ productId: u.id, discountPercentage: u.descuento_porcentaje })),
+      // Vista del combo
+      propuesta_valor: propuestaValor.trim() || null,
+      beneficios,
+      confianza,
+      preguntas_frecuentes: faq,
+      faq_titulo: faqTitulo.trim() || null,
+      ficha_rubro: fichaRubro || null,
+      ficha_datos: fichaDatos || {},
     };
 
     try {
@@ -345,6 +587,9 @@ export default function ComboEditor() {
         saved = await comboAdminService.actualizar(id, payload);
       } else {
         saved = await comboAdminService.crear(payload);
+      }
+      if (imagenesNuevas.length) {
+        await subirImagenesPendientes(saved.id);
       }
       if (activar) {
         await comboAdminService.cambiarEstado(saved.id, 'ACTIVO');
@@ -366,7 +611,7 @@ export default function ComboEditor() {
       setEstadoActual(estadoAConfirmar);
       setEstadoAConfirmar(null);
     } catch (err) {
-      alert(err.response?.data?.message || 'Error al cambiar el estado.');
+      setError(err.response?.data?.message || 'Error al cambiar el estado.');
     } finally {
       setCambiandoEstado(false);
     }
@@ -391,6 +636,8 @@ export default function ComboEditor() {
   }
 
   const r = resultado;
+  const imagenesVista = ordenarImagenes([...imagenes, ...imagenesNuevas]);
+  const puedeAgregarImagenes = imagenesVista.length < MAX_COMBO_IMAGENES;
   // Umbral configurado (Configuración económica > Margen mínimo), como fracción.
   // Antes estas 3 tarjetas usaban un 10% fijo sin importar lo que se configure.
   const margenMinimoDecimal = config?.margen_minimo !== undefined ? Number(config.margen_minimo) / 100 : 0.10;
@@ -421,6 +668,28 @@ export default function ComboEditor() {
         </div>
       )}
 
+      {/* ══ Tabs ═══════════════════════════════════════════════════════════ */}
+      <nav className="combo-tab-nav" aria-label="Secciones del combo">
+        {TABS_COMBO.map(tab => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={tabActiva === tab.id}
+            className={`combo-tab ${tabActiva === tab.id ? 'active' : ''}`}
+            onClick={() => setTabActiva(tab.id)}
+          >
+            {tab.icon}
+            <span>
+              <b>{tab.label}</b>
+              <small>{tab.desc}</small>
+            </span>
+          </button>
+        ))}
+      </nav>
+
+      {tabActiva === 'combo' && (
+      <>
       {/* ══ Sección A — Información básica ══════════════════════════════════ */}
       <div className="combo-section">
         <SectionHeader icon={<Info size={15} />} title="A — Información del combo" />
@@ -446,9 +715,51 @@ export default function ComboEditor() {
         </div>
       </div>
 
-      {/* ══ Sección B — Productos del combo ═════════════════════════════════ */}
+      {/* ══ Sección B — Galería del combo ═══════════════════════════════════ */}
       <div className="combo-section">
-        <SectionHeader icon={<Package size={15} />} title="B — Productos del combo" />
+        <SectionHeader icon={<ImageIcon size={15} />} title="B — Imágenes del combo" />
+        <div className="combo-images-grid">
+          {imagenesVista.map(img => (
+            <div key={img.id} className={`combo-image-card ${img.es_principal ? 'principal' : ''}`}>
+              <img src={getMediaUrl(img.url)} alt={nombre || 'Imagen del combo'} />
+              <div className="combo-image-actions">
+                <button type="button" className="btn-icon" title="Usar como portada" onClick={() => marcarImagenPrincipal(img)}>
+                  <Star size={13} fill={img.es_principal ? 'currentColor' : 'none'} />
+                </button>
+                <button type="button" className="btn-icon danger" title="Eliminar imagen" onClick={() => eliminarImagenCombo(img)}>
+                  <X size={13} />
+                </button>
+              </div>
+              {img.es_principal && <span className="combo-image-badge">Portada</span>}
+              {img.pendiente && <span className="combo-image-badge pending">Pendiente</span>}
+            </div>
+          ))}
+
+          {puedeAgregarImagenes && (
+            <label className="combo-image-upload">
+              {subiendoImagen
+                ? <div className="spinner-sm" />
+                : <><Upload size={20} /><span>Agregar imágenes</span></>
+              }
+              <input
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImagenesCombo}
+                hidden
+                disabled={subiendoImagen}
+              />
+            </label>
+          )}
+        </div>
+        <p className="combo-help-text">
+          Podés subir hasta {MAX_COMBO_IMAGENES} imágenes JPG, PNG o WEBP. Máx. 5MB por imagen. La portada aparece primero en el catálogo y en la landing.
+        </p>
+      </div>
+
+      {/* ══ Sección C — Productos del combo ═════════════════════════════════ */}
+      <div className="combo-section">
+        <SectionHeader icon={<Package size={15} />} title="C — Productos del combo" />
 
         <ProductSearch
           placeholder="Buscar producto para agregar al combo..."
@@ -462,8 +773,8 @@ export default function ComboEditor() {
               <thead>
                 <tr>
                   <th>Producto</th>
-                  <th style={{ textAlign: 'right' }}>Costo</th>
-                  <th style={{ textAlign: 'right' }}>Precio</th>
+                  <th style={{ textAlign: 'right' }}>{esAdmin ? 'Costo admin' : 'Costo para tu tienda'}</th>
+                  <th style={{ textAlign: 'right' }}>{esAdmin ? 'Precio a tiendas' : 'Precio de venta'}</th>
                   <th style={{ textAlign: 'center' }}>Descuento</th>
                   <th style={{ textAlign: 'right' }}>Precio final</th>
                   <th style={{ textAlign: 'right' }}>Utilidad</th>
@@ -558,24 +869,26 @@ export default function ComboEditor() {
         )}
       </div>
 
-      {/* ══ Sección C — Resultado del combo ═════════════════════════════════ */}
+      {/* ══ Sección D — Resultado del combo ═════════════════════════════════ */}
       {r && (
         <div className="combo-section">
-          <SectionHeader icon={<BarChart2 size={15} />} title="C — Resultado del combo" />
+          <SectionHeader icon={<BarChart2 size={15} />} title="D — Resultado del combo" />
 
           <div className="combo-metrics-grid">
             <MetricCard label="Precio original" value={fmtGs(r.combo.originalPrice)} />
             <MetricCard label="Precio con upsells" value={fmtGs(r.combo.finalPrice)} />
             <MetricCard label="Descuento $" value={fmtGs(r.combo.discountAmount)} />
             <MetricCard label="Descuento %" value={fmtPctDirect((r.combo.discountPercentage * 100).toFixed(2))} />
-            <MetricCard label="Costo total" value={fmtGs(r.combo.totalCost)} />
+            <MetricCard label={esAdmin ? 'Costo total admin' : 'Costo total tienda'} value={fmtGs(r.combo.totalCost)} />
             <MetricCard label="Utilidad" value={fmtGs(r.combo.profit)} valueClass={r.combo.profit >= 0 ? 'positive' : 'negative'} />
             <MetricCard label="Margen" value={fmtPct(r.combo.margin)} valueClass={r.combo.margin >= margenMinimoDecimal ? 'positive' : r.combo.margin > 0 ? 'warning' : 'negative'} />
           </div>
 
-          {/* Precio del combo — editable por el admin */}
+          {/* Precio del combo.
+              Admin: precio mayorista del combo para las tiendas.
+              Usuario: precio final que su tienda va a cobrar al comprador. */}
           <div className="combo-price-editor">
-            <div className="combo-section-label">Precio del combo (editado por el administrador)</div>
+            <div className="combo-section-label">{esAdmin ? 'Precio mayorista del combo' : 'Precio de venta del combo'}</div>
             <div className="combo-price-input-wrap">
               <label>Precio:</label>
               <CurrencyInput
@@ -592,22 +905,26 @@ export default function ComboEditor() {
               )}
             </div>
 
-            <div className="combo-price-input-wrap" style={{ marginTop: '0.5rem' }}>
-              <label>Precio mínimo de venta (opcional):</label>
-              <CurrencyInput
-                value={precioMinimo}
-                onChange={val => setPrecioMinimo(val === '' ? '' : String(val))}
-                placeholder="Sin piso configurado"
-                style={{ flex: 1, background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
-              />
-            </div>
-            <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-              Si lo configurás, el sistema no va a permitir guardar el combo con un precio por debajo de este valor.
-            </p>
-            {precioMinimo && parseFloat(precioTotal) > 0 && parseFloat(precioTotal) < parseFloat(precioMinimo) && (
-              <div className="combo-warning-item" style={{ marginTop: '0.5rem' }}>
-                <AlertTriangle size={14} /> El precio actual ({fmtGs(parseFloat(precioTotal))}) está por debajo del mínimo configurado ({fmtGs(parseFloat(precioMinimo))}). No se va a poder guardar así.
-              </div>
+            {esAdmin && (
+              <>
+                <div className="combo-price-input-wrap" style={{ marginTop: '0.5rem' }}>
+                  <label>Precio mínimo de venta (opcional):</label>
+                  <CurrencyInput
+                    value={precioMinimo}
+                    onChange={val => setPrecioMinimo(val === '' ? '' : String(val))}
+                    placeholder="Sin piso configurado"
+                    style={{ flex: 1, background: 'color-mix(in srgb, var(--color-fg) 5%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.95rem', fontFamily: 'inherit', maxWidth: 220 }}
+                  />
+                </div>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                  Si lo configurás, el sistema no va a permitir guardar el combo con un precio por debajo de este valor.
+                </p>
+                {precioMinimo && parseFloat(precioTotal) > 0 && parseFloat(precioTotal) < parseFloat(precioMinimo) && (
+                  <div className="combo-warning-item" style={{ marginTop: '0.5rem' }}>
+                    <AlertTriangle size={14} /> El precio actual ({fmtGs(parseFloat(precioTotal))}) está por debajo del mínimo configurado ({fmtGs(parseFloat(precioMinimo))}). No se va a poder guardar así.
+                  </div>
+                )}
+              </>
             )}
 
             {/* Botones de precio recomendado */}
@@ -632,10 +949,10 @@ export default function ComboEditor() {
         </div>
       )}
 
-      {/* ══ Sección D — Comparativa Solo vs Combo ═══════════════════════════ */}
+      {/* ══ Sección E — Comparativa Solo vs Combo ═══════════════════════════ */}
       {r && (
         <div className="combo-section">
-          <SectionHeader icon={<Zap size={15} />} title="D — Comparativa: venta individual vs combo" />
+          <SectionHeader icon={<Zap size={15} />} title="E — Comparativa: venta individual vs combo" />
           <div className="combo-comparison-grid">
             <div className="combo-compare-card">
               <span className="combo-compare-label">Utilidad individual</span>
@@ -657,7 +974,9 @@ export default function ComboEditor() {
                 {fmtGs(r.comparison.profitDifference)}
               </span>
               <span style={{ fontSize: '0.75rem', color: r.comparison.profitDifferencePercentage > 0 ? '#10b981' : '#ef4444' }}>
-                {r.comparison.profitDifferencePercentage !== null ? `${r.comparison.profitDifferencePercentage.toFixed(2)}% más` : 'N/A'}
+                {r.comparison.profitDifferencePercentage !== null
+                  ? `${r.comparison.profitDifferencePercentage.toFixed(2)}% más`
+                  : 'Sin base positiva'}
               </span>
             </div>
           </div>
@@ -674,10 +993,10 @@ export default function ComboEditor() {
         </div>
       )}
 
-      {/* ══ Sección E — Precios recomendados ════════════════════════════════ */}
+      {/* ══ Sección F — Precios recomendados ════════════════════════════════ */}
       {r && (
         <div className="combo-section">
-          <SectionHeader icon={<Star size={15} />} title="E — Precios recomendados" />
+          <SectionHeader icon={<Star size={15} />} title="F — Precios recomendados" />
           <div style={{ overflowX: 'auto' }}>
             <table className="combo-sensitivity-table">
               <thead>
@@ -711,6 +1030,118 @@ export default function ComboEditor() {
             </table>
           </div>
         </div>
+      )}
+      </>
+      )}
+
+      {/* ══ Vista del combo (tab aparte) ═══════════════════════════════════ */}
+      {tabActiva === 'vista' && (
+      <div className="combo-vista-workspace">
+        <div className="combo-vista-editor">
+        <p className="combo-help-text" style={{ marginTop: 0, marginBottom: '1rem' }}>
+          Contenido de marketing propio del combo. Alimenta su ficha de detalle (template "Combo") en las landings donde lo agregues — igual que la Vista del producto para un producto individual.
+        </p>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <div className="combo-section-label">Propuesta de valor</div>
+          <textarea
+            value={propuestaValor}
+            onChange={e => setPropuestaValor(e.target.value)}
+            placeholder="Ej: Todo lo que necesitás para empezar, en un solo pack."
+            rows={2}
+            style={{ width: '100%', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box', resize: 'vertical' }}
+          />
+        </div>
+
+        <FichaRubroTab
+          rubro={fichaRubro}
+          datos={fichaDatos}
+          onRubro={v => setFichaRubro(v || 'basico')}
+          onDatos={setFichaDatos}
+          modo="completo"
+        />
+
+        <div style={{ marginTop: '1rem' }}>
+          <div className="combo-editor-grid" style={{ marginBottom: '0.5rem' }}>
+            <div className="combo-section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Beneficios</span>
+              <button type="button" className="combo-rec-btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setBeneficios(prev => [...prev, { titulo: '', texto: '' }])}>
+                <Plus size={13} /> Agregar
+              </button>
+            </div>
+          </div>
+          {beneficios.map((b, i) => (
+            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+              <input
+                value={b.titulo || ''}
+                onChange={e => setBeneficios(prev => prev.map((x, j) => j === i ? { ...x, titulo: e.target.value } : x))}
+                placeholder="Título corto (ej: Fácil de usar)"
+                style={{ flex: '0 0 220px', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.5rem 0.75rem', color: 'var(--color-fg)', fontSize: '0.83rem', fontFamily: 'inherit' }}
+              />
+              <input
+                value={b.texto || ''}
+                onChange={e => setBeneficios(prev => prev.map((x, j) => j === i ? { ...x, texto: e.target.value } : x))}
+                placeholder="Descripción breve"
+                style={{ flex: 1, background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.5rem 0.75rem', color: 'var(--color-fg)', fontSize: '0.83rem', fontFamily: 'inherit' }}
+              />
+              <button type="button" className="btn-icon" onClick={() => setBeneficios(prev => prev.filter((_, j) => j !== i))} style={{ flexShrink: 0 }}>
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+          {beneficios.length === 0 && <p className="combo-help-text">Sin beneficios cargados: la ficha del combo no muestra esa sección.</p>}
+        </div>
+
+        <div style={{ marginTop: '1.25rem' }}>
+          <div className="combo-editor-grid" style={{ marginBottom: '0.5rem' }}>
+            <div className="combo-section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Confianza (garantías)</span>
+              <button type="button" className="combo-rec-btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setConfianza(prev => [...prev, { texto: '', icono: 'ShieldCheck' }])}>
+                <Plus size={13} /> Agregar
+              </button>
+            </div>
+          </div>
+          {confianza.map((c, i) => (
+            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <SelectorIcono valor={c.icono || 'ShieldCheck'} onChange={v => setConfianza(prev => prev.map((x, j) => j === i ? { ...x, icono: v } : x))} />
+              <input
+                value={c.texto || ''}
+                onChange={e => setConfianza(prev => prev.map((x, j) => j === i ? { ...x, texto: e.target.value } : x))}
+                placeholder="Ej: Envío gratis"
+                style={{ flex: 1, background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.5rem 0.75rem', color: 'var(--color-fg)', fontSize: '0.83rem', fontFamily: 'inherit' }}
+              />
+              <button type="button" className="btn-icon" onClick={() => setConfianza(prev => prev.filter((_, j) => j !== i))} style={{ flexShrink: 0 }}>
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+          {confianza.length === 0 && <p className="combo-help-text">Sin garantías cargadas: la ficha del combo no muestra esa sección.</p>}
+        </div>
+
+        <div style={{ marginTop: '1.25rem' }}>
+          <div className="combo-section-label">Preguntas frecuentes propias de este combo</div>
+          <input
+            value={faqTitulo}
+            onChange={e => setFaqTitulo(e.target.value)}
+            placeholder="Título de la sección (ej: Todo lo que necesitás saber)"
+            style={{ width: '100%', marginBottom: '0.6rem', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
+          />
+          <FaqPanel faq={faq} onChange={setFaq} />
+        </div>
+        </div>
+
+        <ComboLandingPreview
+          combo={{ nombre, descripcion, propuesta_valor: propuestaValor, beneficios, confianza, ficha_datos: fichaDatos }}
+          principal={principal}
+          upsells={upsells}
+          precioTotal={precioTotal}
+          imagenes={imagenesVista}
+          faq={faq}
+          faqTitulo={faqTitulo}
+          device={previewDevice}
+          onDeviceChange={setPreviewDevice}
+        />
+      </div>
       )}
 
       {/* ══ Footer de acciones ══════════════════════════════════════════════ */}

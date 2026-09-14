@@ -34,6 +34,9 @@ export function useStoreCart(slug, data, catalogoCompleto) {
   const sugerenciasCarrito = useMemo(() => {
     const itemsCarrito = Array.from(carrito.values());
     if (itemsCarrito.length === 0) return [];
+    const configOfertas = data?.content?.ofertas_carrito || [];
+    const idsConfigurados = new Set(configOfertas.map(Number));
+    const ofertaIdsEnCarrito = new Set(itemsCarrito.map(it => it.ofertaId).filter(Boolean).map(Number));
     const sugerencias = [];
     const maxOfertas = 2;
     for (const itemC of itemsCarrito) {
@@ -41,9 +44,16 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       const productoDict = catalogoCompleto.find(i => i.content_id === itemC.contentId);
       if (!productoDict || !productoDict.ofertas?.length) continue;
       const ofertasAptas = productoDict.ofertas.filter(o => {
-        if (o.tipo_contenido === 'pack') return false;
-        if (o.tipo_contenido === 'order_bump') return true;
-        if (o.estrategia === 'volumen' && o.unidades > itemC.cantidad) return true;
+        if (ofertaIdsEnCarrito.has(Number(o.id))) return false;
+        // La configuración explícita filtra por estrategia, no globalmente.
+        // Así un bump elegido para carrito no oculta los upsells activos.
+        const hayConfigParaEstrategia = productoDict.ofertas.some(oferta =>
+          oferta.estrategia === o.estrategia && idsConfigurados.has(Number(oferta.id))
+        );
+        if (hayConfigParaEstrategia && !idsConfigurados.has(Number(o.id))) return false;
+        if (!o.producto_complementario && !o.productos_incluidos?.length) return false;
+        if (o.estrategia === 'order_bump') return true;
+        if (o.estrategia === 'upsell') return true;
         return false;
       });
       for (const o of ofertasAptas) {
@@ -55,7 +65,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       }
     }
     return sugerencias;
-  }, [catalogoCompleto, carrito]);
+  }, [data?.content?.ofertas_carrito, catalogoCompleto, carrito]);
 
   function agregarSugerencia(item, oferta) {
     const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
@@ -82,7 +92,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         ofertaNombre: oferta?.nombre || null,
         precio,
         cantidad: nuevaCantidad,
-        imagen: item.imagenes?.[0] || item.imagen || null,
+        imagen: oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
         envioIncluido: item.envio_incluido === true,
       });

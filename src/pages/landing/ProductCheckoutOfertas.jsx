@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit } from 'lucide-react';
+import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit, Sparkles } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
@@ -18,6 +18,9 @@ import './landing.css';
  *    muestra siempre en la ficha del producto, antes de comprar.
  *  - ORDER BUMP: un producto DISTINTO que se suma como casilla dentro del
  *    checkout, después de que el cliente ya decidió qué lleva.
+ *  - UPSELL: un producto DISTINTO que se ofrece como paso de decisión antes
+ *    de confirmar el pedido. No aparece como checkbox mezclado con el carrito:
+ *    interrumpe el flujo para proponer una mejora clara.
  *
  * El precio del paquete lo fija el comercio a mano — es el sentido de la
  * oferta. El sistema solo calcula el ahorro contra lo que costarían esas
@@ -35,6 +38,12 @@ const ESTRATEGIAS = [
     value: 'order_bump',
     label: 'Order Bump — un producto extra antes de pagar',
     ayuda: 'Se muestra como una casilla dentro del checkout. Suma UN producto distinto a lo que el cliente ya está comprando.',
+    esPaquete: false,
+  },
+  {
+    value: 'upsell',
+    label: 'Upsell — una mejora antes de confirmar',
+    ayuda: 'Se muestra como una oferta de mejora antes de crear el pedido o enviar a WhatsApp.',
     esPaquete: false,
   },
 ];
@@ -82,8 +91,8 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setErrorOferta('');
   }
 
-  // Dónde se muestran los order bumps de esta landing. Un paquete no se
-  // configura acá: siempre va en la ficha del producto.
+  // Dónde se muestran los extras de checkout de esta landing. Un paquete no
+  // se configura acá: siempre va en la ficha del producto.
   const ofertasCarrito = config.ofertas_carrito || [];
   const ofertasProductoVista = config.ofertas_producto_vista || [];
 
@@ -135,7 +144,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setCargando(true);
     try {
       const resp = await ofertaService.listarPorProducto(producto.id, { soloActivas: true });
-      const ofertasVisibles = resp.filter(o => o.estrategia === 'normal' || o.estrategia === 'order_bump');
+      const ofertasVisibles = resp.filter(o => ['normal', 'order_bump', 'upsell'].includes(o.estrategia));
       setOfertas(ofertasVisibles);
       onOfertasChange?.(ofertasVisibles);
     } catch (e) {
@@ -169,7 +178,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
       if (unidades < 2) return setErrorOferta('Un paquete tiene que llevar al menos 2 unidades.');
       if (!(Number(form.precio) > 0)) return setErrorOferta('Poné el precio del paquete.');
     } else {
-      if (!form.bumpProductoId) return setErrorOferta('Elegí el producto que se ofrece como order bump.');
+      if (!form.bumpProductoId) return setErrorOferta('Elegí el producto que se ofrece como extra.');
       if (!(precioBumpNormal > 0)) return setErrorOferta('Ese producto no tiene precio de venta configurado.');
     }
 
@@ -195,9 +204,9 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
         }
         : {
           ...comun,
-          estrategia: 'order_bump',
+          estrategia: form.estrategia,
           tipo_contenido: 'combo',
-          codigo: `BUMP-${producto.id}-${Date.now()}`,
+          codigo: `${form.estrategia === 'upsell' ? 'UPSELL' : 'BUMP'}-${producto.id}-${Date.now()}`,
           // Referencia: lo que vale ese producto suelto. El promocional es
           // opcional; vacío = se cobra el normal.
           precio_normal: precioBumpNormal,
@@ -343,7 +352,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
           ) : (
             <>
               <div className="mb-3">
-                <label className={ETIQUETA}>Producto que se suma</label>
+                <label className={ETIQUETA}>{form.estrategia === 'upsell' ? 'Producto de mejora' : 'Producto que se suma'}</label>
                 <ProductPicker
                   catalogo={{ productos: productosElegibles, combos: [] }}
                   seleccion={seleccionPicker}
@@ -371,13 +380,13 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-[11px] text-[var(--vit-muted-2)] border border-dashed border-[var(--vit-border)] rounded-md px-2 py-3 justify-center">
-                    <Package size={14} /> Elegí el producto que se suma.
+                    <Package size={14} /> Elegí el producto que se ofrece.
                   </div>
                 )}
               </div>
 
               <div className="mb-3">
-                <label className={ETIQUETA}>Precio promocional en checkout</label>
+                <label className={ETIQUETA}>Precio promocional</label>
                 <CurrencyInput value={form.precio_order_bump} onChange={val => setForm({ ...form, precio_order_bump: val })} placeholder="Opcional" className={CAMPO} />
                 <p className="text-[10px] mt-1 leading-snug">
                   {descuentoBump !== null
@@ -474,7 +483,8 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                 </div>
 
                 {/* Un paquete siempre se muestra en la ficha del producto: no
-                    hay nada que configurar. Un order bump sí elige dónde. */}
+                    hay nada que configurar. Los extras de checkout (bump y
+                    upsell) sí eligen dónde aparecen en esta landing. */}
                 {esPack ? (
                   <div className="border-t border-[var(--vit-border)] pt-2 mt-2 text-xs text-[var(--vit-muted-2)] flex items-center gap-1.5">
                     <Package size={13} className="text-[var(--vit-accent)]" /> Se muestra en la ficha del producto.
@@ -482,11 +492,14 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                 ) : (
                   <div className="flex flex-col gap-2 border-t border-[var(--vit-border)] pt-2 mt-2">
                     <label className="flex items-center justify-between cursor-pointer">
-                      <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5"><Check size={14} className="text-[var(--vit-accent)]" /> Checkout "Comprar Ya"</span>
+                      <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5">
+                        {of.estrategia === 'upsell' ? <Sparkles size={14} className="text-[var(--vit-accent)]" /> : <Check size={14} className="text-[var(--vit-accent)]" />}
+                        {of.estrategia === 'upsell' ? 'Upsell antes de confirmar' : 'Checkout "Comprar Ya"'}
+                      </span>
                       <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasProductoVista.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_producto_vista', e.target.checked)} />
                     </label>
                     <label className="flex items-center justify-between cursor-pointer">
-                      <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5"><ShoppingCart size={14} className="text-[var(--vit-accent)]" /> Carrito Global</span>
+                      <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5"><ShoppingCart size={14} className="text-[var(--vit-accent)]" /> Carrito global</span>
                       <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasCarrito.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_carrito', e.target.checked)} />
                     </label>
                   </div>

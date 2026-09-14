@@ -13,9 +13,11 @@ import FitnessProductPage from './templates/fitness/FitnessProductPage';
 import TechProductPage from './templates/tech/TechProductPage';
 import BeautyProductPage from './templates/beauty/BeautyProductPage';
 import BasicoProductPage from './templates/basico/BasicoProductPage';
+import ComboProductPage from './templates/combo/ComboProductPage';
 import { fichaTechDesdeProducto, resolverFichaTech } from './templates/tech/fichaTech';
 import { fichaBeautyDesdeProducto, resolverFichaBeauty } from './templates/beauty/fichaBeauty';
 import { fichaBasicoDesdeProducto, resolverFichaBasico } from './templates/basico/fichaBasico';
+import { fichaComboDesdeProducto, resolverFichaCombo } from './templates/combo/fichaCombo';
 import { armarItemFicha as armarItemFichaComun } from './templates/fichaComun';
 import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
@@ -374,6 +376,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   const [productoFichaBeauty, setProductoFichaBeauty] = useState(null);
   const [productoFichaBasico, setProductoFichaBasico] = useState(null);
+  // Override de ficha_combo EN ESTA landing (ver content.combos["<id>"]).
+  const [productoFichaCombo, setProductoFichaCombo] = useState(null);
 
   const catalogoFiltradoParaRelacionados = useMemo(() => {
     if (!catalogo || !items) return { productos: [], combos: [] };
@@ -471,7 +475,24 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoFicha(null);
     setProductoFichaTech(null);
     setProductoMarketing(null);
-    setProductoImagenesEditables(true);
+    setProductoFichaCombo(null);
+    // Las imágenes de un combo se administran desde Mis Productos → Combos
+    // (necesitan permiso de "editar_combos" que un usuario tienda no
+    // siempre tiene) — acá solo se muestran, nunca se suben/borran.
+    setProductoImagenesEditables(p?.tipo === 'combo' ? false : true);
+
+    if (p?.tipo === 'combo') {
+      // Un combo no pasa por el fetch de abajo (es solo para productos): ya
+      // trae todo lo que hace falta resuelto en el propio ítem del catálogo
+      // (ver precioUsuario.service.js#listarCatalogo). Lo único que vive
+      // POR LANDING es el override de FAQ/ficha, que sale de `draft`.
+      const propio = (draft?.content?.combos || {})[String(p.id)] || null;
+      setProductoFaq(propio?.faq ?? (p.preguntas_frecuentes || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
+      setProductoFaqTitulo(propio?.faq_titulo ?? (p.faq_titulo || ''));
+      setProductoFichaCombo(propio?.ficha_combo || null);
+      setProductoCargando(false);
+      return;
+    }
     if (p?.tipo !== 'producto') return;
     setProductoCargando(true);
     Promise.all([
@@ -692,27 +713,43 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoAviso('');
     try {
       const contenido = draft?.content || {};
-      const porProducto = { ...(contenido.productos || {}) };
-      porProducto[String(productoPreview.id)] = {
-        ...(porProducto[String(productoPreview.id)] || {}),
-        descripcion: productoDescripcion,
-        faq_titulo: productoFaqTitulo,
-        faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
-        relacionados_titulo: productoRelacionadosTitulo,
-        // Los automáticos (rellenados por categoría) no se congelan: si el
-        // comercio no eligió nada, la landing sigue mostrando lo que el
-        // backend calcule, no una foto vieja de esa lista.
-        relacionados: productoRelacionadosAutomatico ? null : productoRelacionados.map(r => r.id),
-        // Solo las secciones que este producto pisa. Sin nada propio se
-        // guarda null y la ficha vuelve a heredar entera — no se congela
-        // una copia de los defaults de la landing.
-        ficha: productoFicha && Object.keys(productoFicha).length ? productoFicha : null,
-        ficha_tech: productoFichaTech && Object.keys(productoFichaTech).length ? productoFichaTech : null,
-        ficha_beauty: productoFichaBeauty && Object.keys(productoFichaBeauty).length ? productoFichaBeauty : null,
-        ficha_basico: productoFichaBasico && Object.keys(productoFichaBasico).length ? productoFichaBasico : null,
-      };
+      let contenidoNuevo;
 
-      const contenidoNuevo = { ...contenido, productos: porProducto };
+      if (productoPreview?.tipo === 'combo') {
+        // Mismo mecanismo que overrideDeProducto, pero en
+        // content.combos["<id>"] (ver overrideDeCombo en el backend). Un
+        // combo no tiene relacionados ni la ficha por rubro: solo FAQ propia
+        // de esta landing y su ficha (template "Combo").
+        const porCombo = { ...(contenido.combos || {}) };
+        porCombo[String(productoPreview.id)] = {
+          ...(porCombo[String(productoPreview.id)] || {}),
+          faq_titulo: productoFaqTitulo,
+          faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
+          ficha_combo: productoFichaCombo && Object.keys(productoFichaCombo).length ? productoFichaCombo : null,
+        };
+        contenidoNuevo = { ...contenido, combos: porCombo };
+      } else {
+        const porProducto = { ...(contenido.productos || {}) };
+        porProducto[String(productoPreview.id)] = {
+          ...(porProducto[String(productoPreview.id)] || {}),
+          descripcion: productoDescripcion,
+          faq_titulo: productoFaqTitulo,
+          faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
+          relacionados_titulo: productoRelacionadosTitulo,
+          // Los automáticos (rellenados por categoría) no se congelan: si el
+          // comercio no eligió nada, la landing sigue mostrando lo que el
+          // backend calcule, no una foto vieja de esa lista.
+          relacionados: productoRelacionadosAutomatico ? null : productoRelacionados.map(r => r.id),
+          // Solo las secciones que este producto pisa. Sin nada propio se
+          // guarda null y la ficha vuelve a heredar entera — no se congela
+          // una copia de los defaults de la landing.
+          ficha: productoFicha && Object.keys(productoFicha).length ? productoFicha : null,
+          ficha_tech: productoFichaTech && Object.keys(productoFichaTech).length ? productoFichaTech : null,
+          ficha_beauty: productoFichaBeauty && Object.keys(productoFichaBeauty).length ? productoFichaBeauty : null,
+          ficha_basico: productoFichaBasico && Object.keys(productoFichaBasico).length ? productoFichaBasico : null,
+        };
+        contenidoNuevo = { ...contenido, productos: porProducto };
+      }
       // `items` va en el mismo guardado porque el precio ancla vive ahí (en
       // el LandingItem) y ahora se edita desde este panel: sin esto, el
       // comercio lo escribe, aprieta "Guardar cambios" y se pierde sin que
@@ -773,6 +810,18 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const fichaBasicoDelProducto = fichaBasicoDesdeProducto(productoMarketing);
   const fichaBasicoResuelta = fichaBasicoActiva
     ? resolverFichaBasico(productoFichaBasico, fichaBasicoLanding, fichaBasicoDelProducto)
+    : null;
+
+  // A diferencia de las otras cuatro, la ficha del Combo no depende del
+  // template de la landing — se activa siempre que lo que está abierto en
+  // el preview es un combo, sin importar qué template rígido usa el resto.
+  // Layer 3 (fichaComboDesdeProducto) sale de lo cargado en "Vista del
+  // combo" (ComboEditor.jsx), que el catálogo ya trae en `productoPreview`.
+  const fichaComboActiva = productoPreview?.tipo === 'combo';
+  const fichaComboLanding = draft?.content?.ficha_combo || null;
+  const fichaComboDelProducto = fichaComboActiva ? fichaComboDesdeProducto(productoPreview) : {};
+  const fichaComboResuelta = fichaComboActiva
+    ? resolverFichaCombo(productoFichaCombo, fichaComboLanding, fichaComboDelProducto)
     : null;
 
   const algunaFichaActiva = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva;
@@ -895,7 +944,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             {productoPreview ? (
             <ProductoPanel
               producto={productoPreview}
-              editable={productoPreview.tipo === 'producto'}
+              editable
               cargando={productoCargando}
               descripcion={productoDescripcion}
               onDescripcion={setProductoDescripcion}
@@ -937,6 +986,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               fichaBasicoLanding={fichaBasicoLanding}
               fichaBasicoDelProducto={fichaBasicoDelProducto}
               onFichaBasico={setProductoFichaBasico}
+              fichaComboActiva={fichaComboActiva}
+              fichaCombo={productoFichaCombo}
+              fichaComboResuelta={fichaComboResuelta}
+              fichaComboLanding={fichaComboLanding}
+              fichaComboDelProducto={fichaComboDelProducto}
+              onFichaCombo={setProductoFichaCombo}
               packs={productoOfertas.filter(o => o.estrategia === 'normal' && o.tipo_contenido === 'pack')}
               faq={productoFaq}
               onFaqChange={setProductoFaq}
@@ -1105,6 +1160,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
                   fichaBasicoResuelta={fichaBasicoResuelta}
+                  fichaComboResuelta={fichaComboResuelta}
                   precioAnclaEnVivo={precioAnclaDe(productoPreview)}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
@@ -1154,6 +1210,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
                   fichaBasicoResuelta={fichaBasicoResuelta}
+                  fichaComboResuelta={fichaComboResuelta}
                   precioAnclaEnVivo={precioAnclaDe(productoPreview)}
                   onCerrarProducto={() => setProductoPreview(null)}
                   onAbrirRelacionado={abrirRelacionado}
@@ -1259,7 +1316,7 @@ function PreviewContent({
   vistaCatalogo, onAbrirInicio, onAbrirCatalogo, onCerrarCatalogo,
   vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
   fichaResuelta = null, fichaTechResuelta = null, fichaBeautyResuelta = null,
-  fichaBasicoResuelta = null,
+  fichaBasicoResuelta = null, fichaComboResuelta = null,
   onCerrarProducto = null, onAbrirRelacionado = null,
   // El precio ancla se edita en el panel del producto y vive en `items`;
   // `productoPreview` es una foto del catálogo del momento en que se abrió,
@@ -1289,6 +1346,49 @@ function PreviewContent({
       // viewport de escritorio y nunca colapsaria a hamburguesa.
       isMobile: viewportMode === 'mobile'
     };
+
+    // Un combo tiene su propia ficha siempre — no depende del template
+    // rígido activo, así que esta rama va ANTES de las cuatro de abajo.
+    if (fichaComboResuelta) {
+      return (
+        <div className="flex flex-col min-h-screen">
+          <StoreHeader {...headerProps} />
+          <ComboProductPage
+            item={armarItemFichaComun({
+              nombre: productoPreview.nombre,
+              categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
+              descripcion: productoDescripcion,
+              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
+              // Las imágenes y productos incluidos vienen del catálogo (se
+              // administran en Mis Productos → Combos). FAQ y faq_titulo SÍ
+              // se editan en esta landing (pestaña "Contenido") y se leen
+              // desde los estados reactivos para que el preview los refleje
+              // en vivo sin tener que guardar primero.
+              imagenes: productoPreview.imagenes || [],
+              faq: productoFaq.length
+                ? productoFaq.filter(f => f?.pregunta?.trim())
+                : (productoPreview.preguntas_frecuentes || []).filter(f => f?.pregunta?.trim()),
+              faqTitulo: productoFaqTitulo || productoPreview.faq_titulo || '',
+              productosIncluidos: Array.isArray(productoPreview.productos_combo) ? productoPreview.productos_combo : [],
+            })}
+            ficha={fichaComboResuelta}
+            tema={datosPreview.tema}
+            templateSlug={templateSlug}
+            contacto={datosPreview.contacto}
+            nombreComercio={datosPreview.nombreComercio}
+            isMobile={viewportMode === 'mobile'}
+            previewMode
+            // Agregar al carrito NO abre el checkout: son dos acciones
+            // distintas. Acá no hay carrito real, así que se avisa — mismo
+            // criterio que Tech/Beauty/Básico en este mismo preview.
+            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
+            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: [], ...(eleccion || {}) })}
+            onVolver={onCerrarProducto}
+          />
+        </div>
+      );
+    }
 
     if (fichaResuelta) {
       return (

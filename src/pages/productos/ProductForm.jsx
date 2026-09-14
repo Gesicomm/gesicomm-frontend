@@ -663,7 +663,7 @@ export default function ProductForm() {
   };
 
   // ── Imágenes ──────────────────────────────────────────────
-  const MAX_IMAGEN_BYTES = 1 * 1024 * 1024; // 1MB en total
+  const MAX_IMAGEN_BYTES = 5 * 1024 * 1024; // 5MB por imagen
 
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -676,13 +676,9 @@ export default function ProductForm() {
       return;
     }
 
-    let pesoTotalNuevas = files.reduce((acc, file) => acc + file.size, 0);
-    if (!esEdicion) {
-      pesoTotalNuevas += imagenesNuevas.reduce((acc, img) => acc + img.file.size, 0);
-    }
-
-    if (pesoTotalNuevas > MAX_IMAGEN_BYTES) {
-      setError(`El peso total de las imágenes (nuevas) supera 1MB. Peso actual: ${(pesoTotalNuevas / 1024 / 1024).toFixed(2)}MB.`);
+    const archivoPesado = files.find(file => file.size > MAX_IMAGEN_BYTES);
+    if (archivoPesado) {
+      setError(`Cada imagen puede pesar hasta 5MB. "${archivoPesado.name}" pesa ${(archivoPesado.size / 1024 / 1024).toFixed(2)}MB.`);
       e.target.value = '';
       return;
     }
@@ -1641,7 +1637,7 @@ export default function ProductForm() {
                         e.target.value = '';
                         if (!file) return;
                         if (file.size > MAX_IMAGEN_BYTES) {
-                          setError('La imagen de la variante supera el máximo permitido de 1MB.');
+                          setError('La imagen de la variante supera el máximo permitido de 5MB.');
                           return;
                         }
                         setError(null);
@@ -1801,7 +1797,7 @@ export default function ProductForm() {
             </label>
           </div>
           <p className="field-hint">
-            JPG, PNG o WEBP. Máx. 1&nbsp;MB.
+            JPG, PNG o WEBP. Máx. 5&nbsp;MB por imagen.
           </p>
         </div>
 
