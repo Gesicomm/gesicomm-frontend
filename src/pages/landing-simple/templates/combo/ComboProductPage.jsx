@@ -261,7 +261,8 @@ export default function ComboProductPage({
 
       {/* ¿Por qué este combo? ──────────────────────────────────────── */}
       {ficha.beneficio_principal.activo && (beneficios.length > 0 || ficha.beneficio_principal.texto || previewMode) && (
-        <section className="cmb-seccion cmb-wrap">
+        <section className="cmb-seccion cmb-seccion--fondo">
+          <div className="cmb-wrap">
           <SeccionTitulo eyebrow="Elegidos para complementarse" texto={ficha.beneficio_principal.titulo} sub={ficha.beneficio_principal.texto} numero={3} mostrarNumero={previewMode} />
           {beneficios.length === 0 ? (
             <p className="cmb-vacio">Se cargan en <b>Vista del combo</b>, como beneficios.</p>
@@ -279,6 +280,7 @@ export default function ComboProductPage({
               })}
             </div>
           )}
+          </div>
         </section>
       )}
 
