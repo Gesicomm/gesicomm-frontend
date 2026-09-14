@@ -346,18 +346,20 @@
   margin-top: 60px;
 }
 .cmb-final-cta-inner {
-  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;
-  padding-top: 48px; padding-bottom: 48px;
+  display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 24px;
+  padding-top: 28px; padding-bottom: 28px;
 }
-.cmb-cierre-etiqueta { margin: 0 0 6px; font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.9; }
+.cmb-cierre-bloque-timer { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.cmb-cierre-etiqueta { margin: 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.9; }
+.cmb-cierre-bloque-info { text-align: left; flex: 1; max-width: 420px; }
+.cmb-cierre-bloque-info h2 { margin: 0 0 4px; font-size: 22px; font-weight: 800; line-height: 1.2; }
+.cmb-cierre-bloque-info p { margin: 0; font-size: 12.5px; opacity: 0.9; }
+.cmb-cierre-bloque-accion { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.cmb-cierre-garantia { font-size: 11px; opacity: 0.85; font-weight: 600; }
 .cmb-final-cta .cmb-contador strong,
 .cmb-final-cta .cmb-contador small { color: var(--cmb-on-accent); }
 .cmb-final-cta .cmb-contador small { opacity: 0.8; }
-.cmb-final-cta-inner h2 { margin: 14px 0 4px; font-size: 26px; font-weight: 800; }
-.cmb-final-price { display: flex; align-items: baseline; gap: 10px; font-size: 30px; font-weight: 800; }
-.cmb-final-price span { font-size: 16px; font-weight: 500; opacity: 0.7; text-decoration: line-through; }
-.cmb-final-cta-inner > div > p { margin: 6px 0 20px; font-size: 13px; opacity: 0.92; }
-.cmb-final-cta .cmb-cta { background: var(--cmb-on-accent); color: var(--cmb-accent); }
+.cmb-final-cta .cmb-cta { background: var(--cmb-on-accent); color: var(--cmb-accent); padding: 14px 28px; font-size: 14px; text-transform: uppercase; }
 
 /* ── Barra fija en móvil ──────────────────────────────────────────── */
 .cmb-barra-movil {
@@ -383,6 +385,9 @@
   .cmb-hero-copy .cmb-lead { margin-left: auto; margin-right: auto; }
   .cmb-hero-copy .cmb-cta { margin: 0 auto; }
   .cmb-value-grid { grid-template-columns: 1fr; }
+  .cmb-final-cta-inner { flex-direction: column; text-align: center; gap: 16px; }
+  .cmb-cierre-bloque-timer { align-items: center; }
+  .cmb-cierre-bloque-info { text-align: center; }
 }
 @media (max-width: 640px) {
   .cmb-barra-movil { display: flex; }

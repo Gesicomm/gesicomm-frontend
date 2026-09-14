@@ -381,14 +381,14 @@ export default function ComboProductPage({
       {ficha.cta_final.activo && (
         <section className="cmb-final-cta">
           <div className="cmb-wrap cmb-final-cta-inner">
-            <div>
-              {ficha.cta_final.etiqueta && <p className="cmb-cierre-etiqueta">{ficha.cta_final.etiqueta}</p>}
-              {ficha.cta_final.contador.activo && <Contador desde={ficha.cta_final.contador} />}
-              <h2>{ficha.cta_final.titulo || item.nombre}</h2>
-              <div className="cmb-final-price">
-                {item.precioAntes != null && <span>{formatPrecio(item.precioAntes)}</span>}
-                {formatPrecio(item.precio)}
+            {ficha.cta_final.contador.activo && (
+              <div className="cmb-cierre-bloque-timer">
+                {ficha.cta_final.etiqueta && <p className="cmb-cierre-etiqueta">{ficha.cta_final.etiqueta}</p>}
+                <Contador desde={ficha.cta_final.contador} />
               </div>
+            )}
+            <div className="cmb-cierre-bloque-info">
+              <h2>{ficha.cta_final.titulo || item.nombre}</h2>
               <p>
                 {[
                   item.ahorroAbsoluto > 0 ? `Ahorrás ${formatPrecio(item.ahorroAbsoluto)}` : null,
@@ -397,9 +397,14 @@ export default function ComboProductPage({
                 ].filter(Boolean).join(' · ')}
               </p>
             </div>
-            <button type="button" className="cmb-cta" onClick={comprar}>
-              {ficha.cta_final.cta_texto || 'Comprar ahora'} <ArrowRight size={16} />
-            </button>
+            <div className="cmb-cierre-bloque-accion">
+              <button type="button" className="cmb-cta" onClick={comprar}>
+                {ficha.cta_final.cta_texto || 'Comprar ahora'} <ArrowRight size={16} />
+              </button>
+              {ficha.hero.nota_garantia && (
+                <small className="cmb-cierre-garantia">{ficha.hero.nota_garantia}</small>
+              )}
+            </div>
           </div>
         </section>
       )}
