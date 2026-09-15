@@ -378,7 +378,15 @@
 }
 .cmb-faq-item svg { flex-shrink: 0; color: var(--cmb-muted); transition: transform 0.15s; }
 .cmb-faq-item.abierta > button svg { transform: rotate(180deg); color: var(--cmb-accent); }
-.cmb-faq-item p { margin: 0; padding: 0 18px 16px; color: var(--cmb-muted); font-size: 13.5px; }
+.cmb-faq-answer {
+  padding: 2px 20px 18px;
+  color: var(--cmb-muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.cmb-faq-answer > * { margin-top: 0; }
+.cmb-faq-answer > *:last-child { margin-bottom: 0; }
+.cmb-faq-answer p { margin: 0 0 8px; }
 
 /* ── Cierre de venta ──────────────────────────────────────────────── */
 .cmb-final-cta {

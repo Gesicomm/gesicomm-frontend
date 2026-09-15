@@ -196,21 +196,25 @@ function normalizarSeccion(key, s) {
  */
 export function fichaComboDesdeProducto(combo) {
   if (!combo) return {};
-  const ficha = {};
+  const ficha = esObjeto(combo.ficha_datos) ? { ...combo.ficha_datos } : {};
 
   const promesa = (combo.propuesta_valor || '').trim();
-  if (promesa) ficha.hero = { lead: promesa };
+  if (promesa && !ficha.hero?.lead) {
+    ficha.hero = { ...(esObjeto(ficha.hero) ? ficha.hero : {}), lead: promesa };
+  }
 
   const beneficios = (combo.beneficios || []).filter(b => b?.titulo?.trim());
-  if (beneficios.length) {
+  if (beneficios.length && !ficha.beneficio_principal?.items?.length) {
     ficha.beneficio_principal = {
+      ...(esObjeto(ficha.beneficio_principal) ? ficha.beneficio_principal : {}),
       items: beneficios.map(b => ({ icono: b.icono || 'star', titulo: b.titulo.trim(), texto: (b.texto || '').trim() })),
     };
   }
 
   const confianza = (combo.confianza || []).filter(c => c?.texto?.trim());
-  if (confianza.length) {
+  if (confianza.length && !ficha.confianza?.items?.length) {
     ficha.confianza = {
+      ...(esObjeto(ficha.confianza) ? ficha.confianza : {}),
       items: confianza.map(c => ({ icono: mapearIconoConfianza(c.icono), titulo: c.texto.trim() })),
     };
   }

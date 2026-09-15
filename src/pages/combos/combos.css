@@ -95,12 +95,12 @@
 /* ─── Vista del combo: editor + preview en vivo ──────────────────────────── */
 .combo-vista-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 480px);
+  grid-template-columns: minmax(360px, 0.92fr) minmax(420px, 1.08fr);
   gap: 1.25rem;
   align-items: start;
 }
 .combo-vista-editor {
-  background: var(--color-canvas);
+  background: color-mix(in srgb, var(--color-fg) 2.5%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
   padding: 1.5rem;

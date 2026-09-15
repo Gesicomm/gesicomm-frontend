@@ -213,7 +213,7 @@ export default function ComboProductPage({
       {ficha.incluye.activo && (productos.length > 0 || previewMode) && (
         <section className="cmb-seccion cmb-seccion--fondo">
           <div className="cmb-wrap">
-            <SeccionTitulo eyebrow="Todo lo que recibís" texto={ficha.incluye.titulo} sub={ficha.incluye.subtitulo} numero={1} mostrarNumero={previewMode} />
+            <SeccionTitulo eyebrow="Todo lo que recibís" texto={ficha.incluye.titulo} sub={ficha.incluye.subtitulo} numero={3} mostrarNumero={previewMode} />
             {productos.length === 0 ? (
               <p className="cmb-vacio">Agregá productos al combo para que esta sección se arme sola.</p>
             ) : (
@@ -226,7 +226,7 @@ export default function ComboProductPage({
                     </div>
                     <div className="cmb-product-card-copy">
                       <h3>{p.nombre}</h3>
-                      {p.beneficios?.[0] && <p>{p.beneficios[0]}</p>}
+                      {textoBeneficio(p.beneficios?.[0]) && <p>{textoBeneficio(p.beneficios[0])}</p>}
                     </div>
                   </article>
                 ))}
@@ -239,7 +239,7 @@ export default function ComboProductPage({
       {/* El valor del combo ────────────────────────────────────────── */}
       {ficha.valor.activo && productos.length > 0 && (
         <section className="cmb-seccion cmb-wrap">
-          <SeccionTitulo eyebrow="Más valor en un solo combo" texto="El valor del combo" numero={2} mostrarNumero={previewMode} />
+          <SeccionTitulo eyebrow="Más valor en un solo combo" texto="El valor del combo" numero={4} mostrarNumero={previewMode} />
           <div className="cmb-value-grid">
             <div className="cmb-price-breakdown">
               <div className="cmb-breakdown-head">
@@ -274,7 +274,7 @@ export default function ComboProductPage({
       {ficha.beneficio_principal.activo && (beneficios.length > 0 || ficha.beneficio_principal.texto || previewMode) && (
         <section className="cmb-seccion cmb-seccion--fondo">
           <div className="cmb-wrap">
-          <SeccionTitulo eyebrow="Elegidos para complementarse" texto={ficha.beneficio_principal.titulo} sub={ficha.beneficio_principal.texto} numero={3} mostrarNumero={previewMode} />
+          <SeccionTitulo eyebrow="Elegidos para complementarse" texto={ficha.beneficio_principal.titulo} sub={ficha.beneficio_principal.texto} numero={5} mostrarNumero={previewMode} />
           {beneficios.length === 0 ? (
             <p className="cmb-vacio">Se cargan en <b>Vista del combo</b>, como beneficios.</p>
           ) : (
@@ -298,7 +298,7 @@ export default function ComboProductPage({
       {/* Conocé lo que recibís ─────────────────────────────────────── */}
       {ficha.detalle_productos.activo && productos.length > 0 && (
         <section className="cmb-seccion cmb-wrap">
-          <SeccionTitulo eyebrow="Detalles de tu compra" texto={ficha.detalle_productos.titulo} numero={4} mostrarNumero={previewMode} />
+          <SeccionTitulo eyebrow="Detalles de tu compra" texto={ficha.detalle_productos.titulo} numero={6} mostrarNumero={previewMode} />
           <div className="cmb-receive-list">
             {productos.map(p => (
               <div className="cmb-receive-row" key={p.id}>
@@ -309,8 +309,10 @@ export default function ComboProductPage({
                   <strong>{p.nombre}</strong>
                   {p.beneficios && p.beneficios.length > 0 ? (
                     <ul className="cmb-checklist">
-                      {p.beneficios.map((texto, i) => (
-                        <li key={i}><span className="cmb-check"><Check size={11} strokeWidth={3} /></span> {texto}</li>
+                      {p.beneficios.map((beneficio, i) => (
+                        textoBeneficio(beneficio) && (
+                          <li key={i}><span className="cmb-check"><Check size={11} strokeWidth={3} /></span> {textoBeneficio(beneficio)}</li>
+                        )
                       ))}
                     </ul>
                   ) : previewMode ? (
@@ -328,7 +330,7 @@ export default function ComboProductPage({
       {ficha.prueba_social.activo && (
         <section className="cmb-seccion cmb-seccion--fondo">
           <div className="cmb-wrap">
-            <SeccionTitulo eyebrow="Experiencias reales" texto={ficha.prueba_social.titulo} numero={5} mostrarNumero={previewMode} />
+            <SeccionTitulo eyebrow="Experiencias reales" texto={ficha.prueba_social.titulo} numero={7} mostrarNumero={previewMode} />
             {testimonios.length === 0 ? (
               previewMode && <p className="cmb-vacio">Sin testimonios cargados.</p>
             ) : (
@@ -350,7 +352,7 @@ export default function ComboProductPage({
       {/* Comprá con confianza ──────────────────────────────────────── */}
       {ficha.confianza.activo && confianzaItems.length > 0 && (
         <section className="cmb-seccion cmb-wrap">
-          <SeccionTitulo eyebrow="Comprá tranquilo" texto={ficha.confianza.titulo} numero={6} mostrarNumero={previewMode} />
+          <SeccionTitulo eyebrow="Comprá tranquilo" texto={ficha.confianza.titulo} numero={8} mostrarNumero={previewMode} />
           <div className="cmb-trust-grid">
             {confianzaItems.map((c, i) => {
               const Icono = getIconoBeneficio(c.icono);
@@ -370,7 +372,7 @@ export default function ComboProductPage({
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="cmb-seccion cmb-seccion--fondo">
           <div className="cmb-wrap">
-            <SeccionTitulo eyebrow="Resolvemos tus dudas" texto={item.faqTitulo || ficha.faq.titulo} numero={7} mostrarNumero={previewMode} />
+            <SeccionTitulo eyebrow="Resolvemos tus dudas" texto={item.faqTitulo || ficha.faq.titulo} numero={9} mostrarNumero={previewMode} />
             {item.faq.length === 0 ? (
               <p className="cmb-vacio">Las preguntas se cargan en <b>Vista del combo</b>.</p>
             ) : (
@@ -381,7 +383,11 @@ export default function ComboProductPage({
                       <span>{f.pregunta}</span>
                       <ChevronDown size={16} />
                     </button>
-                    {preguntaAbierta === i && <RichText text={f.respuesta} />}
+                    {preguntaAbierta === i && (
+                      <div className="cmb-faq-answer">
+                        <RichText text={f.respuesta} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -444,6 +450,13 @@ export default function ComboProductPage({
 function nombreCategoria(categoria) {
   if (!categoria) return '';
   return typeof categoria === 'string' ? categoria : (categoria.nombre || '');
+}
+
+function textoBeneficio(beneficio) {
+  if (!beneficio) return '';
+  if (typeof beneficio === 'string') return beneficio.trim();
+  if (typeof beneficio !== 'object') return String(beneficio).trim();
+  return String(beneficio.titulo || beneficio.texto || '').trim();
 }
 
 /** Patrón de título de sección: eyebrow + h2 + bajada opcional, siempre centrado. */

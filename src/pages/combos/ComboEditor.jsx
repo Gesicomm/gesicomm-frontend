@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Layers, Search, X, Save, Power, PowerOff, ChevronRight,
   BarChart2, AlertTriangle, Package, Star, Zap, Info, Upload, Image as ImageIcon,
-  Eye, Plus, Trash2
+  Eye
 } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import { productService } from '../../services/productService';
@@ -12,9 +12,9 @@ import CurrencyInput from '../../components/CurrencyInput';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { verificarSesion } from '../../utils/auth';
 import { calcular as calcularLocal } from '../../utils/comboPricingLocal';
-import SelectorIcono from '../../components/SelectorIcono';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
-import FichaRubroTab from '../productos/FichaRubroTab';
+import FichaComboPanel from '../landing-simple/panels/FichaComboPanel';
+import { fichaComboDesdeProducto, resolverFichaCombo } from '../landing-simple/templates/combo/fichaCombo';
 import ComboLandingPreview from './ComboLandingPreview';
 import './combos.css';
 
@@ -43,6 +43,18 @@ function numeroValido(...valores) {
     if (Number.isFinite(num)) return num;
   }
   return 0;
+}
+
+function normalizarFichaComboGuardada(fichaDatos, faqTitulo) {
+  const datos = fichaDatos && typeof fichaDatos === 'object' && !Array.isArray(fichaDatos) ? fichaDatos : {};
+  if (!faqTitulo?.trim() || datos.faq?.titulo) return datos;
+  return {
+    ...datos,
+    faq: {
+      ...(datos.faq || {}),
+      titulo: faqTitulo.trim(),
+    },
+  };
 }
 
 /**
@@ -258,8 +270,6 @@ export default function ComboEditor() {
   const [beneficios, setBeneficios] = useState([]);       // [{titulo, texto}]
   const [confianza, setConfianza] = useState([]);         // [{texto, icono}]
   const [faq, setFaq] = useState([]);                     // [{pregunta, respuesta}]
-  const [faqTitulo, setFaqTitulo] = useState('');
-  const [fichaRubro, setFichaRubro] = useState('basico');
   const [fichaDatos, setFichaDatos] = useState({});
 
   const [tabActiva, setTabActiva] = useState('combo');
@@ -277,6 +287,22 @@ export default function ComboEditor() {
   const [saved, setSaved] = useState(false);
   const esAdmin = usuarioActual?.rol === 'administrador';
   const contextoPrecios = { esAdmin, usuarioId: usuarioActual?.id };
+  const comboVistaDto = useMemo(() => ({
+    nombre,
+    descripcion,
+    propuesta_valor: propuestaValor,
+    beneficios,
+    confianza,
+    ficha_datos: fichaDatos,
+  }), [nombre, descripcion, propuestaValor, beneficios, confianza, fichaDatos]);
+  const fichaComboDelProducto = useMemo(
+    () => fichaComboDesdeProducto(comboVistaDto),
+    [comboVistaDto]
+  );
+  const fichaComboResuelta = useMemo(
+    () => resolverFichaCombo(null, null, fichaComboDelProducto),
+    [fichaComboDelProducto]
+  );
 
   // ─── Cargar configuración + combo existente ───────────────────────────────
   useEffect(() => {
@@ -300,9 +326,7 @@ export default function ComboEditor() {
           setBeneficios(Array.isArray(combo.beneficios) ? combo.beneficios : []);
           setConfianza(Array.isArray(combo.confianza) ? combo.confianza : []);
           setFaq(Array.isArray(combo.preguntas_frecuentes) ? combo.preguntas_frecuentes : []);
-          setFaqTitulo(combo.faq_titulo || '');
-          setFichaRubro(combo.ficha_rubro || 'basico');
-          setFichaDatos(combo.ficha_datos && typeof combo.ficha_datos === 'object' ? combo.ficha_datos : {});
+          setFichaDatos(normalizarFichaComboGuardada(combo.ficha_datos, combo.faq_titulo));
 
           if (combo.producto_padre) {
             setPrincipal(productoParaCombo(combo.producto_padre, contexto));
@@ -574,8 +598,8 @@ export default function ComboEditor() {
       beneficios,
       confianza,
       preguntas_frecuentes: faq,
-      faq_titulo: faqTitulo.trim() || null,
-      ficha_rubro: fichaRubro || null,
+      faq_titulo: null,
+      ficha_rubro: 'combo',
       ficha_datos: fichaDatos || {},
     };
 
@@ -1053,91 +1077,33 @@ export default function ComboEditor() {
           />
         </div>
 
-        <FichaRubroTab
-          rubro={fichaRubro}
-          datos={fichaDatos}
-          onRubro={v => setFichaRubro(v || 'basico')}
-          onDatos={setFichaDatos}
-          modo="completo"
+        <FichaComboPanel
+          ficha={fichaDatos}
+          fichaResuelta={fichaComboResuelta}
+          fichaDelProducto={fichaComboDelProducto}
+          respaldos={{
+            titulo: nombre || 'Combo sin nombre',
+            lead: propuestaValor || descripcion,
+          }}
+          modo="producto"
+          expandirTodas
+          onChange={setFichaDatos}
         />
-
-        <div style={{ marginTop: '1rem' }}>
-          <div className="combo-editor-grid" style={{ marginBottom: '0.5rem' }}>
-            <div className="combo-section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Beneficios</span>
-              <button type="button" className="combo-rec-btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setBeneficios(prev => [...prev, { titulo: '', texto: '' }])}>
-                <Plus size={13} /> Agregar
-              </button>
-            </div>
-          </div>
-          {beneficios.map((b, i) => (
-            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-              <input
-                value={b.titulo || ''}
-                onChange={e => setBeneficios(prev => prev.map((x, j) => j === i ? { ...x, titulo: e.target.value } : x))}
-                placeholder="Título corto (ej: Fácil de usar)"
-                style={{ flex: '0 0 220px', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.5rem 0.75rem', color: 'var(--color-fg)', fontSize: '0.83rem', fontFamily: 'inherit' }}
-              />
-              <input
-                value={b.texto || ''}
-                onChange={e => setBeneficios(prev => prev.map((x, j) => j === i ? { ...x, texto: e.target.value } : x))}
-                placeholder="Descripción breve"
-                style={{ flex: 1, background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.5rem 0.75rem', color: 'var(--color-fg)', fontSize: '0.83rem', fontFamily: 'inherit' }}
-              />
-              <button type="button" className="btn-icon" onClick={() => setBeneficios(prev => prev.filter((_, j) => j !== i))} style={{ flexShrink: 0 }}>
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
-          {beneficios.length === 0 && <p className="combo-help-text">Sin beneficios cargados: la ficha del combo no muestra esa sección.</p>}
-        </div>
-
-        <div style={{ marginTop: '1.25rem' }}>
-          <div className="combo-editor-grid" style={{ marginBottom: '0.5rem' }}>
-            <div className="combo-section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Confianza (garantías)</span>
-              <button type="button" className="combo-rec-btn" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={() => setConfianza(prev => [...prev, { texto: '', icono: 'ShieldCheck' }])}>
-                <Plus size={13} /> Agregar
-              </button>
-            </div>
-          </div>
-          {confianza.map((c, i) => (
-            <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <SelectorIcono valor={c.icono || 'ShieldCheck'} onChange={v => setConfianza(prev => prev.map((x, j) => j === i ? { ...x, icono: v } : x))} />
-              <input
-                value={c.texto || ''}
-                onChange={e => setConfianza(prev => prev.map((x, j) => j === i ? { ...x, texto: e.target.value } : x))}
-                placeholder="Ej: Envío gratis"
-                style={{ flex: 1, background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.5rem 0.75rem', color: 'var(--color-fg)', fontSize: '0.83rem', fontFamily: 'inherit' }}
-              />
-              <button type="button" className="btn-icon" onClick={() => setConfianza(prev => prev.filter((_, j) => j !== i))} style={{ flexShrink: 0 }}>
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
-          {confianza.length === 0 && <p className="combo-help-text">Sin garantías cargadas: la ficha del combo no muestra esa sección.</p>}
-        </div>
 
         <div style={{ marginTop: '1.25rem' }}>
           <div className="combo-section-label">Preguntas frecuentes propias de este combo</div>
-          <input
-            value={faqTitulo}
-            onChange={e => setFaqTitulo(e.target.value)}
-            placeholder="Título de la sección (ej: Todo lo que necesitás saber)"
-            style={{ width: '100%', marginBottom: '0.6rem', background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)', borderRadius: 8, padding: '0.55rem 0.9rem', color: 'var(--color-fg)', fontSize: '0.875rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
-          />
           <FaqPanel faq={faq} onChange={setFaq} />
         </div>
         </div>
 
         <ComboLandingPreview
-          combo={{ nombre, descripcion, propuesta_valor: propuestaValor, beneficios, confianza, ficha_datos: fichaDatos }}
+          combo={comboVistaDto}
           principal={principal}
           upsells={upsells}
           precioTotal={precioTotal}
           imagenes={imagenesVista}
           faq={faq}
-          faqTitulo={faqTitulo}
+          faqTitulo=""
           device={previewDevice}
           onDeviceChange={setPreviewDevice}
         />

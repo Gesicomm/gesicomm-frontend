@@ -28,6 +28,11 @@ export default function FichaComboPanel({
   fichaDelProducto = null,
   respaldos = {},
   modo = 'producto',
+  // Vista del combo (ComboEditor.jsx) es una pantalla propia, ancha, sin el
+  // sidebar angosto del page-builder: ahí las secciones se muestran todas
+  // abiertas en fila (misma idea que Vista del producto) en vez de acordeón
+  // de a una, para que no se sienta como un panel técnico escondido.
+  expandirTodas = false,
   onChange,
 }) {
   const [abierta, setAbierta] = useState(null);
@@ -70,7 +75,7 @@ export default function FichaComboPanel({
   };
 
   return (
-    <div className="p-4 space-y-3 pb-32">
+    <div className={expandirTodas ? 'space-y-4 pb-8' : 'p-4 space-y-3 pb-32'}>
       <p className="text-sm text-fg/70 mb-5 leading-relaxed">
         {esProducto ? (
           <>Configurá cómo se ve <strong>este combo</strong> en su ficha de detalle.</>
@@ -80,25 +85,32 @@ export default function FichaComboPanel({
       </p>
 
       {SECCIONES_COMBO.map(sec => {
-        const desplegada = abierta === sec.key;
+        const desplegada = expandirTodas ? true : abierta === sec.key;
         const propia = seccionEsPropia(ficha, sec.key);
         const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
         const datos = fichaResuelta[sec.key] || {};
 
         return (
-          <div key={sec.key} className="bg-fg/5 border border-fg/10 rounded-xl overflow-hidden">
-            <div className={`flex items-center gap-3 p-3.5 transition-colors ${desplegada ? 'bg-fg/5' : ''}`}>
+          <div
+            key={sec.key}
+            className={expandirTodas
+              ? 'bg-canvas border border-fg/10 rounded-2xl overflow-hidden shadow-sm'
+              : 'bg-fg/5 border border-fg/10 rounded-xl overflow-hidden'}
+          >
+            <div className={`flex items-center gap-3 transition-colors ${expandirTodas ? 'p-4' : 'p-3.5'} ${desplegada && !expandirTodas ? 'bg-fg/5' : ''}`}>
               <button
                 type="button"
-                onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className={`flex-1 flex items-center gap-3 text-left min-w-0 ${datos.activo ? 'text-fg' : 'text-fg/40 line-through'}`}
+                onClick={expandirTodas ? undefined : () => setAbierta(desplegada ? null : sec.key)}
+                className={`flex-1 flex items-center gap-3 text-left min-w-0 ${expandirTodas ? 'cursor-default' : ''} ${datos.activo ? 'text-fg' : 'text-fg/40 line-through'}`}
               >
-                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
+                <span className={`flex items-center justify-center shrink-0 rounded-full font-bold ${expandirTodas ? 'w-6 h-6 text-[11px]' : 'w-5 h-5 text-[10px]'} ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
                   {sec.numero}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
-                  {esProducto && (
+                  <span className={expandirTodas ? 'block text-[14px] font-semibold truncate' : 'block text-[13px] font-semibold truncate'}>{sec.label}</span>
+                  {expandirTodas ? (
+                    <span className="block text-[11px] text-fg/40 truncate">{sec.ayuda}</span>
+                  ) : esProducto && (
                     <span className={`block text-[10px] truncate ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
                       {ETIQUETA_FUENTE[fuente]}
                     </span>
@@ -115,18 +127,27 @@ export default function FichaComboPanel({
                 />
               </label>
 
-              <button
-                type="button"
-                onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className="shrink-0 text-fg/30 hover:text-fg"
-              >
-                <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
-              </button>
+              {!expandirTodas && (
+                <button
+                  type="button"
+                  onClick={() => setAbierta(desplegada ? null : sec.key)}
+                  className="shrink-0 text-fg/30 hover:text-fg"
+                >
+                  <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
+                </button>
+              )}
             </div>
 
             {desplegada && (
-              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-fg/10 pt-3">
-                <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
+              <div className={expandirTodas
+                ? 'px-4 pb-4 flex flex-col gap-3 border-t border-fg/10 pt-3.5'
+                : 'px-3 pb-3.5 flex flex-col gap-3 border-t border-fg/10 pt-3'}>
+                {!expandirTodas && <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>}
+                {expandirTodas && esProducto && (
+                  <p className={`text-[11px] -mt-1 ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
+                    {ETIQUETA_FUENTE[fuente]}
+                  </p>
+                )}
 
                 {CAMPOS[sec.key]({
                   d: datos,
