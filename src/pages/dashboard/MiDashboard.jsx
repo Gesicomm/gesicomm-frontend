@@ -1092,6 +1092,106 @@ function TablaCouriers({ filas }) {
  * checkout) son las primeras etapas del embudo de Formularios Web, no un
  * canal aparte. Tenerlo como tab propio duplicaba las mismas visitas en dos
  * lugares y hacía parecer que eran dos fuentes de tráfico distintas. */
+/**
+ * Selector de producto con búsqueda. Reemplaza al <select> nativo: con
+ * cuatro productos era usable, pero con el catálogo real (puede pasar de
+ * 100) el desplegable nativo se vuelve una lista infinita sin forma de
+ * filtrar. Acá el panel tiene alto fijo con scroll propio y un buscador
+ * arriba — nunca tapa la pantalla entera.
+ */
+function SelectorProducto({ productos, value, onChange, disabled }) {
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const wrapRef = useRef(null);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    const cerrarSiAfuera = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) setAbierto(false);
+    };
+    const cerrarConEscape = (e) => { if (e.key === 'Escape') setAbierto(false); };
+    document.addEventListener('mousedown', cerrarSiAfuera);
+    document.addEventListener('keydown', cerrarConEscape);
+    return () => {
+      document.removeEventListener('mousedown', cerrarSiAfuera);
+      document.removeEventListener('keydown', cerrarConEscape);
+    };
+  }, [abierto]);
+
+  useEffect(() => {
+    if (abierto) {
+      setBusqueda('');
+      // Esperar el render del panel antes de enfocar, si no el foco no agarra.
+      setTimeout(() => inputRef.current?.focus(), 0);
+    }
+  }, [abierto]);
+
+  const normalizar = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const filtrados = useMemo(() => {
+    const q = normalizar(busqueda);
+    if (!q) return productos;
+    return productos.filter(p => normalizar(p.nombre).includes(q));
+  }, [productos, busqueda]);
+
+  const seleccionado = value === 'TODOS' ? null : productos.find(p => String(p.producto_id) === String(value));
+  const etiqueta = seleccionado ? seleccionado.nombre : 'Todos los productos';
+
+  const elegir = (id) => {
+    onChange(id);
+    setAbierto(false);
+  };
+
+  return (
+    <div className="md-combo" ref={wrapRef}>
+      <button
+        type="button"
+        className="md-select md-combo-btn"
+        onClick={() => setAbierto(o => !o)}
+        disabled={disabled}
+        aria-expanded={abierto}
+      >
+        <span className="md-combo-btn-texto">{etiqueta}</span>
+        <ChevronDown size={14} className={abierto ? 'md-chevron-abierto' : ''} aria-hidden="true" />
+      </button>
+      {abierto && (
+        <div className="md-combo-panel">
+          <input
+            ref={inputRef}
+            type="text"
+            className="md-combo-buscar"
+            placeholder="Buscar producto…"
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+          />
+          <div className="md-combo-lista">
+            <button
+              type="button"
+              className={`md-combo-opcion ${value === 'TODOS' ? 'activa' : ''}`}
+              onClick={() => elegir('TODOS')}
+            >
+              Todos los productos
+            </button>
+            {filtrados.map(p => (
+              <button
+                key={p.producto_id}
+                type="button"
+                className={`md-combo-opcion ${String(value) === String(p.producto_id) ? 'activa' : ''}`}
+                onClick={() => elegir(p.producto_id)}
+              >
+                {p.nombre}
+              </button>
+            ))}
+            {filtrados.length === 0 && (
+              <p className="md-combo-vacio">Sin coincidencias.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMBUDOS_TABS = [
   { id: 'formularios', label: 'Formularios Web' },
   { id: 'whatsapp', label: 'WhatsApp' },
@@ -1408,12 +1508,12 @@ export default function MiDashboard() {
             <select className="md-select" value={anio} onChange={e => setAnio(Number(e.target.value))} disabled={loading}>
               {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
-            <select className="md-select" value={productoId} onChange={e => setProductoId(e.target.value)} disabled={loading}>
-              <option value="TODOS">Todos los productos</option>
-              {productosDisponibles.map(p => (
-                <option key={p.producto_id} value={p.producto_id}>{p.nombre}</option>
-              ))}
-            </select>
+            <SelectorProducto
+              productos={productosDisponibles}
+              value={productoId}
+              onChange={setProductoId}
+              disabled={loading}
+            />
           </div>
         </div>
       </header>
