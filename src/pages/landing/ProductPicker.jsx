@@ -505,12 +505,20 @@ export default function ProductPicker({
 
   return (
     <div className={`lb-picker ${themeScopeClassName}`}>
-      <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-[13px] font-semibold text-fg/60">{cantidad} / {max} seleccionados</span>
-        <button type="button" onClick={() => setModalAbierto(true)} className="px-3 py-1.5 bg-fg/10 hover:bg-fg/20 text-fg text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+      {max === 1 ? (
+        // Con un solo elemento permitido, "1/1 seleccionados" es metadata,
+        // no una acción — el botón de elegir es lo único que importa acá.
+        <button type="button" onClick={() => setModalAbierto(true)} className="w-full mb-3 px-3 py-2 bg-fg/10 hover:bg-fg/20 text-fg text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
           <Search size={14} /> {triggerLabel}
         </button>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between mb-3 px-1">
+          <span className="text-[13px] font-semibold text-fg/60">{cantidad} / {max} seleccionados</span>
+          <button type="button" onClick={() => setModalAbierto(true)} className="px-3 py-1.5 bg-fg/10 hover:bg-fg/20 text-fg text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+            <Search size={14} /> {triggerLabel}
+          </button>
+        </div>
+      )}
 
       {modalAbierto && createPortal(
         <div className={`lb-modal-overlay fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${themeScopeClassName}`} style={{ zIndex: zIndexModal }}>

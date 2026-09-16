@@ -5,6 +5,7 @@ import {
   clonarSeccionResuelta, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/combo/fichaCombo';
 import IconoPicker from './IconoPicker';
+import FichaSeccionesShell from './ficha/FichaSeccionesShell';
 
 /**
  * Panel de la ficha del template Combo.
@@ -35,7 +36,6 @@ export default function FichaComboPanel({
   expandirTodas = false,
   onChange,
 }) {
-  const [abierta, setAbierta] = useState(null);
   const esProducto = modo === 'producto';
 
   const baseDe = (key) => (
@@ -74,76 +74,50 @@ export default function FichaComboPanel({
     onChange(copia);
   };
 
-  return (
-    <div className={expandirTodas ? 'space-y-4 pb-8' : 'p-4 space-y-3 pb-32'}>
-      <p className="text-sm text-fg/70 mb-5 leading-relaxed">
-        {esProducto ? (
-          <>Configurá cómo se ve <strong>este combo</strong> en su ficha de detalle.</>
-        ) : (
-          <>Configurá los textos por defecto para <strong>todos los combos</strong> de esta landing.</>
-        )}
-      </p>
+  const intro = (
+    <p className="text-sm text-fg/70 mb-5 leading-relaxed">
+      {esProducto ? (
+        <>Configurá cómo se ve <strong>este combo</strong> en su ficha de detalle.</>
+      ) : (
+        <>Configurá los textos por defecto para <strong>todos los combos</strong> de esta landing.</>
+      )}
+    </p>
+  );
 
-      {SECCIONES_COMBO.map(sec => {
-        const desplegada = expandirTodas ? true : abierta === sec.key;
-        const propia = seccionEsPropia(ficha, sec.key);
-        const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
-        const datos = fichaResuelta[sec.key] || {};
+  // Vista del combo (ComboEditor.jsx): pantalla ancha sin sidebar, todas las
+  // secciones abiertas en fila — no pasa por el navigator/inspector, que
+  // solo tiene sentido en el sidebar angosto de ProductoPanel.
+  if (expandirTodas) {
+    return (
+      <div className="space-y-4 pb-8">
+        {intro}
+        {SECCIONES_COMBO.map(sec => {
+          const propia = seccionEsPropia(ficha, sec.key);
+          const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
+          const datos = fichaResuelta[sec.key] || {};
 
-        return (
-          <div
-            key={sec.key}
-            className={expandirTodas
-              ? 'bg-canvas border border-fg/10 rounded-2xl overflow-hidden shadow-sm'
-              : 'bg-fg/5 border border-fg/10 rounded-xl overflow-hidden'}
-          >
-            <div className={`flex items-center gap-3 transition-colors ${expandirTodas ? 'p-4' : 'p-3.5'} ${desplegada && !expandirTodas ? 'bg-fg/5' : ''}`}>
-              <button
-                type="button"
-                onClick={expandirTodas ? undefined : () => setAbierta(desplegada ? null : sec.key)}
-                className={`flex-1 flex items-center gap-3 text-left min-w-0 ${expandirTodas ? 'cursor-default' : ''} ${datos.activo ? 'text-fg' : 'text-fg/40 line-through'}`}
-              >
-                <span className={`flex items-center justify-center shrink-0 rounded-full font-bold ${expandirTodas ? 'w-6 h-6 text-[11px]' : 'w-5 h-5 text-[10px]'} ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
+          return (
+            <div key={sec.key} className="bg-canvas border border-fg/10 rounded-2xl overflow-hidden shadow-sm">
+              <div className="flex items-center gap-3 p-4 transition-colors">
+                <span className={`flex items-center justify-center shrink-0 rounded-full font-bold w-6 h-6 text-[11px] ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
                   {sec.numero}
                 </span>
-                <span className="min-w-0">
-                  <span className={expandirTodas ? 'block text-[14px] font-semibold truncate' : 'block text-[13px] font-semibold truncate'}>{sec.label}</span>
-                  {expandirTodas ? (
-                    <span className="block text-[11px] text-fg/40 truncate">{sec.ayuda}</span>
-                  ) : esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
-                      {ETIQUETA_FUENTE[fuente]}
-                    </span>
-                  )}
+                <span className={`flex-1 min-w-0 ${datos.activo ? 'text-fg' : 'text-fg/40 line-through'}`}>
+                  <span className="block text-[14px] font-semibold truncate">{sec.label}</span>
+                  <span className="block text-[11px] text-fg/40 truncate">{sec.ayuda}</span>
                 </span>
-              </button>
+                <label className="shrink-0 inline-flex items-center cursor-pointer" title={datos.activo ? 'Ocultar sección' : 'Mostrar sección'}>
+                  <input
+                    type="checkbox"
+                    checked={!!datos.activo}
+                    onChange={e => editar(sec.key, { activo: e.target.checked })}
+                    className="w-4 h-4 accent-[var(--color-accent)]"
+                  />
+                </label>
+              </div>
 
-              <label className="shrink-0 inline-flex items-center cursor-pointer" title={datos.activo ? 'Ocultar sección' : 'Mostrar sección'}>
-                <input
-                  type="checkbox"
-                  checked={!!datos.activo}
-                  onChange={e => editar(sec.key, { activo: e.target.checked })}
-                  className="w-4 h-4 accent-[var(--color-accent)]"
-                />
-              </label>
-
-              {!expandirTodas && (
-                <button
-                  type="button"
-                  onClick={() => setAbierta(desplegada ? null : sec.key)}
-                  className="shrink-0 text-fg/30 hover:text-fg"
-                >
-                  <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
-                </button>
-              )}
-            </div>
-
-            {desplegada && (
-              <div className={expandirTodas
-                ? 'px-4 pb-4 flex flex-col gap-3 border-t border-fg/10 pt-3.5'
-                : 'px-3 pb-3.5 flex flex-col gap-3 border-t border-fg/10 pt-3'}>
-                {!expandirTodas && <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>}
-                {expandirTodas && esProducto && (
+              <div className="px-4 pb-4 flex flex-col gap-3 border-t border-fg/10 pt-3.5">
+                {esProducto && (
                   <p className={`text-[11px] -mt-1 ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
                     {ETIQUETA_FUENTE[fuente]}
                   </p>
@@ -171,10 +145,63 @@ export default function FichaComboPanel({
                   </button>
                 )}
               </div>
-            )}
-          </div>
-        );
-      })}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-3 pb-32">
+      {intro}
+      <FichaSeccionesShell
+        secciones={SECCIONES_COMBO.map(sec => {
+          const propia = seccionEsPropia(ficha, sec.key);
+          const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
+          return {
+            key: sec.key,
+            numero: sec.numero,
+            label: sec.label,
+            activo: !!(fichaResuelta[sec.key] || {}).activo,
+            badge: esProducto ? ETIQUETA_FUENTE[fuente] : null,
+            badgeDestacado: propia,
+          };
+        })}
+        onToggleActivo={(key, activo) => editar(key, { activo })}
+        renderInspector={(key) => {
+          const sec = SECCIONES_COMBO.find(s => s.key === key);
+          const datos = fichaResuelta[key] || {};
+          const propia = seccionEsPropia(ficha, key);
+          return (
+            <>
+              <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
+
+              {CAMPOS[key]({
+                d: datos,
+                set: (cambios) => editar(key, cambios),
+                lista: {
+                  editar: (campo, i, c) => editarItem(key, campo, i, c),
+                  agregar: (campo, nuevo) => agregarItem(key, campo, nuevo),
+                  quitar: (campo, i) => quitarItem(key, campo, i),
+                  mover: (campo, i, delta) => moverItem(key, campo, i, delta),
+                },
+                respaldos,
+              })}
+
+              {propia && (
+                <button
+                  type="button"
+                  onClick={() => volverAHeredar(key)}
+                  className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5"
+                >
+                  <Link2Off size={12} /> Descartar y volver a heredar
+                </button>
+              )}
+            </>
+          );
+        }}
+      />
     </div>
   );
 }

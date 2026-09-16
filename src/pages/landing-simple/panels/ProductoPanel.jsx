@@ -51,6 +51,7 @@ export default function ProductoPanel({
   guardando, onGuardar, aviso, error,
   config, onChange,
   onOfertasChange,
+  tema,
   onVolver,
 }) {
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
@@ -111,20 +112,20 @@ export default function ProductoPanel({
         <span className="text-sm font-semibold">Volver a la landing</span>
       </button>
 
-      <div className="flex gap-1 overflow-x-auto bg-fg/5 border-b border-fg/10 shrink-0 px-2 py-2">
+      <div className="flex items-stretch gap-0.5 bg-fg/5 border-b border-fg/10 shrink-0 px-1.5 py-2">
         {tabs.map(t => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`shrink-0 px-3 py-2 rounded-lg text-xs font-semibold text-center transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10 hover:text-fg'}`}
+            className={`flex-1 min-w-0 px-1 py-1.5 rounded-lg text-[10px] leading-tight font-semibold text-center break-words transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10 hover:text-fg'}`}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
+      <div className="flex-1 min-h-0 overflow-y-auto p-5 flex flex-col gap-5">
         <div>
           <p className="text-xs text-fg/40 mb-0.5">Producto en esta landing</p>
           <p className="text-sm font-bold text-fg truncate">{producto?.nombre}</p>
@@ -185,8 +186,14 @@ export default function ProductoPanel({
             {/* ─── Descripción ──────────────────────────────────────── */}
             {/* Un combo todavía no tiene override de descripción por
                 landing (usa siempre la del combo) — no tiene sentido
-                mostrar un campo que el guardado no va a persistir. */}
-            {!esCombo && (
+                mostrar un campo que el guardado no va a persistir.
+                La ficha Básica sí tiene su propia sección "Descripción"
+                (texto largo + destacados, ver fichaBasico.js) que ya lee
+                este mismo texto como respaldo — mostrar los dos campos acá
+                es el mismo texto editable en dos lugares. Fitness/Tech/
+                Beauty/Combo NO tienen sección propia de descripción, así
+                que para esos éste sigue siendo el único lugar. */}
+            {!esCombo && !fichaBasicoActiva && (
               <div>
                 <label className="block text-xs font-semibold text-fg/60 mb-1.5">Descripción</label>
                 <textarea
@@ -198,24 +205,45 @@ export default function ProductoPanel({
                 />
               </div>
             )}
+            {!esCombo && fichaBasicoActiva && (
+              <p className="text-[11px] text-fg/35 leading-relaxed bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-2">
+                La descripción se edita en <strong className="text-fg/55">Ficha avanzada → Descripción</strong>, donde también podés sumar puntos destacados.
+              </p>
+            )}
 
             {/* ─── FAQ ──────────────────────────────────────────────── */}
-            <div>
-              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Todo lo que necesitas saber</label>
-              <p className="text-xs text-fg/30 mb-2">Preguntas frecuentes propias de este {esCombo ? 'combo' : 'producto'}.</p>
+            {/* Un producto normal (no combo) siempre tiene una ficha
+                avanzada activa — cada landing usa un template, y "Básico"
+                es uno de los cuatro, no un quinto estado de "sin ficha".
+                Por eso las preguntas se editan ahí (sección "Preguntas
+                frecuentes") y no se duplican acá.
+                Un combo todavía usa el panel de ficha compartido con
+                ComboEditor.jsx (Mis Productos → Combos), que no tiene el
+                editor de preguntas — para combos este sigue siendo el único
+                lugar hasta que se sume ahí también. */}
+            {esCombo && (
+              <div>
+                <label className="block text-xs font-semibold text-fg/60 mb-1.5">Todo lo que necesitas saber</label>
+                <p className="text-xs text-fg/30 mb-2">Preguntas frecuentes propias de este combo en esta landing.</p>
 
-              <div className="mb-3">
-                <input
-                  type="text"
-                  value={faqTitulo}
-                  onChange={e => onFaqTitulo(e.target.value)}
-                  placeholder="Ej: Todo lo que necesitas saber"
-                  className={CAMPO}
-                />
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    value={faqTitulo}
+                    onChange={e => onFaqTitulo(e.target.value)}
+                    placeholder="Ej: Todo lo que necesitas saber"
+                    className={CAMPO}
+                  />
+                </div>
+
+                <FaqPanel faq={faq} onChange={onFaqChange} />
               </div>
-
-              <FaqPanel faq={faq} onChange={onFaqChange} />
-            </div>
+            )}
+            {!esCombo && (
+              <p className="text-[11px] text-fg/35 leading-relaxed bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-2">
+                Las preguntas frecuentes se editan en <strong className="text-fg/55">Ficha avanzada → Preguntas frecuentes</strong>.
+              </p>
+            )}
             </div>
             )}
 
@@ -267,7 +295,7 @@ export default function ProductoPanel({
                     "productos incluidos" se configuran en Mis Productos →
                     Combos. */}
                 {!esCombo && (
-                  <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} />
+                  <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} tema={tema} />
                 )}
               </div>
             )}
@@ -329,6 +357,10 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFichaTech}
+                faq={faq}
+                onFaqChange={onFaqChange}
+                faqTitulo={faqTitulo}
+                onFaqTitulo={onFaqTitulo}
               />
             )}
 
@@ -348,6 +380,10 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFichaBeauty}
+                faq={faq}
+                onFaqChange={onFaqChange}
+                faqTitulo={faqTitulo}
+                onFaqTitulo={onFaqTitulo}
               />
             )}
 
@@ -385,6 +421,10 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFicha}
+                faq={faq}
+                onFaqChange={onFaqChange}
+                faqTitulo={faqTitulo}
+                onFaqTitulo={onFaqTitulo}
               />
             )}
 
@@ -404,7 +444,13 @@ export default function ProductoPanel({
               />
             )}
 
-            {/* ─── Guardar ──────────────────────────────────────────── */}
+          </>
+        )}
+      </div>
+
+      {!cargando && (
+        <div className="shrink-0 border-t border-fg/10 bg-fg/[0.02] px-5 py-3 flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onGuardar}
@@ -415,9 +461,9 @@ export default function ProductoPanel({
             </button>
             {aviso && <p className="text-xs text-emerald-400">{aviso}</p>}
             {error && <p className="text-xs text-red-400">{error}</p>}
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
