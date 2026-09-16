@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LegalDoc, { Subseccion, TablaLegal } from '../../components/public/LegalDoc';
 import Alert from '../../components/public/Alert';
 import Timeline from '../../components/public/Timeline';
+import { trackearEvento, generarEventId } from '../../lib/metaPixel';
 
 const Correo = ({ direccion }) => <a href={`mailto:${direccion}`}>{direccion}</a>;
 
@@ -576,6 +578,10 @@ const SECCIONES = [
 ];
 
 export default function Security() {
+  useEffect(() => {
+    trackearEvento('ViewContent', generarEventId(), { content_name: 'security', content_category: 'legal' });
+  }, []);
+
   return (
     <LegalDoc
       titulo="Seguridad de la Información"

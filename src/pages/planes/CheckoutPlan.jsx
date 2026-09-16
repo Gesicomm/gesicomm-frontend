@@ -6,6 +6,7 @@ import { tiendaService } from '../../services/tiendaService';
 import { PERIODICIDAD } from '../../lib/planesCatalogo';
 import { verificarSesionDetallada } from '../../utils/auth';
 import { formatMoneda } from '../../utils/currency';
+import { trackearEvento, generarEventId } from '../../lib/metaPixel';
 import './planes.css';
 
 function formatPrecioPlan(plan) {
@@ -157,6 +158,12 @@ export default function CheckoutPlan() {
       if (!resultado?.payment_url) {
         throw new Error('La pasarela no devolvió una URL de pago.');
       }
+      trackearEvento('InitiateCheckout', generarEventId(), {
+        content_name: plan.nombre,
+        content_ids: [plan.codigo],
+        value: Number(plan.precio || 0),
+        currency: plan.moneda || 'PYG',
+      });
       window.location.href = resultado.payment_url;
     } catch (err) {
       setError(err.response?.data?.error || err.response?.data?.message || err.message || 'No pudimos iniciar el pago.');

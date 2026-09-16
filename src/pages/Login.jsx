@@ -8,6 +8,7 @@ import { api } from '../utils/api';
 import Logo from '../components/public/Logo';
 import { AvisoSesionExpirada } from '../components/EstadoSesion';
 import { AVISO_SESION_EXPIRADA, tomarAvisoSesion } from '../utils/sesion';
+import { trackearEvento, trackearEventoPersonalizado, generarEventId } from '../lib/metaPixel';
 
 const INPUT_CLASS = 'h-12 w-full rounded-lg border border-border bg-surface-2/80 px-11 pr-12 text-sm text-fg outline-none transition-all placeholder:text-fg-subtle hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-70';
 const LABEL_CLASS = 'mb-2 block text-sm font-semibold text-fg';
@@ -176,6 +177,10 @@ export default function Login() {
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [mostrarConfirmPassword, setMostrarConfirmPassword] = useState(false);
 
+  // De dónde vino la pantalla de verificación OTP: determina si, al
+  // confirmar el código, hay que trackear un "Login" o un "CompleteRegistration".
+  const [origenVerificacion, setOrigenVerificacion] = useState('login');
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -281,17 +286,19 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
-      const rutaDestino = res.usuario?.rol === 'administrador' 
-        ? '/dashboard' 
-        : res.usuario?.rol === 'solo_pedidos' 
-          ? '/mis-pedidos' 
+      const rutaDestino = res.usuario?.rol === 'administrador'
+        ? '/dashboard'
+        : res.usuario?.rol === 'solo_pedidos'
+          ? '/mis-pedidos'
           : '/mi-catalogo';
+      trackearEventoPersonalizado('Login', generarEventId());
       navigate(rutaDestino);
     } catch (err) {
       // Si el backend indica que necesita verificar el correo, llevar a la pantalla OTP
       if (err.response?.data?.requiere_verificacion) {
         setPendingEmail(err.response.data.email || formData.email);
         setOtpCode('');
+        setOrigenVerificacion('login');
         setActiveForm('verify');
         setError(null);
       } else {
@@ -330,8 +337,12 @@ export default function Login() {
         setPendingEmail(res.email || formData.email);
         setOtpCode('');
         setOtpResendCooldown(60);
+        setOrigenVerificacion('registro');
         setActiveForm('verify');
       } else {
+        trackearEvento('CompleteRegistration', generarEventId(), {
+          content_name: tokenSuscripcion ? 'registro_con_plan' : 'registro_gratis',
+        });
         setSuccess(res.message);
         setTimeout(() => { setActiveForm('login'); setSuccess(null); setFormData({ ...formData, password: '', confirmPassword: '' }); }, 3000);
       }
@@ -354,6 +365,13 @@ export default function Login() {
         email: pendingEmail,
         codigo: otpCode,
       });
+      if (origenVerificacion === 'registro') {
+        trackearEvento('CompleteRegistration', generarEventId(), {
+          content_name: tokenSuscripcion ? 'registro_con_plan' : 'registro_gratis',
+        });
+      } else {
+        trackearEventoPersonalizado('Login', generarEventId());
+      }
       setSuccess(res.message);
       setTimeout(() => {
         const rutaDestino = tokenSuscripcion

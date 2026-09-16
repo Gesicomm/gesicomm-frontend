@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
@@ -52,6 +52,7 @@ import FinanzasAutomatizacion from './pages/finanzas/FinanzasAutomatizacion';
 import PublicLayout from './components/public/PublicLayout';
 import Landing from './pages/public/Landing';
 import { esHostnameDeTienda } from './lib/hostname';
+import { inicializarPixel, PIXEL_ID_GESICOMM } from './lib/metaPixel';
 
 const Contact = lazy(() => import('./pages/public/Contact'));
 // Vista de prueba de la ficha Fitness con datos de ejemplo (/dev/ficha-fitness):
@@ -97,6 +98,26 @@ function PaginaPublica({ children }) {
       </Suspense>
     </PublicLayout>
   );
+}
+
+/**
+ * Carga el Meta Pixel propio de gesicomm.com una sola vez, para toda la app.
+ *
+ * Va acá y no en Landing porque el embudo que hay que trackear no empieza
+ * ni termina en la portada: alguien puede llegar directo a /login desde un
+ * anuncio, o entrar a /security por un link. inicializarPixel ya es
+ * idempotente (ver lib/metaPixel.js), así que no hay riesgo de cargarlo dos
+ * veces.
+ *
+ * No corre en subdominios de tienda: ahí el pixel que se carga es el propio
+ * de cada tienda (Tienda.meta_pixel_id, vía LandingPublica/TiendaPaginaView),
+ * y no tiene sentido mezclarlo con el de la plataforma.
+ */
+function InicializarPixelPlataforma() {
+  useEffect(() => {
+    if (!esHostnameDeTienda()) inicializarPixel(PIXEL_ID_GESICOMM);
+  }, []);
+  return null;
 }
 
 // Misma URL raíz, dos dueños distintos según el hostname: en gesicomm.com
@@ -164,6 +185,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
+        <InicializarPixelPlataforma />
         <Routes>
         {/* ─────────────────────────────────────────────────────────
             Sitio institucional público (gesicomm.com) — sin guards.

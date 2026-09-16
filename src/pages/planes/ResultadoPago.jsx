@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader, CheckCircle2, Clock, AlertCircle, ArrowRight } from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { formatMoneda } from '../../utils/currency';
+import { trackearEvento, generarEventId } from '../../lib/metaPixel';
 import './planes.css';
 
 /**
@@ -24,6 +25,7 @@ export default function ResultadoPago() {
   const [error, setError] = useState(null);
   const [intentos, setIntentos] = useState(0);
   const cancelado = useRef(false);
+  const purchaseTrackeado = useRef(false);
 
   useEffect(() => {
     cancelado.current = false;
@@ -48,6 +50,20 @@ export default function ResultadoPago() {
     consultar(0);
     return () => { cancelado.current = true; clearTimeout(timer); };
   }, [hash]);
+
+  // El pago se confirma vía este polling, así que "Purchase" se dispara acá
+  // y no en el checkout: es el único punto donde sabemos, del lado del
+  // servidor, que PagoPar efectivamente acreditó el cobro.
+  useEffect(() => {
+    if (estado?.estado_pago !== 'PAID' || purchaseTrackeado.current) return;
+    purchaseTrackeado.current = true;
+    trackearEvento('Purchase', generarEventId(), {
+      content_name: estado.plan?.nombre,
+      content_ids: estado.plan?.codigo ? [estado.plan.codigo] : undefined,
+      value: Number(estado.monto || 0),
+      currency: estado.moneda || estado.plan?.moneda || 'PYG',
+    });
+  }, [estado]);
 
   if (error) {
     return (

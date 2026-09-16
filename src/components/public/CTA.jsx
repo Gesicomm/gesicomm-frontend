@@ -11,6 +11,8 @@ export default function CTA({
   descripcion = 'Centralizá productos, pedidos, stock y campañas en un solo panel.',
   accionPrimaria = { etiqueta: 'Entrar al panel', to: '/login' },
   accionSecundaria = { etiqueta: 'Hablar con nosotros', to: '/contact' },
+  onClickPrimaria,
+  onClickSecundaria,
 }) {
   return (
     <section className="no-imprimir border-t border-border bg-surface py-16 sm:py-20">
@@ -22,7 +24,12 @@ export default function CTA({
           </div>
 
           <div className="flex flex-shrink-0 flex-col gap-3 sm:flex-row">
-            <Button to={accionPrimaria.to} tamano="lg" className="w-full sm:w-auto">
+            <Button
+              to={accionPrimaria.to}
+              tamano="lg"
+              className="w-full sm:w-auto"
+              onClick={onClickPrimaria}
+            >
               {accionPrimaria.etiqueta}
             </Button>
             {accionSecundaria && (
@@ -31,6 +38,7 @@ export default function CTA({
                 variante="secundario"
                 tamano="lg"
                 className="w-full sm:w-auto"
+                onClick={onClickSecundaria}
               >
                 {accionSecundaria.etiqueta}
               </Button>

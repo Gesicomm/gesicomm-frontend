@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import LegalDoc, { Subseccion, TablaLegal } from '../../components/public/LegalDoc';
 import Alert from '../../components/public/Alert';
+import { trackearEvento, generarEventId } from '../../lib/metaPixel';
 
 const Correo = ({ direccion }) => <a href={`mailto:${direccion}`}>{direccion}</a>;
 
@@ -463,6 +465,10 @@ const SECCIONES = [
 ];
 
 export default function Compliance() {
+  useEffect(() => {
+    trackearEvento('ViewContent', generarEventId(), { content_name: 'compliance', content_category: 'legal' });
+  }, []);
+
   return (
     <LegalDoc
       titulo="Cumplimiento Legal"

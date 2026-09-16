@@ -12,6 +12,15 @@
 
 let cargado = false;
 
+/**
+ * Pixel propio de gesicomm.com (el sitio institucional y el panel), no el de
+ * una tienda de cliente. Se inicializa una sola vez a nivel App — ver
+ * InicializarPixelPlataforma en App.jsx — para que quede activo entre rutas
+ * (landing, login, planes, checkout) sin depender de por dónde entró la
+ * visita.
+ */
+export const PIXEL_ID_GESICOMM = '3636737413142726';
+
 export function inicializarPixel(pixelId) {
   if (!pixelId || cargado || typeof window === 'undefined') return;
   if (window.fbq) { cargado = true; return; } // ya lo cargó otra instancia
@@ -57,4 +66,15 @@ export function leerCookiesFacebook() {
 export function trackearEvento(eventName, eventId, params) {
   if (typeof window === 'undefined' || !window.fbq) return;
   window.fbq('track', eventName, params, { eventID: eventId });
+}
+
+/**
+ * Igual que trackearEvento pero para eventos que no son del catálogo
+ * estándar de Meta (p. ej. "Login", que Meta no define como evento
+ * estándar). Usa trackCustom en vez de track para que no aparezca como
+ * "evento estándar desconocido" en el Events Manager.
+ */
+export function trackearEventoPersonalizado(eventName, eventId, params) {
+  if (typeof window === 'undefined' || !window.fbq) return;
+  window.fbq('trackCustom', eventName, params, { eventID: eventId });
 }

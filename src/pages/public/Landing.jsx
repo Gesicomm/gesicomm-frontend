@@ -7,6 +7,7 @@ import Accordion from '../../components/public/Accordion';
 import Button from '../../components/public/Button';
 import CTA from '../../components/public/CTA';
 import Reveal from '../../components/public/Reveal';
+import { trackearEvento, generarEventId } from '../../lib/metaPixel';
 
 /**
  * Contenido del registro de la portada.
@@ -286,11 +287,22 @@ export default function Landing() {
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button to="/login" tamano="lg" className="w-full sm:w-auto">
+              <Button
+                to="/login"
+                tamano="lg"
+                className="w-full sm:w-auto"
+                onClick={() => trackearEvento('Lead', generarEventId())}
+              >
                 Entrar al panel
                 <ArrowRight size={17} aria-hidden="true" />
               </Button>
-              <Button to="/contact" variante="secundario" tamano="lg" className="w-full sm:w-auto">
+              <Button
+                to="/contact"
+                variante="secundario"
+                tamano="lg"
+                className="w-full sm:w-auto"
+                onClick={() => trackearEvento('Contact', generarEventId())}
+              >
                 Hablar con nosotros
               </Button>
             </div>
@@ -619,7 +631,11 @@ export default function Landing() {
             />
             <p className="mt-6 text-sm leading-relaxed text-fg-muted">
               ¿Tenés otra consulta?{' '}
-              <Link to="/contact" className="font-medium text-primary-text underline underline-offset-4">
+              <Link
+                to="/contact"
+                className="font-medium text-primary-text underline underline-offset-4"
+                onClick={() => trackearEvento('Contact', generarEventId())}
+              >
                 Escribinos
               </Link>{' '}
               o mandanos un correo a{' '}
@@ -646,7 +662,10 @@ export default function Landing() {
         </div>
       </Section>
 
-      <CTA />
+      <CTA
+        onClickPrimaria={() => trackearEvento('Lead', generarEventId())}
+        onClickSecundaria={() => trackearEvento('Contact', generarEventId())}
+      />
     </>
   );
 }
