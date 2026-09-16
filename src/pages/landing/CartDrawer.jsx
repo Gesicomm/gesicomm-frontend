@@ -16,12 +16,22 @@ const FORM_VACIO = {
  * opcional que decide la propia landing (ver checkout.redirigir_whatsapp
  * en LandingPublica.jsx).
  */
-export default function CartDrawer({ items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades = [] }) {
-  const [paso, setPaso] = useState('carrito'); // carrito | formulario | confirmado
+export default function CartDrawer({
+  items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades = [],
+  // Solo los usa la vista previa del editor (ver LandingSimpleEditor.jsx):
+  // arrancar directo en el paso donde vive lo que se está armando, en vez
+  // de obligar a un click en "Finalizar pedido" + llenar el formulario
+  // falso antes de poder verlo. La tienda publicada nunca pasa estas
+  // props, así que el comprador real sigue viendo carrito -> formulario ->
+  // upsell en ese orden, sin ningún cambio.
+  pasoInicial = 'carrito',
+  mostrarUpsellInicial = false,
+}) {
+  const [paso, setPaso] = useState(pasoInicial); // carrito | formulario | confirmado
   // El upsell NO es un paso del drawer: tiene que interrumpir con un popup
   // real sobre toda la pantalla, no otra pantalla más adentro del drawer
   // (que quedaba mayormente vacía y no se leía como una pregunta urgente).
-  const [mostrarUpsellPopup, setMostrarUpsellPopup] = useState(false);
+  const [mostrarUpsellPopup, setMostrarUpsellPopup] = useState(mostrarUpsellInicial);
   const [form, setForm] = useState(FORM_VACIO);
   const [ciudadDeliveryInput, setCiudadDeliveryInput] = useState('');
   const [acepta, setAcepta] = useState(false);

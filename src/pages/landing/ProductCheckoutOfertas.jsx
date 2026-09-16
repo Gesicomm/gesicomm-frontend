@@ -606,7 +606,19 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-[var(--vit-text)]">{of.nombre}</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--vit-accent)]/10 text-[var(--vit-accent)] uppercase tracking-wider">
+                      {/* Fondo al 10% + texto del mismo --vit-accent (verde marca)
+                          para las 3 etiquetas era casi ilegible en modo oscuro:
+                          mismo tono, apenas distinto de opacidad. Un color por
+                          tipo, con suficiente contraste propio (no depende del
+                          acento de marca), para que se lea de un vistazo cuál
+                          es cuál. */}
+                      <span className={`text-[11px] font-bold px-2 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${
+                        esPack
+                          ? 'bg-sky-500/20 text-sky-300'
+                          : of.estrategia === 'upsell'
+                            ? 'bg-violet-500/20 text-violet-300'
+                            : 'bg-amber-500/20 text-amber-300'
+                      }`}>
                         {esPack ? `Paquete × ${unidades}` : (of.estrategia === 'upsell' ? 'Upsell' : 'Order Bump')}
                       </span>
                     </div>

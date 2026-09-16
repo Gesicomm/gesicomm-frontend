@@ -1406,6 +1406,13 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             // se veía un popup de upsell vacío al pasar de editar un upsell
             // a un order bump.
             key={ofertaBorrador ? `borrador-${ofertaBorrador.id}` : 'sin-borrador'}
+            // El admin no es un cliente probando el flujo: quiere ver
+            // directamente cómo queda, no tocar "Finalizar pedido" y
+            // llenar un formulario falso primero. Order bump vive en el
+            // paso "formulario" (arranca ahí directo); upsell además
+            // fuerza el popup desde el primer render.
+            pasoInicial={ofertaBorrador ? 'formulario' : 'carrito'}
+            mostrarUpsellInicial={ofertaBorrador?.estrategia === 'upsell'}
             items={carritoPreview}
             sugerencias={sugerenciasCarritoPreview}
             onAgregarSugerencia={agregarSugerenciaCarritoPreview}
