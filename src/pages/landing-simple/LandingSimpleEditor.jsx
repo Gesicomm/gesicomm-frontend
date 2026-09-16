@@ -413,16 +413,39 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setCarritoPreviewAbierto(true);
   }, [ofertaBorrador?.id, productoPreview?.id]);
 
-  // Solo el borrador en curso, en forma de sugerencia de carrito — no hace
-  // falta reimplementar la búsqueda de useStoreCart.sugerenciasCarrito
-  // (recorre TODO el catálogo): acá ya se sabe exactamente cuál es la oferta
-  // que se está armando.
+  // El borrador en curso MÁS las demás ofertas reales activas de este
+  // producto (order bump/upsell pueden convivir: uno es casilla en el
+  // formulario, el otro es el popup después) — si solo mostrara el
+  // borrador, editar un upsell no dejaría ver el order bump real que ya
+  // está habilitado para el carrito, y el admin no podría probar cómo
+  // quedan los dos juntos, que es exactamente lo que pasa en la tienda
+  // publicada. Misma regla de habilitación por estrategia que
+  // useStoreCart.sugerenciasCarrito (ver ese archivo): sin config
+  // explícita para una estrategia, sus ofertas activas se muestran por
+  // defecto; con config, solo las tildadas — el borrador se ve siempre,
+  // esté o no tildado, para poder armarlo antes de decidir.
   const sugerenciasCarritoPreview = useMemo(() => {
     if (!ofertaBorrador || !productoPreview) return [];
-    const yaEnCarrito = carritoPreview.some(it => Number(it.ofertaId) === Number(ofertaBorrador.id));
-    if (yaEnCarrito) return [];
-    return [{ item: { imagen: productoPreview.imagen || null }, oferta: ofertaBorrador }];
-  }, [ofertaBorrador, productoPreview, carritoPreview]);
+    const reales = productoOfertas
+      .map(o => ofertaAFormaPublica(o, productoPreview.id))
+      .filter(o => o.estrategia === 'order_bump' || o.estrategia === 'upsell')
+      .filter(o => String(o.id) !== String(ofertaBorrador.id));
+    const todas = [...reales, ofertaBorrador];
+
+    const idsConfigurados = new Set((draft?.content?.ofertas_carrito || []).map(Number));
+    const yaEnCarrito = new Set(carritoPreview.map(it => Number(it.ofertaId)).filter(Boolean));
+
+    return todas
+      .filter(o => !yaEnCarrito.has(Number(o.id)))
+      .filter(o => {
+        if (String(o.id) === String(ofertaBorrador.id)) return true;
+        const hayConfigParaEstrategia = todas.some(x =>
+          x.estrategia === o.estrategia && idsConfigurados.has(Number(x.id))
+        );
+        return !hayConfigParaEstrategia || idsConfigurados.has(Number(o.id));
+      })
+      .map(oferta => ({ item: { imagen: productoPreview.imagen || null }, oferta }));
+  }, [ofertaBorrador, productoPreview, carritoPreview, productoOfertas, draft?.content?.ofertas_carrito]);
 
   function agregarSugerenciaCarritoPreview(item, oferta) {
     const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
