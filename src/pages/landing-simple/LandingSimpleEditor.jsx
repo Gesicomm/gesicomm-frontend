@@ -1245,7 +1245,17 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           </div>
         )}
 
-        <div ref={containerRef} className="flex-1 overflow-y-auto bg-black/30 flex justify-center w-full relative">
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-y-auto bg-black/30 flex justify-center w-full relative"
+          // `contain: layout` vuelve a este div el "containing block" de sus
+          // descendientes en position:fixed (FunnelCheckout y CartDrawer,
+          // ambos con inset:0 pensados para tapar TODA una página publicada).
+          // Sin esto, "fixed" mira el viewport entero y el overlay tapaba
+          // también el sidebar de edición — el comercio no podía ver el
+          // popup/carrito Y seguir editando los campos al mismo tiempo.
+          style={{ contain: 'layout' }}
+        >
           {viewportMode === 'desktop' && desktopScale < 1 ? (
             <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', transform: `scale(${desktopScale})`, transformOrigin: 'top center' }}>
               <div style={{ width: '1440px', height: `${100 / desktopScale}%`, flexShrink: 0, backgroundColor: 'transparent' }}>
@@ -1334,102 +1344,107 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               </div>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Vista previa del checkout. Es el MISMO componente que usa la landing
-          pública, alimentado con la misma configuración (draft.content) y las
-          ofertas del producto ya traducidas a la forma del DTO — así se puede
-          comprobar si un order bump aparece sin tener que publicar y abrir la
-          tienda en otra pestaña. No crea ningún pedido: onConfirmar corta con
-          un aviso, que FunnelCheckout muestra dentro del formulario. */}
-      <FunnelCheckout
-        abierto={!!compraFunnel && !!productoPreview}
-        onCerrar={() => setCompraFunnel(null)}
-        tema={{
-          fondo: datosPreview?.tema?.fondo || '#ffffff',
-          texto: datosPreview?.tema?.texto || '#111827',
-          acento: datosPreview?.tema?.acento || '#111827',
-        }}
-        resumen={productoPreview ? {
-          // Lo que se eligió en la ficha (paquete y/o variante), no el
-          // producto suelto: antes el preview mostraba siempre el precio
-          // individual aunque el cliente hubiera elegido un paquete, así
-          // que no servía para comprobar justamente eso.
-          nombre: [
-            productoPreview.nombre,
-            compraFunnel?.pack ? `— ${compraFunnel.pack.nombre}` : '',
-            compraFunnel?.variante ? `(${compraFunnel.variante.nombre})` : '',
-          ].filter(Boolean).join(' '),
-          variante: compraFunnel?.variante?.nombre || null,
-          precio: compraFunnel?.precio
-            ?? productoPreview.precio_efectivo ?? productoPreview.precio_base ?? 0,
-          imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
-        } : null}
-        ofertasLanding={draft?.content?.ofertas_producto_vista || []}
-        itemOriginal={{ id: productoPreview?.id, ofertas: compraFunnel?.ofertas || [] }}
-        onConfirmar={() => {
-          throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
-        }}
-      />
-
-      {/* Carrito simulado — ver `carritoPreview` más arriba. Mismo CartDrawer
-          que la tienda publicada (nunca un mock aparte), envuelto en las
-          variables --l-* que esas clases `.lp-cart-*` necesitan para pintarse
-          con la paleta real (ver el mismo patrón en ProductPagePublica.jsx). */}
-      {productoPreview && (
-        <div
-          // Deliberadamente SIN className="lp-page": esa clase trae
-          // min-height:100vh + background propios (pensados para una página
-          // pública completa), que acá tapaban todo el editor de un bloque
-          // blanco. Solo hacen falta las variables --l-*, no su layout.
-          style={datosPreview?.tema ? {
-            '--l-primary': datosPreview.tema.acento,
-            '--l-secondary': datosPreview.tema.acento,
-            '--l-bg': datosPreview.tema.fondo,
-            '--l-on-primary': datosPreview.tema.fondo,
-            '--l-text': datosPreview.tema.texto,
-            '--l-text-muted': hexToRgba(datosPreview.tema.texto, 0.55),
-            '--l-surface': hexToRgba(datosPreview.tema.texto, 0.05),
-            '--l-card-bg': datosPreview.tema.fondo,
-            '--l-card-border': hexToRgba(datosPreview.tema.texto, 0.1),
-            '--l-surface-border': hexToRgba(datosPreview.tema.texto, 0.12),
-            '--l-popover-bg': datosPreview.tema.fondo,
-            '--l-modal-bg': datosPreview.tema.fondo,
-          } : undefined}
-        >
-          <CartDrawer
-            // Cambiar de oferta (o cerrar y volver a abrir) tiene que
-            // arrancar de cero: sin key, React reutiliza la misma instancia
-            // y CartDrawer arrastra su estado interno (paso, popup de
-            // upsell ya visto, formulario tipeado) de la oferta anterior —
-            // se veía un popup de upsell vacío al pasar de editar un upsell
-            // a un order bump.
-            key={ofertaBorrador ? `borrador-${ofertaBorrador.id}` : 'sin-borrador'}
-            // El admin no es un cliente probando el flujo: quiere ver
-            // directamente cómo queda, no tocar "Finalizar pedido" y
-            // llenar un formulario falso primero. Order bump vive en el
-            // paso "formulario" (arranca ahí directo); upsell además
-            // fuerza el popup desde el primer render.
-            pasoInicial={ofertaBorrador ? 'formulario' : 'carrito'}
-            mostrarUpsellInicial={ofertaBorrador?.estrategia === 'upsell'}
-            items={carritoPreview}
-            sugerencias={sugerenciasCarritoPreview}
-            onAgregarSugerencia={agregarSugerenciaCarritoPreview}
-            abierto={carritoPreviewAbierto}
-            onAbrir={() => setCarritoPreviewAbierto(true)}
-            onCerrar={() => setCarritoPreviewAbierto(false)}
-            onCantidad={cambiarCantidadCarritoPreview}
-            onQuitar={quitarDeCarritoPreview}
-            onConfirmarPedido={() => {
+          {/* Vista previa del checkout. Es el MISMO componente que usa la landing
+              pública, alimentado con la misma configuración (draft.content) y las
+              ofertas del producto ya traducidas a la forma del DTO — así se puede
+              comprobar si un order bump aparece sin tener que publicar y abrir la
+              tienda en otra pestaña. No crea ningún pedido: onConfirmar corta con
+              un aviso, que FunnelCheckout muestra dentro del formulario.
+              Va DENTRO de containerRef (que tiene contain:layout) para que su
+              overlay position:fixed quede acotado al área del canvas y no tape
+              el sidebar de edición. */}
+          <FunnelCheckout
+            abierto={!!compraFunnel && !!productoPreview}
+            onCerrar={() => setCompraFunnel(null)}
+            tema={{
+              fondo: datosPreview?.tema?.fondo || '#ffffff',
+              texto: datosPreview?.tema?.texto || '#111827',
+              acento: datosPreview?.tema?.acento || '#111827',
+            }}
+            resumen={productoPreview ? {
+              // Lo que se eligió en la ficha (paquete y/o variante), no el
+              // producto suelto: antes el preview mostraba siempre el precio
+              // individual aunque el cliente hubiera elegido un paquete, así
+              // que no servía para comprobar justamente eso.
+              nombre: [
+                productoPreview.nombre,
+                compraFunnel?.pack ? `— ${compraFunnel.pack.nombre}` : '',
+                compraFunnel?.variante ? `(${compraFunnel.variante.nombre})` : '',
+              ].filter(Boolean).join(' '),
+              variante: compraFunnel?.variante?.nombre || null,
+              precio: compraFunnel?.precio
+                ?? productoPreview.precio_efectivo ?? productoPreview.precio_base ?? 0,
+              imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
+            } : null}
+            ofertasLanding={draft?.content?.ofertas_producto_vista || []}
+            itemOriginal={{ id: productoPreview?.id, ofertas: compraFunnel?.ofertas || [] }}
+            onConfirmar={() => {
               throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
             }}
-            onValidarCupon={() => {
-              throw new Error('Los cupones no se pueden probar desde la vista previa.');
-            }}
           />
+
+          {/* Carrito simulado — ver `carritoPreview` más arriba. Mismo CartDrawer
+              que la tienda publicada (nunca un mock aparte), envuelto en las
+              variables --l-* que esas clases `.lp-cart-*` necesitan para pintarse
+              con la paleta real (ver el mismo patrón en ProductPagePublica.jsx).
+              También dentro de containerRef por el mismo motivo que FunnelCheckout
+              arriba: su overlay .lp-cart-overlay es position:fixed. */}
+          {productoPreview && (
+            <div
+              // Deliberadamente SIN className="lp-page": esa clase trae
+              // min-height:100vh + background propios (pensados para una página
+              // pública completa), que acá tapaban todo el editor de un bloque
+              // blanco. Solo hacen falta las variables --l-*, no su layout.
+              style={datosPreview?.tema ? {
+                '--l-primary': datosPreview.tema.acento,
+                '--l-secondary': datosPreview.tema.acento,
+                '--l-bg': datosPreview.tema.fondo,
+                '--l-on-primary': datosPreview.tema.fondo,
+                '--l-text': datosPreview.tema.texto,
+                '--l-text-muted': hexToRgba(datosPreview.tema.texto, 0.55),
+                '--l-surface': hexToRgba(datosPreview.tema.texto, 0.05),
+                '--l-card-bg': datosPreview.tema.fondo,
+                '--l-card-border': hexToRgba(datosPreview.tema.texto, 0.1),
+                '--l-surface-border': hexToRgba(datosPreview.tema.texto, 0.12),
+                '--l-popover-bg': datosPreview.tema.fondo,
+                '--l-modal-bg': datosPreview.tema.fondo,
+              } : undefined}
+            >
+              <CartDrawer
+                // Cambiar de oferta (o cerrar y volver a abrir) tiene que
+                // arrancar de cero: sin key, React reutiliza la misma instancia
+                // y CartDrawer arrastra su estado interno (paso, popup de
+                // upsell ya visto, formulario tipeado) de la oferta anterior —
+                // se veía un popup de upsell vacío al pasar de editar un upsell
+                // a un order bump.
+                key={ofertaBorrador ? `borrador-${ofertaBorrador.id}` : 'sin-borrador'}
+                // El admin no es un cliente probando el flujo: quiere ver
+                // directamente cómo queda, no tocar "Finalizar pedido" y
+                // llenar un formulario falso primero. Order bump vive en el
+                // paso "formulario" (arranca ahí directo); upsell además
+                // fuerza el popup desde el primer render.
+                pasoInicial={ofertaBorrador ? 'formulario' : 'carrito'}
+                mostrarUpsellInicial={ofertaBorrador?.estrategia === 'upsell'}
+                items={carritoPreview}
+                sugerencias={sugerenciasCarritoPreview}
+                onAgregarSugerencia={agregarSugerenciaCarritoPreview}
+                abierto={carritoPreviewAbierto}
+                onAbrir={() => setCarritoPreviewAbierto(true)}
+                onCerrar={() => setCarritoPreviewAbierto(false)}
+                onCantidad={cambiarCantidadCarritoPreview}
+                onQuitar={quitarDeCarritoPreview}
+                onConfirmarPedido={() => {
+                  throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
+                }}
+                onValidarCupon={() => {
+                  throw new Error('Los cupones no se pueden probar desde la vista previa.');
+                }}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

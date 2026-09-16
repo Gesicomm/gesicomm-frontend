@@ -331,6 +331,10 @@ export default function ComboProductPage({
         <section className="cmb-seccion cmb-seccion--fondo">
           <div className="cmb-wrap">
             <SeccionTitulo eyebrow="Experiencias reales" texto={ficha.prueba_social.titulo} numero={7} mostrarNumero={previewMode} />
+            <div className="cmb-rating cmb-rating--centrado">
+              <Estrellas valor={ficha.prueba_social.calificacion} tamano={18} />
+              <b>{Number(ficha.prueba_social.calificacion).toFixed(1)}/5</b>
+            </div>
             {testimonios.length === 0 ? (
               previewMode && <p className="cmb-vacio">Sin testimonios cargados.</p>
             ) : (
@@ -400,14 +404,16 @@ export default function ComboProductPage({
       {ficha.cta_final.activo && (
         <section className="cmb-final-cta">
           <div className="cmb-wrap cmb-final-cta-inner">
-            {ficha.cta_final.contador.activo && (
-              <div className="cmb-cierre-bloque-timer">
-                {ficha.cta_final.etiqueta && <p className="cmb-cierre-etiqueta">{ficha.cta_final.etiqueta}</p>}
-                <Contador desde={ficha.cta_final.contador} />
-              </div>
-            )}
+            <div className="cmb-cierre-bloque-timer">
+              {ficha.cta_final.etiqueta && <p className="cmb-cierre-etiqueta">{ficha.cta_final.etiqueta}</p>}
+              {ficha.cta_final.contador.activo && <Contador desde={ficha.cta_final.contador} />}
+            </div>
             <div className="cmb-cierre-bloque-info">
               <h2>{ficha.cta_final.titulo || item.nombre}</h2>
+              <div className="cmb-final-price">
+                {item.precioAntes != null && <span>{formatPrecio(item.precioAntes)}</span>}
+                {formatPrecio(item.precio)}
+              </div>
               <p>
                 {[
                   item.ahorroAbsoluto > 0 ? `Ahorrás ${formatPrecio(item.ahorroAbsoluto)}` : null,
