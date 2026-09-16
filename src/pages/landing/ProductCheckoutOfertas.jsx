@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit, Sparkles, Gift, ArrowLeft, ChevronDown } from 'lucide-react';
+import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit, Sparkles, ArrowLeft, ChevronDown } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import ProductPicker from './ProductPicker';
 import OfertaImagenPicker, { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
-import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import './landing.css';
-
-// Vista previa por defecto cuando todavía no llegó el tema real de la
-// landing (no debería pasar en uso normal: FunnelCheckout SIEMPRE recibe
-// `tema`, ver landing-simple/templates/*ProductPagePublica.jsx).
-const TEMA_RESPALDO = { fondo: '#161a28', texto: '#f8fafc', acento: '#22c55e' };
 
 /**
  * Ofertas de un producto. Son DOS cosas distintas, en dos momentos distintos,
@@ -73,8 +67,7 @@ function formVacio() {
   };
 }
 
-export default function ProductCheckoutOfertas({ producto, config, onChange, catalogo, onOfertasChange, tema }) {
-  const temaPreview = tema && tema.fondo && tema.texto && tema.acento ? tema : TEMA_RESPALDO;
+export default function ProductCheckoutOfertas({ producto, config, onChange, catalogo, onOfertasChange, onPreviewOferta }) {
   const [ofertas, setOfertas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [creando, setCreando] = useState(false);
@@ -88,7 +81,6 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   function openEditar(oferta) {
     setCreando(false);
     setEditandoId(oferta.id);
-    setPreviewAbierta(false);
     const esPaq = oferta.estrategia === 'normal';
     const c = oferta.componentes?.[0];
     setForm({
@@ -112,11 +104,6 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   const [form, setForm] = useState(formVacio);
   const [guardandoOferta, setGuardandoOferta] = useState(false);
   const [errorOferta, setErrorOferta] = useState('');
-  // La vista previa completa (mock pixel a pixel del popup real) arranca
-  // colapsada: antes ocupaba ~480px arriba de todos los campos, así que
-  // entrar a editar una oferta significaba mirar el resultado antes de
-  // poder tocar nada. Colapsada por defecto, resumen de una línea.
-  const [previewAbierta, setPreviewAbierta] = useState(false);
 
   const estrategiaActual = ESTRATEGIAS.find(e => e.value === form.estrategia) || ESTRATEGIAS[0];
   const esPaquete = estrategiaActual.esPaquete;
@@ -168,6 +155,41 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     const actual = editandoId ? ofertas.find(o => o.id === editandoId) : null;
     setPreviewImagenUrl(actual?.imagen_url || bumpElegido?.imagen || null);
   }, [form.imagen_archivo, editandoId, ofertas, bumpElegido]);
+
+  // Reporta la oferta en edición al editor de la landing para que el canvas
+  // (el mismo FunnelCheckout que ve el cliente) la muestre en vivo — así se
+  // deja de necesitar un mock aparte en el sidebar, que podía divergir del
+  // checkout real. Un paquete no pasa por acá: se ve en la ficha del
+  // producto, no en el checkout. Misma forma que `ofertaAFormaPublica`
+  // (ver LandingSimpleEditor.jsx) para que sea intercambiable con una oferta
+  // real ya guardada.
+  useEffect(() => {
+    if (!onPreviewOferta) return;
+    if (!(creando || editandoId) || esPaquete) {
+      onPreviewOferta(null);
+      return;
+    }
+    onPreviewOferta({
+      id: editandoId ?? -1,
+      nombre: form.nombre || (form.estrategia === 'upsell' ? 'Upsell' : 'Order bump'),
+      estrategia: form.estrategia,
+      tipo_contenido: 'combo',
+      descripcion: form.descripcion || null,
+      imagen: previewImagenUrl || null,
+      precio: precioBumpNormal,
+      precio_normal: precioBumpNormal,
+      precio_order_bump: form.precio_order_bump === '' ? null : Number(form.precio_order_bump),
+      precio_efectivo: precioPreview,
+      unidades: null,
+      producto_complementario: bumpElegido ? { nombre: bumpElegido.nombre, imagen: bumpElegido.imagen || null } : null,
+      productos_incluidos: bumpElegido ? [{ nombre: bumpElegido.nombre, imagen: bumpElegido.imagen || null }] : [],
+    });
+  }, [onPreviewOferta, creando, editandoId, esPaquete, form.nombre, form.estrategia, form.descripcion, form.precio_order_bump, previewImagenUrl, precioBumpNormal, precioPreview, bumpElegido]);
+
+  // Al desmontar (se cambia de tab o de producto) hay que avisar que ya no
+  // hay nada en edición, si no el canvas se queda mostrando un borrador
+  // fantasma de una sesión de edición que ya terminó.
+  useEffect(() => () => onPreviewOferta?.(null), [onPreviewOferta]);
 
   useEffect(() => {
     if (producto?.id) cargarOfertas();
@@ -310,7 +332,6 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setEditandoId(null);
     setForm(formVacio());
     setErrorOferta('');
-    setPreviewAbierta(false);
   }
 
   // Función (no componente) a propósito: si fuera un componente definido
@@ -342,114 +363,15 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
             <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">{estrategiaActual.ayuda}</p>
           </div>
 
-          {/* Vista previa en vivo, PIXEL A PIXEL con lo que realmente pinta
-              FunnelCheckout.jsx (el checkout que de verdad usa esta config,
-              vía ofertas_producto_vista) — mismos colores del tema real de
-              la landing, mismo layout, mismos textos fijos. Ojo: Order Bump
-              y Upsell usan jerarquías DISTINTAS a propósito (así están hechos
-              hoy en FunnelCheckout): en el bump el título grande es la
-              Descripción (con el Título como respaldo si está vacía); en el
-              upsell es al revés, el título grande es el Título y la
-              Descripción va de subtexto.
-              Colapsada por defecto (ver `previewAbierta`): antes esto ocupaba
-              ~480px arriba de todos los campos, así que entrar a editar una
-              oferta significaba primero mirar el resultado y recién después
-              llegar a los controles. */}
-          {!esPaquete && (
-            <div>
-              <button
-                type="button"
-                onClick={() => setPreviewAbierta(v => !v)}
-                className="w-full flex items-center justify-between gap-2 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2.5 py-2"
-              >
-                <span className="min-w-0 text-left">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--vit-accent)]">Vista previa</span>
-                  <span className="block text-[11px] text-[var(--vit-muted-2)] truncate">Así lo verá el cliente — {form.nombre || 'sin título'} · {formatPrecio(precioPreview)}</span>
-                </span>
-                <ChevronDown size={15} className={`shrink-0 text-[var(--vit-muted-2)] transition-transform ${previewAbierta ? 'rotate-180' : ''}`} />
-              </button>
-            </div>
-          )}
-          {!esPaquete && previewAbierta && (
-            <div>
-              {form.estrategia === 'upsell' ? (
-                <div style={{ backgroundColor: temaPreview.fondo, color: temaPreview.texto, borderRadius: '0.85rem', padding: '1rem', fontFamily: 'inherit' }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', fontWeight: 600, color: hexToRgba(temaPreview.texto, 0.65) }}>
-                    <ArrowLeft size={13} /> Volver
-                  </span>
-                  <p style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.66rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: temaPreview.acento, margin: '0.6rem 0 0' }}>
-                    <Sparkles size={12} /> Oferta especial antes de confirmar
-                  </p>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 900, lineHeight: 1.15, margin: '0.4rem 0 0' }}>¿Querés mejorar tu pedido?</h4>
-                  <p style={{ fontSize: '0.78rem', color: hexToRgba(temaPreview.texto, 0.66), lineHeight: 1.4, margin: '0.3rem 0 0.7rem' }}>
-                    Podés sumar esta mejora ahora y recibir todo en el mismo pedido.
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: '0.65rem', border: `1px solid ${hexToRgba(temaPreview.texto, 0.15)}`, borderRadius: '0.7rem', padding: '0.65rem', backgroundColor: hexToRgba(temaPreview.texto, 0.03), marginBottom: '0.7rem' }}>
-                    <div style={{ width: 52, height: 52, borderRadius: '0.5rem', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: hexToRgba(temaPreview.texto, 0.06) }}>
-                      {previewImagenUrl ? <img src={getMediaUrl(previewImagenUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: temaPreview.acento }} />}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <strong style={{ display: 'block', fontSize: '0.85rem', lineHeight: 1.2 }}>{form.nombre || 'Título del upsell'}</strong>
-                      {(form.descripcion || bumpElegido?.nombre) && (
-                        <span style={{ display: 'block', marginTop: '0.2rem', fontSize: '0.72rem', color: hexToRgba(temaPreview.texto, 0.6), lineHeight: 1.3 }}>
-                          {form.descripcion || bumpElegido?.nombre}
-                        </span>
-                      )}
-                      <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginTop: '0.3rem' }}>
-                        <span style={{ fontWeight: 900, fontSize: '0.88rem' }}>{formatPrecio(precioPreview)}</span>
-                        {descuentoBump !== null && (
-                          <span style={{ fontSize: '0.7rem', color: hexToRgba(temaPreview.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioBumpNormal)}</span>
-                        )}
-                        {descuentoBump !== null && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.08rem 0.4rem', borderRadius: '999px', fontSize: '0.64rem', fontWeight: 800, backgroundColor: temaPreview.acento, color: temaPreview.fondo }}>
-                            -{descuentoBump}%
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ width: '100%', padding: '0.7rem', borderRadius: '0.65rem', fontWeight: 900, fontSize: '0.85rem', textAlign: 'center', backgroundColor: temaPreview.acento, color: temaPreview.fondo, boxShadow: `0 8px 20px -8px ${hexToRgba(temaPreview.acento, 0.6)}`, marginBottom: '0.35rem' }}>
-                    Sí, agregar a mi pedido
-                  </div>
-                  <div style={{ width: '100%', padding: '0.4rem', fontWeight: 600, fontSize: '0.74rem', textAlign: 'center', color: hexToRgba(temaPreview.texto, 0.55) }}>
-                    No, gracias — confirmar sin agregar
-                  </div>
-                </div>
-              ) : (
-                <div style={{ backgroundColor: temaPreview.fondo, color: temaPreview.texto, borderRadius: '0.85rem', padding: '1rem', fontFamily: 'inherit' }}>
-                  <p style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: hexToRgba(temaPreview.texto, 0.55), margin: '0 0 0.5rem' }}>
-                    <Sparkles size={12} style={{ color: temaPreview.acento }} /> Sumá esto a tu pedido
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.5rem', border: `2px dashed ${hexToRgba(temaPreview.texto, 0.15)}`, backgroundColor: hexToRgba(temaPreview.texto, 0.02) }}>
-                    <div style={{ width: 20, height: 20, borderRadius: '0.3rem', border: `2px solid ${temaPreview.acento}`, flexShrink: 0 }} />
-                    <div style={{ width: 44, height: 44, borderRadius: '0.25rem', overflow: 'hidden', backgroundColor: hexToRgba(temaPreview.texto, 0.06), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {previewImagenUrl ? <img src={getMediaUrl(previewImagenUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={18} style={{ color: temaPreview.acento }} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.2 }}>
-                        {form.descripcion || form.nombre || `Agregar ${bumpElegido?.nombre || 'oferta'}`}
-                      </span>
-                      {bumpElegido?.nombre && (
-                        <span style={{ display: 'block', fontSize: '0.7rem', color: hexToRgba(temaPreview.texto, 0.55), lineHeight: 1.3, marginTop: '1px' }}>
-                          {bumpElegido.nombre}
-                        </span>
-                      )}
-                      <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '2px' }}>
-                        <span style={{ fontSize: '0.86rem', fontWeight: 800 }}>{formatPrecio(precioPreview)}</span>
-                        {descuentoBump !== null && (
-                          <span style={{ fontSize: '0.72rem', color: hexToRgba(temaPreview.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioBumpNormal)}</span>
-                        )}
-                        {descuentoBump !== null && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.08rem 0.4rem', borderRadius: '999px', fontSize: '0.64rem', fontWeight: 800, backgroundColor: temaPreview.acento, color: temaPreview.fondo }}>
-                            -{descuentoBump}%
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* La preview en vivo del popup real vive en el canvas central del
+              editor (ver LandingSimpleEditor.jsx: `onPreviewOferta` +
+              `ofertaAFormaPublica`) — es el MISMO FunnelCheckout que usa el
+              cliente, así que no puede divergir como podía pasar con un mock
+              acá. El sidebar edita, el canvas representa. */}
+          {!esPaquete && onPreviewOferta && (
+            <p className="text-[11px] text-[var(--vit-muted-2)] leading-snug -mt-1">
+              Mirá el resultado en la vista previa central — se actualiza mientras escribís.
+            </p>
           )}
 
           <div className="flex flex-col gap-3 pt-1 border-t border-[var(--vit-border)]">

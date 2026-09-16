@@ -51,7 +51,7 @@ export default function ProductoPanel({
   guardando, onGuardar, aviso, error,
   config, onChange,
   onOfertasChange,
-  tema,
+  onPreviewOferta,
   onVolver,
 }) {
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
@@ -295,7 +295,7 @@ export default function ProductoPanel({
                     "productos incluidos" se configuran en Mis Productos →
                     Combos. */}
                 {!esCombo && (
-                  <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} tema={tema} />
+                  <ProductCheckoutOfertas producto={producto} config={config} onChange={onChange} catalogo={catalogo} onOfertasChange={onOfertasChange} onPreviewOferta={onPreviewOferta} />
                 )}
               </div>
             )}

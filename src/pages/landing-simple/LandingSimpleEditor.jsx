@@ -23,6 +23,9 @@ import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
 } from './templates/fitness/fichaFitness';
 import FunnelCheckout from '../funnel/FunnelCheckout';
+import CartDrawer from '../landing/CartDrawer';
+import { hexToRgba } from './templates/themeUtils';
+import '../landing/landingPublica.css';
 import StoreHeader from './templates/StoreHeader';
 import CatalogoPreview from './templates/CatalogoPreview';
 import ContactoPreview from './templates/ContactoPreview';
@@ -362,6 +365,94 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoRelacionados, setProductoRelacionados] = useState([]); // [{id, nombre, imagen, precio_efectivo}]
   const [productoRelacionadosAutomatico, setProductoRelacionadosAutomatico] = useState(false);
   const [productoOfertas, setProductoOfertas] = useState([]);
+  // Oferta (order bump / upsell) que se está creando o editando en el
+  // sidebar, todavía sin guardar — ver ProductCheckoutOfertas#onPreviewOferta.
+  // Null cuando no hay ninguna en edición. Alimenta el mismo `compraFunnel`
+  // que dispara "Comprar ahora", así el canvas muestra el checkout real con
+  // el borrador ya adentro, en vez de un mock aparte que podía divergir.
+  const [ofertaBorrador, setOfertaBorrador] = useState(null);
+
+  // Carrito simulado SOLO para previsualizar order bump/upsell en el canvas
+  // mientras se edita uno — el flujo real de esta tienda es "Agregar al
+  // carrito" (CartDrawer), no "Comprar ahora" (FunnelCheckout, que sigue
+  // existiendo pero no es el que usan los clientes acá). Nunca toca
+  // localStorage ni llama al backend: `useStoreCart` (el hook real) hace las
+  // dos cosas y además dispara píxeles de Meta/GA/TikTok, que jamás deben
+  // salir desde una sesión de admin. Es un array, no un Map — mismo shape
+  // de ítem que arma `agregarAlCarrito` en useStoreCart.js.
+  const [carritoPreview, setCarritoPreview] = useState([]);
+  const [carritoPreviewAbierto, setCarritoPreviewAbierto] = useState(false);
+
+  // Mientras se edita un order bump/upsell, el carrito se abre solo con el
+  // producto ya adentro y la sugerencia lista para probar — mismo mecanismo
+  // que si el comprador ya hubiera tocado "Agregar al carrito". Al cerrar el
+  // borrador (se guarda o se cancela) el carrito simulado se vacía: la
+  // próxima edición arranca de cero, no del carrito de la sesión anterior.
+  useEffect(() => {
+    if (!ofertaBorrador || !productoPreview) {
+      setCarritoPreviewAbierto(false);
+      setCarritoPreview([]);
+      return;
+    }
+    const precioAncla = productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio ?? 0;
+    setCarritoPreview([{
+      clave: `producto:${productoPreview.id}:base:individual`,
+      tipo: 'producto',
+      contentId: productoPreview.id,
+      nombre: productoPreview.nombre,
+      varianteId: null,
+      varianteNombre: null,
+      ofertaId: null,
+      ofertaNombre: null,
+      precio: precioAncla,
+      cantidad: 1,
+      imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
+      stockMax: null,
+      envioIncluido: false,
+    }]);
+    setCarritoPreviewAbierto(true);
+  }, [ofertaBorrador?.id, productoPreview?.id]);
+
+  // Solo el borrador en curso, en forma de sugerencia de carrito — no hace
+  // falta reimplementar la búsqueda de useStoreCart.sugerenciasCarrito
+  // (recorre TODO el catálogo): acá ya se sabe exactamente cuál es la oferta
+  // que se está armando.
+  const sugerenciasCarritoPreview = useMemo(() => {
+    if (!ofertaBorrador || !productoPreview) return [];
+    const yaEnCarrito = carritoPreview.some(it => Number(it.ofertaId) === Number(ofertaBorrador.id));
+    if (yaEnCarrito) return [];
+    return [{ item: { imagen: productoPreview.imagen || null }, oferta: ofertaBorrador }];
+  }, [ofertaBorrador, productoPreview, carritoPreview]);
+
+  function agregarSugerenciaCarritoPreview(item, oferta) {
+    const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
+    setCarritoPreview(prev => [...prev, {
+      clave: `producto:${productoPreview?.id}:base:${oferta.id}`,
+      tipo: 'producto',
+      contentId: productoPreview?.id,
+      nombre: productoPreview?.nombre,
+      varianteId: null,
+      varianteNombre: null,
+      ofertaId: oferta.id,
+      ofertaNombre: oferta.nombre,
+      precio,
+      cantidad: 1,
+      imagen: oferta.imagen || oferta.producto_complementario?.imagen || item?.imagen || null,
+      stockMax: null,
+      envioIncluido: false,
+    }]);
+  }
+
+  function cambiarCantidadCarritoPreview(clave, delta) {
+    setCarritoPreview(prev => prev
+      .map(it => it.clave === clave ? { ...it, cantidad: it.cantidad + delta } : it)
+      .filter(it => it.cantidad > 0));
+  }
+
+  function quitarDeCarritoPreview(clave) {
+    setCarritoPreview(prev => prev.filter(it => it.clave !== clave));
+  }
+
   // Ficha rediseñada: `productoFicha` es SOLO lo que este producto pisa en
   // esta landing (content.productos[id].ficha) — puede quedar null entero si
   // hereda todo. `productoMarketing` es el detalle del producto, del que sale
@@ -957,6 +1048,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               config={draft?.content || {}}
               onChange={(k, v) => campo(k, v)}
               onOfertasChange={setProductoOfertas}
+              onPreviewOferta={setOfertaBorrador}
               tema={datosPreview?.tema}
               precioAncla={precioAnclaDe(productoPreview)}
               onPrecioAncla={itemDeLanding(productoPreview) ? cambiarPrecioAncla : null}
@@ -1257,6 +1349,57 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
         }}
       />
+
+      {/* Carrito simulado — ver `carritoPreview` más arriba. Mismo CartDrawer
+          que la tienda publicada (nunca un mock aparte), envuelto en las
+          variables --l-* que esas clases `.lp-cart-*` necesitan para pintarse
+          con la paleta real (ver el mismo patrón en ProductPagePublica.jsx). */}
+      {productoPreview && (
+        <div
+          // Deliberadamente SIN className="lp-page": esa clase trae
+          // min-height:100vh + background propios (pensados para una página
+          // pública completa), que acá tapaban todo el editor de un bloque
+          // blanco. Solo hacen falta las variables --l-*, no su layout.
+          style={datosPreview?.tema ? {
+            '--l-primary': datosPreview.tema.acento,
+            '--l-secondary': datosPreview.tema.acento,
+            '--l-bg': datosPreview.tema.fondo,
+            '--l-on-primary': datosPreview.tema.fondo,
+            '--l-text': datosPreview.tema.texto,
+            '--l-text-muted': hexToRgba(datosPreview.tema.texto, 0.55),
+            '--l-surface': hexToRgba(datosPreview.tema.texto, 0.05),
+            '--l-card-bg': datosPreview.tema.fondo,
+            '--l-card-border': hexToRgba(datosPreview.tema.texto, 0.1),
+            '--l-surface-border': hexToRgba(datosPreview.tema.texto, 0.12),
+            '--l-popover-bg': datosPreview.tema.fondo,
+            '--l-modal-bg': datosPreview.tema.fondo,
+          } : undefined}
+        >
+          <CartDrawer
+            // Cambiar de oferta (o cerrar y volver a abrir) tiene que
+            // arrancar de cero: sin key, React reutiliza la misma instancia
+            // y CartDrawer arrastra su estado interno (paso, popup de
+            // upsell ya visto, formulario tipeado) de la oferta anterior —
+            // se veía un popup de upsell vacío al pasar de editar un upsell
+            // a un order bump.
+            key={ofertaBorrador ? `borrador-${ofertaBorrador.id}` : 'sin-borrador'}
+            items={carritoPreview}
+            sugerencias={sugerenciasCarritoPreview}
+            onAgregarSugerencia={agregarSugerenciaCarritoPreview}
+            abierto={carritoPreviewAbierto}
+            onAbrir={() => setCarritoPreviewAbierto(true)}
+            onCerrar={() => setCarritoPreviewAbierto(false)}
+            onCantidad={cambiarCantidadCarritoPreview}
+            onQuitar={quitarDeCarritoPreview}
+            onConfirmarPedido={() => {
+              throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
+            }}
+            onValidarCupon={() => {
+              throw new Error('Los cupones no se pueden probar desde la vista previa.');
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
