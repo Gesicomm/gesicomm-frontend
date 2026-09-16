@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ChevronDown, Link2Off, Plus, Trash2, GripVertical } from 'lucide-react';
 import {
   SECCIONES_BEAUTY, LIMITES, ETIQUETA_FUENTE,
   clonarFichaBeauty, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/beauty/fichaBeauty';
 import IconoPicker from './IconoPicker';
+import FaqPanel from './FaqPanel';
+import FichaSeccionesShell from './ficha/FichaSeccionesShell';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
 const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
@@ -21,8 +23,11 @@ export default function FichaBeautyPanel({
   packs = [],
   modo = 'producto',
   onChange,
+  faq = [],
+  onFaqChange,
+  faqTitulo = '',
+  onFaqTitulo,
 }) {
-  const [abierta, setAbierta] = useState(null);
   const esProducto = modo === 'producto';
 
   /**
@@ -94,82 +99,58 @@ export default function FichaBeautyPanel({
         )}
       </p>
 
-      {SECCIONES_BEAUTY.map(sec => {
-        const desplegada = abierta === sec.key;
-        const propia = seccionEsPropia(ficha, sec.key);
-        const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
-        const datos = fichaResuelta[sec.key] || {};
+      <FichaSeccionesShell
+        secciones={SECCIONES_BEAUTY.map(sec => {
+          const propia = seccionEsPropia(ficha, sec.key);
+          const fuente = fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaDelProducto });
+          return {
+            key: sec.key,
+            numero: sec.numero,
+            label: sec.label,
+            activo: (fichaResuelta[sec.key] || {}).activo,
+            badge: esProducto ? ETIQUETA_FUENTE[fuente] : null,
+            badgeDestacado: propia,
+          };
+        })}
+        onToggleActivo={(key, activo) => editar(key, { activo })}
+        renderInspector={(key) => {
+          const sec = SECCIONES_BEAUTY.find(s => s.key === key);
+          const datos = fichaResuelta[key] || {};
+          const propia = seccionEsPropia(ficha, key);
+          return (
+            <>
+              <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
 
-        return (
-          <div key={sec.key} className="bg-fg/5 border border-fg/10 rounded-xl overflow-hidden">
-            <div className={`flex items-center gap-3 p-3.5 transition-colors ${desplegada ? 'bg-fg/5' : ''}`}>
-              <button
-                type="button"
-                onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className={`flex-1 flex items-center gap-3 text-left min-w-0 ${datos.activo ? 'text-fg' : 'text-fg/40 line-through'}`}
-              >
-                <span className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 ${datos.activo ? 'bg-fg text-canvas' : 'bg-fg/10 text-fg/40'}`}>
-                  {sec.numero}
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-[13px] font-semibold truncate">{sec.label}</span>
-                  {esProducto && (
-                    <span className={`block text-[10px] truncate ${propia ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
-                      {ETIQUETA_FUENTE[fuente]}
-                    </span>
-                  )}
-                </span>
-              </button>
+              {CAMPOS[key]({
+                d: datos,
+                set: (cambios) => editar(key, cambios),
+                lista: {
+                  editar: (campo, i, c) => editarItem(key, campo, i, c),
+                  agregar: (campo, nuevo) => agregarItem(key, campo, nuevo),
+                  quitar: (campo, i) => quitarItem(key, campo, i),
+                  mover: (campo, i, delta) => moverItem(key, campo, i, delta),
+                },
+                respaldos,
+                packs,
+                faq,
+                onFaqChange,
+                faqTitulo,
+                onFaqTitulo,
+              })}
 
-              <label className="shrink-0 inline-flex items-center cursor-pointer" title={datos.activo ? 'Ocultar sección' : 'Mostrar sección'}>
-                <input
-                  type="checkbox"
-                  checked={datos.activo}
-                  onChange={e => editar(sec.key, { activo: e.target.checked })}
-                  className="w-4 h-4 accent-[var(--color-accent)]"
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setAbierta(desplegada ? null : sec.key)}
-                className="shrink-0 text-fg/30 hover:text-fg"
-              >
-                <ChevronDown size={15} className={desplegada ? 'rotate-180 transition-transform' : 'transition-transform'} />
-              </button>
-            </div>
-
-            {desplegada && (
-              <div className="px-3 pb-3.5 flex flex-col gap-3 border-t border-fg/10 pt-3">
-                <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
-
-                {CAMPOS[sec.key]({
-                  d: datos,
-                  set: (cambios) => editar(sec.key, cambios),
-                  lista: {
-                    editar: (campo, i, c) => editarItem(sec.key, campo, i, c),
-                    agregar: (campo, nuevo) => agregarItem(sec.key, campo, nuevo),
-                    quitar: (campo, i) => quitarItem(sec.key, campo, i),
-                    mover: (campo, i, delta) => moverItem(sec.key, campo, i, delta),
-                  },
-                  respaldos,
-                  packs,
-                })}
-
-                {propia && (
-                  <button
-                    type="button"
-                    onClick={() => volverAHeredar(sec.key)}
-                    className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5"
-                  >
-                    <Link2Off size={12} /> Descartar y volver a heredar
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+              {propia && (
+                <button
+                  type="button"
+                  onClick={() => volverAHeredar(key)}
+                  className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5"
+                >
+                  <Link2Off size={12} /> Descartar y volver a heredar
+                </button>
+              )}
+            </>
+          );
+        }}
+      />
     </div>
   );
 }
@@ -529,12 +510,13 @@ const CAMPOS = {
     </>
   ),
 
-  faq: ({ d, set, respaldos }) => (
+  faq: ({ faqTitulo, onFaqTitulo, faq, onFaqChange }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} respaldo={respaldos.faqTitulo} onChange={v => set({ titulo: v })} />
-      <p className="text-[11px] text-fg/35 leading-relaxed">
-        Las preguntas se cargan en la pestaña <b className="text-fg/60">Detalles</b> de este producto.
-      </p>
+      <div>
+        <label className={ETIQUETA}>Título de la sección</label>
+        <input type="text" className={CAMPO} value={faqTitulo || ''} placeholder="Preguntas frecuentes" onChange={e => onFaqTitulo(e.target.value)} />
+      </div>
+      <FaqPanel faq={faq} onChange={onFaqChange} />
     </>
   ),
 

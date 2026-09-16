@@ -940,7 +940,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
       <div className="flex flex-1 min-h-0">
         {sidebarVisible && (
-          <div className="w-80 shrink-0 border-r border-fg/10 overflow-y-auto">
+          <div className={`w-[336px] shrink-0 border-r border-fg/10 ${productoPreview ? 'overflow-hidden' : 'overflow-y-auto'}`}>
             {productoPreview ? (
             <ProductoPanel
               producto={productoPreview}
@@ -957,6 +957,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               config={draft?.content || {}}
               onChange={(k, v) => campo(k, v)}
               onOfertasChange={setProductoOfertas}
+              tema={datosPreview?.tema}
               precioAncla={precioAnclaDe(productoPreview)}
               onPrecioAncla={itemDeLanding(productoPreview) ? cambiarPrecioAncla : null}
               envioIncluido={envioIncluidoDe(productoPreview)}

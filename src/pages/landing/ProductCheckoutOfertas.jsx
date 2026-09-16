@@ -1,12 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit, Sparkles } from 'lucide-react';
+import { Plus, ShoppingCart, Tag, X, Loader, Trash2, Minus, Package, Check, Edit, Sparkles, Gift, ArrowLeft, ChevronDown } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import ProductPicker from './ProductPicker';
 import OfertaImagenPicker, { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
+import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import './landing.css';
+
+// Vista previa por defecto cuando todavía no llegó el tema real de la
+// landing (no debería pasar en uso normal: FunnelCheckout SIEMPRE recibe
+// `tema`, ver landing-simple/templates/*ProductPagePublica.jsx).
+const TEMA_RESPALDO = { fondo: '#161a28', texto: '#f8fafc', acento: '#22c55e' };
 
 /**
  * Ofertas de un producto. Son DOS cosas distintas, en dos momentos distintos,
@@ -67,15 +73,22 @@ function formVacio() {
   };
 }
 
-export default function ProductCheckoutOfertas({ producto, config, onChange, catalogo, onOfertasChange }) {
+export default function ProductCheckoutOfertas({ producto, config, onChange, catalogo, onOfertasChange, tema }) {
+  const temaPreview = tema && tema.fondo && tema.texto && tema.acento ? tema : TEMA_RESPALDO;
   const [ofertas, setOfertas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [creando, setCreando] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
+  // Qué oferta está expandida mostrando imagen + toggles de checkout/carrito.
+  // Colapsada por defecto: con 3+ ofertas, todo abierto a la vez era la
+  // card más densa del sidebar (nombre, precio, editar/eliminar, imagen,
+  // dos toggles, todo visible siempre para cada una).
+  const [expandidaId, setExpandidaId] = useState(null);
 
   function openEditar(oferta) {
     setCreando(false);
     setEditandoId(oferta.id);
+    setPreviewAbierta(false);
     const esPaq = oferta.estrategia === 'normal';
     const c = oferta.componentes?.[0];
     setForm({
@@ -99,6 +112,11 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   const [form, setForm] = useState(formVacio);
   const [guardandoOferta, setGuardandoOferta] = useState(false);
   const [errorOferta, setErrorOferta] = useState('');
+  // La vista previa completa (mock pixel a pixel del popup real) arranca
+  // colapsada: antes ocupaba ~480px arriba de todos los campos, así que
+  // entrar a editar una oferta significaba mirar el resultado antes de
+  // poder tocar nada. Colapsada por defecto, resumen de una línea.
+  const [previewAbierta, setPreviewAbierta] = useState(false);
 
   const estrategiaActual = ESTRATEGIAS.find(e => e.value === form.estrategia) || ESTRATEGIAS[0];
   const esPaquete = estrategiaActual.esPaquete;
@@ -135,6 +153,21 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   const descuentoBump = precioBumpNormal > 0 && Number(form.precio_order_bump) > 0 && Number(form.precio_order_bump) < precioBumpNormal
     ? Math.round((1 - Number(form.precio_order_bump) / precioBumpNormal) * 100)
     : null;
+
+  // Precio + imagen tal como los va a ver el cliente en el checkout: mismo
+  // fallback que usa CartDrawer (promocional si hay, si no el normal del
+  // producto elegido), y el archivo recién elegido si todavía no se subió.
+  const precioPreview = Number(form.precio_order_bump) > 0 ? Number(form.precio_order_bump) : precioBumpNormal;
+  const [previewImagenUrl, setPreviewImagenUrl] = useState(null);
+  useEffect(() => {
+    if (form.imagen_archivo) {
+      const url = URL.createObjectURL(form.imagen_archivo);
+      setPreviewImagenUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    const actual = editandoId ? ofertas.find(o => o.id === editandoId) : null;
+    setPreviewImagenUrl(actual?.imagen_url || bumpElegido?.imagen || null);
+  }, [form.imagen_archivo, editandoId, ofertas, bumpElegido]);
 
   useEffect(() => {
     if (producto?.id) cargarOfertas();
@@ -237,8 +270,14 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     }
   }
 
+  // Devuelve true solo si de verdad se borró (no si el usuario canceló el
+  // confirm ni si el backend falló) — el botón "Eliminar oferta" de DENTRO
+  // del formulario de edición lo usa para cerrar el inspector después.
+  // Sin esto, borrar la oferta que se está editando dejaba el formulario
+  // abierto apuntando a un id que ya no existe: al tocar "Guardar" después,
+  // `ofertaService.actualizar(editandoId, ...)` fallaba contra un id borrado.
   async function eliminarOferta(id) {
-    if (!window.confirm('¿Dar de baja esta oferta? Deja de mostrarse, pero los pedidos que la usaron la siguen referenciando.')) return;
+    if (!window.confirm('¿Dar de baja esta oferta? Deja de mostrarse, pero los pedidos que la usaron la siguen referenciando.')) return false;
     try {
       await ofertaService.eliminar(id);
       // La landing guarda por id qué order bumps muestra: si se borra uno y su
@@ -251,8 +290,10 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
         ofertas_producto_vista: limpiar('ofertas_producto_vista'),
       });
       await cargarOfertas();
+      return true;
     } catch (err) {
       alert(err.response?.data?.message || 'No se pudo eliminar la oferta.');
+      return false;
     }
   }
 
@@ -264,30 +305,36 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     form.bumpProductoId ? [[`producto:${form.bumpProductoId}`, { id: Number(form.bumpProductoId), tipo: 'producto' }]] : []
   );
 
-  return (
-    <div className="flex flex-col gap-4 mt-6 border-t border-[var(--vit-border)] pt-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-[var(--vit-text)]">Ofertas</h3>
-          <p className="text-xs text-[var(--vit-muted-2)]">Paquetes en la ficha y Order Bumps en el checkout de {producto.nombre || producto.etiqueta}.</p>
-        </div>
-        {!creando && !editandoId && (
-          <button type="button" onClick={() => setCreando(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--vit-text)] bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md hover:border-[var(--vit-accent)] transition-colors">
-            <Plus size={14} /> Nueva
-          </button>
-        )}
-      </div>
+  function cerrarFormulario() {
+    setCreando(false);
+    setEditandoId(null);
+    setForm(formVacio());
+    setErrorOferta('');
+    setPreviewAbierta(false);
+  }
 
-      {(creando || editandoId) && (
-        <form onSubmit={guardarOferta} className="bg-[var(--vit-surface)] border border-[var(--vit-border)] rounded-lg p-3">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-[var(--vit-text)]">{editandoId ? 'Editar Oferta' : 'Nueva Oferta'}</span>
-            <button type="button" onClick={() => { setCreando(false); setEditandoId(null); setForm(formVacio()); setErrorOferta(''); }} className="text-[var(--vit-muted)] hover:text-[var(--vit-text)]"><X size={14} /></button>
+  // Función (no componente) a propósito: si fuera un componente definido
+  // adentro, React le vería una identidad nueva en cada render y remontaría
+  // el <form> en cada tecla — perdés el foco del input mientras escribís.
+  // Tanto "Nueva" como "Editar" reemplazan TODA la sección de Ofertas (lista
+  // + header) por este inspector — no conviven — así el usuario siempre ve
+  // "Ofertas" o "una oferta", nunca las dos cosas superpuestas.
+  function renderFormulario(titulo) {
+    return (
+      <form onSubmit={guardarOferta} className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={cerrarFormulario} className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--vit-muted)] hover:text-[var(--vit-text)] -ml-1 px-1 py-1">
+              <ArrowLeft size={14} /> Ofertas
+            </button>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--vit-text)]">{titulo}</h3>
+            <p className="text-xs text-[var(--vit-muted-2)]">{estrategiaActual.label.split(' — ')[0]}</p>
           </div>
 
-          {errorOferta && <div className="text-xs text-red-500 mb-2">{errorOferta}</div>}
+          {errorOferta && <div className="text-xs text-red-500">{errorOferta}</div>}
 
-          <div className="mb-3">
+          <div>
             <label className={ETIQUETA}>Tipo de oferta</label>
             <select value={form.estrategia} onChange={e => cambiarEstrategia(e.target.value)} className={CAMPO}>
               {ESTRATEGIAS.map(e => <option key={e.value} value={e.value}>{e.label}</option>)}
@@ -295,16 +342,183 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
             <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">{estrategiaActual.ayuda}</p>
           </div>
 
-          <div className="mb-3">
-            <label className={ETIQUETA}>Título</label>
-            <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder={esPaquete ? 'Ej: Llevá 2' : 'Ej: Sumá un cargador'} className={CAMPO} />
+          {/* Vista previa en vivo, PIXEL A PIXEL con lo que realmente pinta
+              FunnelCheckout.jsx (el checkout que de verdad usa esta config,
+              vía ofertas_producto_vista) — mismos colores del tema real de
+              la landing, mismo layout, mismos textos fijos. Ojo: Order Bump
+              y Upsell usan jerarquías DISTINTAS a propósito (así están hechos
+              hoy en FunnelCheckout): en el bump el título grande es la
+              Descripción (con el Título como respaldo si está vacía); en el
+              upsell es al revés, el título grande es el Título y la
+              Descripción va de subtexto.
+              Colapsada por defecto (ver `previewAbierta`): antes esto ocupaba
+              ~480px arriba de todos los campos, así que entrar a editar una
+              oferta significaba primero mirar el resultado y recién después
+              llegar a los controles. */}
+          {!esPaquete && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setPreviewAbierta(v => !v)}
+                className="w-full flex items-center justify-between gap-2 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2.5 py-2"
+              >
+                <span className="min-w-0 text-left">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--vit-accent)]">Vista previa</span>
+                  <span className="block text-[11px] text-[var(--vit-muted-2)] truncate">Así lo verá el cliente — {form.nombre || 'sin título'} · {formatPrecio(precioPreview)}</span>
+                </span>
+                <ChevronDown size={15} className={`shrink-0 text-[var(--vit-muted-2)] transition-transform ${previewAbierta ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+          )}
+          {!esPaquete && previewAbierta && (
+            <div>
+              {form.estrategia === 'upsell' ? (
+                <div style={{ backgroundColor: temaPreview.fondo, color: temaPreview.texto, borderRadius: '0.85rem', padding: '1rem', fontFamily: 'inherit' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', fontWeight: 600, color: hexToRgba(temaPreview.texto, 0.65) }}>
+                    <ArrowLeft size={13} /> Volver
+                  </span>
+                  <p style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.66rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: temaPreview.acento, margin: '0.6rem 0 0' }}>
+                    <Sparkles size={12} /> Oferta especial antes de confirmar
+                  </p>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 900, lineHeight: 1.15, margin: '0.4rem 0 0' }}>¿Querés mejorar tu pedido?</h4>
+                  <p style={{ fontSize: '0.78rem', color: hexToRgba(temaPreview.texto, 0.66), lineHeight: 1.4, margin: '0.3rem 0 0.7rem' }}>
+                    Podés sumar esta mejora ahora y recibir todo en el mismo pedido.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: '0.65rem', border: `1px solid ${hexToRgba(temaPreview.texto, 0.15)}`, borderRadius: '0.7rem', padding: '0.65rem', backgroundColor: hexToRgba(temaPreview.texto, 0.03), marginBottom: '0.7rem' }}>
+                    <div style={{ width: 52, height: 52, borderRadius: '0.5rem', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: hexToRgba(temaPreview.texto, 0.06) }}>
+                      {previewImagenUrl ? <img src={getMediaUrl(previewImagenUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={20} style={{ color: temaPreview.acento }} />}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <strong style={{ display: 'block', fontSize: '0.85rem', lineHeight: 1.2 }}>{form.nombre || 'Título del upsell'}</strong>
+                      {(form.descripcion || bumpElegido?.nombre) && (
+                        <span style={{ display: 'block', marginTop: '0.2rem', fontSize: '0.72rem', color: hexToRgba(temaPreview.texto, 0.6), lineHeight: 1.3 }}>
+                          {form.descripcion || bumpElegido?.nombre}
+                        </span>
+                      )}
+                      <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginTop: '0.3rem' }}>
+                        <span style={{ fontWeight: 900, fontSize: '0.88rem' }}>{formatPrecio(precioPreview)}</span>
+                        {descuentoBump !== null && (
+                          <span style={{ fontSize: '0.7rem', color: hexToRgba(temaPreview.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioBumpNormal)}</span>
+                        )}
+                        {descuentoBump !== null && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.08rem 0.4rem', borderRadius: '999px', fontSize: '0.64rem', fontWeight: 800, backgroundColor: temaPreview.acento, color: temaPreview.fondo }}>
+                            -{descuentoBump}%
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ width: '100%', padding: '0.7rem', borderRadius: '0.65rem', fontWeight: 900, fontSize: '0.85rem', textAlign: 'center', backgroundColor: temaPreview.acento, color: temaPreview.fondo, boxShadow: `0 8px 20px -8px ${hexToRgba(temaPreview.acento, 0.6)}`, marginBottom: '0.35rem' }}>
+                    Sí, agregar a mi pedido
+                  </div>
+                  <div style={{ width: '100%', padding: '0.4rem', fontWeight: 600, fontSize: '0.74rem', textAlign: 'center', color: hexToRgba(temaPreview.texto, 0.55) }}>
+                    No, gracias — confirmar sin agregar
+                  </div>
+                </div>
+              ) : (
+                <div style={{ backgroundColor: temaPreview.fondo, color: temaPreview.texto, borderRadius: '0.85rem', padding: '1rem', fontFamily: 'inherit' }}>
+                  <p style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: hexToRgba(temaPreview.texto, 0.55), margin: '0 0 0.5rem' }}>
+                    <Sparkles size={12} style={{ color: temaPreview.acento }} /> Sumá esto a tu pedido
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '0.5rem', border: `2px dashed ${hexToRgba(temaPreview.texto, 0.15)}`, backgroundColor: hexToRgba(temaPreview.texto, 0.02) }}>
+                    <div style={{ width: 20, height: 20, borderRadius: '0.3rem', border: `2px solid ${temaPreview.acento}`, flexShrink: 0 }} />
+                    <div style={{ width: 44, height: 44, borderRadius: '0.25rem', overflow: 'hidden', backgroundColor: hexToRgba(temaPreview.texto, 0.06), flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {previewImagenUrl ? <img src={getMediaUrl(previewImagenUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Gift size={18} style={{ color: temaPreview.acento }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.2 }}>
+                        {form.descripcion || form.nombre || `Agregar ${bumpElegido?.nombre || 'oferta'}`}
+                      </span>
+                      {bumpElegido?.nombre && (
+                        <span style={{ display: 'block', fontSize: '0.7rem', color: hexToRgba(temaPreview.texto, 0.55), lineHeight: 1.3, marginTop: '1px' }}>
+                          {bumpElegido.nombre}
+                        </span>
+                      )}
+                      <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '2px' }}>
+                        <span style={{ fontSize: '0.86rem', fontWeight: 800 }}>{formatPrecio(precioPreview)}</span>
+                        {descuentoBump !== null && (
+                          <span style={{ fontSize: '0.72rem', color: hexToRgba(temaPreview.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioBumpNormal)}</span>
+                        )}
+                        {descuentoBump !== null && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.08rem 0.4rem', borderRadius: '999px', fontSize: '0.64rem', fontWeight: 800, backgroundColor: temaPreview.acento, color: temaPreview.fondo }}>
+                            -{descuentoBump}%
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 pt-1 border-t border-[var(--vit-border)]">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--vit-muted)] -mb-1">Contenido</h4>
+
+            <div>
+              <label className={ETIQUETA}>Título</label>
+              <input
+                type="text"
+                value={form.nombre}
+                onChange={e => setForm({ ...form, nombre: e.target.value })}
+                placeholder={esPaquete ? 'Ej: Llevá 2' : 'Ej: Sí, quiero sumar mi cargador con 20% OFF'}
+                className={CAMPO}
+              />
+              {form.estrategia === 'upsell' && (
+                <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">
+                  Es el título grande del popup de mejora. Escribilo como un llamado a la acción, en primera persona y con el beneficio incluido.
+                </p>
+              )}
+              {form.estrategia === 'order_bump' && (
+                <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">
+                  En el checkout se usa la Descripción de abajo como título grande. Este campo solo se muestra si dejás la Descripción vacía.
+                </p>
+              )}
+            </div>
+
+            {!esPaquete && (
+              <div>
+                <label className={ETIQUETA}>
+                  Descripción {form.estrategia === 'order_bump' ? '' : <span className="text-[var(--vit-muted-2)]">(opcional)</span>}
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.descripcion}
+                  onChange={e => setForm({ ...form, descripcion: e.target.value })}
+                  placeholder={form.estrategia === 'order_bump' ? 'Ej: Sí, quiero sumar mi cargador con 20% OFF' : 'Ej: Envío incluido — solo por hoy'}
+                  className={`${CAMPO} min-h-[72px] resize-y`}
+                />
+                <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">
+                  {form.estrategia === 'order_bump'
+                    ? 'Es el título grande de la casilla en el checkout — escribilo como llamado a la acción. Si la dejás vacía, se usa el Título de arriba.'
+                    : 'Va debajo del título, en letra más chica. Una línea corta de beneficio o urgencia (envío gratis, stock limitado, garantía).'}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <label className={ETIQUETA}>Imagen de la oferta</label>
+              <OfertaImagenPicker
+                compacto
+                ofertaId={null}
+                imagenUrl={null}
+                archivo={form.imagen_archivo}
+                respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
+                onChange={({ archivo }) => setForm(f => ({ ...f, imagen_archivo: archivo }))}
+              />
+            </div>
           </div>
+
+          <div className="flex flex-col gap-3 pt-1 border-t border-[var(--vit-border)]">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[var(--vit-muted)] -mb-1">
+              {esPaquete ? 'Producto' : 'Producto y precio'}
+            </h4>
 
           {esPaquete ? (
             <>
               {/* Un paquete es este mismo producto en más cantidad: no hay
                   productos que elegir, solo cuántas unidades entran. */}
-              <div className="mb-3 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-2">
+              <div className="rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] p-2">
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 shrink-0 rounded overflow-hidden bg-[var(--vit-surface)] flex items-center justify-center">
                     {porId.get(Number(producto?.id))?.imagen
@@ -396,26 +610,54 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
               </div>
             </>
           )}
-
-          <div className="mb-3">
-            <label className={ETIQUETA}>Imagen de la oferta</label>
-            <OfertaImagenPicker
-              compacto
-              ofertaId={null}
-              imagenUrl={null}
-              archivo={form.imagen_archivo}
-              respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
-              onChange={({ archivo }) => setForm(f => ({ ...f, imagen_archivo: archivo }))}
-            />
           </div>
 
-          <button type="submit" disabled={guardandoOferta} className="w-full h-8 rounded-md bg-[var(--vit-accent)] text-fg text-xs font-semibold hover:bg-[var(--vit-accent-hover)] disabled:opacity-50 transition-colors flex items-center justify-center">
-            {guardandoOferta ? <Loader className="animate-spin" size={14} /> : 'Guardar'}
-          </button>
-        </form>
-      )}
+          {editandoId && (
+            <button
+              type="button"
+              onClick={async () => { if (await eliminarOferta(editandoId)) cerrarFormulario(); }}
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-red-400/80 hover:text-red-400 py-1.5"
+            >
+              <Trash2 size={13} /> Eliminar oferta
+            </button>
+          )}
 
-      {ofertas.length === 0 && !creando ? (
+          {/* Sticky dentro del scroll del tab Venta (no un contenedor propio):
+              se pega al fondo del viewport visible mientras se scrollea el
+              formulario, sin importar cuán largo sea. */}
+          <div className="sticky bottom-0 py-3 bg-[var(--vit-surface)] border-t border-[var(--vit-border)]">
+            <button type="submit" disabled={guardandoOferta} className="w-full h-9 rounded-md bg-[var(--vit-accent)] text-fg text-xs font-semibold hover:bg-[var(--vit-accent-hover)] disabled:opacity-50 transition-colors flex items-center justify-center">
+              {guardandoOferta ? <Loader className="animate-spin" size={14} /> : 'Guardar'}
+            </button>
+          </div>
+        </form>
+    );
+  }
+
+  // Nueva/Editar reemplazan TODA esta sección (header + lista) por el
+  // inspector — nunca conviven. Antes "Editar" dejaba la tarjeta de arriba
+  // parcialmente visible encima del formulario.
+  if (creando || editandoId) {
+    return (
+      <div className="mt-6 border-t border-[var(--vit-border)] pt-4">
+        {renderFormulario(creando ? 'Nueva Oferta' : 'Editar Oferta')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 mt-6 border-t border-[var(--vit-border)] pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-[var(--vit-text)]">Ofertas</h3>
+          <p className="text-xs text-[var(--vit-muted-2)]">Paquetes en la ficha y Order Bumps en el checkout de {producto.nombre || producto.etiqueta}.</p>
+        </div>
+        <button type="button" onClick={() => setCreando(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--vit-text)] bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md hover:border-[var(--vit-accent)] transition-colors">
+          <Plus size={14} /> Nueva
+        </button>
+      </div>
+
+      {ofertas.length === 0 ? (
         <div className="text-center py-6 border border-dashed border-[var(--vit-border)] rounded-lg">
           <Tag className="mx-auto text-[var(--vit-muted-2)] mb-2" size={24} />
           <p className="text-xs text-[var(--vit-muted)]">No hay ofertas para este producto.</p>
@@ -428,16 +670,27 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
             const promo = !esPack && of.precio_order_bump != null && Number(of.precio_order_bump) !== normal
               ? Number(of.precio_order_bump) : null;
             const unidades = (of.componentes || []).reduce((s, c) => s + (c.cantidad || 0), 0);
+            const expandida = expandidaId === of.id;
+
             return (
-              <div key={of.id} className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-lg p-3">
-                <div className="flex justify-between items-start gap-2 mb-2">
+              <div key={of.id} className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-lg overflow-hidden">
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setExpandidaId(expandida ? null : of.id)}
+                  onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandidaId(expandida ? null : of.id); } }}
+                  className="w-full flex justify-between items-start gap-2 p-3 text-left cursor-pointer"
+                >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-[var(--vit-text)]">{of.nombre}</span>
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[var(--vit-accent)]/10 text-[var(--vit-accent)] uppercase tracking-wider">
-                        {esPack ? `Paquete × ${unidades}` : 'Order Bump'}
+                        {esPack ? `Paquete × ${unidades}` : (of.estrategia === 'upsell' ? 'Upsell' : 'Order Bump')}
                       </span>
                     </div>
+                    {of.descripcion && (
+                      <div className="text-[11px] text-[var(--vit-muted-2)] mt-0.5">{of.descripcion}</div>
+                    )}
                     <div className="text-xs mt-1 flex items-baseline gap-2 flex-wrap">
                       <span className="text-[var(--vit-text)] font-semibold">{formatPrecio(promo ?? normal)}</span>
                       {promo !== null && <span className="text-[var(--vit-muted-2)] line-through">{formatPrecio(normal)}</span>}
@@ -448,60 +701,75 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <button type="button" onClick={() => eliminarOferta(of.id)} className="text-[var(--vit-muted-2)] hover:text-red-400 p-1 rounded-md transition-colors" title="Eliminar oferta">
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); eliminarOferta(of.id); }}
+                      className="text-[var(--vit-muted-2)] hover:text-red-400 p-1 rounded-md transition-colors"
+                      title="Eliminar oferta"
+                    >
                       <Trash2 size={14} />
                     </button>
-                    <button type="button" onClick={() => openEditar(of)} className="text-[var(--vit-muted-2)] hover:text-[var(--vit-accent)] p-1 rounded-md transition-colors" title="Editar oferta">
+                    <button
+                      type="button"
+                      onClick={e => { e.stopPropagation(); openEditar(of); }}
+                      className="text-[var(--vit-muted-2)] hover:text-[var(--vit-accent)] p-1 rounded-md transition-colors"
+                      title="Editar oferta"
+                    >
                       <Edit size={14} />
                     </button>
+                    <ChevronDown size={15} className={`text-[var(--vit-muted-2)] transition-transform ${expandida ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
 
-                {/* Imagen propia de la oferta. Es la MISMA que se carga desde
-                    Mis Productos → Ofertas comerciales (vive en la Oferta, no
-                    en la landing): se sube en cualquiera de los dos lados y se
-                    ve en los dos, y en la landing publicada. Sin imagen propia
-                    la tarjeta usa la del producto. */}
-                <div className="border-t border-[var(--vit-border)] pt-2.5 mt-2">
-                  <span className={ETIQUETA}>Imagen de la oferta</span>
-                  <OfertaImagenPicker
-                    compacto
-                    ofertaId={of.id}
-                    imagenUrl={of.imagen_url || null}
-                    respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
-                    onChange={({ imagen_url }) => {
-                      // Se avisa también hacia arriba: el preview de la ficha
-                      // dibuja las tarjetas con las ofertas que le pasa el
-                      // editor, así que sin esto la foto nueva no se vería
-                      // hasta recargar.
-                      const actualizadas = ofertas.map(x => (x.id === of.id ? { ...x, imagen_url } : x));
-                      setOfertas(actualizadas);
-                      onOfertasChange?.(actualizadas);
-                    }}
-                  />
-                </div>
+                {expandida && (
+                  <div className="px-3 pb-3">
+                    {/* Imagen propia de la oferta. Es la MISMA que se carga desde
+                        Mis Productos → Ofertas comerciales (vive en la Oferta, no
+                        en la landing): se sube en cualquiera de los dos lados y se
+                        ve en los dos, y en la landing publicada. Sin imagen propia
+                        la tarjeta usa la del producto. */}
+                    <div className="border-t border-[var(--vit-border)] pt-2.5 mt-2">
+                      <span className={ETIQUETA}>Imagen de la oferta</span>
+                      <OfertaImagenPicker
+                        compacto
+                        ofertaId={of.id}
+                        imagenUrl={of.imagen_url || null}
+                        respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
+                        onChange={({ imagen_url }) => {
+                          // Se avisa también hacia arriba: el preview de la ficha
+                          // dibuja las tarjetas con las ofertas que le pasa el
+                          // editor, así que sin esto la foto nueva no se vería
+                          // hasta recargar.
+                          const actualizadas = ofertas.map(x => (x.id === of.id ? { ...x, imagen_url } : x));
+                          setOfertas(actualizadas);
+                          onOfertasChange?.(actualizadas);
+                        }}
+                      />
+                    </div>
 
-                {/* Un paquete siempre se muestra en la ficha del producto: no
-                    hay nada que configurar. Los extras de checkout (bump y
-                    upsell) sí eligen dónde aparecen en esta landing. */}
-                {esPack ? (
-                  <div className="border-t border-[var(--vit-border)] pt-2 mt-2 text-xs text-[var(--vit-muted-2)] flex items-center gap-1.5">
-                    <Package size={13} className="text-[var(--vit-accent)]" /> Se muestra en la ficha del producto.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 border-t border-[var(--vit-border)] pt-2 mt-2">
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5">
-                        {of.estrategia === 'upsell' ? <Sparkles size={14} className="text-[var(--vit-accent)]" /> : <Check size={14} className="text-[var(--vit-accent)]" />}
-                        {of.estrategia === 'upsell' ? 'Upsell antes de confirmar' : 'Checkout "Comprar Ya"'}
-                      </span>
-                      <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasProductoVista.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_producto_vista', e.target.checked)} />
-                    </label>
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5"><ShoppingCart size={14} className="text-[var(--vit-accent)]" /> Carrito global</span>
-                      <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasCarrito.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_carrito', e.target.checked)} />
-                    </label>
+                    {/* Un paquete siempre se muestra en la ficha del producto: no
+                        hay nada que configurar. Los extras de checkout (bump y
+                        upsell) sí eligen dónde aparecen en esta landing. */}
+                    {esPack ? (
+                      <div className="border-t border-[var(--vit-border)] pt-2 mt-2 text-xs text-[var(--vit-muted-2)] flex items-center gap-1.5">
+                        <Package size={13} className="text-[var(--vit-accent)]" /> Se muestra en la ficha del producto.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2 border-t border-[var(--vit-border)] pt-2 mt-2">
+                        <label className="flex items-center justify-between cursor-pointer">
+                          <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5">
+                            {of.estrategia === 'upsell' ? <Sparkles size={14} className="text-[var(--vit-accent)]" /> : <Check size={14} className="text-[var(--vit-accent)]" />}
+                            {of.estrategia === 'upsell' ? 'Upsell antes de confirmar' : 'Checkout "Comprar Ya"'}
+                          </span>
+                          <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasProductoVista.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_producto_vista', e.target.checked)} />
+                        </label>
+                        <label className="flex items-center justify-between cursor-pointer">
+                          <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5"><ShoppingCart size={14} className="text-[var(--vit-accent)]" /> Carrito global</span>
+                          <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasCarrito.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_carrito', e.target.checked)} />
+                        </label>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
