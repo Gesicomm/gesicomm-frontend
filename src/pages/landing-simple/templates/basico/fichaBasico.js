@@ -39,7 +39,7 @@ export const SECCIONES_BASICO = [
   { key: 'usos',           numero: 7,  label: 'Usos y aplicaciones',   ambito: 'producto', ayuda: 'Los pasos de uso, en orden.' },
   { key: 'prueba_social',  numero: 8,  label: 'Prueba social',         ambito: 'landing',  ayuda: 'Calificación, reseñas y clientes satisfechos.' },
   { key: 'comparacion',    numero: 9,  label: 'Comparación',           ambito: 'producto', ayuda: 'Por qué elegir este producto frente a otras opciones.' },
-  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
+  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Preguntas propias de este producto en esta landing.' },
   { key: 'relacionados',   numero: 11, label: 'Productos relacionados',ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'garantias',      numero: 12, label: 'Garantía y devoluciones',ambito: 'landing', ayuda: 'Sellos de confianza y la política de devolución.' },
   { key: 'cta_final',      numero: 13, label: 'Cierre y urgencia',     ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },

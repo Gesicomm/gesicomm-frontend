@@ -61,6 +61,12 @@ export const updateEstadoEnvio = async (id, datos) => {
   return data;
 };
 
+/** Cambia el precio de un item puntual de un pedido ya creado (ej. descuento por seguimiento comercial). No toca el precio del producto. */
+export const actualizarPrecioItemEnvio = async (envioId, itemId, precio_unitario) => {
+  const { data } = await api.patch(`/envios/${envioId}/items/${itemId}/precio`, { precio_unitario });
+  return data;
+};
+
 export const iniciarPagoAbastecimiento = async (id) => {
   const { data } = await api.post(`/envios/${id}/abastecimiento/pagopar`);
   return data;

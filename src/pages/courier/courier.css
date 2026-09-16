@@ -1331,6 +1331,43 @@
   line-height: 1.25;
 }
 
+.np-order-item-price-edit {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  flex-wrap: nowrap;
+}
+
+.np-order-item-price-edit .np-price-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.82rem;
+  height: 28px;
+}
+
+.np-order-item-price-edit .btn-icon {
+  flex-shrink: 0;
+  padding: 0.25rem;
+  height: 28px;
+  width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.np-order-item-price-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-fg-muted);
+  font-size: 0.78rem;
+}
+
 .np-order-item-title-row span,
 .np-line-option {
   color: var(--color-fg-muted);

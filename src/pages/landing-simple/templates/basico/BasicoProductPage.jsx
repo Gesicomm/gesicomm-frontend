@@ -380,7 +380,7 @@ export default function BasicoProductPage({
         <section className="bsc-seccion bsc-wrap">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
-            <p className="bsc-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
+            <p className="bsc-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
           ) : (
             <div className="bsc-faq-grid">
               {item.faq.map((f, i) => (

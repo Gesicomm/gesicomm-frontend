@@ -603,7 +603,7 @@ export default function TechProductPage({
         <section className="tpp-seccion tpp-wrap" id="tpp-faq">
           <TituloSeccion numero={11} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
-            <p className="tpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
+            <p className="tpp-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
           ) : (
             <div className="tpp-faq-grid">
               {item.faq.map((f, i) => (

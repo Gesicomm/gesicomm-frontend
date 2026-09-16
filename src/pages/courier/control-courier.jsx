@@ -394,6 +394,7 @@ export function ControlCourier() {
         onClose={() => { setOpenNuevoPedido(false); setEnvioParaCompletar(null); }}
         onSubmit={handleModalSubmit}
         deliveryZonas={deliveryZonas}
+        onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}
       />
 
       {/* Modal de Impresión de Pedidos */}

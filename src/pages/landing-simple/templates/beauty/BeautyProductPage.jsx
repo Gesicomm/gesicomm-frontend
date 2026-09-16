@@ -435,7 +435,7 @@ export default function BeautyProductPage({
         <section className="bpp-seccion bpp-wrap">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
-            <p className="bpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
+            <p className="bpp-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
           ) : (
             <div className="bpp-faq-grid">
               {item.faq.map((f, i) => (

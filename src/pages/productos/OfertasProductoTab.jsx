@@ -640,8 +640,23 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
             <div className="form-grid-2">
               <div className="form-group">
-                <label>Nombre</label>
-                <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Pack x3" required />
+                <label>{esPack ? 'Nombre' : 'Título en el checkout'}</label>
+                <input
+                  value={form.nombre}
+                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                  placeholder={esPack ? 'Ej. Pack x3' : 'Ej: Sí, quiero sumar mi cargador con 20% OFF'}
+                  required
+                />
+                {form.estrategia === 'upsell' && (
+                  <small className="hint">
+                    Es el título grande del popup de mejora. Escribilo como un llamado a la acción — funciona mejor en primera persona y con el beneficio incluido.
+                  </small>
+                )}
+                {form.estrategia === 'order_bump' && (
+                  <small className="hint">
+                    Se usa como respaldo si dejás la Descripción de abajo vacía — en el checkout, la Descripción es la que se muestra como título grande.
+                  </small>
+                )}
               </div>
               <div className="form-group">
                 <label>Código interno <span className="hint">(estable, no depende del nombre)</span></label>
@@ -700,7 +715,21 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               )}
               <div className="form-group full">
                 <label>Descripción (opcional)</label>
-                <input value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder={esPack ? 'Ej: Llevá 2 y pagá menos' : 'Copy para mostrar en el checkout'} />
+                <input
+                  value={form.descripcion}
+                  onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                  placeholder={esPack ? 'Ej: Llevá 2 y pagá menos' : 'Ej: Envío incluido — solo por hoy'}
+                />
+                {form.estrategia === 'upsell' && (
+                  <small className="hint">
+                    Va debajo del título, en letra más chica — una línea corta de beneficio o urgencia (envío gratis, stock limitado, garantía). Opcional.
+                  </small>
+                )}
+                {form.estrategia === 'order_bump' && (
+                  <small className="hint">
+                    En el checkout, esto se muestra como el título grande de la casilla — escribilo como llamado a la acción. Si la dejás vacía, se usa el Título de arriba.
+                  </small>
+                )}
               </div>
               {/* Antes acá se pedía pegar una URL a mano, que en la práctica
                   nadie tenía. Ahora se sube el archivo, igual que las fotos

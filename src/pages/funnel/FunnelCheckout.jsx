@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Check, Loader, ImageOff, Gift, Sparkles } from 'lucide-react';
+import { X, Check, Loader, ImageOff, Gift, Sparkles, ArrowLeft } from 'lucide-react';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
@@ -30,6 +30,12 @@ function precioEnCheckout(oferta) {
   if (oferta?.precio_efectivo !== undefined && oferta.precio_efectivo !== null) return oferta.precio_efectivo;
   if (oferta?.precio_order_bump !== undefined && oferta.precio_order_bump !== null) return oferta.precio_order_bump;
   return oferta?.precio_normal ?? oferta?.precio ?? 0;
+}
+
+/** % de ahorro contra el precio normal, o null si no hay descuento real. */
+function pctAhorro(precio, normal) {
+  if (!normal || normal <= precio) return null;
+  return Math.round((1 - precio / normal) * 100);
 }
 
 export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen, tema, ofertasLanding = [], itemOriginal = null, pasarelas = [], deliveryCiudades = [] }) {
@@ -200,6 +206,18 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     marginBottom: '0.3rem',
     color: hexToRgba(tema.texto, 0.65),
   };
+  // Insignia de ahorro: el mismo motivo visual en el order bump Y en el
+  // upsell, para que el checkout se lea como una sola idea ("acá hay un
+  // trato") en vez de dos secciones sueltas con estilos distintos.
+  const Ahorro = ({ pct }) => pct === null ? null : (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', padding: '0.08rem 0.4rem',
+      borderRadius: '999px', fontSize: '0.66rem', fontWeight: 800,
+      backgroundColor: tema.acento, color: tema.fondo, lineHeight: 1.5,
+    }}>
+      -{pct}%
+    </span>
+  );
 
   return (
     <div
@@ -260,13 +278,22 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
             </button>
           </div>
         ) : paso === 'upsell' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+          <div className="fc-upsell-panel" style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <style>{`
+              @keyframes fc-upsell-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+              .fc-upsell-panel { animation: fc-upsell-in 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+              @media (prefers-reduced-motion: reduce) { .fc-upsell-panel { animation: none; } }
+            `}</style>
             <button
               type="button"
               onClick={() => setPaso('formulario')}
-              style={{ alignSelf: 'flex-start', fontSize: '0.85rem', color: hexToRgba(tema.texto, 0.65) }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                alignSelf: 'flex-start', fontSize: '0.82rem', fontWeight: 600,
+                color: hexToRgba(tema.texto, 0.65), padding: 0,
+              }}
             >
-              Volver
+              <ArrowLeft size={15} /> Volver
             </button>
             <p style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
@@ -287,6 +314,8 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               const imgCruda = oferta.imagen || principal?.imagen;
               const img = typeof imgCruda === 'string' ? imgCruda : (imgCruda?.url || imgCruda?.ruta || null);
               const precio = precioEnCheckout(oferta);
+              const precioNormal = oferta.precio_normal ?? oferta.precio;
+              const pct = pctAhorro(precio, precioNormal);
               return (
                 <div key={oferta.id} style={{
                   display: 'grid', gridTemplateColumns: '76px 1fr', gap: '0.85rem',
@@ -307,8 +336,12 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                         {oferta.descripcion || principal?.nombre}
                       </span>
                     )}
-                    <span style={{ display: 'block', marginTop: '0.45rem', fontWeight: 900, fontSize: '1rem' }}>
-                      {formatPrecio(precio)}
+                    <span style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '0.45rem' }}>
+                      <span style={{ fontWeight: 900, fontSize: '1rem' }}>{formatPrecio(precio)}</span>
+                      {pct !== null && (
+                        <span style={{ fontSize: '0.78rem', color: hexToRgba(tema.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioNormal)}</span>
+                      )}
+                      <Ahorro pct={pct} />
                     </span>
                   </div>
                 </div>
@@ -323,23 +356,28 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
               onClick={() => confirmarUpsell(true)}
               style={{
                 width: '100%', padding: '0.9rem', borderRadius: '0.75rem',
-                fontWeight: 900, backgroundColor: tema.acento, color: tema.fondo,
+                fontWeight: 900, fontSize: '0.95rem', backgroundColor: tema.acento, color: tema.fondo,
+                boxShadow: `0 8px 20px -8px ${hexToRgba(tema.acento, 0.6)}`,
                 opacity: enviando ? 0.55 : 1,
               }}
             >
               {enviando ? 'Confirmando...' : 'Sí, agregar a mi pedido'}
             </button>
+            {/* A propósito más liviano que el botón de arriba: declinar el
+                upsell no cancela la compra, solo la sigue sin este agregado —
+                que se lea como una salida discreta, no como una decisión al
+                mismo nivel que aceptar la oferta. */}
             <button
               type="button"
               disabled={enviando}
               onClick={() => confirmarUpsell(false)}
               style={{
-                width: '100%', padding: '0.75rem', borderRadius: '0.75rem',
-                fontWeight: 800, border: `1px solid ${bordeSuave}`,
-                color: tema.texto, backgroundColor: 'transparent', opacity: enviando ? 0.55 : 1,
+                width: '100%', padding: '0.5rem', border: 'none', background: 'transparent',
+                fontWeight: 600, fontSize: '0.82rem',
+                color: hexToRgba(tema.texto, 0.55), opacity: enviando ? 0.55 : 1,
               }}
             >
-              No, confirmar sin agregar
+              No, gracias — confirmar sin agregar
             </button>
           </div>
         ) : (
@@ -389,7 +427,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                   textTransform: 'uppercase', color: hexToRgba(tema.texto, 0.55),
                   marginBottom: '0.5rem',
                 }}>
-                  <Sparkles size={13} style={{ color: tema.acento }} /> Completá tu compra
+                  <Sparkles size={13} style={{ color: tema.acento }} /> Sumá esto a tu pedido
                 </p>
 
                 {orderBumps.map(oferta => {
@@ -402,6 +440,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                   // Solo se tacha si el promocional es de verdad más barato —
                   // si no, se vería un "antes" igual al "ahora".
                   const hayDescuento = precioNormal > precio;
+                  const pct = pctAhorro(precio, precioNormal);
                   const unidades = oferta.unidades > 1 ? oferta.unidades : null;
                   // Solo el order bump aparece acá (ver ESTRATEGIAS_CHECKOUT arriba):
                   // se describe por el producto que suma.
@@ -412,7 +451,8 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                       borderRadius: '0.5rem', border: `2px ${elegida ? 'solid' : 'dashed'}`,
                       borderColor: elegida ? tema.acento : bordeSuave,
                       backgroundColor: elegida ? hexToRgba(tema.acento, 0.06) : hexToRgba(tema.texto, 0.02),
-                      cursor: 'pointer', marginTop: '0.4rem', transition: 'border-color 0.2s, background-color 0.2s',
+                      cursor: 'pointer', marginTop: '0.4rem', transform: elegida ? 'scale(1.01)' : 'scale(1)',
+                      transition: 'border-color 0.2s, background-color 0.2s, transform 0.15s',
                     }}>
                       <input
                         type="checkbox"
@@ -437,6 +477,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                           {hayDescuento && (
                             <span style={{ fontSize: '0.75rem', color: hexToRgba(tema.texto, 0.5), textDecoration: 'line-through' }}>{formatPrecio(precioNormal)}</span>
                           )}
+                          <Ahorro pct={pct} />
                         </span>
                       </div>
                     </label>

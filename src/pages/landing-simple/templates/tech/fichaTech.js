@@ -42,7 +42,7 @@ export const SECCIONES_TECH = [
   { key: 'multimedia',      numero: 8,  label: 'Contenido visual',          ambito: 'producto', ayuda: 'Imágenes y videos adicionales del producto.' },
   { key: 'comparativa',     numero: 9,  label: 'Comparación',               ambito: 'producto', ayuda: 'Por qué es mejor que otras marcas.' },
   { key: 'resenas',         numero: 10, label: 'Reseñas y testimonios',     ambito: 'producto', ayuda: 'Opiniones reales de clientes.' },
-  { key: 'faq',             numero: 11, label: 'Preguntas frecuentes',      ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
+  { key: 'faq',             numero: 11, label: 'Preguntas frecuentes',      ambito: 'producto', ayuda: 'Preguntas propias de este producto en esta landing.' },
   { key: 'upsells',         numero: 12, label: 'Complementa tu compra',     ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'garantias',       numero: 13, label: 'Garantía y devoluciones',   ambito: 'landing',  ayuda: 'Garantía, devoluciones, envío, soporte y pago seguro.' },
   { key: 'cta_final',       numero: 14, label: 'Cierre y urgencia',         ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },

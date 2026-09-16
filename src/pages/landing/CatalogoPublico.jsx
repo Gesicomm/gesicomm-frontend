@@ -4,23 +4,15 @@ import { obtenerLandingPublica } from '../../services/landingPublicaService';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { getMediaUrl } from '../../services/api';
-import { Store, Loader, ImageOff } from 'lucide-react';
+import { Store, Loader } from 'lucide-react';
+import { calcularEstiloLanding } from '../../lib/landingDiseno';
 import { hexToRgba, resolverTemaPorSlug } from '../landing-simple/templates/themeUtils';
-import { RedesSocialesFooter, ImagenProductoHover } from '../landing-simple/templates/sections';
+import { RedesSocialesFooter } from '../landing-simple/templates/sections';
 import StoreFooterLegal from './StoreFooterLegal';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
+import CatalogoView from '../landing-simple/templates/CatalogoView';
 import CartDrawer from './CartDrawer';
 import { useStoreCart } from './useStoreCart';
-
-const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(num || 0);
-
-const OPCIONES_ORDEN = [
-  { id: 'destacados', label: 'Destacados' },
-  { id: 'az', label: 'Alfabéticamente, A-Z' },
-  { id: 'za', label: 'Alfabéticamente, Z-A' },
-  { id: 'min-max', label: 'Precio, menor a mayor' },
-  { id: 'max-min', label: 'Precio, mayor a menor' },
-];
 
 /**
  * Catálogo completo de la landing (todos los items seleccionados en el
@@ -35,13 +27,6 @@ export default function CatalogoPublico() {
   const [estadoCarga, setEstadoCarga] = useState('cargando');
   const [data, setData] = useState(null);
 
-  const [filtroOrden, setFiltroOrden] = useState('destacados');
-  const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
-  const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
-  const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('todos');
-  const [filtroCategoria, setFiltroCategoria] = useState('todas');
-  const [filtroEtiqueta, setFiltroEtiqueta] = useState('todas');
-  
   useEffect(() => {
     let activo = true;
     obtenerLandingPublica(slug)
@@ -98,45 +83,32 @@ export default function CatalogoPublico() {
     stock: i.stock,
   }));
 
-  const categoriasUnicas = Array.from(new Set(productos.map(p => p.categoria).filter(Boolean))).sort();
-  const etiquetasUnicas = Array.from(new Set(productos.map(p => p.etiqueta).filter(Boolean))).sort();
-
-  const filteredAndSortedProducts = productos.filter(p => {
-    if (filtroPrecioMin && p.precio < Number(filtroPrecioMin)) return false;
-    if (filtroPrecioMax && p.precio > Number(filtroPrecioMax)) return false;
-    // Disponibilidad: `stock` es null cuando el producto no rastrea stock
-    // (siempre disponible) — solo se filtra cuando el dato existe.
-    if (filtroDisponibilidad === 'en_stock' && p.stock != null && p.stock <= 0) return false;
-    if (filtroDisponibilidad === 'agotado' && !(p.stock != null && p.stock <= 0)) return false;
-    if (filtroCategoria !== 'todas' && p.categoria !== filtroCategoria) return false;
-    if (filtroEtiqueta !== 'todas' && p.etiqueta !== filtroEtiqueta) return false;
-    return true;
-  }).sort((a, b) => {
-    if (filtroOrden === 'az') return a.nombre.localeCompare(b.nombre);
-    if (filtroOrden === 'za') return b.nombre.localeCompare(a.nombre);
-    if (filtroOrden === 'min-max') return a.precio - b.precio;
-    if (filtroOrden === 'max-min') return b.precio - a.precio;
-    return 0; // destacados (default)
-  });
-
-  const hayFiltrosActivos = filtroPrecioMin || filtroPrecioMax || filtroDisponibilidad !== 'todos' || filtroCategoria !== 'todas' || filtroEtiqueta !== 'todas';
-  function limpiarFiltros() {
-    setFiltroPrecioMin('');
-    setFiltroPrecioMax('');
-    setFiltroDisponibilidad('todos');
-    setFiltroCategoria('todas');
-    setFiltroEtiqueta('todas');
-  }
-
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
   const linkInicio = isLocalFallback && slug ? `/l/${slug}` : '/';
   const linkContacto = isLocalFallback && slug ? `/l/${slug}/contacto` : '/contacto';
   const linkProducto = (productoId) => (isLocalFallback && slug ? `/l/${slug}/${productoId}` : `/${productoId}`);
 
-  const inputClase = 'bg-transparent px-3 py-2 rounded-lg text-sm font-medium outline-none transition-colors';
+  // El CartDrawer (y cualquier clase `lp-*` del CSS compartido) toma sus
+  // colores de las variables --l-*, que acá no llegaban: a diferencia del
+  // home y la ficha de producto (que se montan dentro del wrapper con
+  // cssVarsRigido de TiendaPaginaView.jsx), esta página es una ruta propia
+  // y nunca las definía — el carrito quedaba con los fallbacks
+  // hardcodeados del CSS (gris/negro) en vez del tema real de la tienda.
+  // Mismo cálculo de "modo" que TiendaPaginaView.jsx, para que dé exactamente
+  // el mismo resultado que en esas páginas.
+  const modoOscuro = (() => {
+    const hex = (tema.fondo || '#000').toLowerCase().match(/#([0-9a-f]{6})/)?.[1];
+    if (!hex) return true;
+    const r = parseInt(hex.slice(0, 2), 16) / 255, g = parseInt(hex.slice(2, 4), 16) / 255, b = parseInt(hex.slice(4, 6), 16) / 255;
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) <= 0.5;
+  })();
+  const cssVarsCarrito = calcularEstiloLanding({
+    tema: { primario: tema.acento, fondo: tema.fondo, texto: tema.texto, modo: modoOscuro ? 'oscuro' : 'claro' },
+    diseno: {},
+  });
 
   return (
-    <div className="min-h-screen font-sans flex flex-col" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
+    <div className="min-h-screen font-sans flex flex-col" style={{ ...cssVarsCarrito, backgroundColor: tema.fondo, color: tema.texto }}>
       {data?.template?.kind === 'rigido' ? (
         <StoreHeader
           templateSlug={data.template.slug}
@@ -166,140 +138,16 @@ export default function CatalogoPublico() {
         </header>
       )}
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 pt-8 pb-20">
-        <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{tituloCatalogo}</h1>
-          {data?.catalogo_descripcion && (
-            <p className="mt-2 max-w-2xl text-sm" style={{ color: hexToRgba(tema.texto, 0.6) }}>{data.catalogo_descripcion}</p>
-          )}
-        </div>
-
-        {/* Barra de filtros horizontal — compacta, sin sidebar ni drawer móvil. */}
-        <div className="flex flex-wrap items-center gap-3 pb-5 mb-6" style={{ borderBottom: `1px solid ${bordeSuave}` }}>
-          <select
-            value={filtroOrden}
-            onChange={e => setFiltroOrden(e.target.value)}
-            className={inputClase}
-            style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
-          >
-            {OPCIONES_ORDEN.map(o => <option key={o.id} value={o.id} style={{ color: '#000' }}>{o.label}</option>)}
-          </select>
-
-          <select
-            value={filtroDisponibilidad}
-            onChange={e => setFiltroDisponibilidad(e.target.value)}
-            className={inputClase}
-            style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
-          >
-            <option value="todos" style={{ color: '#000' }}>Disponibilidad: todas</option>
-            <option value="en_stock" style={{ color: '#000' }}>En stock</option>
-            <option value="agotado" style={{ color: '#000' }}>Agotado</option>
-          </select>
-
-          {categoriasUnicas.length > 0 && (
-            <select
-              value={filtroCategoria}
-              onChange={e => setFiltroCategoria(e.target.value)}
-              className={inputClase}
-              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
-            >
-              <option value="todas" style={{ color: '#000' }}>Categoría: todas</option>
-              {categoriasUnicas.map(cat => <option key={cat} value={cat} style={{ color: '#000' }}>{cat}</option>)}
-            </select>
-          )}
-
-          {etiquetasUnicas.length > 0 && (
-            <select
-              value={filtroEtiqueta}
-              onChange={e => setFiltroEtiqueta(e.target.value)}
-              className={inputClase}
-              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
-            >
-              <option value="todas" style={{ color: '#000' }}>Etiqueta: todas</option>
-              {etiquetasUnicas.map(etq => <option key={etq} value={etq} style={{ color: '#000' }}>{etq}</option>)}
-            </select>
-          )}
-
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              placeholder="Precio mín"
-              value={filtroPrecioMin}
-              onChange={e => setFiltroPrecioMin(e.target.value)}
-              className={`${inputClase} w-28`}
-              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
-            />
-            <span style={{ color: hexToRgba(tema.texto, 0.4) }}>–</span>
-            <input
-              type="number"
-              placeholder="Precio máx"
-              value={filtroPrecioMax}
-              onChange={e => setFiltroPrecioMax(e.target.value)}
-              className={`${inputClase} w-28`}
-              style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
-            />
-          </div>
-
-          {hayFiltrosActivos && (
-            <button onClick={limpiarFiltros} className="text-xs font-semibold underline underline-offset-2 hover:opacity-70" style={{ color: hexToRgba(tema.texto, 0.6) }}>
-              Limpiar filtros
-            </button>
-          )}
-
-          <span className="ml-auto text-sm" style={{ color: hexToRgba(tema.texto, 0.5) }}>
-            {filteredAndSortedProducts.length} producto{filteredAndSortedProducts.length === 1 ? '' : 's'}
-          </span>
-        </div>
-
-        {filteredAndSortedProducts.length === 0 ? (
-          <div className="py-20 text-center flex flex-col items-center justify-center rounded-2xl" style={{ border: `1px dashed ${bordeSuave}`, backgroundColor: hexToRgba(tema.texto, 0.02) }}>
-             <ImageOff size={40} className="opacity-20 mb-4" />
-             <h3 className="text-lg font-bold mb-2">No se encontraron productos</h3>
-             <p className="opacity-60 max-w-sm text-sm">Intenta ajustar los filtros para ver más resultados.</p>
-             {hayFiltrosActivos && (
-               <button onClick={limpiarFiltros} className="mt-6 px-6 py-2 rounded-full text-sm font-bold transition-opacity hover:opacity-90" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Limpiar filtros</button>
-             )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {filteredAndSortedProducts.map((p) => {
-              const agotado = p.stock != null && p.stock <= 0;
-              const enOferta = p.precioAntes > p.precio;
-              return (
-                <div key={p.id} onClick={() => navigate(linkProducto(p.id))} className="rounded-2xl overflow-hidden shadow-sm cursor-pointer transition-opacity hover:opacity-90" style={{ backgroundColor: tema.fondo, border: `1px solid ${bordeSuave}` }}>
-                  <div className="aspect-square relative flex items-center justify-center" style={{ backgroundColor: hexToRgba(tema.texto, 0.05) }}>
-                    <ImagenProductoHover
-                      imagenes={p.imagenes}
-                      imagen={p.imagen}
-                      alt={p.nombre}
-                      fallback={<ImageOff size={28} style={{ color: hexToRgba(tema.texto, 0.2) }} />}
-                    />
-                    <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-                      {agotado && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.texto, color: tema.fondo }}>Agotado</span>
-                      )}
-                      {enOferta && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: tema.acento, color: tema.fondo }}>Oferta</span>
-                      )}
-                      {p.etiqueta && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: hexToRgba(tema.texto, 0.85), color: tema.fondo }}>{p.etiqueta}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-semibold text-sm leading-tight mb-1 truncate">{p.nombre}</h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="font-bold">{fmtPrecio(p.precio)}</span>
-                      {enOferta && (
-                        <span className="text-xs line-through opacity-50">{fmtPrecio(p.precioAntes)}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+      <main className="flex-1 flex flex-col">
+        <CatalogoView
+          productos={productos}
+          titulo={tituloCatalogo}
+          descripcion={data?.catalogo_descripcion}
+          tema={tema}
+          bordeSuave={bordeSuave}
+          onClickProducto={(p) => navigate(linkProducto(p.id))}
+          previewMode={false}
+        />
       </main>
       <CartDrawer
         items={Array.from(cartState.carrito.values())}

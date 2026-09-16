@@ -1,10 +1,9 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
-import { ContactoSection, DatosContactoSection } from './sections';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 import StoreHeader from './StoreHeader';
-
+import ContactoView from './ContactoView';
 
 /**
  * Vista previa (dentro del editor) de la página de Contacto — igual que
@@ -14,6 +13,9 @@ import StoreHeader from './StoreHeader';
  * acá para editar, a diferencia del catálogo con sus productos) — este
  * componente solo evita que el comercio se vaya del editor al mirar cómo
  * queda la página.
+ *
+ * El cuerpo es ContactoView.jsx, el MISMO componente que monta
+ * ContactoPublico.jsx — ver memoria gesicomm-preview-igual-publicada.
  */
 export default function ContactoPreview({ contacto, tema, templateSlug, nombreComercio, logo, onClickInicio, onClickCatalogo, onClickContacto, onVolver, isMobile = false }) {
   const t = resolverTemaPorSlug(tema, templateSlug);
@@ -27,7 +29,7 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
         </button>
         <span className="text-xs" style={{ color: hexToRgba(t.texto, 0.5) }}>Página de Contacto</span>
       </div>
-      
+
       <StoreHeader
         templateSlug={templateSlug}
         isMobile={isMobile}
@@ -41,19 +43,8 @@ export default function ContactoPreview({ contacto, tema, templateSlug, nombreCo
         onClickContacto={onClickContacto}
       />
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-10">
-        <h1 className="text-3xl font-bold text-center mb-8">Contacto</h1>
-        <div className="rounded-3xl px-6" style={{ border: `1px solid ${bordeSuave}`, backgroundColor: hexToRgba(t.texto, 0.03) }}>
-          <DatosContactoSection
-            contacto={contacto}
-            acento={t.acento}
-            tituloClase="font-bold"
-            bordeSuave="transparent"
-            textoSuave={(a) => ({ color: hexToRgba(t.texto, a) })}
-            isMobile={false}
-          />
-          <ContactoSection contacto={contacto} acento={t.acento} tituloClase="font-bold" bordeSuave={bordeSuave} isMobile={false} />
-        </div>
+      <main className="flex-1 flex flex-col">
+        <ContactoView contacto={contacto} tema={t} bordeSuave={bordeSuave} />
       </main>
 
       <StoreFooterLegal tema={t} bordeSuave={bordeSuave} nombreComercio={nombreComercio} isPreview={true} />

@@ -1583,13 +1583,9 @@ button.lp-tier-card--imagen {
 }
 
 .lp-cart-sugerencias {
-  padding: 0.25rem 1.25rem 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  border-top: 1px dashed var(--l-card-border, rgba(255, 255, 255, 0.08));
-  margin-top: 0.25rem;
-  padding-top: 0.85rem;
 }
 .lp-cart-sugerencia {
   display: grid;
@@ -1621,6 +1617,61 @@ button.lp-tier-card--imagen {
 }
 .lp-cart-sugerencia-add:hover {
   filter: brightness(1.1);
+}
+
+/* ─── Popup de upsell ─────────────────────────────────────────────────
+   Por encima del propio drawer (z-index 350): es una pregunta que corta
+   el paso, no otra pantalla más adentro del carrito. */
+.lp-upsell-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: lp-fade-in 0.15s ease;
+}
+.lp-upsell-modal {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--l-modal-bg, #161a28);
+  border: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--l-radius, 18px);
+  padding: 1.5rem 1.25rem 1.25rem;
+  color: var(--l-text, #f8fafc);
+  font-family: var(--l-font, inherit);
+  box-shadow: 0 25px 80px -10px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: lp-modal-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lp-upsell-modal-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  background: transparent;
+  border: none;
+  color: var(--l-text-muted, #94a3b8);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  display: flex;
+}
+.lp-upsell-modal-close:hover {
+  color: var(--l-text, #f8fafc);
+}
+.lp-upsell-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin: 0 1.75rem 1.1rem 0;
+  line-height: 1.3;
 }
 
 .lp-cart-footer {

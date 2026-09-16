@@ -51,7 +51,7 @@ export const SECCIONES_FICHA = [
   { key: 'opiniones',    numero: 7,  label: 'Opiniones de clientes', ambito: 'producto', ayuda: 'Testimonios con estrellas y nombre.' },
   { key: 'como_funciona',numero: 8,  label: 'Cómo funciona',         ambito: 'landing',  ayuda: 'Los pasos desde que lo toma hasta que ve resultados.' },
   { key: 'garantias',    numero: 9,  label: 'Garantías y confianza',ambito: 'landing',  ayuda: 'Devolución, fabricación, pago seguro.' },
-  { key: 'faq',          numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
+  { key: 'faq',          numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Preguntas propias de este producto en esta landing.' },
   { key: 'upsells',      numero: 11, label: 'Productos complementarios', ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'cta_final',    numero: 12, label: 'Cierre y urgencia',     ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
 ];

@@ -420,7 +420,7 @@ export default function FitnessProductPage({
         <section className="fpp-seccion fpp-wrap" id="fpp-faq">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
-            <p className="fpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
+            <p className="fpp-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
           ) : (
             <div className="fpp-faq-grid">
               {item.faq.map((f, i) => (

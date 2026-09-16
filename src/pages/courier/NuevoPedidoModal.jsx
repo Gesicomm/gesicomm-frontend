@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save } from "lucide-react";
+import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save, Pencil, Check, Loader2 } from "lucide-react";
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
-import { getCouriers, getMetodosPago } from "../../services/courierApi";
+import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio } from "../../services/courierApi";
 import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
@@ -175,7 +175,7 @@ function buildFormFromEnvio(envio) {
  * "completar" los ítems y la fecha/hora original no son editables (ya
  * comprometieron stock/registro), todo lo demás sí.
  */
-export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [] }) {
+export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [], onPrecioItemActualizado }) {
   const modoCompletar = !!envio;
   // Confirmar solo aplica a un pedido Pendiente. Sobre uno que ya avanzó, el
   // modal es un editor: guarda datos y no toca el estado. El título y el
@@ -208,6 +208,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
    * acá o vuelve el mismo problema.
    */
   const precioAlAbrirRef = useRef(null);
+  // Ítems del pedido, con override local tras editar el precio de alguno —
+  // ver EditarPrecioItem más abajo. Empieza en null (usa envio.items) y se
+  // llena recién cuando se guarda un cambio de precio.
+  const [itemsActuales, setItemsActuales] = useState(null);
+  const [precioEditandoId, setPrecioEditandoId] = useState(null);
+  const [precioTemp, setPrecioTemp] = useState(0);
+  const [guardandoPrecioId, setGuardandoPrecioId] = useState(null);
+  const [precioError, setPrecioError] = useState(null);
 
   useEffect(() => {
     if (open) {
@@ -221,6 +229,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
           }
         : null;
       setItems([]);
+      setItemsActuales(null);
+      setPrecioEditandoId(null);
+      setPrecioError(null);
       setOfertasPorProducto({});
       setErrors({});
       setSubmitError(null);
@@ -282,11 +293,45 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   // Normalizamos siempre el subtotal porque los items que vienen del endpoint
   // paginado no tienen el campo "subtotal" precalculado — lo calculamos acá.
   const itemsParaTarifa = modoCompletar
-    ? (envio?.items || []).map(it => ({
+    ? (itemsActuales || envio?.items || []).map(it => ({
         ...it,
         subtotal: Number(it.subtotal) || (Number(it.precio_unitario) * Number(it.cantidad)),
       }))
     : items;
+
+  /**
+   * Cambia el precio de UN ítem del pedido — caso real de seguimiento
+   * comercial: alguien consultó, no compró, y después se le ofrece un
+   * descuento puntual para cerrar la venta. Pega directo al endpoint
+   * dedicado (no junta esto con el submit general del modal) porque el
+   * monto ya se ajusta en el backend por delta; si además el submit
+   * general mandara `monto: precioTotalVendido` con el valor congelado de
+   * cuando se abrió el modal, pisaría el ajuste — el mismo bug #385 de
+   * más arriba. Por eso, al guardar, se actualiza también la foto
+   * congelada (`precioAlAbrirRef`) con el monto nuevo.
+   */
+  const guardarPrecioItem = async (it) => {
+    const nuevo = Number(precioTemp);
+    if (!Number.isFinite(nuevo) || nuevo < 0) {
+      setPrecioError("El precio debe ser un número válido.");
+      return;
+    }
+    setGuardandoPrecioId(it.id);
+    setPrecioError(null);
+    try {
+      const actualizado = await actualizarPrecioItemEnvio(envio.id, it.id, nuevo);
+      setItemsActuales(actualizado.items || []);
+      if (precioAlAbrirRef.current) {
+        precioAlAbrirRef.current = { ...precioAlAbrirRef.current, monto: Number(actualizado.monto) || 0 };
+      }
+      setPrecioEditandoId(null);
+      onPrecioItemActualizado?.(actualizado);
+    } catch (err) {
+      setPrecioError(err?.response?.data?.error || "No se pudo actualizar el precio.");
+    } finally {
+      setGuardandoPrecioId(null);
+    }
+  };
 
   // Si se está completando un pedido sin courier asignado, intenta
   // autocompletarlo apenas ciudad + couriers + métodos de pago están listos.
@@ -1246,7 +1291,48 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                             <div className="np-order-item-title-row">
                               <div>
                                 <strong>{it.nombre_producto}</strong>
-                                <span>Gs. {pUnit.toLocaleString('es-PY')} c/u</span>
+                                {modoCompletar && precioEditandoId === it.id ? (
+                                  <div className="np-order-item-price-edit">
+                                    <CurrencyInput
+                                      value={precioTemp}
+                                      onChange={setPrecioTemp}
+                                      className="form-input np-price-input"
+                                      style={{ textAlign: 'left' }}
+                                    />
+                                    <button
+                                      type="button"
+                                      className="btn-icon"
+                                      title="Guardar precio"
+                                      disabled={guardandoPrecioId === it.id}
+                                      onClick={() => guardarPrecioItem(it)}
+                                    >
+                                      {guardandoPrecioId === it.id ? <Loader2 size={14} /> : <Check size={14} />}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn-icon"
+                                      title="Cancelar"
+                                      disabled={guardandoPrecioId === it.id}
+                                      onClick={() => { setPrecioEditandoId(null); setPrecioError(null); }}
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="np-order-item-price-view">
+                                    Gs. {pUnit.toLocaleString('es-PY')} c/u
+                                    {modoCompletar && (
+                                      <button
+                                        type="button"
+                                        className="btn-icon"
+                                        title="Cambiar el precio de este ítem solo para este pedido (ej. descuento por seguimiento comercial)"
+                                        onClick={() => { setPrecioEditandoId(it.id); setPrecioTemp(pUnit); setPrecioError(null); }}
+                                      >
+                                        <Pencil size={12} />
+                                      </button>
+                                    )}
+                                  </span>
+                                )}
                               </div>
                               {!modoCompletar && (
                                 <button type="button" onClick={() => handleRemoveItem(idx)} className="btn-icon danger" title="Quitar producto">
@@ -1254,6 +1340,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                                 </button>
                               )}
                             </div>
+                            {modoCompletar && precioEditandoId === it.id && precioError && (
+                              <p style={{ color: 'var(--color-danger)', fontSize: '0.75rem', margin: '0.2rem 0 0' }}>{precioError}</p>
+                            )}
 
                             <div className="np-order-item-controls">
                               {!modoCompletar ? (

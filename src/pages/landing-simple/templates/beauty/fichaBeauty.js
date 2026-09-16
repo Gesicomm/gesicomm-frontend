@@ -34,7 +34,7 @@ export const SECCIONES_BEAUTY = [
   { key: 'resultados',     numero: 7,  label: 'Resultados de clientas',ambito: 'producto', ayuda: 'Testimonios con foto de antes y después.' },
   { key: 'como_funciona',  numero: 8,  label: 'Cómo funciona',         ambito: 'producto', ayuda: 'La rutina paso a paso. Se carga en Mis Productos.' },
   { key: 'garantias',      numero: 9,  label: 'Garantías y confianza', ambito: 'landing',  ayuda: 'Devolución, testeo dermatológico, cruelty free.' },
-  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Las preguntas se cargan en "Vista del producto".' },
+  { key: 'faq',            numero: 10, label: 'Preguntas frecuentes',  ambito: 'producto', ayuda: 'Preguntas propias de este producto en esta landing.' },
   { key: 'upsells',        numero: 11, label: 'Complementa tu rutina', ambito: 'producto', ayuda: 'Los productos se eligen en la pestaña "Relacionados".' },
   { key: 'cta_final',      numero: 12, label: 'Cierre y urgencia',     ambito: 'landing',  ayuda: 'Último llamado a la acción con contador.' },
 ];
