@@ -491,38 +491,64 @@ export default function VistaPedidos({ filtros }) {
                     )}
                   </span>
                 </div>
-                <div className="flex justify-between items-center text-sm text-[var(--vit-muted)]">
-                  <span>Descuentos</span>
-                  <span className="text-orange-400">
-                    -{formatPrecio(pedidoExpandido.descuento || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm text-[var(--vit-muted)]">
-                  <span>Costo de envío</span>
-                  <span>
-                    {pedidoExpandido.costo_envio > 0
-                      ? formatPrecio(pedidoExpandido.costo_envio)
-                      : "Gratis"}
-                  </span>
-                </div>
+                
+                {pedidoExpandido.descuento > 0 && (
+                  <div className="flex justify-between items-center text-sm text-[var(--vit-muted)]">
+                    <span>Descuentos</span>
+                    <span className="text-orange-400">
+                      -{formatPrecio(pedidoExpandido.descuento)}
+                    </span>
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-center text-base font-bold text-[var(--vit-text)] pt-2 border-t border-[var(--vit-border)]">
-                  <span>Total pedido</span>
+                  <span>Total cobrado al cliente</span>
                   <span>{formatPrecio(pedidoExpandido.monto)}</span>
                 </div>
+                
+                {/* ESTADO DE COBRO */}
                 {pedidoExpandido.estado === "Pendiente" ||
                 pedidoExpandido.estado === "Confirmado" ||
                 pedidoExpandido.estado === "Empacado" ||
                 pedidoExpandido.estado === "En tránsito" ? (
-                  <div className="flex justify-between items-center text-sm font-semibold text-yellow-400 pt-2 border-t border-[var(--vit-border)]">
+                  <div className="flex justify-between items-center text-sm font-semibold text-yellow-400 pt-1">
                     <span>Pendiente de cobro</span>
                     <span>{formatPrecio(pedidoExpandido.monto)}</span>
                   </div>
                 ) : pedidoExpandido.estado === "Entregado" ? (
-                  <div className="flex justify-between items-center text-sm font-semibold text-green-400 pt-2 border-t border-[var(--vit-border)]">
-                    <span>Pagado</span>
+                  <div className="flex justify-between items-center text-sm font-semibold text-green-400 pt-1">
+                    <span>Cobrado</span>
                     <span>{formatPrecio(pedidoExpandido.monto)}</span>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="flex justify-between items-center text-sm font-semibold text-red-400 pt-1">
+                    <span>No cobrado (Cancelado)</span>
+                    <span>{formatPrecio(pedidoExpandido.monto)}</span>
+                  </div>
+                )}
+
+                {/* COSTOS OPERATIVOS */}
+                <div className="mt-6 pt-4 border-t border-dashed border-[var(--vit-border)]">
+                  <h4 className="text-xs font-semibold text-[var(--vit-muted)] uppercase tracking-wider mb-3">
+                    Costos Operativos
+                  </h4>
+                  <div className="flex justify-between items-center text-sm text-[var(--vit-muted)]">
+                    <span>Costo de envío (Courier)</span>
+                    <span>
+                      {pedidoExpandido.costo_envio > 0
+                        ? formatPrecio(pedidoExpandido.costo_envio)
+                        : "Gratis"}
+                    </span>
+                  </div>
+                  {pedidoExpandido.costo_envio > 0 && (
+                    <div className="flex justify-between items-center text-sm font-medium text-[var(--vit-text)] mt-2">
+                      <span>Margen antes de otros costos</span>
+                      <span>
+                        {formatPrecio(pedidoExpandido.monto - pedidoExpandido.costo_envio)}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

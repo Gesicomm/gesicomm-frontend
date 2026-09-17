@@ -82,7 +82,8 @@ export function ReporteVentas({ filters }) {
     estado: filters.estado !== 'TODOS' ? filters.estado : '',
     producto_id: filters.producto_id !== 'TODOS' ? filters.producto_id : '',
     metodo_pago: filters.metodo_pago !== 'TODOS' ? filters.metodo_pago : '',
-  }), [rango, buscadorActivo, filters.confirmador, filters.courierId, filters.canal_venta_id, filters.estado, filters.producto_id, filters.metodo_pago]);
+    ciudad: filters.ciudad || '',
+  }), [rango, buscadorActivo, filters.confirmador, filters.courierId, filters.canal_venta_id, filters.estado, filters.producto_id, filters.metodo_pago, filters.ciudad]);
 
   const filtrosKpis = useMemo(() => ({
     fecha_desde: rango.fecha_desde,
@@ -93,7 +94,8 @@ export function ReporteVentas({ filters }) {
     estado: filters.estado !== 'TODOS' ? filters.estado : '',
     producto_id: filters.producto_id !== 'TODOS' ? filters.producto_id : '',
     metodo_pago: filters.metodo_pago !== 'TODOS' ? filters.metodo_pago : '',
-  }), [rango, filters.confirmador, filters.courierId, filters.canal_venta_id, filters.estado, filters.producto_id, filters.metodo_pago]);
+    ciudad: filters.ciudad || '',
+  }), [rango, filters.confirmador, filters.courierId, filters.canal_venta_id, filters.estado, filters.producto_id, filters.metodo_pago, filters.ciudad]);
 
   useEffect(() => {
     cargarDatos();

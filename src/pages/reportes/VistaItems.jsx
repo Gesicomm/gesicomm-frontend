@@ -92,47 +92,54 @@ export default function VistaItems({ filtros }) {
             <tr>
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Pedido</th>
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Fecha</th>
-              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Cliente</th>
-              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Producto Vendido</th>
+              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Producto</th>
+              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Variante/SKU</th>
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Rol Comercial</th>
-              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)]">Estructura</th>
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Cant.</th>
-              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Subtotal</th>
+              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Precio Unit.</th>
+              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Desc.</th>
+              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Venta Neta</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="8" className="p-8 text-center text-[var(--vit-muted)]">Cargando ítems...</td></tr>
+              <tr><td colSpan="9" className="p-8 text-center text-[var(--vit-muted)]">Cargando ítems...</td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan="8" className="p-8 text-center text-[var(--vit-muted)]">No hay ítems entregados para estos filtros.</td></tr>
+              <tr><td colSpan="9" className="p-8 text-center text-[var(--vit-muted)]">No hay ítems entregados para estos filtros.</td></tr>
             ) : (
               items.map(it => {
-                // Sequelize usa Ofertum como alias por defecto para Oferta (inglés irregular)
                 const oferta = it.Ofertum || it.Oferta;
                 const esBase = !oferta;
                 const rol = esBase ? 'Base' :
                             oferta.estrategia === 'order_bump' ? 'Order Bump' :
                             oferta.estrategia === 'upsell' ? 'Upsell' : 'Base';
-                const estructura = esBase ? 'Individual' :
-                                   oferta.tipo_contenido === 'combo' ? 'Combo' : 'Pack';
-
                 const icono = esBase ? <Package size={13} className="inline mr-1 text-blue-400" /> :
                               oferta.estrategia === 'order_bump' ? <Sparkles size={13} className="inline mr-1 text-orange-400" /> :
                               <TrendingUp size={13} className="inline mr-1 text-pink-400" />;
 
+                const varianteTexto = it.Variante ? (it.Variante.sku ? `${it.Variante.nombre} (${it.Variante.sku})` : it.Variante.nombre) : (it.Producto?.sku || '-');
+                
+                const precioBase = it.precio_normal || it.precio_unitario || 0;
+                const totalBase = precioBase * it.cantidad;
+                const ventaNeta = it.subtotal || 0;
+                const descuento = totalBase > ventaNeta ? totalBase - ventaNeta : 0;
+
                 return (
                   <tr key={it.id} className="border-b border-[var(--vit-border)] hover:bg-[var(--vit-bg-secondary)] transition-colors">
-                    <td className="p-4 font-mono font-bold text-[var(--vit-text)]">#{it.envio_id}</td>
+                    <td className="p-4 font-mono font-bold text-[var(--vit-text)]">
+                      {it.Envio?.numero_pedido ? `#${it.Envio.numero_pedido}` : `#${it.envio_id}`}
+                    </td>
                     <td className="p-4 text-[var(--vit-text)]">
                       <div>{formatFecha(it.Envio?.fecha)}</div>
                       {it.Envio?.hora && <div className="text-xs text-[var(--vit-muted)]">{it.Envio.hora}</div>}
                     </td>
-                    <td className="p-4 text-[var(--vit-text)]">{it.Envio?.cliente || '—'}</td>
                     <td className="p-4 font-medium text-[var(--vit-text)]">{it.nombre_producto}</td>
+                    <td className="p-4 text-[var(--vit-text)] text-xs text-[var(--vit-muted)]">{varianteTexto}</td>
                     <td className="p-4 text-[var(--vit-text)]">{icono}{rol}</td>
-                    <td className="p-4 text-[var(--vit-text)]">{estructura}</td>
                     <td className="p-4 text-right text-[var(--vit-text)]">{it.cantidad}</td>
-                    <td className="p-4 text-right font-bold text-[var(--vit-text)]">{formatPrecio(it.subtotal)}</td>
+                    <td className="p-4 text-right text-[var(--vit-text)]">{formatPrecio(precioBase)}</td>
+                    <td className="p-4 text-right text-orange-400">{descuento > 0 ? `-${formatPrecio(descuento)}` : '-'}</td>
+                    <td className="p-4 text-right font-bold text-[var(--vit-text)]">{formatPrecio(ventaNeta)}</td>
                   </tr>
                 );
               })

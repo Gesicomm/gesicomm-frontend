@@ -164,8 +164,21 @@ export function AnalyticsFilters({ filters, setFilters, confirmadoresDisponibles
             <label className="cic-filter-label">Confirmador</label>
             <select className="cic-select" value={filters.confirmador} onChange={e => updateFilter('confirmador', e.target.value)}>
               <option value="TODOS">Todos los confirmadores</option>
-              {confirmadoresDisponibles.map((c, i) => <option key={i} value={c}>{c}</option>)}
+              {confirmadoresDisponibles.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
+          </div>
+
+          <div className="cic-filter-item">
+            <label className="cic-filter-label">Ciudad</label>
+            <input 
+              type="text" 
+              className="cic-select" 
+              placeholder="Ej. Asunción" 
+              value={filters.ciudad || ''} 
+              onChange={e => updateFilter('ciudad', e.target.value)} 
+            />
           </div>
 
           <div className="cic-filter-item">
