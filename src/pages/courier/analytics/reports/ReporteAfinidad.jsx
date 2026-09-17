@@ -112,7 +112,7 @@ export function ReporteAfinidad({ filters }) {
         </div>
         {data.length > 0 && (
           <p style={{ fontSize: '0.72rem', color: 'var(--color-fg-subtle)', marginTop: '0.75rem' }}>
-            * Pares únicos canónicos (A+B ≠ B+A). Cantidad no infla pares: un pedido con A×3 + B×2 cuenta como 1 combinación A+B.
+            * Analizamos qué productos se compran juntos en un mismo pedido, sin importar las cantidades (ej. llevar 3 unidades del Producto A y 2 del B cuenta como una sola compra conjunta).
           </p>
         )}
       </div>
