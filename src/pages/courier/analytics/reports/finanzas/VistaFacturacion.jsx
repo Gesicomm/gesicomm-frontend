@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Calculator } from 'lucide-react';
+import { FileText, Calculator, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
 
 export function VistaFacturacion({ filters }) {
   const [data, setData] = useState([]);
   const [kpis, setKpis] = useState({ total_sujeto_iva: 0, total_iva: 0 });
   const [loading, setLoading] = useState(true);
+  const [localSearch, setLocalSearch] = useState({ buscador: '', fecha_desde: '', fecha_hasta: '' });
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     totalPages: 1
   });
@@ -16,11 +17,17 @@ export function VistaFacturacion({ filters }) {
   const fetchData = async (page = 1) => {
     setLoading(true);
     try {
-      const response = await reportesService.obtenerReporteFacturacion({
+      const payload = {
         ...filters,
         pagina: page,
         limite: pagination.limit
-      });
+      };
+      
+      if (localSearch.buscador) payload.buscador = localSearch.buscador;
+      if (localSearch.fecha_desde) payload.fecha_desde = localSearch.fecha_desde;
+      if (localSearch.fecha_hasta) payload.fecha_hasta = localSearch.fecha_hasta;
+
+      const response = await reportesService.obtenerReporteFacturacion(payload);
       
       setData(response.data || []);
       setKpis(response.kpis || { total_sujeto_iva: 0, total_iva: 0 });
@@ -38,8 +45,12 @@ export function VistaFacturacion({ filters }) {
   };
 
   useEffect(() => {
-    fetchData(1);
-  }, [filters]);
+    const timer = setTimeout(() => {
+      fetchData(1);
+    }, 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line
+  }, [filters, localSearch]);
 
   const handlePageChange = (newPage) => {
     fetchData(newPage);
@@ -72,6 +83,41 @@ export function VistaFacturacion({ filters }) {
       </div>
 
       {/* Data Table */}
+      
+      {/* Barra de Filtros Locales */}
+      <div className="flex flex-col md:flex-row gap-4 mb-4 bg-[var(--color-surface-2)] p-4 rounded-xl border border-[color-mix(in srgb, var(--color-fg) 8%, transparent)]">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-fg-muted)]" size={18} />
+          <input 
+            type="text" 
+            placeholder="Buscar por ID, Cliente, Teléfono, RUC o Razón Social..." 
+            className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg pl-10 pr-4 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+            value={localSearch.buscador}
+            onChange={(e) => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
+          />
+        </div>
+        <div className="flex gap-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Desde</span>
+            <input 
+              type="date" 
+              className="bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              value={localSearch.fecha_desde}
+              onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_desde: e.target.value }))}
+            />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Hasta</span>
+            <input 
+              type="date" 
+              className="bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              value={localSearch.fecha_hasta}
+              onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_hasta: e.target.value }))}
+            />
+          </div>
+        </div>
+      </div>
+
       <div className="cic-table-card">
         <div className="cic-table-wrapper">
           <table className="cic-table">
