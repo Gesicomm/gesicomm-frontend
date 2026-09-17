@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, DollarSign, PiggyBank, List } from 'lucide-react';
+import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, DollarSign, PiggyBank, List, MapPin, Truck, Shuffle } from 'lucide-react';
 import './CentroInteligenciaComercial.css';
 import './analytics/analytics.css';
 
@@ -12,6 +12,9 @@ import { ReporteComposicion } from './analytics/reports/ReporteComposicion';
 import { ReporteClientes } from './analytics/reports/ReporteClientes';
 import { ReporteMetodosPago } from './analytics/reports/ReporteMetodosPago';
 import { ReporteFallos } from './analytics/reports/ReporteFallos';
+import { ReporteGeografia } from './analytics/reports/ReporteGeografia';
+import { ReporteLogistica } from './analytics/reports/ReporteLogistica';
+import { ReporteAfinidad } from './analytics/reports/ReporteAfinidad';
 import ReporteConfirmadores from './analytics/reports/ReporteConfirmadores';
 import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
 

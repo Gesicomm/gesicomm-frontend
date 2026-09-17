@@ -49,5 +49,17 @@ export const reportesService = {
   obtenerReporteFallos: async (params) => {
     const res = await api.post('/reportes/fallos', params);
     return res.data;
+  },
+  obtenerReporteGeografia: async (params) => {
+    const res = await api.post('/reportes/geografia', params);
+    return res.data;
+  },
+  obtenerReporteLogistica: async (params) => {
+    const res = await api.post('/reportes/logistica', params);
+    return res.data;
+  },
+  obtenerReporteCrossSelling: async (params) => {
+    const res = await api.post('/reportes/cross-selling', params);
+    return res.data;
   }
 };
