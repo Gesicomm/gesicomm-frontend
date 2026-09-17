@@ -5,6 +5,10 @@ export const reportesService = {
     const res = await api.post('/reportes/kpis', filtros);
     return res.data;
   },
+  obtenerEvolucionVentas: async (filtros) => {
+    const res = await api.post('/reportes/evolucion-ventas', filtros);
+    return res.data;
+  },
   obtenerPedidos: async (params) => {
     // params incluye { pagina, limite, fecha_desde, fecha_hasta, buscador }
     const res = await api.post('/reportes/pedidos', params);

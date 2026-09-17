@@ -31,6 +31,9 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
     confirmador: 'TODOS',
     courierId: 'TODOS',
     canal_venta_id: 'TODOS',
+    estado: 'TODOS',
+    producto_id: 'TODOS',
+    metodo_pago: 'TODOS',
     // Rango personalizado: solo se envían al backend cuando periodo === 'personalizado_rango'
     fecha_desde: '',
     fecha_hasta: '',
