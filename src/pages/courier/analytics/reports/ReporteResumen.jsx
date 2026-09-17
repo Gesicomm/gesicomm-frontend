@@ -299,6 +299,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
             <FunnelStep num={4} label="Entregados" valor={funnel.entregados} tasa={funnel.tasa_entrega} color="var(--color-success)" tasaLabel="de creados" highlight />
             <FunnelStepSalida label="Devueltos" valor={funnel.devueltos} tasa={funnel.tasa_devolucion} colorDanger />
             <FunnelStepSalida label="Perdidos" valor={funnel.perdidos} tasa={funnel.tasa_perdida} colorWarning />
+            <FunnelStepSalida label="Reprogramados" valor={funnel.reprogramados || 0} tasa={funnel.tasa_reprogramacion || 0} colorWarning />
           </div>
         </div>
 

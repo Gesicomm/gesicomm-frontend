@@ -5,6 +5,7 @@ import { reportesService } from '../../../../../services/reportesApi';
 export function VistaComisiones({ filters }) {
   const [data, setData] = useState([]);
   const [kpis, setKpis] = useState({ total_facturado: 0, total_comisiones: 0, total_neto: 0 });
+  const [distribucionMetodos, setDistribucionMetodos] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -24,6 +25,7 @@ export function VistaComisiones({ filters }) {
       
       setData(response.data || []);
       setKpis(response.kpis || { total_facturado: 0, total_comisiones: 0, total_neto: 0 });
+      setDistribucionMetodos(response.distribucion_metodos || null);
       setPagination({
         ...pagination,
         page: response.actual || 1,
@@ -80,7 +82,39 @@ export function VistaComisiones({ filters }) {
         </div>
       </div>
 
+      {/* Distribución por Métodos de Pago */}
+      {distribucionMetodos && Object.keys(distribucionMetodos).length > 0 && (
+        <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>
+            Distribución por Método de Pago
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            {Object.entries(distribucionMetodos)
+              .sort(([,a], [,b]) => b.monto - a.monto)
+              .map(([metodo, stats]) => (
+                <div key={metodo} style={{ padding: '1rem', background: 'color-mix(in srgb, var(--color-fg) 3%, transparent)', borderRadius: '8px' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-fg)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                    {metodo}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>Facturado</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-fg)' }}>{formatMoney(stats.monto)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>Comisión</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-danger)' }}>{formatMoney(stats.comision)}</span>
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-subtle)', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
+                    {stats.count} pedido{stats.count !== 1 ? 's' : ''}
+                  </div>
+                </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Data Table */}
+
       <div className="cic-table-card">
         <div className="cic-table-wrapper">
           <table className="cic-table">

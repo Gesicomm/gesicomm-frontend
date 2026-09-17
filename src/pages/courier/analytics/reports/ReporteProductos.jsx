@@ -5,6 +5,7 @@ import { reportesService } from '../../../../services/reportesApi';
 export default function ReporteProductos({ filters }) {
   const [data, setData] = useState([]);
   const [kpis, setKpis] = useState({ total_unidades: 0, total_ingresos: 0, producto_estrella: 'Ninguno' });
+  const [top5, setTop5] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -24,6 +25,7 @@ export default function ReporteProductos({ filters }) {
       
       setData(response.data || []);
       setKpis(response.kpis || { total_unidades: 0, total_ingresos: 0, producto_estrella: 'Ninguno' });
+      setTop5(response.top5 || null);
       setPagination({
         ...pagination,
         page: response.actual || 1,
@@ -81,6 +83,60 @@ export default function ReporteProductos({ filters }) {
           <div className="cic-kpi-sub">Mayor cantidad de unidades vendidas</div>
         </div>
       </div>
+      
+      {/* Gráficos Top 5 */}
+      {top5 && (top5.vendidos?.length > 0 || top5.devoluciones?.length > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+          
+          {/* Top 5 Más Vendidos */}
+          {top5.vendidos?.length > 0 && (
+            <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>Top 5: Más Vendidos (Unidades)</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {top5.vendidos.map((p, idx) => {
+                  const maxV = top5.vendidos[0].vendidos;
+                  const pct = Math.max(5, (p.vendidos / maxV) * 100);
+                  return (
+                    <div key={p.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>{idx + 1}. {p.nombre}</span>
+                        <span style={{ color: 'var(--color-primary-text)', fontWeight: 700 }}>{p.vendidos}</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--color-primary)', borderRadius: '4px' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Top 5 Mayor Tasa Devolución */}
+          {top5.devoluciones?.length > 0 && (
+            <div className="cic-card" style={{ padding: '1.5rem', background: 'var(--color-canvas)', borderRadius: '12px', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, margin: '0 0 1rem 0', color: 'var(--color-fg)' }}>Top 5: Mayor Tasa de Devolución</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {top5.devoluciones.map((p, idx) => {
+                  const maxV = top5.devoluciones[0].tasa_devolucion;
+                  const pct = Math.max(5, (p.tasa_devolucion / maxV) * 100);
+                  return (
+                    <div key={p.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>{idx + 1}. {p.nombre}</span>
+                        <span style={{ color: 'var(--color-danger)', fontWeight: 700 }}>{p.tasa_devolucion.toFixed(1)}%</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', background: 'color-mix(in srgb, var(--color-danger) 15%, transparent)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--color-danger)', borderRadius: '4px' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Data Table */}
       <div className="cic-table-card">

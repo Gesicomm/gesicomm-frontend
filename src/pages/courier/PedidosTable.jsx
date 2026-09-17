@@ -759,6 +759,40 @@ export function PedidosTable({
         </div>
       )}
 
+      {/* ── Snapshot visual de pedidos en curso (Actionable) ── */}
+      {!soloAbastecimiento && (
+        <div style={{
+          display: "flex", gap: "1rem", marginTop: "1rem", flexWrap: "wrap"
+        }}>
+          {[
+            { st: "Pendiente", icon: <User size={16} />, label: "Pendientes", color: "var(--color-fg-muted)", border: "color-mix(in srgb, var(--color-fg) 10%, transparent)" },
+            { st: "Confirmado", icon: <Package size={16} />, label: "Por preparar", color: "var(--color-info)", border: "color-mix(in srgb, var(--color-info) 20%, transparent)" },
+            { st: "Preparado", icon: <ClipboardList size={16} />, label: "Por despachar", color: "var(--color-warning)", border: "color-mix(in srgb, var(--color-warning) 20%, transparent)" },
+            { st: "Despachado", icon: <Truck size={16} />, label: "En tránsito", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
+            { st: "Reprogramado", icon: <History size={16} />, label: "Reprogramados", color: "var(--color-danger)", border: "color-mix(in srgb, var(--color-danger) 20%, transparent)" }
+          ].map(item => (
+            <div key={item.st} style={{
+              flex: "1 1 140px",
+              padding: "1rem",
+              borderRadius: "12px",
+              background: "var(--color-canvas)",
+              border: `1px solid ${item.border}`,
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.5rem"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: item.color }}>
+                {item.icon}
+                <span style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>{item.label}</span>
+              </div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-fg)" }}>
+                {conteos[item.st] ?? 0}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Resumen financiero minimalista — solo en Entregados (plan sección 22) ── */}
       {estadoActivo === "Entregado" && resumenEntregados && (
         <div
