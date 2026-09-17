@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, DollarSign, PiggyBank, List, MapPin, Truck, Shuffle, Users } from 'lucide-react';
 import './CentroInteligenciaComercial.css';
 import './analytics/analytics.css';
+import './analytics/grouped-nav.css';
 
 import { AnalyticsFilters } from './analytics/AnalyticsFilters';
 import { ReporteResumen } from './analytics/reports/ReporteResumen';
