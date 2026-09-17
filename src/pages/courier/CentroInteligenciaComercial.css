@@ -389,6 +389,7 @@
 }
 
 .cic-kpi-card {
+  /* overflow removed for tooltips */
   background: color-mix(in srgb, var(--color-fg) 3%, transparent);
   border: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
   border-radius: 14px;
@@ -397,7 +398,6 @@
   flex-direction: column;
   gap: 0.4rem;
   position: relative;
-  overflow: hidden;
   transition: all 0.25s ease;
 }
 
