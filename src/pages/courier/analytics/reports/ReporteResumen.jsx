@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   TrendingUp, Package, CheckCircle2, RotateCcw,
-  AlertTriangle, DollarSign, Trophy, TrendingDown
+  AlertTriangle, DollarSign, Trophy, TrendingDown, Info
 } from 'lucide-react';
 import { getMetricasDashboardPedidos } from '../../../../services/courierApi';
 import { formatGs } from '../../../../lib/courier';
@@ -262,16 +262,22 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         </div>
 
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-accent-text, #f59e0b)' }}>
-          <div className="cic-kpi-header"><span>Facturación Entregada</span><DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} /></div>
+          <div className="cic-kpi-header" title="Total de dinero ingresado exclusivamente por pedidos en estado 'Entregado'. No incluye envíos pendientes ni cobros de delivery.">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>Facturación Entregada <Info size={12} style={{ color: 'var(--color-fg-muted)' }} /></span>
+            <DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} />
+          </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-accent-text)' }}>
             {formatGs(kpis.facturacion_entregada)}
             <Variacion actual={kpis.facturacion_entregada} previo={cmp?.facturacion_entregada} />
           </div>
-          <div className="cic-kpi-sub">Ingreso real de producto</div>
+          <div className="cic-kpi-sub" title="Ingreso real generado por la venta de tus productos, sin incluir costos extras que paga el cliente.">Ingreso real de producto</div>
         </div>
 
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-warning)' }}>
-          <div className="cic-kpi-header"><span>Margen Bruto Est.</span><TrendingUp size={16} style={{ color: 'var(--color-warning)' }} /></div>
+          <div className="cic-kpi-header" title="Es 'Estimado' porque asume que cargaste correctamente el precio de costo de cada producto. Es 'Bruto' porque solo descuenta ese costo, sin restar publicidad, empaque o sueldos.">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'help' }}>Margen Bruto Est. <Info size={12} style={{ color: 'var(--color-fg-muted)' }} /></span>
+            <TrendingUp size={16} style={{ color: 'var(--color-warning)' }} />
+          </div>
           <div className="cic-kpi-val" style={{ color: kpis.margen_bruto_estimado < 0 ? 'var(--color-danger)' : 'var(--color-warning)' }}>
             {formatGs(kpis.margen_bruto_estimado)}
           </div>
