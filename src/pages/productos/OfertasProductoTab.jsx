@@ -76,7 +76,7 @@ function emptyForm(productoId) {
     fecha_fin: '',
     descripcion: '',
     activo: true,
-    componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }],
+    componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }],
   };
 }
 
@@ -118,6 +118,11 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   const [form, setForm] = useState(() => emptyForm(productoId));
   const [guardando, setGuardando] = useState(false);
   const [ofertaABorrar, setOfertaABorrar] = useState(null);
+  // Variantes reales de cada producto elegido como componente — se traen on
+  // demand (no de una vez para todo el catálogo) y se cachean por
+  // producto_id, porque acá NUNCA se crean/editan variantes: solo se
+  // muestran para elegir "fija" o habilitar que el cliente elija.
+  const [variantesPorProducto, setVariantesPorProducto] = useState({});
 
   useEffect(() => {
     cargar();
@@ -138,6 +143,20 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     verificarSesion().then(u => setUsuarioActual(u));
   }, [productoId]);
 
+  useEffect(() => {
+    const ids = [...new Set(form.componentes.map(c => Number(c.producto_id)).filter(Boolean))];
+    ids.forEach(id => {
+      if (variantesPorProducto[id] !== undefined) return;
+      // Marca "ya pedido" de entrada (lista vacía) para no disparar el mismo
+      // fetch en cada render mientras la respuesta todavía no llegó.
+      setVariantesPorProducto(prev => (prev[id] !== undefined ? prev : { ...prev, [id]: [] }));
+      productService.variantes(id).then(vs => {
+        setVariantesPorProducto(prev => ({ ...prev, [id]: Array.isArray(vs) ? vs.filter(v => v.activo !== false) : [] }));
+      }).catch(() => {});
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.componentes]);
+
   async function cargar() {
     try {
       setLoading(true);
@@ -153,7 +172,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   function formPorEstrategia(estrategia) {
     const base = emptyForm(productoId);
     if (estrategia === 'order_bump' || estrategia === 'upsell' || estrategia === 'combo') {
-      return { ...base, estrategia, tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0 }] };
+      return { ...base, estrategia, tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
     }
     return { ...base, estrategia: 'normal', tipo_contenido: 'pack' };
   }
@@ -180,7 +199,13 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       fecha_fin: oferta.fecha_fin ? String(oferta.fecha_fin).slice(0, 10) : '',
       descripcion: oferta.descripcion || '',
       activo: oferta.activo,
-      componentes: (oferta.componentes || []).map(c => ({ producto_id: c.producto_id, cantidad: c.cantidad, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
+      componentes: (oferta.componentes || []).map(c => ({
+        producto_id: c.producto_id,
+        cantidad: c.cantidad,
+        descuento_porcentaje: Number(c.descuento_porcentaje) || 0,
+        variante_id: c.variante_id || null,
+        permite_elegir_variante: !!c.permite_elegir_variante,
+      })),
     });
     setError(null);
     setOpen(true);
@@ -190,7 +215,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     const nuevos = [...f.componentes];
     const idx = nuevos.findIndex(c => Number(c.producto_id) === Number(productoId));
     if (idx >= 0) nuevos[idx] = { ...nuevos[idx], cantidad: 1 };
-    else nuevos.unshift({ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0 });
+    else nuevos.unshift({ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false });
     return nuevos;
   }
 
@@ -202,7 +227,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   function handleTipoContenidoChange(nuevoTipo) {
     setForm(f => {
       if (nuevoTipo === 'pack') {
-        return { ...f, tipo_contenido: nuevoTipo, componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }] };
+        return { ...f, tipo_contenido: nuevoTipo, componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
       }
       if (nuevoTipo === 'combo') {
         return { ...f, tipo_contenido: nuevoTipo, componentes: componentesCombo(f) };
@@ -225,14 +250,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
         return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'combo', componentes: componentesCombo(f) };
       }
       if (nuevaEstrategia === 'normal' && f.tipo_contenido === 'combo') {
-        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'pack', componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0 }] };
+        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'pack', componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
       }
       return { ...f, estrategia: nuevaEstrategia };
     });
   }
 
   function addComponente() {
-    setForm(f => ({ ...f, componentes: [...f.componentes, { producto_id: '', cantidad: 1, descuento_porcentaje: 0 }] }));
+    setForm(f => ({ ...f, componentes: [...f.componentes, { producto_id: '', cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] }));
   }
   function updateComponente(idx, campo, valor) {
     setForm(f => {
@@ -269,7 +294,13 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
         activo: form.activo,
         componentes: form.componentes
           .filter(c => c.producto_id)
-          .map(c => ({ producto_id: Number(c.producto_id), cantidad: Number(c.cantidad) || 1, descuento_porcentaje: Number(c.descuento_porcentaje) || 0 })),
+          .map(c => ({
+            producto_id: Number(c.producto_id),
+            cantidad: Number(c.cantidad) || 1,
+            descuento_porcentaje: Number(c.descuento_porcentaje) || 0,
+            variante_id: c.variante_id ? Number(c.variante_id) : null,
+            permite_elegir_variante: !!c.permite_elegir_variante,
+          })),
       };
       let avisoImagen = null;
       if (editando) {
@@ -428,7 +459,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       // Se reemplazan las filas vacías que hayan quedado de un "+" previo,
       // para no dejar una fila sin producto colgando debajo.
       const sinVacias = f.componentes.filter(c => c.producto_id);
-      return { ...f, componentes: [...sinVacias, { producto_id: id, cantidad: 1, descuento_porcentaje: 0 }] };
+      return { ...f, componentes: [...sinVacias, { producto_id: id, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
     });
   }
 
@@ -567,7 +598,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               </div>
 
               <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                {(oferta.componentes || []).map(c => `${c.cantidad}× ${nombreProducto(c.producto_id)}`).join(' + ')}
+                {(oferta.componentes || []).map(c => {
+                  const detalleVariante = c.permite_elegir_variante
+                    ? ' (el cliente elige)'
+                    : c.variante?.nombre
+                      ? ` (${c.variante.nombre})`
+                      : '';
+                  return `${c.cantidad}× ${nombreProducto(c.producto_id)}${detalleVariante}`;
+                }).join(' + ')}
               </div>
 
               <div className="combo-list-card-metrics">
@@ -863,9 +901,12 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               )}
               {form.componentes.map((c, i) => {
                 const esAncla = c.producto_id && Number(c.producto_id) === Number(productoId);
+                const variantesDelComponente = variantesPorProducto[Number(c.producto_id)] || [];
+                const tieneVariantes = variantesDelComponente.length > 0;
 
                 return (
-                <div key={i} className="form-group" style={{ flexDirection: 'row', gap: '0.5rem', marginBottom: '0.5rem', alignItems: 'center' }}>
+                <div key={i} style={{ marginBottom: '0.5rem' }}>
+                <div className="form-group" style={{ flexDirection: 'row', gap: '0.5rem', alignItems: 'center' }}>
                   {/* Antes acá había un <select> con TODO el catálogo en una
                       lista plana, sin imagen ni filtros: con muchos productos
                       era imposible encontrar uno. La elección pasó al
@@ -906,6 +947,37 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                   <button type="button" className="btn-icon danger" onClick={() => removeComponente(i)}>
                     <Trash2 size={14} />
                   </button>
+                </div>
+                {/* La variante NUNCA se define acá: se lee del producto (ver
+                    Producto → Opciones → Variantes). Esto solo decide si se
+                    agrega una fija o si el cliente la elige en la tienda. */}
+                {tieneVariantes && (
+                  <div style={{ marginLeft: '2.1rem', marginTop: '0.35rem', padding: '0.6rem 0.75rem', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', borderRadius: '6px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!c.permite_elegir_variante}
+                        onChange={e => updateComponente(i, 'permite_elegir_variante', e.target.checked)}
+                      />
+                      Dejar que el cliente elija la variante en la tienda
+                    </label>
+                    {c.permite_elegir_variante ? (
+                      <p className="field-hint" style={{ marginTop: '0.4rem', marginBottom: 0 }}>
+                        El cliente va a poder elegir entre: {variantesDelComponente.map(v => v.nombre).join(', ')}
+                      </p>
+                    ) : (
+                      <select
+                        value={c.variante_id || ''}
+                        onChange={e => updateComponente(i, 'variante_id', e.target.value ? Number(e.target.value) : null)}
+                        style={{ marginTop: '0.4rem', width: '100%' }}
+                        required
+                      >
+                        <option value="">Elegí qué variante se agrega...</option>
+                        {variantesDelComponente.map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+                      </select>
+                    )}
+                  </div>
+                )}
                 </div>
                 );
               })}

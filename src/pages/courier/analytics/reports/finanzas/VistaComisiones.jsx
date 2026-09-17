@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Percent, TrendingDown } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
-import { numeroPedidoVisible } from '../../../../pedidoNumero';
+import { numeroPedidoVisible } from '../../../pedidoNumero';
 
 export function VistaComisiones({ filters }) {
   const [data, setData] = useState([]);
