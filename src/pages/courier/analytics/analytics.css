@@ -56,3 +56,23 @@
 
 
 
+
+/* REPORT HEADERS */
+.cic-report-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+}
+.cic-report-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-fg);
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.01em;
+}
+.cic-report-desc {
+  font-size: 0.9rem;
+  color: var(--color-fg-muted);
+  margin: 0;
+  line-height: 1.5;
+}
