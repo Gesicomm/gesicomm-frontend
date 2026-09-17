@@ -5,6 +5,7 @@ import { Plus, Minus, ShoppingCart, ImageOff, Layers, Check, ChevronLeft, Chevro
 import { getMediaUrl } from '../../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../../lib/mensajeWhatsapp';
 import { recalcularCarritoLanding } from '../../../services/landingPublicaService';
+import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../lib/varianteOpciones';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '',
@@ -73,11 +74,14 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const combosNormales = ofertasNormales.filter(o => o.tipo_contenido === 'combo');
   const tieneCombos = combosNormales.length > 0;
 
-  const [varianteId, setVarianteId] = useState(() => {
-    if (!tieneVariantes) return null;
+  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
+
+  const [seleccion, setSeleccion] = useState(() => {
+    if (!tieneVariantes) return {};
     const conStock = item.variantes.find(v => v.stock > 0);
-    return (conStock || item.variantes[0]).id;
+    return seleccionDeVariante(item, conStock || item.variantes[0]);
   });
+  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
   const [ofertaComboId, setOfertaComboId] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [indiceImagen, setIndiceImagen] = useState(0);
@@ -97,7 +101,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
       try {
         const respuesta = await recalcularCarritoLanding(page.slug, [{
           content_id: item.content_id || item.id,
-          variante_id: varianteId,
+          variante_id: variante?.id ?? null,
           oferta_id: ofertaComboId || undefined,
           cantidad,
         }]);
@@ -108,11 +112,11 @@ export const ProductDetailBlock = ({ content, settings }) => {
         if (!cancel) setPrecioResuelto(null);
       }
     }
-    
+
     if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current);
     timeoutPrecioRef.current = setTimeout(actualizarPrecios, 250);
     return () => { cancel = true; if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current); };
-  }, [item.content_id, item.id, varianteId, ofertaComboId, cantidad, page.slug]);
+  }, [item.content_id, item.id, variante?.id, ofertaComboId, cantidad, page.slug]);
 
   // Checkout de una sola pantalla — "Comprar ahora" abre este formulario
   // inline en vez de mandar a un carrito multi-producto. "Agregar al
@@ -138,7 +142,6 @@ export const ProductDetailBlock = ({ content, settings }) => {
     }
   }, [previewCheckoutAbierto]);
 
-  const variante = tieneVariantes ? item.variantes.find(v => v.id === varianteId) : null;
   // Pack auto-aplicado por cantidad (solo si no hay un combo elegido a
   // mano — mismo orden de prioridad que PricingService en el backend).
   const ofertaPackAplicada = !ofertaComboId && precioResuelto?.oferta_id
@@ -182,7 +185,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
     return propia && propia.length ? propia : [];
   }, [variante, item.imagenes]);
 
-  useEffect(() => { setIndiceImagen(0); }, [varianteId]);
+  useEffect(() => { setIndiceImagen(0); }, [variante?.id]);
 
   // Precio local (fallback inmediato mientras no llega la primera
   // respuesta del recálculo, o si falla) vs. el resuelto por el backend
@@ -227,8 +230,8 @@ export const ProductDetailBlock = ({ content, settings }) => {
     return armarLinkWhatsapp(contacto, itemParaWhatsapp);
   }, [contacto, item, variante, oferta, precio]);
 
-  function cambiarVariante(id) {
-    setVarianteId(id);
+  function cambiarValorOpcion(opcionNombre, valor) {
+    setSeleccion(prev => ({ ...prev, [opcionNombre]: valor }));
     setCantidad(1);
     setAgregado(false);
   }
@@ -407,28 +410,33 @@ export const ProductDetailBlock = ({ content, settings }) => {
 
             {/* Opciones */}
             <div className="lp-product-options-container">
-              {tieneVariantes && (
-                <div className="lp-product-variantes">
-                  <span className="lp-modal-label">Selecciona una opción:</span>
+              {tieneVariantes && gruposOpciones.map(grupo => (
+                <div className="lp-product-variantes" key={grupo.nombre}>
+                  <span className="lp-modal-label">{grupo.nombre}:</span>
                   <div className="lp-modal-variante-pills">
-                    {item.variantes.map(v => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        className={`lp-modal-pill ${v.id === varianteId ? 'active' : ''} ${v.stock <= 0 ? 'agotada' : ''}`}
-                        onClick={() => cambiarVariante(v.id)}
-                        disabled={v.stock <= 0}
-                        title={v.stock <= 0 ? 'Sin stock' : undefined}
-                      >
-                        <span>{v.nombre}</span>
-                        {v.precio_efectivo && v.precio_efectivo !== item.precio && (
-                          <small className="lp-pill-precio">{formatPrecio(v.precio_efectivo)}</small>
-                        )}
-                      </button>
-                    ))}
+                    {grupo.valores.map(valor => {
+                      const activo = seleccion[grupo.nombre] === valor;
+                      const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                      const previa = activo ? variante : resolverVariante(item, { ...seleccion, [grupo.nombre]: valor });
+                      return (
+                        <button
+                          key={valor}
+                          type="button"
+                          className={`lp-modal-pill ${activo ? 'active' : ''} ${!disponible ? 'agotada' : ''}`}
+                          onClick={() => cambiarValorOpcion(grupo.nombre, valor)}
+                          disabled={!disponible}
+                          title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                        >
+                          <span>{valor}</span>
+                          {previa?.precio_efectivo != null && previa.precio_efectivo !== item.precio && (
+                            <small className="lp-pill-precio">{formatPrecio(previa.precio_efectivo)}</small>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              ))}
 
 
 

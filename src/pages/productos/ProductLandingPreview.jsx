@@ -42,7 +42,12 @@ function imagenesOrdenadas(imagenes = [], imagenesNuevas = []) {
 
 function variantesPreview(variantes = [], precioBase = 0) {
   return variantes
-    .filter(v => v?.nombre)
+    // Con Opciones, la fila no trae `nombre` tipeado — se deriva de
+    // `valores` (mismo criterio que el backend). Las combinaciones
+    // destildadas ("incluida: false") no se guardan, tampoco se previsualizan.
+    .filter(v => v?.incluida !== false)
+    .map(v => ({ ...v, nombre: v.nombre || (v.valores || []).map(x => x.valor).join(' / ') }))
+    .filter(v => v.nombre)
     .map((v, idx) => {
       const diferencial = Number(v.precio_diferencial) || 0;
       return {
@@ -52,6 +57,7 @@ function variantesPreview(variantes = [], precioBase = 0) {
         stock: Number(v.stock) || 0,
         precio_diferencial: diferencial,
         precio_efectivo: Math.max(0, Number(precioBase) + diferencial),
+        valoresOpcion: v.valores || [],
       };
     });
 }
@@ -63,6 +69,7 @@ export default function ProductLandingPreview({
   imagenes,
   imagenesNuevas,
   variantes,
+  opciones,
   tieneVariantes,
   faq,
   precioFinal,
@@ -104,6 +111,11 @@ export default function ProductLandingPreview({
       imagenes: imagenesOrdenadas(imagenes, imagenesNuevas),
       ofertas,
       variantes: tieneVariantes ? variantesPreview(variantes, precio || 0) : [],
+      opciones: tieneVariantes
+        ? (opciones || [])
+          .map(o => ({ nombre: (o.nombre || '').trim(), orden: o.orden || 0, valores: (o.valores || []).map(v => (v.valor || '').trim()).filter(Boolean) }))
+          .filter(o => o.nombre && o.valores.length > 0)
+        : [],
       faq: Array.isArray(faq) ? faq : [],
       faq_titulo: producto?.faq_titulo || '',
       propuesta_valor: producto?.propuesta_valor || '',
@@ -121,6 +133,7 @@ export default function ProductLandingPreview({
     ofertas,
     tieneVariantes,
     variantes,
+    opciones,
     faq,
     precioFinal,
     precioAncla,
@@ -152,6 +165,8 @@ export default function ProductLandingPreview({
         precioAntes: dto.precio_antes,
         imagenes: dto.imagenes,
         ofertas: dto.ofertas,
+        variantes: dto.variantes,
+        opciones: dto.opciones,
         faq: dto.faq,
         faqTitulo: dto.faq_titulo,
       });
@@ -169,6 +184,7 @@ export default function ProductLandingPreview({
         imagenes: dto.imagenes,
         ofertas: dto.ofertas,
         variantes: dto.variantes,
+        opciones: dto.opciones,
         faq: dto.faq,
         faqTitulo: dto.faq_titulo,
       });
@@ -185,6 +201,8 @@ export default function ProductLandingPreview({
         precioAntes: dto.precio_antes,
         imagenes: dto.imagenes,
         ofertas: dto.ofertas,
+        variantes: dto.variantes,
+        opciones: dto.opciones,
         faq: dto.faq,
         faqTitulo: dto.faq_titulo,
       });
@@ -201,6 +219,7 @@ export default function ProductLandingPreview({
       imagenes: dto.imagenes,
       ofertas: dto.ofertas,
       variantes: dto.variantes,
+      opciones: dto.opciones,
       faq: dto.faq,
       faqTitulo: dto.faq_titulo,
     });

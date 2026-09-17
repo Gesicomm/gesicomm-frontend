@@ -29,6 +29,14 @@ function fmt(n, decimals = 0) {
 function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '—'; }
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
 
+// Firma estable de una combinación de Opciones (ej: [{opcion:'Color',valor:'Negro'}])
+// para matchear una fila del formulario contra la variante ya guardada en
+// base, sin depender del string de display (`nombre`) — más robusto que
+// comparar por nombre si el separador de display cambia.
+function firmaDeValores(valores) {
+  return (valores || []).map(v => `${(v.opcion || '').toLowerCase()}:${(v.valor || '').toLowerCase()}`).sort().join('|');
+}
+
 const TABS = [
   { id: 'basica', label: 'Identidad', desc: 'Datos base, textos y fotos', level: 'Esencial', icon: <Package size={15} /> },
   { id: 'comercial', label: 'Precio', desc: 'Precio, descuento y margen', level: 'Esencial', icon: <DollarSign size={15} /> },
@@ -328,6 +336,10 @@ export default function ProductForm() {
   // existir todavía en base y la imagen necesita un variante_id real.
   const [imagenesVariante, setImagenesVariante] = useState({});
   const [tieneVariantes, setTieneVariantes] = useState(false);
+  // true = producto viejo con variantes de texto libre y sin Opciones. Se
+  // deja editar igual que siempre (nunca se fuerza la conversión) hasta que
+  // el admin aprieta "Convertir a Opciones".
+  const [modoLegacyVariantes, setModoLegacyVariantes] = useState(false);
   const [descuentoSimulado, setDescuentoSimulado] = useState(0);
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
   const [config, setConfig] = useState(null);
@@ -335,7 +347,7 @@ export default function ProductForm() {
   const [usuarioActual, setUsuarioActual] = useState(null);
   const esAdmin = usuarioActual?.rol === 'administrador';
 
-  const { register, handleSubmit, control, watch, setValue, reset, formState: { errors, isDirty } } = useForm({
+  const { register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors, isDirty } } = useForm({
     defaultValues: {
       nombre: '',
       categoria_id: '',
@@ -371,6 +383,7 @@ export default function ProductForm() {
       estado_venta: 'en_venta',
       destacado: false,
       variantes: [],
+      opciones: [],
     },
   });
 
@@ -380,6 +393,9 @@ export default function ProductForm() {
   // variante existente a actualizar vs. una nueva a crear.
   const { fields: variantesFields, append: appendVariante, remove: removeVariante, replace: replaceVariantes } =
     useFieldArray({ control, name: 'variantes', keyName: '_rhfKey' });
+
+  const { fields: opcionesFields, append: appendOpcion, remove: removeOpcion } =
+    useFieldArray({ control, name: 'opciones', keyName: '_rhfKey' });
 
   const { fields: beneficiosFields, append: appendBeneficio, remove: removeBeneficio, replace: replaceBeneficios } = 
     useFieldArray({ control, name: 'beneficios', keyName: '_rhfKey' });
@@ -398,11 +414,12 @@ export default function ProductForm() {
   // necesidad — medido ~2x más lento que pedirlas todas juntas.
   useEffect(() => {
     const init = async () => {
-      const [catData, conf, p, vars, imgs, provData, faqData, sesion] = await Promise.all([
+      const [catData, conf, p, vars, opcs, imgs, provData, faqData, sesion] = await Promise.all([
         categoriaService.buscar({ solo_activas: true, limit: 1000 }),
         comboAdminService.obtenerConfiguracion().catch(() => null),
         esEdicion ? productService.detalle(id).catch(() => null) : Promise.resolve(null),
         esEdicion ? productService.variantes(id).catch(() => []) : Promise.resolve([]),
+        esEdicion ? productService.opciones(id).catch(() => []) : Promise.resolve([]),
         esEdicion ? productService.imagenes(id).catch(() => []) : Promise.resolve([]),
         proveedoresService.buscar({}).catch(() => ({ proveedores: [] })),
         esEdicion ? productService.faq(id).catch(() => []) : Promise.resolve([]),
@@ -454,7 +471,21 @@ export default function ProductForm() {
             activo: p.activo,
             estado_venta: p.estado_venta || 'en_venta',
             destacado: p.destacado,
-            variantes: vars?.length ? vars : [],
+            variantes: vars?.length
+              ? vars.map(v => ({
+                  ...v,
+                  incluida: true,
+                  valores: (v.valoresOpcion || []).map(vo => ({ opcion: vo.opcion.nombre, valor: vo.valor })),
+                }))
+              : [],
+            opciones: opcs?.length
+              ? opcs.map(o => ({
+                  id: o.id,
+                  nombre: o.nombre,
+                  orden: o.orden,
+                  valores: (o.valores || []).map(val => ({ id: val.id, valor: val.valor, orden: val.orden })),
+                }))
+              : [],
             propuesta_valor: p.propuesta_valor || '',
             beneficios: p.beneficios || [],
             confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
@@ -464,6 +495,10 @@ export default function ProductForm() {
             ficha_datos: p.ficha_datos || {},
           });
           if (vars?.length > 0) setTieneVariantes(true);
+          // Legacy = tenía variantes antes de este cambio y nunca las
+          // migró a Opciones. Se deja intacto hasta que el admin decida
+          // convertir — nunca se adivina Opción/Valor a partir del nombre.
+          if (vars?.length > 0 && (!opcs || opcs.length === 0)) setModoLegacyVariantes(true);
           setImagenes(imgs || []);
           setFaq(Array.isArray(faqData) ? faqData.map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })) : []);
         } catch {
@@ -479,6 +514,124 @@ export default function ProductForm() {
   useEffect(() => {
     verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
   }, []);
+
+  // ── Opciones → combinaciones (variantes) ─────────────────────────────
+  // Cada vez que cambian las Opciones/Valores, se recalcula el producto
+  // cartesiano y se sincroniza contra `variantes`. Las combinaciones que ya
+  // existían (mismo set de valores) conservan su id/sku/stock/precio/
+  // "incluida"; las nuevas entran marcadas para incluir por defecto. No
+  // corre en modo legacy: ahí las filas se siguen editando a mano.
+  const opcionesWatch = watch('opciones');
+
+  // Todas las combinaciones vigentes según Opciones/Valores en este momento
+  // (sin tocar `variantes` — solo cálculo). Se separa del efecto de abajo
+  // para poder ofrecer el selector "el producto actual corresponde a" con
+  // datos frescos en cada render, no solo cuando el efecto corre.
+  const combinacionesActuales = React.useMemo(() => {
+    const opcionesValidas = (opcionesWatch || [])
+      .map(o => ({ nombre: (o.nombre || '').trim(), valores: (o.valores || []).map(v => (v.valor || '').trim()).filter(Boolean) }))
+      .filter(o => o.nombre && o.valores.length > 0);
+    if (opcionesValidas.length === 0) return [];
+    return opcionesValidas.reduce(
+      (acc, opcion) => acc.flatMap(combo => opcion.valores.map(valor => [...combo, { opcion: opcion.nombre, valor }])),
+      [[]]
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(opcionesWatch)]);
+
+  // Mientras ninguna variante tenga id real (nada persistido todavía), el
+  // producto recién activó Opciones y su propio stock/SKU/precio no están
+  // representados en ninguna fila — hay que preguntar cuál combinación es
+  // "el producto actual" para no perder esos datos en silencio. Una vez que
+  // algo se guardó, cada fila ya tiene su propia data y la pregunta deja de
+  // tener sentido (ver useEffect de abajo).
+  const hayVariantesGuardadas = variantesFields.some(f => f.id);
+  const mostrarSelectorOriginal = !modoLegacyVariantes && tieneVariantes
+    && combinacionesActuales.length > 0 && !hayVariantesGuardadas;
+
+  const [combinacionOriginal, setCombinacionOriginal] = useState(null);
+  // Última combinación sembrada con los datos del producto — para poder
+  // limpiarla si el admin cambia de idea en el selector, y así el stock del
+  // producto no termine duplicado en dos filas a la vez.
+  const combinacionOriginalPrevRef = React.useRef(null);
+
+  useEffect(() => {
+    if (modoLegacyVariantes || !tieneVariantes) return;
+
+    if (combinacionesActuales.length === 0) {
+      if (getValues('variantes')?.length > 0) replaceVariantes([]);
+      combinacionOriginalPrevRef.current = null;
+      return;
+    }
+
+    const actuales = getValues('variantes') || [];
+    const actualesPorFirma = new Map(actuales.map(v => [firmaDeValores(v.valores), v]));
+    const yaHayGuardadas = actuales.some(v => v.id);
+
+    // Sin nada persistido todavía: la combinación elegida como "el producto
+    // actual" (por defecto, la primera) siempre refleja el stock/SKU/precio
+    // vigentes del producto — así el admin puede cambiar de combinación en
+    // el selector sin perder lo que ya tenía cargado. El resto conserva lo
+    // que se haya tocado a mano en esta misma sesión, o arranca en blanco.
+    const firmaOriginal = !yaHayGuardadas
+      ? (combinacionOriginal || firmaDeValores(combinacionesActuales[0]))
+      : null;
+    const firmaAnterior = combinacionOriginalPrevRef.current;
+    combinacionOriginalPrevRef.current = firmaOriginal;
+
+    const blanco = (valores) => ({ valores, sku_variante: '', stock_salon: 0, stock_deposito: 0, precio_diferencial: 0, incluida: true });
+
+    const nuevas = combinacionesActuales.map(valores => {
+      const firma = firmaDeValores(valores);
+      const existente = actualesPorFirma.get(firma);
+
+      if (yaHayGuardadas) {
+        return existente ? { ...existente, valores } : blanco(valores);
+      }
+
+      if (firma === firmaOriginal) {
+        return {
+          valores,
+          sku_variante: getValues('sku') || '',
+          stock_salon: parseInt(getValues('stock_salon'), 10) || 0,
+          stock_deposito: parseInt(getValues('stock_deposito'), 10) || 0,
+          precio_diferencial: 0,
+          incluida: true,
+        };
+      }
+      // Dejó de ser la designada: si nada la persistió todavía, no puede
+      // arrastrar el seed de la designación anterior — si no, el stock del
+      // producto termina duplicado en dos filas (la vieja y la nueva).
+      if (firma === firmaAnterior && !existente?.id) {
+        return blanco(valores);
+      }
+      return existente ? { ...existente, valores } : blanco(valores);
+    });
+
+    replaceVariantes(nuevas);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(combinacionesActuales), modoLegacyVariantes, tieneVariantes, combinacionOriginal]);
+
+  /**
+   * Convierte un producto legacy (variantes de texto libre) a Opciones: arma
+   * una única opción genérica "Variante" con cada nombre existente como
+   * valor. Conserva id/sku/stock/precio de cada fila — nunca se pierde lo
+   * ya cargado. No se hace automático: el admin decide cuándo migrar.
+   */
+  const convertirLegacyAOpciones = () => {
+    const variantesActuales = getValues('variantes') || [];
+    setValue('variantes', variantesActuales.map(v => ({
+      ...v,
+      incluida: true,
+      valores: [{ opcion: 'Variante', valor: v.nombre }],
+    })));
+    setValue('opciones', [{
+      nombre: 'Variante',
+      orden: 0,
+      valores: variantesActuales.map((v, i) => ({ valor: v.nombre, orden: i })),
+    }]);
+    setModoLegacyVariantes(false);
+  };
 
   // ── Rentabilidad Reactiva ─────────────────────────────────
   const precioBaseVal = parseFloat(watch('precio_base')) || 0;
@@ -553,15 +706,25 @@ export default function ProductForm() {
    */
   const subirImagenesDeVariantes = async (productoId, variantesDelForm) => {
     const pendientes = variantesFields
-      .map((field, i) => ({ archivo: imagenesVariante[field._rhfKey]?.file, nombre: (variantesDelForm[i]?.nombre || '').trim() }))
-      .filter(v => v.archivo && v.nombre);
+      .map((field, i) => ({
+        archivo: imagenesVariante[field._rhfKey]?.file,
+        nombre: (variantesDelForm[i]?.nombre || '').trim(),
+        firma: firmaDeValores(variantesDelForm[i]?.valores),
+      }))
+      .filter(v => v.archivo && (v.nombre || v.firma));
     if (!pendientes.length) return;
 
     const guardadas = await productService.variantes(productoId).catch(() => []);
+    // Con Opciones, matchear por la firma de valores (opcion+valor) es más
+    // robusto que por `nombre` — no depende del string de display. Sin
+    // Opciones (legacy), se sigue matcheando por nombre como siempre.
+    const porFirma = new Map(guardadas
+      .map(v => [firmaDeValores((v.valoresOpcion || []).map(vo => ({ opcion: vo.opcion?.nombre, valor: vo.valor }))), v.id])
+      .filter(([firma]) => firma));
     const porNombre = new Map(guardadas.map(v => [String(v.nombre).trim().toLowerCase(), v.id]));
 
-    for (const { archivo, nombre } of pendientes) {
-      const varianteId = porNombre.get(nombre.toLowerCase());
+    for (const { archivo, nombre, firma } of pendientes) {
+      const varianteId = (firma && porFirma.get(firma)) || porNombre.get(nombre.toLowerCase());
       if (!varianteId) continue;
       try {
         const fd = new FormData();
@@ -569,7 +732,7 @@ export default function ProductForm() {
         fd.append('variante_id', varianteId);
         await productService.subirImagen(productoId, fd);
       } catch (e) {
-        console.error(`Error subiendo la imagen de la variante "${nombre}"`, e);
+        console.error(`Error subiendo la imagen de la variante "${nombre || firma}"`, e);
       }
     }
   };
@@ -619,13 +782,27 @@ export default function ProductForm() {
         ficha_rubro: data.ficha_rubro === 'basico' ? null : (data.ficha_rubro || null),
         ficha_datos: data.ficha_datos || {},
         // El total no se manda: el backend lo recalcula como salón + depósito
-        // para que no pueda quedar desincronizado con el desglose.
-        variantes: data.variantes.map(v => ({
-          ...v,
-          stock_salon: parseInt(v.stock_salon, 10) || 0,
-          stock_deposito: parseInt(v.stock_deposito, 10) || 0,
-          precio_diferencial: v.precio_diferencial ? parseFloat(v.precio_diferencial) : 0,
-        })),
+        // para que no pueda quedar desincronizado con el desglose. Con
+        // Opciones activas, solo se mandan las combinaciones que quedaron
+        // tildadas ("incluida") — las desmarcadas no se guardan como variante.
+        variantes: data.variantes
+          .filter(v => modoLegacyVariantes || v.incluida !== false)
+          .map(v => ({
+            id: v.id,
+            nombre: v.nombre,
+            valores: v.valores,
+            sku_variante: v.sku_variante,
+            stock_salon: parseInt(v.stock_salon, 10) || 0,
+            stock_deposito: parseInt(v.stock_deposito, 10) || 0,
+            precio_diferencial: v.precio_diferencial ? parseFloat(v.precio_diferencial) : 0,
+          })),
+        // Sin Opciones (modo legacy o producto sin variantes), no se manda
+        // el campo — así el backend no toca producto_opciones para nada.
+        opciones: (!modoLegacyVariantes && data.opciones?.length > 0)
+          ? data.opciones
+            .map(o => ({ ...o, nombre: (o.nombre || '').trim(), valores: (o.valores || []).filter(v => (v.valor || '').trim()) }))
+            .filter(o => o.nombre && o.valores.length > 0)
+          : undefined,
       };
 
       if (esEdicion) {
@@ -1604,121 +1781,312 @@ export default function ProductForm() {
           </div>
 
           {tieneVariantes ? (
-            <>
-              <div className="variantes-header">
-                <span>Foto</span>
-                <span>Nombre de variante</span>
-                <span>SKU</span>
-                <span>Stock salón</span>
-                <span>Stock depósito</span>
-                <span>Total</span>
-                <span>Precio diferencial</span>
-                <span></span>
-              </div>
-              {variantesFields.map((field, i) => {
-                const salonFila = parseInt(watch(`variantes.${i}.stock_salon`), 10) || 0;
-                const depositoFila = parseInt(watch(`variantes.${i}.stock_deposito`), 10) || 0;
-                // La imagen recién elegida gana sobre la ya guardada: es lo
-                // que se va a subir cuando el usuario apriete Guardar.
-                const imagenGuardada = field.id ? imagenes.find(img => img.variante_id === field.id) : null;
-                const imagenElegida = imagenesVariante[field._rhfKey];
-                const previewVariante = imagenElegida?.url || imagenGuardada?.url || null;
-                return (
-                <div key={field._rhfKey} className="variante-row variante-row-3">
-                  <label className="variante-foto" title="Foto de esta variante">
-                    {previewVariante
-                      ? <img src={previewVariante} alt="" />
-                      : <span className="variante-foto-vacia"><ImageIcon size={15} /></span>}
+            modoLegacyVariantes ? (
+              <>
+                <p className="field-hint" style={{ marginBottom: '0.75rem' }}>
+                  Este producto usa el formato anterior de variantes (nombre libre). Podés seguir editándolo así, o
+                  {' '}
+                  <button type="button" className="btn-link" onClick={convertirLegacyAOpciones}>
+                    convertirlo a Opciones
+                  </button>
+                  {' '}para poder agregar/quitar combinaciones como Color/Talla por separado.
+                </p>
+                <div className="variantes-header">
+                  <span className="text-center">Foto</span>
+                  <span>Nombre de variante</span>
+                  <span>SKU</span>
+                  <span className="text-center">Stock salón</span>
+                  <span className="text-center">Stock depósito</span>
+                  <span className="text-center">Total</span>
+                  <span>Precio diferencial</span>
+                  <span></span>
+                </div>
+                {variantesFields.map((field, i) => {
+                  const salonFila = parseInt(watch(`variantes.${i}.stock_salon`), 10) || 0;
+                  const depositoFila = parseInt(watch(`variantes.${i}.stock_deposito`), 10) || 0;
+                  const imagenGuardada = field.id ? imagenes.find(img => img.variante_id === field.id) : null;
+                  const imagenElegida = imagenesVariante[field._rhfKey];
+                  const previewVariante = imagenElegida?.url || imagenGuardada?.url || null;
+                  return (
+                  <div key={field._rhfKey} className="variante-row variante-row-3">
+                    <label className={`variante-foto ${previewVariante ? 'has-image' : ''}`} title="Foto de esta variante">
+                      {previewVariante
+                        ? <img src={previewVariante} alt="" />
+                        : <span className="variante-foto-vacia"><ImageIcon size={15} /></span>}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (!file) return;
+                          if (file.size > MAX_IMAGEN_BYTES) {
+                            setError('La imagen de la variante supera el máximo permitido de 5MB.');
+                            return;
+                          }
+                          setError(null);
+                          setImagenesVariante(prev => ({
+                            ...prev,
+                            [field._rhfKey]: { file, url: URL.createObjectURL(file) },
+                          }));
+                        }}
+                      />
+                    </label>
                     <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        e.target.value = '';
-                        if (!file) return;
-                        if (file.size > MAX_IMAGEN_BYTES) {
-                          setError('La imagen de la variante supera el máximo permitido de 5MB.');
-                          return;
-                        }
-                        setError(null);
-                        setImagenesVariante(prev => ({
-                          ...prev,
-                          [field._rhfKey]: { file, url: URL.createObjectURL(file) },
-                        }));
+                      className="variante-input"
+                      placeholder="Ej: Talle M - Rojo"
+                      {...register(`variantes.${i}.nombre`)}
+                    />
+                    <input
+                      className="variante-input"
+                      placeholder="CRE-M-ROJO"
+                      {...register(`variantes.${i}.sku_variante`)}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      className="variante-input text-center"
+                      placeholder="0"
+                      {...register(`variantes.${i}.stock_salon`)}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      className="variante-input text-center"
+                      placeholder="0"
+                      {...register(`variantes.${i}.stock_deposito`)}
+                    />
+                    <span className="variante-total-badge" title="Salón + depósito. Es el stock que se vende online.">
+                      {salonFila + depositoFila}
+                    </span>
+                    <div style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                      <Controller
+                        name={`variantes.${i}.precio_diferencial`}
+                        control={control}
+                        render={({ field }) => (
+                          <CurrencyInput
+                            className="variante-input"
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                          />
+                        )}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-icon danger"
+                      onClick={() => {
+                        setImagenesVariante(prev => {
+                          const resto = { ...prev };
+                          delete resto[field._rhfKey];
+                          return resto;
+                        });
+                        removeVariante(i);
                       }}
-                    />
-                  </label>
-                  <input
-                    placeholder="Ej: Talle M - Rojo"
-                    {...register(`variantes.${i}.nombre`)}
-                  />
-                  <input
-                    placeholder="CRE-M-ROJO"
-                    {...register(`variantes.${i}.sku_variante`)}
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    {...register(`variantes.${i}.stock_salon`)}
-                  />
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    {...register(`variantes.${i}.stock_deposito`)}
-                  />
-                  <span className="variante-total" title="Salón + depósito. Es el stock que se vende online.">
-                    {salonFila + depositoFila}
-                  </span>
-                  <div className="input-prefix" style={{ padding: 0, border: 'none', background: 'transparent' }}>
-                    <Controller
-                      name={`variantes.${i}.precio_diferencial`}
-                      control={control}
-                      render={({ field }) => (
-                        <CurrencyInput
-                          className="w-full"
-                          style={{ padding: '0.6rem' }}
-                          value={field.value}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                        />
-                      )}
-                    />
+                      aria-label="Quitar variante"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
+                  );
+                })}
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => appendVariante({ nombre: '', sku_variante: '', stock_salon: 0, stock_deposito: 0, precio_diferencial: 0 })}
+                >
+                  <Plus size={14} /> Agregar variante
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="opciones-section">
+                  {opcionesFields.map((field, i) => (
+                    <OpcionRow
+                      key={field._rhfKey}
+                      control={control}
+                      register={register}
+                      index={i}
+                      onQuitar={() => removeOpcion(i)}
+                    />
+                  ))}
                   <button
                     type="button"
-                    className="btn-icon danger"
-                    onClick={() => {
-                      setImagenesVariante(prev => {
-                        const resto = { ...prev };
-                        delete resto[field._rhfKey];
-                        return resto;
-                      });
-                      removeVariante(i);
-                    }}
-                    aria-label="Quitar variante"
+                    className="btn-ghost"
+                    onClick={() => appendOpcion({ nombre: '', orden: opcionesFields.length, valores: [] })}
                   >
-                    <Trash2 size={14} />
+                    <Plus size={14} /> Agregar opción
                   </button>
                 </div>
-                );
-              })}
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => appendVariante({ nombre: '', sku_variante: '', stock_salon: 0, stock_deposito: 0, precio_diferencial: 0 })}
-              >
-                <Plus size={14} /> Agregar variante
-              </button>
-              <p className="field-hint" style={{ marginTop: '0.75rem' }}>
-                Cuando hay variantes, el stock del producto se calcula automáticamente como la suma de todas las variantes.
-                Salón y depósito se cargan por separado para saber dónde está la mercadería, pero online se vende el total de los dos.
-              </p>
-              <p className="field-hint">
-                La foto de cada variante se sube al guardar el producto y es la que ve el cliente en la landing cuando elige esa opción.
-              </p>
-            </>
+
+                {mostrarSelectorOriginal && (
+                  <div className="combinacion-original-card">
+                    <div className="combinacion-original-header">
+                      <div className="combinacion-original-icon">
+                        <Layers size={18} />
+                      </div>
+                      <div>
+                        <label htmlFor="prod-combinacion-original" className="combinacion-original-title">
+                          ¿A qué variante corresponde el stock y SKU base de este producto?
+                        </label>
+                        <p className="combinacion-original-sub">
+                          El stock, SKU y precio base que ya tenías cargados se asignarán automáticamente a la combinación elegida.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="combinacion-original-select-wrap">
+                      <span className="combinacion-original-select-label">Asignar datos base a la variante:</span>
+                      <select
+                        id="prod-combinacion-original"
+                        className="combinacion-original-select"
+                        value={combinacionOriginal || firmaDeValores(combinacionesActuales[0])}
+                        onChange={e => setCombinacionOriginal(e.target.value)}
+                      >
+                        {combinacionesActuales.map(valores => {
+                          const firma = firmaDeValores(valores);
+                          return (
+                            <option key={firma} value={firma}>
+                              {valores.map(v => v.valor).join(' / ')}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {variantesFields.length > 0 && (
+                  <>
+                    <div className="variantes-header variantes-header-generada" style={{ marginTop: '1.25rem' }}>
+                      <span className="text-center" title="Vendible"></span>
+                      <span className="text-center">Foto</span>
+                      <span>Combinación</span>
+                      <span>SKU</span>
+                      <span className="text-center">Stock salón</span>
+                      <span className="text-center">Stock depósito</span>
+                      <span className="text-center">Total</span>
+                      <span>Precio diferencial</span>
+                    </div>
+                    {variantesFields.map((field, i) => {
+                      const estaIncluida = watch(`variantes.${i}.incluida`);
+                      const salonFila = parseInt(watch(`variantes.${i}.stock_salon`), 10) || 0;
+                      const depositoFila = parseInt(watch(`variantes.${i}.stock_deposito`), 10) || 0;
+                      const imagenGuardada = field.id ? imagenes.find(img => img.variante_id === field.id) : null;
+                      const imagenElegida = imagenesVariante[field._rhfKey];
+                      const previewVariante = imagenElegida?.url || imagenGuardada?.url || null;
+                      const nombreDerivado = (field.valores || []).map(v => v.valor).join(' / ');
+                      const skuBase = watch('sku_base') || watch('sku') || '';
+                      const placeholderSku = skuBase
+                        ? `${skuBase}-${(nombreDerivado || '').toUpperCase().replace(/\s*[\/\s]\s*/g, '-')}`
+                        : 'SKU variante';
+                      // Mientras esta fila sea "el producto actual" (sin nada
+                      // guardado todavía), no se le puede subir una foto
+                      // propia: crearía una segunda imagen (variante_id
+                      // distinto de null) que compite con la principal del
+                      // producto y una de las dos termina sin usarse. Usa la
+                      // del producto tal cual hasta que la variante se guarde
+                      // y pase a ser una fila común, editable como cualquiera.
+                      const esLaDesignadaOriginal = mostrarSelectorOriginal
+                        && firmaDeValores(field.valores) === (combinacionOriginal || firmaDeValores(combinacionesActuales[0] || []));
+
+                      return (
+                      <div
+                        key={field._rhfKey}
+                        className={`variante-row variante-row-generada ${estaIncluida === false ? 'variante-row-desactivada' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          title="Incluir esta combinación como variante vendible"
+                          {...register(`variantes.${i}.incluida`)}
+                        />
+                        {esLaDesignadaOriginal ? (
+                          <span className="variante-foto variante-foto-heredada" title="Usa la foto principal del producto. Se podrá cambiar después de guardar.">
+                            {imagenPrincipalUrl
+                              ? <img src={imagenPrincipalUrl} alt="" />
+                              : <span className="variante-foto-vacia"><ImageIcon size={15} /></span>}
+                          </span>
+                        ) : (
+                          <label className={`variante-foto ${previewVariante ? 'has-image' : ''}`} title="Foto de esta variante">
+                            {previewVariante
+                              ? <img src={previewVariante} alt="" />
+                              : <span className="variante-foto-vacia"><ImageIcon size={15} /></span>}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                e.target.value = '';
+                                if (!file) return;
+                                if (file.size > MAX_IMAGEN_BYTES) {
+                                  setError('La imagen de la variante supera el máximo permitido de 5MB.');
+                                  return;
+                                }
+                                setError(null);
+                                setImagenesVariante(prev => ({
+                                  ...prev,
+                                  [field._rhfKey]: { file, url: URL.createObjectURL(file) },
+                                }));
+                              }}
+                            />
+                          </label>
+                        )}
+                        <span className="variante-nombre-derivado">{nombreDerivado || '—'}</span>
+                        <input
+                          className="variante-input"
+                          placeholder={placeholderSku}
+                          {...register(`variantes.${i}.sku_variante`)}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          className="variante-input text-center"
+                          placeholder="0"
+                          {...register(`variantes.${i}.stock_salon`)}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          className="variante-input text-center"
+                          placeholder="0"
+                          {...register(`variantes.${i}.stock_deposito`)}
+                        />
+                        <span className="variante-total-badge" title="Salón + depósito. Es el stock que se vende online.">
+                          {salonFila + depositoFila}
+                        </span>
+                        <div style={{ padding: 0, border: 'none', background: 'transparent' }}>
+                          <Controller
+                            name={`variantes.${i}.precio_diferencial`}
+                            control={control}
+                            render={({ field }) => (
+                              <CurrencyInput
+                                className="variante-input"
+                                value={field.value}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                              />
+                            )}
+                          />
+                        </div>
+                      </div>
+                      );
+                    })}
+                  </>
+                )}
+
+                <div className="variantes-info-card">
+                  <Info size={18} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--color-primary)' }} />
+                  <div>
+                    <p>
+                      <strong>Combinaciones automáticas:</strong> Se generan solas a partir de las Opciones. Destildá las que no desees vender como variante.
+                    </p>
+                    <p>
+                      <strong>Stock y fotos por variante:</strong> El stock online es la suma de Salón + Depósito. Podés asignar foto y precio diferencial a cada combinación.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )
           ) : (
             <div className="variantes-empty">
               <BarChart2 size={32} opacity={0.2} />
@@ -1973,6 +2341,7 @@ export default function ProductForm() {
               imagenes={imagenes}
               imagenesNuevas={imagenesNuevas}
               variantes={valoresProducto.variantes || []}
+              opciones={valoresProducto.opciones || []}
               tieneVariantes={tieneVariantes}
               faq={faq}
               precioFinal={precioFinalVal}
@@ -2092,6 +2461,60 @@ export default function ProductForm() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Una fila de "Opción" (ej: Color) con sus Valores como chips removibles
+ * (ej: Negro, Blanco). Componente propio porque useFieldArray no se puede
+ * llamar condicionalmente dentro del .map() del padre — cada instancia de
+ * este componente monta su propio useFieldArray para `opciones.${index}.valores`,
+ * que es el patrón soportado por react-hook-form para arrays anidados.
+ */
+function OpcionRow({ control, register, index, onQuitar }) {
+  const { fields: valoresFields, append: appendValor, remove: removeValor } =
+    useFieldArray({ control, name: `opciones.${index}.valores`, keyName: '_rhfKey' });
+  const [nuevoValor, setNuevoValor] = useState('');
+
+  const agregarValor = () => {
+    const v = nuevoValor.trim();
+    if (!v) return;
+    appendValor({ valor: v, orden: valoresFields.length });
+    setNuevoValor('');
+  };
+
+  return (
+    <div className="opcion-row">
+      <div className="opcion-row-header">
+        <input placeholder="Ej: Color, RAM, Talla" {...register(`opciones.${index}.nombre`)} />
+        <button type="button" className="btn-icon danger" onClick={onQuitar} aria-label="Quitar opción">
+          <Trash2 size={14} />
+        </button>
+      </div>
+      <div className="opcion-row-valores">
+        {valoresFields.map((vf, j) => (
+          <span key={vf._rhfKey} className="opcion-valor-chip">
+            <input {...register(`opciones.${index}.valores.${j}.valor`)} />
+            <button type="button" onClick={() => removeValor(j)} aria-label="Quitar valor">
+              <X size={11} />
+            </button>
+          </span>
+        ))}
+        <input
+          className="opcion-valor-nuevo"
+          placeholder="+ valor"
+          value={nuevoValor}
+          onChange={e => setNuevoValor(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              agregarValor();
+            }
+          }}
+          onBlur={agregarValor}
+        />
+      </div>
     </div>
   );
 }

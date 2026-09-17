@@ -9,6 +9,7 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
+import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
 import './beautyProductPage.css';
 
 /**
@@ -52,9 +53,21 @@ export default function BeautyProductPage({
 
   const packs = item?.packs || [];
   const pack = packs.find(p => String(p.id) === String(packId)) || null;
-  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : item?.precio;
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
+  const tieneVariantes = (item?.variantes || []).length > 0;
+  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
+  const [seleccion, setSeleccion] = useState(() => {
+    if (!tieneVariantes) return {};
+    const conStock = item.variantes.find(v => v.stock > 0);
+    return seleccionDeVariante(item, conStock || item.variantes[0]);
+  });
+  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
+
+  // Paquete y variante no se combinan (misma regla que en Fitness/Tech):
+  // el paquete manda si hay uno elegido, si no sigue la variante.
+  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : (variante ? variante.precio_efectivo : item?.precio);
+
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
   useEffect(() => {
     if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
   }, [packs, packId]);
@@ -76,17 +89,21 @@ export default function BeautyProductPage({
     else comprar();
   };
 
-  const comprar = () => onComprar && onComprar({ variante: null, pack, precio });
+  const comprar = () => onComprar && onComprar({ variante, pack, precio });
   // Agregar al carrito NO puede caer a comprar(): son acciones distintas y
   // abrir el formulario cuando la clienta solo quiso guardar el producto es
   // lo peor que puede hacer un botón. Sin handler, el botón no se muestra.
   const agregar = (elegido) => onAgregar && onAgregar({
-    variante: null,
+    variante,
     pack: elegido ?? pack,
     precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
   });
 
-  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
+  // Si la variante elegida tiene fotos propias, la galería pasa a ser la
+  // de ella — es la que la clienta espera ver al elegir, por ej., el color.
+  // Si no cargaron ninguna, se sigue viendo la galería general del producto.
+  const galeria = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
+  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
 
   // Igual que en las otras fichas: el CSS no puede medir el texto y los
   // nombres del catálogo son descriptivos, no titulares cortos.
@@ -131,13 +148,13 @@ export default function BeautyProductPage({
               ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
               : <ImageOff size={44} />}
           </div>
-          {item.imagenes.length > 1 && (
+          {galeria.length > 1 && (
             <div className="bpp-miniaturas">
-              {item.imagenes.map((url, i) => (
+              {galeria.map((url, i) => (
                 <button
                   type="button"
                   key={url + i}
-                  aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
+                  aria-label={`Foto ${i + 1} de ${galeria.length}`}
                   className={`bpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
@@ -222,6 +239,30 @@ export default function BeautyProductPage({
             )}
           </div>
 
+          {tieneVariantes && gruposOpciones.map(grupo => (
+            <div className="bpp-variantes" key={grupo.nombre}>
+              <span className="bpp-variantes-label">{grupo.nombre}:</span>
+              <div className="bpp-variantes-pills">
+                {grupo.valores.map(valor => {
+                  const activo = seleccion[grupo.nombre] === valor;
+                  const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                  return (
+                    <button
+                      key={valor}
+                      type="button"
+                      className={`bpp-variante-pill ${activo ? 'activa' : ''}`}
+                      onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
+                      disabled={!disponible}
+                      title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                    >
+                      {valor}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
           {packs.length === 0 ? (
             previewMode ? (
               <p className="bpp-vacio">
@@ -233,7 +274,7 @@ export default function BeautyProductPage({
                 <TarjetaPack
                   elegido
                   nombre={ficha.precio.etiqueta_individual || '1 unidad'}
-                  imagen={item.imagenes[0]}
+                  imagen={galeria[0]}
                   precio={item.precio}
                   precioAntes={item.precioAntes}
                   nota={ficha.precio.nota_pack}
@@ -248,7 +289,7 @@ export default function BeautyProductPage({
               <TarjetaPack
                 elegido={!pack}
                 nombre={ficha.precio.etiqueta_individual || '1 unidad'}
-                imagen={item.imagenes[0]}
+                imagen={galeria[0]}
                 precio={item.precio}
                 precioAntes={item.precioAntes}
                 notaPrecio="Precio normal"
@@ -267,7 +308,7 @@ export default function BeautyProductPage({
                     badge={conf.badge}
                     nombre={p.nombre}
                     subtitulo={conf.subtitulo || `${unidades} unidades`}
-                    imagen={p.imagen || item.imagenes[0]}
+                    imagen={p.imagen || galeria[0]}
                     precio={p.precio_efectivo ?? p.precio}
                     ahorro={ahorroDePack(p, item.precio)}
                     nota={ficha.precio.nota_pack}

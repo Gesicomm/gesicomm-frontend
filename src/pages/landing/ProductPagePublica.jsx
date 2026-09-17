@@ -8,6 +8,7 @@ import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import RichText from '../../components/RichText';
 import StoreFooterLegal from './StoreFooterLegal';
 import FunnelCheckout from '../funnel/FunnelCheckout';
+import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../lib/varianteOpciones';
 
 /**
  * Página de producto dedicada a pantalla completa para la landing pública.
@@ -30,10 +31,12 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
   );
   const tieneOfertas = ofertasProducto.length > 0;
 
-  const [varianteId, setVarianteId] = useState(() => {
-    if (!tieneVariantes) return null;
+  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
+
+  const [seleccion, setSeleccion] = useState(() => {
+    if (!tieneVariantes) return {};
     const conStock = item.variantes.find(v => v.stock > 0);
-    return (conStock || item.variantes[0]).id;
+    return seleccionDeVariante(item, conStock || item.variantes[0]);
   });
   const [comprandoDirecto, setComprandoDirecto] = useState(false);
   const [ofertaId, setOfertaId] = useState(null);
@@ -42,7 +45,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
   const [agregado, setAgregado] = useState(false);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
-  const variante = tieneVariantes ? item.variantes.find(v => v.id === varianteId) : null;
+  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
   const oferta = ofertaId ? ofertasProducto.find(o => o.id === ofertaId) : null;
 
   const galeria = useMemo(() => {
@@ -51,7 +54,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
     return item.imagen ? [item.imagen] : [];
   }, [variante, item.imagenes, item.imagen]);
 
-  useEffect(() => { setIndiceImagen(0); }, [varianteId]);
+  useEffect(() => { setIndiceImagen(0); }, [variante?.id]);
 
   const precio = oferta ? oferta.precio : (variante ? variante.precio_efectivo : item.precio);
   const stock = variante ? variante.stock : item.stock;
@@ -69,8 +72,8 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
     return armarLinkWhatsapp(contacto, itemParaWhatsapp);
   }, [contacto, item, variante, oferta, precio]);
 
-  function cambiarVariante(id) {
-    setVarianteId(id);
+  function cambiarValorOpcion(opcionNombre, valor) {
+    setSeleccion(prev => ({ ...prev, [opcionNombre]: valor }));
     setCantidad(1);
     setAgregado(false);
   }
@@ -227,28 +230,33 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
 
             {/* Opciones */}
             <div className="lp-product-options-container">
-              {tieneVariantes && (
-                <div className="lp-product-variantes">
-                  <span className="lp-modal-label">Selecciona una opción:</span>
+              {tieneVariantes && gruposOpciones.map(grupo => (
+                <div className="lp-product-variantes" key={grupo.nombre}>
+                  <span className="lp-modal-label">{grupo.nombre}:</span>
                   <div className="lp-modal-variante-pills">
-                    {item.variantes.map(v => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        className={`lp-modal-pill ${v.id === varianteId ? 'active' : ''} ${v.stock <= 0 ? 'agotada' : ''}`}
-                        onClick={() => cambiarVariante(v.id)}
-                        disabled={v.stock <= 0}
-                        title={v.stock <= 0 ? 'Sin stock' : undefined}
-                      >
-                        <span>{v.nombre}</span>
-                        {v.precio_efectivo && v.precio_efectivo !== item.precio && (
-                          <small className="lp-pill-precio">{formatPrecio(v.precio_efectivo)}</small>
-                        )}
-                      </button>
-                    ))}
+                    {grupo.valores.map(valor => {
+                      const activo = seleccion[grupo.nombre] === valor;
+                      const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                      const previa = activo ? variante : resolverVariante(item, { ...seleccion, [grupo.nombre]: valor });
+                      return (
+                        <button
+                          key={valor}
+                          type="button"
+                          className={`lp-modal-pill ${activo ? 'active' : ''} ${!disponible ? 'agotada' : ''}`}
+                          onClick={() => cambiarValorOpcion(grupo.nombre, valor)}
+                          disabled={!disponible}
+                          title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                        >
+                          <span>{valor}</span>
+                          {previa?.precio_efectivo != null && previa.precio_efectivo !== item.precio && (
+                            <small className="lp-pill-precio">{formatPrecio(previa.precio_efectivo)}</small>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              ))}
 
               {tieneOfertas && (
                 <div className="lp-product-variantes">

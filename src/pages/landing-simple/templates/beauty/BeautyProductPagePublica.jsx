@@ -53,6 +53,8 @@ export default function BeautyProductPagePublica({
     // Las ofertas ya vienen en forma pública del backend; volver a
     // convertirlas con el traductor del admin las corrompía.
     ofertas: item?.ofertas,
+    variantes: item?.variantes,
+    opciones: item?.opciones,
     faq: item?.faq,
     faqTitulo: item?.faq_titulo,
     relacionados: relacionados?.items,

@@ -477,6 +477,8 @@ export function armarItemFicha({
   precioAntes = null,
   imagenes = [],
   ofertas = [],
+  variantes = [],
+  opciones = [],
   faq = [],
   faqTitulo = '',
   relacionados = [],
@@ -499,6 +501,8 @@ export function armarItemFicha({
     // `imagen` es la de la Oferta: se carga una vez (desde Mis Productos o
     // desde el armador) y manda sobre la foto del producto en esa tarjeta.
     packs: (ofertas || []).filter(o => o.estrategia === 'normal'),
+    variantes: variantes || [],
+    opciones: opciones || [],
     faq: (faq || []).filter(f => f?.pregunta),
     faqTitulo: faqTitulo || '',
     relacionados: relacionados || [],

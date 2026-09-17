@@ -65,6 +65,13 @@ export function AnalyticsFilters({ filters, setFilters, confirmadoresDisponibles
             {p.label}
           </button>
         ))}
+        <button
+          type="button"
+          className={`cic-preset-pill ${filters.periodo === 'personalizado_rango' ? 'active' : ''}`}
+          onClick={() => updateFilter('periodo', 'personalizado_rango')}
+        >
+          Personalizado
+        </button>
       </div>
 
       {/* Filtros Dropdown Específicos */}
@@ -80,14 +87,43 @@ export function AnalyticsFilters({ filters, setFilters, confirmadoresDisponibles
           </div>
         )}
 
-        <div className="cic-filter-item">
-          <label className="cic-filter-label">Año</label>
-          <select className="cic-select" value={filters.anio} onChange={e => updateFilter('anio', Number(e.target.value))}>
-            {[2024, 2025, 2026, 2027].map(a => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
-        </div>
+        {/* Inputs de rango libre: solo cuando se seleccionó "Personalizado" */}
+        {filters.periodo === 'personalizado_rango' && (
+          <>
+            <div className="cic-filter-item">
+              <label className="cic-filter-label">Desde</label>
+              <input
+                type="date"
+                className="cic-select"
+                value={filters.fecha_desde || ''}
+                max={filters.fecha_hasta || undefined}
+                onChange={e => updateFilter('fecha_desde', e.target.value)}
+              />
+            </div>
+            <div className="cic-filter-item">
+              <label className="cic-filter-label">Hasta</label>
+              <input
+                type="date"
+                className="cic-select"
+                value={filters.fecha_hasta || ''}
+                min={filters.fecha_desde || undefined}
+                onChange={e => updateFilter('fecha_hasta', e.target.value)}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Año: no aplica cuando hay rango personalizado (las fechas ya lo definen) */}
+        {filters.periodo !== 'personalizado_rango' && (
+          <div className="cic-filter-item">
+            <label className="cic-filter-label">Año</label>
+            <select className="cic-select" value={filters.anio} onChange={e => updateFilter('anio', Number(e.target.value))}>
+              {[2024, 2025, 2026, 2027].map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="cic-filter-item">
           <label className="cic-filter-label">Confirmador</label>

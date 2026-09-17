@@ -11,6 +11,7 @@ import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
 import { analizarVideo, NOMBRE_PLATAFORMA } from '../video';
+import { agruparOpciones, resolverVariante, valorDisponible } from '../../../../lib/varianteOpciones';
 import './techProductPage.css';
 
 /**
@@ -47,7 +48,8 @@ export default function TechProductPage({
   onClickRelacionado = null,
 }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
-  const [varianteId, setVarianteId] = useState(null);
+  // {} = "Estándar" (sin variante elegida, precio base del producto).
+  const [seleccion, setSeleccion] = useState({});
   const [packId, setPackId] = useState(null);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
   // Video abierto en el lightbox (solo los que se pueden incrustar).
@@ -57,7 +59,8 @@ export default function TechProductPage({
   const vars = useMemo(() => calcularVariables(t), [t.fondo, t.texto, t.acento]);
 
   const variantes = item?.variantes || [];
-  const variante = variantes.find(v => String(v.id) === String(varianteId)) || null;
+  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
+  const variante = resolverVariante(item, seleccion);
 
   // Paquetes del mismo producto ("llevá 2 y pagá menos"). Son las Ofertas
   // con estrategia 'normal' que el comercio carga en "Ofertas"; hasta ahora
@@ -75,7 +78,7 @@ export default function TechProductPage({
   // galería del producto en vez de dejar el escenario vacío.
   const galeria = variante?.imagenes?.length ? variante.imagenes : (item?.imagenes || []);
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, varianteId]);
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
 
   useEffect(() => {
     if (!videoAbierto) return undefined;
@@ -83,9 +86,6 @@ export default function TechProductPage({
     document.addEventListener('keydown', alTeclear);
     return () => document.removeEventListener('keydown', alTeclear);
   }, [videoAbierto]);
-  useEffect(() => {
-    if (varianteId && !variantes.some(v => String(v.id) === String(varianteId))) setVarianteId(null);
-  }, [variantes, varianteId]);
 
   useEffect(() => {
     if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
@@ -275,30 +275,40 @@ export default function TechProductPage({
                 <button
                   type="button"
                   className={`tpp-variante ${!variante ? 'activa' : ''}`}
-                  onClick={() => setVarianteId(null)}
+                  onClick={() => setSeleccion({})}
                 >
                   Estándar
                   {item.precio != null && <small>{formatPrecio(item.precio)}</small>}
                 </button>
-                {variantes.map(v => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    className={`tpp-variante ${String(v.id) === String(varianteId) ? 'activa' : ''}`}
-                    onClick={() => setVarianteId(v.id)}
-                    disabled={v.stock != null && v.stock <= 0}
-                    title={v.stock != null && v.stock <= 0 ? 'Sin stock' : undefined}
-                  >
-                    {/* La foto de la variante, si el comercio la cargó: se
-                        elige mucho más rápido un color viéndolo que leyéndolo. */}
-                    {v.imagenes?.[0] && (
-                      <img className="tpp-variante-foto" src={getMediaUrl(v.imagenes[0])} alt="" loading="lazy" />
-                    )}
-                    {v.nombre}
-                    {v.precio_efectivo != null && <small>{formatPrecio(v.precio_efectivo)}</small>}
-                  </button>
-                ))}
               </div>
+              {gruposOpciones.map(grupo => (
+                <div className="tpp-variantes" key={grupo.nombre} style={{ marginTop: '0.5rem' }}>
+                  {grupo.valores.map(valor => {
+                    const activo = seleccion[grupo.nombre] === valor;
+                    const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                    const previa = activo ? variante : resolverVariante(item, { ...seleccion, [grupo.nombre]: valor });
+                    const imagenValor = variantes.find(v =>
+                      (v.valoresOpcion || []).some(vo => vo.opcion === grupo.nombre && vo.valor === valor) && v.imagenes?.[0]
+                    )?.imagenes?.[0];
+                    return (
+                      <button
+                        key={valor}
+                        type="button"
+                        className={`tpp-variante ${activo ? 'activa' : ''}`}
+                        onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
+                        disabled={!disponible}
+                        title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                      >
+                        {imagenValor && (
+                          <img className="tpp-variante-foto" src={getMediaUrl(imagenValor)} alt="" loading="lazy" />
+                        )}
+                        {valor}
+                        {previa?.precio_efectivo != null && <small>{formatPrecio(previa.precio_efectivo)}</small>}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </>
           )}
 

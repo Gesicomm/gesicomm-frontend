@@ -31,16 +31,21 @@ export function ReporteRentabilidad({ filters }) {
     setLoading(true);
     try {
       const payload = {
-        periodo: filters.periodo,
-        mes: filters.periodo === 'personalizado_mes' ? filters.mes : undefined,
-        anio: filters.anio,
-        confirmador: filters.confirmador,
-        courier_id: filters.courierId,
-        canal_venta_id: filters.canal_venta_id,
+        periodo:    filters.periodo,
+        mes:        filters.periodo === 'personalizado_mes' ? filters.mes : undefined,
+        anio:       filters.anio,
+        // Rango personalizado: el backend lo prioriza sobre el preset
+        fecha_desde: filters.periodo === 'personalizado_rango' ? (filters.fecha_desde || undefined) : undefined,
+        fecha_hasta: filters.periodo === 'personalizado_rango' ? (filters.fecha_hasta || undefined) : undefined,
+        confirmador:    filters.confirmador !== 'TODOS' ? filters.confirmador : undefined,
+        courier_id:     filters.courierId !== 'TODOS' ? filters.courierId : undefined,
+        canal_venta_id: filters.canal_venta_id !== 'TODOS' ? filters.canal_venta_id : undefined,
       };
       const [resKpis, resDesglose] = await Promise.all([
         getMetricasDashboardPedidos(payload),
-        costosGastosService.reporteDesglose({}),
+        // Bug corregido: antes siempre pasaba {}, ignorando el período seleccionado.
+        // Ahora pasa el mismo payload para que los costos/gastos correspondan al rango visible.
+        costosGastosService.reporteDesglose(payload),
       ]);
       setKpis(resKpis.kpis);
       setDesglose(resDesglose);

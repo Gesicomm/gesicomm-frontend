@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, Truck, DollarSign, PiggyBank } from 'lucide-react';
+import { TrendingUp, LayoutDashboard, ShoppingCart, Package, UserCheck, DollarSign, PiggyBank } from 'lucide-react';
 import './CentroInteligenciaComercial.css';
 import './analytics/analytics.css';
 
@@ -11,12 +11,10 @@ import ReporteProductos from './analytics/reports/ReporteProductos';
 import ReporteConfirmadores from './analytics/reports/ReporteConfirmadores';
 import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
 import { ReporteRentabilidad } from './analytics/reports/ReporteRentabilidad';
-import { PlaceholderReport } from './analytics/reports/PlaceholderReport';
-import { DashboardGeneralTab } from './DashboardGeneralTab';
 
 export function CentroInteligenciaComercial({ couriers = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Limpiar la URL si tiene ?report= para no confundir al usuario (ahora usamos estado local)
   useEffect(() => {
     if (searchParams.has('report')) {
@@ -33,14 +31,13 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
     anio: new Date().getFullYear(),
     confirmador: 'TODOS',
     courierId: 'TODOS',
-    canal_venta_id: 'TODOS'
+    canal_venta_id: 'TODOS',
+    // Rango personalizado: solo se envían al backend cuando periodo === 'personalizado_rango'
+    fecha_desde: '',
+    fecha_hasta: '',
   });
 
   const [confirmadoresDisponibles, setConfirmadoresDisponibles] = useState([]);
-
-  const setTab = (report) => {
-    setActiveReport(report);
-  };
 
   const renderActiveReport = () => {
     switch (activeReport) {
@@ -56,8 +53,6 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         return <ReporteFinanzas filters={analyticsFilters} />;
       case 'rentabilidad':
         return <ReporteRentabilidad filters={analyticsFilters} />;
-      case 'resumen_pedidos':
-        return <DashboardGeneralTab couriers={couriers} />;
       default:
         return <ReporteResumen filters={analyticsFilters} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
     }
@@ -73,47 +68,44 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-fg)' }}>Centro de Inteligencia Comercial & Analytics</h2>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--color-fg)' }}>Analítica de Pedidos</h2>
                 <span className="cic-badge-live">
                   <span className="pulse-dot" /> En Vivo
                 </span>
               </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-fg-muted)', margin: '0.2rem 0 0 0' }}>
-                Tracker analítico de confirmaciones, funnel comercial, rendimiento de productos y scorecards de transporte.
+                Funnel comercial, rendimiento de productos, confirmadores y finanzas.
               </p>
             </div>
           </div>
         </div>
 
         {/* Componente de Filtros Centralizado */}
-        <AnalyticsFilters 
-          filters={analyticsFilters} 
-          setFilters={setAnalyticsFilters} 
+        <AnalyticsFilters
+          filters={analyticsFilters}
+          setFilters={setAnalyticsFilters}
           confirmadoresDisponibles={confirmadoresDisponibles}
         />
       </div>
 
-      {/* Sub-navegación Interna */}
+      {/* Sub-navegación — 6 pestañas (sin "Resumen de Pedidos") */}
       <div className="cic-subnav">
-        <button className={`cic-subnav-btn ${activeReport === 'resumen' ? 'active' : ''}`} onClick={() => setTab('resumen')}>
-          <LayoutDashboard size={16} /> Resumen Ejecutivo
+        <button className={`cic-subnav-btn ${activeReport === 'resumen' ? 'active' : ''}`} onClick={() => setActiveReport('resumen')}>
+          <LayoutDashboard size={16} /> Resumen
         </button>
-        <button className={`cic-subnav-btn ${activeReport === 'ventas' ? 'active' : ''}`} onClick={() => setTab('ventas')}>
+        <button className={`cic-subnav-btn ${activeReport === 'ventas' ? 'active' : ''}`} onClick={() => setActiveReport('ventas')}>
           <ShoppingCart size={16} /> Ventas y Pedidos
         </button>
-        <button className={`cic-subnav-btn ${activeReport === 'productos' ? 'active' : ''}`} onClick={() => setTab('productos')}>
-          <Package size={16} /> Rendimiento por Productos
+        <button className={`cic-subnav-btn ${activeReport === 'productos' ? 'active' : ''}`} onClick={() => setActiveReport('productos')}>
+          <Package size={16} /> Productos
         </button>
-        <button className={`cic-subnav-btn ${activeReport === 'confirmadores' ? 'active' : ''}`} onClick={() => setTab('confirmadores')}>
-          <UserCheck size={16} /> Rendimiento Confirmadores
+        <button className={`cic-subnav-btn ${activeReport === 'confirmadores' ? 'active' : ''}`} onClick={() => setActiveReport('confirmadores')}>
+          <UserCheck size={16} /> Confirmadores
         </button>
-        <button className={`cic-subnav-btn ${activeReport === 'resumen_pedidos' ? 'active' : ''}`} onClick={() => setTab('resumen_pedidos')}>
-          <Truck size={16} /> Resumen de Pedidos
+        <button className={`cic-subnav-btn ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setActiveReport('finanzas')}>
+          <DollarSign size={16} /> Finanzas
         </button>
-        <button className={`cic-subnav-btn ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setTab('finanzas')}>
-          <DollarSign size={16} /> Control Financiero
-        </button>
-        <button className={`cic-subnav-btn ${activeReport === 'rentabilidad' ? 'active' : ''}`} onClick={() => setTab('rentabilidad')}>
+        <button className={`cic-subnav-btn ${activeReport === 'rentabilidad' ? 'active' : ''}`} onClick={() => setActiveReport('rentabilidad')}>
           <PiggyBank size={16} /> Rentabilidad
         </button>
       </div>

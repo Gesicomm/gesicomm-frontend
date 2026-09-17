@@ -5,6 +5,7 @@ export const productService = {
   crear: (data) => API.post('/productos', data).then(r => r.data),
   detalle: (id) => API.get(`/productos/${id}`).then(r => r.data),
   variantes: (id) => API.get(`/productos/${id}/variantes`).then(r => r.data),
+  opciones: (id) => API.get(`/productos/${id}/opciones`).then(r => r.data),
   imagenes: (id) => API.get(`/productos/${id}/imagenes`).then(r => r.data),
   faq: (id) => API.get(`/productos/${id}/faq`).then(r => r.data),
   relacionados: (id, landing_id) => API.get(`/productos/${id}/relacionados${landing_id ? '?landing_id=' + landing_id : ''}`).then(r => r.data),

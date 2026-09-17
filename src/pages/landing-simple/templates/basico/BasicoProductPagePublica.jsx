@@ -52,6 +52,8 @@ export default function BasicoProductPagePublica({
     // Las ofertas ya vienen en forma pública del backend; volver a
     // convertirlas con el traductor del admin las corrompe.
     ofertas: item?.ofertas,
+    variantes: item?.variantes,
+    opciones: item?.opciones,
     faq: item?.faq,
     faqTitulo: item?.faq_titulo,
     relacionados: relacionados?.items,

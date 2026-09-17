@@ -139,6 +139,7 @@ export function armarItemFicha({
   imagenes = [],
   ofertas = [],
   variantes = [],
+  opciones = [],
   faq = [],
   faqTitulo = '',
   relacionados = [],
@@ -165,6 +166,7 @@ export function armarItemFicha({
     // combos normales. Los order bump/upsell viven en checkout/carrito.
     packs: (ofertas || []).filter(o => o.estrategia === 'normal'),
     variantes: variantes || [],
+    opciones: opciones || [],
     faq: (faq || []).filter(f => f?.pregunta),
     faqTitulo: faqTitulo || '',
     relacionados: relacionados || [],

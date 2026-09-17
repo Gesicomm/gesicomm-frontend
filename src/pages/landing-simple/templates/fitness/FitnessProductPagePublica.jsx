@@ -47,6 +47,8 @@ export default function FitnessProductPagePublica({
     precioAntes: item?.precio_antes,
     imagenes: item?.imagenes,
     ofertas: item?.ofertas,
+    variantes: item?.variantes,
+    opciones: item?.opciones,
     faq: item?.faq,
     faqTitulo: item?.faq_titulo,
     relacionados: relacionados?.items,

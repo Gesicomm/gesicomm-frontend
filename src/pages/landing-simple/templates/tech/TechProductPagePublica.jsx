@@ -50,6 +50,7 @@ export default function TechProductPagePublica({
     imagenes: item?.imagenes,
     ofertas: item?.ofertas,
     variantes: item?.variantes,
+    opciones: item?.opciones,
     faq: item?.faq,
     faqTitulo: item?.faq_titulo,
     relacionados: relacionados?.items,

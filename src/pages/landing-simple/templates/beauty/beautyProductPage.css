@@ -422,6 +422,31 @@
 .bpp-ofertas-cta { margin-top: 20px; display: flex; justify-content: center; }
 .bpp-ofertas-cta .bpp-cta { width: auto; min-width: 280px; }
 
+.bpp-variantes { margin: 0 0 18px; }
+.bpp-variantes-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  opacity: .7;
+  margin-bottom: 8px;
+}
+.bpp-variantes-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.bpp-variante-pill {
+  border: 2px solid var(--bpp-accent-suave);
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.bpp-variante-pill.activa { border-color: var(--bpp-accent); background: var(--bpp-accent-suave); color: var(--bpp-accent); }
+.bpp-variante-pill:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+
 /* ── 5 · Beneficios ───────────────────────────────────────────────── */
 
 .bpp-beneficios { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 22px; }

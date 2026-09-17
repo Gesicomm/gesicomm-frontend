@@ -242,6 +242,31 @@
 .fpp-cta:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 .fpp-cta--ancho { width: 100%; }
 
+.fpp-variantes { margin: 0 0 16px; }
+.fpp-variantes-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--fpp-muted);
+  margin-bottom: 8px;
+}
+.fpp-variantes-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.fpp-variante-pill {
+  border: 2px solid var(--fpp-accent-borde, var(--fpp-muted));
+  background: transparent;
+  color: inherit;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.fpp-variante-pill.activa { border-color: var(--fpp-accent); background: var(--fpp-accent-suave); color: var(--fpp-accent); }
+.fpp-variante-pill:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+
 .fpp-microcopy {
   display: flex;
   align-items: center;

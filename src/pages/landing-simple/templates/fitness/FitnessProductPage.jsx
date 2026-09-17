@@ -11,6 +11,7 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
+import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
 import './fitnessProductPage.css';
 
 /**
@@ -59,15 +60,28 @@ export default function FitnessProductPage({
   const packs = item?.packs || [];
   const packElegido = packs.find(p => String(p.id) === String(packElegidoId)) || null;
 
+  const tieneVariantes = (item?.variantes || []).length > 0;
+  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
+  const [seleccion, setSeleccion] = useState(() => {
+    if (!tieneVariantes) return {};
+    const conStock = item.variantes.find(v => v.stock > 0);
+    return seleccionDeVariante(item, conStock || item.variantes[0]);
+  });
+  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
+
   // El precio que se muestra arriba y en la barra fija sigue al paquete
-  // elegido, igual que en el checkout — si no hay ninguno, el del producto.
-  const precioMostrado = packElegido ? precioUnitarioDePack(packElegido) * (Number(packElegido.unidades) || 1) : item?.precio;
+  // elegido (paquete y variante no se combinan, igual que en la ficha
+  // Tech); si no hay paquete, sigue a la variante; si no hay ninguno, el
+  // del producto.
+  const precioMostrado = packElegido
+    ? precioUnitarioDePack(packElegido) * (Number(packElegido.unidades) || 1)
+    : (variante ? variante.precio_efectivo : item?.precio);
 
   useEffect(() => {
     if (packElegidoId && !packs.some(p => String(p.id) === String(packElegidoId))) setPackElegidoId(null);
   }, [packs, packElegidoId]);
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
 
   if (!item) return null;
 
@@ -79,9 +93,13 @@ export default function FitnessProductPage({
 
   // Firma única en las tres fichas: siempre un objeto con lo elegido. Así
   // el editor y la landing publicada consumen lo mismo sin adivinar tipos.
-  const comprar = () => onComprar && onComprar({ variante: null, pack: packElegido, precio: precioMostrado });
+  const comprar = () => onComprar && onComprar({ variante, pack: packElegido, precio: precioMostrado });
 
-  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
+  // Si la variante elegida tiene fotos propias, la galería pasa a ser la
+  // de ella — es la que se espera ver al elegir, por ej., el sabor/color.
+  // Si no cargaron ninguna, se sigue viendo la galería general del producto.
+  const galeria = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
+  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
 
   // El diseño supone un título corto y golpeado, pero los nombres reales del
   // catálogo son descriptivos ("AdelFit - Suplemento natural para bajar de
@@ -138,9 +156,9 @@ export default function FitnessProductPage({
               <span className="fpp-hero-badge-descuento">-{item.descuentoPct}%</span>
             )}
           </div>
-          {item.imagenes.length > 1 && (
+          {galeria.length > 1 && (
             <div className="fpp-miniaturas">
-              {item.imagenes.map((url, i) => (
+              {galeria.map((url, i) => (
                 <button
                   type="button"
                   key={url + i}
@@ -182,6 +200,30 @@ export default function FitnessProductPage({
               {!packElegido && item.precioAntes != null && <del>{formatPrecio(item.precioAntes)}</del>}
             </p>
           )}
+
+          {tieneVariantes && gruposOpciones.map(grupo => (
+            <div className="fpp-variantes" key={grupo.nombre}>
+              <span className="fpp-variantes-label">{grupo.nombre}:</span>
+              <div className="fpp-variantes-pills">
+                {grupo.valores.map(valor => {
+                  const activo = seleccion[grupo.nombre] === valor;
+                  const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                  return (
+                    <button
+                      key={valor}
+                      type="button"
+                      className={`fpp-variante-pill ${activo ? 'activa' : ''}`}
+                      onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
+                      disabled={!disponible}
+                      title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                    >
+                      {valor}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar}>
             {ficha.hero.cta_texto || 'Comprar ahora'} <span aria-hidden="true">→</span>
@@ -239,7 +281,7 @@ export default function FitnessProductPage({
                   badge={ficha.ofertas.badge_individual}
                   nombre={ficha.ofertas.etiqueta_individual || 'Individual'}
                   subtitulo="1 unidad"
-                  imagen={item.imagenes[0] || null}
+                  imagen={galeria[0] || null}
                   precioUnitario={item.precio}
                   precioAntes={item.precioAntes}
                   ahorro={null}
@@ -257,7 +299,7 @@ export default function FitnessProductPage({
                       badge={conf.badge}
                       nombre={pack.nombre}
                       subtitulo={conf.subtitulo || `${unidades} unidades`}
-                      imagen={pack.imagen || conf.imagen || item.imagenes[0] || null}
+                      imagen={pack.imagen || conf.imagen || galeria[0] || null}
                       precioUnitario={precioUnitarioDePack(pack)}
                       precioAntes={item.precio != null && unidades > 1 ? item.precio : null}
                       ahorro={ahorroDePack(pack, item.precio)}

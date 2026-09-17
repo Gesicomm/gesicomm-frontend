@@ -270,6 +270,31 @@
 .bsc-pack-cta small { display: block; font-weight: 500; opacity: 0.85; text-transform: none; }
 .bsc-opciones-cta { text-align: center; margin-top: 16px; }
 
+.bsc-variantes { margin: 0 0 16px; }
+.bsc-variantes-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  opacity: .7;
+  margin-bottom: 8px;
+}
+.bsc-variantes-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.bsc-variante-pill {
+  border: 2px solid var(--bsc-accent-borde, var(--bsc-accent));
+  background: transparent;
+  color: inherit;
+  border-radius: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.bsc-variante-pill.activa { background: var(--bsc-accent); color: var(--bsc-on-accent); }
+.bsc-variante-pill:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+
 /* ── 5 · Beneficios ───────────────────────────────────────────────── */
 .bsc-beneficios {
   display: grid;

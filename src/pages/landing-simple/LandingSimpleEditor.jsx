@@ -358,6 +358,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   const [productoCargando, setProductoCargando] = useState(false);
   const [productoImagenes, setProductoImagenes] = useState([]);
+  // Variantes/Opciones del producto abierto en preview — sin esto el
+  // selector de variantes nunca aparecía acá (el catálogo liviano que arma
+  // `abrirProducto` no las trae, ver fetch de abajo).
+  const [productoVariantes, setProductoVariantes] = useState([]);
+  const [productoOpciones, setProductoOpciones] = useState([]);
   const [productoDescripcion, setProductoDescripcion] = useState('');
   const [productoFaq, setProductoFaq] = useState([]);
   const [productoFaqTitulo, setProductoFaqTitulo] = useState('');
@@ -581,6 +586,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoDescripcion(p.descripcion || '');
     setProductoFaqTitulo(p.faq_titulo || '');
     setProductoImagenes([]);
+    setProductoVariantes([]);
+    setProductoOpciones([]);
     setProductoFaq([]);
     setProductoRelacionadosTitulo('');
     setProductoRelacionados([]);
@@ -615,9 +622,27 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       productService.faq(p.id).catch(() => []),
       productService.relacionados(p.id, id).catch(() => ({ titulo: null, items: [], automatico: false })),
       ofertaService.listarPorProducto(p.id, { soloActivas: true }).catch(() => []),
-    ]).then(([pDetail, imgs, preguntas, relacionados, ofertas]) => {
+      productService.variantes(p.id).catch(() => []),
+      productService.opciones(p.id).catch(() => []),
+    ]).then(([pDetail, imgs, preguntas, relacionados, ofertas, variantes, opciones]) => {
       setProductoImagenes(imgs);
       setProductoOfertas((ofertas || []).filter(o => o.estrategia === 'normal' || o.estrategia === 'order_bump'));
+      // Se guardan ya traducidas a la misma forma que usa el DTO público
+      // (ver landing.service.js#obtenerPublica) para que armarItemFicha no
+      // tenga que distinguir de dónde vienen: `valoresOpcion` plano
+      // {opcion, valor} en vez del objeto anidado que devuelve el admin.
+      setProductoVariantes((variantes || []).map(v => ({
+        id: v.id,
+        nombre: v.nombre,
+        stock: v.stock,
+        precio_diferencial: Number(v.precio_diferencial) || 0,
+        valoresOpcion: (v.valoresOpcion || []).map(vo => ({ opcion: vo.opcion?.nombre || vo.opcion, valor: vo.valor })),
+      })));
+      setProductoOpciones((opciones || []).map(o => ({
+        nombre: o.nombre,
+        orden: o.orden,
+        valores: (o.valores || []).map(val => val.valor),
+      })));
       // pDetail null = no se pudo leer el detalle; se asume no editable para
       // no ofrecer un botón que el backend va a rechazar igual.
       setProductoImagenesEditables(pDetail?.puede_editar === true);
@@ -1263,6 +1288,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   productoPreview={productoPreview}
                   productoOfertas={productoOfertas}
                   productoImagenes={productoImagenes}
+                  productoVariantes={productoVariantes}
+                  productoOpciones={productoOpciones}
                   productoDescripcion={productoDescripcion}
                   productoFaq={productoFaq}
                   productoFaqTitulo={productoFaqTitulo}
@@ -1313,6 +1340,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   productoPreview={productoPreview}
                   productoOfertas={productoOfertas}
                   productoImagenes={productoImagenes}
+                  productoVariantes={productoVariantes}
+                  productoOpciones={productoOpciones}
                   productoDescripcion={productoDescripcion}
                   productoFaq={productoFaq}
                   productoFaqTitulo={productoFaqTitulo}
@@ -1499,7 +1528,8 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
 
 // Subcomponente para renderizar el preview sin duplicar código
 function PreviewContent({
-  productoPreview, productoOfertas = [], productoImagenes, productoDescripcion, productoFaq, productoFaqTitulo,
+  productoPreview, productoOfertas = [], productoImagenes, productoVariantes = [], productoOpciones = [],
+  productoDescripcion, productoFaq, productoFaqTitulo,
   productoRelacionadosTitulo, productoRelacionados,
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirInicio, onAbrirCatalogo, onCerrarCatalogo,
@@ -1514,6 +1544,17 @@ function PreviewContent({
 }) {
   if (productoPreview) {
     const ofertasPublicas = productoOfertas.map(o => ofertaAFormaPublica(o, productoPreview?.id));
+
+    // precio_efectivo/imagenes por variante se calculan acá porque
+    // dependen de datos en vivo (precio base editándose, imágenes recién
+    // subidas) que `productoVariantes` no trae — mismo criterio que
+    // ProductLandingPreview.jsx#variantesPreview en el armador de productos.
+    const precioBaseVariantes = Number(productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio) || 0;
+    const variantesParaFicha = productoVariantes.map(v => ({
+      ...v,
+      precio_efectivo: Math.max(0, precioBaseVariantes + (Number(v.precio_diferencial) || 0)),
+      imagenes: (productoImagenes || []).filter(img => img.variante_id === v.id).map(img => img.url),
+    }));
 
     // Ficha rediseñada (Fitness). Es EL MISMO componente que monta la
     // landing publicada (ver LandingPublica.jsx) alimentado con la misma
@@ -1592,6 +1633,8 @@ function PreviewContent({
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
+              variantes: variantesParaFicha,
+              opciones: productoOpciones,
               faq: productoFaq,
               faqTitulo: productoFaqTitulo,
               relacionados: productoRelacionados,
@@ -1626,6 +1669,8 @@ function PreviewContent({
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
+              variantes: variantesParaFicha,
+              opciones: productoOpciones,
               faq: productoFaq,
               faqTitulo: productoFaqTitulo,
               relacionados: productoRelacionados,
@@ -1665,6 +1710,8 @@ function PreviewContent({
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
+              variantes: variantesParaFicha,
+              opciones: productoOpciones,
               faq: productoFaq,
               faqTitulo: productoFaqTitulo,
               relacionados: productoRelacionados,
@@ -1702,6 +1749,8 @@ function PreviewContent({
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: (productoImagenes || []).map(i => i.url),
               ofertas: ofertasPublicas,
+              variantes: variantesParaFicha,
+              opciones: productoOpciones,
               faq: productoFaq,
               faqTitulo: productoFaqTitulo,
               relacionados: productoRelacionados,
