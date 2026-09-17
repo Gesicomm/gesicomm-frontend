@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { UserCheck, DollarSign, Target } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserCheck, DollarSign, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
 
 export default function ReporteConfirmadores({ filters }) {
@@ -12,6 +12,9 @@ export default function ReporteConfirmadores({ filters }) {
     total: 0,
     totalPages: 1
   });
+
+  const [sortKey, setSortKey] = useState('entregados');
+  const [sortOrder, setSortOrder] = useState('desc');
 
   const fetchData = async (page = 1) => {
     setLoading(true);
@@ -45,7 +48,42 @@ export default function ReporteConfirmadores({ filters }) {
     fetchData(newPage);
   };
 
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortOrder('desc');
+    }
+  };
+
   const formatMoney = (val) => new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(val);
+
+  const displayData = useMemo(() => {
+    let sorted = [...data].map(row => {
+      const efectividad = row.procesados > 0 ? ((row.entregados / row.procesados) * 100) : 0;
+      const ticketPromedio = row.entregados > 0 ? (row.ingresos / row.entregados) : 0;
+      return { ...row, efectividad, ticketPromedio };
+    });
+
+    sorted.sort((a, b) => {
+      let valA = a[sortKey];
+      let valB = b[sortKey];
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+      
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [data, sortKey, sortOrder]);
+
+  const SortIcon = ({ columnKey }) => {
+    if (sortKey !== columnKey) return <span style={{ opacity: 0.2, marginLeft: 4 }}><ChevronDown size={12} /></span>;
+    return <span style={{ marginLeft: 4 }}>{sortOrder === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />}</span>;
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -90,13 +128,27 @@ export default function ReporteConfirmadores({ filters }) {
           <table className="cic-table">
             <thead>
               <tr>
-                <th>Nombre del Confirmador</th>
-                <th style={{ textAlign: 'center' }}>Total Procesados</th>
-                <th style={{ textAlign: 'center', color: 'var(--color-success)' }}>Entregados</th>
-                <th style={{ textAlign: 'center', color: 'var(--color-danger)' }}>Caídos/Rechazados</th>
-                <th style={{ textAlign: 'center', color: 'var(--color-primary-text)' }}>Efectividad %</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ingresos Generados</th>
-                <th style={{ textAlign: 'right' }}>Ticket Promedio</th>
+                <th onClick={() => handleSort('nombre')} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>Nombre del Confirmador <SortIcon columnKey="nombre" /></div>
+                </th>
+                <th onClick={() => handleSort('procesados')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Total Procesados <SortIcon columnKey="procesados" /></div>
+                </th>
+                <th onClick={() => handleSort('entregados')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-success)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Entregados <SortIcon columnKey="entregados" /></div>
+                </th>
+                <th onClick={() => handleSort('rechazados')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-danger)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Caídos/Rechazados <SortIcon columnKey="rechazados" /></div>
+                </th>
+                <th onClick={() => handleSort('efectividad')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'center', color: 'var(--color-primary-text)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Efectividad % <SortIcon columnKey="efectividad" /></div>
+                </th>
+                <th onClick={() => handleSort('ingresos')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', color: 'var(--color-success)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>Ingresos Generados <SortIcon columnKey="ingresos" /></div>
+                </th>
+                <th onClick={() => handleSort('ticketPromedio')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>Ticket Promedio <SortIcon columnKey="ticketPromedio" /></div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -104,28 +156,21 @@ export default function ReporteConfirmadores({ filters }) {
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de confirmadores...</td>
                 </tr>
-              ) : data.length === 0 ? (
+              ) : displayData.length === 0 ? (
                 <tr>
                   <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron registros en este período.</td>
                 </tr>
               ) : (
-                data.map((row, idx) => {
-                  const efectividad = row.procesados > 0 
-                    ? ((row.entregados / row.procesados) * 100).toFixed(1) 
-                    : 0;
-                  const ticketPromedio = row.entregados > 0
-                    ? Math.round(row.ingresos / row.entregados)
-                    : 0;
-                  
+                displayData.map((row, idx) => {
                   return (
                     <tr key={idx}>
                       <td style={{ fontWeight: 600 }}>{row.nombre}</td>
                       <td style={{ textAlign: 'center' }}>{row.procesados}</td>
                       <td style={{ textAlign: 'center', color: 'var(--color-success)', fontWeight: 'bold' }}>{row.entregados}</td>
                       <td style={{ textAlign: 'center', color: 'var(--color-danger)' }}>{row.rechazados}</td>
-                      <td style={{ textAlign: 'center', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>{efectividad}%</td>
+                      <td style={{ textAlign: 'center', color: 'var(--color-primary-text)', fontWeight: 'bold' }}>{row.efectividad.toFixed(1)}%</td>
                       <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.ingresos)}</td>
-                      <td style={{ textAlign: 'right' }}>{formatMoney(ticketPromedio)}</td>
+                      <td style={{ textAlign: 'right' }}>{formatMoney(row.ticketPromedio)}</td>
                     </tr>
                   );
                 })

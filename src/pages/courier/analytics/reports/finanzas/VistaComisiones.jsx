@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Percent, TrendingDown } from 'lucide-react';
 import { reportesService } from '../../../../../services/reportesApi';
+import { numeroPedidoVisible } from '../../../../pedidoNumero';
 
 export function VistaComisiones({ filters }) {
   const [data, setData] = useState([]);
@@ -143,7 +144,7 @@ export function VistaComisiones({ filters }) {
               ) : (
                 data.map((row) => (
                   <tr key={row.id}>
-                    <td>#{row.id}</td>
+                    <td style={{ fontWeight: 600 }}>{numeroPedidoVisible(row)}</td>
                     <td>{row.fecha}<br/><small className="text-muted">{row.hora}</small></td>
                     <td>{row.confirmador || 'N/A'}</td>
                     <td>
