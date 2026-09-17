@@ -128,32 +128,35 @@ export function VistaComisiones({ filters }) {
       {/* Data Table */}
       
       {/* Barra de Filtros Locales */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4 bg-[var(--color-surface-2)] p-4 rounded-xl border border-[color-mix(in srgb, var(--color-fg) 8%, transparent)]">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-fg-muted)]" size={18} />
-          <input 
-            type="text" 
-            placeholder="Buscar por ID, Cliente o Teléfono..." 
-            className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg pl-10 pr-4 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
-            value={localSearch.buscador}
-            onChange={(e) => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
-          />
+      <div className="flex flex-col md:flex-row gap-4 mb-4 bg-[var(--color-surface-2)] p-4 rounded-xl border border-[color-mix(in srgb, var(--color-fg) 8%, transparent)] items-end">
+        <div className="flex-1 w-full">
+          <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1 block">Buscar</span>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-fg-muted)]" size={18} />
+            <input 
+              type="text" 
+              placeholder="Buscar por ID, Cliente o Teléfono..." 
+              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg pl-10 pr-4 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              value={localSearch.buscador}
+              onChange={(e) => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
+            />
+          </div>
         </div>
-        <div className="flex gap-4">
-          <div className="flex flex-col">
+        <div className="flex gap-4 w-full md:w-auto">
+          <div className="flex flex-col flex-1 md:flex-none">
             <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Desde</span>
             <input 
               type="date" 
-              className="bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
               value={localSearch.fecha_desde}
               onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_desde: e.target.value }))}
             />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col flex-1 md:flex-none">
             <span className="text-[10px] text-[var(--color-fg-muted)] uppercase font-bold mb-1 ml-1">Hasta</span>
             <input 
               type="date" 
-              className="bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
+              className="w-full bg-[var(--color-surface)] border border-[color-mix(in srgb, var(--color-fg) 12%, transparent)] rounded-lg px-3 py-2 text-sm text-[var(--color-fg)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
               value={localSearch.fecha_hasta}
               onChange={(e) => setLocalSearch(prev => ({ ...prev, fecha_hasta: e.target.value }))}
             />

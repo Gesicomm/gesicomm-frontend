@@ -1618,6 +1618,37 @@ button.lp-tier-card--imagen {
 .lp-cart-sugerencia-add:hover {
   filter: brightness(1.1);
 }
+.lp-cart-sugerencia-variantes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.3rem;
+}
+.lp-cart-sugerencia-variante-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+.lp-cart-sugerencia-variante-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--l-text, #f8fafc) 60%, transparent);
+}
+.lp-cart-sugerencia-variante-pill {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border: 1.5px solid color-mix(in srgb, var(--l-text, #f8fafc) 20%, transparent);
+  background: transparent;
+  color: var(--l-text, #f8fafc);
+  cursor: pointer;
+}
+.lp-cart-sugerencia-variante-pill.active {
+  border-color: var(--l-primary);
+  background: color-mix(in srgb, var(--l-primary) 15%, transparent);
+}
 
 /* ─── Popup de upsell ─────────────────────────────────────────────────
    Por encima del propio drawer (z-index 350): es una pregunta que corta

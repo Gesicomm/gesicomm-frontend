@@ -171,7 +171,17 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
   function formPorEstrategia(estrategia) {
     const base = emptyForm(productoId);
-    if (estrategia === 'order_bump' || estrategia === 'upsell' || estrategia === 'combo') {
+    // Un order bump/upsell se vende como línea APARTE de la del producto
+    // ancla (ver CartDrawer/FunnelCheckout) — el ancla nunca va en su
+    // receta de componentes, así que ni siquiera se precarga acá (el
+    // backend además la saca sola si de algún modo llegara a mandarse).
+    if (estrategia === 'order_bump' || estrategia === 'upsell') {
+      return { ...base, estrategia, tipo_contenido: 'combo', componentes: [] };
+    }
+    // 'combo' (estrategia legacy, ya no se crea desde acá) SÍ reemplaza la
+    // compra entera en una sola línea, así que su receta sigue necesitando
+    // el ancla.
+    if (estrategia === 'combo') {
       return { ...base, estrategia, tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
     }
     return { ...base, estrategia: 'normal', tipo_contenido: 'pack' };
@@ -211,7 +221,15 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     setOpen(true);
   }
 
-  function componentesCombo(f) {
+  function componentesCombo(f, estrategiaObjetivo = f.estrategia) {
+    // Un order bump/upsell nunca lleva al ancla en su receta (se vende
+    // como línea aparte — ver excluirAnclaDeBumpOUpsell en el backend):
+    // al pasar a "combo" arranca vacío, para que el admin elija el
+    // producto que realmente se agrega, en vez de precargar una fila que
+    // el backend va a descartar igual.
+    if (estrategiaObjetivo === 'order_bump' || estrategiaObjetivo === 'upsell') {
+      return f.componentes.filter(c => Number(c.producto_id) !== Number(productoId));
+    }
     const nuevos = [...f.componentes];
     const idx = nuevos.findIndex(c => Number(c.producto_id) === Number(productoId));
     if (idx >= 0) nuevos[idx] = { ...nuevos[idx], cantidad: 1 };
@@ -247,7 +265,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   function handleEstrategiaChange(nuevaEstrategia) {
     setForm(f => {
       if (nuevaEstrategia !== 'normal' && f.tipo_contenido === 'pack') {
-        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'combo', componentes: componentesCombo(f) };
+        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'combo', componentes: componentesCombo(f, nuevaEstrategia) };
       }
       if (nuevaEstrategia === 'normal' && f.tipo_contenido === 'combo') {
         return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'pack', componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
@@ -353,7 +371,14 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   // recalcula ni sobrescribe form.precio salvo que el admin toque
   // "Aplicar precio sugerido".
   const resultadoSensibilidad = useMemo(() => {
-    if (form.tipo_contenido !== 'combo' || !comboConfig) return null;
+    // Este motor calcula la rentabilidad de un BUNDLE (ancla + extras en una
+    // sola línea que reemplaza la compra) contra costos fijos de CPA/envío/
+    // confirmación/empaque — tiene sentido para un combo real (estrategia
+    // 'normal', elegido en la ficha del producto). Un order bump/upsell no es
+    // esa pregunta: se vende como línea APARTE de la del ancla (ver
+    // excluirAnclaDeBumpOUpsell en el backend), así que ni siquiera tiene un
+    // "precio del bundle" que analizar acá.
+    if (form.tipo_contenido !== 'combo' || form.estrategia !== 'normal' || !comboConfig) return null;
     const otros = form.componentes.filter(c => c.producto_id && Number(c.producto_id) !== Number(productoId));
     if (otros.length === 0) return null;
 
@@ -421,19 +446,26 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
    * `combos: []` a propósito: un componente de oferta apunta siempre a un
    * producto (OfertaComponente.producto_id), no a otro combo.
    */
+  // Un order bump/upsell nunca se agrega a sí mismo como componente (se
+  // vende como línea aparte de la del propio ancla) — se lo saca del
+  // buscador para esas dos estrategias, en vez de dejar que se pueda
+  // elegir y que el backend lo rechace recién al guardar.
+  const esBumpOUpsell = form.estrategia === 'order_bump' || form.estrategia === 'upsell';
   const catalogoPicker = useMemo(() => ({
-    productos: productosDisponibles.map(p => ({
-      id: p.id,
-      nombre: p.nombre,
-      imagen: p.imagen || p.imagenes?.[0]?.url || p.imagenes?.[0] || null,
-      precio_efectivo: Number(p.precio_efectivo ?? p.precio_base) || 0,
-      stock: p.cantidad_disponible ?? p.stock ?? null,
-      categoria: p.categoria?.nombre || (typeof p.categoria === 'string' ? p.categoria : null),
-      marca: p.marca?.nombre || (typeof p.marca === 'string' ? p.marca : null),
-      destacado: p.destacado,
-    })),
+    productos: productosDisponibles
+      .filter(p => !esBumpOUpsell || Number(p.id) !== Number(productoId))
+      .map(p => ({
+        id: p.id,
+        nombre: p.nombre,
+        imagen: p.imagen || p.imagenes?.[0]?.url || p.imagenes?.[0] || null,
+        precio_efectivo: Number(p.precio_efectivo ?? p.precio_base) || 0,
+        stock: p.cantidad_disponible ?? p.stock ?? null,
+        categoria: p.categoria?.nombre || (typeof p.categoria === 'string' ? p.categoria : null),
+        marca: p.marca?.nombre || (typeof p.marca === 'string' ? p.marca : null),
+        destacado: p.destacado,
+      })),
     combos: [],
-  }), [productosDisponibles]);
+  }), [productosDisponibles, esBumpOUpsell, productoId]);
 
   // Los componentes ya elegidos, en el Map que ProductPicker usa para saber
   // qué tarjetas van marcadas.
@@ -726,6 +758,12 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                     Lo definís vos. No modifica el precio del producto ({formatMoney(productoBase.precio)}), que sigue vendiéndose igual por separado.
                   </p>
                 )}
+                {(form.estrategia === 'order_bump' || form.estrategia === 'upsell') && (
+                  <p className="field-hint">
+                    Es el precio ADICIONAL que se cobra por sumar esto — nunca el total de la compra. "{productoNombre}" ya se cobra
+                    aparte, en su propia línea, con su propio precio.
+                  </p>
+                )}
                 {precioRecomendado !== null && Number(form.precio) !== precioRecomendado && (
                   <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                     Recomendado según catálogo y descuentos: <strong>{formatMoney(precioRecomendado)}</strong>
@@ -987,11 +1025,13 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               <p className="field-hint">
                 {form.tipo_contenido === 'pack'
                   ? 'Un "pack" es una presentación alternativa de este mismo producto (ej. "x3") — no puede incluir otros productos. Para combinar varios productos, elegí "Combo".'
-                  : 'Un "combo" agrupa varios productos — una fila por cada producto incluido. El % de descuento de cada uno alimenta el análisis de abajo, no cambia el Precio de la oferta.'}
+                  : form.estrategia === 'normal'
+                    ? 'Un "combo" agrupa varios productos — una fila por cada producto incluido. El % de descuento de cada uno alimenta el análisis de abajo, no cambia el Precio de la oferta.'
+                    : 'Los productos que agregues acá son lo que se suma de más al aceptar el bump/upsell — el producto principal nunca va en esta lista, se cobra siempre aparte.'}
               </p>
             )}
 
-            {form.tipo_contenido === 'combo' && (
+            {form.tipo_contenido === 'combo' && form.estrategia === 'normal' && (
               <div style={{ marginTop: '1.5rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', paddingTop: '1rem' }}>
                 <div className="form-section-title">
                   <Activity size={14} /> Rentabilidad y descuentos

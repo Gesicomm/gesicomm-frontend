@@ -3,6 +3,7 @@ import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Chec
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
+import { agruparOpciones, resolverVariante, seleccionDeVariante } from '../../lib/varianteOpciones';
 
 const FORM_VACIO = {
   nombre_cliente: '', documento: '', quiere_factura: false, ruc: '', razon_social: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -109,6 +110,66 @@ export default function CartDrawer({
   const orderBumps = sugerencias.filter(s => s.oferta?.estrategia === 'order_bump');
   const upsells = sugerencias.filter(s => s.oferta?.estrategia === 'upsell');
 
+  // Variante elegida por oferta.id para el componente "elegible" del bump/
+  // upsell (ver Oferta/OfertaComponente.permite_elegir_variante) — se lee
+  // de oferta.producto_complementario.variantes, nunca se inventa acá.
+  const [seleccionVariantePorOferta, setSeleccionVariantePorOferta] = useState({});
+
+  useEffect(() => {
+    sugerencias.forEach(({ oferta }) => {
+      const prod = oferta?.producto_complementario;
+      if (!prod?.permite_elegir_variante || seleccionVariantePorOferta[oferta.id]) return;
+      const conStock = (prod.variantes || []).find(v => v.stock > 0);
+      const inicial = seleccionDeVariante(prod, conStock || prod.variantes?.[0]);
+      if (Object.keys(inicial).length) {
+        setSeleccionVariantePorOferta(prev => ({ ...prev, [oferta.id]: inicial }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sugerencias]);
+
+  function cambiarValorVarianteOferta(ofertaId, opcionNombre, valor) {
+    setSeleccionVariantePorOferta(prev => ({
+      ...prev,
+      [ofertaId]: { ...(prev[ofertaId] || {}), [opcionNombre]: valor },
+    }));
+  }
+
+  function componenteVarianteDe(oferta) {
+    const prod = oferta?.producto_complementario;
+    if (!prod?.permite_elegir_variante) return null;
+    return resolverVariante(prod, seleccionVariantePorOferta[oferta.id] || {});
+  }
+
+  function SelectorVarianteOferta({ oferta }) {
+    const prod = oferta?.producto_complementario;
+    if (!prod?.permite_elegir_variante) return null;
+    const grupos = agruparOpciones(prod);
+    const seleccion = seleccionVariantePorOferta[oferta.id] || {};
+    return (
+      <div className="lp-cart-sugerencia-variantes" onClick={e => e.stopPropagation()}>
+        {grupos.map(grupo => (
+          <div key={grupo.nombre} className="lp-cart-sugerencia-variante-grupo">
+            <span className="lp-cart-sugerencia-variante-label">{grupo.nombre}:</span>
+            {grupo.valores.map(valor => {
+              const activo = seleccion[grupo.nombre] === valor;
+              return (
+                <button
+                  key={valor}
+                  type="button"
+                  className={`lp-cart-sugerencia-variante-pill ${activo ? 'active' : ''}`}
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); cambiarValorVarianteOferta(oferta.id, grupo.nombre, valor); }}
+                >
+                  {valor}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function reiniciar() {
     setPaso('carrito');
     setForm(FORM_VACIO);
@@ -183,11 +244,11 @@ export default function CartDrawer({
     confirmarPedidoFinal();
   }
 
-  function aceptarUpsell(item, oferta) {
+  function aceptarUpsell(item, oferta, componenteVariante = null) {
     setUpsellRevisado(true);
     setMostrarUpsellPopup(false);
     setEnviando(true);
-    onAgregarSugerencia(item, oferta);
+    onAgregarSugerencia(item, oferta, componenteVariante);
     // No se manda el pedido todavía: `items` (prop) recién va a traer este
     // upsell después de que el padre re-renderice con su nuevo carrito.
     setUpsellPendiente(oferta.id);
@@ -472,8 +533,9 @@ export default function CartDrawer({
                               <span className="lp-cart-item-precio">
                                 {formatPrecio(oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio)}
                               </span>
+                              <SelectorVarianteOferta oferta={oferta} />
                             </div>
-                            <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta)} title="Agregar">
+                            <button type="button" className="lp-cart-sugerencia-add" onClick={() => onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta))} title="Agregar">
                               <Plus size={16} />
                             </button>
                           </div>
@@ -628,12 +690,13 @@ export default function CartDrawer({
                       <span className="lp-cart-item-variante">{oferta.descripcion || complementario?.nombre}</span>
                     )}
                     <span className="lp-cart-item-precio">{formatPrecio(precio)}</span>
+                    <SelectorVarianteOferta oferta={oferta} />
                   </div>
                   <button
                     type="button"
                     className="lp-cart-checkout"
                     style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}
-                    onClick={() => aceptarUpsell(item, oferta)}
+                    onClick={() => aceptarUpsell(item, oferta, componenteVarianteDe(oferta))}
                     disabled={enviando}
                   >
                     Sí, quiero agregar

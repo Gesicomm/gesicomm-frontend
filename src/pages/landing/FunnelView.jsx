@@ -31,8 +31,8 @@ import './landingPublica.css';
 registerLegacyBlocks();
 const VENTANA_NUEVO_DIAS = 14;
 
-function claveCarrito(item, varianteId, ofertaId) {
-  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}`;
+function claveCarrito(item, varianteId, ofertaId, componenteVarianteId) {
+  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}:${componenteVarianteId || 'sinbump'}`;
 }
 
 function cargarCarritoGuardado(slug) {
@@ -209,16 +209,16 @@ export default function FunnelView({ data, slug, productId }) {
     return sugerencias;
   }, [data, catalogoCompleto, carrito]);
 
-  function agregarSugerencia(item, oferta) {
+  function agregarSugerencia(item, oferta, componenteVariante = null) {
     // precio_efectivo es el que el backend va a cobrar por esta oferta
     // (promocional si la tiene, normal si no) — ver landing.service.js. Los
     // fallbacks cubren un DTO servido antes de separar ambos precios.
     const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
-    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio });
+    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio, componenteVariante });
   }
 
-  function agregarAlCarrito({ item, variante, oferta, cantidad, precio }) {
-    const clave = claveCarrito(item, variante?.id, oferta?.id);
+  function agregarAlCarrito({ item, variante, oferta, cantidad, precio, componenteVariante = null }) {
+    const clave = claveCarrito(item, variante?.id, oferta?.id, componenteVariante?.id);
     const stockMax = variante ? variante.stock : (oferta ? null : item.stock);
     setCarrito(prev => {
       const copia = new Map(prev);
@@ -235,9 +235,11 @@ export default function FunnelView({ data, slug, productId }) {
         varianteNombre: variante?.nombre || null,
         ofertaId: oferta?.id || null,
         ofertaNombre: oferta?.nombre || null,
+        componenteVarianteId: componenteVariante?.id || null,
+        componenteVarianteNombre: componenteVariante?.nombre || null,
         precio,
         cantidad: nuevaCantidad,
-        imagen: oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
+        imagen: componenteVariante?.imagenes?.[0] || oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
         envioIncluido: item.envio_incluido === true,
       });
@@ -307,6 +309,7 @@ export default function FunnelView({ data, slug, productId }) {
         content_id: it.contentId,
         variante_id: it.varianteId || undefined,
         oferta_id: it.ofertaId || undefined,
+        componente_variante_id: it.componenteVarianteId || undefined,
         cantidad: it.cantidad,
       }));
       try {
@@ -321,7 +324,8 @@ export default function FunnelView({ data, slug, productId }) {
               if (
                 item.contentId === linea.content_id &&
                 (item.varianteId || null) === (linea.variante_id_solicitada || null) &&
-                (item.ofertaId || null) === (linea.oferta_id_solicitada || null)
+                (item.ofertaId || null) === (linea.oferta_id_solicitada || null) &&
+                (item.componenteVarianteId || null) === (linea.componente_variante_id || null)
               ) {
                 copia.set(clave, { ...item, precio: linea.precio_unitario });
                 break;
@@ -394,6 +398,7 @@ export default function FunnelView({ data, slug, productId }) {
       content_id: it.contentId,
       variante_id: it.varianteId || undefined,
       oferta_id: it.ofertaId || undefined,
+      componente_variante_id: it.componenteVarianteId || undefined,
       cantidad: it.cantidad,
     })));
   }
@@ -408,6 +413,7 @@ export default function FunnelView({ data, slug, productId }) {
         content_id: it.contentId,
         variante_id: it.varianteId || undefined,
         oferta_id: it.ofertaId || undefined,
+        componente_variante_id: it.componenteVarianteId || undefined,
         cantidad: it.cantidad,
       })),
     });
@@ -499,8 +505,10 @@ export default function FunnelView({ data, slug, productId }) {
     // El precio que se arma acá es solo para el tracking y el mensaje de
     // WhatsApp: el backend vuelve a resolver cada línea por oferta_id y
     // decide cuál de los dos precios de la oferta corresponde cobrar.
+    // `of.componenteVarianteId`: variante elegida para el componente
+    // "elegible" de este bump/upsell (ver FunnelCheckout.jsx/ProductDetailBlock.jsx).
     const lineasOferta = (ofertasCheckout || []).map(of => ({
-      clave: claveCarrito(item, null, of.id),
+      clave: claveCarrito(item, null, of.id, of.componenteVarianteId),
       tipo: item.tipo,
       contentId: item.content_id,
       nombre: item.nombre,
@@ -508,6 +516,7 @@ export default function FunnelView({ data, slug, productId }) {
       varianteNombre: null,
       ofertaId: of.id,
       ofertaNombre: of.nombre,
+      componenteVarianteId: of.componenteVarianteId || null,
       precio: of.precio_efectivo ?? of.precio_order_bump ?? of.precio_normal ?? of.precio ?? 0,
       cantidad: 1,
       imagen: of.producto_complementario?.imagen || item.imagen || null,

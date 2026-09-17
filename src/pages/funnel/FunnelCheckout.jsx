@@ -4,6 +4,7 @@ import { hexToRgba } from '../landing-simple/templates/themeUtils';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { getMediaUrl } from '../../services/api';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
+import { agruparOpciones, resolverVariante, seleccionDeVariante } from '../../lib/varianteOpciones';
 
 const FORM_VACIO = {
   nombre_cliente: '', ruc: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -50,6 +51,11 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
   const [upsellRevisado, setUpsellRevisado] = useState(false);
   // Varias ofertas a la vez: son casillas independientes, no un radio.
   const [seleccionadas, setSeleccionadas] = useState(() => new Set());
+  // Variante elegida por oferta.id, para el componente "elegible" del bump/
+  // upsell (ver Oferta/OfertaComponente.permite_elegir_variante) — NUNCA se
+  // inventa acá: son las variantes reales de oferta.producto_complementario,
+  // que ya vienen resueltas en el DTO público.
+  const [seleccionVariantePorOferta, setSeleccionVariantePorOferta] = useState({});
 
   const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
   const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
@@ -89,6 +95,71 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
     () => ofertasCheckout.filter(o => o.estrategia === 'upsell'),
     [ofertasCheckout]
   );
+
+  // Precarga una variante con stock apenas aparece un bump/upsell elegible,
+  // para no obligar a tocar los pills si a la persona no le importa cuál —
+  // mismo criterio que el selector principal del producto.
+  React.useEffect(() => {
+    ofertasCheckout.forEach(oferta => {
+      const prod = oferta.producto_complementario;
+      if (!prod?.permite_elegir_variante || seleccionVariantePorOferta[oferta.id]) return;
+      const conStock = (prod.variantes || []).find(v => v.stock > 0);
+      const inicial = seleccionDeVariante(prod, conStock || prod.variantes?.[0]);
+      if (Object.keys(inicial).length) {
+        setSeleccionVariantePorOferta(prev => ({ ...prev, [oferta.id]: inicial }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ofertasCheckout]);
+
+  function cambiarValorVarianteOferta(ofertaId, opcionNombre, valor) {
+    setSeleccionVariantePorOferta(prev => ({
+      ...prev,
+      [ofertaId]: { ...(prev[ofertaId] || {}), [opcionNombre]: valor },
+    }));
+  }
+
+  /** La variante REAL resuelta para el componente elegible de esta oferta, o null si no aplica/no eligió. */
+  function componenteVarianteDe(oferta) {
+    const prod = oferta.producto_complementario;
+    if (!prod?.permite_elegir_variante) return null;
+    return resolverVariante(prod, seleccionVariantePorOferta[oferta.id] || {});
+  }
+
+  /** Selector de pills reutilizable para el bump/upsell que permite elegir variante. */
+  function SelectorVarianteOferta({ oferta }) {
+    const prod = oferta.producto_complementario;
+    if (!prod?.permite_elegir_variante) return null;
+    const grupos = agruparOpciones(prod);
+    const seleccion = seleccionVariantePorOferta[oferta.id] || {};
+    return (
+      <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }} onClick={e => e.preventDefault()}>
+        {grupos.map(grupo => (
+          <div key={grupo.nombre} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: hexToRgba(tema.texto, 0.55) }}>{grupo.nombre}:</span>
+            {grupo.valores.map(valor => {
+              const activo = seleccion[grupo.nombre] === valor;
+              return (
+                <button
+                  key={valor}
+                  type="button"
+                  onClick={e => { e.preventDefault(); e.stopPropagation(); cambiarValorVarianteOferta(oferta.id, grupo.nombre, valor); }}
+                  style={{
+                    padding: '0.15rem 0.55rem', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700,
+                    border: `1.5px solid ${activo ? tema.acento : bordeSuave}`,
+                    backgroundColor: activo ? hexToRgba(tema.acento, 0.12) : 'transparent',
+                    color: tema.texto, cursor: 'pointer',
+                  }}
+                >
+                  {valor}
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   const ofertasElegidas = useMemo(
     () => ofertasCheckout.filter(o => seleccionadas.has(o.id)),
@@ -159,7 +230,10 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
       // Las ofertas aceptadas van como líneas APARTE del producto principal.
       // Antes se mandaba la oferta del bump EN LUGAR de la del producto, así
       // que el backend cobraba todo el pedido al precio promocional del bump.
-      const res = await onConfirmar(formulario, ofertas);
+      // Acá se les cuelga, además, la variante que la persona eligió para el
+      // componente "elegible" de cada una (si tiene).
+      const ofertasConVariante = ofertas.map(o => ({ ...o, componenteVarianteId: componenteVarianteDe(o)?.id || null }));
+      const res = await onConfirmar(formulario, ofertasConVariante);
       if (res?.payment_data?.payment_url) {
         window.location.href = res.payment_data.payment_url;
         return;
@@ -343,6 +417,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                       )}
                       <Ahorro pct={pct} />
                     </span>
+                    <SelectorVarianteOferta oferta={oferta} />
                   </div>
                 </div>
               );
@@ -479,6 +554,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                           )}
                           <Ahorro pct={pct} />
                         </span>
+                        <SelectorVarianteOferta oferta={oferta} />
                       </div>
                     </label>
                   );

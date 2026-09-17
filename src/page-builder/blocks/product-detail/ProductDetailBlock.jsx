@@ -83,6 +83,11 @@ export const ProductDetailBlock = ({ content, settings }) => {
   });
   const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
   const [ofertaComboId, setOfertaComboId] = useState(null);
+  // El order bump se agrega como línea APARTE del producto principal (ver
+  // TiendaPaginaView.jsx#comprarAhora/ofertasCheckout) — nunca reemplaza
+  // qué se está comprando, por eso tiene su propio estado en vez de
+  // reusar ofertaComboId (que sí reemplaza la compra).
+  const [bumpAceptado, setBumpAceptado] = useState(false);
   const [cantidad, setCantidad] = useState(1);
   const [indiceImagen, setIndiceImagen] = useState(0);
   const [agregado, setAgregado] = useState(false);
@@ -99,24 +104,37 @@ export const ProductDetailBlock = ({ content, settings }) => {
     async function actualizarPrecios() {
       if (item.id === 'preview' || !page.slug) return;
       try {
-        const respuesta = await recalcularCarritoLanding(page.slug, [{
+        // Dos líneas independientes cuando el bump está aceptado — nunca se
+        // funden en una sola: el ancla y el bump son compras separadas (ver
+        // TiendaPaginaView.jsx#comprarAhora), cada una con su propio precio.
+        const itemsAResolver = [{
           content_id: item.content_id || item.id,
           variante_id: variante?.id ?? null,
           oferta_id: ofertaComboId || undefined,
           cantidad,
-        }]);
-        if (!cancel && respuesta && respuesta.items && respuesta.items[0]) {
+        }];
+        if (bumpAceptado && orderBumpOferta) {
+          itemsAResolver.push({
+            content_id: item.content_id || item.id,
+            oferta_id: orderBumpOferta.id,
+            componente_variante_id: componenteVarianteBump?.id ?? undefined,
+            cantidad: 1,
+          });
+        }
+        const respuesta = await recalcularCarritoLanding(page.slug, itemsAResolver);
+        if (!cancel && respuesta?.items?.length) {
           setPrecioResuelto(respuesta.items[0]);
+          setPrecioResueltoBump(bumpAceptado ? (respuesta.items[1] || null) : null);
         }
       } catch (e) {
-        if (!cancel) setPrecioResuelto(null);
+        if (!cancel) { setPrecioResuelto(null); setPrecioResueltoBump(null); }
       }
     }
 
     if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current);
     timeoutPrecioRef.current = setTimeout(actualizarPrecios, 250);
     return () => { cancel = true; if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current); };
-  }, [item.content_id, item.id, variante?.id, ofertaComboId, cantidad, page.slug]);
+  }, [item.content_id, item.id, variante?.id, ofertaComboId, cantidad, page.slug, bumpAceptado, orderBumpOferta?.id, componenteVarianteBump?.id]);
 
   // Checkout de una sola pantalla — "Comprar ahora" abre este formulario
   // inline en vez de mandar a un carrito multi-producto. "Agregar al
@@ -176,9 +194,42 @@ export const ProductDetailBlock = ({ content, settings }) => {
     return null;
   }, [item.ofertas, settings]);
 
-  const oferta = ofertaComboId 
-    ? (combosNormales.find(o => o.id === ofertaComboId) || (orderBumpOferta?.id === ofertaComboId ? orderBumpOferta : null))
+  // El combo/pack elegido en la ficha SÍ reemplaza la compra (una sola
+  // línea, ver "Elegí cómo comprarlo" más abajo) — el order bump es otra
+  // cosa: se agrega como línea APARTE, nunca reemplaza esta.
+  const oferta = ofertaComboId
+    ? combosNormales.find(o => o.id === ofertaComboId)
     : ofertaPackAplicada;
+
+  // Variante elegida por el cliente para el componente "elegible" del order
+  // bump (ver Oferta/OfertaComponente.permite_elegir_variante) — NUNCA se
+  // inventa acá: son las variantes reales de producto_complementario, que
+  // ya vienen resueltas en el DTO público (ver landing.service.js).
+  const bumpProducto = orderBumpOferta?.producto_complementario;
+  const bumpPermiteElegirVariante = !!bumpProducto?.permite_elegir_variante;
+  const [seleccionVarianteBump, setSeleccionVarianteBump] = useState({});
+  const gruposOpcionesBump = useMemo(
+    () => (bumpPermiteElegirVariante ? agruparOpciones(bumpProducto) : []),
+    [bumpPermiteElegirVariante, bumpProducto]
+  );
+  const componenteVarianteBump = bumpPermiteElegirVariante
+    ? resolverVariante(bumpProducto, seleccionVarianteBump)
+    : null;
+
+  useEffect(() => {
+    if (!bumpPermiteElegirVariante || !bumpProducto?.variantes?.length) return;
+    if (Object.keys(seleccionVarianteBump).length) return;
+    const conStock = bumpProducto.variantes.find(v => v.stock > 0);
+    setSeleccionVarianteBump(seleccionDeVariante(bumpProducto, conStock || bumpProducto.variantes[0]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bumpPermiteElegirVariante, orderBumpOferta?.id]);
+
+  // Precio de la línea del bump (cuando está aceptado) — mismo Pricing
+  // Engine que el resto, resuelto aparte de `precioResuelto` (que es la
+  // línea del producto principal, nunca la del bump).
+  const [precioResueltoBump, setPrecioResueltoBump] = useState(null);
+  const precioBumpLocal = orderBumpOferta ? (orderBumpOferta.precio_efectivo ?? orderBumpOferta.precio_order_bump ?? orderBumpOferta.precio_normal ?? orderBumpOferta.precio ?? 0) : 0;
+  const precioBump = precioResueltoBump ? precioResueltoBump.precio_unitario : precioBumpLocal;
 
   const galeria = useMemo(() => {
     const propia = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
@@ -272,7 +323,13 @@ export const ProductDetailBlock = ({ content, settings }) => {
     setErrorCompra(null);
     setEnviandoCompra(true);
     try {
-      const resultado = await actions.comprarAhora(item, variante, oferta, cantidad, precio, formCheckout);
+      // El bump va como línea APARTE (ver comprarAhora/ofertasCheckout en
+      // TiendaPaginaView.jsx) — nunca reemplaza `oferta`, que sigue siendo
+      // la del combo/pack elegido para el producto principal.
+      const ofertasCheckout = bumpAceptado && orderBumpOferta
+        ? [{ ...orderBumpOferta, componenteVarianteId: componenteVarianteBump?.id || null }]
+        : [];
+      const resultado = await actions.comprarAhora(item, variante, oferta, cantidad, precio, formCheckout, ofertasCheckout);
       setCompraConfirmada(resultado);
     } catch (err) {
       setErrorCompra(err.message || 'No se pudo enviar el pedido. Probá de nuevo.');
@@ -562,13 +619,14 @@ export const ProductDetailBlock = ({ content, settings }) => {
                               </div>
                               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                                 <span style={{ fontWeight: 600 }}>{cantidad} × {variante ? variante.nombre : item.nombre}</span>
-                                {ofertaComboId && orderBumpOferta && (
+                                {bumpAceptado && orderBumpOferta && (
                                   <span style={{ fontSize: '0.85rem', color: 'var(--l-primary)', fontWeight: 600, marginTop: '2px' }}>
                                     + {orderBumpOferta.producto_complementario?.nombre || orderBumpOferta.componentes?.[1]?.Producto?.nombre || orderBumpOferta.nombre}
+                                    {' '}({formatPrecio(precioBump)})
                                   </span>
                                 )}
                               </div>
-                              <strong style={{ fontSize: '1.1rem' }}>{formatPrecio(precio * cantidad)}</strong>
+                              <strong style={{ fontSize: '1.1rem' }}>{formatPrecio(precio * cantidad + (bumpAceptado ? precioBump : 0))}</strong>
                             </div>
                           )}
 
@@ -627,14 +685,14 @@ export const ProductDetailBlock = ({ content, settings }) => {
                             const checkoutText = orderBumpOferta.descripcion || orderBumpOferta.nombre || `Agregar ${mainBumpProd?.nombre || 'oferta'} a este pedido`;
                             
                             return (
-                              <label className={`mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${ofertaComboId === orderBumpOferta.id ? 'bg-[var(--l-surface)] shadow-md' : 'border-dashed bg-[var(--l-surface)]'}`} style={{ borderColor: ofertaComboId === orderBumpOferta.id ? 'var(--l-primary)' : 'var(--l-surface-border)' }}>
+                              <label className={`mt-4 mb-4 block rounded-md border-2 p-3 cursor-pointer transition-colors ${bumpAceptado ? 'bg-[var(--l-surface)] shadow-md' : 'border-dashed bg-[var(--l-surface)]'}`} style={{ borderColor: bumpAceptado ? 'var(--l-primary)' : 'var(--l-surface-border)' }}>
                                 <div className="flex items-center gap-3">
                                   <input
                                     type="checkbox"
                                     className="w-5 h-5 flex-shrink-0 rounded border-gray-300 focus:ring-0 focus:outline-none"
                                     style={{ color: 'var(--l-primary)' }}
-                                    checked={ofertaComboId === orderBumpOferta.id}
-                                    onChange={e => setOfertaComboId(e.target.checked ? orderBumpOferta.id : null)}
+                                    checked={bumpAceptado}
+                                    onChange={e => setBumpAceptado(e.target.checked)}
                                   />
                                   <div className="w-14 h-14 rounded border flex-shrink-0 flex items-center justify-center overflow-hidden bg-[var(--l-bg)]" style={{ borderColor: 'var(--l-surface-border)' }}>
                                     {bumpImg ? (
@@ -653,21 +711,48 @@ export const ProductDetailBlock = ({ content, settings }) => {
                                       </span>
                                     )}
                                   </div>
-                                  {(orderBumpOferta.precio > 0 || settings?._preview_bump_precio > 0) && (
+                                  {(precioBump > 0 || settings?._preview_bump_precio > 0) && (
                                     <div className="flex-shrink-0 text-right ml-2">
                                       <span className="text-sm font-bold" style={{ color: 'var(--l-text)' }}>
-                                        {formatPrecio(orderBumpOferta.precio || settings?._preview_bump_precio)}
+                                        {formatPrecio(precioBump || settings?._preview_bump_precio)}
                                       </span>
                                     </div>
                                   )}
                                 </div>
+                                {bumpPermiteElegirVariante && (
+                                  <div className="mt-3 pl-8 flex flex-col gap-1.5" onClick={e => e.preventDefault()}>
+                                    {gruposOpcionesBump.map(grupo => (
+                                      <div key={grupo.nombre} className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-xs font-bold" style={{ color: 'var(--l-text)', opacity: 0.6 }}>{grupo.nombre}:</span>
+                                        {grupo.valores.map(valor => {
+                                          const activo = seleccionVarianteBump[grupo.nombre] === valor;
+                                          return (
+                                            <button
+                                              key={valor}
+                                              type="button"
+                                              onClick={e => { e.preventDefault(); e.stopPropagation(); setSeleccionVarianteBump(prev => ({ ...prev, [grupo.nombre]: valor })); }}
+                                              className="text-xs font-bold rounded-full px-2 py-0.5"
+                                              style={{
+                                                border: `1.5px solid ${activo ? 'var(--l-primary)' : 'var(--l-surface-border)'}`,
+                                                backgroundColor: activo ? 'color-mix(in srgb, var(--l-primary) 15%, transparent)' : 'transparent',
+                                                color: 'var(--l-text)',
+                                              }}
+                                            >
+                                              {valor}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </label>
                             );
                           })()}
 
                           <div className="lp-product-botones-grid" style={{ marginTop: '1rem' }}>
                             <button type="submit" className="lp-modal-agregar" disabled={!formCheckoutValido || enviandoCompra}>
-                              {enviandoCompra ? <><Loader size={16} className="lp-spin" /> Enviando...</> : `Completá tu compra — ${formatPrecio(precio * cantidad)}`}
+                              {enviandoCompra ? <><Loader size={16} className="lp-spin" /> Enviando...</> : `Completá tu compra — ${formatPrecio(precio * cantidad + (bumpAceptado ? precioBump : 0))}`}
                             </button>
                           </div>
                         </form>
