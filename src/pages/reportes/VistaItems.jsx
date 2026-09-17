@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportesService } from '../../services/reportesApi';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
-import { ChevronRight, ChevronLeft, Package, Sparkles, TrendingUp } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Package, Sparkles, TrendingUp, Search } from 'lucide-react';
 
 function formatFecha(f) {
   if (!f) return '—';
@@ -13,16 +13,25 @@ export default function VistaItems({ filtros }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paginacion, setPaginacion] = useState({ actual: 1, total: 1, paginas: 1 });
+  const [localSearch, setLocalSearch] = useState({ buscador: '', fecha_desde: '', fecha_hasta: '' });
 
   useEffect(() => {
-    cargarDatos(1);
+    const timer = setTimeout(() => {
+      cargarDatos(1);
+    }, 400);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line
-  }, [filtros]);
+  }, [filtros, localSearch]);
 
   const cargarDatos = async (pagina) => {
     setLoading(true);
     try {
-      const data = await reportesService.obtenerItems({ ...filtros, pagina });
+      const payload = { ...filtros, pagina, limite: 10 };
+      if (localSearch.buscador) payload.buscador = localSearch.buscador;
+      if (localSearch.fecha_desde) payload.fecha_desde = localSearch.fecha_desde;
+      if (localSearch.fecha_hasta) payload.fecha_hasta = localSearch.fecha_hasta;
+
+      const data = await reportesService.obtenerItems(payload);
       setItems(data.items || []);
       setPaginacion({ actual: data.actual, total: data.total, paginas: data.paginas });
     } catch (err) {
@@ -33,7 +42,50 @@ export default function VistaItems({ filtros }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
+    <div className="flex-1 flex flex-col min-h-0 bg-[var(--vit-bg)]">
+      {/* TOOLBAR LOCAL */}
+      <div className="p-4 border-b border-[var(--vit-border)] bg-[var(--vit-surface)] flex gap-3 flex-wrap items-end shrink-0">
+        <div className="flex-1 min-w-[200px] relative">
+          <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">Buscar</label>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--vit-muted)]" size={14} />
+            <input
+              type="text"
+              placeholder="Cliente, # Pedido o Teléfono..."
+              className="w-full bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md pl-8 pr-3 py-1.5 text-sm text-[var(--vit-text)] placeholder:text-[var(--vit-muted-2)] focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+              value={localSearch.buscador}
+              onChange={e => setLocalSearch(prev => ({ ...prev, buscador: e.target.value }))}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">Desde</label>
+          <input
+            type="date"
+            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-blue-500/50"
+            value={localSearch.fecha_desde}
+            onChange={e => setLocalSearch(prev => ({ ...prev, fecha_desde: e.target.value }))}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-[var(--vit-muted)] uppercase mb-1">Hasta</label>
+          <input
+            type="date"
+            className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md px-3 py-1.5 text-sm text-[var(--vit-text)] focus:outline-none focus:border-blue-500/50"
+            value={localSearch.fecha_hasta}
+            onChange={e => setLocalSearch(prev => ({ ...prev, fecha_hasta: e.target.value }))}
+          />
+        </div>
+        { (localSearch.buscador || localSearch.fecha_desde || localSearch.fecha_hasta) && (
+          <button
+            onClick={() => setLocalSearch({ buscador: '', fecha_desde: '', fecha_hasta: '' })}
+            className="text-xs text-[var(--vit-muted)] hover:text-red-400 font-medium px-2 py-1.5 transition-colors"
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
+
       <div className="flex-1 overflow-auto">
         <table className="w-full text-left border-collapse text-sm">
           <thead className="sticky top-0 bg-[var(--vit-card-bg)] z-10 shadow-sm">
