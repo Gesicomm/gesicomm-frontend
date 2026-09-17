@@ -10,7 +10,6 @@ import { ReporteVentas } from './analytics/reports/ReporteVentas';
 import ReporteProductos from './analytics/reports/ReporteProductos';
 import ReporteConfirmadores from './analytics/reports/ReporteConfirmadores';
 import { ReporteFinanzas } from './analytics/reports/ReporteFinanzas';
-import { ReporteRentabilidad } from './analytics/reports/ReporteRentabilidad';
 
 export function CentroInteligenciaComercial({ couriers = [] }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -51,8 +50,6 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         return <ReporteConfirmadores filters={analyticsFilters} />;
       case 'finanzas':
         return <ReporteFinanzas filters={analyticsFilters} />;
-      case 'rentabilidad':
-        return <ReporteRentabilidad filters={analyticsFilters} />;
       default:
         return <ReporteResumen filters={analyticsFilters} setConfirmadoresDisponibles={setConfirmadoresDisponibles} />;
     }
@@ -104,9 +101,6 @@ export function CentroInteligenciaComercial({ couriers = [] }) {
         </button>
         <button className={`cic-subnav-btn ${activeReport === 'finanzas' ? 'active' : ''}`} onClick={() => setActiveReport('finanzas')}>
           <DollarSign size={16} /> Finanzas
-        </button>
-        <button className={`cic-subnav-btn ${activeReport === 'rentabilidad' ? 'active' : ''}`} onClick={() => setActiveReport('rentabilidad')}>
-          <PiggyBank size={16} /> Rentabilidad
         </button>
       </div>
 
