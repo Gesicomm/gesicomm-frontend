@@ -4,7 +4,7 @@ import { reportesService } from '../../../../services/reportesApi';
 
 export default function ReporteProductos({ filters }) {
   const [data, setData] = useState([]);
-  const [kpis, setKpis] = useState({ total_unidades: 0, total_ingresos: 0, producto_estrella: 'Ninguno' });
+  const [kpis, setKpis] = useState({ unidades_vendidas: 0, ventas_netas: 0, producto_estrella: 'Ninguno' });
   const [top5, setTop5] = useState(null);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
@@ -13,6 +13,16 @@ export default function ReporteProductos({ filters }) {
     total: 0,
     totalPages: 1
   });
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
+  const toggleRow = (id) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
 
   const fetchData = async (page = 1) => {
     setLoading(true);
@@ -24,7 +34,7 @@ export default function ReporteProductos({ filters }) {
       });
       
       setData(response.data || []);
-      setKpis(response.kpis || { total_unidades: 0, total_ingresos: 0, producto_estrella: 'Ninguno' });
+      setKpis(response.kpis || { unidades_vendidas: 0, ventas_netas: 0, producto_estrella: 'Ninguno' });
       setTop5(response.top5 || null);
       setPagination({
         ...pagination,
@@ -59,7 +69,7 @@ export default function ReporteProductos({ filters }) {
             TOTAL UNIDADES
             <Package size={16} color="var(--color-primary-text)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{kpis.total_unidades}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-primary-text)' }}>{kpis.unidades_vendidas}</div>
           <div className="cic-kpi-sub">Unidades de catálogo entregadas</div>
         </div>
 
@@ -68,7 +78,7 @@ export default function ReporteProductos({ filters }) {
             TOTAL INGRESOS NETOS
             <TrendingUp size={16} color="var(--color-success)" />
           </div>
-          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ingresos)}</div>
+          <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.ventas_netas)}</div>
           <div className="cic-kpi-sub">Venta entregada menos costo de producto</div>
         </div>
 
@@ -144,47 +154,69 @@ export default function ReporteProductos({ filters }) {
           <table className="cic-table">
             <thead>
               <tr>
-                <th>Nombre del Producto</th>
-                <th style={{ textAlign: 'center' }}>Total Procesados</th>
-                <th style={{ textAlign: 'center', color: 'var(--color-success)' }}>Vendidos (Entregado)</th>
-                <th style={{ textAlign: 'center', color: 'var(--color-danger)' }}>Devueltos/Rechazados</th>
-                <th style={{ textAlign: 'center', color: 'var(--color-fg-subtle)' }}>Cancelados</th>
-                <th style={{ textAlign: 'right' }}>P. Costo Unid.</th>
-                <th style={{ textAlign: 'right' }}>P. Venta Base</th>
-                <th style={{ textAlign: 'right' }}>Costo Total</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ingresos Netos</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-primary-text)' }}>Tasa Devolución</th>
+                <th>Producto / Variante</th>
+                <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
+                <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
+                <th style={{ textAlign: 'right' }}>% Part.</th>
+                <th style={{ textAlign: 'right' }}>Precio Promedio</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ventas Netas</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de productos...</td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>Cargando reporte de productos...</td>
                 </tr>
               ) : data.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron productos vendidos en este período.</td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-fg-muted)' }}>No se encontraron productos vendidos en este período.</td>
                 </tr>
               ) : (
-                data.map((row, idx) => {
-                  const returnRate = row.total_procesados > 0 
-                    ? ((row.devoluciones / row.total_procesados) * 100).toFixed(1) 
-                    : 0;
+                data.flatMap((row) => {
+                  const hasVariants = row.variantes && row.variantes.length > 0;
+                  const isExpanded = expandedRows.has(row.id);
+                  const rows = [];
                   
-                  return (
-                    <tr key={row.id || idx}>
-                      <td style={{ fontWeight: 600 }}>{row.nombre}</td>
-                      <td style={{ textAlign: 'center' }}>{row.total_procesados}</td>
-                      <td style={{ textAlign: 'center', color: 'var(--color-success)', fontWeight: 'bold' }}>{row.vendidos}</td>
-                      <td style={{ textAlign: 'center', color: 'var(--color-danger)' }}>{row.devoluciones}</td>
-                      <td style={{ textAlign: 'center', color: 'var(--color-fg-subtle)' }}>{row.cancelados}</td>
-                      <td style={{ textAlign: 'right', color: 'var(--color-fg-muted)' }}>{formatMoney(row.precio_costo_unitario)}</td>
-                      <td style={{ textAlign: 'right', color: 'var(--color-fg)' }}>{formatMoney(row.precio_venta_unitario)}</td>
-                      <td style={{ textAlign: 'right' }}>{formatMoney(row.costo_total)}</td>
-                      <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.ingresos)}</td>
-                      <td style={{ textAlign: 'right', color: returnRate > 15 ? 'var(--color-danger)' : 'var(--color-primary-text)' }}>{returnRate}%</td>
+                  // Fila Principal (Producto)
+                  rows.push(
+                    <tr key={row.id} style={{ cursor: hasVariants ? 'pointer' : 'default', background: isExpanded ? 'var(--color-bg-subtle)' : 'transparent' }} onClick={() => hasVariants && toggleRow(row.id)}>
+                      <td style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {hasVariants && (
+                          <span style={{ fontSize: '0.7rem', color: 'var(--color-fg-subtle)', width: '12px' }}>
+                            {isExpanded ? '▼' : '▶'}
+                          </span>
+                        )}
+                        {!hasVariants && <span style={{ width: '12px' }} />}
+                        {row.nombre} <span style={{ fontSize: '0.7rem', color: 'var(--color-fg-muted)' }}>{row.sku !== '-' ? `(${row.sku})` : ''}</span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>{row.unidades_vendidas}</td>
+                      <td style={{ textAlign: 'center' }}>{row.pedidos_unicos}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-fg-subtle)' }}>{row.participacion.toFixed(1)}%</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-fg-muted)' }}>{formatMoney(row.precio_promedio)}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--color-success)', fontWeight: 'bold' }}>{formatMoney(row.ventas_netas)}</td>
                     </tr>
                   );
+
+                  // Filas Secundarias (Variantes)
+                  if (hasVariants && isExpanded) {
+                    row.variantes.forEach((v) => {
+                      rows.push(
+                        <tr key={`v-${row.id}-${v.id}`} style={{ background: 'color-mix(in srgb, var(--color-bg-subtle) 50%, transparent)' }}>
+                          <td style={{ paddingLeft: '2.5rem', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
+                            <span style={{ color: 'var(--color-border)', marginRight: '0.5rem' }}>├─</span>
+                            {v.nombre} {v.sku !== '-' ? `(${v.sku})` : ''}
+                          </td>
+                          <td style={{ textAlign: 'center', fontSize: '0.85rem' }}>{v.unidades_vendidas}</td>
+                          <td style={{ textAlign: 'center', fontSize: '0.85rem' }}>{v.pedidos_unicos}</td>
+                          <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-fg-subtle)' }}>{v.participacion.toFixed(1)}%</td>
+                          <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-fg-muted)' }}>{formatMoney(v.precio_promedio)}</td>
+                          <td style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--color-fg)' }}>{formatMoney(v.ventas_netas)}</td>
+                        </tr>
+                      );
+                    });
+                  }
+                  
+                  return rows;
                 })
               )}
             </tbody>

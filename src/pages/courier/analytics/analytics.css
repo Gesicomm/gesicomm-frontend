@@ -1,3 +1,5 @@
+@import './grouped-nav.css';
+
 /* SUBNAV TABS */
 .cic-subnav {
   display: grid;
@@ -51,3 +53,6 @@
   max-width: none;
   margin: 0;
 }
+
+
+

@@ -1004,15 +1004,16 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                         El cliente va a poder elegir entre: {variantesDelComponente.map(v => v.nombre).join(', ')}
                       </p>
                     ) : (
-                      <select
-                        value={c.variante_id || ''}
-                        onChange={e => updateComponente(i, 'variante_id', e.target.value ? Number(e.target.value) : null)}
-                        style={{ marginTop: '0.4rem', width: '100%' }}
-                        required
-                      >
-                        <option value="">Elegí qué variante se agrega...</option>
-                        {variantesDelComponente.map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
-                      </select>
+                      <div className="form-group" style={{ marginTop: '0.4rem' }}>
+                        <select
+                          value={c.variante_id || ''}
+                          onChange={e => updateComponente(i, 'variante_id', e.target.value ? Number(e.target.value) : null)}
+                          required
+                        >
+                          <option value="">Elegí qué variante se agrega...</option>
+                          {variantesDelComponente.map(v => <option key={v.id} value={v.id}>{v.nombre}</option>)}
+                        </select>
+                      </div>
                     )}
                   </div>
                 )}

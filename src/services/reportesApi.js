@@ -33,5 +33,21 @@ export const reportesService = {
   obtenerReporteConfirmadores: async (params) => {
     const res = await api.post('/reportes/confirmadores', params);
     return res.data;
+  },
+  obtenerReporteComposicion: async (params) => {
+    const res = await api.post('/reportes/composicion', params);
+    return res.data;
+  },
+  obtenerReporteClientes: async (params) => {
+    const res = await api.post('/reportes/clientes', params);
+    return res.data;
+  },
+  obtenerReporteMetodosPago: async (params) => {
+    const res = await api.post('/reportes/metodos-pago', params);
+    return res.data;
+  },
+  obtenerReporteFallos: async (params) => {
+    const res = await api.post('/reportes/fallos', params);
+    return res.data;
   }
 };
