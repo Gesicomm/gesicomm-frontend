@@ -65,7 +65,7 @@ export function ReporteComposicion({ filters }) {
               <th>Rol Comercial</th>
               <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
               <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
-              <th style={{ textAlign: 'right' }}>% Participación</th>
+              <th style={{ textAlign: 'right' }}>% de Ventas</th>
               <th style={{ textAlign: 'right' }}>Precio Promedio</th>
               <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ventas Netas</th>
             </tr>

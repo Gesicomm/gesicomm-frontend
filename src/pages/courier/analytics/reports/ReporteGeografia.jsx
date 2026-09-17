@@ -81,7 +81,7 @@ export function ReporteGeografia({ filters }) {
                   <th style={{ textAlign: 'center' }}>Fallidos</th>
                   <th style={{ textAlign: 'center' }}>Tasa de Fallo</th>
                   <th style={{ textAlign: 'right' }}>Ventas Netas</th>
-                  <th style={{ textAlign: 'right' }}>Participación</th>
+                  <th style={{ textAlign: 'right' }}>% de Ventas</th>
                   <th style={{ textAlign: 'right' }}>Ticket Prom.</th>
                   <th>Riesgo</th>
                 </tr>

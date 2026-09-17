@@ -74,7 +74,7 @@ export function ReporteFallos({ filters }) {
                 <tr>
                   <th>Motivo de Fallo</th>
                   <th style={{ textAlign: 'center' }}>Pedidos</th>
-                  <th style={{ textAlign: 'right' }}>% Participación</th>
+                  <th style={{ textAlign: 'right' }}>% del Total</th>
                   <th style={{ textAlign: 'right' }}>Venta Potencial Perdida</th>
                   <th style={{ textAlign: 'right' }}>Costo Logístico Incurrido</th>
                 </tr>
