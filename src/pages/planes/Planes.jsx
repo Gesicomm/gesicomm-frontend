@@ -42,21 +42,9 @@ export default function Planes() {
   const [usuario, setUsuario] = useState(null);
   const [estadoCuenta, setEstadoCuenta] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [pagandoCodigo, setPagandoCodigo] = useState(null);
-  const [preparandoCodigo, setPreparandoCodigo] = useState(null);
   const [errorPago, setErrorPago] = useState(null);
-  const [exito, setExito] = useState(null);
   const [afiliadoRef, setAfiliadoRef] = useState(() => leerRefAfiliado());
   const [afiliadoInvitacion, setAfiliadoInvitacion] = useState(null);
-  const [checkoutIntentToken, setCheckoutIntentToken] = useState(null);
-  const [planCheckout, setPlanCheckout] = useState(null);
-  const [checkoutForm, setCheckoutForm] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    documento: '',
-  });
-  const [checkoutErrores, setCheckoutErrores] = useState({});
 
   useEffect(() => {
     let activo = true;
@@ -127,86 +115,6 @@ export default function Planes() {
   const nombrePlanActual = estadoCuenta?.suscripcion?.plan?.nombre || 'tu plan actual';
   const planesOrdenados = useMemo(() => [...planes].sort((a, b) => (a.orden || 0) - (b.orden || 0)), [planes]);
 
-  async function abrirCheckout(plan) {
-    if (modoPreviewAdmin) {
-      setErrorPago('Estás viendo la vista previa de admin. Para probar un cobro real, abrí /planes fuera del preview.');
-      return;
-    }
-
-    setErrorPago(null);
-    setExito(null);
-    setCheckoutErrores({});
-    setPreparandoCodigo(plan.codigo);
-    try {
-      const intent = await planesService.crearCheckoutIntent({
-        plan_codigo: plan.codigo,
-        afiliado_codigo: afiliadoRef || leerRefAfiliado(),
-      });
-      setCheckoutIntentToken(intent.checkout_intent_token);
-      if (intent.afiliado) setAfiliadoInvitacion(intent.afiliado);
-      setPlanCheckout(plan);
-      setCheckoutForm(prev => ({
-        nombre: usuario?.nombre || prev.nombre,
-        email: usuario?.correo_electronico || prev.email,
-        telefono: prev.telefono,
-        documento: prev.documento,
-      }));
-    } catch (err) {
-      setErrorPago(err.response?.data?.error || err.response?.data?.message || err.message || 'No pudimos preparar tu selección de plan.');
-    } finally {
-      setPreparandoCodigo(null);
-    }
-  }
-
-  function actualizarCheckout(campo, valor) {
-    setCheckoutForm(prev => ({ ...prev, [campo]: valor }));
-    setCheckoutErrores(prev => ({ ...prev, [campo]: null }));
-  }
-
-  function validarCheckout() {
-    const errores = {};
-    const nombre = checkoutForm.nombre.trim();
-    const email = checkoutForm.email.trim().toLowerCase();
-    const telefono = checkoutForm.telefono.trim();
-    const documento = checkoutForm.documento.trim();
-
-    if (nombre.length < 3) errores.nombre = 'Ingresá tu nombre completo.';
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errores.email = 'Ingresá un correo válido.';
-    if (telefono.length < 6) errores.telefono = 'Ingresá un teléfono válido.';
-    if (!/^[0-9.\-]{5,24}$/.test(documento)) errores.documento = 'Ingresá tu cédula, sin letras ni símbolos especiales.';
-
-    setCheckoutErrores(errores);
-    return Object.keys(errores).length === 0;
-  }
-
-  async function iniciarPago(e) {
-    e.preventDefault();
-    if (!planCheckout || !validarCheckout()) return;
-
-    setErrorPago(null);
-    setExito(null);
-    setPagandoCodigo(planCheckout.codigo);
-    try {
-      const resultado = await planesService.checkout({
-        plan_codigo: planCheckout.codigo,
-        email: checkoutForm.email.trim().toLowerCase(),
-        nombre: checkoutForm.nombre.trim(),
-        telefono: checkoutForm.telefono.trim(),
-        documento: checkoutForm.documento.trim(),
-        checkout_intent_token: checkoutIntentToken,
-        afiliado_codigo: afiliadoRef || leerRefAfiliado(),
-      });
-      if (!resultado?.payment_url) {
-        throw new Error('PagoPar no devolvió una URL de pago.');
-      }
-      window.location.href = resultado.payment_url;
-    } catch (err) {
-      setErrorPago(err.response?.data?.error || err.response?.data?.message || err.message || 'No pudimos iniciar el pago con PagoPar.');
-    } finally {
-      setPagandoCodigo(null);
-    }
-  }
-
   function solicitarCambioPlan(plan) {
     const asunto = `Quiero mejorar mi plan a ${plan.nombre}`;
     const lineas = [
@@ -223,6 +131,10 @@ export default function Planes() {
   }
 
   function seleccionarPlan(plan) {
+    if (modoPreviewAdmin) {
+      setErrorPago('Estás viendo la vista previa de admin. Para probar un cobro real, abrí /planes fuera del preview.');
+      return;
+    }
     if (yaTienePlanPago) {
       solicitarCambioPlan(plan);
       return;
@@ -231,17 +143,19 @@ export default function Planes() {
       navigate(`/checkout/plan/${encodeURIComponent(plan.codigo)}`, { state: { plan } });
       return;
     }
-    abrirCheckout(plan);
+    
+    // Flujo para no autenticados: navegar a la página dedicada de checkout público
+    navigate(`/checkout/public/${encodeURIComponent(plan.codigo)}`, { state: { plan } });
   }
 
   return (
     <div className="pl-page">
-      <button type="button" className="pl-volver" onClick={() => navigate(modoPreviewAdmin ? '/admin/planes' : (usuario ? '/mi-dashboard' : '/login'))}>
+      <button type="button" className="pl-volver" onClick={() => navigate(modoPreviewAdmin ? '/admin/planes' : (usuario ? '/mi-dashboard' : '/'))}>
         <ArrowLeft size={14} /> Volver
       </button>
 
       <header className="pl-hero">
-        <span className="pl-hero-eyebrow"><Sparkles size={13} /> Planes Gesicomm</span>
+        <span className="pl-hero-eyebrow"><Sparkles size={13} /> Planes Gesicom</span>
         {yaTienePlan ? (
           <>
             <h1>Tu plan está activo</h1>
@@ -256,19 +170,12 @@ export default function Planes() {
           <>
             <h1>Elegí un plan pago para activar tu tienda</h1>
             <p>
-              No hay plan gratis. Después de acreditar el pago, Gesicomm te lleva al onboarding para configurar
+              Después de acreditar el pago, Gesicom te lleva al onboarding para configurar
               el nombre de tu tienda, la ficha y los productos que vas a vender.
             </p>
           </>
         )}
       </header>
-
-      {exito && (
-        <div className="pl-aviso pl-aviso-ok">
-          <CheckCircle2 size={17} />
-          <span>{exito}</span>
-        </div>
-      )}
 
       {errorPago && (
         <div className="pl-aviso pl-aviso-error">
@@ -282,81 +189,6 @@ export default function Planes() {
           <BadgeDollarSign size={17} />
           <span>Invitado por {afiliadoInvitacion.nombre || afiliadoInvitacion.codigo}</span>
         </div>
-      )}
-
-      {planCheckout && !yaTienePlan && (
-        <form className="pl-editor-card pl-checkout-card" onSubmit={iniciarPago}>
-          <div className="pl-editor-card-head">
-            <div>
-              <h3>Datos para contratar {planCheckout.nombre}</h3>
-              <p>Usamos estos datos para iniciar la transacción con PagoPar y precargar tu onboarding después del pago.</p>
-            </div>
-            <span className="pl-editor-id">{formatPrecioPlan(planCheckout)} {PERIODICIDAD}</span>
-          </div>
-
-          <div className="pl-checkout-grid">
-            <label className="pl-campo">
-              <span>Nombre completo</span>
-              <input
-                value={checkoutForm.nombre}
-                onChange={e => actualizarCheckout('nombre', e.target.value)}
-                placeholder="Ej: Ana González"
-                autoComplete="name"
-              />
-              {checkoutErrores.nombre && <em className="pl-campo-error">{checkoutErrores.nombre}</em>}
-            </label>
-
-            <label className="pl-campo">
-              <span>Correo</span>
-              <input
-                type="email"
-                value={checkoutForm.email}
-                onChange={e => actualizarCheckout('email', e.target.value)}
-                placeholder="tu@email.com"
-                autoComplete="email"
-                disabled={!!usuario?.correo_electronico}
-              />
-              {checkoutErrores.email && <em className="pl-campo-error">{checkoutErrores.email}</em>}
-            </label>
-
-            <label className="pl-campo">
-              <span>Teléfono</span>
-              <input
-                value={checkoutForm.telefono}
-                onChange={e => actualizarCheckout('telefono', e.target.value)}
-                placeholder="Ej: +595981123456"
-                autoComplete="tel"
-                inputMode="tel"
-              />
-              {checkoutErrores.telefono && <em className="pl-campo-error">{checkoutErrores.telefono}</em>}
-            </label>
-
-            <label className="pl-campo">
-              <span>Número de cédula</span>
-              <input
-                value={checkoutForm.documento}
-                onChange={e => actualizarCheckout('documento', e.target.value)}
-                placeholder="Ej: 4123456"
-                autoComplete="off"
-                inputMode="numeric"
-              />
-              {checkoutErrores.documento && <em className="pl-campo-error">{checkoutErrores.documento}</em>}
-            </label>
-          </div>
-
-          <div className="pl-checkout-actions">
-            <button type="button" className="pl-btn-texto" onClick={() => setPlanCheckout(null)} disabled={!!pagandoCodigo}>
-              Cancelar
-            </button>
-            <button type="submit" className="pl-cta primario" disabled={!!pagandoCodigo}>
-              {pagandoCodigo === planCheckout.codigo ? (
-                <><Loader size={14} className="spin-icon" /> Abriendo PagoPar...</>
-              ) : (
-                <><CreditCard size={15} /> Continuar a PagoPar <ArrowRight size={15} /></>
-              )}
-            </button>
-          </div>
-        </form>
       )}
 
       {cargando ? (
@@ -390,15 +222,11 @@ export default function Planes() {
               <button
                 type="button"
                 className={`pl-cta ${plan.destacado ? 'primario' : ''}`}
-                disabled={!!pagandoCodigo || !!preparandoCodigo || esActual}
+                disabled={esActual}
                 onClick={() => seleccionarPlan(plan)}
               >
                 {esActual ? (
                   <><CheckCircle2 size={15} /> Plan activo</>
-                ) : preparandoCodigo === plan.codigo ? (
-                  <><Loader size={14} className="spin-icon" /> Preparando...</>
-                ) : pagandoCodigo === plan.codigo ? (
-                  <><Loader size={14} className="spin-icon" /> Abriendo PagoPar...</>
                 ) : yaTienePlanPago || usuario ? (
                   <>Mejorar a {plan.nombre} <ArrowRight size={15} /></>
                 ) : (

@@ -7,11 +7,11 @@ const COLUMNAS = [
   {
     titulo: 'Producto',
     enlaces: [
+      { etiqueta: 'Cómo funciona', href: '/#como-funciona' },
       { etiqueta: 'Características', href: '/#producto' },
       { etiqueta: 'Integraciones', href: '/#integraciones' },
-      { etiqueta: 'Seguridad', href: '/security' },
+      { etiqueta: 'Planes', href: '/planes' },
       { etiqueta: 'Preguntas frecuentes', href: '/#faq' },
-      { etiqueta: 'Entrar al panel', href: '/login' },
     ],
   },
   {
@@ -24,9 +24,9 @@ const COLUMNAS = [
     ],
   },
   {
-    titulo: 'Confianza',
+    titulo: 'Gesicom',
     enlaces: [
-      { etiqueta: 'Seguridad de la Información', href: '/security' },
+      { etiqueta: 'Seguridad', href: '/security' },
       { etiqueta: 'Cumplimiento Legal', href: '/compliance' },
       { etiqueta: 'Contacto', href: '/contact' },
     ],
@@ -48,8 +48,7 @@ export default function PublicFooter() {
           <div className="max-w-sm">
             <Logo size={30} />
             <p className="mt-4 text-sm leading-relaxed text-fg-muted">
-              Plataforma de gestión de eCommerce. Productos, pedidos, inventario, clientes,
-              logística y campañas en un solo panel.
+              Gestioná tus productos, pedidos y ventas desde un solo lugar.
             </p>
 
             <p className="mt-6 flex items-center gap-2 text-sm">

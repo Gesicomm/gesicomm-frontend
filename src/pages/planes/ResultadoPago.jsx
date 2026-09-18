@@ -143,7 +143,7 @@ export default function ResultadoPago() {
             <button
               type="button"
               className="pl-cta primario"
-              onClick={() => navigate(`/registro?token=${estado.token_registro}`)}
+              onClick={() => navigate('/registro', { state: { token: estado.token_registro } })}
             >
               Crear mi cuenta <ArrowRight size={16} />
             </button>

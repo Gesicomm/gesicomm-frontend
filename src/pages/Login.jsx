@@ -162,7 +162,11 @@ export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
   const paramsIniciales = new URLSearchParams(location.search);
-  const tokenSuscripcionInicial = paramsIniciales.get('token') || '';
+  // Preferimos el token vía router state (ResultadoPago.jsx) para que no
+  // quede en la URL — historial del navegador, logs de proxy, Referer. El
+  // query param sigue andando como resguardo (ej: recarga de página, que
+  // pierde el state) y para no romper enlaces ya generados.
+  const tokenSuscripcionInicial = location.state?.token || paramsIniciales.get('token') || '';
   const esRutaRegistro = location.pathname === '/registro' || paramsIniciales.get('registro') === '1';
   const [activeForm, setActiveForm] = useState(esRutaRegistro ? 'register' : 'login');
 
@@ -171,6 +175,10 @@ export default function Login() {
   const [suscripcionRegistro, setSuscripcionRegistro] = useState(null);
   const [validandoSuscripcion, setValidandoSuscripcion] = useState(Boolean(tokenSuscripcionInicial));
   const [pendingEmail, setPendingEmail] = useState('');
+  // El backend detectó un token_suscripcion válido pero de OTRO correo: la
+  // cuenta se crea igual (free), pero no debe sentirse como un alta
+  // exitosa cualquiera — se le avisa mientras completa el OTP.
+  const [avisoCorreoNoCoincide, setAvisoCorreoNoCoincide] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(OTP_TTL);
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
@@ -195,7 +203,7 @@ export default function Login() {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const token = params.get('token') || '';
+    const token = location.state?.token || params.get('token') || '';
     const debeRegistrar = location.pathname === '/registro' || params.get('registro') === '1';
 
     if (debeRegistrar) setActiveForm('register');
@@ -335,6 +343,7 @@ export default function Login() {
       });
       if (res.requiere_verificacion) {
         setPendingEmail(res.email || formData.email);
+        setAvisoCorreoNoCoincide(Boolean(res.token_correo_no_coincide));
         setOtpCode('');
         setOtpResendCooldown(60);
         setOrigenVerificacion('registro');
@@ -444,6 +453,7 @@ export default function Login() {
     setActiveForm(formName);
     setError(null);
     setSuccess(null);
+    setAvisoCorreoNoCoincide(false);
     setMostrarPassword(false);
     setMostrarConfirmPassword(false);
     setFormData(prev => ({
@@ -698,6 +708,16 @@ export default function Login() {
                     <strong className="text-fg">{pendingEmail}</strong>
                   </p>
                 </div>
+
+                {avisoCorreoNoCoincide && (
+                  <div className="flex items-start gap-2.5 rounded-lg border border-danger/25 bg-danger/8 px-3.5 py-3 text-xs text-fg-muted leading-relaxed">
+                    <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-danger" />
+                    <span>
+                      El enlace de pago que usaste corresponde a <strong className="text-fg-muted">otro correo</strong>: esta cuenta se crea sin plan activo.
+                      Si la compra es tuya, después iniciá sesión con el mismo correo con el que pagaste.
+                    </span>
+                  </div>
+                )}
 
                 {/* Aviso spam — siempre visible antes de ingresar el código */}
                 <div className="flex items-start gap-2.5 rounded-lg border border-warning/25 bg-warning/8 px-3.5 py-3 text-xs text-fg-muted leading-relaxed">

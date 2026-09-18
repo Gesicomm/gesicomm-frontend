@@ -26,6 +26,7 @@ import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
 import Planes from './pages/planes/Planes';
 import CheckoutPlan from './pages/planes/CheckoutPlan';
+import PublicCheckoutPlan from './pages/planes/PublicCheckoutPlan';
 import ResultadoPago from './pages/planes/ResultadoPago';
 import ParametrosAdmin from './pages/admin/Parametros';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -343,6 +344,7 @@ function App() {
         <Route path="/checkout/plan/:codigo" element={
           <RequireTienda><UserLayout><CheckoutPlan /></UserLayout></RequireTienda>
         } />
+        <Route path="/checkout/public/:codigo" element={<PublicCheckoutPlan />} />
         <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
         <Route path="/admin/planes" element={
           <AdminRoute><DashboardLayout><AdminPlanes /></DashboardLayout></AdminRoute>

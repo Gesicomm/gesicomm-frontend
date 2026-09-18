@@ -6,11 +6,11 @@ import ThemeToggle from './ThemeToggle';
 import { Container } from './Section';
 
 const ENLACES = [
+  { etiqueta: 'Cómo funciona', href: '/#como-funciona' },
   { etiqueta: 'Producto', href: '/#producto' },
   { etiqueta: 'Integraciones', href: '/#integraciones' },
-  { etiqueta: 'Seguridad', href: '/security' },
-  { etiqueta: 'Cumplimiento', href: '/compliance' },
-  { etiqueta: 'Contacto', href: '/contact' },
+  { etiqueta: 'Seguridad', href: '/#seguridad' },
+  { etiqueta: 'Planes', href: '/planes' },
 ];
 
 export default function PublicNavbar() {
@@ -82,10 +82,15 @@ export default function PublicNavbar() {
 
             <Link
               to="/login"
-              className="hidden h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover sm:inline-flex"
+              className="hidden h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg sm:inline-flex"
             >
               Entrar
-              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+            <Link
+              to="/registro"
+              className="hidden h-9 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-hover sm:inline-flex"
+            >
+              Registrarse
             </Link>
 
             <button
@@ -122,11 +127,17 @@ export default function PublicNavbar() {
             </ul>
 
             <Link
-              to="/login"
+              to="/registro"
               className="mt-5 flex h-11 items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
             >
-              Entrar al panel
-              <ArrowRight size={16} aria-hidden="true" />
+              Registrarse
+            </Link>
+            
+            <Link
+              to="/login"
+              className="mt-3 flex h-11 items-center justify-center gap-2 rounded-md border border-border text-sm font-semibold text-fg transition-colors hover:bg-surface-2"
+            >
+              Entrar
             </Link>
 
             <div className="mt-8 border-t border-border pt-6">

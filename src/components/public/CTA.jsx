@@ -7,10 +7,10 @@ import { Container } from './Section';
  * quede sin un próximo paso.
  */
 export default function CTA({
-  titulo = '¿Listo para ordenar tu operación?',
-  descripcion = 'Centralizá productos, pedidos, stock y campañas en un solo panel.',
-  accionPrimaria = { etiqueta: 'Entrar al panel', to: '/login' },
-  accionSecundaria = { etiqueta: 'Hablar con nosotros', to: '/contact' },
+  titulo = 'Empezá a ordenar tu negocio',
+  descripcion = 'Gestioná tus productos, pedidos y ventas desde un solo lugar.',
+  accionPrimaria = { etiqueta: 'Registrarse', to: '/registro' },
+  accionSecundaria = { etiqueta: 'Ver planes', to: '/planes' },
   onClickPrimaria,
   onClickSecundaria,
 }) {
