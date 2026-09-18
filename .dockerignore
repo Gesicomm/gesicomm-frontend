@@ -9,3 +9,5 @@ npm-debug.log
 *.log
 .DS_Store
 Thumbs.db
+actions-runner-frontend
+actions-runner-frontend-test
