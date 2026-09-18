@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { X, History, Loader } from "lucide-react";
+import { X, History, Loader, MessageCircle, CalendarClock, Tag, Ban, CheckCircle2 } from "lucide-react";
 import { getHistorialPedido } from "../../services/courierApi";
+import { seguimientoService } from "../../services/seguimiento.service";
 import { numeroPedidoVisible } from "./pedidoNumero";
 
 function formatFechaHora(iso) {
@@ -24,7 +25,7 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
     let activo = true;
     setCargando(true);
     setError(null);
-    getHistorialPedido(envio.id)
+    seguimientoService.getTimeline(envio.id)
       .then((res) => { if (activo) setHistorial(res || []); })
       .catch((err) => { if (activo) setError(err?.response?.data?.error || "No se pudo cargar el historial."); })
       .finally(() => { if (activo) setCargando(false); });
@@ -54,9 +55,21 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
               {historial.map((h, i) => (
                 <div key={h.id} style={{ display: "flex", gap: "0.75rem", position: "relative", paddingBottom: i === historial.length - 1 ? 0 : "1rem" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--color-primary-text)", flexShrink: 0, marginTop: "0.3rem" }} />
-                    {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "color-mix(in srgb, var(--color-fg) 10%, transparent)", marginTop: "0.2rem" }} />}
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ 
+                      width: "24px", height: "24px", borderRadius: "50%", 
+                      background: "var(--color-surface-2)", border: "1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)",
+                      display: "flex", alignItems: "center", justifyContent: "center", color: "var(--color-primary-text)", zIndex: 1
+                    }}>
+                      {h.tipo === 'CONTACTO_WHATSAPP' && <MessageCircle size={12} color="#10b981" />}
+                      {h.tipo === 'ETIQUETA' && <Tag size={12} color="#8b5cf6" />}
+                      {h.tipo === 'SEGUIMIENTO_PROGRAMADO' && <CalendarClock size={12} color="#3b82f6" />}
+                      {h.tipo === 'SEGUIMIENTO_VENCIDO' && <History size={12} color="#ef4444" />}
+                      {h.tipo === 'SEGUIMIENTO_COMPLETADO' && <CheckCircle2 size={12} color="#10b981" />}
+                      {h.tipo === 'SEGUIMIENTO_CANCELADO' && <Ban size={12} color="#64748b" />}
+                      {(!h.tipo || h.tipo === 'HISTORIAL') && <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--color-primary-text)" }} />}
+                    </div>
+                    {i < historial.length - 1 && <span style={{ width: "1px", flex: 1, background: "color-mix(in srgb, var(--color-fg) 10%, transparent)", marginTop: "-4px", marginBottom: "-4px" }} />}
                   </div>
                   <div style={{ paddingBottom: "0.2rem" }}>
                     <div style={{ fontSize: "0.72rem", color: "var(--color-fg-subtle)", fontFamily: "monospace" }}>{formatFechaHora(h.fecha)}</div>
@@ -72,3 +85,5 @@ export function HistorialPedidoPanel({ open, envio, onClose }) {
     </div>
   );
 }
+
+

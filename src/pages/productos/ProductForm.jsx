@@ -319,6 +319,15 @@ export default function ProductForm() {
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);
+  // Guardar en edición se queda EN la misma ficha (no vuelve al catálogo):
+  // así se pueden tocar varias pestañas (Venta, Ficha avanzada, etc.) sin
+  // tener que reabrir el producto entre cada guardado.
+  const [aviso, setAviso] = useState(null);
+  useEffect(() => {
+    if (!aviso) return;
+    const t = setTimeout(() => setAviso(null), 4000);
+    return () => clearTimeout(t);
+  }, [aviso]);
   const [categorias, setCategorias] = useState([]);
   const [creandoCategoria, setCreandoCategoria] = useState(false);
   const [nuevaCategoria, setNuevaCategoria] = useState('');
@@ -740,6 +749,7 @@ export default function ProductForm() {
   const onSubmit = async (data) => {
     setGuardando(true);
     setError(null);
+    setAviso(null);
     try {
       const payload = {
         nombre: data.nombre.trim(),
@@ -813,7 +823,10 @@ export default function ProductForm() {
           await productService.subirImagen(id, fd);
         }
         await subirImagenesDeVariantes(id, data.variantes);
-        navigate('/mi-catalogo?filtro=mios');
+        // Se queda en esta misma ficha — antes mandaba de vuelta al listado
+        // aunque solo se hubiera tocado, por ejemplo, la pestaña Venta, y
+        // había que volver a entrar para seguir editando otra cosa.
+        setAviso('Cambios guardados.');
       } else {
         const nuevo = await productService.crear(payload);
         for (const imgObj of imagenesNuevas) {
@@ -1080,6 +1093,16 @@ export default function ProductForm() {
           <Info size={15} />
           <span style={{ flex: 1, whiteSpace: 'pre-line' }}>{error}</span>
           <button type="button" onClick={() => setError(null)} aria-label="Cerrar error">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {aviso && (
+        <div className="form-success-banner" role="status">
+          <CheckCircle2 size={15} />
+          <span style={{ flex: 1 }}>{aviso}</span>
+          <button type="button" onClick={() => setAviso(null)} aria-label="Cerrar aviso">
             <X size={14} />
           </button>
         </div>

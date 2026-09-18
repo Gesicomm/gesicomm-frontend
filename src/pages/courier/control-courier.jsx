@@ -15,6 +15,7 @@ import { PerdidaModal } from "./PerdidaModal";
 import { ResumenPedidoPanel } from "./ResumenPedidoPanel";
 import { HistorialPedidoPanel } from "./HistorialPedidoPanel";
 import { RendicionTab } from "./RendicionTab";
+import { SeguimientoPanel } from "./SeguimientoPanel";
 import {
   getCouriers,
   getEnvios,
@@ -67,6 +68,7 @@ export function ControlCourier() {
   const [accionEspecial, setAccionEspecial] = useState(null);
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
+  const [seguimientoEnvio, setSeguimientoEnvio] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
   const esAdmin = usuarioActual?.rol === "administrador";
 
@@ -340,6 +342,7 @@ export function ControlCourier() {
             onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
+            onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
             refrescarKey={refrescarKey}
           />
         ) : tab === "abastecimiento" ? (
@@ -352,6 +355,7 @@ export function ControlCourier() {
             onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
+            onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
             refrescarKey={refrescarKey}
             soloAbastecimiento
             initialAbastecimientoEstado="en_proceso"
@@ -395,6 +399,7 @@ export function ControlCourier() {
         onSubmit={handleModalSubmit}
         deliveryZonas={deliveryZonas}
         onPrecioItemActualizado={() => setRefrescarKey((k) => k + 1)}
+        onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
       />
 
       {/* Modal de Impresión de Pedidos */}
@@ -448,6 +453,12 @@ export function ControlCourier() {
         open={!!historialEnvio}
         envio={historialEnvio}
         onClose={() => setHistorialEnvio(null)}
+      />
+      <SeguimientoPanel
+        open={!!seguimientoEnvio}
+        envio={seguimientoEnvio}
+        onClose={() => setSeguimientoEnvio(null)}
+        onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
       />
     </div>
   );

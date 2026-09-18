@@ -8,6 +8,8 @@ import {
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
 import { planesService } from '../services/planesService';
+import { notificationsService } from '../services/notifications.service';
+import NotificationBell from './NotificationBell';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
 import './dashboard.css';
@@ -27,6 +29,9 @@ const UserLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   // Ocultar automáticamente en rutas de edición de landing
   const isLandingRoute = Boolean(
     location.pathname.match(/\/(mi-landing|landing)\/[a-zA-Z0-9_-]+/) ||
@@ -40,6 +45,16 @@ const UserLayout = ({ children }) => {
       setDesktopClosed(false);
     }
   }, [isLandingRoute]);
+
+  const refreshNotifications = async () => {
+    try {
+      const data = await notificationsService.getNotifications({ leida: false, limit: 50 });
+      setNotifications(data.data || []);
+      setUnreadCount(data.no_leidas || 0);
+    } catch (e) {
+      console.error('Error fetching notifications', e);
+    }
+  };
 
   useEffect(() => {
     let activo = true;
@@ -57,6 +72,24 @@ const UserLayout = ({ children }) => {
     cargarProgreso();
     return () => { activo = false; };
   }, []);
+
+  useEffect(() => {
+    if (!usuario) return;
+    refreshNotifications();
+    const interval = setInterval(refreshNotifications, 60000);
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [usuario]);
 
   const cargarProgreso = async () => {
     try {
@@ -166,6 +199,20 @@ const UserLayout = ({ children }) => {
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+            <NotificationBell 
+              notifications={notifications} 
+              unreadCount={unreadCount} 
+              onMarkAsRead={async (id) => {
+                await notificationsService.markAsRead(id);
+                refreshNotifications();
+              }}
+              onMarkAllAsRead={async () => {
+                await notificationsService.markAllAsRead();
+                refreshNotifications();
+              }}
+              onRefresh={refreshNotifications}
+              align="left"
+            />
             <ThemeToggle className="h-8 w-8 !border-none" />
             <button
               type="button"
@@ -194,6 +241,7 @@ const UserLayout = ({ children }) => {
               {renderLink({ path: '/mis-pedidos', label: 'Pedidos', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
             </ul>
           </div>
 
@@ -289,7 +337,22 @@ const UserLayout = ({ children }) => {
             </button>
             <Logo size={24} className="text-fg" />
           </div>
-          <ThemeToggle className="h-8 w-8 !border-none" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <NotificationBell 
+              notifications={notifications} 
+              unreadCount={unreadCount} 
+              onMarkAsRead={async (id) => {
+                await notificationsService.markAsRead(id);
+                refreshNotifications();
+              }}
+              onMarkAllAsRead={async () => {
+                await notificationsService.markAllAsRead();
+                refreshNotifications();
+              }}
+              onRefresh={refreshNotifications}
+            />
+            <ThemeToggle className="h-8 w-8 !border-none" />
+          </div>
         </header>
 
         <main className="dashboard-main" style={{ background: 'var(--color-canvas)', flex: 1, padding: 0, overflowY: 'auto' }}>

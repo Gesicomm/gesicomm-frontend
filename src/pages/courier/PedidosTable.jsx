@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash,
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Tag
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
 import { canalVentaService } from "../../services/canalVentaService";
+import { seguimientoService } from "../../services/seguimiento.service";
 import { verificarSesion } from "../../utils/auth";
 import { numeroPedidoVisible } from "./pedidoNumero";
 
@@ -31,7 +32,8 @@ const ABASTECIMIENTO_META = {
 const ESTADOS_CON_MODAL = { Reprogramado: "reprogramar", Entregado: "entregar", Devuelto: "devolver", Perdido: "perder" };
 
 const TRANSICIONES_VALIDAS_FRONTEND = {
-  Pendiente: ['Confirmado', 'Cancelado'],
+  Pendiente: ['EnSeguimiento', 'Confirmado', 'Cancelado'],
+  EnSeguimiento: ['Confirmado', 'Cancelado'],
   Confirmado: ['Preparado', 'Cancelado'],
   Preparado: ['Despachado', 'Cancelado'],
   Despachado: ['Entregado', 'Reprogramado', 'Devuelto', 'Perdido'],
@@ -54,6 +56,11 @@ const FILTROS_VACIOS = {
   canal_venta_id: "TODOS",
   producto: "",
   metodo_pago_id: "TODOS",
+  etiqueta_id: "TODOS",
+  plantilla_id: "TODOS",
+  seguimiento_responsable_id: "TODOS",
+  seguimiento_pendiente: false,
+  seguimiento_vencido: false,
 };
 
 function EstadoBadgeDropdown({ estado, onChange }) {
@@ -379,6 +386,7 @@ export function PedidosTable({
   onAccionEspecial,
   onAbrirResumen,
   onAbrirHistorial,
+  onAbrirSeguimiento,
   refrescarKey = 0,
   initialPedidoId = "",
   initialEstado = "Pendiente",
@@ -400,6 +408,9 @@ export function PedidosTable({
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [modalAbastecimientoOpen, setModalAbastecimientoOpen] = useState(false);
   const [modalAbastecimientoDismissedKey, setModalAbastecimientoDismissedKey] = useState(null);
+  
+  const [etiquetas, setEtiquetas] = useState([]);
+  const [plantillas, setPlantillas] = useState([]);
 
   // Modals
   const [modalOpen, setModalOpen] = useState(false);
@@ -408,6 +419,8 @@ export function PedidosTable({
     getMetodosPago().then((data) => setMetodosPagoList(data || [])).catch(() => setMetodosPagoList([]));
     canalVentaService.listar().then((data) => setCanalesVenta(data || [])).catch(() => setCanalesVenta([]));
     verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
+    seguimientoService.getEtiquetas({ activo: true }).then(d => setEtiquetas(d || [])).catch(()=>{});
+    seguimientoService.getPlantillas({ activo: true }).then(d => setPlantillas(d || [])).catch(()=>{});
   }, []);
 
   useEffect(() => {
@@ -439,6 +452,13 @@ export function PedidosTable({
     if (f.canal_venta_id !== "TODOS") payload.canal_venta_id = f.canal_venta_id;
     if (f.producto.trim()) payload.producto_busqueda = f.producto.trim();
     if (f.metodo_pago_id !== "TODOS") payload.metodo_pago_id = f.metodo_pago_id;
+    
+    if (f.etiqueta_id !== "TODOS") payload.etiqueta_id = f.etiqueta_id;
+    if (f.plantilla_id !== "TODOS") payload.plantilla_id = f.plantilla_id;
+    if (f.seguimiento_responsable_id !== "TODOS") payload.seguimiento_responsable_id = f.seguimiento_responsable_id;
+    if (f.seguimiento_pendiente) payload.seguimiento_pendiente = f.seguimiento_pendiente;
+    if (f.seguimiento_vencido) payload.seguimiento_vencido = f.seguimiento_vencido;
+
     if (soloAbastecimiento && incluirFiltroAbastecimiento) {
       if (abastecimientoEstadoActivo && abastecimientoEstadoActivo !== "TODOS") {
         payload.abastecimiento_estado = abastecimientoEstadoActivo;
@@ -1039,6 +1059,33 @@ export function PedidosTable({
               ))}
             </select>
           </label>
+          
+          {estadoActivo === "EnSeguimiento" && (
+            <>
+              <label className="pt-extra-label">
+                <Tag size={13} />
+                <select className="pt-filter-select" style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }} value={filtros.etiqueta_id} onChange={(e) => setFiltro("etiqueta_id", e.target.value)}>
+                  <option value="TODOS">Todas las etiquetas</option>
+                  {etiquetas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                </select>
+              </label>
+              <label className="pt-extra-label">
+                <MessageCircle size={13} />
+                <select className="pt-filter-select" style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }} value={filtros.plantilla_id} onChange={(e) => setFiltro("plantilla_id", e.target.value)}>
+                  <option value="TODOS">Todas las plantillas</option>
+                  {plantillas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                </select>
+              </label>
+              <label className="pt-extra-label" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <input type="checkbox" checked={filtros.seguimiento_pendiente} onChange={e => setFiltro("seguimiento_pendiente", e.target.checked)} />
+                <span style={{ fontSize: "0.8rem", color: "var(--color-fg)" }}>Seguimiento pendiente</span>
+              </label>
+              <label className="pt-extra-label" style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                <input type="checkbox" checked={filtros.seguimiento_vencido} onChange={e => setFiltro("seguimiento_vencido", e.target.checked)} />
+                <span style={{ fontSize: "0.8rem", color: "var(--color-fg)" }}>Seguimiento vencido</span>
+              </label>
+            </>
+          )}
         </div>
       )}
 
@@ -1152,18 +1199,19 @@ export function PedidosTable({
                         <td className="pt-td">
                           <span className="pt-phone-cell">
                             <span>{e.telefono || "—"}</span>
-                            {whatsappLink && (
-                              <a
-                                href={whatsappLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            {e.telefono && onAbrirSeguimiento && (
+                              <button
+                                type="button"
                                 className="pt-whatsapp-action"
-                                title={`Escribir por WhatsApp a ${e.telefono}`}
-                                aria-label={`Escribir por WhatsApp a ${nombreCliente}`}
-                                onClick={(ev) => ev.stopPropagation()}
+                                title={`Seguimiento por WhatsApp a ${e.telefono}`}
+                                aria-label={`Seguimiento por WhatsApp a ${nombreCliente}`}
+                                onClick={(ev) => {
+                                  ev.stopPropagation();
+                                  onAbrirSeguimiento(e);
+                                }}
                               >
                                 <MessageCircle size={14} />
-                              </a>
+                              </button>
                             )}
                           </span>
                         </td>

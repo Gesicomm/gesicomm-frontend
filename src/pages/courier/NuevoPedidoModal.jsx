@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save, Pencil, Check, Loader2 } from "lucide-react";
+import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save, Pencil, Check, Loader2, MessageCircle } from "lucide-react";
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio } from "../../services/courierApi";
@@ -175,7 +175,7 @@ function buildFormFromEnvio(envio) {
  * "completar" los ítems y la fecha/hora original no son editables (ya
  * comprometieron stock/registro), todo lo demás sí.
  */
-export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [], onPrecioItemActualizado }) {
+export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, deliveryZonas = [], onPrecioItemActualizado, onAbrirSeguimiento }) {
   const modoCompletar = !!envio;
   // Confirmar solo aplica a un pedido Pendiente. Sobre uno que ya avanzó, el
   // modal es un editor: guarda datos y no toca el estado. El título y el
@@ -872,10 +872,24 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                 : "Nuevo pedido"}
             </h2>
           </div>
-          <button type="button" onClick={handleRequestClose} className="np-close-action" aria-label="Cerrar modal">
-            <X size={20} />
-            <span>Cerrar</span>
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {modoCompletar && onAbrirSeguimiento && (
+              <button 
+                type="button" 
+                onClick={() => onAbrirSeguimiento(envio)} 
+                className="np-close-action" 
+                style={{ color: "var(--color-primary-text)", background: "color-mix(in srgb, var(--color-primary) 15%, transparent)" }}
+                aria-label="Abrir seguimiento por WhatsApp"
+              >
+                <MessageCircle size={20} />
+                <span>WhatsApp</span>
+              </button>
+            )}
+            <button type="button" onClick={handleRequestClose} className="np-close-action" aria-label="Cerrar modal">
+              <X size={20} />
+              <span>Cerrar</span>
+            </button>
+          </div>
         </div>
 
         <div className="np-progress-strip" aria-label="Resumen de carga del pedido">
@@ -1025,7 +1039,18 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
               </div>
 
               <div className="np-row">
-                <label>Teléfono del cliente</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <label style={{ margin: 0 }}>Teléfono del cliente</label>
+                  {modoCompletar && onAbrirSeguimiento && form.telefono && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); onAbrirSeguimiento(envio); }}
+                      style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-primary-text)', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', padding: '2px 8px', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
+                    >
+                      <MessageCircle size={12} /> Contactar
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   className={`form-input ${errors.telefono ? 'input-error' : ''}`}

@@ -1549,7 +1549,7 @@ export default function MiDashboard() {
             </div>
             <div className="md-rent-item">
               <span className="md-rent-label">
-                Venta Promedio
+                Ticket Promedio
                 <Ayuda
                   ariaLabel="Promedio cobrado por cada pedido entregado. Formula: facturacion real dividida por pedidos entregados."
                   texto={(

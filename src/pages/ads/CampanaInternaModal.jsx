@@ -392,7 +392,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-fg-muted)' }}>¿A qué canal apunta esta campaña?</p>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {[
-                      { value: 'web', label: 'Funnel', desc: 'Solo clasificación para reportes', icon: <Globe size={22} color="#3b82f6" />, color: '#3b82f6' },
+                      { value: 'web', label: 'Web', desc: 'Solo clasificación para reportes', icon: <Globe size={22} color="#3b82f6" />, color: '#3b82f6' },
                       { value: 'whatsapp', label: 'WhatsApp', desc: 'Conversaciones / mensajes', icon: <MessageCircle size={22} color="#10b981" />, color: '#10b981' },
                     ].map(opt => (
                       <button

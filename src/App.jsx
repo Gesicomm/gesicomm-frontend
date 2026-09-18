@@ -35,6 +35,7 @@ import MiAfiliado from './pages/afiliados/MiAfiliado';
 import AuthTracking from './pages/admin/AuthTracking';
 import Onboarding from './pages/onboarding/Onboarding';
 import { ControlCourier } from './pages/courier/control-courier';
+import { SeguimientoConfig } from './pages/courier/SeguimientoConfig';
 import EducacionView from './pages/educacion/EducacionView';
 import AdminEducacion from './pages/educacion/AdminEducacion';
 import CostosGastos from './pages/finanzas/CostosGastos';
@@ -330,6 +331,9 @@ function App() {
         <Route path="/mis-pedidos" element={
           <RequireTienda><UserLayout><ControlCourier /></UserLayout></RequireTienda>
         } />
+        <Route path="/pedidos/configuracion" element={
+          <RequireTienda><UserLayout><SeguimientoConfig /></UserLayout></RequireTienda>
+        } />
         <Route path="/mi-tienda" element={
           <RequireTienda><DynamicLayout><ConfigurarTienda /></DynamicLayout></RequireTienda>
         } />
@@ -437,3 +441,5 @@ function App() {
 }
 
 export default App;
+
+
