@@ -878,7 +878,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                 type="button" 
                 onClick={() => onAbrirSeguimiento(envio)} 
                 className="np-close-action" 
-                style={{ color: "var(--color-primary-text)", background: "color-mix(in srgb, var(--color-primary) 15%, transparent)" }}
                 aria-label="Abrir seguimiento por WhatsApp"
               >
                 <MessageCircle size={20} />
