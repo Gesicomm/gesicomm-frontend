@@ -20,7 +20,7 @@ export const STATUS_ORDER = [
 
 export const STATUS = {
   "EnSeguimiento": {
-    label: "En Seguimiento",
+    label: "En Seguimiento de Contacto",
     columnBar: "bg-blue-300",
     chipBg: "color-mix(in srgb, #3b82f6 14%, transparent)",
     chipText: "#3b82f6",

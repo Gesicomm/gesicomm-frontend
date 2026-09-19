@@ -827,7 +827,7 @@ export function PedidosTable({
             {
               st: "EnSeguimiento",
               icon: <MessageCircle size={16} />,
-              label: "En Seguimiento",
+              label: "En seguimiento de contacto",
               color: "#3b82f6",
               border: (conteos?.seguimiento_vencidos > 0)
                 ? "color-mix(in srgb, var(--color-danger) 45%, transparent)"
@@ -836,7 +836,7 @@ export function PedidosTable({
                 ? `${conteos.seguimiento_vencidos} por contactar`
                 : null
             },
-            { st: "Confirmado", icon: <Package size={16} />, label: "Por preparar", color: "var(--color-info)", border: "color-mix(in srgb, var(--color-info) 20%, transparent)" },
+            { st: "Confirmado", icon: <Package size={16} />, label: "Confirmados", color: "var(--color-info)", border: "color-mix(in srgb, var(--color-info) 20%, transparent)" },
             { st: "Preparado", icon: <ClipboardList size={16} />, label: "Por despachar", color: "var(--color-warning)", border: "color-mix(in srgb, var(--color-warning) 20%, transparent)" },
             { st: "Despachado", icon: <Truck size={16} />, label: "En tránsito", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
             { st: "Reprogramado", icon: <History size={16} />, label: "Reprogramados", color: "var(--color-danger)", border: "color-mix(in srgb, var(--color-danger) 20%, transparent)" }
