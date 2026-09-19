@@ -99,6 +99,25 @@ export function ControlCourier() {
     cargarDatos();
   }, [fechaDesde, fechaHasta]);
 
+  useEffect(() => {
+    if (seguimientoEnvio) {
+      const updated = envios.find(e => e.id === seguimientoEnvio.id);
+      if (updated && updated !== seguimientoEnvio) setSeguimientoEnvio(updated);
+    }
+    if (resumenEnvio) {
+      const updated = envios.find(e => e.id === resumenEnvio.id);
+      if (updated && updated !== resumenEnvio) setResumenEnvio(updated);
+    }
+    if (historialEnvio) {
+      const updated = envios.find(e => e.id === historialEnvio.id);
+      if (updated && updated !== historialEnvio) setHistorialEnvio(updated);
+    }
+    if (envioParaCompletar) {
+      const updated = envios.find(e => e.id === envioParaCompletar.id);
+      if (updated && updated !== envioParaCompletar) setEnvioParaCompletar(updated);
+    }
+  }, [envios]);
+
   const cargarDatos = async () => {
     try {
       setLoading(true);

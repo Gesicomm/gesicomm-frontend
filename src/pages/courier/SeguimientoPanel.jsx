@@ -97,74 +97,64 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
       alert("Selecciona una plantilla");
       return;
     }
+    await saveAll({ whatsapp: true });
+  };
+
+  const handleGuardarSolo = async () => {
+    await saveAll({ whatsapp: false });
+  };
+
+  const saveAll = async ({ whatsapp }) => {
     setLoadingAccion(true);
     try {
-      const res = await seguimientoService.crearContacto(envio.id, {
-        plantilla_id: plantillaSeleccionada,
-        telefono: telefonoPersonalizado || envio.telefono
-      });
-      if (res.whatsapp_url) {
-        window.open(res.whatsapp_url, '_blank');
+      // 1. WhatsApp Contact (only if requested)
+      if (whatsapp) {
+        const res = await seguimientoService.crearContacto(envio.id, {
+          plantilla_id: plantillaSeleccionada,
+          telefono: telefonoPersonalizado || envio.telefono
+        });
+        if (res.whatsapp_url) {
+          window.open(res.whatsapp_url, '_blank');
+        }
       }
+      
+      // 2. Note and Reminder
+      if (notaRecordatorio.trim() || horasProgramadas || fechaCustom) {
+        const payload = { nota: notaRecordatorio.trim() };
+        if (horasProgramadas && horasProgramadas !== 'custom') {
+          payload.horas = horasProgramadas;
+        } else if (fechaCustom) {
+          payload.ejecutar_en = new Date(fechaCustom).toISOString();
+        }
+        await seguimientoService.programarRecordatorio(envio.id, payload);
+        setNotaRecordatorio("");
+        setHorasProgramadas(null);
+        setFechaCustom("");
+      } else if (notaRecordatorio.trim()) {
+        await seguimientoService.guardarNota(envio.id, notaRecordatorio.trim());
+        setNotaRecordatorio("");
+      }
+
       if (onRefreshPedido) onRefreshPedido();
-      // Reload etiquetas to reflect changes
+      // Reload etiquetas to reflect changes (in case plantilla had auto tag)
       const resEtiqPed = await seguimientoService.getEtiquetasPedido(envio.id);
       setEtiquetasPedido(resEtiqPed || []);
-      if (onRefreshPedido) onRefreshPedido();
     } catch (err) {
       console.error(err);
+      alert("Ocurri un error al guardar");
     } finally {
       setLoadingAccion(false);
     }
   };
 
-  const programarRapido = async (horas) => {
-    setLoadingAccion(true);
-    try {
-      await seguimientoService.programarRecordatorio(envio.id, { horas, nota: notaRecordatorio });
-      setNotaRecordatorio("");
-      setHorasProgramadas(horas);
-      setTimeout(() => setHorasProgramadas(null), 5000);
-      if (onRefreshPedido) onRefreshPedido();
-    } catch (e) {
-      console.error(e);
-      alert("Error al programar recordatorio");
-    } finally {
-      setLoadingAccion(false);
-    }
+  const programarRapido = (horas) => {
+    setHorasProgramadas(horas);
+    setFechaCustom("");
   };
 
-  const programarCustom = async () => {
+  const programarCustom = () => {
     if (!fechaCustom) return;
-    setLoadingAccion(true);
-    try {
-      const dateIso = new Date(fechaCustom).toISOString();
-      await seguimientoService.programarRecordatorio(envio.id, { ejecutar_en: dateIso, nota: notaRecordatorio });
-      setNotaRecordatorio("");
-      setFechaCustom("");
-      setHorasProgramadas('custom');
-      setTimeout(() => setHorasProgramadas(null), 5000);
-      if (onRefreshPedido) onRefreshPedido();
-    } catch (e) {
-      console.error(e);
-      alert("Error al programar fecha");
-    } finally {
-      setLoadingAccion(false);
-    }
-  };
-
-  const agregarNota = async () => {
-    if (!notaRecordatorio.trim()) return;
-    setLoadingAccion(true);
-    try {
-      await seguimientoService.guardarNota(envio.id, notaRecordatorio.trim());
-      setNotaRecordatorio("");
-    } catch (e) {
-      console.error(e);
-      alert("Error al guardar nota");
-    } finally {
-      setLoadingAccion(false);
-    }
+    setHorasProgramadas('custom');
   };
 
   const completar = async () => {
@@ -374,9 +364,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                   
                   <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
                     <textarea className="form-input" value={notaRecordatorio} onChange={e => setNotaRecordatorio(e.target.value)} style={{ flex: 1, minHeight: '60px', resize: 'vertical' }} placeholder="Escribe una nota..." />
-                    <button className="btn-secondary" style={{ padding: "0 12px", background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", color: "var(--color-primary-text)", borderColor: "transparent", fontWeight: 600 }} onClick={agregarNota} disabled={loadingAccion || !notaRecordatorio}>
-                      Guardar
-                    </button>
                   </div>
                   
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
@@ -407,16 +394,15 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                     })}
                   </div>
 
-                  {horasProgramadas && (
-                    <div style={{ marginBottom: "10px", padding: "8px 12px", borderRadius: "6px", background: "color-mix(in srgb, var(--color-success) 12%, transparent)", color: "var(--color-success)", fontSize: "0.82rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
-                      ✓ Recordatorio agendado{horasProgramadas !== 'custom' ? ` para +${horasProgramadas}h` : " para la fecha seleccionada"}
-                    </div>
-                  )}
-
-                  <div style={{ display: "flex", gap: "6px" }}>
-                    <input type="datetime-local" className="form-input" value={fechaCustom} onChange={e => setFechaCustom(e.target.value)} style={{ flex: 1 }} disabled={loadingAccion}/>
-                    <button className="btn-secondary" onClick={programarCustom} disabled={loadingAccion || !fechaCustom}>Agendar</button>
+                  <div style={{ display: "flex", gap: "6px", marginBottom: "12px" }}>
+                    <input type="datetime-local" className="form-input" value={fechaCustom} onChange={e => { setFechaCustom(e.target.value); setHorasProgramadas(e.target.value ? 'custom' : null); }} style={{ flex: 1 }} disabled={loadingAccion}/>
                   </div>
+
+                  {(notaRecordatorio.trim() || horasProgramadas || fechaCustom) && (
+                    <button className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={handleGuardarSolo} disabled={loadingAccion}>
+                      Guardar nota / recordatorio
+                    </button>
+                  )}
                 </div>
                 
               </div>
