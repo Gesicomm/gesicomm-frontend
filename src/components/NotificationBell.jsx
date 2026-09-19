@@ -52,7 +52,7 @@ export default function NotificationBell({
     setIsOpen(false);
     await onMarkAsRead(notification.id);
     if (notification.envio_id) {
-      navigate(`/pedidos/${notification.envio_id}`);
+      navigate('/mis-pedidos');
     }
   };
 

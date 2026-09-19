@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { X, MessageCircle, Clock, Check, Calendar, Plus, Trash2, Tag, Loader2, Ban } from "lucide-react";
 import Select, { components } from "react-select";
 import { seguimientoService } from "../../services/seguimiento.service";
@@ -56,6 +56,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [loadingAccion, setLoadingAccion] = useState(false);
+  const [horasProgramadas, setHorasProgramadas] = useState(null); // feedback visual botones de tiempo
 
   // Form states
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
@@ -121,11 +122,12 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setLoadingAccion(true);
     try {
       await seguimientoService.programarRecordatorio(envio.id, { horas, nota: notaRecordatorio });
-      if (onRefreshPedido) onRefreshPedido();
       setNotaRecordatorio("");
+      setHorasProgramadas(horas);
+      setTimeout(() => setHorasProgramadas(null), 5000);
     } catch (e) {
       console.error(e);
-      alert("Error al programar");
+      alert("Error al programar recordatorio");
     } finally {
       setLoadingAccion(false);
     }
@@ -137,9 +139,10 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     try {
       const dateIso = new Date(fechaCustom).toISOString();
       await seguimientoService.programarRecordatorio(envio.id, { ejecutar_en: dateIso, nota: notaRecordatorio });
-      if (onRefreshPedido) onRefreshPedido();
       setNotaRecordatorio("");
       setFechaCustom("");
+      setHorasProgramadas('custom');
+      setTimeout(() => setHorasProgramadas(null), 5000);
     } catch (e) {
       console.error(e);
       alert("Error al programar fecha");
@@ -375,13 +378,39 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                   </div>
                   
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
-                    {configuracion?.tiempos_rapidos_horas?.map(h => (
-                      <button key={h} className="btn-secondary" style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "16px", background: "var(--color-canvas)", borderColor: "color-mix(in srgb, var(--color-fg) 12%, transparent)", flex: "1 1 auto", textAlign: "center", transition: "all 0.2s ease" }} onClick={() => programarRapido(h)} disabled={loadingAccion}>
-                        +{h}h
-                      </button>
-                    ))}
+                    {configuracion?.tiempos_rapidos_horas?.map(h => {
+                      const activo = horasProgramadas === h;
+                      return (
+                        <button
+                          key={h}
+                          className="btn-secondary"
+                          style={{
+                            padding: "6px 14px",
+                            fontSize: "0.8rem",
+                            borderRadius: "16px",
+                            flex: "1 1 auto",
+                            textAlign: "center",
+                            transition: "all 0.18s ease",
+                            background: activo ? "var(--color-primary)" : "var(--color-canvas)",
+                            color: activo ? "var(--color-primary-fg)" : undefined,
+                            borderColor: activo ? "var(--color-primary)" : "color-mix(in srgb, var(--color-fg) 12%, transparent)",
+                            fontWeight: activo ? 700 : 400,
+                          }}
+                          onClick={() => programarRapido(h)}
+                          disabled={loadingAccion}
+                        >
+                          {activo ? `✓ +${h}h` : `+${h}h`}
+                        </button>
+                      );
+                    })}
                   </div>
-                  
+
+                  {horasProgramadas && (
+                    <div style={{ marginBottom: "10px", padding: "8px 12px", borderRadius: "6px", background: "color-mix(in srgb, var(--color-success) 12%, transparent)", color: "var(--color-success)", fontSize: "0.82rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                      ✓ Recordatorio agendado{horasProgramadas !== 'custom' ? ` para +${horasProgramadas}h` : " para la fecha seleccionada"}
+                    </div>
+                  )}
+
                   <div style={{ display: "flex", gap: "6px" }}>
                     <input type="datetime-local" className="form-input" value={fechaCustom} onChange={e => setFechaCustom(e.target.value)} style={{ flex: 1 }} disabled={loadingAccion}/>
                     <button className="btn-secondary" onClick={programarCustom} disabled={loadingAccion || !fechaCustom}>Agendar</button>
