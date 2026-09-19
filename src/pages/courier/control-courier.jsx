@@ -8,6 +8,7 @@ import { NuevoPedidoModal } from "./NuevoPedidoModal";
 import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import { ReprogramarModal } from "./ReprogramarModal";
+import LogisticaAbastecimientoModal from '../../components/depositos/LogisticaAbastecimientoModal';
 import { CostoViajeModal } from "./CostoViajeModal";
 import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
 import { DevolucionModal } from "./DevolucionModal";
@@ -147,9 +148,15 @@ export function ControlCourier() {
     }
   };
 
+  const [logisticaModalEnvio, setLogisticaModalEnvio] = useState(null);
+
   const handlePagarAbastecimiento = async (envio) => {
+    setLogisticaModalEnvio(envio);
+  };
+
+  const proceedToPagarAbastecimiento = async (envioId) => {
     try {
-      const checkout = await iniciarPagoAbastecimiento(envio.id);
+      const checkout = await iniciarPagoAbastecimiento(envioId);
       if (checkout?.payment_url) {
         window.location.href = checkout.payment_url;
         return;
@@ -459,6 +466,16 @@ export function ControlCourier() {
         envio={seguimientoEnvio}
         onClose={() => setSeguimientoEnvio(null)}
         onRefreshPedido={() => setRefrescarKey((k) => k + 1)}
+      />
+      <LogisticaAbastecimientoModal
+        open={!!logisticaModalEnvio}
+        envio={logisticaModalEnvio}
+        onClose={() => setLogisticaModalEnvio(null)}
+        onPagar={() => {
+          const envioId = logisticaModalEnvio.id;
+          setLogisticaModalEnvio(null);
+          proceedToPagarAbastecimiento(envioId);
+        }}
       />
     </div>
   );

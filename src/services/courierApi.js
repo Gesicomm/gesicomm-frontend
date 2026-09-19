@@ -165,3 +165,8 @@ export const deleteMetodoPago = async (id) => {
   return data;
 };
 
+export const actualizarLogisticaAbastecimiento = async (envioId, payload) => {
+  const { data } = await api.put(`/envios/${envioId}/abastecimiento/logistica`, payload);
+  return data;
+};
+

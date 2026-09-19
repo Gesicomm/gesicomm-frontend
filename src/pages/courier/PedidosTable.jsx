@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Tag
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Tag, Clock, AlertCircle
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
@@ -750,6 +750,10 @@ export function PedidosTable({
           {STATUS_ORDER.map((st) => {
             const cfg = STATUS[st] || {};
             const active = estadoActivo === st;
+            const isEnSeguimiento = st === "EnSeguimiento";
+            const vencidosSeguimiento = Number(conteos?.seguimiento_vencidos) || 0;
+            const tieneAlertas = isEnSeguimiento && vencidosSeguimiento > 0;
+
             return (
               <button
                 key={st}
@@ -758,9 +762,21 @@ export function PedidosTable({
                 style={{
                   padding: "0.45rem 0.9rem",
                   borderRadius: "999px",
-                  border: active ? `1px solid ${cfg.chipText}` : "1px solid var(--color-border)",
-                  background: active ? cfg.chipBg : "var(--color-surface-2)",
-                  color: active ? cfg.chipText : "var(--color-fg-muted)",
+                  border: active
+                    ? `1px solid ${cfg.chipText}`
+                    : tieneAlertas
+                    ? "1px solid var(--color-danger)"
+                    : "1px solid var(--color-border)",
+                  background: active
+                    ? cfg.chipBg
+                    : tieneAlertas
+                    ? "color-mix(in srgb, var(--color-danger) 10%, var(--color-surface-2))"
+                    : "var(--color-surface-2)",
+                  color: active
+                    ? cfg.chipText
+                    : tieneAlertas
+                    ? "var(--color-danger)"
+                    : "var(--color-fg-muted)",
                   fontSize: "0.8rem",
                   fontWeight: 700,
                   cursor: "pointer",
@@ -769,10 +785,32 @@ export function PedidosTable({
                   alignItems: "center",
                   gap: "0.4rem",
                   flexShrink: 0,
+                  transition: "all 0.15s ease",
                 }}
               >
-                {st}
+                {cfg.label || st}
                 <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos[st] ?? 0})</span>
+                {tieneAlertas && (
+                  <span
+                    title={`${vencidosSeguimiento} seguimiento(s) pendientes de contactar`}
+                    style={{
+                      background: "var(--color-danger)",
+                      color: "#ffffff",
+                      fontSize: "0.68rem",
+                      fontWeight: 800,
+                      padding: "1px 6px",
+                      borderRadius: "999px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      boxShadow: "0 0 6px color-mix(in srgb, var(--color-danger) 60%, transparent)",
+                    }}
+                    className="vencido-pulse"
+                  >
+                    <Clock size={10} />
+                    {vencidosSeguimiento}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -786,24 +824,63 @@ export function PedidosTable({
         }}>
           {[
             { st: "Pendiente", icon: <User size={16} />, label: "Pendientes", color: "var(--color-fg-muted)", border: "color-mix(in srgb, var(--color-fg) 10%, transparent)" },
+            {
+              st: "EnSeguimiento",
+              icon: <MessageCircle size={16} />,
+              label: "En Seguimiento",
+              color: "#3b82f6",
+              border: (conteos?.seguimiento_vencidos > 0)
+                ? "color-mix(in srgb, var(--color-danger) 45%, transparent)"
+                : "color-mix(in srgb, #3b82f6 25%, transparent)",
+              badgeExtra: (conteos?.seguimiento_vencidos > 0)
+                ? `${conteos.seguimiento_vencidos} por contactar`
+                : null
+            },
             { st: "Confirmado", icon: <Package size={16} />, label: "Por preparar", color: "var(--color-info)", border: "color-mix(in srgb, var(--color-info) 20%, transparent)" },
             { st: "Preparado", icon: <ClipboardList size={16} />, label: "Por despachar", color: "var(--color-warning)", border: "color-mix(in srgb, var(--color-warning) 20%, transparent)" },
             { st: "Despachado", icon: <Truck size={16} />, label: "En tránsito", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
             { st: "Reprogramado", icon: <History size={16} />, label: "Reprogramados", color: "var(--color-danger)", border: "color-mix(in srgb, var(--color-danger) 20%, transparent)" }
           ].map(item => (
-            <div key={item.st} style={{
-              flex: "1 1 140px",
-              padding: "1rem",
-              borderRadius: "12px",
-              background: "var(--color-canvas)",
-              border: `1px solid ${item.border}`,
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.5rem"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: item.color }}>
-                {item.icon}
-                <span style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>{item.label}</span>
+            <div
+              key={item.st}
+              onClick={() => handleSelectEstado(item.st)}
+              style={{
+                flex: "1 1 140px",
+                padding: "1rem",
+                borderRadius: "12px",
+                background: estadoActivo === item.st
+                  ? "color-mix(in srgb, var(--color-primary) 10%, var(--color-canvas))"
+                  : "var(--color-canvas)",
+                border: `1px solid ${item.border}`,
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                cursor: "pointer",
+                transition: "transform 0.15s ease, border-color 0.15s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", color: item.color }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  {item.icon}
+                  <span style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>{item.label}</span>
+                </div>
+                {item.badgeExtra && (
+                  <span style={{
+                    fontSize: "0.68rem",
+                    fontWeight: 800,
+                    padding: "2px 6px",
+                    borderRadius: "6px",
+                    background: "color-mix(in srgb, var(--color-danger) 15%, transparent)",
+                    color: "var(--color-danger)",
+                    border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "3px"
+                  }}>
+                    <AlertCircle size={10} />
+                    {item.badgeExtra}
+                  </span>
+                )}
               </div>
               <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-fg)" }}>
                 {conteos[item.st] ?? 0}
@@ -1197,18 +1274,63 @@ export function PedidosTable({
                           </span>
                         </td>
                         <td className="pt-td">
-                          <span className="pt-phone-cell">
+                          <span className="pt-phone-cell" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
                             <span>{e.telefono || "—"}</span>
+                            {e.recordatorio_vencido ? (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "2px",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 800,
+                                  background: "color-mix(in srgb, var(--color-danger) 18%, transparent)",
+                                  color: "var(--color-danger)",
+                                  border: "1px solid color-mix(in srgb, var(--color-danger) 40%, transparent)",
+                                  whiteSpace: "nowrap",
+                                }}
+                                title={`Seguimiento vencido: ${e.recordatorio_ejecutar_en ? new Date(e.recordatorio_ejecutar_en).toLocaleString('es-PY') : 'Requiere contacto urgente'}`}
+                              >
+                                <Clock size={10} /> Contactar
+                              </span>
+                            ) : e.recordatorio_estado === 'PENDIENTE' && e.recordatorio_ejecutar_en ? (
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "2px",
+                                  padding: "2px 5px",
+                                  borderRadius: "4px",
+                                  fontSize: "0.68rem",
+                                  fontWeight: 600,
+                                  background: "color-mix(in srgb, var(--color-info) 10%, transparent)",
+                                  color: "var(--color-info)",
+                                  border: "1px solid color-mix(in srgb, var(--color-info) 25%, transparent)",
+                                  whiteSpace: "nowrap",
+                                }}
+                                title={`Próximo contacto: ${new Date(e.recordatorio_ejecutar_en).toLocaleString('es-PY')}`}
+                              >
+                                <Clock size={10} /> {new Date(e.recordatorio_ejecutar_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            ) : null}
                             {e.telefono && onAbrirSeguimiento && (
                               <button
                                 type="button"
-                                className="pt-whatsapp-action"
-                                title={`Seguimiento por WhatsApp a ${e.telefono}`}
+                                className={`pt-whatsapp-action ${e.recordatorio_vencido ? "vencido-pulse" : ""}`}
+                                title={`Seguimiento por WhatsApp a ${e.telefono}${e.recordatorio_vencido ? ' (Requiere contacto)' : ''}`}
                                 aria-label={`Seguimiento por WhatsApp a ${nombreCliente}`}
                                 onClick={(ev) => {
                                   ev.stopPropagation();
                                   onAbrirSeguimiento(e);
                                 }}
+                                style={e.recordatorio_vencido ? {
+                                  borderColor: "var(--color-danger)",
+                                  background: "color-mix(in srgb, var(--color-danger) 22%, transparent)",
+                                  color: "var(--color-danger)",
+                                  boxShadow: "0 0 8px color-mix(in srgb, var(--color-danger) 40%, transparent)",
+                                } : undefined}
                               >
                                 <MessageCircle size={14} />
                               </button>

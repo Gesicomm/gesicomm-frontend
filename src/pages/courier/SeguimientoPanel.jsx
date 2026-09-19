@@ -125,6 +125,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
       setNotaRecordatorio("");
       setHorasProgramadas(horas);
       setTimeout(() => setHorasProgramadas(null), 5000);
+      if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
       console.error(e);
       alert("Error al programar recordatorio");
@@ -143,6 +144,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
       setFechaCustom("");
       setHorasProgramadas('custom');
       setTimeout(() => setHorasProgramadas(null), 5000);
+      if (onRefreshPedido) onRefreshPedido();
     } catch (e) {
       console.error(e);
       alert("Error al programar fecha");

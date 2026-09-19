@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
@@ -188,6 +188,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles /> })}
             {renderLink({ path: '/page-builder', label: 'Page Builder', icon: <Code2 /> })}
             {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store /> })}
+            {renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin /> })}
             {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
             {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}

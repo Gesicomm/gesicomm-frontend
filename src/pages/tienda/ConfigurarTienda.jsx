@@ -604,31 +604,32 @@ export default function ConfigurarTienda() {
                 <div className="tn-tab-content" key="deposito">
                   <section className="tn-group">
                     <div className="tn-group-head">
-                      <h3>Dirección de depósito</h3>
-                      <p>Cuando vendés un producto que administra Gesicomm, te lo enviamos a esta dirección. No es la dirección de entrega de tus clientes — esa se carga en cada pedido.</p>
+                      <h3>Gestión de depósitos</h3>
+                      <p>
+                        La administración de las direcciones donde recibís mercadería se ha
+                        trasladado a una nueva sección donde podés gestionar múltiples depósitos.
+                      </p>
                     </div>
                     <div className="tn-group-body">
-                      <div className="tn-fields">
-                        <label className="tn-field">
-                          <span className="tn-field-label">Departamento</span>
-                          <input value={form.deposito_departamento} onChange={e => handleChange('deposito_departamento', e.target.value)} placeholder="Ej: Central" />
-                        </label>
-                        <label className="tn-field">
-                          <span className="tn-field-label">Ciudad</span>
-                          <input value={form.deposito_ciudad} onChange={e => handleChange('deposito_ciudad', e.target.value)} placeholder="Ej: Luque" />
-                        </label>
-                        <label className="tn-field">
-                          <span className="tn-field-label">Dirección</span>
-                          <input value={form.deposito_direccion} onChange={e => handleChange('deposito_direccion', e.target.value)} placeholder="Calle, número, barrio" />
-                        </label>
-                        <label className="tn-field">
-                          <span className="tn-field-label">Referencia <em>(opcional)</em></span>
-                          <input value={form.deposito_referencia} onChange={e => handleChange('deposito_referencia', e.target.value)} placeholder="Ej: portón negro, casa de dos pisos" />
-                        </label>
-                        <label className="tn-field">
-                          <span className="tn-field-label">Teléfono de contacto <em>(opcional)</em></span>
-                          <input value={form.deposito_telefono} onChange={e => handleChange('deposito_telefono', e.target.value)} placeholder="Quien recibe el envío, si no sos vos" />
-                        </label>
+                      <div className="rounded-lg border border-border bg-surface-50 p-6 text-center">
+                        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                          <MapPin size={24} />
+                        </div>
+                        <h4 className="m-0 mb-2 text-base font-semibold text-fg">
+                          Nueva sección de Depósitos
+                        </h4>
+                        <p className="m-0 mx-auto mb-6 max-w-sm text-sm text-fg-muted">
+                          Ahora podés crear y administrar múltiples depósitos para tus flujos logísticos, 
+                          además de activar o desactivar direcciones según necesites.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/mi-tienda/depositos')}
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-text transition-colors hover:bg-primary-hover"
+                        >
+                          Ir a gestionar depósitos
+                          <ArrowRight size={16} />
+                        </button>
                       </div>
                     </div>
                   </section>

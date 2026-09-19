@@ -1,6 +1,26 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, CreditCard, Loader, Sparkles, AlertCircle, BadgeDollarSign } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  BadgeDollarSign,
+  Bot,
+  Check,
+  CheckCircle2,
+  CreditCard,
+  LayoutTemplate,
+  Loader,
+  MessageCircle,
+  PackageCheck,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  Store,
+  Users,
+  Zap,
+  AlertCircle,
+} from 'lucide-react';
 import { planesService } from '../../services/planesService';
 import { afiliadosService, guardarRefAfiliado, leerRefAfiliado } from '../../services/afiliadosService';
 import { PERIODICIDAD } from '../../lib/planesCatalogo';
@@ -9,6 +29,64 @@ import { formatMoneda } from '../../utils/currency';
 import './planes.css';
 
 const CORREO_FACTURACION = 'contacto@gesicomm.com';
+
+const MODULOS_GESICOMM = [
+  {
+    icono: Store,
+    titulo: 'Tienda y landing listas para vender',
+    texto: 'Creá una vitrina profesional, páginas de producto y checkout sin armar todo desde cero.',
+  },
+  {
+    icono: ShoppingCart,
+    titulo: 'Pedidos organizados en un solo lugar',
+    texto: 'Recibí ventas, confirmá datos y seguí cada pedido con estados claros para tu equipo.',
+  },
+  {
+    icono: LayoutTemplate,
+    titulo: 'Fichas que convierten mejor',
+    texto: 'Plantillas por rubro para mostrar beneficios, combos, ofertas y respuestas a objeciones.',
+  },
+  {
+    icono: PackageCheck,
+    titulo: 'Delivery, stock y abastecimiento',
+    texto: 'Gestioná entregas, depósitos y disponibilidad sin perder el control operativo del día a día.',
+  },
+  {
+    icono: MessageCircle,
+    titulo: 'Seguimiento por WhatsApp',
+    texto: 'Recordatorios y mensajes para recuperar interesados, confirmar pedidos y evitar ventas frías.',
+  },
+  {
+    icono: BarChart3,
+    titulo: 'Reportes para decidir con números',
+    texto: 'Medí ventas, costos, canales y rendimiento para saber qué producto o anuncio conviene empujar.',
+  },
+];
+
+const PASOS = [
+  ['Elegís tu plan', 'Seleccionás el nivel que calza con tu operación y pagás con PagoPar.'],
+  ['Configurás tu negocio', 'Después del pago cargás nombre, rubro, datos de entrega y primera ficha.'],
+  ['Empezás a vender', 'Publicás productos, compartís tu tienda y administrás pedidos desde el panel.'],
+];
+
+const FAQS = [
+  {
+    pregunta: '¿Gesicomm es solo una página web?',
+    respuesta: 'No. Es una plataforma para vender: landing, catálogo, productos, pedidos, delivery, seguimiento, reportes y herramientas comerciales en el mismo flujo.',
+  },
+  {
+    pregunta: '¿Necesito saber diseño o programación?',
+    respuesta: 'No. El sistema trae estructuras listas y formularios guiados para publicar rápido, sin depender de código.',
+  },
+  {
+    pregunta: '¿Qué pasa después de pagar?',
+    respuesta: 'Se habilita tu cuenta y te llevamos al onboarding para configurar tu tienda, los datos principales y el primer punto de venta.',
+  },
+  {
+    pregunta: '¿Puedo entrar por un link de afiliado?',
+    respuesta: 'Sí. Si el link trae un código de referido, Gesicomm guarda esa referencia y la mantiene durante el checkout.',
+  },
+];
 
 function formatPrecioPlan(plan) {
   if (plan.moneda === 'USD') {
@@ -97,14 +175,6 @@ export default function Planes() {
     return () => { activo = false; };
   }, [location.search, modoPreviewAdmin]);
 
-  useEffect(() => {
-    if (modoPreviewAdmin) return;
-    if (!estadoCuenta?.tiene_suscripcion_activa) return;
-    if (!estadoCuenta.requiere_onboarding) return;
-    const t = setTimeout(() => navigate('/onboarding', { replace: true }), 900);
-    return () => clearTimeout(t);
-  }, [estadoCuenta, modoPreviewAdmin, navigate]);
-
   const yaTienePlanPago = !modoPreviewAdmin && (
     estadoCuenta?.tiene_plan_pago === true ||
     estadoCuenta?.suscripcion?.plan?.equivale_plan === 'pago'
@@ -154,27 +224,78 @@ export default function Planes() {
         <ArrowLeft size={14} /> Volver
       </button>
 
-      <header className="pl-hero">
-        <span className="pl-hero-eyebrow"><Sparkles size={13} /> Planes Gesicom</span>
-        {yaTienePlan ? (
-          <>
-            <h1>Tu plan está activo</h1>
-            <p>Estás en {nombrePlanActual}. Podés revisar los planes disponibles sin salir de tu cuenta.</p>
-          </>
-        ) : estaMejorandoDesdeGratis ? (
-          <>
-            <h1>Mejorá tu tienda a un plan pago</h1>
-            <p>Elegí el plan y confirmá el pago con los datos que ya están guardados en tu cuenta y en tu tienda.</p>
-          </>
-        ) : (
-          <>
-            <h1>Elegí un plan pago para activar tu tienda</h1>
-            <p>
-              Después de acreditar el pago, Gesicom te lleva al onboarding para configurar
-              el nombre de tu tienda, la ficha y los productos que vas a vender.
-            </p>
-          </>
-        )}
+      <header className="pl-landing-hero">
+        <div className="pl-landing-copy">
+          <span className="pl-hero-eyebrow"><Sparkles size={13} /> Gesicomm para vender online</span>
+          {yaTienePlan ? (
+            <>
+              <h1>Tu plan está activo y tu operación puede seguir creciendo</h1>
+              <p>Estás en {nombrePlanActual}. Revisá qué incluye Gesicomm y compará los planes disponibles sin salir de tu cuenta.</p>
+            </>
+          ) : estaMejorandoDesdeGratis ? (
+            <>
+              <h1>Vender online debería ser más simple.</h1>
+              <p>Mejorá a un plan pago para activar más herramientas comerciales, checkout, seguimiento y gestión completa sin repetir tu onboarding.</p>
+            </>
+          ) : (
+            <>
+              <h1>Vender online debería ser más simple.</h1>
+              <p>
+                Gesicomm une tu tienda, tu catálogo y tus ventas en un panel pensado para que entiendas qué pasa en tu negocio y puedas empezar con el plan correcto.
+              </p>
+            </>
+          )}
+          <div className="pl-hero-actions">
+            <a className="pl-cta primario" href="#planes">
+              Ver planes y precios <ArrowRight size={15} />
+            </a>
+            <a className="pl-cta" href="#que-incluye">
+              Qué incluye Gesicomm
+            </a>
+          </div>
+          <div className="pl-trust-row" aria-label="Señales de confianza">
+            <span><ShieldCheck size={15} /> Pago seguro con PagoPar</span>
+            <span><Zap size={15} /> Activación guiada</span>
+            <span><Users size={15} /> Hecho para comercios que venden por redes</span>
+          </div>
+        </div>
+
+        <div className="pl-product-visual" aria-label="Vista previa del panel de Gesicomm">
+          <div className="pl-browser-bar">
+            <div className="pl-browser-dots"><span /><span /><span /></div>
+            <div className="pl-browser-url">gesicomm.com/panel/resumen</div>
+          </div>
+          <div className="pl-visual-toolbar">
+            <strong>Panel de ventas</strong>
+            <span>Hoy</span>
+          </div>
+          <div className="pl-visual-metrics">
+            <div><span>Pedidos</span><strong>38</strong></div>
+            <div><span>Conversión</span><strong>12.4%</strong></div>
+            <div><span>Ventas</span><strong>Gs. 8.7M</strong></div>
+          </div>
+          <div className="pl-visual-board">
+            <div>
+              <span>Nuevo</span>
+              <p>Combo skincare x2</p>
+              <p>Suplemento proteína</p>
+            </div>
+            <div>
+              <span>Confirmado</span>
+              <p>Kit tecnología</p>
+              <p>Pedido express</p>
+            </div>
+            <div>
+              <span>En delivery</span>
+              <p>Pack bienestar</p>
+              <p>Reposición mayorista</p>
+            </div>
+          </div>
+          <div className="pl-visual-note">
+            <Bot size={16} />
+            <span>Seguimiento automático listo para recuperar clientes indecisos.</span>
+          </div>
+        </div>
       </header>
 
       {errorPago && (
@@ -190,6 +311,63 @@ export default function Planes() {
           <span>Invitado por {afiliadoInvitacion.nombre || afiliadoInvitacion.codigo}</span>
         </div>
       )}
+
+      <section id="que-incluye" className="pl-section">
+        <div className="pl-section-head">
+          <span className="pl-section-kicker">Qué es Gesicomm</span>
+          <h2>Todo lo que necesitás para pasar de “me escriben al WhatsApp” a una operación vendiendo en serio.</h2>
+          <p>La landing no solo muestra precios: primero hace tangible el producto, responde dudas y reduce el miedo de pagar por una herramienta nueva.</p>
+        </div>
+        <div className="pl-feature-grid">
+          {MODULOS_GESICOMM.map(({ icono: Icono, titulo, texto }) => (
+            <article key={titulo} className="pl-feature">
+              <Icono size={20} />
+              <h3>{titulo}</h3>
+              <p>{texto}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="pl-proof-band">
+        <div>
+          <span className="pl-section-kicker">Por qué convierte mejor</span>
+          <h2>Antes de pedir el pago, la página explica el valor.</h2>
+        </div>
+        <div className="pl-proof-grid">
+          <article>
+            <strong>Sin contexto</strong>
+            <p>El visitante ve precios, no entiende el producto y posterga la decisión.</p>
+          </article>
+          <article>
+            <strong>Con Gesicomm explicado</strong>
+            <p>Ve el resultado, entiende módulos, elimina objeciones y llega a planes con intención.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="pl-section">
+        <div className="pl-section-head compact">
+          <span className="pl-section-kicker">Cómo empieza</span>
+          <h2>De visitante a tienda activa en tres pasos.</h2>
+        </div>
+        <div className="pl-steps">
+          {PASOS.map(([titulo, texto], index) => (
+            <article key={titulo} className="pl-step">
+              <span>{index + 1}</span>
+              <h3>{titulo}</h3>
+              <p>{texto}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section id="planes" className="pl-section">
+        <div className="pl-section-head compact">
+          <span className="pl-section-kicker">Planes</span>
+          <h2>Elegí el plan que acompaña tu nivel de venta.</h2>
+          <p>Todos los planes pagos activan el flujo para configurar tu negocio y empezar a vender con una experiencia guiada.</p>
+        </div>
 
       {cargando ? (
         <div className="pl-cargando"><Loader size={20} className="spin-icon" /><span>Cargando planes...</span></div>
@@ -237,6 +415,22 @@ export default function Planes() {
           )})}
         </div>
       )}
+      </section>
+
+      <section className="pl-section">
+        <div className="pl-section-head compact">
+          <span className="pl-section-kicker">Dudas frecuentes</span>
+          <h2>Lo importante antes de activar tu plan.</h2>
+        </div>
+        <div className="pl-faq-grid">
+          {FAQS.map(item => (
+            <article key={item.pregunta} className="pl-faq">
+              <h3>{item.pregunta}</h3>
+              <p>{item.respuesta}</p>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -31,6 +31,7 @@ const UserLayout = ({ children }) => {
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [vencidosCount, setVencidosCount] = useState(0);
 
   // Ocultar automáticamente en rutas de edición de landing
   const isLandingRoute = Boolean(
@@ -51,6 +52,7 @@ const UserLayout = ({ children }) => {
       const data = await notificationsService.getNotifications({ leida: false, limit: 50 });
       setNotifications(data.data || []);
       setUnreadCount(data.no_leidas || 0);
+      setVencidosCount(data.seguimientos_vencidos || 0);
     } catch (e) {
       console.error('Error fetching notifications', e);
     }
@@ -156,7 +158,7 @@ const UserLayout = ({ children }) => {
               Bloqueado
             </span>
           )}
-          {item.badge && (
+          {item.badge && !item.badgeDanger && (
             <span style={{
               fontSize: '10px',
               background: 'rgba(59, 130, 246, 0.2)',
@@ -166,6 +168,20 @@ const UserLayout = ({ children }) => {
               fontWeight: 700
             }}>
               {item.badge}
+            </span>
+          )}
+          {item.badgeDanger && (
+            <span style={{
+              fontSize: '10px',
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontWeight: 700,
+              boxShadow: '0 0 6px rgba(239, 68, 68, 0.5)'
+            }}>
+              {item.badgeDanger}
             </span>
           )}
         </Link>
@@ -238,7 +254,13 @@ const UserLayout = ({ children }) => {
           <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
             <ul className="sidebar-list">
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
-              {renderLink({ path: '/mis-pedidos', label: 'Pedidos', icon: <ShoppingCart size={14} />, menuKey: 'mis-pedidos' })}
+              {renderLink({ 
+                path: '/mis-pedidos', 
+                label: 'Pedidos', 
+                icon: <ShoppingCart size={14} />, 
+                menuKey: 'mis-pedidos',
+                badgeDanger: vencidosCount > 0 ? `${vencidosCount} pendientes` : null 
+              })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}

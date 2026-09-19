@@ -24,6 +24,7 @@ import LandingPublica from './pages/landing/LandingPublica';
 import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
 import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
 import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
+import DepositosPage from './pages/tienda/DepositosPage';
 import Planes from './pages/planes/Planes';
 import CheckoutPlan from './pages/planes/CheckoutPlan';
 import PublicCheckoutPlan from './pages/planes/PublicCheckoutPlan';
@@ -337,6 +338,9 @@ function App() {
         <Route path="/mi-tienda" element={
           <RequireTienda><DynamicLayout><ConfigurarTienda /></DynamicLayout></RequireTienda>
         } />
+        <Route path="/mi-tienda/depositos" element={
+          <RequireTienda><DynamicLayout><DepositosPage /></DynamicLayout></RequireTienda>
+        } />
         {/* Planes: /planes es la pantalla que ve el comercio (catálogo de
             lib/planesCatalogo.js); /admin/planes es donde el admin edita ese
             catálogo. Sin backend todavía — ver el aviso del editor. */}
@@ -346,7 +350,7 @@ function App() {
             configura en el panel de PagoPar. */}
         <Route path="/planes" element={<Planes />} />
         <Route path="/checkout/plan/:codigo" element={
-          <RequireTienda><UserLayout><CheckoutPlan /></UserLayout></RequireTienda>
+          <ProtectedRoute><UserLayout><CheckoutPlan /></UserLayout></ProtectedRoute>
         } />
         <Route path="/checkout/public/:codigo" element={<PublicCheckoutPlan />} />
         <Route path="/planes/resultado/:hash" element={<ResultadoPago />} />
