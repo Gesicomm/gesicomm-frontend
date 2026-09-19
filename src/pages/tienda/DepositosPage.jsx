@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, FilterX, Building2, Package } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, FilterX, Building2, Package, ArrowLeft } from 'lucide-react';
 import { depositoService } from '../../services/deposito.service';
 import DepositoFilters from '../../components/depositos/DepositoFilters';
 import DepositoCard from '../../components/depositos/DepositoCard';
@@ -7,6 +8,7 @@ import DepositoForm from '../../components/depositos/DepositoForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 export default function DepositosPage() {
+  const navigate = useNavigate();
   const [depositos, setDepositos] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -121,6 +123,15 @@ export default function DepositosPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+      <div className="mb-4">
+        <button
+          onClick={() => navigate('/mi-tienda')}
+          className="flex items-center gap-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
+        >
+          <ArrowLeft size={16} />
+          Volver a Mi Tienda
+        </button>
+      </div>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="m-0 text-2xl font-bold text-fg">Depósitos</h1>
@@ -131,7 +142,7 @@ export default function DepositosPage() {
         <button
           type="button"
           onClick={handleOpenNuevo}
-          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-text transition-colors hover:bg-primary-hover shadow-sm"
+          className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
         >
           <Plus size={16} />
           Nuevo depósito
@@ -219,7 +230,7 @@ export default function DepositosPage() {
                 <button
                   type="button"
                   onClick={handleOpenNuevo}
-                  className="flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-primary-text transition-colors hover:bg-primary-hover shadow-sm"
+                  className="flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
                 >
                   <Plus size={16} />
                   Crear mi primer depósito

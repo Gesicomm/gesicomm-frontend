@@ -196,7 +196,7 @@ export default function DepositoForm({ initialValues, onSubmit, onClose, loading
             <button
               type="submit"
               disabled={loading}
-              className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-text transition-colors hover:bg-primary-hover disabled:opacity-70 flex items-center gap-2"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-70 flex items-center gap-2"
             >
               {loading && <span className="loader loader-sm border-white" />}
               Guardar depósito

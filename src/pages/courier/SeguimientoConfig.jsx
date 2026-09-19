@@ -65,10 +65,10 @@ export function SeguimientoConfig() {
       alert("Atencin: El nombre de la plantilla es obligatorio.");
       return;
     }
-    if (!p.mensaje_template?.trim()) {
-      alert("Atencin: El mensaje de la plantilla no puede estar vaco.");
-      return;
-    }
+      if (!p.mensaje?.trim()) {
+        alert("Atencin: El mensaje de la plantilla no puede estar vaco.");
+        return;
+      }
     try {
       if (p.id) {
         await seguimientoService.updatePlantilla(p.id, p);
@@ -126,8 +126,8 @@ export function SeguimientoConfig() {
 
   const insertVariable = (variableKey) => {
     if (editandoPlantilla) {
-      const newVal = editandoPlantilla.mensaje_template + " {" + variableKey + "}";
-      setEditandoPlantilla({ ...editandoPlantilla, mensaje_template: newVal });
+      const newVal = editandoPlantilla.mensaje + " {" + variableKey + "}";
+      setEditandoPlantilla({ ...editandoPlantilla, mensaje: newVal });
     }
   };
 
@@ -166,7 +166,7 @@ export function SeguimientoConfig() {
               </h2>
               <p style={{ margin: "0.25rem 0 0 0", fontSize: "0.85rem", color: "var(--color-fg-muted)" }}>Mensajes predefinidos para enviar a clientes.</p>
             </div>
-            <button className="btn-primary" onClick={() => setEditandoPlantilla({ nombre: "", mensaje_template: "", activo: true })}>
+            <button className="btn-primary" onClick={() => setEditandoPlantilla({ nombre: "", mensaje: "", activo: true })}>
               <Plus size={16} /> Nueva Plantilla
             </button>
           </div>
@@ -196,8 +196,8 @@ export function SeguimientoConfig() {
                         className="form-input" 
                         style={{ width: "100%", height: "180px", fontFamily: "monospace", fontSize: "0.9rem" }}
                         placeholder="¡Hola {cliente_nombre}! Tu pedido..." 
-                        value={editandoPlantilla.mensaje_template} 
-                        onChange={e => setEditandoPlantilla({...editandoPlantilla, mensaje_template: e.target.value})} 
+                        value={editandoPlantilla.mensaje} 
+                        onChange={e => setEditandoPlantilla({...editandoPlantilla, mensaje: e.target.value})} 
                       />
                     </label>
                     
@@ -256,7 +256,7 @@ export function SeguimientoConfig() {
                     </div>
                   </div>
                   <div style={{ fontSize: "0.85rem", color: "var(--color-fg-muted)", whiteSpace: "pre-wrap", maxHeight: "100px", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
-                    {p.mensaje_template}
+                    {p.mensaje}
                   </div>
                 </div>
               ))}

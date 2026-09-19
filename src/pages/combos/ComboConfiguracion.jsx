@@ -161,7 +161,7 @@ export default function ComboConfiguracion({ asTab = false }) {
 
         <div className="combo-editor-grid">
           <div>
-            <div className="combo-section-label">CPA (%)</div>
+            <div className="combo-section-label">CPA proyectado (%)</div>
             <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={cpa} onChange={e => setCpa(e.target.value)} />
             <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Costo por Adquisición como porcentaje del precio de venta. Ej: 20 = 20%.
@@ -172,11 +172,11 @@ export default function ComboConfiguracion({ asTab = false }) {
             <CurrencyInput style={inputStyle} value={envio} onChange={setEnvio} />
           </div>
           <div>
-            <div className="combo-section-label">Costo de confirmación</div>
+            <div className="combo-section-label">Costo de confirmación promedio</div>
             <CurrencyInput style={inputStyle} value={confirmacion} onChange={setConfirmacion} />
           </div>
           <div>
-            <div className="combo-section-label">Costo de empaque</div>
+            <div className="combo-section-label">Costo de empaque promedio</div>
             <CurrencyInput style={inputStyle} value={empaque} onChange={setEmpaque} />
           </div>
         </div>

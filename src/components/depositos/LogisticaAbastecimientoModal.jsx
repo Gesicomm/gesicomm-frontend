@@ -271,7 +271,7 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
               type="button"
               disabled={!isFormValid || guardandoLogistica}
               onClick={handleGuardarLogistica}
-              className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-text transition-colors hover:bg-primary-hover disabled:opacity-50"
+              className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >
               {guardandoLogistica && <span className="loader loader-sm border-white" />}
               Guardar y Continuar al Pago
@@ -282,7 +282,7 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
             <button
               type="button"
               onClick={onPagar}
-              className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-text transition-colors hover:bg-primary-hover"
+              className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover"
             >
               Ir a pagar
             </button>

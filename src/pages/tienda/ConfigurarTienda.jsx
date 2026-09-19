@@ -625,7 +625,7 @@ export default function ConfigurarTienda() {
                         <button
                           type="button"
                           onClick={() => navigate('/mi-tienda/depositos')}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-5 font-semibold text-primary-text transition-colors hover:bg-primary-hover"
+                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-5 font-semibold text-white transition-colors hover:bg-primary-hover"
                         >
                           Ir a gestionar depósitos
                           <ArrowRight size={16} />
