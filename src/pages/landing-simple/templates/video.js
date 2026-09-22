@@ -10,11 +10,16 @@
  * se abre en otra pestaña. Instagram, TikTok y X no permiten incrustar sin
  * su script (y ese script rastrea al visitante), así que se enlazan.
  *
- * @returns {{plataforma, id, embed, miniatura, url, incrustable}|null}
+ * @returns {{plataforma, id, embed, miniatura, url, incrustable, tipo}|null}
  */
 export function analizarVideo(url) {
-  const limpio = String(url || '').trim();
+  let limpio = String(url || '').trim();
   if (!limpio) return null;
+
+  if (limpio.includes('<iframe') && limpio.includes('src=')) {
+    const src = limpio.match(/src=["']([^"']+)["']/i)?.[1];
+    if (src) limpio = src;
+  }
 
   let u;
   try {
@@ -57,8 +62,71 @@ export function analizarVideo(url) {
         miniatura: null,
         url: u.href,
         incrustable: true,
+        tipo: 'iframe',
       };
     }
+  }
+
+  // ── Google Drive ───────────────────────────────────────────────────
+  if (host === 'drive.google.com') {
+    const id = u.pathname.match(/\/file\/d\/([^/]+)/)?.[1]
+      || u.searchParams.get('id');
+    if (id) {
+      return {
+        plataforma: 'drive',
+        id,
+        embed: `https://drive.google.com/file/d/${id}/preview`,
+        miniatura: null,
+        url: u.href,
+        incrustable: true,
+        tipo: 'iframe',
+      };
+    }
+  }
+
+  // ── Loom ───────────────────────────────────────────────────────────
+  if (host.endsWith('loom.com')) {
+    const id = u.pathname.match(/\/(?:share|embed)\/([a-zA-Z0-9]+)/)?.[1];
+    if (id) {
+      return {
+        plataforma: 'loom',
+        id,
+        embed: `https://www.loom.com/embed/${id}`,
+        miniatura: null,
+        url: u.href,
+        incrustable: true,
+        tipo: 'iframe',
+      };
+    }
+  }
+
+  // ── Wistia ─────────────────────────────────────────────────────────
+  if (host.includes('wistia.')) {
+    const id = u.pathname.match(/\/(?:medias|embed\/iframe)\/([a-zA-Z0-9]+)/)?.[1];
+    if (id) {
+      return {
+        plataforma: 'wistia',
+        id,
+        embed: `https://fast.wistia.net/embed/iframe/${id}`,
+        miniatura: null,
+        url: u.href,
+        incrustable: true,
+        tipo: 'iframe',
+      };
+    }
+  }
+
+  // ── Archivo directo ────────────────────────────────────────────────
+  if (/\.(mp4|webm|ogg)(?:$|[?#])/i.test(u.pathname + u.search)) {
+    return {
+      plataforma: 'directo',
+      id: null,
+      embed: u.href,
+      miniatura: null,
+      url: u.href,
+      incrustable: true,
+      tipo: 'video',
+    };
   }
 
   const plataformas = {
@@ -78,6 +146,7 @@ export function analizarVideo(url) {
     miniatura: null,
     url: u.href,
     incrustable: false,
+    tipo: 'link',
   };
 }
 
@@ -93,6 +162,7 @@ function youtube(id, u) {
     miniatura: `https://i.ytimg.com/vi/${limpio}/hqdefault.jpg`,
     url: u.href,
     incrustable: true,
+    tipo: 'iframe',
   };
 }
 
@@ -100,6 +170,10 @@ function youtube(id, u) {
 export const NOMBRE_PLATAFORMA = {
   youtube: 'YouTube',
   vimeo: 'Vimeo',
+  drive: 'Google Drive',
+  loom: 'Loom',
+  wistia: 'Wistia',
+  directo: 'Video',
   instagram: 'Instagram',
   tiktok: 'TikTok',
   x: 'X',

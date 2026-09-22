@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import CodigoPreview from './CodigoPreview';
-import FunnelCheckout from '../funnel/FunnelCheckout';
 import StoreFooterLegal from '../landing/StoreFooterLegal';
+import CartDrawer from '../landing/CartDrawer';
 import { ContactoSection } from './templates/sections';
-import { crearCheckoutLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
+import { useStoreCart } from '../landing/useStoreCart';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -123,10 +123,10 @@ function codigoTieneFooter(codigo) {
 }
 
 export default function LandingCodigoPublica({ codigo, titulo, data = null, slug }) {
-  const [compra, setCompra] = useState(null);
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
   const productos = useMemo(() => data?.catalogo_items || data?.items || [], [data]);
+  const cartState = useStoreCart(slug, data, productos);
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
   const tieneFooterEnCodigo = useMemo(() => codigoTieneFooter(codigo), [codigo?.html]);
@@ -137,25 +137,15 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
     if (!data) return;
     const item = resolverItemCheckout(data, pedido);
     if (!item) return;
-    setCompra({ item, cantidad: Number(pedido?.cantidad || 1) || 1 });
-  }
-
-  async function confirmarPedido(datosFormulario) {
-    if (!compra?.item) throw new Error('No se encontró el producto seleccionado.');
-    const resultado = await crearCheckoutLanding(slug, {
-      ...datosFormulario,
-      items: [{
-        content_id: compra.item.content_id,
-        cantidad: compra.cantidad,
-      }],
+    const cantidad = Number(pedido?.cantidad || 1) || 1;
+    cartState.agregarAlCarrito({
+      item,
+      variante: null,
+      oferta: null,
+      cantidad,
+      precio: item.precio || 0,
     });
-    if (datosFormulario?.payment_method === 'pagopar' && !resultado.payment_data?.payment_url) {
-      throw new Error(
-        resultado.payment_data?.error
-          || 'No pudimos abrir el pago online con PagoPar. Probá de nuevo o elegí pagar en efectivo al recibir.',
-      );
-    }
-    return resultado;
+    cartState.setCarritoAbierto(true);
   }
 
   const vacia = !codigo?.html?.trim() && !codigo?.css?.trim() && !codigo?.js?.trim();
@@ -206,25 +196,19 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
         </>
       )}
 
-      <FunnelCheckout
-        abierto={!!compra}
-        onCerrar={() => setCompra(null)}
-        tema={tema}
-        resumen={compra?.item ? {
-          nombre: compra.item.nombre,
-          precio: compra.item.precio || 0,
-          cantidad: compra.cantidad,
-          imagen: compra.item.imagen ? getMediaUrl(compra.item.imagen) : null,
-        } : null}
-        itemOriginal={compra?.item ? {
-          id: compra.item.referencia_id,
-          ofertas: compra.item.ofertas || [],
-          envio_incluido: compra.item.envio_incluido,
-        } : null}
-        ofertasLanding={data?.content?.ofertas_producto_vista || []}
+      <CartDrawer
+        items={Array.from(cartState.carrito.values())}
+        sugerencias={cartState.sugerenciasCarrito}
+        onAgregarSugerencia={cartState.agregarSugerencia}
+        abierto={cartState.carritoAbierto}
+        onAbrir={() => cartState.setCarritoAbierto(true)}
+        onCerrar={() => cartState.setCarritoAbierto(false)}
+        onCantidad={cartState.cambiarCantidadCarrito}
+        onQuitar={cartState.quitarDelCarrito}
+        onConfirmarPedido={cartState.confirmarPedido}
+        onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
         deliveryCiudades={data?.delivery_ciudades || []}
-        onConfirmar={confirmarPedido}
       />
     </div>
   );

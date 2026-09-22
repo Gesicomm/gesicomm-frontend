@@ -36,7 +36,6 @@ import '../vitrina/vitrina.css';
 import './landing.css';
 
 const MAX_ITEMS = 40;
-const MAX_IMAGEN_BYTES = 1024 * 1024;
 
 const SECCIONES_BASE = [
   { tipo: 'header', nombre_interno: 'Header', activo: true, fijo: true },
@@ -927,10 +926,6 @@ export default function LandingEditor() {
    */
   async function handleTestimonioFoto(idx, file) {
     if (!file) return;
-    if (file.size > MAX_IMAGEN_BYTES) {
-      setError('La foto supera el máximo permitido de 1MB.');
-      return;
-    }
 
     let idActual = id || landing?.id;
     if (!idActual) {
@@ -966,7 +961,6 @@ export default function LandingEditor() {
    */
   async function handleUploadSeccionImagen(file) {
     if (!file) throw new Error('No se seleccionó ningún archivo.');
-    if (file.size > MAX_IMAGEN_BYTES) throw new Error('La imagen supera el máximo permitido de 1MB.');
 
     if (esModoProducto) {
       if (!inicioLandingId) throw new Error('Todavía se está cargando la tienda — probá de nuevo en un segundo.');
@@ -1026,10 +1020,6 @@ export default function LandingEditor() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > MAX_IMAGEN_BYTES) {
-      setError('La imagen del banner supera el máximo permitido de 1MB.');
-      return;
-    }
 
     let idActual = id || landing?.id;
     if (!idActual) {
@@ -1072,10 +1062,6 @@ export default function LandingEditor() {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > MAX_IMAGEN_BYTES) {
-      setError('La imagen supera el máximo permitido de 1MB.');
-      return;
-    }
 
     let idActual = id || landing?.id;
     if (!idActual) {

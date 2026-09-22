@@ -1,12 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
+import NotificationBell from './NotificationBell';
+import { notificationsService } from '../services/notifications.service';
 import './dashboard.css';
 
 const DashboardLayout = ({ children }) => {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // El panel de administración no tenía campanita: los avisos in-app (por
+    // ejemplo, un comprobante de abastecimiento esperando validación) se
+    // creaban en la base pero el admin no los veía en ningún lado.
+    const refreshNotifications = useCallback(async () => {
+        try {
+            const data = await notificationsService.getNotifications({ leida: false, limit: 50 });
+            setNotifications(data.data || []);
+            setUnreadCount(data.no_leidas || 0);
+        } catch {
+            /* la campanita nunca debe romper el layout */
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshNotifications();
+        const id = setInterval(refreshNotifications, 60000);
+        const alVolver = () => { if (!document.hidden) refreshNotifications(); };
+        document.addEventListener('visibilitychange', alVolver);
+        return () => {
+            clearInterval(id);
+            document.removeEventListener('visibilitychange', alVolver);
+        };
+    }, [refreshNotifications]);
+
+    const campanita = (
+        <NotificationBell
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onRefresh={refreshNotifications}
+            onMarkAsRead={async (id) => {
+                await notificationsService.markAsRead(id);
+                refreshNotifications();
+            }}
+            onMarkAllAsRead={async () => {
+                await notificationsService.markAllAsRead();
+                refreshNotifications();
+            }}
+        />
+    );
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-canvas text-fg">
@@ -25,6 +69,14 @@ const DashboardLayout = ({ children }) => {
                         </button>
                         <Logo size={24} className="text-fg" />
                     </div>
+                    <div className="flex items-center gap-2">
+                        {campanita}
+                        <ThemeToggle className="h-8 w-8 !border-none" />
+                    </div>
+                </header>
+
+                <header className="hidden h-14 flex-shrink-0 items-center justify-end gap-2 border-b border-border px-6 lg:flex">
+                    {campanita}
                     <ThemeToggle className="h-8 w-8 !border-none" />
                 </header>
 

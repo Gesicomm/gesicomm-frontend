@@ -98,6 +98,7 @@ export function CourierWizard({
   courier = null,
   reglas = [],
   pasoInicial = "courier",
+  esAdmin = false,
   onClose,
   onGuardar,
 }) {
@@ -233,6 +234,8 @@ export function CourierWizard({
           telefono: draft.courier.telefono.trim(),
           vehiculo: draft.courier.vehiculo,
           activo: draft.courier.activo,
+          // Solo el admin puede publicar un courier como proveedor de
+          // Gesicomm; el backend revalida igual y rechaza con 403.
         },
         reglas: reglasFinales,
       });
@@ -374,6 +377,7 @@ export function CourierWizard({
                     </div>
                   </Field>
                 </div>
+
 
                 <label style={styles.toggle}>
                   <input

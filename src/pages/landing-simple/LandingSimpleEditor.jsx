@@ -22,9 +22,10 @@ import { armarItemFicha as armarItemFichaComun } from './templates/fichaComun';
 import {
   armarItemFicha, fichaDesdeMarketing, resolverFichaFitness,
 } from './templates/fitness/fichaFitness';
-import FunnelCheckout from '../funnel/FunnelCheckout';
 import CartDrawer from '../landing/CartDrawer';
+import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from '../landing/ofertasCheckout';
 import { hexToRgba } from './templates/themeUtils';
+import { tintaSobre } from '../../lib/landingDiseno';
 import '../landing/landingPublica.css';
 import StoreHeader from './templates/StoreHeader';
 import CatalogoPreview from './templates/CatalogoPreview';
@@ -44,6 +45,7 @@ import FichaFitnessPanel from './panels/FichaFitnessPanel';
 import FichaTechPanel from './panels/FichaTechPanel';
 import FichaBeautyPanel from './panels/FichaBeautyPanel';
 import FichaBasicoPanel from './panels/FichaBasicoPanel';
+import { imagenPrincipalDeGaleria } from './templates/mediaGaleria';
 
 // El id de la sección apunta a la misma sección del template (ver los
 // `id="..."` en templates/*.jsx y templates/sections.jsx) — al cambiar de
@@ -107,6 +109,75 @@ const TAB_SECCIONES = {
 
 function grupoActivoDe(tabActual) {
   return PANEL_GROUPS.find(g => g.tabs.includes(tabActual)) || PANEL_GROUPS[0];
+}
+
+function medioDesdeImagenProducto(img) {
+  if (!img?.url) return null;
+  return {
+    tipo: 'imagen',
+    id: img.id,
+    imagen_id: img.id,
+    url: img.url,
+    es_principal: !!img.es_principal,
+    variante_id: img.variante_id ?? null,
+  };
+}
+
+function imagenesCatalogoAMedios(imagenes = []) {
+  return (imagenes || []).map(medioDesdeImagenProducto).filter(Boolean);
+}
+
+function fusionarMediosProducto(imagenes = [], mediosGuardados = null) {
+  const base = imagenesCatalogoAMedios(imagenes);
+  if (!Array.isArray(mediosGuardados) || mediosGuardados.length === 0) return base;
+
+  const porId = new Map(base.filter(m => m.imagen_id != null).map(m => [String(m.imagen_id), m]));
+  const porUrl = new Map(base.map(m => [String(m.url), m]));
+  const usados = new Set();
+  const resueltos = [];
+
+  mediosGuardados.forEach(medio => {
+    if (!medio) return;
+    if (typeof medio === 'string') {
+      const encontrado = porUrl.get(medio);
+      if (encontrado) {
+        usados.add(String(encontrado.imagen_id ?? encontrado.url));
+        resueltos.push(encontrado);
+      } else {
+        resueltos.push({ tipo: 'imagen', url: medio });
+      }
+      return;
+    }
+
+    if (medio.tipo === 'video') {
+      if (medio.url) resueltos.push({ tipo: 'video', url: medio.url, titulo: medio.titulo || '', id: medio.id || null });
+      return;
+    }
+
+    const encontrado = porId.get(String(medio.imagen_id ?? medio.id)) || porUrl.get(String(medio.url || ''));
+    if (encontrado) {
+      usados.add(String(encontrado.imagen_id ?? encontrado.url));
+      resueltos.push(encontrado);
+    }
+  });
+
+  base.forEach(medio => {
+    const clave = String(medio.imagen_id ?? medio.url);
+    if (!usados.has(clave)) resueltos.push(medio);
+  });
+
+  return resueltos;
+}
+
+function serializarMediosProducto(medios = []) {
+  return (medios || []).map(medio => {
+    if (!medio) return null;
+    if (typeof medio === 'string') return { tipo: 'imagen', url: medio };
+    if (medio.tipo === 'video') {
+      return { tipo: 'video', url: medio.url, titulo: medio.titulo || '' };
+    }
+    return { tipo: 'imagen', imagen_id: medio.imagen_id ?? medio.id ?? null, url: medio.url };
+  }).filter(m => m?.url);
 }
 
 /**
@@ -338,7 +409,6 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // derecha solo refleja — así no hay que duplicar "Guardar"/"Volver" dentro
   // del área de preview, y esta escribe en vivo sin esperar un guardado.
   const [productoPreview, setProductoPreview] = useState(null);
-  const [compraFunnel, setCompraFunnel] = useState(null);
   // Vista in-editor del Catálogo completo — clickear "Catálogo" en el
   // header del preview (antes navegaba a la landing pública de verdad, en
   // una pestaña nueva, sin nada editable) abre esto en el mismo panel en
@@ -358,6 +428,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 
   const [productoCargando, setProductoCargando] = useState(false);
   const [productoImagenes, setProductoImagenes] = useState([]);
+  const [productoMedios, setProductoMedios] = useState([]);
   // Variantes/Opciones del producto abierto en preview — sin esto el
   // selector de variantes nunca aparecía acá (el catálogo liviano que arma
   // `abrirProducto` no las trae, ver fetch de abajo).
@@ -372,15 +443,14 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoOfertas, setProductoOfertas] = useState([]);
   // Oferta (order bump / upsell) que se está creando o editando en el
   // sidebar, todavía sin guardar — ver ProductCheckoutOfertas#onPreviewOferta.
-  // Null cuando no hay ninguna en edición. Alimenta el mismo `compraFunnel`
+  // Null cuando no hay ninguna en edición. Alimenta el mismo carrito simulado
   // que dispara "Comprar ahora", así el canvas muestra el checkout real con
   // el borrador ya adentro, en vez de un mock aparte que podía divergir.
   const [ofertaBorrador, setOfertaBorrador] = useState(null);
 
   // Carrito simulado SOLO para previsualizar order bump/upsell en el canvas
-  // mientras se edita uno — el flujo real de esta tienda es "Agregar al
-  // carrito" (CartDrawer), no "Comprar ahora" (FunnelCheckout, que sigue
-  // existiendo pero no es el que usan los clientes acá). Nunca toca
+  // mientras se edita uno — el flujo real de esta tienda es el carrito
+  // (CartDrawer), también cuando el CTA dice "Comprar ahora". Nunca toca
   // localStorage ni llama al backend: `useStoreCart` (el hook real) hace las
   // dos cosas y además dispara píxeles de Meta/GA/TikTok, que jamás deben
   // salir desde una sesión de admin. Es un array, no un Map — mismo shape
@@ -411,12 +481,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       ofertaNombre: null,
       precio: precioAncla,
       cantidad: 1,
-      imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
+      imagen: imagenPrincipalDeGaleria(productoMedios) || productoPreview.imagen || null,
       stockMax: null,
       envioIncluido: false,
     }]);
     setCarritoPreviewAbierto(true);
-  }, [ofertaBorrador?.id, productoPreview?.id]);
+  }, [ofertaBorrador?.id, productoPreview?.id, productoMedios]);
 
   // El borrador en curso MÁS las demás ofertas reales activas de este
   // producto (order bump/upsell pueden convivir: uno es casilla en el
@@ -430,26 +500,20 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   // defecto; con config, solo las tildadas — el borrador se ve siempre,
   // esté o no tildado, para poder armarlo antes de decidir.
   const sugerenciasCarritoPreview = useMemo(() => {
-    if (!ofertaBorrador || !productoPreview) return [];
+    if (!productoPreview) return [];
     const reales = productoOfertas
       .map(o => ofertaAFormaPublica(o, productoPreview.id))
       .filter(o => o.estrategia === 'order_bump' || o.estrategia === 'upsell')
-      .filter(o => String(o.id) !== String(ofertaBorrador.id));
-    const todas = [...reales, ofertaBorrador];
+      .filter(o => !ofertaBorrador || String(o.id) !== String(ofertaBorrador.id));
+    const todas = ofertaBorrador ? [...reales, ofertaBorrador] : reales;
 
     const idsConfigurados = new Set((draft?.content?.ofertas_carrito || []).map(Number));
     const yaEnCarrito = new Set(carritoPreview.map(it => Number(it.ofertaId)).filter(Boolean));
 
-    return todas
+    return ordenarOfertasCheckout(todas, idsConfigurados)
       .filter(o => !yaEnCarrito.has(Number(o.id)))
-      .filter(o => {
-        if (String(o.id) === String(ofertaBorrador.id)) return true;
-        const hayConfigParaEstrategia = todas.some(x =>
-          x.estrategia === o.estrategia && idsConfigurados.has(Number(x.id))
-        );
-        return !hayConfigParaEstrategia || idsConfigurados.has(Number(o.id));
-      })
-      .map(oferta => ({ item: { imagen: productoPreview.imagen || null }, oferta }));
+      .filter(o => o.__previewBorrador || ofertaCheckoutPublicable(o))
+      .map(oferta => ({ item: { ...productoPreview, imagen: productoPreview.imagen || null }, oferta }));
   }, [ofertaBorrador, productoPreview, carritoPreview, productoOfertas, draft?.content?.ofertas_carrito]);
 
   function agregarSugerenciaCarritoPreview(item, oferta) {
@@ -469,6 +533,36 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       stockMax: null,
       envioIncluido: false,
     }]);
+  }
+
+  function abrirCarritoCompraPreview(eleccion = {}) {
+    if (!productoPreview) return;
+    const pack = eleccion?.pack || null;
+    const variante = eleccion?.variante || null;
+    const precio = eleccion?.precio
+      ?? (pack ? (pack.precio_efectivo ?? pack.precio) : null)
+      ?? (variante ? variante.precio_efectivo : null)
+      ?? productoPreview.precio_efectivo
+      ?? productoPreview.precio_base
+      ?? productoPreview.precio
+      ?? 0;
+
+    setCarritoPreview([{
+      clave: `producto:${productoPreview.id}:preview:${pack?.id || 'base'}:${variante?.id || 'sin-variante'}`,
+      tipo: 'producto',
+      contentId: productoPreview.id,
+      nombre: productoPreview.nombre,
+      varianteId: variante?.id || null,
+      varianteNombre: variante?.nombre || null,
+      ofertaId: pack?.id || null,
+      ofertaNombre: pack?.nombre || null,
+      precio,
+      cantidad: 1,
+      imagen: imagenPrincipalDeGaleria(productoMedios) || productoPreview.imagen || null,
+      stockMax: null,
+      envioIncluido: false,
+    }]);
+    setCarritoPreviewAbierto(true);
   }
 
   function cambiarCantidadCarritoPreview(clave, delta) {
@@ -586,6 +680,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoDescripcion(p.descripcion || '');
     setProductoFaqTitulo(p.faq_titulo || '');
     setProductoImagenes([]);
+    setProductoMedios([]);
     setProductoVariantes([]);
     setProductoOpciones([]);
     setProductoFaq([]);
@@ -608,6 +703,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       // (ver precioUsuario.service.js#listarCatalogo). Lo único que vive
       // POR LANDING es el override de FAQ/ficha, que sale de `draft`.
       const propio = (draft?.content?.combos || {})[String(p.id)] || null;
+      const imagenesCombo = (p.imagenes || []).map((url, idx) => ({ id: `combo-${p.id}-${idx}`, url }));
+      setProductoMedios(fusionarMediosProducto(imagenesCombo, propio?.medios));
       setProductoFaq(propio?.faq ?? (p.preguntas_frecuentes || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })));
       setProductoFaqTitulo(propio?.faq_titulo ?? (p.faq_titulo || ''));
       setProductoFichaCombo(propio?.ficha_combo || null);
@@ -658,6 +755,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       // siendo el punto de partida para lo que todavía no se tocó — lo que
       // no pasa nunca es el camino inverso: editar acá no lo reescribe.
       const propio = (draft?.content?.productos || {})[String(p.id)] || null;
+      setProductoMedios(fusionarMediosProducto(imgs, propio?.medios));
 
       // Pre-cargar la descripción detallada si existe (sobre_este_producto > descripcion_larga > descripcion_corta)
       const descPreCargada = pDetail?.sobre_este_producto || pDetail?.descripcion_larga || pDetail?.descripcion_corta || p.descripcion || '';
@@ -723,6 +821,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         fd.append('imagen', file);
         const nueva = await productService.subirImagen(productoPreview.id, fd);
         setProductoImagenes(prev => [...prev, nueva]);
+        const nuevoMedio = medioDesdeImagenProducto(nueva);
+        if (nuevoMedio) setProductoMedios(prev => [...prev, nuevoMedio]);
       } catch (err) {
         setProductoError(err?.response?.data?.message || 'No se pudo subir la imagen.');
       }
@@ -735,6 +835,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     try {
       await productService.eliminarImagen(productoPreview.id, imgId);
       setProductoImagenes(prev => prev.filter(i => i.id !== imgId));
+      setProductoMedios(prev => prev.filter(m => String(m?.imagen_id ?? m?.id) !== String(imgId)));
       recargarCatalogo();
     } catch {
       setProductoError('No se pudo eliminar la imagen.');
@@ -745,10 +846,39 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     try {
       await productService.actualizarImagen(productoPreview.id, imgId, { es_principal: true });
       setProductoImagenes(prev => prev.map(i => ({ ...i, es_principal: i.id === imgId })));
+      setProductoMedios(prev => prev.map(m => (
+        m?.tipo === 'imagen' ? { ...m, es_principal: String(m.imagen_id ?? m.id) === String(imgId) } : m
+      )));
       recargarCatalogo();
     } catch {
       setProductoError('No se pudo actualizar la imagen.');
     }
+  }
+
+  function agregarVideoProducto(url) {
+    const limpio = String(url || '').trim();
+    if (!limpio) return;
+    setProductoMedios(prev => [
+      ...(prev || []),
+      { tipo: 'video', id: `video-${Date.now()}`, url: limpio, titulo: '' },
+    ]);
+    setProductoAviso('');
+  }
+
+  function eliminarMedioProducto(index) {
+    setProductoMedios(prev => (prev || []).filter((_, i) => i !== index));
+    setProductoAviso('');
+  }
+
+  function reordenarMediosProducto(origen, destino) {
+    setProductoMedios(prev => {
+      const lista = [...(prev || [])];
+      if (origen < 0 || destino < 0 || origen >= lista.length || destino >= lista.length) return prev;
+      const [movido] = lista.splice(origen, 1);
+      lista.splice(destino, 0, movido);
+      return lista;
+    });
+    setProductoAviso('');
   }
 
   function agregarRelacionado(item) {
@@ -864,6 +994,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           ...(porCombo[String(productoPreview.id)] || {}),
           faq_titulo: productoFaqTitulo,
           faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
+          medios: serializarMediosProducto(productoMedios),
           ficha_combo: productoFichaCombo && Object.keys(productoFichaCombo).length ? productoFichaCombo : null,
         };
         contenidoNuevo = { ...contenido, combos: porCombo };
@@ -874,6 +1005,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           descripcion: productoDescripcion,
           faq_titulo: productoFaqTitulo,
           faq: productoFaq.filter(f => f.pregunta.trim() && f.respuesta.trim()),
+          medios: serializarMediosProducto(productoMedios),
           relacionados_titulo: productoRelacionadosTitulo,
           // Los automáticos (rellenados por categoría) no se congelan: si el
           // comercio no eligió nada, la landing sigue mostrando lo que el
@@ -1088,11 +1220,15 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               descripcion={productoDescripcion}
               onDescripcion={setProductoDescripcion}
               imagenes={productoImagenes}
+              medios={productoMedios}
               imagenesEditables={productoImagenesEditables}
               subiendoImg={productoSubiendoImg}
               onSubirImagen={subirImagenProducto}
               onEliminarImagen={eliminarImagenProducto}
               onMarcarPrincipal={marcarPrincipalProducto}
+              onAgregarVideo={agregarVideoProducto}
+              onEliminarMedio={eliminarMedioProducto}
+              onReordenarMedios={reordenarMediosProducto}
               config={draft?.content || {}}
               onChange={(k, v) => campo(k, v)}
               onOfertasChange={setProductoOfertas}
@@ -1274,8 +1410,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           ref={containerRef}
           className="flex-1 overflow-y-auto bg-black/30 flex justify-center w-full relative"
           // `contain: layout` vuelve a este div el "containing block" de sus
-          // descendientes en position:fixed (FunnelCheckout y CartDrawer,
-          // ambos con inset:0 pensados para tapar TODA una página publicada).
+          // descendientes en position:fixed (CartDrawer, con inset:0 pensado
+          // para tapar TODA una página publicada).
           // Sin esto, "fixed" mira el viewport entero y el overlay tapaba
           // también el sidebar de edición — el comercio no podía ver el
           // popup/carrito Y seguir editando los campos al mismo tiempo.
@@ -1288,6 +1424,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   productoPreview={productoPreview}
                   productoOfertas={productoOfertas}
                   productoImagenes={productoImagenes}
+                  productoMedios={productoMedios}
                   productoVariantes={productoVariantes}
                   productoOpciones={productoOpciones}
                   productoDescripcion={productoDescripcion}
@@ -1308,7 +1445,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
                   templateSlug={templateSlug}
-                  setCompraFunnel={setCompraFunnel}
+                  onComprarPreview={abrirCarritoCompraPreview}
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
@@ -1340,6 +1477,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   productoPreview={productoPreview}
                   productoOfertas={productoOfertas}
                   productoImagenes={productoImagenes}
+                  productoMedios={productoMedios}
                   productoVariantes={productoVariantes}
                   productoOpciones={productoOpciones}
                   productoDescripcion={productoDescripcion}
@@ -1360,7 +1498,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   onAbrirContacto={abrirContacto}
                   onCerrarContacto={cerrarContacto}
                   templateSlug={templateSlug}
-                  setCompraFunnel={setCompraFunnel}
+                  onComprarPreview={abrirCarritoCompraPreview}
                   fichaResuelta={fichaResuelta}
                   fichaTechResuelta={fichaTechResuelta}
                   fichaBeautyResuelta={fichaBeautyResuelta}
@@ -1374,51 +1512,12 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
             </div>
           )}
 
-          {/* Vista previa del checkout. Es el MISMO componente que usa la landing
-              pública, alimentado con la misma configuración (draft.content) y las
-              ofertas del producto ya traducidas a la forma del DTO — así se puede
-              comprobar si un order bump aparece sin tener que publicar y abrir la
-              tienda en otra pestaña. No crea ningún pedido: onConfirmar corta con
-              un aviso, que FunnelCheckout muestra dentro del formulario.
-              Va DENTRO de containerRef (que tiene contain:layout) para que su
-              overlay position:fixed quede acotado al área del canvas y no tape
-              el sidebar de edición. */}
-          <FunnelCheckout
-            abierto={!!compraFunnel && !!productoPreview}
-            onCerrar={() => setCompraFunnel(null)}
-            tema={{
-              fondo: datosPreview?.tema?.fondo || '#ffffff',
-              texto: datosPreview?.tema?.texto || '#111827',
-              acento: datosPreview?.tema?.acento || '#111827',
-            }}
-            resumen={productoPreview ? {
-              // Lo que se eligió en la ficha (paquete y/o variante), no el
-              // producto suelto: antes el preview mostraba siempre el precio
-              // individual aunque el cliente hubiera elegido un paquete, así
-              // que no servía para comprobar justamente eso.
-              nombre: [
-                productoPreview.nombre,
-                compraFunnel?.pack ? `— ${compraFunnel.pack.nombre}` : '',
-                compraFunnel?.variante ? `(${compraFunnel.variante.nombre})` : '',
-              ].filter(Boolean).join(' '),
-              variante: compraFunnel?.variante?.nombre || null,
-              precio: compraFunnel?.precio
-                ?? productoPreview.precio_efectivo ?? productoPreview.precio_base ?? 0,
-              imagen: productoImagenes?.[0]?.url || productoPreview.imagen || null,
-            } : null}
-            ofertasLanding={draft?.content?.ofertas_producto_vista || []}
-            itemOriginal={{ id: productoPreview?.id, ofertas: compraFunnel?.ofertas || [] }}
-            onConfirmar={() => {
-              throw new Error('Es una vista previa: desde el editor no se envía el pedido.');
-            }}
-          />
-
           {/* Carrito simulado — ver `carritoPreview` más arriba. Mismo CartDrawer
               que la tienda publicada (nunca un mock aparte), envuelto en las
               variables --l-* que esas clases `.lp-cart-*` necesitan para pintarse
               con la paleta real (ver el mismo patrón en ProductPagePublica.jsx).
-              También dentro de containerRef por el mismo motivo que FunnelCheckout
-              arriba: su overlay .lp-cart-overlay es position:fixed. */}
+              También dentro de containerRef: su overlay .lp-cart-overlay es
+              position:fixed. */}
           {productoPreview && (
             <div
               // Deliberadamente SIN className="lp-page": esa clase trae
@@ -1429,7 +1528,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                 '--l-primary': datosPreview.tema.acento,
                 '--l-secondary': datosPreview.tema.acento,
                 '--l-bg': datosPreview.tema.fondo,
-                '--l-on-primary': datosPreview.tema.fondo,
+                '--l-on-primary': tintaSobre(datosPreview.tema.acento),
                 '--l-text': datosPreview.tema.texto,
                 '--l-text-muted': hexToRgba(datosPreview.tema.texto, 0.55),
                 '--l-surface': hexToRgba(datosPreview.tema.texto, 0.05),
@@ -1455,6 +1554,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                 // fuerza el popup desde el primer render.
                 pasoInicial={ofertaBorrador ? 'formulario' : 'carrito'}
                 mostrarUpsellInicial={ofertaBorrador?.estrategia === 'upsell'}
+                permitirSugerenciasIncompletas={true}
                 items={carritoPreview}
                 sugerencias={sugerenciasCarritoPreview}
                 onAgregarSugerencia={agregarSugerenciaCarritoPreview}
@@ -1481,16 +1581,15 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
 /**
  * Traduce una Oferta como la devuelve el admin (`/productos/:id/ofertas`) a
  * la forma que publica el backend en el DTO de la landing, que es la que
- * espera FunnelCheckout. Se replica acá para que la vista previa muestre
+ * espera CartDrawer. Se replica acá para que la vista previa muestre
  * EXACTAMENTE lo que va a ver el visitante — incluido cuál de los dos
  * precios se cobra — sin tener que publicar la landing para comprobarlo.
  * Ver landing.service.js#obtenerPublica (armado de `ofertasDto`).
  */
 export function ofertaAFormaPublica(o, productoAnclaId) {
-  // Solo el order bump vive en el checkout (ver Oferta.js). Un paquete
-  // (estrategia 'normal') no pasa por acá: se elige en la ficha del
-  // producto, no como casilla del checkout.
-  const esCheckout = o.estrategia === 'order_bump';
+  // Bump y upsell viven en el checkout; un paquete (estrategia 'normal') se
+  // elige en la ficha del producto.
+  const esCheckout = o.estrategia === 'order_bump' || o.estrategia === 'upsell';
   const componentes = o.componentes || [];
   const compPack = componentes.find(c => Number(c.producto_id) === Number(productoAnclaId)) || componentes[0];
   const unidades = o.tipo_contenido === 'pack' ? (Number(o.unidades ?? compPack?.cantidad) || null) : null;
@@ -1520,6 +1619,7 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
     precio_normal: precioNormal,
     precio_order_bump: bump,
     precio_efectivo: esCheckout ? (bump ?? precioNormal) : precioNormal,
+    beneficios: Array.isArray(o.beneficios) ? o.beneficios : null,
     unidades,
     producto_complementario: productos_incluidos[0] || null,
     productos_incluidos,
@@ -1528,12 +1628,12 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
 
 // Subcomponente para renderizar el preview sin duplicar código
 function PreviewContent({
-  productoPreview, productoOfertas = [], productoImagenes, productoVariantes = [], productoOpciones = [],
+  productoPreview, productoOfertas = [], productoImagenes, productoMedios = [], productoVariantes = [], productoOpciones = [],
   productoDescripcion, productoFaq, productoFaqTitulo,
   productoRelacionadosTitulo, productoRelacionados,
   datosPreview, Componente, abrirProducto, catalogoPorIdMapeado, viewportMode,
   vistaCatalogo, onAbrirInicio, onAbrirCatalogo, onCerrarCatalogo,
-  vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, setCompraFunnel,
+  vistaContacto, onAbrirContacto, onCerrarContacto, templateSlug, onComprarPreview,
   fichaResuelta = null, fichaTechResuelta = null, fichaBeautyResuelta = null,
   fichaBasicoResuelta = null, fichaComboResuelta = null,
   onCerrarProducto = null, onAbrirRelacionado = null,
@@ -1595,7 +1695,7 @@ function PreviewContent({
               // se editan en esta landing (pestaña "Contenido") y se leen
               // desde los estados reactivos para que el preview los refleje
               // en vivo sin tener que guardar primero.
-              imagenes: productoPreview.imagenes || [],
+              imagenes: productoMedios?.length ? productoMedios : (productoPreview.imagenes || []),
               faq: productoFaq.length
                 ? productoFaq.filter(f => f?.pregunta?.trim())
                 : (productoPreview.preguntas_frecuentes || []).filter(f => f?.pregunta?.trim()),
@@ -1609,11 +1709,10 @@ function PreviewContent({
             nombreComercio={datosPreview.nombreComercio}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            // Agregar al carrito NO abre el checkout: son dos acciones
-            // distintas. Acá no hay carrito real, así que se avisa — mismo
-            // criterio que Tech/Beauty/Básico en este mismo preview.
-            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
-            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: [], ...(eleccion || {}) })}
+            // En combo el CTA principal usa primero onAgregar; por eso se
+            // conecta al mismo carrito simulado que "Comprar ahora".
+            onAgregar={onComprarPreview}
+            onComprar={onComprarPreview}
             onVolver={onCerrarProducto}
           />
         </div>
@@ -1631,7 +1730,7 @@ function PreviewContent({
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
-              imagenes: (productoImagenes || []).map(i => i.url),
+              imagenes: productoMedios,
               ofertas: ofertasPublicas,
               variantes: variantesParaFicha,
               opciones: productoOpciones,
@@ -1648,7 +1747,7 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
+            onComprar={onComprarPreview}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1667,7 +1766,7 @@ function PreviewContent({
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
-              imagenes: (productoImagenes || []).map(i => i.url),
+              imagenes: productoMedios,
               ofertas: ofertasPublicas,
               variantes: variantesParaFicha,
               opciones: productoOpciones,
@@ -1684,12 +1783,8 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
-            // Agregar al carrito NO abre el checkout: son dos acciones
-            // distintas. Acá no hay carrito real, así que se avisa en vez de
-            // simular algo que no pasa (mismo criterio que el botón de
-            // carrito del header en el preview).
-            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
+            onComprar={onComprarPreview}
+            onAgregar={onComprarPreview}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1708,7 +1803,7 @@ function PreviewContent({
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
-              imagenes: (productoImagenes || []).map(i => i.url),
+              imagenes: productoMedios,
               ofertas: ofertasPublicas,
               variantes: variantesParaFicha,
               opciones: productoOpciones,
@@ -1725,10 +1820,8 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
-            // Agregar al carrito NO abre el checkout: son acciones
-            // distintas. Acá no hay carrito, así que se avisa.
-            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
+            onComprar={onComprarPreview}
+            onAgregar={onComprarPreview}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1747,7 +1840,7 @@ function PreviewContent({
               descripcion: productoDescripcion,
               precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
-              imagenes: (productoImagenes || []).map(i => i.url),
+              imagenes: productoMedios,
               ofertas: ofertasPublicas,
               variantes: variantesParaFicha,
               opciones: productoOpciones,
@@ -1764,10 +1857,8 @@ function PreviewContent({
             logo={datosPreview.logo}
             isMobile={viewportMode === 'mobile'}
             previewMode
-            onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
-            // Agregar al carrito NO abre el checkout: son acciones
-            // distintas. Acá no hay carrito, así que se avisa.
-            onAgregar={() => window.alert('El carrito funciona en la landing publicada.')}
+            onComprar={onComprarPreview}
+            onAgregar={onComprarPreview}
             onVolver={onCerrarProducto}
             onClickRelacionado={onAbrirRelacionado}
           />
@@ -1781,7 +1872,7 @@ function PreviewContent({
         <ProductoPreview
         producto={productoPreview}
         ofertas={ofertasPublicas}
-        imagenes={productoImagenes}
+        imagenes={productoMedios}
         descripcion={productoDescripcion}
         faq={productoFaq}
         faqTitulo={productoFaqTitulo}
@@ -1794,7 +1885,7 @@ function PreviewContent({
         logo={datosPreview.logo}
         isMobile={viewportMode === 'mobile'}
         previewMode={true}
-        onComprar={(eleccion) => setCompraFunnel?.({ ofertas: ofertasPublicas, ...(eleccion || {}) })}
+        onComprar={onComprarPreview}
       />
       </div>
     );

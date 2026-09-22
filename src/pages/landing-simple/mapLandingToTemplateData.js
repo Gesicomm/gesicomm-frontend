@@ -6,10 +6,17 @@ import { getMediaUrl } from '../../services/api';
  * (items viejos en cache, combos sin producto padre), así el componente de
  * la tarjeta nunca tiene que distinguir los dos casos.
  */
-function galeriaDeItem(item) {
-  const urls = (item?.imagenes || []).filter(Boolean);
+export function galeriaTarjetaDeItem(item) {
+  const urls = (item?.imagenes || []).map(urlTarjetaDeMedio).filter(Boolean);
   if (!urls.length) return item?.imagen ? [getMediaUrl(item.imagen)] : [];
   return urls.map(getMediaUrl);
+}
+
+export function urlTarjetaDeMedio(medio) {
+  if (!medio) return null;
+  if (typeof medio === 'string') return medio;
+  if (medio.tipo === 'video') return medio.portada || medio.miniatura || null;
+  return medio.url || medio.imagen || medio.src || null;
 }
 
 /**
@@ -63,7 +70,7 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
         imagen: c?.imagen ? getMediaUrl(c.imagen) : null,
         // Galería completa: la tarjeta la rota al pasar el mouse por encima
         // (ver ImagenProductoHover). `imagen` sigue siendo la principal.
-        imagenes: galeriaDeItem(c),
+        imagenes: galeriaTarjetaDeItem(c),
         etiqueta: item.etiqueta || null,
         envioIncluido: item.envio_incluido === true,
         // stock y tieneOpciones deciden qué botón dibuja la tarjeta (ver
@@ -159,7 +166,7 @@ export function mapPublicDtoToTemplateData(dto) {
       precio: i.precio,
       precioAntes: i.precio_antes,
       imagen: i.imagen ? getMediaUrl(i.imagen) : null,
-      imagenes: galeriaDeItem(i),
+      imagenes: galeriaTarjetaDeItem(i),
       etiqueta: i.etiqueta || null,
       envioIncluido: i.envio_incluido === true,
       stock: i.stock,

@@ -31,10 +31,9 @@ export const ofertaService = {
     API.delete(`/ofertas/${id}/imagen`).then(r => r.data),
 };
 export function ofertaAFormaPublica(o, productoAnclaId) {
-  // Solo el order bump vive en el checkout (ver Oferta.js). Un paquete
-  // (estrategia 'normal') no pasa por acá: se elige en la ficha del
-  // producto, no como casilla del checkout.
-  const esCheckout = o.estrategia === 'order_bump';
+  // Bump y upsell viven en el checkout; un paquete (estrategia 'normal') se
+  // elige en la ficha del producto.
+  const esCheckout = o.estrategia === 'order_bump' || o.estrategia === 'upsell';
   const componentes = o.componentes || [];
   const compPack = componentes.find(c => Number(c.producto_id) === Number(productoAnclaId)) || componentes[0];
   const unidades = o.tipo_contenido === 'pack' ? (Number(o.unidades ?? compPack?.cantidad) || null) : null;
@@ -64,6 +63,7 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
     precio_normal: precioNormal,
     precio_order_bump: bump,
     precio_efectivo: esCheckout ? (bump ?? precioNormal) : precioNormal,
+    beneficios: Array.isArray(o.beneficios) ? o.beneficios : null,
     unidades,
     producto_complementario: productos_incluidos[0] || null,
     productos_incluidos,

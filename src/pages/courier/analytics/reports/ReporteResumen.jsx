@@ -264,8 +264,8 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-accent-text, #f59e0b)' }}>
           <div className="cic-kpi-header">
             <span className="cic-tooltip-trigger">
-              Facturación Entregada <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
-              <div className="cic-tooltip">Total de dinero ingresado exclusivamente por pedidos en estado 'Entregado'. No incluye envíos pendientes ni cobros de delivery.</div>
+              Ventas netas entregadas <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
+              <div className="cic-tooltip">Venta de producto exclusivamente por pedidos en estado 'Entregado'. No incluye envíos pendientes ni cobros de delivery.</div>
             </span>
             <DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} />
           </div>

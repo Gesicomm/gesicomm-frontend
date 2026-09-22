@@ -50,6 +50,20 @@ const ESTRATEGIAS = [
 
 const CAMPO = 'w-full h-8 rounded-md border border-[var(--vit-border)] bg-[var(--vit-bg)] px-2 text-sm text-[var(--vit-text)] focus:border-[var(--vit-accent)] focus:outline-none';
 const ETIQUETA = 'block text-[10px] text-[var(--vit-muted-2)] uppercase mb-1';
+const BADGE_OFERTA = {
+  normal: 'border border-sky-300 bg-sky-100 text-sky-900 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)]',
+  order_bump: 'border border-amber-300 bg-amber-100 text-amber-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)]',
+  upsell: 'border border-violet-300 bg-violet-100 text-violet-950 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.55)]',
+};
+function normalizarBeneficiosOferta(beneficios) {
+  if (!Array.isArray(beneficios)) return [];
+  return beneficios.map(b => String(b || '').trim()).filter(Boolean).slice(0, 6);
+}
+
+function beneficiosParaForm(oferta) {
+  if (!oferta) return [];
+  return Array.isArray(oferta.beneficios) ? oferta.beneficios.map(b => String(b || '')) : [];
+}
 
 function formVacio() {
   return {
@@ -58,12 +72,37 @@ function formVacio() {
     unidades: 2,          // solo paquete
     precio: '',           // precio del paquete, a mano
     bumpProductoId: null, // solo order bump
+    bumpProductoSnapshot: null,
     precio_order_bump: '',
     descripcion: '',
+    beneficios: [],
     // Archivo elegido antes de que la oferta exista: todavía no hay id al
     // que subirlo, así que se guarda acá y se sube recién después de crear
     // (ver crearOferta), igual que en OfertasProductoTab.
     imagen_archivo: null,
+  };
+}
+
+function imagenProducto(producto) {
+  if (!producto) return null;
+  if (producto.imagen) return producto.imagen;
+  const imagenes = producto.imagenes || [];
+  const principal = imagenes.find(img => img.es_principal) || imagenes[0];
+  return principal?.url || principal || null;
+}
+
+function componenteExtraOferta(oferta, productoAnclaId) {
+  return (oferta.componentes || []).find(c => Number(c.producto_id) !== Number(productoAnclaId)) || null;
+}
+
+function productoDeComponente(componente, fallback = null) {
+  if (!componente) return fallback;
+  const producto = componente.producto || componente.Producto || fallback;
+  if (!producto) return null;
+  return {
+    ...producto,
+    id: producto.id ?? componente.producto_id,
+    imagen: producto.imagen || imagenProducto(producto) || null,
   };
 }
 
@@ -82,15 +121,18 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setCreando(false);
     setEditandoId(oferta.id);
     const esPaq = oferta.estrategia === 'normal';
-    const c = oferta.componentes?.[0];
+    const c = esPaq ? oferta.componentes?.[0] : componenteExtraOferta(oferta, producto?.id);
+    const productoExtra = productoDeComponente(c, oferta.producto_complementario || oferta.productos_incluidos?.[0] || null);
     setForm({
       estrategia: oferta.estrategia || 'normal',
       nombre: oferta.nombre || '',
       unidades: esPaq && c ? c.cantidad : 2,
       precio: esPaq ? oferta.precio_normal || oferta.precio || '' : '',
       bumpProductoId: !esPaq && c ? c.producto_id : null,
+      bumpProductoSnapshot: !esPaq ? productoExtra : null,
       precio_order_bump: !esPaq ? oferta.precio_order_bump || '' : '',
       descripcion: oferta.descripcion || '',
+      beneficios: beneficiosParaForm(oferta),
       imagen_archivo: null,
     });
     setErrorOferta('');
@@ -122,8 +164,16 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     [catalogo, producto?.id]
   );
 
-  const bumpElegido = form.bumpProductoId ? porId.get(Number(form.bumpProductoId)) : null;
-  const precioBumpNormal = Number(bumpElegido?.precio_efectivo ?? bumpElegido?.precio_base ?? 0);
+  const ofertaActual = editandoId ? ofertas.find(o => Number(o.id) === Number(editandoId)) : null;
+  const bumpElegido = form.bumpProductoId ? (porId.get(Number(form.bumpProductoId)) || form.bumpProductoSnapshot || null) : null;
+  const precioBumpNormal = Number(
+    bumpElegido?.precio_efectivo
+    ?? bumpElegido?.precio_base
+    ?? bumpElegido?.precio
+    ?? ofertaActual?.precio_normal
+    ?? ofertaActual?.precio
+    ?? 0
+  );
 
   /**
    * Ahorro del paquete: se deriva del precio que puso el comercio, comparado
@@ -171,6 +221,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     }
     onPreviewOferta({
       id: editandoId ?? -1,
+      __previewBorrador: true,
       nombre: form.nombre || (form.estrategia === 'upsell' ? 'Upsell' : 'Order bump'),
       estrategia: form.estrategia,
       tipo_contenido: 'combo',
@@ -180,11 +231,12 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
       precio_normal: precioBumpNormal,
       precio_order_bump: form.precio_order_bump === '' ? null : Number(form.precio_order_bump),
       precio_efectivo: precioPreview,
+      beneficios: normalizarBeneficiosOferta(form.beneficios),
       unidades: null,
       producto_complementario: bumpElegido ? { nombre: bumpElegido.nombre, imagen: bumpElegido.imagen || null } : null,
       productos_incluidos: bumpElegido ? [{ nombre: bumpElegido.nombre, imagen: bumpElegido.imagen || null }] : [],
     });
-  }, [onPreviewOferta, creando, editandoId, esPaquete, form.nombre, form.estrategia, form.descripcion, form.precio_order_bump, previewImagenUrl, precioBumpNormal, precioPreview, bumpElegido]);
+  }, [onPreviewOferta, creando, editandoId, esPaquete, form.nombre, form.estrategia, form.descripcion, form.precio_order_bump, form.beneficios, previewImagenUrl, precioBumpNormal, precioPreview, bumpElegido]);
 
   // Al desmontar (se cambia de tab o de producto) hay que avisar que ya no
   // hay nada en edición, si no el canvas se queda mostrando un borrador
@@ -219,7 +271,16 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
   }
 
   function cambiarEstrategia(valor) {
-    setForm(prev => ({ ...formVacio(), estrategia: valor, nombre: prev.nombre, descripcion: prev.descripcion, imagen_archivo: prev.imagen_archivo }));
+    setForm(prev => ({
+      ...formVacio(),
+      estrategia: valor,
+      nombre: prev.nombre,
+      descripcion: prev.descripcion,
+      beneficios: Array.isArray(prev.beneficios) ? prev.beneficios : [],
+      imagen_archivo: prev.imagen_archivo,
+      bumpProductoId: prev.bumpProductoId,
+      bumpProductoSnapshot: prev.bumpProductoSnapshot,
+    }));
   }
 
   async function guardarOferta(e) {
@@ -235,6 +296,13 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     } else {
       if (!form.bumpProductoId) return setErrorOferta('Elegí el producto que se ofrece como extra.');
       if (!(precioBumpNormal > 0)) return setErrorOferta('Ese producto no tiene precio de venta configurado.');
+      const actual = editandoId ? ofertas.find(o => o.id === editandoId) : null;
+      const imagenLista = form.imagen_archivo || actual?.imagen_url || imagenProducto(bumpElegido);
+      const tienePrecioPromocional = form.precio_order_bump !== '' && form.precio_order_bump !== null && form.precio_order_bump !== undefined;
+      const precioFinal = tienePrecioPromocional ? Number(form.precio_order_bump) : precioBumpNormal;
+      if (!(precioFinal > 0)) return setErrorOferta('La oferta necesita un precio mayor a 0 antes de publicarse.');
+      if (tienePrecioPromocional && precioFinal >= precioBumpNormal) return setErrorOferta('El precio promocional tiene que ser menor al precio normal para mostrar Antes / Hoy / Ahorrás.');
+      if (!imagenLista) return setErrorOferta('La oferta necesita una imagen del producto antes de mostrarse al comprador.');
     }
 
     setGuardandoOferta(true);
@@ -242,6 +310,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
       const comun = {
         nombre: form.nombre.trim(),
         descripcion: form.descripcion || '',
+        beneficios: normalizarBeneficiosOferta(form.beneficios),
       };
 
       const payload = esPaquete
@@ -279,6 +348,18 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
       // modo "sin id") se sube recién ahora. Si falla, la oferta ya quedó
       // guardada igual — se avisa sin deshacer nada.
       const avisoImagen = await subirImagenPendiente(guardada?.id, form.imagen_archivo);
+      const ofertaCheckoutId = Number(guardada?.id || editandoId);
+      if (!esPaquete && ofertaCheckoutId) {
+        const agregarId = lista => {
+          const actual = Array.isArray(config?.[lista]) ? config[lista] : [];
+          return actual.some(id => Number(id) === ofertaCheckoutId) ? actual : [...actual, ofertaCheckoutId];
+        };
+        onChange('content', {
+          ...config,
+          ofertas_carrito: agregarId('ofertas_carrito'),
+          ofertas_producto_vista: agregarId('ofertas_producto_vista'),
+        });
+      }
 
       await cargarOfertas();
       setCreando(false);
@@ -332,6 +413,27 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setEditandoId(null);
     setForm(formVacio());
     setErrorOferta('');
+  }
+
+  function actualizarBeneficio(indice, valor) {
+    setForm(prev => ({
+      ...prev,
+      beneficios: (Array.isArray(prev.beneficios) ? prev.beneficios : []).map((beneficio, i) => i === indice ? valor : beneficio),
+    }));
+  }
+
+  function agregarBeneficio() {
+    setForm(prev => ({
+      ...prev,
+      beneficios: [...(Array.isArray(prev.beneficios) ? prev.beneficios : []), ''].slice(0, 6),
+    }));
+  }
+
+  function quitarBeneficio(indice) {
+    setForm(prev => ({
+      ...prev,
+      beneficios: (Array.isArray(prev.beneficios) ? prev.beneficios : []).filter((_, i) => i !== indice),
+    }));
   }
 
   // Función (no componente) a propósito: si fuera un componente definido
@@ -418,6 +520,53 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
               </div>
             )}
 
+            {!esPaquete && (
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <label className={`${ETIQUETA} mb-0`}>
+                    {form.estrategia === 'order_bump' ? 'Beneficios del complemento' : 'Beneficios del upsell'}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={agregarBeneficio}
+                    disabled={(form.beneficios || []).length >= 6}
+                    className="inline-flex items-center gap-1 rounded-md border border-[var(--vit-border)] px-2 py-1 text-[10px] font-semibold text-[var(--vit-text)] hover:bg-[var(--vit-surface)] disabled:opacity-40"
+                  >
+                    <Plus size={11} /> Agregar
+                  </button>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {(form.beneficios || []).map((beneficio, indice) => (
+                    <div key={indice} className="flex items-center gap-1.5">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700">
+                        <Check size={12} />
+                      </span>
+                      <input
+                        type="text"
+                        value={beneficio}
+                        onChange={e => actualizarBeneficio(indice, e.target.value)}
+                        placeholder="Ej: Carga rápida de 20W"
+                        className={CAMPO}
+                      />
+                      <button
+                        type="button"
+                        title="Quitar check"
+                        onClick={() => quitarBeneficio(indice)}
+                        className="h-7 w-7 shrink-0 inline-flex items-center justify-center rounded-md border border-[var(--vit-border)] text-[var(--vit-muted)] hover:text-red-500"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">
+                  {form.estrategia === 'order_bump'
+                    ? 'Se muestran como puntos breves dentro del order bump del checkout. Podés dejarlos vacíos y no se publican.'
+                    : 'Se muestran como checks en el popup de upsell. Podés dejarlos vacíos y no se publican.'}
+                </p>
+              </div>
+            )}
+
             <div>
               <label className={ETIQUETA}>Imagen de la oferta</label>
               <OfertaImagenPicker
@@ -425,7 +574,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                 ofertaId={null}
                 imagenUrl={null}
                 archivo={form.imagen_archivo}
-                respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
+                respaldoUrl={bumpElegido?.imagen || porId.get(Number(producto?.id))?.imagen || null}
                 onChange={({ archivo }) => setForm(f => ({ ...f, imagen_archivo: archivo }))}
               />
             </div>
@@ -493,7 +642,14 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                   catalogo={{ productos: productosElegibles, combos: [] }}
                   seleccion={seleccionPicker}
                   itemsOrdenados={[]}
-                  onToggle={item => setForm(f => ({ ...f, bumpProductoId: Number(f.bumpProductoId) === Number(item.id) ? null : item.id }))}
+                  onToggle={item => setForm(f => {
+                    const mismo = Number(f.bumpProductoId) === Number(item.id);
+                    return {
+                      ...f,
+                      bumpProductoId: mismo ? null : item.id,
+                      bumpProductoSnapshot: mismo ? null : item,
+                    };
+                  })}
                   onEtiqueta={() => {}}
                   onPrecioAncla={() => {}}
                   onReordenar={() => {}}
@@ -512,7 +668,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                       <div className="text-xs text-[var(--vit-text)] truncate" title={bumpElegido.nombre}>{bumpElegido.nombre}</div>
                       <div className="text-[10px] text-[var(--vit-muted-2)] font-mono">{formatPrecio(precioBumpNormal)}</div>
                     </div>
-                    <button type="button" title="Quitar" onClick={() => setForm(f => ({ ...f, bumpProductoId: null }))} className="shrink-0 p-1 rounded text-[var(--vit-muted-2)] hover:text-red-400"><X size={13} /></button>
+                    <button type="button" title="Quitar" onClick={() => setForm(f => ({ ...f, bumpProductoId: null, bumpProductoSnapshot: null }))} className="shrink-0 p-1 rounded text-[var(--vit-muted-2)] hover:text-red-400"><X size={13} /></button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-[11px] text-[var(--vit-muted-2)] border border-dashed border-[var(--vit-border)] rounded-md px-2 py-3 justify-center">
@@ -593,6 +749,21 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
               ? Number(of.precio_order_bump) : null;
             const unidades = (of.componentes || []).reduce((s, c) => s + (c.cantidad || 0), 0);
             const expandida = expandidaId === of.id;
+            const extra = componenteExtraOferta(of, producto?.id);
+            const productoExtra = extra ? (porId.get(Number(extra.producto_id)) || extra.producto || extra.Producto || null) : null;
+            const imagenPublicable = of.imagen_url || imagenProducto(productoExtra);
+            const precioNormalPublicable = Number(of.precio_normal ?? of.precio) || 0;
+            const tienePromoPublicable = of.precio_order_bump !== null && of.precio_order_bump !== undefined && Number(of.precio_order_bump) > 0;
+            const precioPromoPublicable = tienePromoPublicable ? Number(of.precio_order_bump) : precioNormalPublicable;
+            const puedePublicarse = esPack || (
+              Boolean(extra)
+              && precioPromoPublicable > 0
+              && (!tienePromoPublicable || precioNormalPublicable > precioPromoPublicable)
+              && Boolean(imagenPublicable)
+            );
+            const bloqueoPublicacion = !puedePublicarse
+              ? 'Para activar esta oferta, agregá producto, imagen y un precio válido. Si usás precio promocional, debe ser menor al normal.'
+              : '';
 
             return (
               <div key={of.id} className="bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-lg overflow-hidden">
@@ -606,19 +777,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-[var(--vit-text)]">{of.nombre}</span>
-                      {/* Fondo al 10% + texto del mismo --vit-accent (verde marca)
-                          para las 3 etiquetas era casi ilegible en modo oscuro:
-                          mismo tono, apenas distinto de opacidad. Un color por
-                          tipo, con suficiente contraste propio (no depende del
-                          acento de marca), para que se lea de un vistazo cuál
-                          es cuál. */}
-                      <span className={`text-[11px] font-bold px-2 py-1 rounded-md uppercase tracking-wider whitespace-nowrap ${
-                        esPack
-                          ? 'bg-sky-500/20 text-sky-300'
-                          : of.estrategia === 'upsell'
-                            ? 'bg-violet-500/20 text-violet-300'
-                            : 'bg-amber-500/20 text-amber-300'
-                      }`}>
+                      <span className={`text-[10px] font-extrabold px-2 py-1 rounded-md uppercase tracking-wide whitespace-nowrap ${BADGE_OFERTA[of.estrategia] || BADGE_OFERTA.order_bump}`}>
                         {esPack ? `Paquete × ${unidades}` : (of.estrategia === 'upsell' ? 'Upsell' : 'Order Bump')}
                       </span>
                     </div>
@@ -629,9 +788,9 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                       <span className="text-[var(--vit-text)] font-semibold">{formatPrecio(promo ?? normal)}</span>
                       {promo !== null && <span className="text-[var(--vit-muted-2)] line-through">{formatPrecio(normal)}</span>}
                     </div>
-                    {normal <= 0 && (
+                    {!puedePublicarse && !esPack && (
                       <div className="text-[10px] text-amber-400 mt-1 leading-snug">
-                        Esta oferta quedó guardada sin precio. Borrala y volvé a crearla.
+                        {bloqueoPublicacion}
                       </div>
                     )}
                   </div>
@@ -669,7 +828,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                         compacto
                         ofertaId={of.id}
                         imagenUrl={of.imagen_url || null}
-                        respaldoUrl={porId.get(Number(producto?.id))?.imagen || null}
+                        respaldoUrl={imagenProducto(productoExtra) || porId.get(Number(producto?.id))?.imagen || null}
                         onChange={({ imagen_url }) => {
                           // Se avisa también hacia arriba: el preview de la ficha
                           // dibuja las tarjetas con las ofertas que le pasa el
@@ -691,16 +850,16 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                       </div>
                     ) : (
                       <div className="flex flex-col gap-2 border-t border-[var(--vit-border)] pt-2 mt-2">
-                        <label className="flex items-center justify-between cursor-pointer">
+                        <label className={`flex items-center justify-between ${puedePublicarse ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} title={bloqueoPublicacion || undefined}>
                           <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5">
                             {of.estrategia === 'upsell' ? <Sparkles size={14} className="text-[var(--vit-accent)]" /> : <Check size={14} className="text-[var(--vit-accent)]" />}
                             {of.estrategia === 'upsell' ? 'Upsell antes de confirmar' : 'Checkout "Comprar Ya"'}
                           </span>
-                          <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasProductoVista.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_producto_vista', e.target.checked)} />
+                          <input type="checkbox" className="accent-[var(--vit-accent)]" disabled={!puedePublicarse} checked={puedePublicarse && ofertasProductoVista.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_producto_vista', e.target.checked)} />
                         </label>
-                        <label className="flex items-center justify-between cursor-pointer">
+                        <label className={`flex items-center justify-between ${puedePublicarse ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`} title={bloqueoPublicacion || undefined}>
                           <span className="text-xs text-[var(--vit-text)] flex items-center gap-1.5"><ShoppingCart size={14} className="text-[var(--vit-accent)]" /> Carrito global</span>
-                          <input type="checkbox" className="accent-[var(--vit-accent)]" checked={ofertasCarrito.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_carrito', e.target.checked)} />
+                          <input type="checkbox" className="accent-[var(--vit-accent)]" disabled={!puedePublicarse} checked={puedePublicarse && ofertasCarrito.some(id => Number(id) === Number(of.id))} onChange={e => handleCheck(of.id, 'ofertas_carrito', e.target.checked)} />
                         </label>
                       </div>
                     )}

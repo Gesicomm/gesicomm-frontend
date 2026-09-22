@@ -30,6 +30,14 @@ export async function obtenerLandingPublica(slug) {
   return res.json();
 }
 
+export async function obtenerCatalogoLandingPublica(slug) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}?vista=catalogo` : '/api/l/?vista=catalogo';
+  const res = await fetch(path, { credentials: 'include' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('No se pudo cargar el catálogo.');
+  return res.json();
+}
+
 export async function obtenerProductoLanding(slug, productoSlug) {
   const path = slug
     ? `/api/l/${encodeURIComponent(slug)}/producto/${encodeURIComponent(productoSlug)}`
@@ -140,6 +148,7 @@ export async function registrarEventoLanding(slug, payload) {
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
       body: JSON.stringify(payload),
     });
     if (!res.ok) {

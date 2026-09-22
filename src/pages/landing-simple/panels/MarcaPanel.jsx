@@ -1,8 +1,6 @@
 import React, { useRef } from 'react';
 import { Image as ImageIcon, X, Loader } from 'lucide-react';
 
-const MAX_IMAGEN_BYTES = 1 * 1024 * 1024;
-
 export default function MarcaPanel({ draft, onCampo, logoUrl, subiendoLogo, onSubirLogo, onQuitarLogo, error }) {
   const inputRef = useRef(null);
 
@@ -10,10 +8,6 @@ export default function MarcaPanel({ draft, onCampo, logoUrl, subiendoLogo, onSu
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > MAX_IMAGEN_BYTES) {
-      onSubirLogo(null, 'El logo supera el máximo permitido de 1MB.');
-      return;
-    }
     onSubirLogo(file);
   }
 
@@ -39,6 +33,9 @@ export default function MarcaPanel({ draft, onCampo, logoUrl, subiendoLogo, onSu
           </div>
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
         </div>
+        <p className="text-[11px] text-fg/40 mt-2">
+          Recomendado: PNG o WebP cuadrado, mínimo 512x512. Se optimiza al subir.
+        </p>
       </div>
 
       <div>

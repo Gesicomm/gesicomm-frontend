@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import TechProductPage from './TechProductPage';
 import { fichaTechDesdeProducto, resolverFichaTech } from './fichaTech';
 import { armarItemFicha } from '../fichaComun';
-import FunnelCheckout from '../../../funnel/FunnelCheckout';
 
 /**
  * La ficha de Electrónica en la landing PUBLICADA.
@@ -26,14 +25,9 @@ export default function TechProductPagePublica({
   nombreComercio,
   relacionados,
   onAgregar,
-  onComprarAhora,
   onClickRelacionado,
   onVolver,
-  deliveryCiudades = [],
 }) {
-  const [enCompra, setEnCompra] = useState({ variante: null, pack: null });
-  const [comprando, setComprando] = useState(false);
-
   const ficha = useMemo(
     () => resolverFichaTech(item?.ficha_tech, landingConfig?.ficha_tech, fichaTechDesdeProducto(item)),
     [item, landingConfig?.ficha_tech]
@@ -64,54 +58,26 @@ export default function TechProductPagePublica({
   const precioDe = ({ variante, pack } = {}) => (
     pack ? (pack.precio_efectivo ?? pack.precio) : (variante?.precio_efectivo ?? item.precio)
   );
+  const agregarCompra = (eleccion) => onAgregar && onAgregar({
+    item,
+    variante: eleccion?.variante || null,
+    oferta: eleccion?.pack || null,
+    cantidad: 1,
+    precio: precioDe(eleccion),
+  });
 
   return (
-    <>
-      <TechProductPage
-        item={itemFicha}
-        ficha={ficha}
-        tema={tema}
-        contacto={contacto}
-        nombreComercio={nombreComercio}
-        previewMode={false}
-        onVolver={onVolver}
-        onClickRelacionado={onClickRelacionado}
-        onAgregar={(eleccion) => onAgregar && onAgregar({
-          item,
-          variante: eleccion?.variante || null,
-          oferta: eleccion?.pack || null,
-          cantidad: 1,
-          precio: precioDe(eleccion),
-        })}
-        onComprar={(eleccion) => { setEnCompra(eleccion || { variante: null, pack: null }); setComprando(true); }}
-      />
-
-      <FunnelCheckout
-        abierto={comprando}
-        onCerrar={() => setComprando(false)}
-        tema={tema || {}}
-        resumen={{
-          nombre: [
-            item.nombre,
-            enCompra.pack ? `— ${enCompra.pack.nombre}` : '',
-            enCompra.variante ? `(${enCompra.variante.nombre})` : '',
-          ].filter(Boolean).join(' '),
-          variante: enCompra.variante?.nombre || null,
-          precio: precioDe(enCompra),
-          cantidad: 1,
-          imagen: item.imagenes?.[0] || null,
-        }}
-        ofertasLanding={landingConfig?.ofertas_producto_vista || []}
-        itemOriginal={item}
-        deliveryCiudades={deliveryCiudades}
-        onConfirmar={(form, ofertasCheckout = []) => {
-          if (!onComprarAhora) return undefined;
-          // La variante elegida y las ofertas del checkout (order bumps) son
-          // cosas distintas y viajan por separado: el bump nunca pisa el
-          // precio del producto principal.
-          return onComprarAhora(item, enCompra.variante, enCompra.pack, 1, precioDe(enCompra), form, ofertasCheckout);
-        }}
-      />
-    </>
+    <TechProductPage
+      item={itemFicha}
+      ficha={ficha}
+      tema={tema}
+      contacto={contacto}
+      nombreComercio={nombreComercio}
+      previewMode={false}
+      onVolver={onVolver}
+      onClickRelacionado={onClickRelacionado}
+      onAgregar={agregarCompra}
+      onComprar={agregarCompra}
+    />
   );
 }

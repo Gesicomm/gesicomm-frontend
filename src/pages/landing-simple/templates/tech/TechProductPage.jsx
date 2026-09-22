@@ -12,6 +12,7 @@ import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
 import { analizarVideo, NOMBRE_PLATAFORMA } from '../video';
 import { agruparOpciones, resolverVariante, valorDisponible } from '../../../../lib/varianteOpciones';
+import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './techProductPage.css';
 
 /**
@@ -73,10 +74,9 @@ export default function TechProductPage({
   const precioUnitario = variante?.precio_efectivo ?? item?.precio;
   const precio = pack ? (pack.precio_efectivo ?? pack.precio) : precioUnitario;
 
-  // Si la variante elegida tiene fotos propias, manda la variante: es la que
-  // el cliente está mirando. Si no cargaron ninguna, se sigue viendo la
-  // galería del producto en vez de dejar el escenario vacío.
-  const galeria = variante?.imagenes?.length ? variante.imagenes : (item?.imagenes || []);
+  // La variante solo toma el asiento principal: videos e imágenes generales
+  // siguen en la galería porque también venden y explican el producto.
+  const galeria = galeriaConVariantePromovida(item?.imagenes || [], variante);
 
   useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
 
@@ -163,24 +163,24 @@ export default function TechProductPage({
         <div className="tpp-galeria">
           {galeria.length > 1 && (
             <div className="tpp-miniaturas" role="tablist" aria-label="Fotos del producto">
-              {galeria.map((url, i) => (
+              {galeria.map((medio, i) => (
                 <button
                   type="button"
-                  key={url + i}
+                  key={claveMedioProducto(medio, i)}
                   role="tab"
                   aria-selected={i === indiceImagen}
-                  aria-label={`Foto ${i + 1} de ${galeria.length}`}
+                  aria-label={`Medio ${i + 1} de ${galeria.length}`}
                   className={`tpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
+                  <MiniaturaMediaProducto medio={medio} alt="" />
                 </button>
               ))}
             </div>
           )}
           <div className={`tpp-escenario ${imagenActual ? '' : 'vacia'}`}>
             {imagenActual
-              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
+              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
               : <ImageOff size={44} />}
             {ficha.hero.etiqueta && <span className="tpp-etiqueta-nueva">{ficha.hero.etiqueta}</span>}
           </div>
@@ -538,7 +538,7 @@ export default function TechProductPage({
                   <figure>
                     <span className="tpp-duelo-foto">
                       <img
-                        src={getMediaUrl((ficha.comparativa.imagen_nosotros || '').trim() || item.imagenes[0] || '')}
+                        src={getMediaUrl((ficha.comparativa.imagen_nosotros || '').trim() || imagenPrincipalDeGaleria(item.imagenes) || '')}
                         alt={ficha.comparativa.nosotros}
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
@@ -729,12 +729,16 @@ export default function TechProductPage({
             <X size={20} />
           </button>
           <div className="tpp-lightbox-marco" onClick={e => e.stopPropagation()}>
-            <iframe
-              src={videoAbierto.embed}
-              title="Video del producto"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+            {videoAbierto.tipo === 'video' ? (
+              <video src={videoAbierto.embed} controls playsInline />
+            ) : (
+              <iframe
+                src={videoAbierto.embed}
+                title="Video del producto"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )}
           </div>
         </div>
       ), document.body)}

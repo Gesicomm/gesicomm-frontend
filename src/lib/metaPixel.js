@@ -21,7 +21,8 @@ let cargado = false;
  */
 export const PIXEL_ID_GESICOMM = '3636737413142726';
 
-export function inicializarPixel(pixelId) {
+export function inicializarPixel(pixelId, opts = {}) {
+  const { trackPageView = true } = opts;
   if (!pixelId || cargado || typeof window === 'undefined') return;
   if (window.fbq) { cargado = true; return; } // ya lo cargó otra instancia
 
@@ -34,7 +35,7 @@ export function inicializarPixel(pixelId) {
   /* eslint-enable */
 
   window.fbq('init', pixelId);
-  window.fbq('track', 'PageView');
+  if (trackPageView) window.fbq('track', 'PageView');
   cargado = true;
 }
 

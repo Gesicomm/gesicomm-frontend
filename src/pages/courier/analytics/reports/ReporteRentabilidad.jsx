@@ -82,9 +82,9 @@ export function ReporteRentabilidad({ filters }) {
           <div className="cic-kpi-sub">{kpis.pct_margen_bruto}% — ya neto de mercadería, comisión e IVA (el delivery lo paga el cliente)</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-danger)' }}>
-          <div className="cic-kpi-header"><span>Costos y Gastos</span><TrendingDown size={16} style={{ color: 'var(--color-danger)' }} /></div>
+          <div className="cic-kpi-header"><span>Egresos registrados</span><TrendingDown size={16} style={{ color: 'var(--color-danger)' }} /></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-danger)' }}>{formatGs(kpis.gastos_operativos + kpis.costos_operativos_adicionales)}</div>
-          <div className="cic-kpi-sub">Registrados en Finanzas → Costos y Gastos</div>
+          <div className="cic-kpi-sub">Registrados en Finanzas → Control financiero</div>
         </div>
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-success)' }}>
           <div className="cic-kpi-header"><span>Ganancia Neta</span><PiggyBank size={16} style={{ color: 'var(--color-success)' }} /></div>
@@ -121,7 +121,7 @@ export function ReporteRentabilidad({ filters }) {
                   <div key={idx} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '100%' }}>
                       <div style={{ width: '8px', height: `${hIngresos}%`, background: 'var(--color-success)', borderRadius: '4px' }} title={`Ingresos: ${formatGs(m.ingresos)}`} />
-                      <div style={{ width: '8px', height: `${hEgresos}%`, background: 'var(--color-danger)', borderRadius: '4px' }} title={`Costos y gastos: ${formatGs(m.costos + m.gastos)}`} />
+                      <div style={{ width: '8px', height: `${hEgresos}%`, background: 'var(--color-danger)', borderRadius: '4px' }} title={`Egresos registrados: ${formatGs(m.costos + m.gastos)}`} />
                     </div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--color-fg-subtle)' }}>{mesLabel(m.mes)}</div>
                   </div>
@@ -135,7 +135,7 @@ export function ReporteRentabilidad({ filters }) {
           )}
           <div style={{ display: 'flex', gap: '1.5rem', padding: '0 1rem 1rem 1rem', fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--color-success)', display: 'inline-block' }} /> Ingresos</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--color-danger)', display: 'inline-block' }} /> Costos y gastos</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--color-danger)', display: 'inline-block' }} /> Egresos registrados</span>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export function ReporteRentabilidad({ filters }) {
         <div className="cic-table-card" style={{ marginTop: '1.5rem' }}>
           <div className="cic-card-header">
             <div>
-              <h3 className="cic-card-title"><Package size={18} style={{ color: 'var(--color-primary-text)' }} /> Principales Costos y Gastos</h3>
+              <h3 className="cic-card-title"><Package size={18} style={{ color: 'var(--color-primary-text)' }} /> Principales egresos</h3>
               <p className="cic-card-subtitle">Los montos más altos registrados en el período</p>
             </div>
           </div>

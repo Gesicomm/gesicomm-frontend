@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft, Loader, Lock, Save, Star, Trash2, Truck, Upload } from 'lucide-react';
-import { getMediaUrl } from '../../../services/api';
+import { ArrowLeft, GripVertical, Link, Loader, Lock, Save, Star, Trash2, Truck, Upload } from 'lucide-react';
 import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
 import ProductCheckoutOfertas from '../../landing/ProductCheckoutOfertas';
@@ -11,6 +10,7 @@ import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import FichaBeautyPanel from './FichaBeautyPanel';
 import FichaBasicoPanel from './FichaBasicoPanel';
 import FichaComboPanel from './FichaComboPanel';
+import { claveMedioProducto, MiniaturaMediaProducto, normalizarMedioProducto } from '../templates/mediaGaleria';
 import '../../landing/landing.css';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
@@ -43,7 +43,8 @@ export default function ProductoPanel({
   precioAncla = null, onPrecioAncla = null, precioActual = null,
   envioIncluido = false, onEnvioIncluido = null,
   packs = [],
-  imagenes, imagenesEditables = true, subiendoImg, onSubirImagen, onEliminarImagen, onMarcarPrincipal,
+  imagenes, medios = null, imagenesEditables = true, subiendoImg,
+  onSubirImagen, onEliminarImagen, onMarcarPrincipal, onAgregarVideo, onEliminarMedio, onReordenarMedios,
   faqTitulo, onFaqTitulo,
   faq, onFaqChange,
   relacionadosTitulo, onRelacionadosTitulo,
@@ -57,6 +58,8 @@ export default function ProductoPanel({
   // Mapeamos `relacionados` (array [{id, nombre, imagen, precio_efectivo}]) a
   // un Map con clave "producto:id" para reutilizar ProductPicker sin cambios.
   const [tab, setTab] = React.useState('contenido');
+  const [videoUrl, setVideoUrl] = React.useState('');
+  const dragOrigen = React.useRef(null);
   const esCombo = producto?.tipo === 'combo';
   const hayFichaAvanzada = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva || fichaComboActiva;
   const tabs = [
@@ -77,6 +80,12 @@ export default function ProductoPanel({
     return map;
   }, [relacionados]);
 
+  const galeria = useMemo(() => (
+    Array.isArray(medios)
+      ? medios
+      : (imagenes || []).map(img => ({ tipo: 'imagen', id: img.id, imagen_id: img.id, url: img.url, es_principal: img.es_principal }))
+  ), [medios, imagenes]);
+
   // ProductPicker llama onToggle con el item completo — necesitamos
   // traducir eso a agregar/quitar del array de relacionados.
   function handleToggleRelacionado(item) {
@@ -87,6 +96,21 @@ export default function ProductoPanel({
     } else {
       onAgregarRelacionado(item);
     }
+  }
+
+  function agregarVideo(e) {
+    e.preventDefault();
+    const limpio = videoUrl.trim();
+    if (!limpio || !onAgregarVideo) return;
+    onAgregarVideo(limpio);
+    setVideoUrl('');
+  }
+
+  function soltarMedio(destino) {
+    const origen = dragOrigen.current;
+    dragOrigen.current = null;
+    if (origen == null || origen === destino || !onReordenarMedios) return;
+    onReordenarMedios(origen, destino);
   }
 
   // itemsOrdenados para la vista "Orden y etiquetas" del picker (solo lectura,
@@ -138,28 +162,53 @@ export default function ProductoPanel({
           <>
             {tab === 'contenido' && (
               <div className="flex flex-col gap-5">
-            {/* ─── Imágenes ─────────────────────────────────────────── */}
+            {/* ─── Medios ───────────────────────────────────────────── */}
             <div>
-              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Imágenes</label>
+              <label className="block text-xs font-semibold text-fg/60 mb-1.5">Imágenes y videos</label>
+              <p className="text-[11px] text-fg/35 mb-2 leading-relaxed">
+                Ordená arrastrando. Recomendado: fotos cuadradas 1200×1200 px y videos 16:9 en 1920×1080 px o 1280×720 px.
+              </p>
               <div className="flex flex-wrap gap-2 mb-2">
-                {imagenes.map(img => (
-                  <div key={img.id} className="relative w-14 h-14 rounded-lg overflow-hidden border border-fg/10 group">
-                    <img src={getMediaUrl(img.url)} alt="" className="w-full h-full object-cover" />
-                    {img.es_principal && <span className="absolute top-0.5 left-0.5 bg-fg rounded-full p-0.5"><Star size={9} className="text-canvas" fill="var(--color-canvas)" /></span>}
-                    {imagenesEditables && (
+                {galeria.map((medio, index) => {
+                  const normalizado = normalizarMedioProducto(medio);
+                  if (!normalizado) return null;
+                  const esImagen = normalizado.tipo === 'imagen';
+                  const imagenId = normalizado.imagenId || normalizado.id;
+                  return (
+                  <div
+                    key={claveMedioProducto(medio, index)}
+                    draggable={!!onReordenarMedios}
+                    onDragStart={() => { dragOrigen.current = index; }}
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={() => soltarMedio(index)}
+                    className="relative w-14 h-14 rounded-lg overflow-hidden border border-fg/10 group bg-fg/5 cursor-grab active:cursor-grabbing"
+                    title="Arrastrar para ordenar"
+                  >
+                    <MiniaturaMediaProducto medio={medio} alt="" />
+                    <span className="absolute top-0.5 right-0.5 bg-black/55 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GripVertical size={10} />
+                    </span>
+                    {esImagen && normalizado.esPrincipal && <span className="absolute top-0.5 left-0.5 bg-fg rounded-full p-0.5"><Star size={9} className="text-canvas" fill="var(--color-canvas)" /></span>}
+                    {(esImagen ? imagenesEditables : true) && (
                       <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                        {!img.es_principal && (
-                          <button type="button" onClick={() => onMarcarPrincipal(img.id)} title="Marcar como principal" className="p-1 rounded bg-fg hover:bg-fg/80">
+                        {esImagen && !normalizado.esPrincipal && imagenId && (
+                          <button type="button" onClick={() => onMarcarPrincipal(imagenId)} title="Marcar como principal" className="p-1 rounded bg-fg hover:bg-fg/80">
                             <Star size={11} />
                           </button>
                         )}
-                        <button type="button" onClick={() => onEliminarImagen(img.id)} title="Eliminar" className="p-1 rounded bg-fg hover:bg-fg/80">
+                        <button
+                          type="button"
+                          onClick={() => (esImagen && imagenId ? onEliminarImagen(imagenId) : onEliminarMedio?.(index))}
+                          title={esImagen ? 'Eliminar' : 'Quitar video'}
+                          className="p-1 rounded bg-fg hover:bg-fg/80"
+                        >
                           <Trash2 size={11} />
                         </button>
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               {imagenesEditables ? (
                 <label className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg cursor-pointer w-fit">
@@ -181,6 +230,22 @@ export default function ProductoPanel({
                   </span>
                 </p>
               )}
+              <form onSubmit={agregarVideo} className="mt-2 flex gap-1.5">
+                <input
+                  type="text"
+                  value={videoUrl}
+                  onChange={e => setVideoUrl(e.target.value)}
+                  placeholder="Pegar link de video"
+                  className={`${CAMPO} min-w-0`}
+                />
+                <button
+                  type="submit"
+                  disabled={!videoUrl.trim()}
+                  className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg disabled:opacity-40"
+                >
+                  <Link size={13} /> Video
+                </button>
+              </form>
             </div>
 
             {/* ─── Descripción ──────────────────────────────────────── */}

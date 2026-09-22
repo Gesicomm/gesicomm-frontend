@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import BasicoProductPage from './BasicoProductPage';
 import { fichaBasicoDesdeProducto, resolverFichaBasico } from './fichaBasico';
 import { armarItemFicha } from '../fichaComun';
-import FunnelCheckout from '../../../funnel/FunnelCheckout';
 
 /**
  * La ficha del template Básico en la landing PUBLICADA.
@@ -26,14 +25,9 @@ export default function BasicoProductPagePublica({
   nombreComercio,
   relacionados,
   onAgregar,
-  onComprarAhora,
   onClickRelacionado,
   onVolver,
-  deliveryCiudades = [],
 }) {
-  const [enCompra, setEnCompra] = useState({ variante: null, pack: null });
-  const [comprando, setComprando] = useState(false);
-
   const ficha = useMemo(
     () => resolverFichaBasico(item?.ficha_basico, landingConfig?.ficha_basico, fichaBasicoDesdeProducto(item)),
     [item, landingConfig?.ficha_basico]
@@ -64,50 +58,26 @@ export default function BasicoProductPagePublica({
 
   // Un paquete trae su precio total: es otra forma de comprar lo mismo.
   const precioDe = ({ pack } = {}) => (pack ? (pack.precio_efectivo ?? pack.precio) : item.precio);
+  const agregarCompra = (eleccion) => onAgregar && onAgregar({
+    item,
+    variante: null,
+    oferta: eleccion?.pack || null,
+    cantidad: 1,
+    precio: precioDe(eleccion),
+  });
 
   return (
-    <>
-      <BasicoProductPage
-        item={itemFicha}
-        ficha={ficha}
-        tema={tema}
-        contacto={contacto}
-        nombreComercio={nombreComercio}
-        previewMode={false}
-        onVolver={onVolver}
-        onClickRelacionado={onClickRelacionado}
-        onAgregar={(eleccion) => onAgregar && onAgregar({
-          item,
-          variante: null,
-          oferta: eleccion?.pack || null,
-          cantidad: 1,
-          precio: precioDe(eleccion),
-        })}
-        onComprar={(eleccion) => { setEnCompra(eleccion || { variante: null, pack: null }); setComprando(true); }}
-      />
-
-      <FunnelCheckout
-        abierto={comprando}
-        onCerrar={() => setComprando(false)}
-        tema={tema || {}}
-        resumen={{
-          nombre: enCompra.pack ? `${item.nombre} — ${enCompra.pack.nombre}` : item.nombre,
-          variante: null,
-          precio: precioDe(enCompra),
-          cantidad: 1,
-          imagen: item.imagenes?.[0] || null,
-        }}
-        ofertasLanding={landingConfig?.ofertas_producto_vista || []}
-        itemOriginal={item}
-        deliveryCiudades={deliveryCiudades}
-        onConfirmar={(form, ofertasCheckout = []) => {
-          if (!onComprarAhora) return undefined;
-          // El paquete elegido y las ofertas del checkout (order bumps) son
-          // cosas distintas y viajan por separado: el bump nunca pisa el
-          // precio del producto principal.
-          return onComprarAhora(item, null, enCompra.pack, 1, precioDe(enCompra), form, ofertasCheckout);
-        }}
-      />
-    </>
+    <BasicoProductPage
+      item={itemFicha}
+      ficha={ficha}
+      tema={tema}
+      contacto={contacto}
+      nombreComercio={nombreComercio}
+      previewMode={false}
+      onVolver={onVolver}
+      onClickRelacionado={onClickRelacionado}
+      onAgregar={agregarCompra}
+      onComprar={agregarCompra}
+    />
   );
 }

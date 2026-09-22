@@ -630,7 +630,7 @@ export default function FunnelCheckout({ abierto, onCerrar, onConfirmar, resumen
                     onChange={() => campo('payment_method', 'efectivo')}
                     style={{ margin: 0, cursor: 'pointer', accentColor: tema.acento }}
                   />
-                  <span style={{ fontSize: '0.85rem' }}>Pagar en efectivo al recibir</span>
+                  <span style={{ fontSize: '0.85rem' }}>Pagar en efectivo</span>
                 </label>
                 
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: tema.texto }}>

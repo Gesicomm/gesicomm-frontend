@@ -8,7 +8,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import {
   Package, Plus, Search, Edit2, Trash2,
   Star, AlertTriangle, ChevronLeft, ChevronRight,
-  ToggleLeft, ToggleRight, Loader, Tag, Layers
+  ToggleLeft, ToggleRight, Loader, Tag, Layers, Warehouse
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import ProductCombosDrawer from './ProductCombosDrawer';
@@ -376,13 +376,22 @@ export default function ProductList() {
                                 puedeModificar() arriba y el mismo criterio
                                 en producto.service.js (backend). */}
                             {editable && (
-                              <button
-                                className="btn-icon"
-                                onClick={(e) => { e.stopPropagation(); navigate(`/products/${p.id}/editar`); }}
-                                title="Abrir workspace"
-                              >
-                                <Edit2 size={15} />
-                              </button>
+                              <>
+                                <button
+                                  className="btn-icon"
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/products/${p.id}/editar`); }}
+                                  title="Abrir workspace"
+                                >
+                                  <Edit2 size={15} />
+                                </button>
+                                <button
+                                  className="btn-icon"
+                                  onClick={(e) => { e.stopPropagation(); navigate('/inventario/nuevo', { state: { preseleccionarProducto: p } }); }}
+                                  title="Enviar a Fulfillment Gesicomm"
+                                >
+                                  <Warehouse size={15} />
+                                </button>
+                              </>
                             )}
                             <button
                               className="btn-icon"

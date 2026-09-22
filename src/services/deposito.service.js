@@ -71,5 +71,17 @@ export const depositoService = {
   eliminarDeposito: async (id) => {
     const { data } = await api.delete(`/depositos/${id}`);
     return data; // Retorna el message enviado por backend
-  }
+  },
+
+  /** Couriers que pueden despachar desde el depósito (propios + de Gesicomm). */
+  listarCouriersDeposito: async (id) => {
+    const { data } = await api.get(`/depositos/${id}/couriers`);
+    return data;
+  },
+
+  /** Reemplaza el set de couriers habilitados del depósito. */
+  guardarCouriersDeposito: async (id, courierIds) => {
+    const { data } = await api.put(`/depositos/${id}/couriers`, { courierIds });
+    return data;
+  },
 };

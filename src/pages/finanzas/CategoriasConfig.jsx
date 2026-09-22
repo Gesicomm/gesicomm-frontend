@@ -53,7 +53,7 @@ export default function CategoriasConfig({ categorias, onClose, onCambio }) {
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
       <div className="flex max-h-[85vh] w-full max-w-md flex-col rounded-xl border border-border bg-surface shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
-          <h3 className="m-0 text-base font-semibold text-fg">Categorías de costos y gastos</h3>
+          <h3 className="m-0 text-base font-semibold text-fg">Categorías financieras</h3>
           <button type="button" onClick={onClose} className="rounded-md p-1.5 text-fg-muted hover:bg-surface-2 hover:text-fg"><X size={18} /></button>
         </div>
 

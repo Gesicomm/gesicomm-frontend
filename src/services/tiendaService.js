@@ -6,6 +6,11 @@ export const tiendaService = {
   actualizar: (payload) => API.put('/mi-tienda', payload).then(r => r.data),
   disponibilidadSubdominio: (sub) => API.get('/mi-tienda/subdominio/disponibilidad', { params: { sub } }).then(r => r.data),
 
+  // Cómo entrega el comercio lo que vende (modalidad de fulfillment).
+  obtenerFulfillment: () => API.get('/mi-tienda/fulfillment').then(r => r.data),
+  guardarFulfillment: (modalidad, depositoId) =>
+    API.put('/mi-tienda/fulfillment', { modalidad, depositoId }).then(r => r.data),
+
   guardarDominioPropio: (dominio) => API.post('/mi-tienda/dominio-propio', { dominio }).then(r => r.data),
   estadoDominioPropio: () => API.get('/mi-tienda/dominio-propio/estado').then(r => r.data),
   habilitarDominioPropio: (habilitado) =>

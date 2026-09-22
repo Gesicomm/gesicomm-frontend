@@ -8,6 +8,7 @@ import { RedesSocialesFooter } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
+import { MediaProducto, MiniaturaMediaProducto, normalizarGaleriaProducto, claveMedioProducto } from '../mediaGaleria';
 import './comboProductPage.css';
 
 /**
@@ -69,7 +70,8 @@ export default function ComboProductPage({
     else comprar();
   };
 
-  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
+  const galeria = normalizarGaleriaProducto(item.imagenes);
+  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
   const tituloTexto = (ficha.hero.titulo || item.nombre || '').trim();
   const largoTitulo = tituloTexto.length + (ficha.hero.titulo_destacado || '').length;
   const claseTitulo = largoTitulo > 60 ? 'es-muy-largo' : largoTitulo > 32 ? 'es-largo' : '';
@@ -129,7 +131,7 @@ export default function ComboProductPage({
               {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
               <div className={`cmb-hero-foto ${!imagenActual ? 'sin-imagen' : ''}`}>
                 {imagenActual
-                  ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
+                  ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
                   : (
                     <div className="cmb-hero-foto-vacio">
                       <ImageOff size={32} />
@@ -137,17 +139,17 @@ export default function ComboProductPage({
                     </div>
                   )}
               </div>
-              {item.imagenes.length > 1 && (
+              {galeria.length > 1 && (
                 <div className="cmb-miniaturas">
-                  {item.imagenes.slice(0, 6).map((url, i) => (
+                  {galeria.slice(0, 6).map((medio, i) => (
                     <button
                       type="button"
-                      key={url + i}
-                      aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
+                      key={claveMedioProducto(medio, i)}
+                      aria-label={`Medio ${i + 1} de ${galeria.length}`}
                       className={`cmb-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                       onClick={() => setIndiceImagen(i)}
                     >
-                      <img src={getMediaUrl(url)} alt="" loading="lazy" />
+                      <MiniaturaMediaProducto medio={medio} alt="" />
                     </button>
                   ))}
                 </div>

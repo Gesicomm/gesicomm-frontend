@@ -25,8 +25,14 @@ export const getDeliveryZonas = async () => {
   return data;
 };
 
-export const replaceDeliveryZonas = async (zonas) => {
-  const { data } = await api.put('/couriers/zonas-delivery', { zonas });
+/**
+ * Reemplaza tarifas de delivery. `courierIds` acota el alcance: sin él el
+ * backend borra TODAS las del comercio y reescribe lo que llegue, así que un
+ * guardado parcial se llevaría puestas las tarifas de los demás couriers.
+ */
+export const replaceDeliveryZonas = async (zonas, courierIds = undefined) => {
+  const payload = courierIds === undefined ? { zonas } : { zonas, courierIds };
+  const { data } = await api.put('/couriers/zonas-delivery', payload);
   return data;
 };
 
@@ -67,13 +73,45 @@ export const actualizarPrecioItemEnvio = async (envioId, itemId, precio_unitario
   return data;
 };
 
-export const iniciarPagoAbastecimiento = async (id) => {
-  const { data } = await api.post(`/envios/${id}/abastecimiento/pagopar`);
+/** Datos de la cuenta bancaria + monto a transferir para pagar el abastecimiento. */
+export const obtenerDatosTransferenciaAbastecimiento = async (id) => {
+  const { data } = await api.get(`/envios/${id}/abastecimiento/datos-transferencia`);
   return data;
 };
 
-export const actualizarAbastecimientoManual = async (id, payload) => {
-  const { data } = await api.post(`/envios/${id}/abastecimiento/manual`, payload);
+/** Sube el comprobante de transferencia; en el mismo acto pasa a "pago enviado". */
+export const subirComprobanteAbastecimiento = async (id, archivo) => {
+  const formData = new FormData();
+  formData.append('comprobante', archivo);
+  const { data } = await api.post(`/envios/${id}/abastecimiento/comprobante`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
+export const validarPagoAbastecimiento = async (id) => {
+  const { data } = await api.post(`/envios/${id}/abastecimiento/pago/validar`);
+  return data;
+};
+
+export const rechazarPagoAbastecimiento = async (id, motivo) => {
+  const { data } = await api.post(`/envios/${id}/abastecimiento/pago/rechazar`, { motivo });
+  return data;
+};
+
+/** Avanza al único siguiente estado operativo válido; el backend lo resuelve, acá no se elige nada. */
+export const avanzarAbastecimiento = async (id) => {
+  const { data } = await api.post(`/envios/${id}/abastecimiento/avanzar`);
+  return data;
+};
+
+export const confirmarRecepcionAbastecimiento = async (id) => {
+  const { data } = await api.post(`/envios/${id}/abastecimiento/confirmar-recepcion`);
+  return data;
+};
+
+export const obtenerTimelineAbastecimiento = async (id) => {
+  const { data } = await api.get(`/envios/${id}/abastecimiento/timeline`);
   return data;
 };
 
@@ -167,6 +205,11 @@ export const deleteMetodoPago = async (id) => {
 
 export const actualizarLogisticaAbastecimiento = async (envioId, payload) => {
   const { data } = await api.put(`/envios/${envioId}/abastecimiento/logistica`, payload);
+  return data;
+};
+
+export const cotizarLogisticaAbastecimiento = async (envioId, payload) => {
+  const { data } = await api.post(`/envios/${envioId}/abastecimiento/cotizar-logistica`, payload);
   return data;
 };
 

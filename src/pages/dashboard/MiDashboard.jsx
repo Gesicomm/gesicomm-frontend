@@ -103,6 +103,19 @@ function gs(valor) {
   return `Gs ${Math.round(n).toLocaleString('es-PY')}`;
 }
 
+function pct(valor) {
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return '—';
+  return `${n.toFixed(1).replace(/\.0$/, '')}%`;
+}
+
+function claseValor(valor) {
+  const n = Number(valor) || 0;
+  if (n > 0) return 'md-valor-positivo';
+  if (n < 0) return 'md-valor-negativo';
+  return 'md-valor-neutro';
+}
+
 /**
  * Variación contra el mismo número del período anterior (`ventas.comparativo`,
  * que el backend calcula sobre un rango de la misma duración justo antes del
@@ -216,7 +229,7 @@ function DetalleCosto({ producto, columnas }) {
             </div>
             <div className="md-detalle-linea md-detalle-total">
               <span className="md-detalle-label">= Ganancia</span>
-              <span className={`md-detalle-valor ${producto.ganancia < 0 ? 'md-valor-negativo' : ''}`}>{gs(producto.ganancia)}</span>
+              <span className={`md-detalle-valor ${claseValor(producto.ganancia)}`}>{gs(producto.ganancia)}</span>
             </div>
           </div>
         </div>
@@ -676,7 +689,7 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
                   <td>{formatFechaCorta(d.fecha)}</td>
                   <td>{gs(d.monto)}</td>
                   <td>{gs(d.costo)}</td>
-                  <td className={d.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(d.ganancia)}</td>
+                  <td className={claseValor(d.ganancia)}>{gs(d.ganancia)}</td>
                 </tr>
               ))}
             </tbody>
@@ -700,9 +713,9 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
                 <stop offset="100%" stopColor="var(--md-visitas)" stopOpacity="0" />
               </linearGradient>
               <linearGradient id="md-area-ganancia" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="var(--md-confirmado)" stopOpacity="0.18" />
-                <stop offset="72%" stopColor="var(--md-confirmado)" stopOpacity="0.03" />
-                <stop offset="100%" stopColor="var(--md-confirmado)" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--md-positivo)" stopOpacity="0.18" />
+                <stop offset="72%" stopColor="var(--md-positivo)" stopOpacity="0.03" />
+                <stop offset="100%" stopColor="var(--md-positivo)" stopOpacity="0" />
               </linearGradient>
               {/* La pérdida se pinta al revés que la ganancia: más fuerte
                   abajo, porque crece hacia abajo. Con el mismo degradado
@@ -824,7 +837,7 @@ function GraficoEvolucionFinanciera({ serie, className = '' }) {
                   <span key={c.campo} className="md-tt-fila">
                     <i className={`md-dot-${c.clase}`} />
                     <span className="md-tt-nombre">{c.label}</span>
-                    <span className={`md-tt-valor ${valor < 0 ? 'md-valor-negativo' : ''}`}>{gs(valor)}</span>
+                    <span className={`md-tt-valor ${c.campo === 'ganancia' ? claseValor(valor) : (valor < 0 ? 'md-valor-negativo' : '')}`}>{gs(valor)}</span>
                   </span>
                 );
               })}
@@ -851,20 +864,22 @@ function TablaRendimientoCanal({ filas }) {
         <thead>
           <tr>
             <th>Canal</th>
-            <th>Total <Ayuda texto="Cuántos pedidos entraron por este canal, sin importar cómo terminaron." /></th>
-            <th>Confirmados <Ayuda texto="De esos pedidos, cuántos el cliente confirmó que quería." /></th>
-            <th>Entregados <Ayuda texto="De esos pedidos, cuántos llegaron a manos del cliente." /></th>
-            <th>Efectividad <Ayuda texto="De cada 100 pedidos que entraron por este canal, cuántos terminaron entregados." /></th>
+            <th>Ventas <Ayuda texto="Venta neta de productos entregados por este canal, sin contar delivery/flete." /></th>
+            <th>Costos totales <Ayuda texto="Mercadería, publicidad, comisiones, logística, IVA y gastos operativos atribuibles a este canal." /></th>
+            <th>Utilidad neta <Ayuda texto="Ventas menos todos los costos atribuibles del canal." /></th>
+            <th>Margen neto <Ayuda texto="De cada Gs 100 vendidos por este canal, cuántos quedan como utilidad." /></th>
+            <th>ROI canal <Ayuda texto="Utilidad neta dividida por costo total del canal. Mide cuánta utilidad genera cada guaraní invertido." /></th>
           </tr>
         </thead>
         <tbody>
           {filas.map(f => (
             <tr key={f.canal}>
               <td>{f.canal}</td>
-              <td>{f.total ?? '—'}</td>
-              <td>{f.confirmados ?? '—'}</td>
-              <td>{f.entregados ?? '—'}</td>
-              <td>{f.efectividad === undefined || f.efectividad === null ? '—' : `${f.efectividad}%`}</td>
+              <td>{gs(f.ventas)}</td>
+              <td>{gs(f.costos_totales)}</td>
+              <td className={claseValor(f.utilidad_neta)}>{gs(f.utilidad_neta)}</td>
+              <td className={claseValor(f.margen_neto)}>{pct(f.margen_neto)}</td>
+              <td className={f.roi_canal == null ? 'md-valor-neutro' : claseValor(f.roi_canal)}>{pct(f.roi_canal)}</td>
             </tr>
           ))}
         </tbody>
@@ -915,7 +930,7 @@ function TablaRankingLandings({ ranking }) {
               <td>{l.pedidos}</td>
               <td>{l.entregados}</td>
               <td>{gs(l.facturacion)}</td>
-              <td className={l.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(l.ganancia)}</td>
+              <td className={claseValor(l.ganancia)}>{gs(l.ganancia)}</td>
               {/* Sin visitas registradas no hay 0% de conversión: no hay con
                   qué calcularla. Un guion dice eso; un 0% mentiría. */}
               <td>{l.visitas > 0 ? `${l.conversion}%` : '—'}</td>
@@ -934,7 +949,7 @@ function TablaRankingLandings({ ranking }) {
             <td>{t.pedidos}</td>
             <td>{t.entregados}</td>
             <td>{gs(t.facturacion)}</td>
-            <td className={t.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(t.ganancia)}</td>
+            <td className={claseValor(t.ganancia)}>{gs(t.ganancia)}</td>
             <td>{t.visitas > 0 ? `${t.conversion}%` : '—'}</td>
           </tr>
         </tfoot>
@@ -1011,7 +1026,7 @@ function TablaMasVendidos({ filas }) {
               </td>
               <td>{p.unidades ?? '—'}</td>
               <td>{gs(p.venta)}</td>
-              <td className={margenBruto(p) <= 0 ? 'md-valor-negativo' : ''}>
+              <td className={claseValor(margenBruto(p))}>
                 {gs(margenBruto(p))} <small className="md-valor-pct">{pctMargenBruto(p)}%</small>
               </td>
               <td>
@@ -1025,11 +1040,11 @@ function TablaMasVendidos({ filas }) {
                   <ChevronDown size={12} className={estaAbierto ? 'md-chevron-abierto' : ''} aria-hidden="true" />
                 </button>
               </td>
-              <td className={p.ganancia < 0 ? 'md-valor-negativo' : ''}>{gs(p.ganancia)}</td>
+              <td className={claseValor(p.ganancia)}>{gs(p.ganancia)}</td>
               {/* La pérdida solo grita cuando hay algo que mirar: en la
                   mayoría de las filas es cero y no debe robar atención. */}
               <td className={p.perdida > 0 ? 'md-valor-negativo' : 'md-valor-neutro'}>{gs(p.perdida)}</td>
-              <td className={p.rentabilidad < 0 ? 'md-valor-negativo' : ''}>{p.rentabilidad}%</td>
+              <td className={claseValor(p.rentabilidad)}>{p.rentabilidad}%</td>
             </tr>
             {estaAbierto && <DetalleCosto producto={p} columnas={COLUMNAS} />}
             </React.Fragment>
@@ -1170,7 +1185,7 @@ function SelectorProducto({ productos, value, onChange, disabled }) {
               className={`md-combo-opcion ${value === 'TODOS' ? 'activa' : ''}`}
               onClick={() => elegir('TODOS')}
             >
-              Todos los productos
+              <span className="md-combo-opcion-main">Todos los productos</span>
             </button>
             {filtrados.map(p => (
               <button
@@ -1179,7 +1194,7 @@ function SelectorProducto({ productos, value, onChange, disabled }) {
                 className={`md-combo-opcion ${String(value) === String(p.producto_id) ? 'activa' : ''}`}
                 onClick={() => elegir(p.producto_id)}
               >
-                {p.nombre}
+                <span className="md-combo-opcion-main">{p.nombre}</span>
               </button>
             ))}
             {filtrados.length === 0 && (
@@ -1189,6 +1204,36 @@ function SelectorProducto({ productos, value, onChange, disabled }) {
         </div>
       )}
     </div>
+  );
+}
+
+function SelectorLanding({ landings, value, onChange, disabled }) {
+  const etiquetaTipo = (tipo) => {
+    if (tipo === 'inicio') return 'inicio';
+    if (tipo === 'catalogo') return 'catálogo';
+    if (tipo === 'contacto') return 'contacto';
+    if (tipo === 'funnel') return 'funnel';
+    return tipo || 'landing';
+  };
+
+  return (
+    <select
+      className="md-select md-select-landing"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      disabled={disabled}
+      aria-label="Landing"
+    >
+      <option value="TODAS">Todas las landings</option>
+      {landings.map(l => (
+        <option
+          key={l.landing_id}
+          value={l.landing_id}
+        >
+          {l.nombre} ({etiquetaTipo(l.tipo_pagina)}{!l.publicada ? ' - sin publicar' : ''})
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -1344,7 +1389,18 @@ export default function MiDashboard() {
   const productosConsultados = pixel?.productos_mas_consultados || [];
   const maxConsultados = productosConsultados[0]?.consultas || 0;
 
-  const ctrPct = pixel ? (pixel.ctr * 100).toFixed(1).replace(/\.0$/, '') : '0';
+  const visitasPixel = Number(pixel?.visitas || 0);
+  const formulariosWeb = Number(canalLanding.total || 0);
+  const checkoutsIniciados = Number(pixel?.checkouts_iniciados || 0);
+  const pagosRealizados = Number(pagosOnline.pagos_realizados || 0);
+  const visitasFormularios = pixelFallo ? null : Math.max(visitasPixel, formulariosWeb);
+  const visitasPago = pixelFallo ? null : Math.max(visitasPixel, checkoutsIniciados, pagosRealizados);
+  const visitasFormulariosCompletadas = !pixelFallo && formulariosWeb > 0 && visitasPixel < formulariosWeb;
+  const visitasPagoCompletadas = !pixelFallo && Math.max(checkoutsIniciados, pagosRealizados) > 0 && visitasPixel < Math.max(checkoutsIniciados, pagosRealizados);
+  const contactosWhatsapp = Number(pixel?.contactos_whatsapp || 0);
+  const ctrPct = !pixelFallo && visitasFormularios > 0
+    ? ((contactosWhatsapp / visitasFormularios) * 100).toFixed(1).replace(/\.0$/, '')
+    : '0';
 
   // Datos de cada embudo — MISMOS cálculos que antes. Lo que cambió es que
   // las etapas del Pixel/CAPI (visitas → carrito → checkout) ahora abren el
@@ -1357,7 +1413,7 @@ export default function MiDashboard() {
     // son etapas previas a la bifurcación y viven en el embudo de pago.
     formularios: {
       pasos: [
-        { label: 'Visitas', valor: pixelFallo ? null : (pixel?.visitas ?? 0), valorLabel: pixelFallo ? '—' : undefined, icono: <Eye size={18} />, tono: 'visitas' },
+        { label: 'Visitas', valor: visitasFormularios, valorLabel: pixelFallo ? '—' : undefined, icono: <Eye size={18} />, tono: 'visitas' },
         { label: 'Formulario', valor: canalLanding.total, icono: <FileText size={18} />, tono: 'carrito' },
         { label: 'Pedidos por Confirmar', valor: canalLanding.total - canalLanding.cancelados, icono: <Clock size={18} />, tono: 'checkout' },
         { label: 'Pedidos Confirmados', valor: canalLanding.confirmados, icono: <CheckCircle2 size={18} />, tono: 'checkout' },
@@ -1365,9 +1421,9 @@ export default function MiDashboard() {
       ],
       pieFinal: (
         <>
-          % conversión del embudo (Visitas a Entregados): <strong>{pixelFallo ? '—' : `${(pixel?.visitas || 0) > 0 ? ((canalLanding.entregados / pixel.visitas) * 100).toFixed(1) : 0}%`}</strong>
+          % conversión del embudo (Visitas a Entregados): <strong>{pixelFallo ? '—' : `${visitasFormularios > 0 ? ((canalLanding.entregados / visitasFormularios) * 100).toFixed(1) : 0}%`}</strong>
           <span className="md-funnel-div" />
-          Contactos a WhatsApp: <strong>{pixel?.contactos_whatsapp ?? 0}</strong> ({ctrPct}% de las visitas)
+          Contactos a WhatsApp: <strong>{contactosWhatsapp}</strong> ({ctrPct}% de las visitas)
           <span className="md-funnel-div" />
           Valor total en carritos: <strong>{gs(pixel?.valor_carritos || 0)}</strong>
         </>
@@ -1379,6 +1435,9 @@ export default function MiDashboard() {
       nota: [
         pixelFallo
           ? 'No pudimos traer las visitas de esta página, por eso ese paso muestra un guion en vez de un número. Los pedidos de abajo sí son reales.'
+          : null,
+        visitasFormulariosCompletadas
+          ? 'Las visitas se muestran como mínimo igual a los formularios porque hay pedidos web en el período pero el tracking histórico de visitas no dejó filas de PageView/visita.'
           : null,
         landingActiva
           ? `Solo "${landingActiva.nombre}". Los pedidos que se cargaron antes de que el sistema empezara a guardar la landing de origen no entran acá: se ven en "Todas".`
@@ -1400,13 +1459,13 @@ export default function MiDashboard() {
     // el carrito no es una etapa obligatoria de este embudo.
     pago: {
       pasos: [
-        { label: 'Visitas', valor: pixelFallo ? null : (pixel?.visitas ?? 0), valorLabel: pixelFallo ? '—' : undefined, icono: <Eye size={18} />, tono: 'visitas' },
+        { label: 'Visitas', valor: visitasPago, valorLabel: pixelFallo ? '—' : undefined, icono: <Eye size={18} />, tono: 'visitas' },
         { label: 'Checkout', valor: pixelFallo ? null : (pixel?.checkouts_iniciados ?? 0), valorLabel: pixelFallo ? '—' : undefined, icono: <CreditCard size={18} />, tono: 'checkout' },
         { label: 'Pagos Realizados', valor: pagosOnline.pagos_realizados, icono: <Wallet size={18} />, tono: 'contactos' },
       ],
       pieFinal: (
         <>
-          % conversión (Visitas a Pagos): <strong>{pixelFallo ? '—' : `${(pixel?.visitas || 0) > 0 ? ((pagosOnline.pagos_realizados / pixel.visitas) * 100).toFixed(1) : 0}%`}</strong>
+          % conversión (Visitas a Pagos): <strong>{pixelFallo ? '—' : `${visitasPago > 0 ? ((pagosOnline.pagos_realizados / visitasPago) * 100).toFixed(1) : 0}%`}</strong>
           <span className="md-funnel-div" />
           {/* El carrito no se pierde: deja de ser una etapa obligatoria del
               embudo y pasa acá, donde es un dato más y no rompe la lectura. */}
@@ -1415,6 +1474,9 @@ export default function MiDashboard() {
           Monto cobrado: <strong>{gs(pagosOnline.monto_pagado)}</strong>
         </>
       ),
+      nota: visitasPagoCompletadas
+        ? 'Las visitas se muestran como mínimo igual a las acciones de pago detectadas para evitar embudos imposibles cuando falta el PageView histórico.'
+        : undefined,
     },
   };
 
@@ -1423,13 +1485,15 @@ export default function MiDashboard() {
   // como fila propia porque no es un canal de pedidos: es el tracking de la
   // landing, o sea el tráfico que alimenta la fila "Formularios Web".
   const canalesFunnel = ventas?.funnel?.canales || {};
+  const rentabilidadCanales = ventas?.rentabilidad_canales || {};
   const rendimientoCanales = [
     ...(ventas?.canales_disponibles || []).map(c => ({
       canal: c.nombre,
       ...(canalesFunnel[c.slug] || canalVacio),
+      ...(rentabilidadCanales[c.slug] || {}),
     })),
-    { canal: 'Sin canal', ...(canalesFunnel.sin_canal || canalVacio) },
-  ].filter(c => c.total > 0);
+    { canal: 'Sin canal', ...(canalesFunnel.sin_canal || canalVacio), ...(rentabilidadCanales.sin_canal || {}) },
+  ].filter(c => c.total > 0 || Number(c.ventas) > 0 || Number(c.costos_totales) > 0);
 
   const embudoProductosVisibles = verTodosProductos ? embudoProductos : embudoProductos.slice(0, 5);
 
@@ -1458,32 +1522,17 @@ export default function MiDashboard() {
               esa página (suma catálogo, contacto, funnels y los pedidos
               cargados a mano, que no vienen de ninguna landing). */}
           {landingsDisponibles.length > 0 && (
-            <div className="md-tabs md-tabs-landing">
+            <div className="md-landing-filter">
               <span className="md-tabs-label">
                 Landing
                 <Ayuda texto="Elegí de qué página querés ver los números. Cada tienda tiene su propio tráfico y sus propios pedidos. 'Todas' suma el negocio completo, incluidos los pedidos por WhatsApp y los cargados a mano, que no vienen de ninguna landing — por eso 'Todas' siempre da más que la suma de las páginas." />
               </span>
-              <button
-                type="button"
-                className={`md-tab ${landingId === 'TODAS' ? 'activo' : ''}`}
-                onClick={() => setLandingId('TODAS')}
+              <SelectorLanding
+                landings={landingsDisponibles}
+                value={landingId}
+                onChange={setLandingId}
                 disabled={loading}
-              >
-                Todas
-              </button>
-              {landingsDisponibles.map(l => (
-                <button
-                  key={l.landing_id}
-                  type="button"
-                  className={`md-tab ${String(landingId) === String(l.landing_id) ? 'activo' : ''}`}
-                  onClick={() => setLandingId(l.landing_id)}
-                  disabled={loading}
-                  title={l.publicada ? l.nombre : `${l.nombre} — sin publicar`}
-                >
-                  {l.nombre}
-                  {!l.publicada && <span className="md-tab-badge">sin publicar</span>}
-                </button>
-              ))}
+              />
             </div>
           )}
           <div className="md-tabs">
@@ -1530,7 +1579,7 @@ export default function MiDashboard() {
             antes vivían dispersos (pedidos/ticket ya no se repiten abajo) ── */}
         <section className="md-hero md-span-8">
           <div className="md-hero-top">
-            <span className="md-eyebrow">Facturación Real · {rangoLabel}</span>
+            <span className="md-eyebrow">Ventas netas · {rangoLabel}</span>
             <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
           </div>
           <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
@@ -1551,12 +1600,12 @@ export default function MiDashboard() {
               <span className="md-rent-label">
                 Ticket Promedio
                 <Ayuda
-                  ariaLabel="Promedio cobrado por cada pedido entregado. Formula: facturacion real dividida por pedidos entregados."
+                  ariaLabel="Promedio vendido por cada pedido entregado. Fórmula: ventas netas divididas por pedidos entregados."
                   texto={(
                     <>
                       <strong>Promedio por pedido entregado.</strong>
-                      <span>Es cuánto cobraste, en promedio, por cada pedido que llegó al cliente.</span>
-                      <small>Facturación real ÷ pedidos entregados</small>
+                      <span>Es cuánto vendiste, en promedio, por cada pedido que llegó al cliente.</span>
+                      <small>Ventas netas ÷ pedidos entregados</small>
                     </>
                   )}
                 />
@@ -1564,14 +1613,14 @@ export default function MiDashboard() {
               <span className="md-rent-valor">{gs(kpis.ticket_promedio)}</span>
             </div>
             <div className="md-rent-item md-rent-destacado">
-              <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: la facturación menos todos los costos y gastos del período." /></span>
-              <span className={`md-rent-valor ${kpis.ganancia_neta_estimada < 0 ? 'md-valor-negativo' : ''}`}>
+              <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: las ventas netas menos todos los costos y gastos del período." /></span>
+              <span className={`md-rent-valor ${claseValor(kpis.ganancia_neta_estimada)}`}>
                 {gs(kpis.ganancia_neta_estimada)}
                 <Variacion actual={kpis.ganancia_neta_estimada} previo={comparativo?.ganancia_neta_estimada} />
               </span>
             </div>
             <div className="md-rent-item">
-              <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes que facturaste, cuántos te quedaron limpios." /></span>
+              <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes de ventas netas, cuántos te quedaron limpios." /></span>
               <span className="md-rent-valor">{kpis.pct_margen_neto}%</span>
             </div>
             <div className="md-rent-item">
@@ -1594,7 +1643,7 @@ export default function MiDashboard() {
             el comercio la lee: arrancás con lo que facturaste y le vas
             restando cada gasto hasta llegar a lo que te quedó.
 
-              Facturación Real
+              Ventas netas
               - Meta (ads)
               - Producto
               - Envíos
@@ -1606,17 +1655,16 @@ export default function MiDashboard() {
 
             "Envíos" es SIEMPRE el costo real pagado al courier, tildado o
             no "Incluye delivery" — al courier se le paga igual. Cuando el
-            cliente cubre el flete, esa misma plata ya está sumada en
-            Facturación Real, así que el renglón de Envíos no le pega a la
-            Utilidad (entra y sale); cuando lo absorbe el negocio, Facturación
-            Real no la tiene y Envíos sí la resta — ahí es un costo real. */}
+            cliente cubre el flete, esa plata se ve como cobro total, pero no
+            dentro de Ventas netas. El renglón de Envíos muestra el costo real
+            pagado al courier para que no se confunda venta de producto con caja. */}
         <div className="md-rentabilidad-grid">
           <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Facturación Real <Ayuda texto="Toda la plata que cobraste en los pedidos entregados: el pedido completo, tal como lo cargaste. Los pedidos pendientes o cancelados no entran." /></span>
+            <span className="md-rent-label">Ventas netas <Ayuda texto="Venta de productos entregados, sin delivery/flete. Los pedidos pendientes o cancelados no entran." /></span>
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale de los reportes que importaste en Ads & Campañas, con IVA. Si un reporte abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Costos y Gastos no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
+            <span className="md-rent-label">Meta <small>(ads)</small> <Ayuda texto="Lo que gastaste en Meta Ads en este período. Sale de los reportes que importaste en Ads & Campañas, con IVA. Si un reporte abarca más días que el período que estás viendo, se toma solo la parte proporcional. La publicidad que cargues a mano en Control financiero no entra acá: va en Costos Fijos o Variables, según cómo la hayas clasificado." /></span>
             <span className="md-rent-valor">{gs(gastoMetaAds)}</span>
           </div>
           <div className="md-rent-item">
@@ -1631,19 +1679,19 @@ export default function MiDashboard() {
             <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Costos y Gastos con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
+            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
             <span className="md-rent-valor">{gs(costosFijos)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Costos Variables <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Costos y Gastos con clasificación 'Variable'." /></span>
+            <span className="md-rent-label">Costos Variables <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'." /></span>
             <span className="md-rent-valor">{gs(costosVariables)}</span>
           </div>
           <div className="md-rent-item md-rent-destacado">
             <span className="md-rent-label">
               Utilidad Bruta <small>({kpis.pct_margen_bruto}%)</small>
-              <Ayuda texto="Facturación real menos producto, envíos, comisiones e IVA. Todavía no descuenta Meta ni costos fijos." />
+              <Ayuda texto="Ventas netas menos producto, envíos, comisiones e IVA. Todavía no descuenta Meta ni costos fijos." />
             </span>
-            <span className={`md-rent-valor ${utilidadBruta < 0 ? 'md-valor-negativo' : ''}`}>{gs(utilidadBruta)}</span>
+            <span className={`md-rent-valor ${claseValor(utilidadBruta)}`}>{gs(utilidadBruta)}</span>
           </div>
           <div className="md-rent-item">
             <span className="md-rent-label">IVA <Ayuda texto="El impuesto de los pedidos que pidieron factura. Esa plata no es tuya: la cobrás al cliente y se la pagás a Hacienda." /></span>

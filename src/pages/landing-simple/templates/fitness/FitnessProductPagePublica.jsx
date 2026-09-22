@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import FitnessProductPage from './FitnessProductPage';
 import { armarItemFicha, fichaDesdeMarketing, resolverFichaFitness } from './fichaFitness';
-import FunnelCheckout from '../../../funnel/FunnelCheckout';
 
 /**
  * La ficha Fitness en la landing PUBLICADA.
@@ -24,14 +23,10 @@ export default function FitnessProductPagePublica({
   contacto,
   nombreComercio,
   relacionados,
-  onComprarAhora,
+  onAgregar,
   onClickRelacionado,
   onVolver,
-  deliveryCiudades = [],
 }) {
-  const [packEnCompra, setPackEnCompra] = useState(null);
-  const [comprando, setComprando] = useState(false);
-
   const ficha = useMemo(
     () => resolverFichaFitness(item?.ficha, landingConfig?.ficha_fitness, fichaDesdeMarketing(item)),
     [item, landingConfig?.ficha_fitness]
@@ -58,43 +53,25 @@ export default function FitnessProductPagePublica({
   if (!item) return null;
 
   const precioDe = (pack) => (pack ? (pack.precio_efectivo ?? pack.precio) : item.precio);
+  const agregarCompra = (pack) => onAgregar && onAgregar({
+    item,
+    variante: null,
+    oferta: pack || null,
+    cantidad: 1,
+    precio: precioDe(pack),
+  });
 
   return (
-    <>
-      <FitnessProductPage
-        item={itemFicha}
-        ficha={ficha}
-        tema={tema}
-        contacto={contacto}
-        nombreComercio={nombreComercio}
-        previewMode={false}
-        onVolver={onVolver}
-        onClickRelacionado={onClickRelacionado}
-        onComprar={(pack) => { setPackEnCompra(pack); setComprando(true); }}
-      />
-
-      <FunnelCheckout
-        abierto={comprando}
-        onCerrar={() => setComprando(false)}
-        tema={tema || {}}
-        resumen={{
-          nombre: packEnCompra ? `${item.nombre} — ${packEnCompra.nombre}` : item.nombre,
-          variante: null,
-          precio: precioDe(packEnCompra),
-          cantidad: 1,
-          imagen: item.imagenes?.[0] || null,
-        }}
-        ofertasLanding={landingConfig?.ofertas_producto_vista || []}
-        itemOriginal={item}
-        deliveryCiudades={deliveryCiudades}
-        onConfirmar={(form, ofertasCheckout = []) => {
-          if (!onComprarAhora) return undefined;
-          // El paquete elegido en la ficha y las ofertas del checkout (order
-          // bumps) son cosas distintas y viajan por separado, igual que en
-          // ProductPagePublica: el bump nunca pisa el precio del principal.
-          return onComprarAhora(item, null, packEnCompra, 1, precioDe(packEnCompra), form, ofertasCheckout);
-        }}
-      />
-    </>
+    <FitnessProductPage
+      item={itemFicha}
+      ficha={ficha}
+      tema={tema}
+      contacto={contacto}
+      nombreComercio={nombreComercio}
+      previewMode={false}
+      onVolver={onVolver}
+      onClickRelacionado={onClickRelacionado}
+      onComprar={(eleccion) => agregarCompra(eleccion?.pack || eleccion || null)}
+    />
   );
 }

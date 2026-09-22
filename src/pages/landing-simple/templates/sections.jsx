@@ -3,6 +3,8 @@ import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock, Check, MessageCi
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
 import RichText from '../../../components/RichText';
+import { getMediaUrl } from '../../../services/api';
+import { analizarVideo } from './video';
 
 /** Tope de fotos que rota una tarjeta: más que esto marea y son bytes de más. */
 const MAX_FOTOS_TARJETA = 5;
@@ -23,8 +25,9 @@ export function ImagenProductoHover({ imagenes = [], imagen = null, alt = '', fa
   // `imagen` es el respaldo para los orígenes de datos que todavía mandan
   // una sola foto (funnels, items cacheados): la tarjeta se ve igual que
   // antes, simplemente no rota.
-  const galeria = (imagenes || []).filter(Boolean);
-  const fotos = (galeria.length ? galeria : [imagen].filter(Boolean)).slice(0, MAX_FOTOS_TARJETA);
+  const galeria = (imagenes || []).map(urlDeTarjeta).filter(Boolean);
+  const respaldo = urlDeTarjeta(imagen);
+  const fotos = (galeria.length ? galeria : [respaldo].filter(Boolean)).slice(0, MAX_FOTOS_TARJETA);
   const [indice, setIndice] = useState(0);
   const [precargar, setPrecargar] = useState(false);
   const timer = useRef(null);
@@ -74,6 +77,22 @@ export function ImagenProductoHover({ imagenes = [], imagen = null, alt = '', fa
       ))}
     </div>
   );
+}
+
+function urlDeTarjeta(medio) {
+  if (!medio) return null;
+  if (typeof medio === 'string') {
+    if (/\.(jpe?g|png|webp|gif|avif|svg)(?:$|[?#])/i.test(medio)) return getMediaUrl(medio);
+    const video = analizarVideo(medio);
+    if (video?.miniatura) return video.miniatura;
+    if (video && video.plataforma !== 'enlace') return null;
+    return getMediaUrl(medio);
+  }
+  if (medio.tipo === 'video') {
+    const video = analizarVideo(medio.url);
+    return medio.portada || medio.miniatura || video?.miniatura || null;
+  }
+  return getMediaUrl(medio.url || medio.imagen || medio.src || medio.path || '');
 }
 
 /**

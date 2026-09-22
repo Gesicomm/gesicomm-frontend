@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { obtenerLandingPublica, obtenerProductoLanding } from '../../services/landingPublicaService';
-import { inicializarPixel } from '../../lib/metaPixel';
+import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding } from '../../services/landingPublicaService';
+import { generarEventId, inicializarPixel, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA } from '../../lib/googleAnalytics';
 import { inicializarTikTokPixel } from '../../lib/tiktokPixel';
 import { cargarFuenteGoogle } from '../../lib/landingDiseno';
@@ -16,6 +16,7 @@ export default function LandingPublica() {
   const navigate = useNavigate();
   const [estado, setEstado] = useState('cargando'); // 'cargando' | 'no-encontrada' | 'no-disponible' | 'ok'
   const [data, setData] = useState(null);
+  const pageviewEnviadoRef = useRef(null);
 
   useEffect(() => {
     let activo = true;
@@ -43,10 +44,25 @@ export default function LandingPublica() {
         if (!res.disponible) return setEstado('no-disponible');
         setData(res);
         setEstado('ok');
-        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id);
+        if (res.meta?.pixel_id) inicializarPixel(res.meta.pixel_id, { trackPageView: false });
         if (res.meta?.google_analytics_id) inicializarGA(res.meta.google_analytics_id);
         if (res.meta?.tiktok_pixel_id) inicializarTikTokPixel(res.meta.tiktok_pixel_id);
         if (res.diseno?.fuente) cargarFuenteGoogle(res.diseno.fuente);
+
+        const pageviewKey = `${slug || 'home'}:${productId || ''}:${window.location.pathname}`;
+        if (pageviewEnviadoRef.current !== pageviewKey) {
+          pageviewEnviadoRef.current = pageviewKey;
+          const eventId = generarEventId();
+          const { fbc, fbp } = leerCookiesFacebook();
+          trackearEvento('PageView', eventId, {});
+          registrarEventoLanding(slug, {
+            event_name: 'PageView',
+            event_id: eventId,
+            event_source_url: window.location.href,
+            fbc,
+            fbp,
+          });
+        }
       })
       .catch(() => { if (activo) setEstado('no-encontrada'); });
     return () => { activo = false; };

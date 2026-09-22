@@ -12,6 +12,7 @@ import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
 import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
+import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './fitnessProductPage.css';
 
 /**
@@ -95,11 +96,11 @@ export default function FitnessProductPage({
   // el editor y la landing publicada consumen lo mismo sin adivinar tipos.
   const comprar = () => onComprar && onComprar({ variante, pack: packElegido, precio: precioMostrado });
 
-  // Si la variante elegida tiene fotos propias, la galería pasa a ser la
-  // de ella — es la que se espera ver al elegir, por ej., el sabor/color.
-  // Si no cargaron ninguna, se sigue viendo la galería general del producto.
-  const galeria = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
+  // La variante solo toma el asiento principal: videos e imágenes generales
+  // siguen en la galería porque también venden y explican el producto.
+  const galeria = galeriaConVariantePromovida(item.imagenes, variante);
   const imagenActual = galeria[indiceImagen] || galeria[0] || null;
+  const imagenResumen = imagenPrincipalDeGaleria(galeria);
 
   // El diseño supone un título corto y golpeado, pero los nombres reales del
   // catálogo son descriptivos ("AdelFit - Suplemento natural para bajar de
@@ -150,7 +151,7 @@ export default function FitnessProductPage({
         <div className="fpp-hero-galeria">
           <div className={`fpp-hero-imagen ${imagenActual ? '' : 'vacia'}`}>
             {imagenActual
-              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
+              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
               : <ImageOff size={44} />}
             {item.descuentoPct > 0 && (
               <span className="fpp-hero-badge-descuento">-{item.descuentoPct}%</span>
@@ -158,14 +159,14 @@ export default function FitnessProductPage({
           </div>
           {galeria.length > 1 && (
             <div className="fpp-miniaturas">
-              {galeria.map((url, i) => (
+              {galeria.map((medio, i) => (
                 <button
                   type="button"
-                  key={url + i}
+                  key={claveMedioProducto(medio, i)}
                   className={`fpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <img src={getMediaUrl(url)} alt="" />
+                  <MiniaturaMediaProducto medio={medio} alt="" />
                 </button>
               ))}
             </div>
@@ -281,7 +282,7 @@ export default function FitnessProductPage({
                   badge={ficha.ofertas.badge_individual}
                   nombre={ficha.ofertas.etiqueta_individual || 'Individual'}
                   subtitulo="1 unidad"
-                  imagen={galeria[0] || null}
+                  imagen={imagenResumen}
                   precioUnitario={item.precio}
                   precioAntes={item.precioAntes}
                   ahorro={null}
@@ -299,7 +300,7 @@ export default function FitnessProductPage({
                       badge={conf.badge}
                       nombre={pack.nombre}
                       subtitulo={conf.subtitulo || `${unidades} unidades`}
-                      imagen={pack.imagen || conf.imagen || galeria[0] || null}
+                      imagen={pack.imagen || conf.imagen || imagenResumen}
                       precioUnitario={precioUnitarioDePack(pack)}
                       precioAntes={item.precio != null && unidades > 1 ? item.precio : null}
                       ahorro={ahorroDePack(pack, item.precio)}

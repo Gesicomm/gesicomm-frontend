@@ -3,6 +3,12 @@ import { Bell, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationsService } from '../services/notifications.service';
 
+// Tipos que no viven en /mis-pedidos: el aviso de abastecimiento le llega al
+// administrador, y su bandeja es la sección de Abastecimiento.
+const RUTA_POR_TIPO = {
+  ABASTECIMIENTO_COMPROBANTE_SUBIDO: '/abastecimiento',
+};
+
 function formatTimeAgo(dateString) {
   const d = new Date(dateString);
   if (isNaN(d)) return '';
@@ -51,9 +57,8 @@ export default function NotificationBell({
   const handleNotificationClick = async (notification) => {
     setIsOpen(false);
     await onMarkAsRead(notification.id);
-    if (notification.envio_id) {
-      navigate('/mis-pedidos');
-    }
+    const destino = RUTA_POR_TIPO[notification.tipo] || (notification.envio_id ? '/mis-pedidos' : null);
+    if (destino) navigate(destino);
   };
 
   return (

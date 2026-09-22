@@ -853,8 +853,6 @@ export default function ProductForm() {
   };
 
   // ── Imágenes ──────────────────────────────────────────────
-  const MAX_IMAGEN_BYTES = 5 * 1024 * 1024; // 5MB por imagen
-
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
@@ -862,13 +860,6 @@ export default function ProductForm() {
     const totalActual = imagenes.length + imagenesNuevas.length;
     if (totalActual + files.length > 6) {
       setError(`Solo se permiten hasta 6 imágenes por producto. Tienes ${totalActual} y estás intentando subir ${files.length} más.`);
-      e.target.value = '';
-      return;
-    }
-
-    const archivoPesado = files.find(file => file.size > MAX_IMAGEN_BYTES);
-    if (archivoPesado) {
-      setError(`Cada imagen puede pesar hasta 5MB. "${archivoPesado.name}" pesa ${(archivoPesado.size / 1024 / 1024).toFixed(2)}MB.`);
       e.target.value = '';
       return;
     }
@@ -1843,10 +1834,6 @@ export default function ProductForm() {
                           const file = e.target.files?.[0];
                           e.target.value = '';
                           if (!file) return;
-                          if (file.size > MAX_IMAGEN_BYTES) {
-                            setError('La imagen de la variante supera el máximo permitido de 5MB.');
-                            return;
-                          }
                           setError(null);
                           setImagenesVariante(prev => ({
                             ...prev,
@@ -2041,10 +2028,6 @@ export default function ProductForm() {
                                 const file = e.target.files?.[0];
                                 e.target.value = '';
                                 if (!file) return;
-                                if (file.size > MAX_IMAGEN_BYTES) {
-                                  setError('La imagen de la variante supera el máximo permitido de 5MB.');
-                                  return;
-                                }
                                 setError(null);
                                 setImagenesVariante(prev => ({
                                   ...prev,
@@ -2188,7 +2171,7 @@ export default function ProductForm() {
             </label>
           </div>
           <p className="field-hint">
-            JPG, PNG o WEBP. Máx. 5&nbsp;MB por imagen.
+            JPG, PNG o WEBP. Recomendado: 1200x1200 para galería; si subís otra proporción, se recorta visualmente para mantener prolija la landing. El servidor redimensiona y convierte a WebP automáticamente.
           </p>
         </div>
 

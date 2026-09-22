@@ -3,12 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin, PackageCheck, Network
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
 import ThemeToggle from './public/ThemeToggle';
 import { authTrackingService } from '../services/authTrackingService';
+import { getConteoPorAbastecimiento } from '../services/courierApi';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
 const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary-text hover:bg-primary/10 hover:text-primary-text before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
@@ -53,6 +54,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   );
   const [alertasAccesos, setAlertasAccesos] = useState(0);
   const [alertasPagos, setAlertasPagos] = useState(0);
+  const [pagosAbastecimientoAValidar, setPagosAbastecimientoAValidar] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
@@ -68,6 +70,12 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
       })
       .catch(() => {});
     cargarAlertas();
+    // Cuántos comprobantes de abastecimiento esperan validación. Sale de una
+    // consulta a la base, no de una notificación: aunque se pierda un aviso,
+    // este número siempre refleja lo que falta hacer.
+    getConteoPorAbastecimiento({})
+      .then((conteos) => { if (!cancelado) setPagosAbastecimientoAValidar(Number(conteos?.pago_enviado) || 0); })
+      .catch(() => {});
     window.addEventListener('auth-tracking:updated', cargarAlertas);
     return () => {
       cancelado = true;
@@ -78,12 +86,13 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
 
-  const renderLink = ({ path, label, icon, badge }) => {
+  const renderLink = ({ path, label, icon, badge, state }) => {
     const active = isActive(path);
     return (
       <li key={path}>
         <Link
           to={path}
+          state={state}
           onClick={onClose}
           aria-current={active ? 'page' : undefined}
           className={`${NAV_LINK} ${active ? NAV_LINK_ACTIVE : ''}`}
@@ -181,18 +190,42 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
               )}
             </li>
 
-            {renderLink({ path: '/orders', label: 'Pedidos', icon: <ShoppingCart /> })}
             {renderLink({ path: '/customers', label: 'Clientes', icon: <Users /> })}
-            {renderLink({ path: '/admin/educacion', label: 'Academia LMS', icon: <GraduationCap /> })}
 
-            {renderLink({ path: '/landing', label: 'Landing', icon: <Sparkles /> })}
-            {renderLink({ path: '/page-builder', label: 'Page Builder', icon: <Code2 /> })}
-            {renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store /> })}
-            {renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin /> })}
-            {renderLink({ path: '/configuracion-economica', label: 'Configuración económica', icon: <Settings /> })}
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
             {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
+          </ul>
+
+          {/* Operación: la infraestructura logística de la plataforma.
+              Abastecimiento es cómo entra el stock; Fulfillment es la red con
+              la que Gesicomm entrega, y sus operadores son proveedores
+              logísticos, no couriers de nadie. */}
+          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+            Operación
+          </div>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+            {renderLink({
+              path: '/abastecimiento',
+              label: 'Abastecimiento',
+              icon: <PackageCheck />,
+              badge: pagosAbastecimientoAValidar > 0 ? pagosAbastecimientoAValidar : null,
+            })}
+            {renderLink({ path: '/fulfillment', label: 'Fulfillment', icon: <Network /> })}
+            {renderLink({ path: '/fulfillment/proveedores', label: 'Proveedores logísticos', icon: <Truck /> })}
+          </ul>
+
+          {/* Mi comercio: un administrador puede además vender, y estas son
+              SUS herramientas como comercio, no las de la red. Van aparte
+              porque confundirlas fue lo que llevó a administrar la red desde
+              el panel de couriers. */}
+          <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">
+            Mi comercio
+          </div>
+          <ul className="m-0 flex list-none flex-col gap-1 p-0">
+            {renderLink({ path: '/orders', label: 'Delivery', icon: <Truck />, state: { tab: 'delivery' } })}
+            {renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin /> })}
+            {renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck /> })}
           </ul>
 
           <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">

@@ -65,7 +65,7 @@ export function SummaryBar({ envios = [], couriers = [] }) {
       }
     }
 
-    // Facturación Total: suma de todos los pedidos entregados + pedidos prepagos activos
+    // Monto total pedidos: suma de pedidos entregados + pedidos prepagos activos.
     let facturacion = 0;
     for (const e of envios) {
       const estadoNorm = e.estado || "Pendiente";
@@ -147,7 +147,7 @@ export function SummaryBar({ envios = [], couriers = [] }) {
         gap: '0.85rem',
         width: '100%'
       }}>
-        <MetricCard title="Facturación Total" value={stats.facturacion} />
+        <MetricCard title="Monto total pedidos" value={stats.facturacion} />
         <MetricCard title="Cobrado por Courier" value={stats.cobradoCourier} />
         <MetricCard title="Cobrado Directamente" value={stats.cobradoDirecto} />
         <MetricCard title="Costo Delivery" value={stats.totalCostoDelivery} />

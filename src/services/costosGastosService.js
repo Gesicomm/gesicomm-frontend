@@ -3,6 +3,7 @@ import API from './api';
 export const costosGastosService = {
   buscar: (filtros) => API.post('/costos-gastos/buscar', filtros).then(r => r.data),
   resumen: (params) => API.get('/costos-gastos/resumen', { params }).then(r => r.data),
+  reporteFlujoCaja: (params) => API.get('/costos-gastos/reporte-flujo-caja', { params }).then(r => r.data),
   reporteDesglose: (filtros) => API.post('/costos-gastos/reporte-desglose', filtros).then(r => r.data),
   crear: (data) => API.post('/costos-gastos', data).then(r => r.data),
   detalle: (id) => API.get(`/costos-gastos/${id}`).then(r => r.data),

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search, MessageCircle, Package, Layers, ImageOff, ShoppingCart, Plus, Check, Heart, Eye } from 'lucide-react';
-import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, crearCheckoutLanding, recalcularCarritoLanding, validarCuponLanding } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, registrarEventoLanding, crearCheckoutLanding, recalcularCarritoLanding, validarCuponLanding } from '../../services/landingPublicaService';
 import { getMediaUrl } from '../../services/api';
 import { inicializarPixel, generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA, trackearEventoGA } from '../../lib/googleAnalytics';
@@ -29,6 +29,7 @@ import StoreFooterLegal from './StoreFooterLegal';
 import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
 import FunnelCheckout from '../funnel/FunnelCheckout';
 import { mapPublicDtoToFunnelData } from '../funnel/mapFunnelToTemplateData';
+import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -151,6 +152,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     } catch { /* modo privado / storage lleno — la wishlist sigue funcionando solo en memoria */ }
   }, [wishlist, slug]);
 
+
   function toggleWishlist(e, contentId) {
     e.stopPropagation();
     setWishlist(prev => {
@@ -182,9 +184,6 @@ export default function TiendaPaginaView({ data, slug, productId }) {
   const sugerenciasCarrito = useMemo(() => {
     if (!data) return [];
     
-    // Si la landing tiene configuración específica de ofertas de carrito,
-    // se respeta por estrategia. Marcar un order bump no debe apagar los
-    // upsells del mismo producto: son dos momentos distintos del checkout.
     const configOfertas = data?.content?.ofertas_carrito || [];
     const idsConfigurados = new Set(configOfertas.map(Number));
     
@@ -193,22 +192,10 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     for (const itemCarrito of carrito.values()) {
       const item = catalogoCompleto.find(i => i.content_id === itemCarrito.contentId);
       if (!item || item.tipo !== 'producto' || !item.ofertas?.length) continue;
-      for (const oferta of item.ofertas) {
+      const ofertasAptas = ordenarOfertasCheckout(item.ofertas, idsConfigurados);
+      for (const oferta of ofertasAptas) {
         if (ofertaIdsEnCarrito.has(Number(oferta.id))) continue;
-        
-        // Si el comercio eligió una lista explícita, se respeta. Si no hay
-        // lista, los bumps/upsells activos del producto funcionan por defecto:
-        // configurar la oferta en el producto ya tiene que producir una
-        // experiencia visible en la tienda publicada.
-        const hayConfigParaEstrategia = item.ofertas.some(o =>
-          o.estrategia === oferta.estrategia && idsConfigurados.has(Number(o.id))
-        );
-        if (hayConfigParaEstrategia && !idsConfigurados.has(Number(oferta.id))) continue;
-
-        const tieneComplemento = Boolean(oferta.producto_complementario || oferta.productos_incluidos?.length);
-        if (!tieneComplemento) continue;
-
-        if (oferta.estrategia === 'order_bump' || oferta.estrategia === 'upsell') {
+        if (ofertaCheckoutPublicable(oferta)) {
           sugerencias.push({ item, oferta });
         }
       }
@@ -665,6 +652,20 @@ export default function TiendaPaginaView({ data, slug, productId }) {
   }
 
   function handleAgregarRapido(e, item) {
+    if (e && !e.stopPropagation && e.item) {
+      agregarAlCarrito({
+        item: e.item,
+        variante: e.variante || null,
+        oferta: e.oferta || null,
+        cantidad: e.cantidad || 1,
+        precio: e.precio ?? e.item.precio,
+      });
+      if (e.abrirCarrito) setCarritoAbierto(true);
+      setAgregadoRapido(e.item.content_id);
+      setTimeout(() => setAgregadoRapido(null), 1400);
+      return;
+    }
+
     e.stopPropagation();
     const tieneOfertasNormales = (item.ofertas || []).some(o => o.estrategia === 'normal');
     if (item.variantes?.length > 0 || tieneOfertasNormales) {
@@ -713,7 +714,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
 
   const isProductView = Boolean(productId);
   const itemSeleccionado = isProductView
-    ? catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId))
+    ? (data?.producto || catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId)))
     : null;
 
   // Landing de uno de los 3 templates rígidos (Fitness/Beauty/Tech/Básico)
@@ -766,7 +767,13 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     });
 
     if (isProductView) {
-      const itemSeleccionado = itemAbierto || catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId));
+      // data ya incluye .producto/.secciones_producto/.relacionados
+      // (los resolvio obtenerProductoLanding en LandingPublica): no hace
+      // falta un fetch propio acá.
+      const dataProductoPublico = data;
+      const itemSeleccionado = data?.producto
+        || itemAbierto
+        || catalogoCompleto.find(i => String(i.content_id) === String(productId) || String(i.id) === String(productId));
       if (!itemSeleccionado) {
         return <div className="lp-status-page"><h1>El producto no existe o ya no está disponible</h1></div>;
       }
@@ -778,8 +785,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       // dto crudo y la página de producto quedaba con los colores por
       // defecto de landingPublica.css (verde/negro), sin relación con el
       // template real de la landing.
-      const datosProductoPublico = mapPublicDtoToTemplateData(data);
-      const temaResuelto = resolverTemaPorSlug(datosProductoPublico.tema, data?.template?.slug);
+      const datosProductoPublico = mapPublicDtoToTemplateData(dataProductoPublico);
+      const temaResuelto = resolverTemaPorSlug(datosProductoPublico.tema, dataProductoPublico?.template?.slug);
 
       // Fitness estrena la ficha de producto rediseñada (12 secciones
       // editables). Es el MISMO componente que dibuja el preview del
@@ -811,9 +818,9 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             <StoreHeader {...headerProps} />
             <ComboProductPagePublica
               item={itemSeleccionado}
-              landingConfig={data.content || {}}
+              landingConfig={dataProductoPublico.content || {}}
               tema={temaResuelto}
-              templateSlug={data?.template?.slug}
+              templateSlug={dataProductoPublico?.template?.slug}
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
               deliveryCiudades={data?.delivery_ciudades || []}
@@ -838,12 +845,16 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             <StoreHeader {...headerProps} />
             <FitnessProductPagePublica
               item={itemSeleccionado}
-              landingConfig={data.content || {}}
+              landingConfig={dataProductoPublico.content || {}}
               tema={temaResuelto}
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
-              relacionados={data?.relacionados}
+              relacionados={dataProductoPublico?.relacionados}
               deliveryCiudades={data?.delivery_ciudades || []}
+              onAgregar={(datos) => {
+                agregarAlCarrito(datos);
+                setCarritoAbierto(true);
+              }}
               onComprarAhora={comprarAhora}
               onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
               onClickRelacionado={agregarRelacionadoAlCarrito}
@@ -859,11 +870,11 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             <StoreHeader {...headerProps} />
             <TechProductPagePublica
               item={itemSeleccionado}
-              landingConfig={data.content || {}}
+              landingConfig={dataProductoPublico.content || {}}
               tema={temaResuelto}
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
-              relacionados={data?.relacionados}
+              relacionados={dataProductoPublico?.relacionados}
               deliveryCiudades={data?.delivery_ciudades || []}
               onAgregar={(datos) => {
                 // Agregar al carrito es SOLO agregar: nunca abre el
@@ -887,11 +898,11 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             <StoreHeader {...headerProps} />
             <BeautyProductPagePublica
               item={itemSeleccionado}
-              landingConfig={data.content || {}}
+              landingConfig={dataProductoPublico.content || {}}
               tema={temaResuelto}
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
-              relacionados={data?.relacionados}
+              relacionados={dataProductoPublico?.relacionados}
               deliveryCiudades={data?.delivery_ciudades || []}
               onAgregar={(datos) => {
                 // Agregar al carrito es SOLO agregar: nunca abre el
@@ -915,11 +926,11 @@ export default function TiendaPaginaView({ data, slug, productId }) {
             <StoreHeader {...headerProps} />
             <BasicoProductPagePublica
               item={itemSeleccionado}
-              landingConfig={data.content || {}}
+              landingConfig={dataProductoPublico.content || {}}
               tema={temaResuelto}
               contacto={datosProductoPublico.contacto}
               nombreComercio={datosProductoPublico.nombreComercio}
-              relacionados={data?.relacionados}
+              relacionados={dataProductoPublico?.relacionados}
               deliveryCiudades={data?.delivery_ciudades || []}
               onAgregar={(datos) => {
                 // Agregar al carrito es SOLO agregar: nunca abre el
@@ -941,16 +952,19 @@ export default function TiendaPaginaView({ data, slug, productId }) {
           <StoreHeader {...headerProps} />
           <ProductPagePublica
             item={itemSeleccionado}
-            onAgregar={agregarAlCarrito}
+            onAgregar={(datos) => {
+              agregarAlCarrito(datos);
+              setCarritoAbierto(true);
+            }}
             onComprarAhora={comprarAhora}
             contacto={datosProductoPublico.contacto}
             tema={temaResuelto}
-            landingConfig={data.content || {}}
+            landingConfig={dataProductoPublico.content || {}}
             nombreComercio={datosProductoPublico.nombreComercio}
             deliveryCiudades={data?.delivery_ciudades || []}
             onContactar={contactar}
             slug={slug}
-            relacionados={data?.relacionados}
+            relacionados={dataProductoPublico?.relacionados}
             onClickRelacionado={agregarRelacionadoAlCarrito}
           />
           <CartDrawer {...cartDrawerProps} />

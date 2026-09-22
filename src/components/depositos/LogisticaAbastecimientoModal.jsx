@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { X, Package, Truck, CheckCircle2, AlertCircle, Check } from 'lucide-react';
-import { actualizarLogisticaAbastecimiento } from '../../services/courierApi';
+import { X, Package, Truck, CheckCircle2, AlertCircle, Check, Loader } from 'lucide-react';
+import { actualizarLogisticaAbastecimiento, cotizarLogisticaAbastecimiento } from '../../services/courierApi';
 import DepositoSelector from './DepositoSelector';
 import { depositoService } from '../../services/deposito.service';
+
+function formatGs(n) {
+  return Number(n || 0).toLocaleString('es-PY');
+}
 
 export default function LogisticaAbastecimientoModal({ envio, open, onClose, onPagar }) {
   const [tipoLogistica, setTipoLogistica] = useState(null); // 'GESICOMM' | 'PROPIA'
   const [depositoSeleccionado, setDepositoSeleccionado] = useState(null);
+  
+  const [cotizacion, setCotizacion] = useState(null);
+  const [cotizando, setCotizando] = useState(false);
+
   const [guardandoLogistica, setGuardandoLogistica] = useState(false);
   const [logisticaConfirmada, setLogisticaConfirmada] = useState(false);
   const [errorBackend, setErrorBackend] = useState(null);
@@ -16,12 +24,10 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
 
   useEffect(() => {
     if (open && envio) {
-      // Cargar estado inicial si ya existe logística guardada
       if (envio.tipo_logistica_abastecimiento) {
         setTipoLogistica(envio.tipo_logistica_abastecimiento);
         setLogisticaConfirmada(true);
         if (envio.tipo_logistica_abastecimiento === 'PROPIA' && envio.deposito_id) {
-          // Obtener datos del depósito si es propia
           depositoService.obtenerDeposito(envio.deposito_id)
             .then(dep => setDepositoSeleccionado(dep))
             .catch(err => console.error("No se pudo cargar el depósito inicial", err))
@@ -33,37 +39,74 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
         setInitialLoading(false);
       }
     } else {
-      // Resetear estado al cerrar
       setTipoLogistica(null);
       setDepositoSeleccionado(null);
       setLogisticaConfirmada(false);
       setErrorBackend(null);
       setInitialLoading(true);
+      setCotizacion(null);
     }
   }, [open, envio]);
+
+  useEffect(() => {
+    if (!open || !envio || logisticaConfirmada) return;
+    
+    // Cotizar
+    if (tipoLogistica === 'PROPIA' && depositoSeleccionado) {
+      setCotizando(true);
+      setErrorBackend(null);
+      setCotizacion(null);
+      cotizarLogisticaAbastecimiento(envio.id, { tipoLogistica: 'PROPIA', depositoId: depositoSeleccionado.id })
+        .then(res => {
+          if (!res.cubierto) {
+            setErrorBackend(res.mensaje || 'Sin cobertura');
+            setCotizacion({ cubierto: false });
+          } else {
+            setCotizacion(res);
+          }
+        })
+        .catch(() => setErrorBackend('No se pudo cotizar el traslado a este depósito.'))
+        .finally(() => setCotizando(false));
+    } else if (tipoLogistica === 'GESICOMM') {
+      setCotizacion({ cubierto: true, costo: 0, proveedor: 'Red Gesicomm', tiempo: null });
+      setErrorBackend(null);
+    } else {
+      setCotizacion(null);
+    }
+  }, [open, envio, tipoLogistica, depositoSeleccionado, logisticaConfirmada]);
 
   if (!open || !envio) return null;
 
   const handleGuardarLogistica = async () => {
     setErrorBackend(null);
+    
+    if (cotizacion && !cotizacion.cubierto) {
+      setErrorBackend('No hay cobertura para el destino seleccionado.');
+      return;
+    }
+
     setGuardandoLogistica(true);
     
     const payload = {
-      tipoLogistica
+      tipoLogistica,
+      tipo_logistica: tipoLogistica,
+      tipo_logistica_abastecimiento: tipoLogistica,
+      costo_logistica_abastecimiento: cotizacion?.costo || 0 // Save shipping cost for the merchant to pay!
     };
     
     if (tipoLogistica === 'PROPIA') {
       if (!depositoSeleccionado) {
         setGuardandoLogistica(false);
-        return; // Validación extra
+        return;
       }
       payload.depositoId = depositoSeleccionado.id;
+      payload.deposito_id = depositoSeleccionado.id;
+      payload.abastecimiento_deposito_id = depositoSeleccionado.id;
     }
 
     try {
       await actualizarLogisticaAbastecimiento(envio.id, payload);
       setLogisticaConfirmada(true);
-      // Tras confirmar la logística con éxito, pasamos al flujo de pago real
       onPagar();
     } catch (err) {
       console.error('Error actualizando logística:', err);
@@ -163,7 +206,9 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
                             <p className="m-0 text-[13px] text-fg-subtle mt-0.5">{depositoSeleccionado.direccion}</p>
                           </>
                         ) : (
-                          <span className="text-[13px] text-fg-muted">Depósito guardado (ID {envio.deposito_id})</span>
+                          <span className="text-[13px] text-fg-muted">
+                            {envio.deposito_id ? `Cargando detalles (ID ${envio.deposito_id})...` : 'Depósito propio (Destino guardado)'}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -249,6 +294,31 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
                       setErrorBackend(null);
                     }}
                   />
+                  
+                  {cotizando && (
+                    <div className="mt-4 flex items-center gap-2 text-sm text-fg-muted bg-surface-2 p-3 rounded-md">
+                      <Loader size={16} className="animate-spin text-primary" />
+                      Calculando costo de envío...
+                    </div>
+                  )}
+
+                  {!cotizando && cotizacion && cotizacion.cubierto && (
+                    <div className="mt-4 bg-surface-50 border border-border p-4 rounded-md">
+                      <p className="m-0 text-sm font-semibold text-fg mb-3">Resumen del traslado</p>
+                      <div className="flex justify-between items-center text-[13px] text-fg-muted mb-2">
+                        <span>Proveedor</span>
+                        <span className="font-medium text-fg">{cotizacion.proveedor}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[13px] text-fg-muted mb-2">
+                        <span>Tiempo estimado</span>
+                        <span className="font-medium text-fg">{cotizacion.tiempo}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm font-medium mt-3 pt-3 border-t border-border">
+                        <span className="text-fg-muted">Costo de traslado</span>
+                        <span className="text-primary font-bold">Gs. {formatGs(cotizacion.costo)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -269,7 +339,7 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
           {esPendientePago && !logisticaConfirmada && (
             <button
               type="button"
-              disabled={!isFormValid || guardandoLogistica}
+              disabled={!isFormValid || guardandoLogistica || cotizando || (cotizacion && !cotizacion.cubierto)}
               onClick={handleGuardarLogistica}
               className="flex items-center gap-2 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
             >

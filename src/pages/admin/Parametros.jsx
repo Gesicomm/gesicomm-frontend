@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Info, Mail,
+  Save, Loader, ShieldCheck, AlertCircle, CheckCircle2, KeyRound, Phone, Info, Mail, Landmark,
 } from 'lucide-react';
 import { parametrosService } from '../../services/parametrosService';
 import './parametros.css';
@@ -51,6 +51,29 @@ const GRUPOS = [
         ayuda: 'A este correo llega el aviso cuando un pedido confirmado requiere pago o acreditación de abastecimiento.',
         tipo: 'email',
       },
+    ],
+  },
+  {
+    id: 'abastecimiento_transferencia',
+    titulo: 'Cuenta para transferencias de abastecimiento',
+    icono: Landmark,
+    desc: 'Datos bancarios que ve la tienda al pagar el abastecimiento por transferencia. Una sola cuenta, la misma para todos los pedidos.',
+    campos: [
+      { clave: 'ABASTECIMIENTO_BANCO_NOMBRE', label: 'Banco', placeholder: 'Banco Itaú' },
+      { clave: 'ABASTECIMIENTO_BANCO_TITULAR', label: 'Titular', placeholder: 'Gesicomm S.A.' },
+      { clave: 'ABASTECIMIENTO_BANCO_CI_RUC', label: 'CI / RUC', placeholder: '80012345-6' },
+      { clave: 'ABASTECIMIENTO_BANCO_NUMERO_CUENTA', label: 'Número de cuenta', placeholder: '000-1234567' },
+      {
+        clave: 'ABASTECIMIENTO_ALIAS_TIPO',
+        label: 'Tipo de alias',
+        opciones: [
+          { value: '', label: 'Sin alias' },
+          { value: 'CEDULA', label: 'Cédula' },
+          { value: 'TELEFONO', label: 'Teléfono' },
+          { value: 'EMAIL', label: 'Correo electrónico' },
+        ],
+      },
+      { clave: 'ABASTECIMIENTO_ALIAS_VALOR', label: 'Número o correo del alias', placeholder: 'Según el tipo elegido arriba' },
     ],
   },
 ];
@@ -186,14 +209,25 @@ export default function Parametros() {
                         )}
                       </span>
 
-                      <input
-                        type={campo.secreto ? 'password' : (campo.tipo || 'text')}
-                        value={valores[campo.clave] || ''}
-                        onChange={e => cambiar(campo.clave, e.target.value)}
-                        placeholder={campo.placeholder}
-                        autoComplete={campo.secreto ? 'new-password' : 'off'}
-                        spellCheck={false}
-                      />
+                      {campo.opciones ? (
+                        <select
+                          value={valores[campo.clave] ?? ''}
+                          onChange={e => cambiar(campo.clave, e.target.value)}
+                        >
+                          {campo.opciones.map(op => (
+                            <option key={op.value} value={op.value}>{op.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={campo.secreto ? 'password' : (campo.tipo || 'text')}
+                          value={valores[campo.clave] || ''}
+                          onChange={e => cambiar(campo.clave, e.target.value)}
+                          placeholder={campo.placeholder}
+                          autoComplete={campo.secreto ? 'new-password' : 'off'}
+                          spellCheck={false}
+                        />
+                      )}
 
                       {campo.ayuda && <span className="pa-ayuda">{campo.ayuda}</span>}
                       {campo.secreto && (

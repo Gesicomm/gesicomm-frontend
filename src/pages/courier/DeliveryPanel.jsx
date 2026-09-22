@@ -84,6 +84,7 @@ export function DeliveryPanel({
   zonas = [],
   couriers = [],
   enviosCountByCourier = {},
+  esAdmin = false,
   onSaveZonas,
   onCreateCourier,
   onUpdateCourier,
@@ -209,9 +210,12 @@ export function DeliveryPanel({
     const courierId = String(courier.id || guardado?.id || "");
     if (!courierId) throw new Error("El courier no devolvió un id");
 
-    const resto = filas.filter(f => f.courier_id !== courierId);
+    // Se manda SOLO lo de este courier, declarando el alcance. Antes se
+    // reenviaba el set completo (`resto` + propias) porque el backend borraba
+    // todo: alcanzaba con que el estado local estuviera desactualizado para
+    // pisar las tarifas de otro courier.
     const propias = reglas.map(r => normalizarRegla({ ...r, courier_id: courierId }));
-    await onSaveZonas(paraApi([...resto, ...propias]));
+    await onSaveZonas(paraApi(propias), [Number(courierId)]);
     setWizard(null);
   }
 
@@ -219,8 +223,8 @@ export function DeliveryPanel({
     setGuardando(true);
     try {
       await onDeleteCourier(courier.id);
-      const resto = filas.filter(f => f.courier_id !== String(courier.id));
-      await onSaveZonas(paraApi(resto));
+      // Alcance = ese courier y sin reglas: borra las suyas y nada más.
+      await onSaveZonas([], [Number(courier.id)]);
     } finally {
       setGuardando(false);
       setCourierABorrar(null);
@@ -443,6 +447,7 @@ export function DeliveryPanel({
         courier={wizard?.courier}
         reglas={wizard?.reglas || []}
         pasoInicial={wizard?.paso || "courier"}
+        esAdmin={esAdmin}
         onClose={() => setWizard(null)}
         onGuardar={guardarDesdeWizard}
       />

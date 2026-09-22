@@ -95,7 +95,7 @@ const LUM_TINTA_OSCURA = 0.00545; // luminanciaRelativa(TINTA_OSCURA), constante
  * contraste. Acá se elige entre tinta clara y oscura por razón de contraste
  * WCAG real, así que funciona con cualquier color que elija el comercio.
  */
-function tintaSobre(color) {
+export function tintaSobre(color) {
   const l = luminanciaRelativa(color);
   if (l === null) return TINTA_OSCURA; // formato exótico: se mantiene el comportamiento previo
   const contrasteClaro = 1.05 / (l + 0.05);

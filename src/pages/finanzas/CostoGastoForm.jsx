@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, Package, Receipt, ChevronDown, ChevronRight, Upload, FileText, Search, CheckCircle2 } from 'lucide-react';
+import { X, Package, Receipt, ChevronDown, ChevronRight, Upload, FileText, Search, CheckCircle2, CircleDollarSign } from 'lucide-react';
 import CurrencyInput from '../../components/CurrencyInput';
 import { costosGastosService } from '../../services/costosGastosService';
 import { getMetodosPago } from '../../services/courierApi';
@@ -15,6 +15,33 @@ const FRECUENCIAS = [
   { id: 'semanal', label: 'Semanal' }, { id: 'quincenal', label: 'Quincenal' },
   { id: 'mensual', label: 'Mensual' }, { id: 'trimestral', label: 'Trimestral' },
   { id: 'semestral', label: 'Semestral' }, { id: 'anual', label: 'Anual' },
+];
+
+const TIPOS = [
+  {
+    id: 'ingreso',
+    label: 'Ingreso',
+    descripcion: 'Dinero que entró al negocio fuera de las ventas de pedidos.',
+    icon: CircleDollarSign,
+    activo: 'border-success bg-success/10 text-success',
+    hover: 'hover:border-success hover:bg-success/5',
+  },
+  {
+    id: 'costo',
+    label: 'Costo',
+    descripcion: 'Asociado directamente a la operación, producción o venta.',
+    icon: Package,
+    activo: 'border-info bg-info/10 text-info',
+    hover: 'hover:border-info hover:bg-info/5',
+  },
+  {
+    id: 'gasto',
+    label: 'Gasto',
+    descripcion: 'Necesario para mantener funcionando el negocio.',
+    icon: Receipt,
+    activo: 'border-primary bg-primary/10 text-primary-text',
+    hover: 'hover:border-primary hover:bg-primary/5',
+  },
 ];
 
 function hoyISO() { return new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }); }
@@ -93,6 +120,8 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
     return '';
   };
 
+  const esIngreso = datos.tipo === 'ingreso';
+
   const construirPayload = () => ({
     tipo: datos.tipo,
     concepto: datos.concepto.trim(),
@@ -104,10 +133,10 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
     descripcion: datos.descripcion || null,
     estado: datos.estado,
     fecha_pago: datos.fecha_pago || null,
-    clasificacion: datos.clasificacion || null,
+    clasificacion: esIngreso ? null : (datos.clasificacion || null),
     metodo_pago_id: datos.metodo_pago_id || null,
-    proveedor_id: datos.proveedor_id || null,
-    producto_id: datos.producto_id || null,
+    proveedor_id: esIngreso ? null : (datos.proveedor_id || null),
+    producto_id: esIngreso ? null : (datos.producto_id || null),
   });
 
   const subirComprobanteSiCorresponde = async (id) => {
@@ -160,7 +189,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
       <div className="flex h-full w-full max-w-lg flex-col bg-surface shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
           <h3 className="m-0 text-base font-semibold text-fg">
-            {esEdicion ? 'Editar registro' : 'Registrar costo o gasto'}
+            {esEdicion ? 'Editar movimiento' : 'Registrar movimiento'}
           </h3>
           <button type="button" onClick={onClose} className="rounded-md p-1.5 text-fg-muted hover:bg-surface-2 hover:text-fg"><X size={18} /></button>
         </div>
@@ -168,19 +197,17 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
         {paso === 'seleccion' && (
           <div className="flex flex-1 flex-col justify-center gap-4 p-6">
             <p className="text-center text-sm font-medium text-fg-muted">¿Qué quieres registrar?</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button type="button" onClick={() => elegirTipo('costo')}
-                className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface-2 p-5 text-left transition-colors hover:border-info hover:bg-info/5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-info/10 text-info"><Package size={18} /></div>
-                <span className="text-base font-bold text-fg">Costo</span>
-                <span className="text-xs text-fg-muted">Asociado directamente a la operación, producción o venta.</span>
-              </button>
-              <button type="button" onClick={() => elegirTipo('gasto')}
-                className="flex flex-col items-start gap-2 rounded-xl border border-border bg-surface-2 p-5 text-left transition-colors hover:border-primary hover:bg-primary/5">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary-text"><Receipt size={18} /></div>
-                <span className="text-base font-bold text-fg">Gasto</span>
-                <span className="text-xs text-fg-muted">Necesario para mantener funcionando el negocio.</span>
-              </button>
+            <div className="grid grid-cols-1 gap-3">
+              {TIPOS.map(({ id, label, descripcion, icon: Icon, hover }) => (
+                <button key={id} type="button" onClick={() => elegirTipo(id)}
+                  className={`flex items-start gap-3 rounded-xl border border-border bg-surface-2 p-4 text-left transition-colors ${hover}`}>
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${id === 'ingreso' ? 'bg-success/10 text-success' : id === 'costo' ? 'bg-info/10 text-info' : 'bg-primary/10 text-primary-text'}`}><Icon size={18} /></div>
+                  <span>
+                    <span className="block text-base font-bold text-fg">{label}</span>
+                    <span className="block text-xs text-fg-muted">{descripcion}</span>
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         )}
@@ -206,10 +233,10 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
             <div className="flex-1 overflow-y-auto p-4">
               {!esEdicion && (
                 <div className="mb-4 flex gap-2">
-                  {['costo', 'gasto'].map(t => (
-                    <button key={t} type="button" onClick={() => setDatos(d => ({ ...d, tipo: t }))}
-                      className={`flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors ${datos.tipo === t ? (t === 'costo' ? 'border-info bg-info/10 text-info' : 'border-primary bg-primary/10 text-primary-text') : 'border-border text-fg-muted hover:bg-surface-2'}`}>
-                      {t === 'costo' ? 'Costo' : 'Gasto'}
+                  {TIPOS.map(t => (
+                    <button key={t.id} type="button" onClick={() => setDatos(d => ({ ...d, tipo: t.id }))}
+                      className={`flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors ${datos.tipo === t.id ? t.activo : 'border-border text-fg-muted hover:bg-surface-2'}`}>
+                      {t.label}
                     </button>
                   ))}
                 </div>
@@ -218,7 +245,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
               <div className="flex flex-col gap-3">
                 <Campo label="Concepto">
                   <input type="text" value={datos.concepto} onChange={set('concepto')} autoFocus
-                    placeholder="Ej: Factura de electricidad"
+                    placeholder={esIngreso ? 'Ej: Aporte de socio' : 'Ej: Factura de electricidad'}
                     className="h-10 w-full rounded-md border border-border bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-subtle" />
                 </Campo>
 
@@ -275,25 +302,27 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
                     <Campo label="Estado">
                       <select value={datos.estado} onChange={set('estado')} className="h-10 w-full rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
                         <option value="pendiente">Pendiente</option>
-                        <option value="pagado">Pagado</option>
+                        <option value="pagado">{esIngreso ? 'Cobrado' : 'Pagado'}</option>
                         <option value="cancelado">Cancelado</option>
                       </select>
                     </Campo>
-                    <Campo label="Fecha de pago">
+                    <Campo label={esIngreso ? 'Fecha de cobro' : 'Fecha de pago'}>
                       <input type="date" value={datos.fecha_pago} onChange={set('fecha_pago')} className="h-10 w-full rounded-md border border-border bg-surface-2 px-2 text-sm text-fg" />
                     </Campo>
                   </div>
 
-                  <Campo label="Clasificación">
-                    <div className="flex gap-2">
-                      {[{ id: '', label: 'Sin definir' }, { id: 'fijo', label: 'Fijo' }, { id: 'variable', label: 'Variable' }].map(o => (
-                        <button key={o.id} type="button" onClick={() => setDatos(d => ({ ...d, clasificacion: o.id }))}
-                          className={`flex-1 rounded-md border py-1.5 text-xs font-medium ${datos.clasificacion === o.id ? 'border-primary bg-primary/10 text-primary-text' : 'border-border text-fg-muted hover:bg-surface-2'}`}>
-                          {o.label}
-                        </button>
-                      ))}
-                    </div>
-                  </Campo>
+                  {!esIngreso && (
+                    <Campo label="Clasificación">
+                      <div className="flex gap-2">
+                        {[{ id: '', label: 'Sin definir' }, { id: 'fijo', label: 'Fijo' }, { id: 'variable', label: 'Variable' }].map(o => (
+                          <button key={o.id} type="button" onClick={() => setDatos(d => ({ ...d, clasificacion: o.id }))}
+                            className={`flex-1 rounded-md border py-1.5 text-xs font-medium ${datos.clasificacion === o.id ? 'border-primary bg-primary/10 text-primary-text' : 'border-border text-fg-muted hover:bg-surface-2'}`}>
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    </Campo>
+                  )}
 
                   <Campo label="Método de pago">
                     <select value={datos.metodo_pago_id} onChange={set('metodo_pago_id')} className="h-10 w-full rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
@@ -302,51 +331,55 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
                     </select>
                   </Campo>
 
-                  <Campo label="Proveedor">
-                    <div className="flex gap-2">
-                      <select value={datos.proveedor_id} onChange={set('proveedor_id')} className="h-10 w-full flex-1 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
-                        <option value="">Sin especificar</option>
-                        {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                      </select>
-                    </div>
-                    <div className="mt-1.5 flex gap-2">
-                      <input type="text" value={nuevoProveedor} onChange={e => setNuevoProveedor(e.target.value)}
-                        placeholder="Agregar proveedor nuevo…"
-                        className="h-8 flex-1 rounded-md border border-border bg-surface px-2 text-xs text-fg placeholder:text-fg-subtle" />
-                      <button type="button" onClick={agregarProveedorRapido} className="rounded-md border border-border px-2 text-xs font-medium text-fg-muted hover:bg-surface-2">Agregar</button>
-                    </div>
-                  </Campo>
+                  {!esIngreso && (
+                    <Campo label="Proveedor">
+                      <div className="flex gap-2">
+                        <select value={datos.proveedor_id} onChange={set('proveedor_id')} className="h-10 w-full flex-1 rounded-md border border-border bg-surface-2 px-2 text-sm text-fg">
+                          <option value="">Sin especificar</option>
+                          {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                        </select>
+                      </div>
+                      <div className="mt-1.5 flex gap-2">
+                        <input type="text" value={nuevoProveedor} onChange={e => setNuevoProveedor(e.target.value)}
+                          placeholder="Agregar proveedor nuevo…"
+                          className="h-8 flex-1 rounded-md border border-border bg-surface px-2 text-xs text-fg placeholder:text-fg-subtle" />
+                        <button type="button" onClick={agregarProveedorRapido} className="rounded-md border border-border px-2 text-xs font-medium text-fg-muted hover:bg-surface-2">Agregar</button>
+                      </div>
+                    </Campo>
+                  )}
 
-                  <Campo label="Producto asociado">
-                    {datos.producto_id ? (
-                      <div className="flex items-center justify-between rounded-md border border-border bg-surface-2 px-3 py-2 text-sm">
-                        <span className="text-fg">{datos.producto_nombre}</span>
-                        <button type="button" onClick={() => setDatos(d => ({ ...d, producto_id: '', producto_nombre: '' }))} className="text-fg-subtle hover:text-danger"><X size={14} /></button>
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <div className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3">
-                          <Search size={14} className="text-fg-subtle" />
-                          <input type="text" value={buscarProducto}
-                            onChange={e => { setBuscarProducto(e.target.value); setMostrarBusquedaProducto(true); }}
-                            onFocus={() => setMostrarBusquedaProducto(true)}
-                            placeholder="Buscar producto…"
-                            className="h-10 w-full bg-transparent text-sm text-fg placeholder:text-fg-subtle focus:outline-none" />
+                  {!esIngreso && (
+                    <Campo label="Producto asociado">
+                      {datos.producto_id ? (
+                        <div className="flex items-center justify-between rounded-md border border-border bg-surface-2 px-3 py-2 text-sm">
+                          <span className="text-fg">{datos.producto_nombre}</span>
+                          <button type="button" onClick={() => setDatos(d => ({ ...d, producto_id: '', producto_nombre: '' }))} className="text-fg-subtle hover:text-danger"><X size={14} /></button>
                         </div>
-                        {mostrarBusquedaProducto && resultadosProducto.length > 0 && (
-                          <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-surface shadow-xl">
-                            {resultadosProducto.map(p => (
-                              <button key={p.id} type="button"
-                                onClick={() => { setDatos(d => ({ ...d, producto_id: p.id, producto_nombre: p.nombre })); setMostrarBusquedaProducto(false); setBuscarProducto(''); }}
-                                className="block w-full px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
-                                {p.nombre}
-                              </button>
-                            ))}
+                      ) : (
+                        <div className="relative">
+                          <div className="flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3">
+                            <Search size={14} className="text-fg-subtle" />
+                            <input type="text" value={buscarProducto}
+                              onChange={e => { setBuscarProducto(e.target.value); setMostrarBusquedaProducto(true); }}
+                              onFocus={() => setMostrarBusquedaProducto(true)}
+                              placeholder="Buscar producto…"
+                              className="h-10 w-full bg-transparent text-sm text-fg placeholder:text-fg-subtle focus:outline-none" />
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </Campo>
+                          {mostrarBusquedaProducto && resultadosProducto.length > 0 && (
+                            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-surface shadow-xl">
+                              {resultadosProducto.map(p => (
+                                <button key={p.id} type="button"
+                                  onClick={() => { setDatos(d => ({ ...d, producto_id: p.id, producto_nombre: p.nombre })); setMostrarBusquedaProducto(false); setBuscarProducto(''); }}
+                                  className="block w-full px-3 py-2 text-left text-sm text-fg hover:bg-surface-2">
+                                  {p.nombre}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Campo>
+                  )}
 
                   <Campo label="Comprobante">
                     <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border bg-surface-2 px-3 py-3 text-sm text-fg-muted hover:border-primary hover:text-primary-text">

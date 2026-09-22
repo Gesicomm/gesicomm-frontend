@@ -1,7 +1,6 @@
 import React, { useRef } from 'react';
 import { Image as ImageIcon, X, Loader, Link as LinkIcon, Sparkles } from 'lucide-react';
 
-const MAX_IMAGEN_BYTES = 1 * 1024 * 1024;
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 const LABEL = 'block text-xs font-semibold text-fg/60 mb-1.5';
 
@@ -24,10 +23,6 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > MAX_IMAGEN_BYTES) {
-      onSubirHero(null, 'La imagen supera el máximo permitido de 1MB.');
-      return;
-    }
     onSubirHero(file);
   }
 
@@ -110,6 +105,9 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
           </div>
           <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
         </div>
+        <p className="text-[11px] text-fg/40 mt-2">
+          Recomendado: 1600x900 o mayor. Se optimiza a WebP al subir y el diseño recorta el sobrante para mantener el hero prolijo.
+        </p>
         {heroUrl && (
           <div className="mt-4 flex flex-col gap-1.5">
             <div className="flex justify-between items-center">

@@ -99,48 +99,9 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const [precioResuelto, setPrecioResuelto] = useState(null);
   const timeoutPrecioRef = useRef(null);
 
-  useEffect(() => {
-    let cancel = false;
-    async function actualizarPrecios() {
-      if (item.id === 'preview' || !page.slug) return;
-      try {
-        // Dos líneas independientes cuando el bump está aceptado — nunca se
-        // funden en una sola: el ancla y el bump son compras separadas (ver
-        // TiendaPaginaView.jsx#comprarAhora), cada una con su propio precio.
-        const itemsAResolver = [{
-          content_id: item.content_id || item.id,
-          variante_id: variante?.id ?? null,
-          oferta_id: ofertaComboId || undefined,
-          cantidad,
-        }];
-        if (bumpAceptado && orderBumpOferta) {
-          itemsAResolver.push({
-            content_id: item.content_id || item.id,
-            oferta_id: orderBumpOferta.id,
-            componente_variante_id: componenteVarianteBump?.id ?? undefined,
-            cantidad: 1,
-          });
-        }
-        const respuesta = await recalcularCarritoLanding(page.slug, itemsAResolver);
-        if (!cancel && respuesta?.items?.length) {
-          setPrecioResuelto(respuesta.items[0]);
-          setPrecioResueltoBump(bumpAceptado ? (respuesta.items[1] || null) : null);
-        }
-      } catch (e) {
-        if (!cancel) { setPrecioResuelto(null); setPrecioResueltoBump(null); }
-      }
-    }
-
-    if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current);
-    timeoutPrecioRef.current = setTimeout(actualizarPrecios, 250);
-    return () => { cancel = true; if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current); };
-  }, [item.content_id, item.id, variante?.id, ofertaComboId, cantidad, page.slug, bumpAceptado, orderBumpOferta?.id, componenteVarianteBump?.id]);
-
-  // Checkout de una sola pantalla — "Comprar ahora" abre este formulario
-  // inline en vez de mandar a un carrito multi-producto. "Agregar al
-  // carrito" sigue existiendo aparte para quien quiera seguir comprando
-  // (los order bumps/upsells del carrito necesitan más de un ítem, ver
-  // Oferta.estrategia — por eso el carrito no desaparece).
+  // El formulario inline viejo queda fuera del flujo público: "Comprar ahora"
+  // ahora agrega el producto y abre el CartDrawer común, que es donde viven
+  // order bumps, upsells, cupón, delivery y pedido real para todos los templates.
   const [comprando, setComprando] = useState(false);
   const [formCheckout, setFormCheckout] = useState(FORM_VACIO);
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
@@ -149,16 +110,13 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const [compraConfirmada, setCompraConfirmada] = useState(null);
 
   // "Visualizar checkout" del armador (ProductDetailInspector.jsx) — fuerza
-  // a mostrar el formulario inline sin tener que clickear "Comprar ahora",
-  // que en la preview del editor no es interactivo (pointer-events-none
-  // del SectionWrapper de LandingPreview.jsx). Es solo visual: los campos
-  // igual no son clickeables ahí, sirve para revisar que las tarjetas de
-  // precio/order bump quedaron bien configuradas.
+  // a abrir el checkout común, sin revivir el formulario inline anterior.
   useEffect(() => {
     if (previewCheckoutAbierto !== undefined) {
-      setComprando(!!previewCheckoutAbierto);
+      setComprando(false);
+      if (previewCheckoutAbierto) actions.abrirCarrito?.();
     }
-  }, [previewCheckoutAbierto]);
+  }, [previewCheckoutAbierto, actions.abrirCarrito]);
 
   // Pack auto-aplicado por cantidad (solo si no hay un combo elegido a
   // mano — mismo orden de prioridad que PricingService en el backend).
@@ -231,6 +189,42 @@ export const ProductDetailBlock = ({ content, settings }) => {
   const precioBumpLocal = orderBumpOferta ? (orderBumpOferta.precio_efectivo ?? orderBumpOferta.precio_order_bump ?? orderBumpOferta.precio_normal ?? orderBumpOferta.precio ?? 0) : 0;
   const precioBump = precioResueltoBump ? precioResueltoBump.precio_unitario : precioBumpLocal;
 
+  useEffect(() => {
+    let cancel = false;
+    async function actualizarPrecios() {
+      if (item.id === 'preview' || !page.slug) return;
+      try {
+        // Dos líneas independientes cuando el bump está aceptado: el ancla y
+        // el bump son compras separadas, cada una con su propio precio.
+        const itemsAResolver = [{
+          content_id: item.content_id || item.id,
+          variante_id: variante?.id ?? null,
+          oferta_id: ofertaComboId || undefined,
+          cantidad,
+        }];
+        if (bumpAceptado && orderBumpOferta) {
+          itemsAResolver.push({
+            content_id: item.content_id || item.id,
+            oferta_id: orderBumpOferta.id,
+            componente_variante_id: componenteVarianteBump?.id ?? undefined,
+            cantidad: 1,
+          });
+        }
+        const respuesta = await recalcularCarritoLanding(page.slug, itemsAResolver);
+        if (!cancel && respuesta?.items?.length) {
+          setPrecioResuelto(respuesta.items[0]);
+          setPrecioResueltoBump(bumpAceptado ? (respuesta.items[1] || null) : null);
+        }
+      } catch (e) {
+        if (!cancel) { setPrecioResuelto(null); setPrecioResueltoBump(null); }
+      }
+    }
+
+    if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current);
+    timeoutPrecioRef.current = setTimeout(actualizarPrecios, 250);
+    return () => { cancel = true; if (timeoutPrecioRef.current) clearTimeout(timeoutPrecioRef.current); };
+  }, [item.content_id, item.id, variante?.id, ofertaComboId, cantidad, page.slug, bumpAceptado, orderBumpOferta?.id, componenteVarianteBump?.id]);
+
   const galeria = useMemo(() => {
     const propia = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
     return propia && propia.length ? propia : [];
@@ -297,15 +291,17 @@ export const ProductDetailBlock = ({ content, settings }) => {
     setCantidad(c => Math.min(maxCantidad, Math.max(1, c + delta)));
   }
 
-  function agregar() {
+  function agregar({ abrirCarrito = false } = {}) {
     if (sinStock) return;
-    actions.agregarRapido({
+    actions.agregarRapido?.({
       item,
       variante,
       oferta,
       cantidad,
       precio,
+      abrirCarrito,
     });
+    if (abrirCarrito) actions.abrirCarrito?.();
     setAgregado(true);
     setTimeout(() => setAgregado(false), 1600);
   }
@@ -523,8 +519,8 @@ export const ProductDetailBlock = ({ content, settings }) => {
                     <button
                       type="button"
                       className="lp-modal-agregar"
-                      onClick={() => setComprando(true)}
-                      disabled={sinStock || !actions.comprarAhora}
+                      onClick={() => agregar({ abrirCarrito: true })}
+                      disabled={sinStock || !actions.agregarRapido}
                     >
                       <Zap size={18} /> Comprar ahora
                     </button>

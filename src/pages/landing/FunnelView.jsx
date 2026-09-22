@@ -26,6 +26,7 @@ import StoreFooterLegal from './StoreFooterLegal';
 import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
 import FunnelCheckout from '../funnel/FunnelCheckout';
 import { mapPublicDtoToFunnelData } from '../funnel/mapFunnelToTemplateData';
+import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -179,9 +180,6 @@ export default function FunnelView({ data, slug, productId }) {
   const sugerenciasCarrito = useMemo(() => {
     if (!data) return [];
     
-    // Si la landing tiene configuración específica de ofertas de carrito,
-    // se respeta por estrategia. Elegir un order bump no debe esconder los
-    // upsells activos del mismo producto.
     const configOfertas = data?.content?.ofertas_carrito || [];
     const idsConfigurados = new Set(configOfertas.map(Number));
     
@@ -190,18 +188,10 @@ export default function FunnelView({ data, slug, productId }) {
     for (const itemCarrito of carrito.values()) {
       const item = catalogoCompleto.find(i => i.content_id === itemCarrito.contentId);
       if (!item || item.tipo !== 'producto' || !item.ofertas?.length) continue;
-      for (const oferta of item.ofertas) {
+      const ofertasAptas = ordenarOfertasCheckout(item.ofertas, idsConfigurados);
+      for (const oferta of ofertasAptas) {
         if (ofertaIdsEnCarrito.has(Number(oferta.id))) continue;
-        
-        const hayConfigParaEstrategia = item.ofertas.some(o =>
-          o.estrategia === oferta.estrategia && idsConfigurados.has(Number(o.id))
-        );
-        if (hayConfigParaEstrategia && !idsConfigurados.has(Number(oferta.id))) continue;
-
-        const tieneComplemento = Boolean(oferta.producto_complementario || oferta.productos_incluidos?.length);
-        if (!tieneComplemento) continue;
-
-        if (oferta.estrategia === 'order_bump' || oferta.estrategia === 'upsell') {
+        if (ofertaCheckoutPublicable(oferta)) {
           sugerencias.push({ item, oferta });
         }
       }

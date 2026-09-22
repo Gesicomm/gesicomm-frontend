@@ -5,16 +5,16 @@ import { getMediaUrl } from '../../services/api';
 import { formatPrecio, armarLinkWhatsapp } from '../../lib/mensajeWhatsapp';
 import { RedesSocialesFooter, ImagenProductoHover } from '../landing-simple/templates/sections';
 import { hexToRgba } from '../landing-simple/templates/themeUtils';
+import { tintaSobre } from '../../lib/landingDiseno';
 import RichText from '../../components/RichText';
 import StoreFooterLegal from './StoreFooterLegal';
-import FunnelCheckout from '../funnel/FunnelCheckout';
 import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../lib/varianteOpciones';
 
 /**
  * Página de producto dedicada a pantalla completa para la landing pública.
  * Sustituye al antiguo ProductDetailModal.
  */
-export default function ProductPagePublica({ item, onAgregar, onComprarAhora, landingConfig, contacto, tema, onContactar, slug, nombreComercio, relacionados, onClickRelacionado, deliveryCiudades = [] }) {
+export default function ProductPagePublica({ item, onAgregar, contacto, tema, slug, nombreComercio, relacionados, onClickRelacionado }) {
   const navigate = useNavigate();
   const tieneVariantes = item.variantes && item.variantes.length > 0;
   /**
@@ -38,7 +38,6 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
     const conStock = item.variantes.find(v => v.stock > 0);
     return seleccionDeVariante(item, conStock || item.variantes[0]);
   });
-  const [comprandoDirecto, setComprandoDirecto] = useState(false);
   const [ofertaId, setOfertaId] = useState(null);
   const [cantidad, setCantidad] = useState(1);
   const [indiceImagen, setIndiceImagen] = useState(0);
@@ -130,7 +129,7 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
     '--l-primary': tema.acento,
     '--l-secondary': tema.acento,
     '--l-bg': tema.fondo,
-    '--l-on-primary': tema.fondo,
+    '--l-on-primary': tintaSobre(tema.acento),
     '--l-text': tema.texto,
     '--l-text-muted': hexToRgba(tema.texto, 0.55),
     '--l-surface': hexToRgba(tema.texto, 0.05),
@@ -301,38 +300,13 @@ export default function ProductPagePublica({ item, onAgregar, onComprarAhora, la
                   type="button"
                   className="lp-modal-agregar"
                   style={{ backgroundColor: 'var(--vit-accent)', color: 'var(--vit-bg)' }}
-                  onClick={() => setComprandoDirecto(true)}
-                  disabled={sinStock || !onComprarAhora}
+                  onClick={agregar}
+                  disabled={sinStock || !onAgregar}
                 >
                   <Zap size={18} /> Comprar Ahora
                 </button>
               </div>
             </div>
-            
-            <FunnelCheckout
-              abierto={comprandoDirecto}
-              onCerrar={() => setComprandoDirecto(false)}
-              tema={tema || {}}
-              resumen={{
-                nombre: item.nombre,
-                variante: variante?.nombre || null,
-                precio: precio * cantidad,
-                cantidad,
-                imagen: galeria[0] || null,
-              }}
-              ofertasLanding={landingConfig?.ofertas_producto_vista || []}
-              itemOriginal={item}
-              deliveryCiudades={deliveryCiudades}
-              onConfirmar={(form, ofertasCheckout = []) => {
-                if (!onComprarAhora) return;
-                // `oferta` (el pack/combo elegido en la ficha) y las ofertas
-                // de checkout son cosas distintas: estas últimas van aparte
-                // para no pisar el precio del producto principal.
-                // Se devuelve la promesa: FunnelCheckout la espera para
-                // mostrar la confirmación o el error del backend.
-                return onComprarAhora(item, variante, oferta, cantidad, precio, form, ofertasCheckout);
-              }}
-            />
           </div>
         </div>
 

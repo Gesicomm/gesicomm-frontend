@@ -10,6 +10,7 @@ import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
 import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
+import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './basicoProductPage.css';
 
 /**
@@ -97,18 +98,18 @@ export default function BasicoProductPage({
     precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
   });
 
-  // Si la variante elegida tiene fotos propias, la galería pasa a ser la
-  // de ella — es la que el cliente espera ver al elegir, por ej., el color.
-  // Si no cargaron ninguna, se sigue viendo la galería general del producto.
-  const galeria = variante?.imagenes?.length ? variante.imagenes : item.imagenes;
+  // La variante solo toma el asiento principal: videos e imágenes generales
+  // siguen en la galería porque también venden y explican el producto.
+  const galeria = galeriaConVariantePromovida(item.imagenes, variante);
   const imagenActual = galeria[indiceImagen] || galeria[0] || null;
+  const imagenResumen = imagenPrincipalDeGaleria(galeria);
 
   const tituloTexto = (ficha.hero.titulo || item.nombre || '').trim();
   const largoTitulo = tituloTexto.length + (ficha.hero.titulo_destacado || '').length;
   const claseTitulo = largoTitulo > 78 ? 'es-muy-largo' : largoTitulo > 38 ? 'es-largo' : '';
 
   const descripcionTexto = ficha.descripcion.texto || item.descripcion;
-  const imagenNosotros = ficha.comparacion.imagen_nosotros || item.imagenes[0] || null;
+  const imagenNosotros = ficha.comparacion.imagen_nosotros || imagenPrincipalDeGaleria(item.imagenes) || null;
 
   return (
     <div className={`bsc-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
@@ -146,20 +147,20 @@ export default function BasicoProductPage({
           {ficha.hero.etiqueta && <span className="bsc-hero-badge">{ficha.hero.etiqueta}</span>}
           <div className="bsc-hero-foto">
             {imagenActual
-              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
+              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
               : <ImageOff size={44} />}
           </div>
           {galeria.length > 1 && (
             <div className="bsc-miniaturas">
-              {galeria.slice(0, 5).map((url, i) => (
+              {galeria.slice(0, 5).map((medio, i) => (
                 <button
                   type="button"
-                  key={url + i}
-                  aria-label={`Foto ${i + 1} de ${galeria.length}`}
+                  key={claveMedioProducto(medio, i)}
+                  aria-label={`Medio ${i + 1} de ${galeria.length}`}
                   className={`bsc-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
+                  <MiniaturaMediaProducto medio={medio} alt="" />
                 </button>
               ))}
             </div>
@@ -257,7 +258,7 @@ export default function BasicoProductPage({
               <TarjetaPack
                 elegido={!pack}
                 nombre={ficha.opciones.etiqueta_individual || '1 unidad'}
-                imagen={galeria[0]}
+                imagen={imagenResumen}
                 precio={item.precio}
                 precioAntes={item.precioAntes}
                 notaPrecio={packs.length > 0 ? 'Precio normal' : null}
@@ -276,7 +277,7 @@ export default function BasicoProductPage({
                     badge={conf.badge}
                     nombre={p.nombre}
                     subtitulo={conf.subtitulo || `${unidades} unidades`}
-                    imagen={p.imagen || galeria[0]}
+                    imagen={p.imagen || imagenResumen}
                     precio={p.precio_efectivo ?? p.precio}
                     ahorro={ahorroDePack(p, item.precio)}
                     nota={ficha.opciones.nota_pack}

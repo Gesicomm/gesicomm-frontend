@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
+import AbastecimientoTimeline from "../../components/abastecimiento/AbastecimientoTimeline";
 import { canalVentaService } from "../../services/canalVentaService";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { verificarSesion } from "../../utils/auth";
@@ -13,17 +14,43 @@ import { numeroPedidoVisible } from "./pedidoNumero";
 
 const LIMITE = 10;
 
+// Pestaña "virtual": no es un Envio.estado real (no toca la máquina de
+// fulfillment Pendiente→...→Entregado), es un filtro sobre
+// abastecimiento_estado que se muestra en la MISMA barra que las pestañas
+// reales, entre Confirmado y Preparado, para que la tienda vea de un
+// vistazo qué pedidos ya pagaron el abastecimiento y puedan abrir su
+// timeline sin tener que entrar a una sección aparte.
+const TAB_ABASTECIMIENTO_ID = "AbastecimientoSeguimiento";
+const TAB_ABASTECIMIENTO_CFG = {
+  label: "En Seguimiento de Abastecimiento",
+  chipBg: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
+  chipText: "var(--color-primary)",
+};
+
 const ABASTECIMIENTO_TABS = [
-  { id: "en_proceso", label: "Pagados", description: "Pago acreditado, falta recibir mercadería" },
-  { id: "pendiente_pago", label: "Pendientes de pago", description: "La tienda todavía debe pagar" },
+  { id: "en_seguimiento", label: "En seguimiento", description: "Pago validado, en camino hacia el depósito" },
+  { id: "pendiente_pago", label: "Pendientes de pago", description: "La tienda todavía debe pagar o reenviar el comprobante" },
   { id: "recibido", label: "Recibidos", description: "Mercadería recibida en depósito" },
   { id: "TODOS", label: "Todos", description: "Todos los pedidos con abastecimiento" },
 ];
 
+// El label "En seguimiento abastecimiento" cubre todo el tramo operativo
+// intermedio (desde pago validado hasta que sale hacia el destino final):
+// el detalle exacto de en qué paso está se ve en el timeline, no acá.
 const ABASTECIMIENTO_META = {
   pendiente_pago: { label: "Pendiente de pago", tone: "danger" },
-  en_proceso: { label: "Pagado", tone: "info" },
-  recibido: { label: "Recibido", tone: "success" },
+  pago_enviado: { label: "En seguimiento abastecimiento", tone: "warning" },
+  pago_rechazado: { label: "Pago rechazado", tone: "danger" },
+  pago_validado: { label: "En seguimiento abastecimiento", tone: "info" },
+  proveedor_contactado: { label: "En seguimiento abastecimiento", tone: "info" },
+  enviado_por_proveedor: { label: "En seguimiento abastecimiento", tone: "info" },
+  en_transito_a_gesicomm: { label: "En seguimiento abastecimiento", tone: "info" },
+  recibido_en_gesicomm: { label: "En seguimiento abastecimiento", tone: "info" },
+  preparando_envio_a_deposito_cliente: { label: "En seguimiento abastecimiento", tone: "info" },
+  despachado_a_deposito_cliente: { label: "En seguimiento abastecimiento", tone: "info" },
+  en_transito_a_deposito_cliente: { label: "En tránsito a tu depósito", tone: "info" },
+  recibido_en_deposito_cliente: { label: "Recibido", tone: "success" },
+  disponible_en_gesicomm: { label: "Recibido", tone: "success" },
 };
 
 // Transiciones que necesitan datos adicionales (fecha, método de pago,
@@ -249,17 +276,30 @@ function formatFechaCorta(fecha) {
   });
 }
 
-function AbastecimientoBadge({ envio }) {
+function AbastecimientoBadge({ envio, onAbrirTimeline }) {
   const meta = ABASTECIMIENTO_META[envio?.abastecimiento_estado] || { label: "Sin abastecimiento", tone: "neutral" };
   const fechaPago = formatFechaCorta(envio?.abastecimiento_pagado_at);
   const fechaRecibido = formatFechaCorta(envio?.abastecimiento_recibido_at);
-  const detalleFecha = envio?.abastecimiento_estado === "recibido" ? fechaRecibido : fechaPago;
+  const detalleFecha = ["recibido_en_deposito_cliente", "disponible_en_gesicomm"].includes(envio?.abastecimiento_estado)
+    ? fechaRecibido
+    : fechaPago;
+  const tieneTimeline = Boolean(envio?.abastecimiento_estado) && envio.abastecimiento_estado !== "no_requiere";
 
   return (
     <div className="pt-abastecimiento-cell">
-      <span className={`pt-abastecimiento-badge pt-abastecimiento-badge--${meta.tone}`}>
+      <button
+        type="button"
+        className={`pt-abastecimiento-badge pt-abastecimiento-badge--${meta.tone}`}
+        style={{ cursor: tieneTimeline ? "pointer" : "default", border: "none" }}
+        disabled={!tieneTimeline}
+        title={tieneTimeline ? "Ver seguimiento" : undefined}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (tieneTimeline) onAbrirTimeline?.(envio);
+        }}
+      >
         {meta.label}
-      </span>
+      </button>
       <span className="pt-abastecimiento-meta">
         {formatGs(envio?.abastecimiento_costo || 0)}
         {detalleFecha ? ` · ${detalleFecha}` : ""}
@@ -295,43 +335,110 @@ const accionBtnStyle = {
 
 function AccionPrincipal({ envio, isAdmin, onAbrirDetalle, onAbrirResumen, onAccionSiguiente }) {
   const accion = envio.accion_siguiente;
-  if (accion?.tipo === "abastecimiento_en_proceso") {
+
+  // La confirmación de recepción en el depósito propio se decide SOLO por el
+  // estado de abastecimiento, no por el estado de venta del pedido: es el
+  // paso que destraba el pase a "Preparado", así que la tienda tiene que
+  // poder marcarlo siempre que la mercadería esté viajando hacia su depósito.
+  if (envio.abastecimiento_estado === "en_transito_a_deposito_cliente") {
     if (isAdmin) {
       return (
-        <button
-          type="button"
-          className="pt-next-action pt-next-action--success"
-          title="Marcar que la mercadería ya llegó al depósito"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAccionSiguiente?.(envio, accion);
-          }}
-        >
-          <Package size={13} /> Marcar recibido
-        </button>
+        <span className="pt-next-pill pt-next-pill--info" title="Solo el comercio puede confirmar la recepción en su depósito">
+          <Package size={13} /> Esperando confirmación del cliente
+        </span>
       );
     }
     return (
-      <span className="pt-next-pill pt-next-pill--info" title={accion.descripcion}>
-        <Package size={13} /> {accion.titulo}
-      </span>
+      <button
+        type="button"
+        className="pt-next-action pt-next-action--success"
+        title="Cuando recibas la mercadería, confirmá la recepción para poder preparar el pedido"
+        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, { tipo: "confirmar_recepcion_deposito" }); }}
+      >
+        <Package size={13} /> Confirmar recepción
+      </button>
     );
   }
+
+  // pendiente_pago: solo la tienda tiene acción (pagar por transferencia). El
+  // admin no acredita nada acá — el pago se valida recién cuando llega el
+  // comprobante (pago_enviado).
   if (accion?.tipo === "pagar_abastecimiento") {
+    if (isAdmin) {
+      return <span className="pt-next-pill pt-next-pill--danger" title={accion.descripcion}><CreditCard size={13} /> Pendiente de pago</span>;
+    }
     return (
       <button
         type="button"
         className={`pt-next-action pt-next-action--${accion.tono || "danger"}`}
         title={accion.descripcion}
-        onClick={(e) => {
-          e.stopPropagation();
-          onAccionSiguiente?.(envio, accion);
-        }}
+        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, accion); }}
       >
-        <CreditCard size={13} /> {isAdmin ? "Acreditar pago" : accion.cta}
+        <CreditCard size={13} /> {accion.cta}
       </button>
     );
   }
+
+  // pago_enviado: solo el admin puede validar/rechazar.
+  if (accion?.tipo === "pago_enviado") {
+    if (!isAdmin) {
+      return <span className="pt-next-pill pt-next-pill--warning" title={accion.descripcion}><CreditCard size={13} /> {accion.titulo}</span>;
+    }
+    return (
+      <div style={{ display: "inline-flex", gap: 6 }}>
+        <button
+          type="button"
+          className="pt-next-action pt-next-action--success"
+          onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, { ...accion, tipo: "validar_pago" }); }}
+        >
+          Validar pago
+        </button>
+        <button
+          type="button"
+          className="pt-next-action pt-next-action--danger"
+          onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, { ...accion, tipo: "rechazar_pago" }); }}
+        >
+          Rechazar
+        </button>
+      </div>
+    );
+  }
+
+  // pago_rechazado: solo la tienda puede reemplazar el comprobante y reenviar.
+  if (accion?.tipo === "pago_rechazado") {
+    if (isAdmin) {
+      return <span className="pt-next-pill pt-next-pill--danger" title={accion.descripcion}><CreditCard size={13} /> Rechazado, esperando reenvío</span>;
+    }
+    return (
+      <button
+        type="button"
+        className="pt-next-action pt-next-action--danger"
+        title={accion.descripcion}
+        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, accion); }}
+      >
+        <CreditCard size={13} /> {accion.cta}
+      </button>
+    );
+  }
+
+  // Tramo operativo intermedio: solo el admin avanza, la tienda ve el estado.
+  if (accion?.tipo === "abastecimiento_avanzar") {
+    if (!isAdmin) {
+      return <span className="pt-next-pill pt-next-pill--info" title={accion.descripcion}><Package size={13} /> {accion.titulo}</span>;
+    }
+    return (
+      <button
+        type="button"
+        className="pt-next-action pt-next-action--info"
+        title={accion.descripcion}
+        onClick={(e) => { e.stopPropagation(); onAccionSiguiente?.(envio, accion); }}
+      >
+        <Package size={13} /> {accion.cta}
+      </button>
+    );
+  }
+
+  // en_transito_a_deposito_cliente: solo la tienda confirma la recepción.
   if (accion?.cta && accion.siguiente_estado) {
     return (
       <button
@@ -381,7 +488,11 @@ export function PedidosTable({
   couriers = [],
   onChangeEstado,
   onPagarAbastecimiento,
-  onAdminAbastecimiento,
+  onValidarPagoAbastecimiento,
+  onRechazarPagoAbastecimiento,
+  onAvanzarAbastecimiento,
+  onConfirmarRecepcionAbastecimiento,
+  onAbrirTimelineAbastecimiento,
   onAbrirDetalle,
   onAccionEspecial,
   onAbrirResumen,
@@ -391,10 +502,12 @@ export function PedidosTable({
   initialPedidoId = "",
   initialEstado = "Pendiente",
   soloAbastecimiento = false,
-  initialAbastecimientoEstado = "en_proceso",
+  initialAbastecimientoEstado = "en_seguimiento",
 }) {
   const filtrosBase = useMemo(() => ({ ...FILTROS_VACIOS, pedido_id: initialPedidoId || "" }), [initialPedidoId]);
   const [estadoActivo, setEstadoActivo] = useState(initialEstado);
+  // Fila expandida con el seguimiento de abastecimiento (solo en esa pestaña).
+  const [timelineExpandidoId, setTimelineExpandidoId] = useState(null);
   const [abastecimientoEstadoActivo, setAbastecimientoEstadoActivo] = useState(initialAbastecimientoEstado);
   const [filtros, setFiltros] = useState(() => filtrosBase);
   const [page, setPage] = useState(1);
@@ -473,7 +586,9 @@ export function PedidosTable({
     setLoading(true);
     try {
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
-      if (!soloAbastecimiento && estado) {
+      if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
+        payload.abastecimiento_estado = "pagado";
+      } else if (!soloAbastecimiento && estado) {
         payload.estados = [estado];
       }
       const res = await getEnviosPaginados(payload);
@@ -560,6 +675,7 @@ export function PedidosTable({
       setModalAbastecimientoDismissedKey(null);
     }
     setEstadoActivo(estado);
+    setTimelineExpandidoId(null);
     setPage(1);
   };
 
@@ -607,17 +723,27 @@ export function PedidosTable({
 
   const handleAccionSiguiente = (item, accion) => {
     if (accion.tipo === "pagar_abastecimiento") {
-      if (usuarioActual?.rol === "administrador") {
-        onAdminAbastecimiento?.(item, "acreditar_pago");
-      } else {
-        onPagarAbastecimiento?.(item);
-      }
+      onPagarAbastecimiento?.(item);
       return;
     }
-    if (accion.tipo === "abastecimiento_en_proceso") {
-      if (usuarioActual?.rol === "administrador") {
-        onAdminAbastecimiento?.(item, "recibir");
-      }
+    if (accion.tipo === "validar_pago") {
+      onValidarPagoAbastecimiento?.(item);
+      return;
+    }
+    if (accion.tipo === "rechazar_pago") {
+      onRechazarPagoAbastecimiento?.(item);
+      return;
+    }
+    if (accion.tipo === "pago_rechazado") {
+      onPagarAbastecimiento?.(item);
+      return;
+    }
+    if (accion.tipo === "abastecimiento_avanzar") {
+      onAvanzarAbastecimiento?.(item);
+      return;
+    }
+    if (accion.tipo === "confirmar_recepcion_deposito") {
+      onConfirmarRecepcionAbastecimiento?.(item);
       return;
     }
     if (accion.siguiente_estado === "Confirmado") {
@@ -631,6 +757,7 @@ export function PedidosTable({
 
   const hayFiltros = Object.entries(filtros).some(([, v]) => v !== "" && v !== "TODOS");
   const esAdmin = usuarioActual?.rol === "administrador";
+  const esTabAbastecimiento = !soloAbastecimiento && estadoActivo === TAB_ABASTECIMIENTO_ID;
 
   const envios = data.data || [];
   const tableColSpan = soloAbastecimiento ? 9 : 10;
@@ -645,6 +772,7 @@ export function PedidosTable({
   useEffect(() => {
     if (
       !soloAbastecimiento &&
+      usuarioActual?.rol !== "administrador" &&
       estadoActivo === "Confirmado" &&
       !loading &&
       pagosAbastecimientoPendientes.length > 0 &&
@@ -656,6 +784,7 @@ export function PedidosTable({
   }, [
     estadoActivo,
     soloAbastecimiento,
+    usuarioActual,
     loading,
     pagosAbastecimientoPendientes.length,
     abastecimientoModalKey,
@@ -712,7 +841,7 @@ export function PedidosTable({
                 Ver pedidos
               </button>
               <button type="button" className="pt-payment-modal__primary" onClick={pagarDesdeModalAbastecimiento}>
-                {usuarioActual?.rol === "administrador" ? "Acreditar pago" : "Pagar abastecimiento"}
+                Pagar abastecimiento
               </button>
             </div>
           </div>
@@ -754,7 +883,7 @@ export function PedidosTable({
             const vencidosSeguimiento = Number(conteos?.seguimiento_vencidos) || 0;
             const tieneAlertas = isEnSeguimiento && vencidosSeguimiento > 0;
 
-            return (
+            return [
               <button
                 key={st}
                 type="button"
@@ -811,8 +940,34 @@ export function PedidosTable({
                     {vencidosSeguimiento}
                   </span>
                 )}
-              </button>
-            );
+              </button>,
+              st === "Confirmado" && (
+                <button
+                  key="abastecimiento-seguimiento-tab"
+                  type="button"
+                  onClick={() => handleSelectEstado(TAB_ABASTECIMIENTO_ID)}
+                  style={{
+                    padding: "0.45rem 0.9rem",
+                    borderRadius: "999px",
+                    border: estadoActivo === TAB_ABASTECIMIENTO_ID ? `1px solid ${TAB_ABASTECIMIENTO_CFG.chipText}` : "1px solid var(--color-border)",
+                    background: estadoActivo === TAB_ABASTECIMIENTO_ID ? TAB_ABASTECIMIENTO_CFG.chipBg : "var(--color-surface-2)",
+                    color: estadoActivo === TAB_ABASTECIMIENTO_ID ? TAB_ABASTECIMIENTO_CFG.chipText : "var(--color-fg-muted)",
+                    fontSize: "0.8rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    flexShrink: 0,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {TAB_ABASTECIMIENTO_CFG.label}
+                  <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos.abastecimiento_pagado ?? 0})</span>
+                </button>
+              ),
+            ];
           })}
         </div>
       )}
@@ -837,6 +992,7 @@ export function PedidosTable({
                 : null
             },
             { st: "Confirmado", icon: <Package size={16} />, label: "Confirmados", color: "var(--color-info)", border: "color-mix(in srgb, var(--color-info) 20%, transparent)" },
+            { st: TAB_ABASTECIMIENTO_ID, icon: <CreditCard size={16} />, label: "Pagado, en seguimiento", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", count: conteos.abastecimiento_pagado },
             { st: "Preparado", icon: <ClipboardList size={16} />, label: "Por despachar", color: "var(--color-warning)", border: "color-mix(in srgb, var(--color-warning) 20%, transparent)" },
             { st: "Despachado", icon: <Truck size={16} />, label: "En tránsito", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
             { st: "Reprogramado", icon: <History size={16} />, label: "Reprogramados", color: "var(--color-danger)", border: "color-mix(in srgb, var(--color-danger) 20%, transparent)" }
@@ -883,7 +1039,7 @@ export function PedidosTable({
                 )}
               </div>
               <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-fg)" }}>
-                {conteos[item.st] ?? 0}
+                {item.count ?? conteos[item.st] ?? 0}
               </div>
             </div>
           ))}
@@ -1205,6 +1361,8 @@ export function PedidosTable({
                 <td colSpan={tableColSpan} className="pt-empty">
                   {soloAbastecimiento
                     ? "No hay pedidos de abastecimiento que coincidan con los filtros."
+                    : estadoActivo === TAB_ABASTECIMIENTO_ID
+                    ? "No hay pedidos con abastecimiento en seguimiento que coincidan con los filtros."
                     : `No hay pedidos en "${estadoActivo}" que coincidan con los filtros.`}
                 </td>
               </tr>
@@ -1228,11 +1386,19 @@ export function PedidosTable({
                 const whatsappLink = getWhatsappLink(e);
                 const nombreCliente = [e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") || e.cliente || "cliente";
 
-                return (
+                return [
                   <tr
                     key={e.id}
                     className="pt-row"
-                    onClick={() => onAbrirDetalle && onAbrirDetalle(e)}
+                    onClick={() => {
+                      // Dentro de la pestaña de abastecimiento el clic en la
+                      // fila abre el seguimiento, no el editor del pedido.
+                      if (esTabAbastecimiento) {
+                        setTimelineExpandidoId((prev) => (prev === e.id ? null : e.id));
+                        return;
+                      }
+                      onAbrirDetalle && onAbrirDetalle(e);
+                    }}
                   >
                     <td className="pt-td pt-td-id">
                       <span>#{numeroPedidoVisible(e)}</span>
@@ -1369,10 +1535,15 @@ export function PedidosTable({
                         estado={e.estado}
                         onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
                       />
+                      {!soloAbastecimiento && e.abastecimiento_estado && e.abastecimiento_estado !== "no_requiere" && (
+                        <div style={{ marginTop: 4 }} onClick={(ev) => ev.stopPropagation()}>
+                          <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
+                        </div>
+                      )}
                     </td>
                     {soloAbastecimiento && (
                       <td className="pt-td">
-                        <AbastecimientoBadge envio={e} />
+                        <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
                       </td>
                     )}
                     <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
@@ -1394,6 +1565,16 @@ export function PedidosTable({
                             <History size={13} />
                           </button>
                         )}
+                        {onAbrirTimelineAbastecimiento && e.abastecimiento_estado && e.abastecimiento_estado !== "no_requiere" && (
+                          <button
+                            type="button"
+                            title="Ver seguimiento de abastecimiento"
+                            style={{ ...accionBtnStyle, padding: "4px 6px" }}
+                            onClick={() => onAbrirTimelineAbastecimiento(e)}
+                          >
+                            <Truck size={13} />
+                          </button>
+                        )}
                         {esAdmin && (
                           <button
                             type="button"
@@ -1406,8 +1587,20 @@ export function PedidosTable({
                         )}
                       </div>
                     </td>
-                  </tr>
-                );
+                  </tr>,
+                  esTabAbastecimiento && timelineExpandidoId === e.id && (
+                    <tr key={`${e.id}-timeline`} className="pt-row-timeline">
+                      <td className="pt-td" colSpan={tableColSpan} style={{ background: "var(--color-surface-2)", padding: "1rem 1.25rem" }}>
+                        <AbastecimientoTimeline
+                          envio={e}
+                          compacto
+                          esAdmin={esAdmin}
+                          onConfirmarRecepcion={onConfirmarRecepcionAbastecimiento}
+                        />
+                      </td>
+                    </tr>
+                  ),
+                ];
               })
             )}
           </tbody>

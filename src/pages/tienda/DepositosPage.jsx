@@ -6,9 +6,15 @@ import DepositoFilters from '../../components/depositos/DepositoFilters';
 import DepositoCard from '../../components/depositos/DepositoCard';
 import DepositoForm from '../../components/depositos/DepositoForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import CouriersDepositoModal from '../../components/depositos/CouriersDepositoModal';
+import FulfillmentCard from '../../components/depositos/FulfillmentCard';
+import useSesion from '../../hooks/useSesion';
 
 export default function DepositosPage() {
   const navigate = useNavigate();
+  const { usuario } = useSesion();
+  const esAdmin = usuario?.rol === 'administrador';
+
   const [depositos, setDepositos] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -19,6 +25,11 @@ export default function DepositosPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
+
+  const [couriersDeposito, setCouriersDeposito] = useState(null);
+  // Habilitar couriers cambia si la logística propia es viable: al guardar,
+  // se remonta la tarjeta para que relea su estado.
+  const [fulfillmentKey, setFulfillmentKey] = useState(0);
 
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', desc: '', action: null, danger: false });
 
@@ -123,15 +134,17 @@ export default function DepositosPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
-      <div className="mb-4">
-        <button
-          onClick={() => navigate('/mi-tienda')}
-          className="flex items-center gap-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
-        >
-          <ArrowLeft size={16} />
-          Volver a Mi Tienda
-        </button>
-      </div>
+      {!esAdmin && (
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/mi-tienda')}
+            className="flex items-center gap-2 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
+          >
+            <ArrowLeft size={16} />
+            Volver a Mi Tienda
+          </button>
+        </div>
+      )}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="m-0 text-2xl font-bold text-fg">Depósitos</h1>
@@ -148,6 +161,12 @@ export default function DepositosPage() {
           Nuevo depósito
         </button>
       </div>
+
+      {!esAdmin && (
+        <div className="mb-6">
+          <FulfillmentCard key={fulfillmentKey} />
+        </div>
+      )}
 
       <div className="mb-6">
         <DepositoFilters onChange={handleFiltrosChange} />
@@ -170,6 +189,7 @@ export default function DepositosPage() {
                   onEdit={handleOpenEditar}
                   onToggleEstado={handleToggleEstado}
                   onDelete={handleDelete}
+                  onGestionarCouriers={(dep) => setCouriersDeposito(dep)}
                 />
               ))}
             </div>
@@ -249,6 +269,13 @@ export default function DepositosPage() {
           loading={formLoading}
         />
       )}
+
+      <CouriersDepositoModal
+        open={!!couriersDeposito}
+        deposito={couriersDeposito}
+        onClose={() => setCouriersDeposito(null)}
+        onGuardado={() => { fetchDepositos(); setFulfillmentKey((k) => k + 1); }}
+      />
 
       <ConfirmDialog
         open={confirmDialog.open}

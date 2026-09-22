@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { obtenerLandingPublica } from '../../services/landingPublicaService';
+import { obtenerCatalogoLandingPublica } from '../../services/landingPublicaService';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
-import { mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
+import { galeriaTarjetaDeItem, mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { getMediaUrl } from '../../services/api';
 import { Store, Loader } from 'lucide-react';
 import { calcularEstiloLanding } from '../../lib/landingDiseno';
@@ -29,7 +29,7 @@ export default function CatalogoPublico() {
 
   useEffect(() => {
     let activo = true;
-    obtenerLandingPublica(slug)
+    obtenerCatalogoLandingPublica(slug)
       .then((res) => {
         if (!activo) return;
         if (res === null) return setEstadoCarga('no-encontrada');
@@ -45,14 +45,30 @@ export default function CatalogoPublico() {
 
   useDocumentSeo(data ? `Catálogo - ${data.titulo || data.tienda?.nombre}` : 'Catálogo', data?.seo_descripcion || '');
 
-  const catalogoCompleto = data?.catalogo_items?.length ? data.catalogo_items : (data?.items || []);
+  const catalogoCompleto = useMemo(
+    () => (data?.catalogo_items?.length ? data.catalogo_items : (data?.items || [])),
+    [data]
+  );
   const cartState = useStoreCart(slug, data, catalogoCompleto);
+  const datosTemplate = useMemo(() => mapPublicDtoToTemplateData(data), [data]);
+  const productos = useMemo(() => (data?.catalogo_items || []).map(i => ({
+    id: i.content_id,
+    nombre: i.nombre,
+    precio: i.precio,
+    precioAntes: i.precio_antes,
+    imagen: i.imagen ? getMediaUrl(i.imagen) : null,
+    // Solo imágenes/miniaturas para la tarjeta: un link de video no puede ir
+    // como <img src>, porque se ve como imagen rota.
+    imagenes: galeriaTarjetaDeItem(i),
+    categoria: i.categoria || null,
+    etiqueta: i.etiqueta || null,
+    stock: i.stock,
+  })), [data?.catalogo_items]);
 
   if (estadoCarga === 'cargando') return <div className="min-h-screen flex items-center justify-center bg-canvas"><Loader className="animate-spin text-white/50" /></div>;
   if (estadoCarga === 'no-encontrada') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Tienda no encontrada.</div>;
   if (estadoCarga === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Esta tienda no está disponible actualmente.</div>;
 
-  const datosTemplate = mapPublicDtoToTemplateData(data);
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;
   // `productos_titulo` (panel "Productos" del editor) es el título de la
   // sección "Productos destacados" del home — en esta página de catálogo
@@ -65,23 +81,6 @@ export default function CatalogoPublico() {
   const tituloCatalogo = data?.catalogo_titulo || 'Catálogo de Productos';
   const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
-
-  // A propósito NO es `data.items` (esa es solo la selección con
-  // mostrar_en_inicio para "Productos destacados" del home) — `catalogo_items`
-  // trae TODOS los items que el comercio agregó a esta landing, sin importar
-  // ese flag, para que pueda tener productos que solo aparezcan acá.
-  const productos = (data?.catalogo_items || []).map(i => ({
-    id: i.content_id,
-    nombre: i.nombre,
-    precio: i.precio,
-    precioAntes: i.precio_antes,
-    imagen: i.imagen ? getMediaUrl(i.imagen) : null,
-    // Galería completa para el hover de la tarjeta (ImagenProductoHover).
-    imagenes: (i.imagenes?.length ? i.imagenes : [i.imagen]).filter(Boolean).map(getMediaUrl),
-    categoria: i.categoria || null,
-    etiqueta: i.etiqueta || null,
-    stock: i.stock,
-  }));
 
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
   const linkInicio = isLocalFallback && slug ? `/l/${slug}` : '/';

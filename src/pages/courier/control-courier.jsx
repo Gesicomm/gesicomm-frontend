@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck, CreditCard } from "lucide-react";
+import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
 import { PedidosTable } from "./PedidosTable";
 import { DeliveryPanel } from "./DeliveryPanel";
@@ -9,6 +9,8 @@ import { ImprimirPedidosModal } from "./ImprimirPedidosModal";
 import { CentroInteligenciaComercial } from "./CentroInteligenciaComercial";
 import { ReprogramarModal } from "./ReprogramarModal";
 import LogisticaAbastecimientoModal from '../../components/depositos/LogisticaAbastecimientoModal';
+import TransferenciaAbastecimientoModal from '../../components/abastecimiento/TransferenciaAbastecimientoModal';
+import AbastecimientoTimelineModal from '../../components/abastecimiento/AbastecimientoTimelineModal';
 import { CostoViajeModal } from "./CostoViajeModal";
 import { MarcarEntregadoModal } from "./MarcarEntregadoModal";
 import { DevolucionModal } from "./DevolucionModal";
@@ -21,8 +23,10 @@ import {
   getCouriers,
   getEnvios,
   updateEstadoEnvio,
-  iniciarPagoAbastecimiento,
-  actualizarAbastecimientoManual,
+  validarPagoAbastecimiento,
+  rechazarPagoAbastecimiento,
+  avanzarAbastecimiento,
+  confirmarRecepcionAbastecimiento,
   createCourier,
   updateCourier,
   deleteCourier,
@@ -34,8 +38,9 @@ import {
 } from "../../services/courierApi";
 import "./courier.css";
 
-const TABS_VALIDOS = new Set(["tablero", "abastecimiento", "delivery", "rendicion", "analitica"]);
-const TABS_SOLO_ADMIN = new Set(["abastecimiento"]);
+// Abastecimiento ya no es una pestaña de acá: vive en su propia sección
+// (/abastecimiento), porque como pestaña quedaba escondida.
+const TABS_VALIDOS = new Set(["tablero", "delivery", "rendicion", "analitica"]);
 const CLAVE_TAB = "gesicomm:pedidosTab";
 
 // La pestaña activa nunca viaja por query string: llega como router state
@@ -70,6 +75,8 @@ export function ControlCourier() {
   const [resumenEnvio, setResumenEnvio] = useState(null);
   const [historialEnvio, setHistorialEnvio] = useState(null);
   const [seguimientoEnvio, setSeguimientoEnvio] = useState(null);
+  const [transferenciaModalEnvio, setTransferenciaModalEnvio] = useState(null);
+  const [timelineAbastecimientoEnvio, setTimelineAbastecimientoEnvio] = useState(null);
   const [usuarioActual, setUsuarioActual] = useState(null);
   const esAdmin = usuarioActual?.rol === "administrador";
 
@@ -84,13 +91,7 @@ export function ControlCourier() {
     verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
   }, []);
 
-  useEffect(() => {
-    if (usuarioActual === null || esAdmin || !TABS_SOLO_ADMIN.has(tab)) return;
-    seleccionarTab("tablero");
-  }, [usuarioActual, esAdmin, tab]);
-
   function seleccionarTab(tabId) {
-    if (!esAdmin && TABS_SOLO_ADMIN.has(tabId)) tabId = "tablero";
     setTab(tabId);
     try { window.sessionStorage.setItem(CLAVE_TAB, tabId); } catch { /* sin storage */ }
   }
@@ -169,46 +170,76 @@ export function ControlCourier() {
 
   const [logisticaModalEnvio, setLogisticaModalEnvio] = useState(null);
 
-  const handlePagarAbastecimiento = async (envio) => {
-    setLogisticaModalEnvio(envio);
-  };
-
-  const proceedToPagarAbastecimiento = async (envioId) => {
-    try {
-      const checkout = await iniciarPagoAbastecimiento(envioId);
-      if (checkout?.payment_url) {
-        window.location.href = checkout.payment_url;
-        return;
-      }
-      throw new Error("PagoPar no devolvió un enlace de pago.");
-    } catch (err) {
-      console.error("Error iniciando pago de abastecimiento:", err);
-      alert(err.response?.data?.error || err.message || "No se pudo iniciar el pago de abastecimiento.");
+  // pendiente_pago sin logística definida: primero hay que elegir GESICOMM
+  // o depósito propio (LogisticaAbastecimientoModal). Con la logística ya
+  // definida (primer pago o reenvío tras un rechazo) se va directo a la
+  // transferencia — ya no hay redirect a PagoPar.
+  const handlePagarAbastecimiento = (envio) => {
+    if (envio.abastecimiento_estado === "pendiente_pago" && !envio.tipo_logistica_abastecimiento) {
+      setLogisticaModalEnvio(envio);
+    } else {
+      setTransferenciaModalEnvio(envio);
     }
   };
 
-  const handleAdminAbastecimiento = async (envio, accion) => {
-    const esPago = accion === "acreditar_pago";
-    const metodo = esPago
-      ? window.prompt("Método de acreditación (ej: transferencia, contacto directo, efectivo)", "transferencia")
-      : "recepción en depósito";
-    if (metodo === null) return;
+  const handleComprobanteEnviado = (actualizado) => {
+    setEnvios(prev => prev.map(e => e.id === actualizado.id ? actualizado : e));
+    setTransferenciaModalEnvio(null);
+    cargarDatos();
+    setRefrescarKey(k => k + 1);
+  };
 
-    const nota = window.prompt("Nota interna opcional", "");
-    if (nota === null) return;
-
+  const handleValidarPagoAbastecimiento = async (envio) => {
     try {
-      const actualizado = await actualizarAbastecimientoManual(envio.id, {
-        accion,
-        metodo_acreditacion: metodo || "manual",
-        nota: nota || null,
-      });
+      const actualizado = await validarPagoAbastecimiento(envio.id);
       setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
       cargarDatos();
       setRefrescarKey(k => k + 1);
     } catch (err) {
-      console.error("Error actualizando abastecimiento manual:", err);
-      alert(err.response?.data?.error || err.message || "No se pudo actualizar el abastecimiento.");
+      console.error("Error validando pago de abastecimiento:", err);
+      alert(err.response?.data?.error || err.message || "No se pudo validar el pago.");
+    }
+  };
+
+  const handleRechazarPagoAbastecimiento = async (envio) => {
+    const motivo = window.prompt("Motivo del rechazo (obligatorio, lo ve la tienda):", "");
+    if (!motivo) return;
+    try {
+      const actualizado = await rechazarPagoAbastecimiento(envio.id, motivo);
+      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+      cargarDatos();
+      setRefrescarKey(k => k + 1);
+    } catch (err) {
+      console.error("Error rechazando pago de abastecimiento:", err);
+      alert(err.response?.data?.error || err.message || "No se pudo rechazar el pago.");
+    }
+  };
+
+  // El backend resuelve el único siguiente estado válido (proveedor
+  // contactado → ... → recibido/disponible): acá no se elige nada, solo se
+  // dispara la acción.
+  const handleAvanzarAbastecimiento = async (envio) => {
+    try {
+      const actualizado = await avanzarAbastecimiento(envio.id);
+      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+      cargarDatos();
+      setRefrescarKey(k => k + 1);
+    } catch (err) {
+      console.error("Error avanzando abastecimiento:", err);
+      alert(err.response?.data?.error || err.message || "No se pudo avanzar el abastecimiento.");
+    }
+  };
+
+  const handleConfirmarRecepcionAbastecimiento = async (envio) => {
+    if (!window.confirm("¿Confirmás que recibiste este abastecimiento en tu depósito?")) return;
+    try {
+      const actualizado = await confirmarRecepcionAbastecimiento(envio.id);
+      setEnvios(prev => prev.map(e => e.id === envio.id ? actualizado : e));
+      cargarDatos();
+      setRefrescarKey(k => k + 1);
+    } catch (err) {
+      console.error("Error confirmando recepción de abastecimiento:", err);
+      alert(err.response?.data?.error || err.message || "No se pudo confirmar la recepción.");
     }
   };
 
@@ -338,11 +369,6 @@ export function ControlCourier() {
           <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
             Tablero
           </TabButton>
-          {esAdmin && (
-            <TabButton active={tab === "abastecimiento"} onClick={() => seleccionarTab("abastecimiento")} icon={<CreditCard size={16} />}>
-              Abastecimiento
-            </TabButton>
-          )}
           <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
             Delivery
           </TabButton>
@@ -363,36 +389,26 @@ export function ControlCourier() {
             couriers={couriers}
             onChangeEstado={handleChangeEstado}
             onPagarAbastecimiento={handlePagarAbastecimiento}
-            onAdminAbastecimiento={handleAdminAbastecimiento}
+            onValidarPagoAbastecimiento={handleValidarPagoAbastecimiento}
+            onRechazarPagoAbastecimiento={handleRechazarPagoAbastecimiento}
+            onAvanzarAbastecimiento={handleAvanzarAbastecimiento}
+            onConfirmarRecepcionAbastecimiento={handleConfirmarRecepcionAbastecimiento}
+            onAbrirTimelineAbastecimiento={(envio) => setTimelineAbastecimientoEnvio(envio)}
             onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
             onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
             onAbrirResumen={(envio) => setResumenEnvio(envio)}
             onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
             onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
             refrescarKey={refrescarKey}
-          />
-        ) : tab === "abastecimiento" ? (
-          <PedidosTable
-            couriers={couriers}
-            onChangeEstado={handleChangeEstado}
-            onPagarAbastecimiento={handlePagarAbastecimiento}
-            onAdminAbastecimiento={handleAdminAbastecimiento}
-            onAbrirDetalle={(envio) => setEnvioParaCompletar(envio)}
-            onAccionEspecial={(tipo, envio, extra) => setAccionEspecial({ tipo, envio, ...extra })}
-            onAbrirResumen={(envio) => setResumenEnvio(envio)}
-            onAbrirHistorial={(envio) => setHistorialEnvio(envio)}
-            onAbrirSeguimiento={(envio) => setSeguimientoEnvio(envio)}
-            refrescarKey={refrescarKey}
-            soloAbastecimiento
-            initialAbastecimientoEstado="en_proceso"
           />
         ) : tab === "delivery" ? (
           <DeliveryPanel
             zonas={deliveryZonas}
             couriers={couriers}
+            esAdmin={esAdmin}
             enviosCountByCourier={enviosCountByCourier}
-            onSaveZonas={async (zonas) => {
-              const res = await replaceDeliveryZonas(zonas);
+            onSaveZonas={async (zonas, courierIds) => {
+              const res = await replaceDeliveryZonas(zonas, courierIds);
               setDeliveryZonas(res);
             }}
             onCreateCourier={async (c) => {
@@ -491,10 +507,23 @@ export function ControlCourier() {
         envio={logisticaModalEnvio}
         onClose={() => setLogisticaModalEnvio(null)}
         onPagar={() => {
-          const envioId = logisticaModalEnvio.id;
+          const envio = logisticaModalEnvio;
           setLogisticaModalEnvio(null);
-          proceedToPagarAbastecimiento(envioId);
+          setTransferenciaModalEnvio(envio);
         }}
+      />
+      <TransferenciaAbastecimientoModal
+        open={!!transferenciaModalEnvio}
+        envio={transferenciaModalEnvio}
+        onClose={() => setTransferenciaModalEnvio(null)}
+        onEnviado={handleComprobanteEnviado}
+      />
+      <AbastecimientoTimelineModal
+        open={!!timelineAbastecimientoEnvio}
+        envio={timelineAbastecimientoEnvio}
+        onClose={() => setTimelineAbastecimientoEnvio(null)}
+        esAdmin={esAdmin}
+        onConfirmarRecepcion={esAdmin ? null : handleConfirmarRecepcionAbastecimiento}
       />
     </div>
   );

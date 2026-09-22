@@ -4,6 +4,7 @@ import { generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/m
 import { trackearEventoGA } from '../../lib/googleAnalytics';
 import { trackearEventoTikTok } from '../../lib/tiktokPixel';
 import { registrarEventoLanding, recalcularCarritoLanding, crearCheckoutLanding, validarCuponLanding } from '../../services/landingPublicaService';
+import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 
 function claveCarrito(item, varianteId, ofertaId) {
   return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}`;
@@ -43,19 +44,10 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       if (sugerencias.length >= maxOfertas) break;
       const productoDict = catalogoCompleto.find(i => i.content_id === itemC.contentId);
       if (!productoDict || !productoDict.ofertas?.length) continue;
-      const ofertasAptas = productoDict.ofertas.filter(o => {
-        if (ofertaIdsEnCarrito.has(Number(o.id))) return false;
-        // La configuración explícita filtra por estrategia, no globalmente.
-        // Así un bump elegido para carrito no oculta los upsells activos.
-        const hayConfigParaEstrategia = productoDict.ofertas.some(oferta =>
-          oferta.estrategia === o.estrategia && idsConfigurados.has(Number(oferta.id))
-        );
-        if (hayConfigParaEstrategia && !idsConfigurados.has(Number(o.id))) return false;
-        if (!o.producto_complementario && !o.productos_incluidos?.length) return false;
-        if (o.estrategia === 'order_bump') return true;
-        if (o.estrategia === 'upsell') return true;
-        return false;
-      });
+      const ofertasAptas = ordenarOfertasCheckout(
+        productoDict.ofertas.filter(o => !ofertaIdsEnCarrito.has(Number(o.id)) && ofertaCheckoutPublicable(o)),
+        idsConfigurados
+      );
       for (const o of ofertasAptas) {
         if (sugerencias.length >= maxOfertas) break;
         const claveOferta = claveCarrito(productoDict, itemC.varianteId, o.id);

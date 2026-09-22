@@ -27,6 +27,8 @@
   --md-ink-faint: #687280;
   --md-confirmado: #ffc107;
   --md-confirmado-soft: rgba(255, 193, 7, 0.16);
+  --md-positivo: #34d399;
+  --md-positivo-soft: rgba(52, 211, 153, 0.16);
   --md-visitas: #7fa8d9;
   --md-contactos: #ffc107;
   --md-carrito: #7fa8d9;
@@ -60,6 +62,8 @@
   --md-ink-faint: #687280;
   --md-confirmado: #b8860b;
   --md-confirmado-soft: rgba(184, 134, 11, 0.12);
+  --md-positivo: #059669;
+  --md-positivo-soft: rgba(5, 150, 105, 0.12);
   --md-visitas: #3d5fa3;
   --md-contactos: #b8860b;
   --md-carrito: #3d5fa3;
@@ -168,10 +172,14 @@
    tarjeta "Embudo de Conversión" — solo agrega el margen que necesita ahí. */
 .md-tabs-embudo { margin: 0.9rem 0 1.2rem; }
 
-/* Selector de landing: el mismo componente de tabs, con una etiqueta al
-   frente porque acá el nombre de la página no alcanza para saber qué se
-   está eligiendo (a diferencia de "Hoy"/"Este mes", que se explican solos). */
-.md-tabs-landing { align-items: center; }
+/* Selector de landing: mismo patrón que productos, con búsqueda porque una
+   cuenta puede tener muchas páginas históricas y no entran bien como tabs. */
+.md-landing-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: min(360px, 100%);
+}
 .md-tabs-label {
   display: inline-flex;
   align-items: center;
@@ -218,6 +226,7 @@
 }
 .md-select:last-child { min-width: min(260px, 100%); }
 .md-select:focus { border-color: var(--md-confirmado); }
+.md-select-landing { min-width: min(300px, 100%); }
 
 /* Selector de producto con búsqueda: mismo look que .md-select, pero es un
    <button> que abre un panel propio en vez de dejar que el navegador dibuje
@@ -282,12 +291,29 @@
   padding: 0.45rem 0.6rem;
   border-radius: 6px;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.12rem;
+  overflow: hidden;
+}
+.md-combo-opcion-main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.md-combo-opcion-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--md-ink-faint);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
 .md-combo-opcion:hover { background: var(--md-surface-alt); }
 .md-combo-opcion.activa { background: var(--md-confirmado); color: #fff; }
+.md-combo-opcion.activa .md-combo-opcion-meta { color: rgba(255, 255, 255, 0.8); }
 .md-combo-vacio {
   font-size: 0.78rem;
   color: var(--md-ink-faint);
@@ -295,6 +321,7 @@
   margin: 0;
 }
 @media (max-width: 600px) {
+  .md-landing-filter { width: 100%; }
   .md-combo { width: 100%; }
   .md-combo-panel { left: 0; right: 0; width: auto; }
 }
@@ -596,7 +623,7 @@
 .md-dot-contactos { background: var(--md-contactos); }
 .md-dot-ventas { background: var(--md-visitas); }
 .md-dot-costos { background: var(--md-negativo); }
-.md-dot-ganancia { background: var(--md-confirmado); }
+.md-dot-ganancia { background: var(--md-positivo); }
 
 .md-empty {
   display: flex;
@@ -642,7 +669,7 @@
 }
 .md-line-ventas { stroke: var(--md-visitas); }
 .md-line-costos { stroke: var(--md-negativo); }
-.md-line-ganancia { stroke: var(--md-confirmado); }
+.md-line-ganancia { stroke: var(--md-positivo); }
 /* El tramo de la curva de ganancia que cae bajo cero. Mismo trazo, otro
    color: sin esto una pérdida se dibujaba dorada igual que una ganancia y
    solo se distinguía mirando la altura. */
@@ -672,7 +699,7 @@
 }
 .md-line-punto-ventas { fill: var(--md-visitas); }
 .md-line-punto-costos { fill: var(--md-negativo); }
-.md-line-punto-ganancia { fill: var(--md-confirmado); }
+.md-line-punto-ganancia { fill: var(--md-positivo); }
 
 .md-chart-tooltip {
   position: absolute;
@@ -882,6 +909,7 @@
 .md-rent-desglose li:last-child { border-bottom: none; }
 
 .md-valor-negativo { color: var(--md-negativo) !important; }
+.md-valor-positivo { color: var(--md-positivo) !important; }
 /* Una pérdida en cero no es una mala noticia: no debe llamar la atención. */
 .md-valor-neutro { color: var(--md-ink-faint); }
 

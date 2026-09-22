@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import ComboProductPage from './ComboProductPage';
 import { fichaComboDesdeProducto, resolverFichaCombo } from './fichaCombo';
 import { armarItemFicha } from '../fichaComun';
-import FunnelCheckout from '../../../funnel/FunnelCheckout';
 
 /**
  * La ficha del Combo en la landing PUBLICADA.
@@ -30,12 +29,8 @@ export default function ComboProductPagePublica({
   // individual (ver TiendaPaginaView.jsx: agrega y abre el carrito, donde
   // se elige PagoPar o contra entrega).
   onAgregar,
-  onComprarAhora,
   onVolver,
-  deliveryCiudades = [],
 }) {
-  const [comprando, setComprando] = useState(false);
-
   const ficha = useMemo(
     () => resolverFichaCombo(item?.ficha_combo, landingConfig?.ficha_combo, fichaComboDesdeProducto(item)),
     [item, landingConfig?.ficha_combo]
@@ -57,46 +52,26 @@ export default function ComboProductPagePublica({
 
   if (!item) return null;
 
-  return (
-    <>
-      <ComboProductPage
-        item={itemFicha}
-        ficha={ficha}
-        tema={tema}
-        templateSlug={templateSlug}
-        contacto={contacto}
-        nombreComercio={nombreComercio}
-        previewMode={false}
-        onVolver={onVolver}
-        onAgregar={onAgregar ? (eleccion) => onAgregar({
-          item,
-          variante: null,
-          oferta: null,
-          cantidad: 1,
-          precio: eleccion?.precio ?? item.precio,
-        }) : null}
-        onComprar={() => setComprando(true)}
-      />
+  const agregarCompra = (eleccion) => onAgregar && onAgregar({
+    item,
+    variante: null,
+    oferta: null,
+    cantidad: 1,
+    precio: eleccion?.precio ?? item.precio,
+  });
 
-      <FunnelCheckout
-        abierto={comprando}
-        onCerrar={() => setComprando(false)}
-        tema={tema || {}}
-        resumen={{
-          nombre: item.nombre,
-          variante: null,
-          precio: item.precio,
-          cantidad: 1,
-          imagen: item.imagenes?.[0] || null,
-        }}
-        ofertasLanding={landingConfig?.ofertas_producto_vista || []}
-        itemOriginal={item}
-        deliveryCiudades={deliveryCiudades}
-        onConfirmar={(form, ofertasCheckout = []) => {
-          if (!onComprarAhora) return undefined;
-          return onComprarAhora(item, null, null, 1, item.precio, form, ofertasCheckout);
-        }}
-      />
-    </>
+  return (
+    <ComboProductPage
+      item={itemFicha}
+      ficha={ficha}
+      tema={tema}
+      templateSlug={templateSlug}
+      contacto={contacto}
+      nombreComercio={nombreComercio}
+      previewMode={false}
+      onVolver={onVolver}
+      onAgregar={agregarCompra}
+      onComprar={agregarCompra}
+    />
   );
 }

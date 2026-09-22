@@ -281,7 +281,7 @@ const UserLayout = ({ children }) => {
               <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
                 <ul className="sidebar-list">
                   {renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
-                  {renderLink({ path: '/finanzas/costos-gastos', label: 'Costos y gastos', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
+                  {renderLink({ path: '/finanzas/costos-gastos', label: 'Control financiero', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
                   {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
                 </ul>
               </div>

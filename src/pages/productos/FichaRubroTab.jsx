@@ -288,7 +288,7 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
 
           <ListaObjetos
             label="Contenido visual"
-            ayuda="Imágenes o videos adicionales del producto."
+            ayuda="Pegá links de YouTube, Vimeo, Drive, Loom, Wistia o MP4/WebM. Video recomendado: 16:9 en 1920x1080 o 1280x720; portada recomendada: 1200x675."
             items={listaDe('tech_multimedia')}
             max={LIMITES.tech_multimedia}
             nuevo={() => ({ titulo: '', url: '', imagen: '' })}
@@ -296,8 +296,8 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             textoAgregar="Agregar contenido"
             campos={[
               { clave: 'titulo', label: 'Título', placeholder: 'Detalle del producto' },
-              { clave: 'url', label: 'Video o link', placeholder: 'URL de video opcional' },
-              { clave: 'imagen', label: 'Imagen', placeholder: 'URL de imagen' },
+              { clave: 'url', label: 'Link de video', placeholder: 'https://youtube.com/watch?v=...' },
+              { clave: 'imagen', label: 'Portada opcional', placeholder: 'URL de imagen 16:9' },
             ]}
           />
 

@@ -1,14 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import ResetPassword from './pages/ResetPassword';
-import Settings from './pages/Settings';
-import Ads from './pages/Ads';
-import ProductList from './pages/productos/ProductList';
-import ProductForm from './pages/productos/ProductForm';
-import CategoriaList from './pages/categorias/CategoriaList';
-import ComboList from './pages/combos/ComboList';
-import ComboEditor from './pages/combos/ComboEditor';
+import LandingPublica from './pages/landing/LandingPublica';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -16,33 +8,52 @@ import RequireTienda from './components/RequireTienda';
 import DashboardLayout from './components/DashboardLayout';
 import UserLayout from './components/UserLayout';
 import DynamicLayout from './components/DynamicLayout';
-import VitrinaGrid from './pages/vitrina/VitrinaGrid';
-import MiDashboard from './pages/dashboard/MiDashboard';
-import MiLandingEntry from './pages/landing/MiLandingEntry';
-import LandingEditor from './pages/landing/LandingEditor';
-import LandingPublica from './pages/landing/LandingPublica';
-import LandingSimpleEntry from './pages/landing-simple/LandingSimpleEntry';
-import EditorSegunModo from './pages/landing-simple/EditorSegunModo';
-import ConfigurarTienda from './pages/tienda/ConfigurarTienda';
-import DepositosPage from './pages/tienda/DepositosPage';
-import Planes from './pages/planes/Planes';
-import CheckoutPlan from './pages/planes/CheckoutPlan';
-import PublicCheckoutPlan from './pages/planes/PublicCheckoutPlan';
-import ResultadoPago from './pages/planes/ResultadoPago';
-import ParametrosAdmin from './pages/admin/Parametros';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminPlanes from './pages/planes/AdminPlanes';
-import MiAfiliado from './pages/afiliados/MiAfiliado';
-import AuthTracking from './pages/admin/AuthTracking';
-import Onboarding from './pages/onboarding/Onboarding';
-import { ControlCourier } from './pages/courier/control-courier';
-import { SeguimientoConfig } from './pages/courier/SeguimientoConfig';
-import EducacionView from './pages/educacion/EducacionView';
-import AdminEducacion from './pages/educacion/AdminEducacion';
-import CostosGastos from './pages/finanzas/CostosGastos';
-import ProveedoresView from './pages/finanzas/Proveedores';
-import AutomationHub from './pages/automation-hub/AutomationHub';
-import FinanzasAutomatizacion from './pages/finanzas/FinanzasAutomatizacion';
+
+// Panel de administracion / dashboard del comercio: ningun visitante publico
+// de una tienda (catalogo, ficha de producto) pasa por estas pantallas, asi
+// que van con lazy() para no sumarles el peso de todo el panel admin al
+// bundle de entrada -- mismo criterio que los documentos legales, mas abajo.
+const Login = lazy(() => import('./pages/Login'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Ads = lazy(() => import('./pages/Ads'));
+const ProductList = lazy(() => import('./pages/productos/ProductList'));
+const ProductForm = lazy(() => import('./pages/productos/ProductForm'));
+const CategoriaList = lazy(() => import('./pages/categorias/CategoriaList'));
+const ComboList = lazy(() => import('./pages/combos/ComboList'));
+const ComboEditor = lazy(() => import('./pages/combos/ComboEditor'));
+const VitrinaGrid = lazy(() => import('./pages/vitrina/VitrinaGrid'));
+const MiDashboard = lazy(() => import('./pages/dashboard/MiDashboard'));
+const MiLandingEntry = lazy(() => import('./pages/landing/MiLandingEntry'));
+const LandingEditor = lazy(() => import('./pages/landing/LandingEditor'));
+const LandingSimpleEntry = lazy(() => import('./pages/landing-simple/LandingSimpleEntry'));
+const EditorSegunModo = lazy(() => import('./pages/landing-simple/EditorSegunModo'));
+const ConfigurarTienda = lazy(() => import('./pages/tienda/ConfigurarTienda'));
+const DepositosPage = lazy(() => import('./pages/tienda/DepositosPage'));
+const InventarioPage = lazy(() => import('./pages/inventario/InventarioPage'));
+const NuevoIngresoPage = lazy(() => import('./pages/inventario/NuevoIngresoPage'));
+const Planes = lazy(() => import('./pages/planes/Planes'));
+const CheckoutPlan = lazy(() => import('./pages/planes/CheckoutPlan'));
+const PublicCheckoutPlan = lazy(() => import('./pages/planes/PublicCheckoutPlan'));
+const ResultadoPago = lazy(() => import('./pages/planes/ResultadoPago'));
+const ParametrosAdmin = lazy(() => import('./pages/admin/Parametros'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminPlanes = lazy(() => import('./pages/planes/AdminPlanes'));
+const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
+const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
+const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
+const ControlCourier = lazy(() => import('./pages/courier/control-courier').then(m => ({ default: m.ControlCourier })));
+const AbastecimientoAdmin = lazy(() => import('./pages/abastecimiento/AbastecimientoAdmin'));
+const RedFulfillment = lazy(() => import('./pages/fulfillment/RedFulfillment'));
+const CentroFulfillmentDetalle = lazy(() => import('./pages/fulfillment/CentroDetalle'));
+const ProveedoresLogisticos = lazy(() => import('./pages/fulfillment/ProveedoresLogisticos'));
+const SeguimientoConfig = lazy(() => import('./pages/courier/SeguimientoConfig').then(m => ({ default: m.SeguimientoConfig })));
+const EducacionView = lazy(() => import('./pages/educacion/EducacionView'));
+const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
+const CostosGastos = lazy(() => import('./pages/finanzas/CostosGastos'));
+const ProveedoresView = lazy(() => import('./pages/finanzas/Proveedores'));
+const AutomationHub = lazy(() => import('./pages/automation-hub/AutomationHub'));
+const FinanzasAutomatizacion = lazy(() => import('./pages/finanzas/FinanzasAutomatizacion'));
 
 // Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
 // el App Dashboard de Meta para la revisión de la aplicación, así que tienen
@@ -139,9 +150,11 @@ import PoliticaEnvioPublica from './pages/landing/PoliticaEnvioPublica';
 import AvisoLegalPublico from './pages/landing/AvisoLegalPublico';
 import ResultadoPagoTienda from './pages/landing/ResultadoPagoTienda';
 import PaginaBuilderPublica from './pages/page-builder/publico/PaginaBuilderPublica';
-import PageBuilderHome from './pages/page-builder/PageBuilderHome';
-import ProyectoDetalle from './pages/page-builder/ProyectoDetalle';
-import FunnelBuilder from './pages/page-builder/funnel/FunnelBuilder';
+// Page Builder (privado, siempre detras de AdminRoute): mismo criterio de
+// lazy() que el resto del panel admin de arriba.
+const PageBuilderHome = lazy(() => import('./pages/page-builder/PageBuilderHome'));
+const ProyectoDetalle = lazy(() => import('./pages/page-builder/ProyectoDetalle'));
+const FunnelBuilder = lazy(() => import('./pages/page-builder/funnel/FunnelBuilder'));
 // El editor va diferido: es la pantalla más pesada del módulo (y la que
 // va a cargar Monaco), no tiene por qué entrar al bundle del dashboard.
 const PageEditor = lazy(() => import('./pages/page-builder/editor/PageEditor'));
@@ -189,6 +202,11 @@ function App() {
     <ThemeProvider>
       <Router>
         <InicializarPixelPlataforma />
+        <Suspense fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <span className="loader" />
+          </div>
+        }>
         <Routes>
         {/* ─────────────────────────────────────────────────────────
             Sitio institucional público (gesicomm.com) — sin guards.
@@ -246,6 +264,23 @@ function App() {
         {/* Otras secciones */}
         <Route path="/orders" element={
           <AdminRoute><DashboardLayout><ControlCourier /></DashboardLayout></AdminRoute>
+        } />
+        {/* Abastecimiento: sección propia, no una pestaña dentro de Pedidos. */}
+        <Route path="/abastecimiento" element={
+          <AdminRoute><DashboardLayout><AbastecimientoAdmin /></DashboardLayout></AdminRoute>
+        } />
+        {/* Red de Fulfillment: el producto logístico de Gesicomm. No es el
+            panel de couriers del comercio, que vive en Pedidos -> Delivery. */}
+        <Route path="/fulfillment" element={
+          <AdminRoute><DashboardLayout><RedFulfillment /></DashboardLayout></AdminRoute>
+        } />
+        {/* Antes que /centros/:id no hace falta: las rutas no se pisan, pero
+            se agrupan para que se lean juntas. */}
+        <Route path="/fulfillment/proveedores" element={
+          <AdminRoute><DashboardLayout><ProveedoresLogisticos /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/fulfillment/centros/:id" element={
+          <AdminRoute><DashboardLayout><CentroFulfillmentDetalle /></DashboardLayout></AdminRoute>
         } />
         <Route path="/customers" element={
           <AdminRoute><DashboardLayout><div><h1>Clientes</h1><p>En construcción</p></div></DashboardLayout></AdminRoute>
@@ -340,6 +375,12 @@ function App() {
         } />
         <Route path="/mi-tienda/depositos" element={
           <RequireTienda><DynamicLayout><DepositosPage /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/inventario" element={
+          <RequireTienda><DynamicLayout><InventarioPage /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/inventario/nuevo" element={
+          <RequireTienda><DynamicLayout><NuevoIngresoPage /></DynamicLayout></RequireTienda>
         } />
         {/* Planes: /planes es la pantalla que ve el comercio (catálogo de
             lib/planesCatalogo.js); /admin/planes es donde el admin edita ese
@@ -439,6 +480,7 @@ function App() {
             blanco, porque React Router no encuentra ninguna coincidencia. */}
         <Route path="*" element={<PaginaPublica><NotFound /></PaginaPublica>} />
       </Routes>
+        </Suspense>
       </Router>
     </ThemeProvider>
   );
