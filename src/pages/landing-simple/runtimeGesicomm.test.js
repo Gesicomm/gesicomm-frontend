@@ -352,6 +352,25 @@ describe('runtime — order bump en la ficha', () => {
       expect.objectContaining({ producto: 'air-fryer-26l', oferta: null, abrir: true }),
     ]);
   });
+
+  it('el botón muestra el total en vivo: cantidad + bumps marcados', () => {
+    const { window, document } = montar(PLANTILLA_PRODUCTO, datos);
+    const total = () => document.querySelector('.buy-row [data-gesicomm-total]').textContent;
+    const precio = datos.producto.precio;
+    const bump = datos.producto.ofertas.find(o => o.estrategia === 'order_bump');
+    const gs = n => 'Gs ' + Math.round(n).toLocaleString('es-PY');
+    expect(total()).toBe(gs(precio));
+
+    const casilla = document.querySelector('input[data-gesicomm-bump]');
+    casilla.checked = true;
+    casilla.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(total()).toBe(gs(precio + bump.precio_efectivo));
+
+    const cantidad = document.querySelector('[data-gesicomm-cantidad-input]');
+    cantidad.value = '2';
+    cantidad.dispatchEvent(new window.Event('input', { bubbles: true }));
+    expect(total()).toBe(gs(precio * 2 + bump.precio_efectivo));
+  });
 });
 
 describe('order bump y upsell de punta a punta (datos del backend → ficha)', () => {

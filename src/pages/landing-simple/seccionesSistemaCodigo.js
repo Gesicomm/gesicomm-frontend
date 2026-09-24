@@ -18,20 +18,28 @@ function htmlTieneSelector(html, selector) {
   return new RegExp(`(?:id|class)=["'][^"']*\\b${selector}\\b[^"']*["']`, 'i').test(html);
 }
 
+// Reconocen tanto el formato viejo (ids/clases, data-gesicomm-checkout) como
+// el contrato del runtime (data-gesicomm-lista, -comprar, -form, -link): si
+// la landing ya tiene la sección, Gesicom no agrega otra.
 export function codigoTieneProductos(codigo) {
   const html = codigo?.html || '';
   return htmlTieneSelector(html, 'productos')
     || htmlTieneSelector(html, 'productos-grid')
-    || /data-gesicomm-checkout/i.test(html);
+    || /data-gesicomm-(checkout|comprar|agregar)\b/i.test(html)
+    || /data-gesicomm-lista=["'](catalogo|productos|combos)["']/i.test(html);
 }
 
 export function codigoTieneContacto(codigo) {
-  return htmlTieneSelector(codigo?.html || '', 'contacto');
+  const html = codigo?.html || '';
+  return htmlTieneSelector(html, 'contacto')
+    || /data-gesicomm-form=["']contacto["']/i.test(html)
+    || /data-gesicomm-whatsapp\b/i.test(html);
 }
 
 export function codigoTieneFooter(codigo) {
   const html = codigo?.html || '';
-  return /<footer(?:\s|>)/i.test(html) || htmlTieneSelector(html, 'footer');
+  return /<footer(?:\s|>)/i.test(html) || htmlTieneSelector(html, 'footer')
+    || /data-gesicomm-link=["']politica-privacidad["']/i.test(html);
 }
 
 function esc(valor) {

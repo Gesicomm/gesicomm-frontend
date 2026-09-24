@@ -26,6 +26,12 @@ const TOKENS_CSS = `:root {
   --accent-soft: #fff5e3;
   --shadow-sm: 0 8px 25px rgba(16, 32, 47, .07);
   --shadow-lg: 0 24px 70px rgba(16, 32, 47, .14);
+  /* Contrato con el carrito de Gesicom: lee estas cuatro para pintarse con
+     los colores de la página (ver el puente de tema del iframe). */
+  --gc-primario: var(--brand);
+  --gc-texto-sobre-primario: var(--white);
+  --gc-fondo: var(--paper);
+  --gc-texto: var(--ink);
   --radius-sm: 14px;
   --radius-lg: 28px;
   --max: 1180px;
@@ -530,27 +536,47 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .buy-row .button-primary { flex: 1; min-height: 52px; font-size: 1rem; }
 .buy-secondary { display: flex; gap: 10px; margin-bottom: 26px; }
 .buy-secondary .button-secondary { flex: 1; }
+/* Caminos secundarios más livianos: el primario es "Comprar ahora" con el
+   total, y el bump no tiene que competir con tres botones iguales. */
+.pdp .buy-secondary .button-secondary { min-height: 40px; background: transparent; border-color: transparent; color: var(--ink-soft); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.pdp .buy-secondary .button-secondary:hover { color: var(--ink); }
 
 .offers { display: grid; gap: 12px; margin-bottom: 26px; }
 /* Order bump. Lo que sostienen los datos: casilla en el mismo lugar de la
    compra, precio anterior tachado, poco texto. El borde punteado y la
    franja de color son la convención del formato para que se note. */
-.bumps { display: grid; gap: 12px; margin-bottom: 18px; }
-.bump { display: block; overflow: hidden; background: #fffdf5; border: 2px dashed #f0b43c; border-radius: 16px; cursor: pointer; transition: border-color .2s ease, background .2s ease; }
-.bump:hover { border-color: #d98f06; }
+.bumps { display: grid; gap: 12px; margin-bottom: 12px; }
+.bump { position: relative; display: block; overflow: hidden; background: #fffdf5; border: 2px dashed #f0b43c; border-radius: 16px; cursor: pointer; transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease; }
+.bump:hover { border-color: #d98f06; box-shadow: 0 10px 24px -14px rgba(217, 143, 6, .6); transform: translateY(-1px); }
+.bump:has(.bump-check:focus-visible) { outline: 3px solid var(--brand-soft); outline-offset: 2px; }
 .bump.is-checked, .bump:has(.bump-check:checked) { background: var(--brand-soft); border-style: solid; border-color: var(--brand); }
+/* La casilla real queda accesible (teclado, lector) pero invisible: el
+   control que se ve es .bump-dot. */
+.bump-check { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .bump-flag { display: block; padding: 7px 14px; color: #6b4a00; background: #ffe3a3; font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.bump-flag-on, .bump-ctrl-on { display: none; }
 .bump.is-checked .bump-flag, .bump:has(.bump-check:checked) .bump-flag { color: var(--white); background: var(--brand); }
-.bump-body { display: flex; gap: 12px; align-items: flex-start; padding: 14px; }
-.bump-check { flex: 0 0 22px; width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--brand); cursor: pointer; }
-.bump-img { flex: 0 0 56px; width: 56px; height: 56px; object-fit: contain; background: var(--white); border-radius: 10px; }
+.bump.is-checked .bump-flag-off, .bump:has(.bump-check:checked) .bump-flag-off,
+.bump.is-checked .bump-ctrl-off, .bump:has(.bump-check:checked) .bump-ctrl-off,
+.bump.is-checked .bump-sub, .bump:has(.bump-check:checked) .bump-sub { display: none; }
+.bump.is-checked .bump-flag-on, .bump:has(.bump-check:checked) .bump-flag-on,
+.bump.is-checked .bump-ctrl-on, .bump:has(.bump-check:checked) .bump-ctrl-on { display: inline; }
+.bump-body { display: flex; gap: 14px; align-items: center; padding: 14px 14px 10px; }
+.bump-img { flex: 0 0 68px; width: 68px; height: 68px; object-fit: contain; background: var(--white); border: 1px solid var(--line); border-radius: 12px; }
 .bump-copy { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.bump-sub { color: var(--ink-soft); font-size: .84rem; }
+.bump-sub b { color: var(--ink); }
 .bump-title { font-weight: 800; line-height: 1.25; }
-.bump-text { color: var(--ink-soft); font-size: .86rem; }
 .bump-prices { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
 .bump-prices b { font-size: 1.05rem; }
 .bump-prices s { color: var(--ink-soft); font-size: .85rem; }
 .bump-prices em, .offer-save { color: #b42318; font-size: .82rem; font-style: normal; font-weight: 800; }
+.bump-ctrl { display: flex; align-items: center; gap: 10px; margin: 0 14px; padding: 10px 0 12px; border-top: 1px solid rgba(0, 0, 0, .08); font-weight: 800; font-size: .9rem; }
+.bump-dot { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border: 2px solid var(--brand); border-radius: 999px; color: transparent; font-size: .8rem; transition: background .15s ease, color .15s ease; }
+.bump.is-checked .bump-dot, .bump:has(.bump-check:checked) .bump-dot { background: var(--brand); color: var(--white); }
+.bump-ctrl-on u { margin-left: 10px; color: var(--ink-soft); font-weight: 600; font-size: .82rem; }
+.bump-incluye { display: none; margin: -2px 2px 14px; color: var(--ink-soft); font-size: .85rem; }
+.bumps:has(.bump-check:checked) + .bump-incluye { display: block; }
 .upsell { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 14px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; }
 .upsell img { flex: 0 0 64px; width: 64px; height: 64px; object-fit: contain; background: #f3f2ee; border-radius: 12px; }
 .upsell > div { flex: 1 1 160px; min-width: 0; }
@@ -632,28 +658,38 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
            oferta se suma sola al tocar "Comprar ahora". -->
       <div class="bumps" data-gesicomm-lista="ofertas_bump">
         <template>
+          <!-- Toda la tarjeta es la casilla (label): se marca tocando en
+               cualquier parte. El estado marcado cambia encabezado y control. -->
           <label class="bump">
-            <span class="bump-flag">Oferta solo con esta compra</span>
+            <input class="bump-check" type="checkbox" data-gesicomm-bump>
+            <span class="bump-flag">
+              <span class="bump-flag-off">Oferta exclusiva · <span data-gesicomm-bind="ahorro"></span></span>
+              <span class="bump-flag-on">✓ Oferta agregada a tu pedido</span>
+            </span>
             <span class="bump-body">
-              <input class="bump-check" type="checkbox" data-gesicomm-bump>
               <img class="bump-img" data-gesicomm-bind="imagen" alt="">
               <span class="bump-copy">
+                <span class="bump-sub">Sumalo a tu pedido por solo <b data-gesicomm-bind="precio"></b></span>
                 <span class="bump-title" data-gesicomm-bind="nombre"></span>
-                <span class="bump-text" data-gesicomm-bind="descripcion"></span>
                 <span class="bump-prices">
                   <b data-gesicomm-bind="precio"></b>
                   <s data-gesicomm-bind="precio_antes"></s>
-                  <em data-gesicomm-bind="ahorro"></em>
                 </span>
               </span>
+            </span>
+            <span class="bump-ctrl">
+              <span class="bump-dot" aria-hidden="true">✓</span>
+              <span class="bump-ctrl-off">Agregar esta oferta</span>
+              <span class="bump-ctrl-on">Oferta agregada <u>Quitar</u></span>
             </span>
           </label>
         </template>
       </div>
+      <p class="bump-incluye">Tu compra incluye <span data-gesicomm-bind="nombre"></span> + la oferta seleccionada.</p>
 
       <div class="buy-row">
         <input class="qty" type="number" min="1" max="99" value="1" aria-label="Cantidad" data-gesicomm-cantidad-input>
-        <button class="button-primary" type="button" data-gesicomm-comprar>Comprar ahora</button>
+        <button class="button-primary" type="button" data-gesicomm-comprar>Comprar ahora · <span data-gesicomm-total></span></button>
       </div>
       <div class="buy-secondary">
         <button class="button-secondary" type="button" data-gesicomm-agregar>Agregar al carrito</button>

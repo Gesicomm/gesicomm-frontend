@@ -38,6 +38,7 @@
  *   bind "ahorro" → "Ahorrás Gs X" (ofertas con precio anterior)
  *   data-gesicomm-variante         (dentro de la lista "variantes") elige la variante
  *   data-gesicomm-cantidad-input   input numérico de cantidad en la ficha
+ *   data-gesicomm-total            total en vivo de la ficha (producto × cantidad + bumps marcados)
  *   data-gesicomm-whatsapp[="texto"] abre el WhatsApp de la tienda
  *   data-gesicomm-evento="Nombre"  registra un evento de tracking propio
  *   <form data-gesicomm-form="contacto"> consulta → WhatsApp + evento Lead
@@ -173,6 +174,22 @@ export function runtimeGesicomm() {
   function precioDe(item, variante) {
     if (variante && Number(variante.precio_efectivo) > 0) return variante.precio_efectivo;
     return item.precio;
+  }
+
+  // Total de la compra de la ficha: producto (con variante y cantidad) + los
+  // order bumps marcados. Lo muestran los elementos data-gesicomm-total (ej.
+  // dentro del botón: "Comprar ahora · Gs 160.000"), así marcar la oferta
+  // da una confirmación inmediata de que se sumó.
+  function pintarTotal() {
+    var destinos = document.querySelectorAll('[data-gesicomm-total]');
+    if (!destinos.length || !productoActual) return;
+    var input = document.querySelector('[data-gesicomm-cantidad-input]');
+    var n = input ? parseInt(input.value, 10) : 1;
+    var total = (Number(precioDe(productoActual, varianteElegida)) || 0) * (n > 0 ? Math.min(n, 99) : 1);
+    (productoActual.ofertas || []).forEach(function (o) {
+      if (bumpsElegidos[o.id]) total += Number(o.precio_efectivo) || 0;
+    });
+    for (var i = 0; i < destinos.length; i++) destinos[i].textContent = formatoPrecio(total);
   }
 
   function aplicarBind(el, item, extra) {
@@ -336,6 +353,7 @@ export function runtimeGesicomm() {
       }
     }
     pintarControlesCatalogo();
+    pintarTotal();
     var marcas = document.querySelectorAll('[data-gesicomm-tienda]');
     for (var k = 0; k < marcas.length; k++) {
       var campo = marcas[k].getAttribute('data-gesicomm-tienda');
@@ -495,6 +513,10 @@ export function runtimeGesicomm() {
     repintarCatalogo();
   });
 
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.matches && e.target.matches('[data-gesicomm-cantidad-input]')) pintarTotal();
+  });
+
   var temporizadorBusqueda = null;
   document.addEventListener('input', function (e) {
     var campo = e.target && e.target.closest ? e.target.closest('[data-gesicomm-buscar]') : null;
@@ -516,7 +538,9 @@ export function runtimeGesicomm() {
       if (!idBump) return;
       if (bump.checked) bumpsElegidos[idBump] = true; else delete bumpsElegidos[idBump];
       cont.classList.toggle('is-checked', bump.checked);
-      if (bump.checked) toast('Listo: se suma cuando toques Comprar');
+      pintarTotal();
+      // Sin toast: la tarjeta marcada y el total del botón ya lo confirman,
+      // y el aviso flotante tapaba justo el botón de comprar.
       enviar({ tipo: 'gesicomm:evento', nombre: bump.checked ? 'OrderBumpMarcado' : 'OrderBumpDesmarcado', datos: { oferta: idBump } });
       return;
     }

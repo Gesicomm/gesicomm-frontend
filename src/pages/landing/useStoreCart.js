@@ -19,10 +19,40 @@ export function cargarCarritoGuardado(slug) {
   }
 }
 
+const CLAVE_UTM = 'gesicomm:utm';
+const CAMPOS_UTM = ['utm_source', 'utm_medium', 'utm_campaign'];
+
+/**
+ * Los UTM llegan solo en la URL de entrada (el link del anuncio). Al pasar a
+ * la ficha de un producto el SPA cambia de ruta y el query string se pierde,
+ * así que el pedido salía sin campaña aunque la visita viniera de una. Se
+ * guardan en sessionStorage la primera vez que aparecen: duran lo que dura
+ * la visita, que es justo el alcance de la atribución.
+ */
+function capturarUtm() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const nuevos = {};
+    CAMPOS_UTM.forEach(c => { const v = params.get(c); if (v) nuevos[c] = v.slice(0, 100); });
+    if (Object.keys(nuevos).length) sessionStorage.setItem(CLAVE_UTM, JSON.stringify(nuevos));
+  } catch { /* sin storage: se usa lo que haya en la URL al pagar */ }
+}
+
+function leerUtm() {
+  const params = new URLSearchParams(window.location.search);
+  let guardados = {};
+  try { guardados = JSON.parse(sessionStorage.getItem(CLAVE_UTM) || '{}') || {}; } catch { guardados = {}; }
+  const salida = {};
+  CAMPOS_UTM.forEach(c => { salida[c] = params.get(c) || guardados[c] || undefined; });
+  return salida;
+}
+
 export function useStoreCart(slug, data, catalogoCompleto) {
   const navigate = useNavigate();
   const [carrito, setCarrito] = useState(() => cargarCarritoGuardado(slug));
   const [carritoAbierto, setCarritoAbierto] = useState(false);
+
+  useEffect(() => { capturarUtm(); }, []);
 
   useEffect(() => { setCarrito(cargarCarritoGuardado(slug)); }, [slug]);
   
@@ -145,9 +175,10 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         value: valorTotal,
         currency: 'PYG'
       });
-      // Misma firma que TiendaPaginaView: (slug, payload). Antes se llamaba
-      // (data.id, 'AddToCart', {...}) y el backend respondía 400, así que el
-      // AddToCart de estas landings nunca llegaba a CAPI ni a Estadísticas.
+      // Misma firma que PageView/InitiateCheckout: (slug, {event_name, ...}).
+      // Antes se llamaba con (data.id, 'AddToCart', {...}) — el backend
+      // recibía el string como body y lo rechazaba, así que ningún
+      // AddToCart llegó nunca a la Conversions API ni a las estadísticas.
       registrarEventoLanding(slug, {
         event_name: 'AddToCart',
         event_id: eventId,
@@ -155,6 +186,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         fbc,
         fbp,
         custom_data: customData,
+        items: [{ content_id: item.content_id, nombre: nombreCompleto, cantidad, precio }],
       }).catch(() => {});
     } catch (e) {
       console.error('Error trackeando AddToCart:', e);
@@ -214,15 +246,49 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     }));
 
     const res = await recalcularCarritoLanding(slug, itemsPayload);
+    const cookiesFb = leerCookiesFacebook();
     const checkout = await crearCheckoutLanding(slug, {
       ...datosFormulario,
       items: itemsPayload,
       descuentos: res.descuentos_aplicados || [],
       origen: slug ? 'landing' : 'tienda_directa',
-      utm_source: new URLSearchParams(window.location.search).get('utm_source') || undefined,
-      utm_medium: new URLSearchParams(window.location.search).get('utm_medium') || undefined,
-      utm_campaign: new URLSearchParams(window.location.search).get('utm_campaign') || undefined,
+      ...leerUtm(),
+      // Para el Purchase que manda el backend por la Conversions API: sin
+      // fbc/fbp Meta no puede asociar la compra al clic del anuncio.
+      fbc: cookiesFb.fbc || undefined,
+      fbp: cookiesFb.fbp || undefined,
+      event_source_url: window.location.href,
     });
+
+    // Purchase de navegador, con el MISMO event_id que el backend ya mandó
+    // por CAPI (Meta cuenta una sola compra). Solo viene cuando el pedido
+    // cuenta como venta ya: con PagoPar el Purchase sale del servidor recién
+    // al confirmarse el pago, y esta pantalla ya no está (se va a PagoPar).
+    if (checkout.purchase_event_id) {
+      try {
+        const valor = Number(checkout.monto) || 0;
+        trackearEvento('Purchase', checkout.purchase_event_id, {
+          value: valor,
+          currency: 'PYG',
+          content_ids: itemsCrudos.map(i => i.contentId),
+          content_type: 'product',
+          num_items: itemsCrudos.reduce((sum, item) => sum + item.cantidad, 0),
+        });
+        trackearEventoGA('purchase', {
+          transaction_id: String(checkout.numero_pedido || checkout.pedido_id),
+          currency: 'PYG',
+          value: valor,
+          items: itemsCrudos.map(i => ({ item_id: i.contentId, item_name: i.nombre, price: i.precio, quantity: i.cantidad })),
+        });
+        trackearEventoTikTok('CompletePayment', {
+          contents: itemsCrudos.map(i => ({ content_id: i.contentId, content_name: i.nombre, quantity: i.cantidad, price: i.precio })),
+          value: valor,
+          currency: 'PYG',
+        });
+      } catch (e) {
+        console.error('Error trackeando Purchase:', e);
+      }
+    }
 
     try {
       const eventId = generarEventId();

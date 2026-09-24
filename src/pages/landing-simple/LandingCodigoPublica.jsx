@@ -1,10 +1,15 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
+import { PLANTILLA_PRODUCTO } from './plantillasBaseCodigo';
+import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
+import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
+import { trackearEventoGA } from '../../lib/googleAnalytics';
+import { registrarEventoLanding, obtenerCatalogoLandingPublica } from '../../services/landingPublicaService';
 import CartDrawer from '../landing/CartDrawer';
+import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { getMediaUrl } from '../../services/api';
 import { useStoreCart } from '../landing/useStoreCart';
-import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
-import { CSS_BUMP_CODIGO, datosBumpsCodigo, scriptBumpCodigo } from './bumpCodigo';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -19,8 +24,6 @@ import { CSS_BUMP_CODIGO, datosBumpsCodigo, scriptBumpCodigo } from './bumpCodig
  * del documento contenedor mientras esta landing está montada.
  */
 function contactoDesdeData(data) {
-  // contacto_landing ya trae el fallback a los datos de la Tienda
-  // (onboarding / Configurar tienda), ver landing.service.js.
   return {
     whatsapp: data?.contacto_whatsapp || data?.contacto_landing?.whatsapp || '',
     telefono: data?.contacto_telefono || data?.contacto_landing?.telefono || '',
@@ -86,10 +89,15 @@ function textoLegibleSobre(fondo) {
   return blanco >= negro ? '#ffffff' : '#111827';
 }
 
-function resolverItemCheckout(data, pedido) {
+// Los únicos eventos que el backend acepta en /eventos además de los del
+// carrito (ver EVENTOS_PERMITIDOS en landingPublica.controller). Cualquier
+// otro nombre que ponga el comercio en data-gesicomm-evento va solo al
+// pixel y a GA como evento personalizado.
+const EVENTOS_ESTANDAR = new Set(['Contact', 'Lead']);
+
+function resolverItemCheckout(items, pedido) {
   const raw = String(pedido?.producto || '').trim();
   if (!raw) return null;
-  const items = data?.catalogo_items || data?.items || [];
   const colon = raw.match(/^(producto|combo):(\d+)$/);
   if (colon) {
     const [, tipo, id] = colon;
@@ -98,25 +106,58 @@ function resolverItemCheckout(data, pedido) {
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
 }
 
-export default function LandingCodigoPublica({ codigo, titulo, data = null, slug }) {
+export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null }) {
+  const navigate = useNavigate();
+  // Ficha de producto: una sola plantilla (content.vistas.producto) que el
+  // runtime llena con el producto de la URL. Si el comercio todavía no la
+  // escribió se usa la ficha base: ningún producto se queda sin página.
+  const productoPublico = productId ? (data?.producto || null) : null;
+  const esFicha = !!productoPublico;
+  const codigo = esFicha
+    ? (data?.content?.vistas?.producto?.html ? data.content.vistas.producto : PLANTILLA_PRODUCTO)
+    : codigoInicio;
+
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
-  const productos = useMemo(() => data?.catalogo_items || data?.items || [], [data]);
+  // Todo producto que la landing mostró: la primera página que vino con la
+  // landing + cada página que el visitante pidió después. Comprar desde la
+  // página 7 tiene que encontrar el producto (y el carrito, sus ofertas).
+  const [extras, setExtras] = useState([]);
+  useEffect(() => { setExtras([]); }, [data]);
+  const productos = useMemo(() => {
+    const base = data?.catalogo_items || data?.items || [];
+    if (!extras.length) return base;
+    const ids = new Set(base.map(i => i.content_id));
+    return [...base, ...extras.filter(i => !ids.has(i.content_id))];
+  }, [data, extras]);
   const cartState = useStoreCart(slug, data, productos);
+  const datosRuntime = useMemo(
+    () => (data ? datosRuntimePublico(data, slug, productoPublico) : null),
+    [data, slug, productoPublico],
+  );
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
   const tieneFooterEnCodigo = useMemo(() => codigoTieneFooter(codigo), [codigo?.html]);
   // Colores reales de la landing, reportados por el iframe (variables
-  // --gc-* del prompt, o lo que se ve si el código no las define). Hasta
-  // que llegan se usa el tema guardado de la landing/tienda.
+  // --gc-* o lo que se ve si el código no las define). Hasta que llegan se
+  // usa el tema guardado; así el carrito nunca queda oscuro sobre una
+  // landing blanca.
   const [temaIframe, setTemaIframe] = useState(null);
   const onTema = useCallback((t) => setTemaIframe(t), []);
+  const cartApariencia = useMemo(() => ({
+    primario: temaIframe?.primario || tema.acento,
+    fondo: temaIframe?.fondo || tema.fondo,
+  }), [temaIframe, tema]);
 
-  const extras = useMemo(() => {
+  // Productos (si el código no tiene grilla), contacto y footer legal de la
+  // tienda: van DENTRO del iframe, heredando fondo y tipografía de la
+  // landing. Afuera quedaban con un segundo scroll y el fondo de la tienda
+  // (oscuro por defecto) aunque la landing fuera blanca.
+  const seccionesSistema = useMemo(() => {
     if (!data) return null;
     const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/') && slug ? `/l/${slug}` : '';
-    const secciones = armarSeccionesSistema({
-      mostrarProductos: !tieneProductosEnCodigo,
+    return armarSeccionesSistema({
+      mostrarProductos: !esFicha && !tieneProductosEnCodigo,
       mostrarContacto: !tieneContactoEnCodigo,
       mostrarFooter: !tieneFooterEnCodigo,
       productos: productos.map(p => ({ ...p, imagen: p.imagen ? getMediaUrl(p.imagen) : null })),
@@ -125,37 +166,117 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
       basePath,
       acento: tema.acento,
     });
-    return {
-      html: secciones.html,
-      css: `${secciones.css}\n${CSS_BUMP_CODIGO}`,
-      script: scriptBumpCodigo(datosBumpsCodigo(productos, getMediaUrl)),
-    };
-  }, [data, slug, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
+  }, [data, slug, esFicha, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
+  // Ventas cruzadas apagadas en la configuración de venta → el carrito no sugiere nada.
+  const crossSellActivo = data?.content?.venta?.cross_sell?.activo !== false;
 
-  const apariencia = useMemo(() => ({
-    primario: temaIframe?.primario || tema.acento,
-    fondo: temaIframe?.fondo || tema.fondo,
-  }), [temaIframe, tema]);
+  // ViewContent de la ficha: una vez por producto, con el mismo event_id
+  // al pixel y a la Conversions API (así Meta los deduplica).
+  const vistaTrackeada = useRef(null);
+  useEffect(() => {
+    if (!esFicha || vistaTrackeada.current === productoPublico.content_id) return;
+    vistaTrackeada.current = productoPublico.content_id;
+    try {
+      const eventId = generarEventId();
+      const { fbc, fbp } = leerCookiesFacebook();
+      const customData = {
+        content_ids: [productoPublico.content_id],
+        content_name: productoPublico.nombre,
+        content_type: productoPublico.tipo === 'combo' ? 'product_group' : 'product',
+        value: Number(productoPublico.precio) || 0,
+        currency: 'PYG',
+      };
+      trackearEvento('ViewContent', eventId, customData);
+      trackearEventoGA('view_item', {
+        currency: 'PYG',
+        value: customData.value,
+        items: [{ item_id: productoPublico.content_id, item_name: productoPublico.nombre, price: customData.value }],
+      });
+      registrarEventoLanding(slug, {
+        event_name: 'ViewContent', event_id: eventId, event_source_url: window.location.href, fbc, fbp, custom_data: customData,
+      });
+    } catch (e) {
+      console.error('Error trackeando ViewContent:', e);
+    }
+  }, [esFicha, productoPublico, slug]);
 
   function abrirCheckout(pedido) {
     if (!data) return;
-    const item = resolverItemCheckout(data, pedido);
+    const item = resolverItemCheckout(productos, pedido);
     if (!item) return;
-    const cantidad = Number(pedido?.cantidad || 1) || 1;
-    cartState.agregarAlCarrito({
-      item,
-      variante: null,
-      oferta: null,
-      cantidad,
-      precio: item.precio || 0,
+    const cantidad = Math.max(1, Math.min(99, Number(pedido?.cantidad || 1) || 1));
+    const variante = pedido?.variante != null
+      ? (item.variantes || []).find(v => Number(v.id) === Number(pedido.variante)) || null
+      : null;
+    const oferta = pedido?.oferta != null
+      ? (item.ofertas || []).find(o => Number(o.id) === Number(pedido.oferta)) || null
+      : null;
+    // El precio es solo lo que se muestra en el carrito: el backend lo
+    // recalcula entero al confirmar (LandingService.resolverCarrito).
+    const precio = oferta
+      ? (oferta.precio_efectivo ?? oferta.precio_normal ?? oferta.precio ?? item.precio)
+      : (variante?.precio_efectivo ?? item.precio ?? 0);
+    cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio });
+    if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
+  }
+
+  // Una página del catálogo, pedida por el runtime del iframe.
+  const pedirCatalogo = useCallback(async (pedido) => {
+    const res = await obtenerCatalogoLandingPublica(slug, {
+      pagina: pedido?.pagina,
+      porPagina: pedido?.porPagina,
+      orden: pedido?.orden === 'min-max' || pedido?.orden === 'max-min' || pedido?.orden === 'az' || pedido?.orden === 'za'
+        ? pedido.orden
+        : 'destacados',
+      categoria: pedido?.categoria || undefined,
+      busqueda: pedido?.busqueda || undefined,
     });
-    // Order bump marcado en la landing (ver bumpCodigo.js): se agrega como
-    // la misma oferta que ofrece el carrito, con su precio promocional.
-    for (const ofertaId of pedido?.ofertas || []) {
-      const oferta = (item.ofertas || []).find(o => Number(o.id) === Number(ofertaId));
-      if (oferta) cartState.agregarSugerencia(item, oferta);
+    if (!res || !res.disponible) throw new Error('Catálogo no disponible');
+    const items = res.items || [];
+    setExtras(prev => {
+      const ids = new Set(prev.map(i => i.content_id));
+      return [...prev, ...items.filter(i => !ids.has(i.content_id))];
+    });
+    return {
+      productos: items.map(i => itemPublicoARuntime(i, slug, data?.content?.venta || null)),
+      pagina: res.paginacion?.pagina || 1,
+      totalPaginas: res.paginacion?.totalPaginas || 1,
+      total: res.paginacion?.total ?? items.length,
+      categorias: res.categorias_disponibles || [],
+    };
+  }, [slug]);
+
+  function navegar(pedido) {
+    if (pedido?.destino === 'producto' && pedido.producto) {
+      navigate(urlProducto(slug, pedido.producto));
+    } else if (pedido?.destino === 'inicio') {
+      navigate(slug ? `/l/${slug}` : '/');
+    } else if (pedido?.destino === 'pagina' && PAGINAS_TIENDA[pedido.pagina]) {
+      navigate(urlPaginaTienda(slug, pedido.pagina));
     }
-    cartState.setCarritoAbierto(true);
+  }
+
+  function registrarEvento(pedido) {
+    const nombre = String(pedido?.nombre || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+    if (!nombre) return;
+    const eventId = generarEventId();
+    try {
+      if (EVENTOS_ESTANDAR.has(nombre)) {
+        const { fbc, fbp } = leerCookiesFacebook();
+        const customData = productoPublico
+          ? { content_ids: [productoPublico.content_id], content_type: 'product' }
+          : undefined;
+        trackearEvento(nombre, eventId, customData || {});
+        registrarEventoLanding(slug, {
+          event_name: nombre, event_id: eventId, event_source_url: window.location.href, fbc, fbp, custom_data: customData,
+        });
+      } else {
+        trackearEventoPersonalizado(nombre, eventId, {});
+      }
+      trackearEventoGA(nombre === 'Lead' ? 'generate_lead' : nombre === 'Contact' ? 'contact' : nombre, {});
+    } catch (e) {
+      console.error('Error trackeando evento de la landing:', e);
+    }
   }
 
   const vacia = !codigo?.html?.trim() && !codigo?.css?.trim() && !codigo?.js?.trim();
@@ -169,14 +290,29 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
   }
 
   return (
-    <div style={{ height: '100vh', background: apariencia.fondo }}>
-      <CodigoPreview codigo={codigo} titulo={titulo} extras={extras} onCheckout={abrirCheckout} onTema={onTema} />
+    <div style={{ height: '100vh', background: cartApariencia.fondo }}>
+      {/* key: al pasar de un producto a otro el iframe se remonta y el
+          JS del comercio arranca de cero, como en una página nueva. */}
+      <CodigoPreview
+        key={esFicha ? `producto:${productoPublico.content_id}` : 'inicio'}
+        codigo={codigo}
+        titulo={esFicha ? productoPublico.nombre : titulo}
+        datos={datosRuntime}
+        extras={seccionesSistema}
+        onCheckout={abrirCheckout}
+        onNavegar={navegar}
+        onEvento={registrarEvento}
+        onCatalogo={pedirCatalogo}
+        onTema={onTema}
+      />
 
       <CartDrawer
         items={Array.from(cartState.carrito.values())}
-        sugerencias={cartState.sugerenciasCarrito}
+        sugerencias={crossSellActivo
+          ? cartState.sugerenciasCarrito.filter(s => ofertaCruzadaVisible(s.oferta, data?.content?.venta))
+          : []}
         onAgregarSugerencia={cartState.agregarSugerencia}
-        crossSells={cartState.crossSellsCarrito}
+        crossSells={crossSellActivo ? cartState.crossSellsCarrito : []}
         onAgregarCrossSell={cartState.agregarCrossSell}
         abierto={cartState.carritoAbierto}
         onAbrir={() => cartState.setCarritoAbierto(true)}
@@ -187,7 +323,7 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
         deliveryCiudades={data?.delivery_ciudades || []}
-        apariencia={apariencia}
+        apariencia={cartApariencia}
       />
     </div>
   );

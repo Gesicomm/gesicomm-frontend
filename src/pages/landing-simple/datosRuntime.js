@@ -138,11 +138,21 @@ export function contentIdPanel(item) {
   return item.tipo === 'combo' ? `combo-${item.id}` : (item.slug || `producto-${item.id}`);
 }
 
-/** Oferta del panel (GET /api/ofertas) → oferta del runtime, para el preview. */
-function ofertaPanelARuntime(o) {
+/**
+ * Oferta del panel (GET /api/ofertas) → oferta del runtime, para el preview.
+ * Mismas reglas que el DTO público: bump y upsell se cobran al precio
+ * promocional (precio_order_bump) si lo tienen, y sin imagen propia se
+ * muestra la del producto que suma la oferta (su primer componente), que es
+ * lo que el cliente reconoce.
+ */
+function ofertaPanelARuntime(o, imagenDeProducto = () => null) {
   const normal = Number(o.precio_normal) || 0;
   const bump = o.precio_order_bump != null ? Number(o.precio_order_bump) : null;
-  const efectivo = o.estrategia === 'order_bump' && bump ? bump : normal;
+  const efectivo = ['order_bump', 'upsell'].includes(o.estrategia) && bump ? bump : normal;
+  const componente = (o.componentes || [])[0] || null;
+  const imgsComponente = componente?.producto?.imagenes || [];
+  const imagenComponente = (imgsComponente.find(i => i.es_principal) || imgsComponente[0])?.url
+    || imagenDeProducto(componente?.producto_id ?? componente?.producto?.id);
   return conAhorro({
     id: o.id,
     nombre: o.nombre,
@@ -150,12 +160,12 @@ function ofertaPanelARuntime(o) {
     descripcion: o.descripcion || null,
     precio_efectivo: efectivo,
     precio_normal: normal > efectivo ? normal : null,
-    imagen: media(o.imagen_url),
+    imagen: media(o.imagen_url || o.imagen || imagenComponente),
   });
 }
 
 /** Item del catálogo del panel (vitrina) → item del runtime, para el preview del editor. */
-export function itemPanelARuntime(item, ofertas = []) {
+export function itemPanelARuntime(item, ofertas = [], imagenDeProducto) {
   const contentId = contentIdPanel(item);
   const precio = item.precio_efectivo ?? item.precio_usuario ?? item.precio_base ?? item.precio ?? 0;
   const imagenes = (item.imagenes || []).map(media).filter(Boolean);
@@ -179,7 +189,7 @@ export function itemPanelARuntime(item, ofertas = []) {
     // El catálogo del panel no trae variantes ni ofertas: el preview de la
     // ficha las muestra vacías y la landing publicada las trae reales.
     variantes: [],
-    ofertas: ofertas.map(ofertaPanelARuntime),
+    ofertas: ofertas.map(o => ofertaPanelARuntime(o, imagenDeProducto)),
     productos_incluidos: item.productos_incluidos || null,
     url: '#',
   };
@@ -269,7 +279,9 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
       const k = Number(o.producto_ancla_id);
       porProducto.set(k, [...(porProducto.get(k) || []), o]);
     });
-  const catalogo = productos.map(p => itemPanelARuntime(p, p.tipo === 'producto' ? (porProducto.get(Number(p.id)) || []) : []));
+  const imagenPorProducto = new Map(productos.filter(p => p.tipo === 'producto').map(p => [Number(p.id), p.imagen]));
+  const imagenDeProducto = id => imagenPorProducto.get(Number(id)) || null;
+  const catalogo = productos.map(p => itemPanelARuntime(p, p.tipo === 'producto' ? (porProducto.get(Number(p.id)) || []) : [], imagenDeProducto));
   const producto = vista === 'producto'
     ? (catalogo.find(i => i.id === productoId) || catalogo[0] || null)
     : null;

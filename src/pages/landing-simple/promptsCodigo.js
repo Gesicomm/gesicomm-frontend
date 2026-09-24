@@ -85,7 +85,11 @@ Datos de la tienda: data-gesicomm-tienda="nombre|logo|email|telefono|whatsapp|di
 
 ## Order bump (lo que dicen los datos)
 - Es una CASILLA, no un botón aparte, y va justo ARRIBA del botón de comprar de la ficha.
-- Encabezado corto que lo haga notar (ej. "Oferta solo con esta compra"), borde que se distinga del resto, foto chica, el nombre, una sola frase de beneficio, precio, precio anterior tachado y el ahorro.
+- TODA la tarjeta es la casilla: envolvela en un <label> con el <input type="checkbox" data-gesicomm-bump> adentro (podés ocultarlo visualmente y dibujar un control propio). Hover con cursor pointer.
+- Jerarquía: encabezado con el beneficio económico ("Oferta exclusiva · " + bind "ahorro"), después "Sumalo a tu pedido por solo " + precio, foto de 56–72px (que se reconozca el producto), el nombre, precio y precio anterior tachado. Nada de claims de salud exagerados.
+- Estado marcado MUY evidente: el runtime pone la clase "is-checked" en la tarjeta (o usá :has(:checked)). Cambiá el encabezado a "✓ Oferta agregada a tu pedido", el borde a sólido y el control a "✓ Oferta agregada · Quitar". No alcanza con un ☑.
+- Poné <span data-gesicomm-total></span> dentro del botón de comprar ("Comprar ahora · Gs 40.000"): el runtime lo actualiza en vivo con la cantidad y los bumps marcados ("· Gs 160.000").
+- "Agregar al carrito" y "Consultar por WhatsApp" van como caminos secundarios livianos (links o botones fantasma), para que no compitan con la compra y el bump.
 - Poco texto: dos o tres frases como máximo.
 - Nunca marcada de antemano: la elige el cliente.
 - Upsell y paquetes van DEBAJO del botón de compra, con su propio botón.
@@ -101,6 +105,11 @@ Un producto con variantes comprado desde una grilla lleva a su ficha para elegir
 - Tenés window.Gesicomm: productos, producto (en la ficha), recomendados, tienda, formatoPrecio(n), comprar(id), agregar(id), verProducto(id), whatsapp(texto), evento(nombre), renderizar(), toast(texto).
 - PROHIBIDO (el guardado lo rechaza, también dentro de atributos onclick): fetch, XMLHttpRequest, WebSocket, EventSource, navigator.sendBeacon, localStorage, sessionStorage, indexedDB, document.cookie, postMessage, eval, new Function, import(), document.write, serviceWorker, y cualquier "parent.", "top." u "opener." — aunque sea la propiedad de otro objeto (rect.top.toFixed() también se rechaza: guardalo antes en una variable, const y = rect.top;). parentElement y parentNode sí se pueden usar.
 - Los links a anclas (href="#seccion") scrollean dentro de la página; no hace falta JS para eso.
+
+## Colores (obligatorio)
+Definí la paleta con estas variables CSS exactas en :root y usalas en todo el CSS; el carrito y el checkout de Gesicom las leen para pintarse con los mismos colores de la página:
+:root { --gc-primario: #xxxxxx; --gc-texto-sobre-primario: #xxxxxx; --gc-fondo: #xxxxxx; --gc-texto: #xxxxxx; }
+(botones y acentos / texto encima del primario / fondo principal sólido / texto principal). Poné background: var(--gc-fondo) y color: var(--gc-texto) en el body. Podés sumar variables propias, pero estas cuatro tienen que existir con estos nombres.
 
 ## Reglas de calidad
 - Mobile first: la mayoría de las visitas llegan desde anuncios de Instagram/Facebook en el celular. Probá mentalmente en 375px.

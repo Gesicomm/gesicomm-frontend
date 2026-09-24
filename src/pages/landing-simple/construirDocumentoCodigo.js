@@ -21,6 +21,8 @@
  * (salvo lo que el guardado le quite).
  */
 
+import { runtimeGesicomm } from './runtimeGesicomm';
+
 // El sandbox del iframe. allow-same-origin NO va acá y no debe agregarse:
 // combinado con allow-scripts anula el aislamiento por completo.
 export const SANDBOX_CODIGO = [
@@ -47,6 +49,24 @@ const CSP = [
   "base-uri 'none'",
 ].join('; ');
 
+// Los separadores de línea se construyen por código y no como escape
+// en un literal: más de una herramienta los "normaliza" al carácter real
+// y el regex queda roto.
+const SEPARADOR_LINEA = new RegExp(String.fromCharCode(0x2028), 'g');
+const SEPARADOR_PARRAFO = new RegExp(String.fromCharCode(0x2029), 'g');
+
+/**
+ * JSON seguro para meter dentro de un <script>: `<` escapado corta
+ * cualquier `</script>` que venga en un nombre o descripción de producto,
+ * y U+2028/U+2029 rompen el parseo de JS aunque sean JSON válido.
+ */
+function jsonEnScript(valor) {
+  return JSON.stringify(valor ?? {})
+    .replace(/</g, '\\u003c')
+    .replace(SEPARADOR_LINEA, '\\u2028')
+    .replace(SEPARADOR_PARRAFO, '\\u2029');
+}
+
 /** Evita que un `</script>` dentro del JS del comercio cierre el <script> del documento. */
 function escaparCierreScript(js) {
   return String(js || '').replace(/<\/(script)/gi, '<\\/$1');
@@ -57,21 +77,28 @@ function escaparCierreStyle(css) {
   return String(css || '').replace(/<\/(style)/gi, '<\\/$1');
 }
 
+const SYSTEM_CSS = `
+/* Los upsells no viven dentro de la ficha: son una etapa del checkout. */
+[data-gesicomm-lista="ofertas_upsell"] {
+  display: none !important;
+}
+`;
+
 /**
  * @param {{html?: string, css?: string, js?: string}} codigo
- * @param {{titulo?: string, reportarErrores?: boolean, extras?: {html: string, css: string, script?: string}}} opciones
+ * @param {{titulo?: string, reportarErrores?: boolean, datos?: object, extras?: {html: string, css: string}}} opciones
  *   reportarErrores: manda los errores de ejecución del JS al contenedor
  *   por postMessage — lo usa el editor para mostrarlos; en la landing
  *   pública no hace falta.
  *   extras: secciones de Gesicom (productos/contacto/footer) que se pegan
  *   al final del <body>, ver seccionesSistemaCodigo.js. Ya vienen escapadas.
- *   extras.script: runtime del order bump (bumpCodigo.js), antes del puente
- *   de checkout porque este lee lo que el cliente marcó.
+
+ *   datos: lo que lee el runtime (window.__GESICOMM__), ver datosRuntime.js.
  * @returns {string} documento listo para el srcDoc del iframe
  */
 export function construirDocumentoCodigo(codigo, opciones = {}) {
   const { html = '', css = '', js = '' } = codigo || {};
-  const { titulo = '', reportarErrores = false, extras = null } = opciones;
+  const { titulo = '', reportarErrores = false, datos = null, extras = null } = opciones;
 
   // El puente de errores lo inyectamos nosotros, no el comercio: por eso
   // puede usar postMessage aunque el JS del comercio lo tenga prohibido.
@@ -84,17 +111,24 @@ window.addEventListener('unhandledrejection', function (e) {
 });
 </script>` : '';
 
-  const puenteGesicomm = `<script>
+  // El runtime (ver runtimeGesicomm.js) va ANTES del código del comercio:
+  // cuando su JS corre, las listas ya están pintadas y window.Gesicomm
+  // existe. Lo inyectamos nosotros, no pasa por el sanitizador, y por eso
+  // puede usar postMessage aunque al comercio se lo prohibamos. Maneja
+  // compra, cantidad y order bumps; acá solo se agrega el reporte de tema.
+  const puenteGesicomm = `<script>window.__GESICOMM__ = ${jsonEnScript(datos)};</script>
+<script>(${runtimeGesicomm.toString()})();</script>
+<script>
 // Tema de la landing → carrito. El carrito vive fuera del iframe y no puede
-// leer este CSS: se le mandan los colores. Primero las variables --gc-* que
-// pide el prompt de generación; si el código no las define, lo que se ve
-// (fondo del body, color de texto, fondo del primer botón de compra).
+// leer este CSS: se le mandan los colores. Primero las variables --gc-* del
+// prompt; si el código no las define, lo que se ve (fondo del body, color
+// de texto, fondo del primer botón de compra).
 (function () {
   function opaco(c) { return c && c !== 'transparent' && c.replace(/ /g, '') !== 'rgba(0,0,0,0)' ? c : ''; }
   function reportar() {
     var raiz = getComputedStyle(document.documentElement);
     var body = document.body ? getComputedStyle(document.body) : raiz;
-    var boton = document.querySelector('[data-gesicomm-checkout]');
+    var boton = document.querySelector('[data-gesicomm-comprar], [data-gesicomm-checkout]');
     var v = function (n) { return raiz.getPropertyValue(n).trim(); };
     parent.postMessage({
       tipo: 'gesicomm:tema',
@@ -105,24 +139,6 @@ window.addEventListener('unhandledrejection', function (e) {
   }
   if (document.readyState === 'complete') reportar(); else window.addEventListener('load', reportar);
 })();
-document.addEventListener('click', function (e) {
-  var el = e.target && e.target.closest ? e.target.closest('[data-gesicomm-checkout]') : null;
-  if (!el) return;
-  e.preventDefault();
-  var producto = String(el.getAttribute('data-gesicomm-checkout') || '');
-  // Cantidad: el input data-gesicomm-cantidad-de del producto (si la landing
-  // lo tiene) o el atributo fijo data-gesicomm-cantidad. Ofertas: las que el
-  // cliente marcó en el bump de Gesicom (ver bumpCodigo.js).
-  var cantidad = el.hasAttribute('data-gesicomm-cantidad')
-    ? Number(el.getAttribute('data-gesicomm-cantidad')) || 1
-    : (window.__gesicommCantidad ? window.__gesicommCantidad(producto) : 1);
-  parent.postMessage({
-    tipo: 'gesicomm:checkout',
-    producto: producto,
-    cantidad: cantidad,
-    ofertas: window.__gesicommBumps ? window.__gesicommBumps(producto) : []
-  }, '*');
-});
 </script>`;
 
   return `<!doctype html>
@@ -141,12 +157,14 @@ html, body { margin: 0; padding: 0; }
 <style>
 ${escaparCierreStyle(css)}
 </style>
+<style>
+${SYSTEM_CSS}
+</style>
 ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 </head>
 <body>
 ${html || ''}
 ${extras?.html || ''}
-${extras?.script ? `<script>\n${escaparCierreScript(extras.script)}\n</script>` : ''}
 ${puenteGesicomm}
 ${puenteErrores}
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y

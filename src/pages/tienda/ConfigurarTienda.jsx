@@ -45,7 +45,7 @@ const FORM_INICIAL = {
   mensaje_contacto: 'Hola, me interesa {producto}',
   nombre_contacto: '',
   canal_contacto: 'whatsapp',
-  email_contacto: '',
+  email: '',
   instagram: '',
   facebook: '',
   twitter: '',
@@ -194,7 +194,7 @@ export default function ConfigurarTienda() {
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
           nombre_contacto: data.nombre_contacto || '',
           canal_contacto: data.canal_contacto || 'whatsapp',
-          email_contacto: data.email_contacto || '',
+          email: data.email || data.email_contacto || '',
           instagram: data.instagram || '',
           facebook: data.facebook || '',
           twitter: data.twitter || '',
@@ -788,8 +788,8 @@ export default function ConfigurarTienda() {
                           <span className="tn-field-label"><Mail size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Email de contacto <em>(opcional)</em></span>
                           <input
                             type="email"
-                            value={form.email_contacto}
-                            onChange={e => handleChange('email_contacto', e.target.value)}
+                            value={form.email}
+                            onChange={e => handleChange('email', e.target.value)}
                             placeholder="Ej: contacto@tutienda.com"
                           />
                         </label>
@@ -909,6 +909,7 @@ export default function ConfigurarTienda() {
                   </section>
 
                   {/* Mensaje de WhatsApp */}
+
                   <section className="tn-group">
                     <div className="tn-group-head">
                       <h3>Mensaje de WhatsApp</h3>
