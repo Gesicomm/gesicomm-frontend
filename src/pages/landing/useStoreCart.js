@@ -4,10 +4,10 @@ import { generarEventId, leerCookiesFacebook, trackearEvento } from '../../lib/m
 import { trackearEventoGA } from '../../lib/googleAnalytics';
 import { trackearEventoTikTok } from '../../lib/tiktokPixel';
 import { registrarEventoLanding, recalcularCarritoLanding, crearCheckoutLanding, validarCuponLanding } from '../../services/landingPublicaService';
-import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
+import { calcularCrossSells, ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 
-function claveCarrito(item, varianteId, ofertaId) {
-  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}`;
+function claveCarrito(item, varianteId, ofertaId, componenteVarianteId) {
+  return `${item.tipo}:${item.content_id}:${varianteId || 'base'}:${ofertaId || 'individual'}:${componenteVarianteId || 'sinbump'}`;
 }
 
 export function cargarCarritoGuardado(slug) {
@@ -89,13 +89,25 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     return sugerencias;
   }, [data?.content?.ofertas_carrito, catalogoCompleto, carrito]);
 
-  function agregarSugerencia(item, oferta) {
-    const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
-    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio });
+  const crossSellsCarrito = useMemo(
+    () => calcularCrossSells(catalogoCompleto, Array.from(carrito.values())),
+    [catalogoCompleto, carrito],
+  );
+
+  function agregarCrossSell(item) {
+    agregarAlCarrito({ item, variante: null, oferta: null, cantidad: 1, precio: item.precio || 0 });
   }
 
-  function agregarAlCarrito({ item, variante, oferta, cantidad, precio }) {
-    const clave = claveCarrito(item, variante?.id, oferta?.id);
+  // componenteVariante: variante elegida para el componente "elegible" del
+  // bump/upsell — mismo contrato que TiendaPaginaView. Antes se ignoraba y
+  // el pedido salía sin la variante que el cliente eligió en el carrito.
+  function agregarSugerencia(item, oferta, componenteVariante = null) {
+    const precio = oferta.precio_efectivo ?? oferta.precio_order_bump ?? oferta.precio_normal ?? oferta.precio ?? 0;
+    agregarAlCarrito({ item, variante: null, oferta, cantidad: 1, precio, componenteVariante });
+  }
+
+  function agregarAlCarrito({ item, variante, oferta, cantidad, precio, componenteVariante = null }) {
+    const clave = claveCarrito(item, variante?.id, oferta?.id, componenteVariante?.id);
     const stockMax = variante ? variante.stock : (oferta ? null : item.stock);
     setCarrito(prev => {
       const copia = new Map(prev);
@@ -112,9 +124,17 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         varianteNombre: variante?.nombre || null,
         ofertaId: oferta?.id || null,
         ofertaNombre: oferta?.nombre || null,
+        componenteVarianteId: componenteVariante?.id || null,
+        componenteVarianteNombre: componenteVariante?.nombre || null,
         precio,
+        // Precio de lista, para mostrar el ahorro en el carrito: el normal de
+        // la oferta (bump/upsell/pack) o el "antes" del producto. Con
+        // variante no se usa: precio_antes es del producto base.
+        precioAntes: oferta
+          ? (Number(oferta.precio_normal) || null)
+          : (variante ? null : (Number(item.precio_antes) || null)),
         cantidad: nuevaCantidad,
-        imagen: oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
+        imagen: componenteVariante?.imagenes?.[0] || oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
         envioIncluido: item.envio_incluido === true,
       });
@@ -155,10 +175,9 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         value: valorTotal,
         currency: 'PYG'
       });
-      // Misma firma que PageView/InitiateCheckout: (slug, {event_name, ...}).
-      // Antes se llamaba con (data.id, 'AddToCart', {...}) — el backend
-      // recibía el string como body y lo rechazaba, así que ningún
-      // AddToCart llegó nunca a la Conversions API ni a las estadísticas.
+      // Misma firma que TiendaPaginaView: (slug, payload). Antes se llamaba
+      // (data.id, 'AddToCart', {...}) y el backend respondía 400, así que el
+      // AddToCart de estas landings nunca llegaba a CAPI ni a Estadísticas.
       registrarEventoLanding(slug, {
         event_name: 'AddToCart',
         event_id: eventId,
@@ -166,8 +185,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
         fbc,
         fbp,
         custom_data: customData,
-        items: [{ content_id: item.content_id, nombre: nombreCompleto, cantidad, precio }],
-      });
+      }).catch(() => {});
     } catch (e) {
       console.error('Error trackeando AddToCart:', e);
     }
@@ -208,6 +226,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       cantidad: i.cantidad,
       variante_id: i.varianteId,
       oferta_id: i.ofertaId,
+      componente_variante_id: i.componenteVarianteId || undefined,
     }));
     return validarCuponLanding(slug, codigo, itemsPayload);
   }
@@ -221,6 +240,7 @@ export function useStoreCart(slug, data, catalogoCompleto) {
       cantidad: i.cantidad,
       variante_id: i.varianteId,
       oferta_id: i.ofertaId,
+      componente_variante_id: i.componenteVarianteId || undefined,
     }));
 
     const res = await recalcularCarritoLanding(slug, itemsPayload);
@@ -319,6 +339,8 @@ export function useStoreCart(slug, data, catalogoCompleto) {
     setCarritoAbierto,
     sugerenciasCarrito,
     agregarSugerencia,
+    crossSellsCarrito,
+    agregarCrossSell,
     agregarAlCarrito,
     quitarDelCarrito,
     cambiarCantidadCarrito,

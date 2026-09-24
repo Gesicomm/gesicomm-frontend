@@ -26,6 +26,7 @@ export default function RedesPanel({ draft, onCampo }) {
     <div className="flex flex-col gap-4">
       <p className="text-xs text-fg/40 leading-relaxed">
         Perfiles visibles en el pie de la tienda y en la página de contacto. WhatsApp se carga en Contacto.
+        Si dejás un campo vacío, se usa el que cargaste en Configurar tienda.
       </p>
       {CAMPOS.map(({ key, label, placeholder, Icon }) => (
         <div key={key}>

@@ -9,7 +9,16 @@ import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
 import { vitrinaService } from '../../services/vitrinaService';
 import CodigoPreview from './CodigoPreview';
-import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
+import { getMediaUrl } from '../../services/api';
+import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
+import { CSS_BUMP_CODIGO } from './bumpCodigo';
+
+// En el editor no hay ofertas cargadas: el marcador del bump se muestra como
+// un recuadro que avisa dónde va a aparecer, en vez de quedar invisible.
+const CSS_BUMP_EDITOR = `
+[data-gesicomm-bump]:empty { display: block; margin: 16px 0; padding: 14px; border-radius: 14px; border: 1.5px dashed color-mix(in srgb, var(--gc-primario, #16a34a) 60%, transparent); font: 600 13px system-ui, sans-serif; opacity: .8; }
+[data-gesicomm-bump]:empty::before { content: "Acá se muestra el order bump de este producto (se configura en Mis productos → Ofertas)"; }
+`;
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
 import { PLANTILLA_PRODUCTO, plantillaInicioPara, formatoDeBase } from './plantillasBaseCodigo';
@@ -66,16 +75,110 @@ function resolverSeleccion(items, catalogo) {
     .filter(Boolean);
 }
 
-/**
- * Selección → payload de items. Conserva lo que ya tenía cada item en la
- * landing (etiqueta, precio ancla, envío incluido): el paso de venta elige
- * QUÉ productos, no pisa cómo estaban configurados.
- */
-function seleccionAItems(seleccion, itemsPrevios = []) {
-  const previos = new Map(itemsPrevios.map(i => [`${i.tipo}:${Number(i.referencia_id)}`, i]));
-  return seleccion.map((p, idx) => {
-    const previo = previos.get(`${p.tipo}:${Number(p.id)}`) || {};
-    return {
+function bloqueProductosHtml(productos = []) {
+  if (!productos.length) return '';
+  const cards = productos.map(p => {
+    const precio = formatearGs(precioProducto(p));
+    return [
+      '    <article class="producto-card">',
+      p.imagen ? `      <img src="${escaparHtml(p.imagen)}" alt="${escaparHtml(p.nombre)}" />` : '',
+      `      <span class="producto-tipo">${p.tipo === 'combo' ? 'Combo' : 'Producto'}</span>`,
+      `      <h3>${escaparHtml(p.nombre)}</h3>`,
+      p.descripcion ? `      <p>${escaparHtml(p.descripcion)}</p>` : '',
+      precio ? `      <strong>${precio}</strong>` : '',
+      `      <div data-gesicomm-bump="${p.tipo}:${p.id}"></div>`,
+      `      <button class="producto-cta" data-gesicomm-checkout="${p.tipo}:${p.id}">Comprar ahora</button>`,
+      '    </article>',
+    ].filter(Boolean).join('\n');
+  }).join('\n');
+  return [
+    '<section class="productos" id="productos">',
+    '  <div class="productos-header">',
+    '    <span>Productos seleccionados</span>',
+    '    <h2>Armá tu oferta con estos productos</h2>',
+    '    <p>Estos son los productos que elegiste en tu catálogo. Podés cambiar textos, orden y llamadas a la acción.</p>',
+    '  </div>',
+    '  <div class="productos-grid">',
+    cards,
+    '  </div>',
+    '</section>',
+  ].join('\n');
+}
+
+function bloqueProductosCss(cssActual = '') {
+  // Si el código todavía no define la paleta --gc-*, se la agrega: es lo que
+  // lee el carrito de Gesicom para pintarse igual que la landing.
+  const paleta = /--gc-primario\s*:/.test(cssActual) ? [] : [
+    '',
+    ':root {',
+    '  --gc-primario: #2563eb;',
+    '  --gc-texto-sobre-primario: #ffffff;',
+    '  --gc-fondo: #ffffff;',
+    '  --gc-texto: #0f172a;',
+    '}',
+  ];
+  return [
+    ...paleta,
+    '',
+    '.productos { padding: 72px 24px; }',
+    '.productos-header { max-width: 820px; margin: 0 auto 28px; text-align: center; }',
+    '.productos-header span { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--gc-primario); }',
+    '.productos-header h2 { margin: 8px 0; font-size: clamp(28px, 4vw, 48px); }',
+    '.productos-header p { margin: 0 auto; max-width: 62ch; opacity: .72; }',
+    '.productos-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }',
+    '.producto-card { display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: 18px; }',
+    '.producto-card img { width: 100%; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 12px; background: #fff; }',
+    '.producto-tipo { width: fit-content; padding: 5px 9px; border-radius: 999px; background: color-mix(in srgb, var(--gc-primario) 14%, transparent); color: var(--gc-primario); font-size: 11px; font-weight: 800; }',
+    '.producto-card h3 { margin: 0; font-size: 20px; }',
+    '.producto-card p { margin: 0; opacity: .72; line-height: 1.5; }',
+    '.producto-card strong { margin-top: auto; font-size: 18px; }',
+    '.producto-cta { display: inline-flex; justify-content: center; padding: 12px 16px; border: 0; border-radius: 12px; background: var(--gc-primario); color: var(--gc-texto-sobre-primario); font-weight: 800; text-decoration: none; cursor: pointer; }',
+  ].join('\n');
+}
+
+function armarPromptProductos(productos = [], tienda) {
+  const nombre = tienda?.nombre || 'mi tienda';
+  const detalle = productos.map((p, idx) => [
+    `${idx + 1}. ${p.nombre}`,
+    `Tipo: ${p.tipo === 'combo' ? 'combo' : 'producto'}`,
+    p.categoria ? `Categoría: ${p.categoria}` : null,
+    formatearGs(precioProducto(p)) ? `Precio: ${formatearGs(precioProducto(p))}` : null,
+    p.descripcion ? `Descripción: ${p.descripcion}` : null,
+    p.imagen ? `Imagen: ${p.imagen}` : null,
+    p.productos_incluidos?.length ? `Incluye: ${p.productos_incluidos.join(', ')}` : null,
+  ].filter(Boolean).join('\n')).join('\n\n');
+  return [
+    `Quiero crear una landing en HTML, CSS y JavaScript para ${nombre}.`,
+    'Usá los productos seleccionados de abajo como contenido principal de la oferta.',
+    'La landing debe tener hero, sección de beneficios, detalle de los productos, prueba social y FAQ.',
+    '',
+    'COLORES (obligatorio): definí la paleta con estas variables CSS exactas en :root y usalas en todo el CSS.',
+    'El carrito y el checkout de Gesicom leen estas variables para pintarse con los mismos colores de la landing:',
+    ':root {',
+    '  --gc-primario: #xxxxxx;              /* botones de compra y acentos */',
+    '  --gc-texto-sobre-primario: #xxxxxx;  /* texto encima de --gc-primario, con buen contraste */',
+    '  --gc-fondo: #xxxxxx;                 /* fondo principal de la página (color sólido) */',
+    '  --gc-texto: #xxxxxx;                 /* texto principal sobre --gc-fondo */',
+    '}',
+    'Poné también background: var(--gc-fondo) y color: var(--gc-texto) en el body. Podés agregar otras variables propias, pero estas cuatro tienen que existir con estos nombres.',
+    '',
+    'CHECKOUT: cada botón de compra debe usar data-gesicomm-checkout="producto:ID" o data-gesicomm-checkout="combo:ID". Ese botón abre el carrito real de Gesicom (datos de entrega, PagoPar, order bump, upsell y cross-sell).',
+    'ORDER BUMP: justo arriba del botón de compra de cada producto poné <div data-gesicomm-bump="producto:ID"></div> (vacío). Gesicom dibuja ahí la oferta configurada con su precio, ahorro e imagen, y el botón pasa a mostrar el total ("Comprar ahora · Gs 160.000"). NO armes el order bump a mano con un checkbox: no estaría conectado al pedido.',
+    'CANTIDAD (opcional): si ponés un selector de cantidad, usá <input type="number" min="1" value="1" data-gesicomm-cantidad-de="producto:ID">.',
+    'No armes carrito, formulario de compra, upsells ni cupones en el HTML: el checkout de Gesicom los muestra solo, con las ofertas configuradas en cada producto.',
+    '',
+    'CONTACTO Y FOOTER: no los incluyas. Gesicom agrega al final la sección de contacto con las redes sociales de la tienda y el footer con los enlaces legales, con los colores de la landing.',
+    '',
+    'No uses fetch, localStorage, cookies, scripts externos ni dependencias externas.',
+    '',
+    'Productos seleccionados:',
+    detalle || 'Sin productos seleccionados.',
+  ].join('\n');
+}
+
+function productosAItemsLanding(productos = []) {
+  return productos
+    .map((p, idx) => ({
       tipo: p.tipo,
       referencia_id: Number(p.id),
       etiqueta: previo.etiqueta || '',
@@ -155,10 +258,23 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       vitrinaService.catalogo().catch(() => ({ productos: [], combos: [] })),
     ]).then(([l, t, cat]) => {
       if (!activo) return;
-      const inicial = {
-        inicio: { ...CODIGO_VACIO, ...(l.content?.codigo || {}) },
-        producto: l.content?.vistas?.producto?.html ? l.content.vistas.producto : PLANTILLA_PRODUCTO,
-      };
+      let prefilledItems = [];
+      try {
+        const stored = sessionStorage.getItem('gesicomm:prefilledLandingItems');
+        if (stored) {
+          prefilledItems = JSON.parse(stored);
+          sessionStorage.removeItem('gesicomm:prefilledLandingItems');
+        }
+      } catch (e) {}
+      const productosPrefill = normalizarSeleccionLanding(prefilledItems, { productos: [], combos: [] });
+      const inicial = { ...CODIGO_VACIO, ...(l.content?.codigo || {}) };
+      const inicialConProductos = productosPrefill.length ? {
+        // Contacto y footer ya no se pegan acá: los agrega Gesicom solo, con
+        // los datos de la tienda (ver seccionesSistemaCodigo.js).
+        html: inicial.html.includes('id="productos"') ? inicial.html : `${inicial.html}\n\n${bloqueProductosHtml(productosPrefill)}`,
+        css: inicial.css.includes('.productos') ? inicial.css : `${inicial.css}\n${bloqueProductosCss(inicial.css)}`,
+        js: inicial.js,
+      } : inicial;
       setLanding(l);
       setTienda(t);
       setCatalogo(cat);
@@ -341,40 +457,46 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   const publicUrl = useMemo(() => urlPublicaLanding(tienda, landing), [tienda, landing]);
 
-  const datosPreview = useMemo(() => datosRuntimePreview({
-    productos: seleccion,
-    tienda,
-    venta,
-    vista,
-    productoId: productoPreviewId,
-  }), [seleccion, tienda, venta, vista, productoPreviewId]);
-
-  const nombrePorId = useMemo(
-    () => new Map(seleccion.map(p => [contentIdPanel(p), p.nombre])),
-    [seleccion],
+  // Mismas secciones automáticas (productos/contacto/footer) que agrega la
+  // landing pública, para que el preview no mienta. El contacto sale de la
+  // landing y, lo que falte, de Configurar tienda — igual que el DTO público.
+  const extrasPreview = useMemo(() => {
+    const campo = k => landing?.[`contacto_${k}`] || tienda?.[k] || '';
+    const contacto = Object.fromEntries(
+      ['whatsapp', 'telefono', 'email', 'direccion', 'ciudad', 'pais', 'horarios', 'instagram', 'facebook', 'tiktok', 'youtube', 'twitter']
+        .map(k => [k, campo(k)])
+    );
+    const secciones = armarSeccionesSistema({
+      mostrarProductos: !codigoTieneProductos(codigoPreview),
+      mostrarContacto: !codigoTieneContacto(codigoPreview),
+      mostrarFooter: !codigoTieneFooter(codigoPreview),
+      productos: productosSeleccionados.map(p => ({
+        tipo: p.tipo,
+        referencia_id: p.referencia_id ?? p.id,
+        nombre: p.nombre,
+        precio: precioProducto(p),
+        imagen: p.imagen ? getMediaUrl(p.imagen) : null,
+      })),
+      contacto,
+      nombreComercio: ajustes.titulo || tienda?.nombre || 'Tu tienda',
+      acento: tienda?.color_primario || null,
+    });
+    return { ...secciones, css: `${secciones.css}\n${CSS_BUMP_CODIGO}\n${CSS_BUMP_EDITOR}` };
+  }, [landing, tienda, productosSeleccionados, codigoPreview, ajustes.titulo]);
+  const promptProductos = useMemo(
+    () => armarPromptProductos(productosSeleccionados, tienda),
+    [productosSeleccionados, tienda],
   );
 
-  // Clics del runtime dentro del preview: no hay carrito en el editor, así
-  // que se explica qué pasaría y la navegación cambia de vista acá mismo.
-  const alCheckoutPreview = useCallback((p) => {
-    const nombre = nombrePorId.get(p?.producto) || 'el producto';
-    setAviso(`Preview: en la landing publicada esto ${p?.abrir === false ? 'agrega' : 'agrega y abre el carrito con'} "${nombre}".`);
-  }, [nombrePorId]);
-  const alNavegarPreview = useCallback((p) => {
-    if (p?.destino === 'pagina') {
-      setAviso(`Preview: en la landing publicada este link abre «${PAGINAS_TIENDA[p.pagina] || p.pagina}».`);
-      return;
+  async function copiarPromptProductos() {
+    try {
+      await navigator.clipboard.writeText(promptProductos);
+      setPromptCopiado(true);
+      setTimeout(() => setPromptCopiado(false), 1800);
+    } catch (e) {
+      setError('No se pudo copiar el prompt. Seleccionalo manualmente desde la pestaña Productos.');
     }
-    if (p?.destino === 'producto') {
-      setVista('producto');
-      setProductoPreviewId(p.producto);
-    } else {
-      setVista('inicio');
-    }
-  }, []);
-  const alEventoPreview = useCallback((p) => {
-    setAviso(`Preview: se registraría el evento "${p?.nombre}".`);
-  }, []);
+  }
 
   if (cargando) {
     return (
@@ -647,9 +769,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 titulo={ajustes.seo_titulo || ajustes.titulo}
                 datos={datosPreview}
                 onError={alErrorRuntime}
-                onCheckout={alCheckoutPreview}
-                onNavegar={alNavegarPreview}
-                onEvento={alEventoPreview}
+                extras={extrasPreview}
               />
             </div>
           </div>

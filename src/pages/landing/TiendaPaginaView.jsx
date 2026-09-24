@@ -29,7 +29,7 @@ import StoreFooterLegal from './StoreFooterLegal';
 import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
 import FunnelCheckout from '../funnel/FunnelCheckout';
 import { mapPublicDtoToFunnelData } from '../funnel/mapFunnelToTemplateData';
-import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
+import { calcularCrossSells, ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -203,6 +203,15 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     return sugerencias;
   }, [data, catalogoCompleto, carrito]);
 
+  const crossSellsCarrito = useMemo(
+    () => calcularCrossSells(catalogoCompleto, Array.from(carrito.values())),
+    [catalogoCompleto, carrito],
+  );
+
+  function agregarCrossSell(item) {
+    agregarAlCarrito({ item, variante: null, oferta: null, cantidad: 1, precio: item.precio || 0 });
+  }
+
   function agregarSugerencia(item, oferta, componenteVariante = null) {
     // precio_efectivo es el que el backend va a cobrar por esta oferta
     // (promocional si la tiene, normal si no) — ver landing.service.js. Los
@@ -236,6 +245,12 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         componenteVarianteId: componenteVariante?.id || null,
         componenteVarianteNombre: componenteVariante?.nombre || null,
         precio,
+        // Precio de lista, para mostrar el ahorro en el carrito: el normal de
+        // la oferta (bump/upsell/pack) o el "antes" del producto. Con
+        // variante no se usa: precio_antes es del producto base.
+        precioAntes: oferta
+          ? (Number(oferta.precio_normal) || null)
+          : (variante ? null : (Number(item.precio_antes) || null)),
         cantidad: nuevaCantidad,
         imagen: componenteVariante?.imagenes?.[0] || oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,
@@ -730,6 +745,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       items: Array.from(carrito.values()),
       sugerencias: sugerenciasCarrito,
       onAgregarSugerencia: agregarSugerencia,
+      crossSells: crossSellsCarrito,
+      onAgregarCrossSell: agregarCrossSell,
       abierto: carritoAbierto,
       onAbrir: () => setCarritoAbierto(true),
       onCerrar: () => setCarritoAbierto(false),
@@ -1091,6 +1108,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         items={Array.from(carrito.values())}
         sugerencias={sugerenciasCarrito}
         onAgregarSugerencia={agregarSugerencia}
+        crossSells={crossSellsCarrito}
+        onAgregarCrossSell={agregarCrossSell}
         abierto={carritoAbierto}
         onAbrir={() => setCarritoAbierto(true)}
         onCerrar={() => setCarritoAbierto(false)}

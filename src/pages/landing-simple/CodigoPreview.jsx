@@ -19,7 +19,7 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * clics del runtime vuelven por postMessage y se reparten en onCheckout /
  * onNavegar / onEvento.
  */
-export default function CodigoPreview({ codigo, titulo, datos, onError, onCheckout, onNavegar, onEvento, onCatalogo, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, onError, onCheckout, onTema, extras = null, className = '', style }) {
   const ref = useRef(null);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
@@ -39,8 +39,8 @@ export default function CodigoPreview({ codigo, titulo, datos, onError, onChecko
   // iframe (se reiniciaría el JS del comercio y el scroll del visitante).
   const datosJson = useMemo(() => JSON.stringify(datos ?? null), [datos]);
   const doc = useMemo(
-    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson) }),
-    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, datosJson],
+    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, extras }),
+    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script],
   );
 
   // Refs para los handlers: se registran una sola vez y siempre llaman a
@@ -49,34 +49,19 @@ export default function CodigoPreview({ codigo, titulo, datos, onError, onChecko
   handlers.current = { onError, onCheckout, onNavegar, onEvento, onCatalogo };
 
   useEffect(() => {
+    if (!onError && !onCheckout && !onTema) return;
     function alMensaje(e) {
       // El iframe tiene origen opaco (sandbox sin allow-same-origin), así
       // que e.origin es "null" y no sirve para validar: lo que identifica
       // al emisor es que sea ESTE iframe.
       if (!ref.current || e.source !== ref.current.contentWindow) return;
-      const h = handlers.current;
-      const tipo = e.data?.tipo;
-      if (tipo === 'gesicomm:error-codigo') h.onError?.(e.data.mensaje);
-      if (tipo === 'gesicomm:checkout') h.onCheckout?.(e.data);
-      if (tipo === 'gesicomm:navegar') h.onNavegar?.(e.data);
-      if (tipo === 'gesicomm:evento') h.onEvento?.(e.data);
-      // Página del catálogo: el iframe no tiene red, la pide el contenedor
-      // y se la devuelve con el mismo id (el runtime descarta respuestas
-      // viejas si el visitante ya cambió de filtro).
-      if (tipo === 'gesicomm:catalogo' && h.onCatalogo) {
-        const pedido = e.data;
-        const ventana = e.source;
-        Promise.resolve(h.onCatalogo(pedido))
-          .then(res => ({ ...res, error: false }))
-          .catch(() => ({ error: true }))
-          .then(res => {
-            try { ventana.postMessage({ tipo: 'gesicomm:catalogo-respuesta', id: pedido.id, modo: pedido.modo, ...res }, '*'); } catch { /* iframe desmontado */ }
-          });
-      }
+      if (e.data?.tipo === 'gesicomm:error-codigo') onError?.(e.data.mensaje);
+      if (e.data?.tipo === 'gesicomm:checkout') onCheckout?.(e.data);
+      if (e.data?.tipo === 'gesicomm:tema') onTema?.(e.data);
     }
     window.addEventListener('message', alMensaje);
     return () => window.removeEventListener('message', alMensaje);
-  }, []);
+  }, [onError, onCheckout, onTema]);
 
   return (
     <iframe

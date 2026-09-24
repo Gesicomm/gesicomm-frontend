@@ -1,16 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useMemo, useState } from 'react';
 import CodigoPreview from './CodigoPreview';
-import { PLANTILLA_PRODUCTO } from './plantillasBaseCodigo';
-import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
-import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
-import { trackearEventoGA } from '../../lib/googleAnalytics';
-import { registrarEventoLanding, obtenerCatalogoLandingPublica } from '../../services/landingPublicaService';
-import StoreFooterLegal from '../landing/StoreFooterLegal';
 import CartDrawer from '../landing/CartDrawer';
-import { ContactoSection } from './templates/sections';
 import { getMediaUrl } from '../../services/api';
 import { useStoreCart } from '../landing/useStoreCart';
+import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
+import { CSS_BUMP_CODIGO, datosBumpsCodigo, scriptBumpCodigo } from './bumpCodigo';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -25,6 +19,8 @@ import { useStoreCart } from '../landing/useStoreCart';
  * del documento contenedor mientras esta landing está montada.
  */
 function contactoDesdeData(data) {
+  // contacto_landing ya trae el fallback a los datos de la Tienda
+  // (onboarding / Configurar tienda), ver landing.service.js.
   return {
     whatsapp: data?.contacto_whatsapp || data?.contacto_landing?.whatsapp || '',
     telefono: data?.contacto_telefono || data?.contacto_landing?.telefono || '',
@@ -90,19 +86,7 @@ function textoLegibleSobre(fondo) {
   return blanco >= negro ? '#ffffff' : '#111827';
 }
 
-function rgba(hex, alpha) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(17,24,39,${alpha})`;
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-}
-
-// Los únicos eventos que el backend acepta en /eventos además de los del
-// carrito (ver EVENTOS_PERMITIDOS en landingPublica.controller). Cualquier
-// otro nombre que ponga el comercio en data-gesicomm-evento va solo al
-// pixel y a GA como evento personalizado.
-const EVENTOS_ESTANDAR = new Set(['Contact', 'Lead']);
-
-function resolverItemCheckout(items, pedido) {
+function resolverItemCheckout(data, pedido) {
   const raw = String(pedido?.producto || '').trim();
   if (!raw) return null;
   const colon = raw.match(/^(producto|combo):(\d+)$/);
@@ -113,37 +97,7 @@ function resolverItemCheckout(items, pedido) {
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
 }
 
-function htmlTieneSelector(html, selector) {
-  return new RegExp(`(?:id|class)=["'][^"']*\\b${selector}\\b[^"']*["']`, 'i').test(html);
-}
-
-function codigoTieneProductos(codigo) {
-  const html = codigo?.html || '';
-  return htmlTieneSelector(html, 'productos')
-    || htmlTieneSelector(html, 'productos-grid')
-    || /data-gesicomm-checkout/i.test(html);
-}
-
-function codigoTieneContacto(codigo) {
-  return htmlTieneSelector(codigo?.html || '', 'contacto');
-}
-
-function codigoTieneFooter(codigo) {
-  const html = codigo?.html || '';
-  return /<footer(?:\s|>)/i.test(html) || htmlTieneSelector(html, 'footer');
-}
-
-export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null }) {
-  const navigate = useNavigate();
-  // Ficha de producto: una sola plantilla (content.vistas.producto) que el
-  // runtime llena con el producto de la URL. Si el comercio todavía no la
-  // escribió se usa la ficha base: ningún producto se queda sin página.
-  const productoPublico = productId ? (data?.producto || null) : null;
-  const esFicha = !!productoPublico;
-  const codigo = esFicha
-    ? (data?.content?.vistas?.producto?.html ? data.content.vistas.producto : PLANTILLA_PRODUCTO)
-    : codigoInicio;
-
+export default function LandingCodigoPublica({ codigo, titulo, data = null, slug }) {
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
   // Todo producto que la landing mostró: la primera página que vino con la
@@ -165,123 +119,56 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
   const tieneFooterEnCodigo = useMemo(() => codigoTieneFooter(codigo), [codigo?.html]);
-  const mostrarSistema = !!data;
-  const bordeSuave = rgba(tema.texto, 0.16);
-  const cartApariencia = useMemo(() => ({
-    acento: tema.acento,
-    onAcento: textoLegibleSobre(tema.acento),
-    claro: (luminancia(tema.fondo) ?? 1) > 0.62,
-  }), [tema]);
-  // Ventas cruzadas apagadas en la configuración de venta → el carrito no sugiere nada.
-  const crossSellActivo = data?.content?.venta?.cross_sell?.activo !== false;
+  // Colores reales de la landing, reportados por el iframe (variables
+  // --gc-* del prompt, o lo que se ve si el código no las define). Hasta
+  // que llegan se usa el tema guardado de la landing/tienda.
+  const [temaIframe, setTemaIframe] = useState(null);
+  const onTema = useCallback((t) => setTemaIframe(t), []);
 
-  // ViewContent de la ficha: una vez por producto, con el mismo event_id
-  // al pixel y a la Conversions API (así Meta los deduplica).
-  const vistaTrackeada = useRef(null);
-  useEffect(() => {
-    if (!esFicha || vistaTrackeada.current === productoPublico.content_id) return;
-    vistaTrackeada.current = productoPublico.content_id;
-    try {
-      const eventId = generarEventId();
-      const { fbc, fbp } = leerCookiesFacebook();
-      const customData = {
-        content_ids: [productoPublico.content_id],
-        content_name: productoPublico.nombre,
-        content_type: productoPublico.tipo === 'combo' ? 'product_group' : 'product',
-        value: Number(productoPublico.precio) || 0,
-        currency: 'PYG',
-      };
-      trackearEvento('ViewContent', eventId, customData);
-      trackearEventoGA('view_item', {
-        currency: 'PYG',
-        value: customData.value,
-        items: [{ item_id: productoPublico.content_id, item_name: productoPublico.nombre, price: customData.value }],
-      });
-      registrarEventoLanding(slug, {
-        event_name: 'ViewContent', event_id: eventId, event_source_url: window.location.href, fbc, fbp, custom_data: customData,
-      });
-    } catch (e) {
-      console.error('Error trackeando ViewContent:', e);
-    }
-  }, [esFicha, productoPublico, slug]);
+  const extras = useMemo(() => {
+    if (!data) return null;
+    const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/') && slug ? `/l/${slug}` : '';
+    const secciones = armarSeccionesSistema({
+      mostrarProductos: !tieneProductosEnCodigo,
+      mostrarContacto: !tieneContactoEnCodigo,
+      mostrarFooter: !tieneFooterEnCodigo,
+      productos: productos.map(p => ({ ...p, imagen: p.imagen ? getMediaUrl(p.imagen) : null })),
+      contacto,
+      nombreComercio: data?.titulo || data?.tienda?.nombre || 'Tienda',
+      basePath,
+      acento: tema.acento,
+    });
+    return {
+      html: secciones.html,
+      css: `${secciones.css}\n${CSS_BUMP_CODIGO}`,
+      script: scriptBumpCodigo(datosBumpsCodigo(productos, getMediaUrl)),
+    };
+  }, [data, slug, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
+
+  const apariencia = useMemo(() => ({
+    primario: temaIframe?.primario || tema.acento,
+    fondo: temaIframe?.fondo || tema.fondo,
+  }), [temaIframe, tema]);
 
   function abrirCheckout(pedido) {
     if (!data) return;
     const item = resolverItemCheckout(productos, pedido);
     if (!item) return;
-    const cantidad = Math.max(1, Math.min(99, Number(pedido?.cantidad || 1) || 1));
-    const variante = pedido?.variante != null
-      ? (item.variantes || []).find(v => Number(v.id) === Number(pedido.variante)) || null
-      : null;
-    const oferta = pedido?.oferta != null
-      ? (item.ofertas || []).find(o => Number(o.id) === Number(pedido.oferta)) || null
-      : null;
-    // El precio es solo lo que se muestra en el carrito: el backend lo
-    // recalcula entero al confirmar (LandingService.resolverCarrito).
-    const precio = oferta
-      ? (oferta.precio_efectivo ?? oferta.precio_normal ?? oferta.precio ?? item.precio)
-      : (variante?.precio_efectivo ?? item.precio ?? 0);
-    cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio });
-    if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
-  }
-
-  // Una página del catálogo, pedida por el runtime del iframe.
-  const pedirCatalogo = useCallback(async (pedido) => {
-    const res = await obtenerCatalogoLandingPublica(slug, {
-      pagina: pedido?.pagina,
-      porPagina: pedido?.porPagina,
-      orden: pedido?.orden === 'min-max' || pedido?.orden === 'max-min' || pedido?.orden === 'az' || pedido?.orden === 'za'
-        ? pedido.orden
-        : 'destacados',
-      categoria: pedido?.categoria || undefined,
-      busqueda: pedido?.busqueda || undefined,
+    const cantidad = Number(pedido?.cantidad || 1) || 1;
+    cartState.agregarAlCarrito({
+      item,
+      variante: null,
+      oferta: null,
+      cantidad,
+      precio: item.precio || 0,
     });
-    if (!res || !res.disponible) throw new Error('Catálogo no disponible');
-    const items = res.items || [];
-    setExtras(prev => {
-      const ids = new Set(prev.map(i => i.content_id));
-      return [...prev, ...items.filter(i => !ids.has(i.content_id))];
-    });
-    return {
-      productos: items.map(i => itemPublicoARuntime(i, slug, data?.content?.venta || null)),
-      pagina: res.paginacion?.pagina || 1,
-      totalPaginas: res.paginacion?.totalPaginas || 1,
-      total: res.paginacion?.total ?? items.length,
-      categorias: res.categorias_disponibles || [],
-    };
-  }, [slug]);
-
-  function navegar(pedido) {
-    if (pedido?.destino === 'producto' && pedido.producto) {
-      navigate(urlProducto(slug, pedido.producto));
-    } else if (pedido?.destino === 'inicio') {
-      navigate(slug ? `/l/${slug}` : '/');
-    } else if (pedido?.destino === 'pagina' && PAGINAS_TIENDA[pedido.pagina]) {
-      navigate(urlPaginaTienda(slug, pedido.pagina));
+    // Order bump marcado en la landing (ver bumpCodigo.js): se agrega como
+    // la misma oferta que ofrece el carrito, con su precio promocional.
+    for (const ofertaId of pedido?.ofertas || []) {
+      const oferta = (item.ofertas || []).find(o => Number(o.id) === Number(ofertaId));
+      if (oferta) cartState.agregarSugerencia(item, oferta);
     }
-  }
-
-  function registrarEvento(pedido) {
-    const nombre = String(pedido?.nombre || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
-    if (!nombre) return;
-    const eventId = generarEventId();
-    try {
-      if (EVENTOS_ESTANDAR.has(nombre)) {
-        const { fbc, fbp } = leerCookiesFacebook();
-        const customData = productoPublico
-          ? { content_ids: [productoPublico.content_id], content_type: 'product' }
-          : undefined;
-        trackearEvento(nombre, eventId, customData || {});
-        registrarEventoLanding(slug, {
-          event_name: nombre, event_id: eventId, event_source_url: window.location.href, fbc, fbp, custom_data: customData,
-        });
-      } else {
-        trackearEventoPersonalizado(nombre, eventId, {});
-      }
-      trackearEventoGA(nombre === 'Lead' ? 'generate_lead' : nombre === 'Contact' ? 'contact' : nombre, {});
-    } catch (e) {
-      console.error('Error trackeando evento de la landing:', e);
-    }
+    cartState.setCarritoAbierto(true);
   }
 
   const vacia = !codigo?.html?.trim() && !codigo?.css?.trim() && !codigo?.js?.trim();
@@ -295,53 +182,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: tema.fondo, color: tema.texto }}>
-      <div style={{ height: '100vh', background: '#fff' }}>
-        {/* key: al pasar de un producto a otro el iframe se remonta y el
-            JS del comercio arranca de cero, como en una página nueva. */}
-        <CodigoPreview
-          key={esFicha ? `producto:${productoPublico.content_id}` : 'inicio'}
-          codigo={codigo}
-          titulo={esFicha ? productoPublico.nombre : titulo}
-          datos={datosRuntime}
-          onCheckout={abrirCheckout}
-          onNavegar={navegar}
-          onEvento={registrarEvento}
-          onCatalogo={pedirCatalogo}
-        />
-      </div>
-
-      {mostrarSistema && (
-        <>
-          {!esFicha && !tieneProductosEnCodigo && (
-            <ProductosSistema
-              productos={productos}
-              tema={tema}
-              bordeSuave={bordeSuave}
-              onComprar={(item) => abrirCheckout({ producto: `${item.tipo}:${item.referencia_id}` })}
-            />
-          )}
-          {!tieneContactoEnCodigo && (
-            <div style={{ backgroundColor: tema.fondo, color: tema.texto }}>
-              <ContactoSection
-                contacto={contacto}
-                acento={tema.acento}
-                tituloClase="font-bold"
-                bordeSuave={bordeSuave}
-                isMobile={false}
-              />
-            </div>
-          )}
-          {!tieneFooterEnCodigo && (
-            <StoreFooterLegal
-              tema={tema}
-              bordeSuave={bordeSuave}
-              nombreComercio={data?.titulo || data?.tienda?.nombre || 'Tienda'}
-              style={{ backgroundColor: tema.fondo }}
-            />
-          )}
-        </>
-      )}
+    <div style={{ height: '100vh', background: apariencia.fondo }}>
+      <CodigoPreview codigo={codigo} titulo={titulo} extras={extras} onCheckout={abrirCheckout} onTema={onTema} />
 
       <CartDrawer
         items={Array.from(cartState.carrito.values())}
@@ -349,6 +191,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
           ? cartState.sugerenciasCarrito.filter(s => ofertaCruzadaVisible(s.oferta, data?.content?.venta))
           : []}
         onAgregarSugerencia={cartState.agregarSugerencia}
+        crossSells={cartState.crossSellsCarrito}
+        onAgregarCrossSell={cartState.agregarCrossSell}
         abierto={cartState.carritoAbierto}
         onAbrir={() => cartState.setCarritoAbierto(true)}
         onCerrar={() => cartState.setCarritoAbierto(false)}
@@ -358,77 +202,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
         deliveryCiudades={data?.delivery_ciudades || []}
-        apariencia={cartApariencia}
+        apariencia={apariencia}
       />
     </div>
-  );
-}
-
-function ProductosSistema({ productos, tema, bordeSuave, onComprar }) {
-  if (!productos?.length) return null;
-  return (
-    <section
-      id="productos-seleccionados"
-      style={{
-        backgroundColor: tema.fondo,
-        color: tema.texto,
-        borderTop: `1px solid ${bordeSuave}`,
-        padding: '64px 24px',
-      }}
-    >
-      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div style={{ marginBottom: 28 }}>
-          <p style={{ margin: '0 0 8px', color: tema.acento, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Productos seleccionados
-          </p>
-          <h2 style={{ margin: 0, fontSize: 'clamp(28px, 4vw, 44px)', lineHeight: 1.05 }}>Comprá desde esta landing</h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          {productos.map(item => (
-            <article
-              key={item.content_id || `${item.tipo}-${item.referencia_id}`}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-                border: `1px solid ${bordeSuave}`,
-                borderRadius: 14,
-                padding: 16,
-                backgroundColor: rgba(tema.texto, 0.04),
-              }}
-            >
-              {item.imagen && (
-                <img
-                  src={getMediaUrl(item.imagen)}
-                  alt={item.nombre}
-                  style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 10, background: rgba(tema.texto, 0.08) }}
-                />
-              )}
-              <span style={{ color: tema.acento, fontSize: 12, fontWeight: 800 }}>{item.tipo === 'combo' ? 'Combo' : 'Producto'}</span>
-              <h3 style={{ margin: 0, fontSize: 20 }}>{item.nombre}</h3>
-              {item.descripcion && <p style={{ margin: 0, color: rgba(tema.texto, 0.72), lineHeight: 1.45 }}>{item.descripcion}</p>}
-              <strong style={{ marginTop: 'auto', fontSize: 18 }}>
-                {Number(item.precio || 0).toLocaleString('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 })}
-              </strong>
-              <button
-                type="button"
-                onClick={() => onComprar(item)}
-                style={{
-                  border: 0,
-                  borderRadius: 10,
-                  padding: '12px 14px',
-                  backgroundColor: tema.acento,
-                  color: textoLegibleSobre(tema.acento),
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                Comprar ahora
-              </button>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }

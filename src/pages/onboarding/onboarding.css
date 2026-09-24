@@ -170,3 +170,34 @@
   box-shadow: 0 0 0 2px var(--vit-accent-soft);
 }
 .onb-campo small { font-size: 0.72rem; line-height: 1.45; color: var(--vit-muted-2); }
+
+/* ─── Contacto público opcional (paso 1) ─────────────────────────────── */
+.onb-redes {
+  border: 1px solid var(--vit-border);
+  border-radius: 12px;
+  padding: 0.85rem 0.9rem 0.1rem;
+  margin: 0.25rem 0 1rem;
+  text-align: left;
+}
+.onb-redes legend {
+  padding: 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--vit-text);
+}
+.onb-redes legend em { font-style: normal; font-weight: 400; color: var(--vit-muted-2); }
+.onb-redes > small {
+  display: block;
+  margin-bottom: 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--vit-muted-2);
+}
+.onb-redes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 0.7rem;
+}
+@media (max-width: 480px) {
+  .onb-redes-grid { grid-template-columns: 1fr; }
+}

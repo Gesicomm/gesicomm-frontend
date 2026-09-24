@@ -1488,8 +1488,8 @@ button.lp-tier-card--imagen {
   transition: color 0.15s, background 0.15s;
 }
 .lp-cart-close:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--lp-cart-text, #fff);
+  background: color-mix(in srgb, var(--lp-cart-text, #fff) 8%, transparent);
 }
 
 .lp-cart-vacio {
@@ -1506,9 +1506,7 @@ button.lp-tier-card--imagen {
 }
 
 .lp-cart-items {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.75rem 1.25rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -1529,7 +1527,7 @@ button.lp-tier-card--imagen {
   height: 50px;
   border-radius: var(--l-radius-sm, 8px);
   overflow: hidden;
-  background: color-mix(in srgb, var(--l-surface, #0c0f17) 80%, black);
+  background: color-mix(in srgb, var(--l-surface, #0c0f17) 80%, var(--lp-cart-shade, black));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1549,9 +1547,11 @@ button.lp-tier-card--imagen {
 .lp-cart-item-nombre {
   font-size: 0.85rem;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
   color: var(--l-text, #f8fafc);
 }
 .lp-cart-item-variante {
@@ -1575,7 +1575,7 @@ button.lp-tier-card--imagen {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--lp-cart-text, #f8fafc) 7%, transparent);
   border-radius: 999px;
   padding: 0.15rem 0.45rem;
 }
@@ -1650,7 +1650,7 @@ button.lp-tier-card--imagen {
 .lp-checkout-total-box {
   border: 1px solid color-mix(in srgb, var(--l-text, #f8fafc) 10%, transparent);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--l-surface, #181d2a) 88%, black);
+  background: color-mix(in srgb, var(--l-surface, #181d2a) 88%, var(--lp-cart-shade, black));
   padding: 0.85rem;
 }
 .lp-checkout-summary-head,
@@ -1692,18 +1692,10 @@ button.lp-tier-card--imagen {
   font-weight: 850;
 }
 .lp-cart-bumps {
+  /* Contenedor plano: la tarjeta .lp-bump ya tiene su propio marco. */
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.85rem;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--l-primary) 38%, var(--lp-cart-border-soft, rgba(255,255,255,0.08)));
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--l-primary) 12%, transparent), transparent 48%),
-    color-mix(in srgb, var(--lp-cart-surface, #111827) 96%, black);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.05),
-    0 12px 30px rgba(0,0,0,0.18);
+  gap: 0.7rem;
 }
 .lp-cart-bumps-head {
   display: flex;
@@ -1812,7 +1804,7 @@ button.lp-tier-card--imagen {
   font-weight: 950;
 }
 .lp-cart-bump-price span {
-  color: #34d399;
+  color: var(--lp-cart-success, #34d399);
   font-size: 0.72rem;
   font-weight: 900;
 }
@@ -1852,14 +1844,14 @@ button.lp-tier-card--imagen {
   gap: 0.6rem;
   padding: 0.6rem 0.7rem;
   border-radius: 10px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.32);
+  background: color-mix(in srgb, var(--lp-cart-success, #34d399) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lp-cart-success, #34d399) 32%, transparent);
 }
 .lp-cart-bump-added span {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: #34d399;
+  color: var(--lp-cart-success, #34d399);
   font-size: 0.76rem;
   font-weight: 850;
 }
@@ -1905,169 +1897,405 @@ button.lp-tier-card--imagen {
   background: color-mix(in srgb, var(--l-primary) 15%, transparent);
 }
 
-/* ─── Order bump moderno dentro del carrito/checkout ─────────────────── */
-.lp-bumps {
-  display: grid;
-  gap: 12px;
-  margin: 0 20px 14px;
+/* ─── Carrito: tema ────────────────────────────────────────────────────
+   .lp-cart-root es un envoltorio sin caja (display: contents): solo
+   transporta el tema (--l-primary de la landing + data-cart-modo) al FAB,
+   al drawer y al popup de upsell. El modo claro redefine la misma paleta
+   --lp-cart-* que usa el oscuro, así ninguna regla de abajo necesita saber
+   en qué modo está. --l-primary NO se toca: el acento siempre es el de la
+   landing (azul, bordó, verde…), nunca un verde fijo. */
+.lp-cart-root { display: contents; }
+.lp-cart-drawer,
+.lp-upsell-modal {
+  --lp-cart-shade: black;
+  --lp-cart-success: #34d399;
 }
-.lp-cart-items + .lp-bumps { margin-top: 8px; }
-.lp-bump {
-  display: block;
-  overflow: hidden;
-  position: relative;
-  border: 1.5px solid color-mix(in srgb, var(--l-primary, #16a36a) 38%, var(--lp-cart-border, rgba(255,255,255,0.14)));
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--l-primary, #16a36a) 13%, transparent), transparent 62%),
-    var(--lp-cart-surface, #111827);
-  cursor: pointer;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
-  transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
+.lp-cart-root[data-cart-modo="claro"] .lp-cart-drawer,
+.lp-cart-root[data-cart-modo="claro"] .lp-upsell-modal {
+  --lp-cart-bg: #ffffff;
+  --lp-cart-surface: #f6f7f9;
+  --lp-cart-surface-2: #ffffff;
+  --lp-cart-text: #0f172a;
+  --lp-cart-muted: #475569;
+  --lp-cart-soft: #64748b;
+  --lp-cart-border: rgba(15, 23, 42, 0.14);
+  --lp-cart-border-soft: rgba(15, 23, 42, 0.08);
+  --lp-cart-shade: #cbd5e1;
+  --lp-cart-success: #047857;
+  color-scheme: light;
 }
-.lp-bump:hover {
-  border-color: var(--l-primary, #16a36a);
-  transform: translateY(-1px);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2);
+.lp-cart-root[data-cart-modo="claro"] .lp-cart-drawer {
+  box-shadow: -18px 0 50px rgba(15, 23, 42, 0.18);
 }
-.lp-bump.is-checked {
-  border-color: var(--l-primary, #16a36a);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--l-primary, #16a36a) 18%, transparent), transparent 60%),
-    var(--lp-cart-surface, #111827);
+.lp-cart-root[data-cart-modo="claro"] .lp-cart-overlay {
+  background: rgba(15, 23, 42, 0.45);
 }
-.lp-bump.is-disabled { cursor: default; opacity: .72; }
-.lp-bump-flag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  color: var(--l-primary, #16a36a);
-  background: color-mix(in srgb, var(--l-primary, #16a36a) 14%, var(--lp-cart-surface, #111827));
-  font-size: .7rem;
-  font-weight: 950;
-  letter-spacing: .05em;
-  line-height: 1.2;
-  text-transform: uppercase;
+.lp-cart-root[data-cart-modo="claro"] .lp-upsell-modal {
+  box-shadow: 0 30px 80px -20px rgba(15, 23, 42, 0.35);
 }
-.lp-bump.is-checked .lp-bump-flag {
-  color: var(--l-on-primary, #fff);
-  background: var(--l-primary, #16a36a);
+.lp-cart-root[data-cart-modo="claro"] .lp-cart-fab-badge {
+  border-color: #ffffff;
 }
-.lp-bump-body {
-  display: grid;
-  grid-template-columns: 28px 68px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 14px;
+/* El FAB tiene que despegarse del fondo aunque el acento se parezca a la
+   sección que tiene detrás (antes se perdía sobre el footer). */
+.lp-cart-fab {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--l-on-primary, #fff) 85%, transparent),
+    0 12px 30px rgba(0, 0, 0, 0.35);
 }
-.lp-bump-check {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-.lp-bump-control {
-  display: grid;
+
+/* ─── Paso "Tu pedido" ──────────────────────────────────────────────────
+   Estructura de los carritos que más convierten (Shopify/Upcart/Rebuy,
+   Baymard): recompensa arriba → lo elegido → UNA oferta relevante →
+   2-3 cross-sells debajo → footer fijo con ahorro, CTA con total y
+   señales de confianza. Items, bump y cross-sell van en un solo scroll. */
+.lp-cart-head h3 { gap: 0.5rem; }
+.lp-cart-count {
+  display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 2px solid color-mix(in srgb, var(--l-primary, #16a36a) 64%, var(--lp-cart-border, rgba(255,255,255,0.14)));
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
   border-radius: 999px;
-  color: var(--l-primary, #16a36a);
-  background: color-mix(in srgb, var(--l-primary, #16a36a) 10%, var(--lp-cart-surface, #111827));
-  font-size: 1.05rem;
-  font-weight: 950;
-  line-height: 1;
-}
-.lp-bump.is-checked .lp-bump-control {
-  border-color: var(--l-primary, #16a36a);
-  background: var(--l-primary, #16a36a);
-  color: var(--l-on-primary, #fff);
-}
-.lp-bump-media {
-  display: grid;
-  place-items: center;
-  width: 68px;
-  aspect-ratio: 1 / 1;
-  overflow: hidden;
-  border-radius: 10px;
-  background: #fff;
-  color: var(--lp-cart-soft, #94a3b8);
-  border: 1px solid rgba(16, 32, 47, 0.08);
-}
-.lp-bump-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.lp-bump-copy {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.lp-bump-kicker {
-  color: var(--l-primary, #16a36a);
-  font-size: .72rem;
-  font-weight: 900;
-}
-.lp-bump-copy strong {
-  color: var(--lp-cart-text, #f8fafc);
-  font-size: .92rem;
-  line-height: 1.22;
-}
-.lp-bump-text {
-  color: var(--lp-cart-muted, #cbd5e1);
-  font-size: .78rem;
-  line-height: 1.35;
-}
-.lp-bump-prices {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: baseline;
-}
-.lp-bump-prices b {
-  color: var(--lp-cart-text, #f8fafc);
-  font-size: 1rem;
-  font-weight: 950;
-}
-.lp-bump-prices s {
-  color: var(--lp-cart-soft, #94a3b8);
-  font-size: .78rem;
-}
-.lp-bump-prices em {
-  color: #ef6b61;
-  font-size: .74rem;
-  font-style: normal;
+  background: var(--l-primary);
+  color: var(--l-on-primary, #0b1211);
+  font-size: 0.72rem;
   font-weight: 800;
 }
-.lp-bump-action {
-  align-self: center;
-  justify-self: end;
-  border-radius: 999px;
-  background: var(--l-primary, #16a36a);
-  color: var(--l-on-primary, #fff);
-  padding: 0.55rem 0.75rem;
-  font-size: .72rem;
-  font-weight: 950;
-  white-space: nowrap;
+.lp-cart-reward {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.85rem 1.25rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--l-primary) 12%, var(--lp-cart-surface-2, #171b28));
+  border: 1px solid color-mix(in srgb, var(--l-primary) 30%, transparent);
+  color: var(--lp-cart-text, #f8fafc);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  animation: lp-reward-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.lp-bump.is-checked .lp-bump-action {
+.lp-cart-reward svg { flex: 0 0 auto; color: color-mix(in srgb, var(--l-primary) 80%, var(--lp-cart-text, #fff)); }
+.lp-cart-reward b { font-weight: 900; }
+.lp-cart-reward--ok {
+  background: color-mix(in srgb, var(--lp-cart-success, #34d399) 14%, var(--lp-cart-surface-2, #171b28));
+  border-color: color-mix(in srgb, var(--lp-cart-success, #34d399) 40%, transparent);
+}
+.lp-cart-reward--ok svg, .lp-cart-reward--ok b { color: var(--lp-cart-success, #34d399); }
+@keyframes lp-reward-in {
+  0% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  100% { opacity: 1; transform: none; }
+}
+
+.lp-cart-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+.lp-cart-items { display: flex; flex-direction: column; gap: 0.65rem; }
+.lp-cart-item {
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.85rem;
+  padding: 0.7rem;
+  border-radius: 14px;
+  background: var(--lp-cart-surface-2, #171b28);
+  border: 1px solid var(--lp-cart-border-soft, rgba(255, 255, 255, 0.08));
+}
+.lp-cart-item-media { width: 64px; height: 64px; border-radius: 10px; background: #fff; }
+.lp-cart-item-media img { object-fit: contain; }
+.lp-cart-item-info { justify-content: center; gap: 0.25rem; }
+.lp-cart-item-precio { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; color: var(--lp-cart-text, #f8fafc); }
+.lp-cart-item-precio b { font-size: 0.9rem; font-weight: 800; }
+.lp-cart-item-precio del { font-size: 0.74rem; font-weight: 500; color: var(--lp-cart-soft, #94a3b8); }
+.lp-cart-item-acciones { justify-content: space-between; align-items: flex-end; }
+.lp-cart-stepper {
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border: 1px solid var(--lp-cart-border, rgba(255, 255, 255, 0.14));
   background: transparent;
-  color: var(--l-primary, #16a36a);
-  border: 1px solid color-mix(in srgb, var(--l-primary, #16a36a) 38%, transparent);
 }
-.lp-cart-drawer--claro .lp-bump {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--l-primary, #16a36a) 10%, #ffffff), transparent 66%),
-    #ffffff;
+.lp-cart-stepper button { width: 26px; height: 26px; align-items: center; justify-content: center; border-radius: 999px; }
+.lp-cart-stepper button:hover:not(:disabled) { background: color-mix(in srgb, var(--lp-cart-text, #fff) 8%, transparent); }
+
+.lp-cart-section { display: flex; flex-direction: column; gap: 0.7rem; }
+.lp-cart-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--lp-cart-text, #f8fafc);
 }
-.lp-cart-drawer--claro .lp-bump.is-checked {
-  background: color-mix(in srgb, var(--l-primary, #16a36a) 8%, #ffffff);
+
+/* ─── Order bump de checkbox (tarjeta única: carrito y formulario) ──────
+   La franja de arriba es la acción: casilla grande + "Sí, sumalo…" + flecha
+   que empuja. Borde punteado del acento: se lee como "esto es especial". */
+.lp-bump {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  border: 2px dashed color-mix(in srgb, var(--l-primary) 65%, transparent);
+  background: color-mix(in srgb, var(--l-primary) 5%, var(--lp-cart-surface-2, #171b28));
+  overflow: hidden;
 }
-.lp-cart-drawer--claro .lp-bump-prices em { color: #b42318; }
+.lp-bump-check {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 0;
+  background: color-mix(in srgb, var(--l-primary) 16%, var(--lp-cart-surface-2, #171b28));
+  color: var(--lp-cart-text, #f8fafc);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lp-bump-check:hover:not(:disabled) { background: color-mix(in srgb, var(--l-primary) 24%, var(--lp-cart-surface-2, #171b28)); }
+.lp-bump-check:disabled { cursor: not-allowed; opacity: 0.6; }
+.lp-bump-check b { font-weight: 900; }
+.lp-bump-box {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--l-primary);
+  background: var(--lp-cart-bg, #090b12);
+  color: transparent;
+  animation: lp-bump-pulse 1.8s ease-in-out infinite;
+}
+.lp-bump-check:hover:not(:disabled) .lp-bump-box { color: var(--l-primary); }
+.lp-bump-cta { flex: 1; min-width: 0; line-height: 1.3; }
+.lp-bump-arrow { flex: 0 0 auto; color: color-mix(in srgb, var(--l-primary) 80%, var(--lp-cart-text, #fff)); animation: lp-bump-nudge 1.2s ease-in-out infinite; }
+@keyframes lp-bump-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--l-primary) 45%, transparent); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--l-primary) 0%, transparent); }
+}
+@keyframes lp-bump-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+.lp-bump-body {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 0.9rem 0.9rem 0.8rem;
+  align-items: start;
+}
+.lp-bump-media {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+.lp-bump-media img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; display: block; }
+.lp-bump-off {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
+}
+.lp-bump-info { min-width: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.lp-bump-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: color-mix(in srgb, var(--l-primary) 80%, var(--lp-cart-text, #fff));
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.lp-bump-info h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--lp-cart-text, #f8fafc);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lp-bump-info p {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--lp-cart-muted, #cbd5e1);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lp-bump-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.2rem 0.5rem; margin-top: 0.1rem; }
+.lp-bump-price strong { font-size: 1.05rem; font-weight: 900; color: var(--lp-cart-text, #f8fafc); }
+.lp-bump-price del { font-size: 0.78rem; color: var(--lp-cart-soft, #94a3b8); text-decoration-color: #ef4444; }
+.lp-bump-benefits {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0 0.9rem 0.9rem;
+  list-style: none;
+}
+.lp-bump-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  line-height: 1.3;
+  color: var(--lp-cart-muted, #cbd5e1);
+}
+.lp-bump-benefits svg { flex: 0 0 auto; margin-top: 0.1rem; color: var(--lp-cart-success, #34d399); }
+.lp-bump .lp-cart-sugerencia-variantes { margin: 0; padding: 0 0.9rem 0.9rem; }
+
+/* ─── Cross-sell en carrusel ─────────────────────────────────────────── */
+.lp-cross-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 132px;
+  gap: 0.65rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.25rem;
+  scrollbar-width: thin;
+}
+.lp-cross-card {
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem;
+  border-radius: 14px;
+  background: var(--lp-cart-surface-2, #171b28);
+  border: 1px solid var(--lp-cart-border-soft, rgba(255, 255, 255, 0.08));
+}
+.lp-cross-card-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  overflow: hidden;
+}
+.lp-cross-card-media img { width: 100%; height: 100%; object-fit: contain; }
+.lp-cross-medal {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  max-width: calc(100% - 12px);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35);
+}
+.lp-cross-card-nombre {
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--lp-cart-text, #f8fafc);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
+}
+.lp-cross-card-precio { display: flex; align-items: baseline; gap: 0.35rem; flex-wrap: wrap; }
+.lp-cross-card-precio b { font-size: 0.82rem; font-weight: 800; color: var(--lp-cart-text, #f8fafc); }
+.lp-cross-card-precio del { font-size: 0.7rem; color: var(--lp-cart-soft, #94a3b8); }
+.lp-cross-card-add {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1.5px solid var(--l-primary);
+  background: transparent;
+  color: color-mix(in srgb, var(--l-primary) 80%, var(--lp-cart-text, #fff));
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.lp-cross-card-add:hover { background: var(--l-primary); color: var(--l-on-primary, #0b1211); }
+
+/* ─── Footer fijo ────────────────────────────────────────────────────── */
+.lp-cart-footer {
+  gap: 0.75rem;
+  box-shadow: 0 -12px 30px -18px rgba(0, 0, 0, 0.35);
+}
+.lp-cart-lines { display: flex; flex-direction: column; gap: 0.3rem; }
+.lp-cart-line { display: flex; justify-content: space-between; font-size: 0.85rem; }
+.lp-cart-line--ahorro span, .lp-cart-line--ahorro strong { color: var(--lp-cart-success, #34d399); font-weight: 800; }
+.lp-cart-checkout.lp-cart-checkout--hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 54px;
+  font-size: 1rem;
+  font-weight: 800;
+  border-radius: 14px;
+}
+.lp-cart-checkout.lp-cart-checkout--hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  transform: translateX(-100%);
+  animation: lp-cta-shine 3.2s ease-in-out infinite;
+}
+@keyframes lp-cta-shine { 0%, 60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.lp-cart-trust {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.72rem;
+  color: var(--lp-cart-soft, #94a3b8);
+}
+.lp-cart-trust li { display: inline-flex; align-items: center; gap: 0.3rem; }
+.lp-cart-trust svg { color: var(--lp-cart-success, #34d399); }
+.lp-cart-footnote {
+  margin: -0.25rem 0 0;
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--lp-cart-soft, #94a3b8);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-bump-box, .lp-bump-arrow, .lp-cart-checkout--hero::after, .lp-cart-reward { animation: none; }
+}
 
 /* ─── Popup de upsell ─────────────────────────────────────────────────
    Por encima del propio drawer (z-index 350): es una pregunta que corta
@@ -2262,8 +2490,8 @@ button.lp-tier-card--imagen {
   font-weight: 900;
 }
 .lp-upsell-save {
-  color: #34d399;
-  font-size: 0.9rem;
+  color: var(--lp-cart-success, #34d399);
+  font-size: 0.82rem;
   font-weight: 900;
 }
 .lp-upsell-primary {
@@ -2368,7 +2596,7 @@ button.lp-tier-card--imagen {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  background: color-mix(in srgb, var(--l-modal-bg, #161a28) 95%, black);
+  background: color-mix(in srgb, var(--l-modal-bg, #161a28) 95%, var(--lp-cart-shade, black));
 }
 .lp-cart-subtotal {
   display: flex;
@@ -2431,7 +2659,7 @@ button.lp-tier-card--imagen {
 }
 .lp-cart-back:hover {
   color: var(--l-text, #f8fafc);
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--lp-cart-text, #fff) 8%, transparent);
 }
 
 /* ─── Formulario de checkout ──────────────────────────────────────────── */
@@ -2515,9 +2743,13 @@ button.lp-tier-card--imagen {
 }
 .lp-checkout-address-row {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
+  /* minmax(0, …): sin esto el ancho mínimo intrínseco del <input> estira
+     la columna y "Departamento" se salía de la tarjeta en móvil. */
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   gap: 0.7rem;
 }
+.lp-checkout-field { min-width: 0; }
+.lp-checkout-field input { width: 100%; min-width: 0; box-sizing: border-box; }
 @media (max-width: 380px) {
   .lp-checkout-address-row {
     grid-template-columns: 1fr;
@@ -2536,6 +2768,7 @@ button.lp-tier-card--imagen {
   border-color: var(--l-primary);
 }
 .lp-checkout-tel-prefijo {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   padding: 0 0.7rem;
@@ -2614,7 +2847,7 @@ button.lp-tier-card--imagen {
   z-index: 2;
   margin: 0 -1.4rem -1.4rem;
   padding: 0.85rem 1.4rem 1.1rem;
-  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--l-modal-bg, #161a28) 94%, black) 28%);
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--l-modal-bg, #161a28) 94%, var(--lp-cart-shade, black)) 28%);
 }
 .lp-checkout-submit {
   width: 100%;
