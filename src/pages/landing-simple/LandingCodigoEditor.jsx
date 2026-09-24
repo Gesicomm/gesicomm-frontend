@@ -8,6 +8,8 @@ import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
 import { vitrinaService } from '../../services/vitrinaService';
 import CodigoPreview from './CodigoPreview';
+import { getMediaUrl } from '../../services/api';
+import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
 
 /**
@@ -98,57 +100,35 @@ function bloqueProductosHtml(productos = []) {
   ].join('\n');
 }
 
-function bloqueProductosCss() {
-  return [
+function bloqueProductosCss(cssActual = '') {
+  // Si el código todavía no define la paleta --gc-*, se la agrega: es lo que
+  // lee el carrito de Gesicom para pintarse igual que la landing.
+  const paleta = /--gc-primario\s*:/.test(cssActual) ? [] : [
     '',
-    '.productos { padding: 72px 24px; background: #f7f3ec; color: #18181b; }',
-    '.productos-header { max-width: 820px; margin: 0 auto 28px; text-align: center; }',
-    '.productos-header span { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #9f5b2b; }',
-    '.productos-header h2 { margin: 8px 0; font-size: clamp(28px, 4vw, 48px); }',
-    '.productos-header p { margin: 0 auto; max-width: 62ch; color: #57534e; }',
-    '.productos-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }',
-    '.producto-card { display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid #e7ded0; background: #fffaf2; border-radius: 18px; box-shadow: 0 16px 40px rgba(24, 24, 27, .08); }',
-    '.producto-card img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 12px; background: #e7ded0; }',
-    '.producto-tipo { width: fit-content; padding: 5px 9px; border-radius: 999px; background: #18181b; color: white; font-size: 11px; font-weight: 800; }',
-    '.producto-card h3 { margin: 0; font-size: 20px; }',
-    '.producto-card p { margin: 0; color: #57534e; line-height: 1.5; }',
-    '.producto-card strong { margin-top: auto; font-size: 18px; }',
-    '.producto-cta { display: inline-flex; justify-content: center; padding: 12px 16px; border: 0; border-radius: 12px; background: #9f5b2b; color: #fff; font-weight: 800; text-decoration: none; cursor: pointer; }',
-    '.contacto-obligatorio { padding: 64px 24px; background: #18181b; color: #fff; text-align: center; }',
-    '.contacto-obligatorio h2 { margin: 0 0 12px; font-size: clamp(26px, 4vw, 42px); }',
-    '.contacto-obligatorio p { margin: 6px 0; color: rgba(255,255,255,.72); }',
-    '.footer-legal-obligatorio { padding: 28px 18px; background: #0f0f12; color: rgba(255,255,255,.72); text-align: center; font-size: 13px; }',
-    '.footer-legal-obligatorio nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 16px; margin-bottom: 14px; }',
-    '.footer-legal-obligatorio a { color: rgba(255,255,255,.86); text-decoration: none; }',
-  ].join('\n');
-}
-
-function bloqueContactoFooterHtml(tienda) {
-  const nombre = escaparHtml(tienda?.nombre || 'Tu tienda');
-  const telefono = tienda?.telefono || tienda?.whatsapp || '';
-  const email = tienda?.email || '';
-  const direccion = [tienda?.direccion, tienda?.ciudad, tienda?.pais].filter(Boolean).join(', ');
+    ':root {',
+    '  --gc-primario: #2563eb;',
+    '  --gc-texto-sobre-primario: #ffffff;',
+    '  --gc-fondo: #ffffff;',
+    '  --gc-texto: #0f172a;',
+    '}',
+  ];
   return [
-    '<section class="contacto-obligatorio" id="contacto">',
-    '  <h2>Contacto</h2>',
-    '  <p>Escribinos para coordinar tu compra o resolver cualquier consulta.</p>',
-    telefono ? `  <p>Teléfono / WhatsApp: ${escaparHtml(telefono)}</p>` : '',
-    email ? `  <p>Email: ${escaparHtml(email)}</p>` : '',
-    direccion ? `  <p>Dirección: ${escaparHtml(direccion)}</p>` : '',
-    '</section>',
-    '<footer class="footer-legal-obligatorio">',
-    '  <nav>',
-    '    <a href="/politica-privacidad">Política de Privacidad</a>',
-    '    <a href="/politica-reembolso">Política de Reembolso</a>',
-    '    <a href="/terminos-servicio">Términos del Servicio</a>',
-    '    <a href="/politica-envio">Política de Envío</a>',
-    '    <a href="/contacto">Información de Contacto</a>',
-    '    <a href="/aviso-legal">Aviso Legal</a>',
-    '  </nav>',
-    `  <div>© 2026 ${nombre}</div>`,
-    '  <div>Tecnología de <a href="https://gesicomm.com" target="_blank" rel="noopener noreferrer">Gesicom</a></div>',
-    '</footer>',
-  ].filter(Boolean).join('\n');
+    ...paleta,
+    '',
+    '.productos { padding: 72px 24px; }',
+    '.productos-header { max-width: 820px; margin: 0 auto 28px; text-align: center; }',
+    '.productos-header span { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--gc-primario); }',
+    '.productos-header h2 { margin: 8px 0; font-size: clamp(28px, 4vw, 48px); }',
+    '.productos-header p { margin: 0 auto; max-width: 62ch; opacity: .72; }',
+    '.productos-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }',
+    '.producto-card { display: flex; flex-direction: column; gap: 10px; padding: 18px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: 18px; }',
+    '.producto-card img { width: 100%; aspect-ratio: 1 / 1; object-fit: contain; border-radius: 12px; background: #fff; }',
+    '.producto-tipo { width: fit-content; padding: 5px 9px; border-radius: 999px; background: color-mix(in srgb, var(--gc-primario) 14%, transparent); color: var(--gc-primario); font-size: 11px; font-weight: 800; }',
+    '.producto-card h3 { margin: 0; font-size: 20px; }',
+    '.producto-card p { margin: 0; opacity: .72; line-height: 1.5; }',
+    '.producto-card strong { margin-top: auto; font-size: 18px; }',
+    '.producto-cta { display: inline-flex; justify-content: center; padding: 12px 16px; border: 0; border-radius: 12px; background: var(--gc-primario); color: var(--gc-texto-sobre-primario); font-weight: 800; text-decoration: none; cursor: pointer; }',
+  ].join('\n');
 }
 
 function armarPromptProductos(productos = [], tienda) {
@@ -165,8 +145,23 @@ function armarPromptProductos(productos = [], tienda) {
   return [
     `Quiero crear una landing en HTML, CSS y JavaScript para ${nombre}.`,
     'Usá los productos seleccionados de abajo como contenido principal de la oferta.',
-    'La landing debe tener hero, sección de beneficios, grilla de productos, prueba social, FAQ, sección de contacto y footer legal.',
-    'Para abrir el checkout real de Gesicom/PagoPar, cada botón de compra debe usar data-gesicomm-checkout="producto:ID" o data-gesicomm-checkout="combo:ID".',
+    'La landing debe tener hero, sección de beneficios, detalle de los productos, prueba social y FAQ.',
+    '',
+    'COLORES (obligatorio): definí la paleta con estas variables CSS exactas en :root y usalas en todo el CSS.',
+    'El carrito y el checkout de Gesicom leen estas variables para pintarse con los mismos colores de la landing:',
+    ':root {',
+    '  --gc-primario: #xxxxxx;              /* botones de compra y acentos */',
+    '  --gc-texto-sobre-primario: #xxxxxx;  /* texto encima de --gc-primario, con buen contraste */',
+    '  --gc-fondo: #xxxxxx;                 /* fondo principal de la página (color sólido) */',
+    '  --gc-texto: #xxxxxx;                 /* texto principal sobre --gc-fondo */',
+    '}',
+    'Poné también background: var(--gc-fondo) y color: var(--gc-texto) en el body. Podés agregar otras variables propias, pero estas cuatro tienen que existir con estos nombres.',
+    '',
+    'CHECKOUT: cada botón de compra debe usar data-gesicomm-checkout="producto:ID" o data-gesicomm-checkout="combo:ID". Ese botón abre el carrito real de Gesicom (datos de entrega, PagoPar, order bump, upsell y cross-sell).',
+    'No armes carrito, formulario de compra, order bumps, upsells ni cupones en el HTML: el checkout de Gesicom los muestra solo, con las ofertas configuradas en cada producto.',
+    '',
+    'CONTACTO Y FOOTER: no los incluyas. Gesicom agrega al final la sección de contacto con las redes sociales de la tienda y el footer con los enlaces legales, con los colores de la landing.',
+    '',
     'No uses fetch, localStorage, cookies, scripts externos ni dependencias externas.',
     '',
     'Productos seleccionados:',
@@ -234,8 +229,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       const productosPrefill = normalizarSeleccionLanding(prefilledItems, { productos: [], combos: [] });
       const inicial = { ...CODIGO_VACIO, ...(l.content?.codigo || {}) };
       const inicialConProductos = productosPrefill.length ? {
-        html: inicial.html.includes('id="productos"') ? inicial.html : `${inicial.html}\n\n${bloqueProductosHtml(productosPrefill)}\n\n${bloqueContactoFooterHtml(t)}`,
-        css: inicial.css.includes('.productos') ? inicial.css : `${inicial.css}\n${bloqueProductosCss()}`,
+        // Contacto y footer ya no se pegan acá: los agrega Gesicom solo, con
+        // los datos de la tienda (ver seccionesSistemaCodigo.js).
+        html: inicial.html.includes('id="productos"') ? inicial.html : `${inicial.html}\n\n${bloqueProductosHtml(productosPrefill)}`,
+        css: inicial.css.includes('.productos') ? inicial.css : `${inicial.css}\n${bloqueProductosCss(inicial.css)}`,
         js: inicial.js,
       } : inicial;
       setLanding(l);
@@ -349,6 +346,32 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   const publicUrl = useMemo(() => urlPublicaLanding(tienda, landing), [tienda, landing]);
+
+  // Mismas secciones automáticas (productos/contacto/footer) que agrega la
+  // landing pública, para que el preview no mienta. El contacto sale de la
+  // landing y, lo que falte, de Configurar tienda — igual que el DTO público.
+  const extrasPreview = useMemo(() => {
+    const campo = k => landing?.[`contacto_${k}`] || tienda?.[k] || '';
+    const contacto = Object.fromEntries(
+      ['whatsapp', 'telefono', 'email', 'direccion', 'ciudad', 'pais', 'horarios', 'instagram', 'facebook', 'tiktok', 'youtube', 'twitter']
+        .map(k => [k, campo(k)])
+    );
+    return armarSeccionesSistema({
+      mostrarProductos: !codigoTieneProductos(codigoPreview),
+      mostrarContacto: !codigoTieneContacto(codigoPreview),
+      mostrarFooter: !codigoTieneFooter(codigoPreview),
+      productos: productosSeleccionados.map(p => ({
+        tipo: p.tipo,
+        referencia_id: p.referencia_id ?? p.id,
+        nombre: p.nombre,
+        precio: precioProducto(p),
+        imagen: p.imagen ? getMediaUrl(p.imagen) : null,
+      })),
+      contacto,
+      nombreComercio: ajustes.titulo || tienda?.nombre || 'Tu tienda',
+      acento: tienda?.color_primario || null,
+    });
+  }, [landing, tienda, productosSeleccionados, codigoPreview, ajustes.titulo]);
   const promptProductos = useMemo(
     () => armarPromptProductos(productosSeleccionados, tienda),
     [productosSeleccionados, tienda],
@@ -608,6 +631,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 codigo={codigoPreview}
                 titulo={ajustes.seo_titulo || ajustes.titulo}
                 onError={alErrorRuntime}
+                extras={extrasPreview}
               />
             </div>
           </div>

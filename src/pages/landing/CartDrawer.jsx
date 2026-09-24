@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader, Sparkles, Zap, MapPin } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
 import { agruparOpciones, resolverVariante, seleccionDeVariante } from '../../lib/varianteOpciones';
+import { esColorClaro, normalizarColorHex, tintaSobre } from '../../lib/landingDiseno';
 
 const FORM_VACIO = {
   nombre_cliente: '', documento: '', quiere_factura: false, ruc: '', razon_social: '', telefono: '', ciudad: '', departamento: '', direccion: '', referencia: '', payment_method: 'efectivo',
@@ -105,6 +106,14 @@ export default function CartDrawer({
   pasoInicial = 'carrito',
   mostrarUpsellInicial = false,
   permitirSugerenciasIncompletas = false,
+  // Colores de la landing que hospeda al carrito: { primario, fondo, modo? }.
+  // Sin esto el drawer hereda --l-primary/--l-bg del contenedor (si los
+  // hay) y deduce claro/oscuro leyendo --l-bg ya resuelto — ver `modo`.
+  apariencia = null,
+  // Cross-sell: otros productos del catálogo de la landing, a precio normal.
+  // Distinto del order bump (una oferta configurada con precio especial).
+  crossSells = [],
+  onAgregarCrossSell,
 }) {
   const [paso, setPaso] = useState(pasoInicial); // carrito | formulario | confirmado
   // El upsell NO es un paso del drawer: tiene que interrumpir con un popup
@@ -134,6 +143,30 @@ export default function CartDrawer({
   // useEffect más abajo) antes de recién ahí mandar el pedido — mandarlo antes
   // mandaría el pedido SIN el upsell que el cliente acaba de aceptar.
   const [upsellPendiente, setUpsellPendiente] = useState(null);
+
+  // ─── Tema ─────────────────────────────────────────────────────────────
+  // El drawer siempre fue oscuro fijo: sobre una landing blanca quedaba
+  // como un panel ajeno. Ahora sigue el fondo de la landing: explícito si
+  // viene `apariencia`, o leyendo --l-bg ya resuelto del contenedor.
+  const rootRef = useRef(null);
+  const [modoDetectado, setModoDetectado] = useState(null);
+  const primarioTema = normalizarColorHex(apariencia?.primario);
+  const modoExplicito = apariencia?.modo
+    || (apariencia?.fondo != null ? (esColorClaro(apariencia.fondo) ? 'claro' : 'oscuro') : null);
+
+  useLayoutEffect(() => {
+    if (modoExplicito || !rootRef.current) return;
+    const estilo = getComputedStyle(rootRef.current);
+    const fondo = estilo.getPropertyValue('--l-bg').trim()
+      || getComputedStyle(document.body).backgroundColor;
+    const claro = esColorClaro(fondo);
+    if (claro !== null) setModoDetectado(claro ? 'claro' : 'oscuro');
+  }, [modoExplicito, abierto]);
+
+  const modo = modoExplicito || modoDetectado || 'oscuro';
+  const varsTema = primarioTema
+    ? { '--l-primary': primarioTema, '--l-on-primary': tintaSobre(primarioTema) }
+    : undefined;
 
   async function aplicarCupon() {
     setValidandoCupon(true);
@@ -358,8 +391,64 @@ export default function CartDrawer({
     }
   }, [items, upsellPendiente]);
 
+  /**
+   * Única tarjeta de order bump — la misma en "Tu pedido" y en el
+   * formulario, para que no convivan dos diseños. Es una función de render
+   * y no un componente: declarado dentro de CartDrawer, un componente se
+   * re-montaría en cada render y perdería el foco/animación.
+   *
+   * Layout en dos filas a propósito: [imagen | texto] arriba y el botón a
+   * todo el ancho abajo. Con imagen + texto + botón en una sola fila, en
+   * los 400px del drawer el título quedaba en una columna de 60px, una
+   * palabra por renglón.
+   */
+  function renderTarjetaBump({ item, oferta }) {
+    const detalle = textoBump(item, oferta);
+    const imagenOferta = detalle.imagen || item.imagen;
+    const completo = ofertaCheckoutPublicable(item, oferta);
+    const beneficios = normalizarBeneficiosOferta(oferta?.beneficios).slice(0, 3);
+    return (
+      <article key={oferta.id} className="lp-bump">
+        <div className="lp-bump-tag">
+          <Zap size={12} />
+          <span>{detalle.ahorro > 0 ? `Solo en este pedido · Ahorrás ${formatPrecio(detalle.ahorro)}` : 'Solo en este pedido'}</span>
+        </div>
+        <div className="lp-bump-body">
+          <div className="lp-bump-media">
+            {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={18} />}
+          </div>
+          <div className="lp-bump-info">
+            <h4>{detalle.titulo}</h4>
+            {detalle.descripcion && <p>{detalle.descripcion}</p>}
+            <div className="lp-bump-price">
+              <strong>{completo ? formatPrecio(detalle.precioFinal) : 'Falta precio'}</strong>
+              {detalle.ahorro > 0 && <del>{formatPrecio(detalle.precioNormal)}</del>}
+              {detalle.ahorroPorcentaje ? <span>-{detalle.ahorroPorcentaje}%</span> : null}
+            </div>
+          </div>
+        </div>
+        {beneficios.length > 0 && (
+          <ul className="lp-bump-benefits">
+            {beneficios.map(b => <li key={b}><Check size={12} /> {b}</li>)}
+          </ul>
+        )}
+        <SelectorVarianteOferta oferta={oferta} />
+        <button
+          type="button"
+          className="lp-bump-add"
+          onClick={() => onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta))}
+          disabled={!completo}
+        >
+          {completo ? <><Plus size={15} /> Agregar a mi pedido</> : 'Completá producto, imagen y precio'}
+        </button>
+      </article>
+    );
+  }
+
+  const crossSellsVisibles = (onAgregarCrossSell ? crossSells : []).slice(0, 3);
+
   return (
-    <>
+    <div ref={rootRef} className="lp-cart-root" data-cart-modo={modo} style={varsTema}>
       {cantidadTotal > 0 && !abierto && (
         <button type="button" className="lp-cart-fab" onClick={onAbrir}>
           <ShoppingCart size={20} />
@@ -385,6 +474,7 @@ export default function CartDrawer({
                   </div>
                 ) : (
                   <>
+                    <div className="lp-cart-scroll">
                     <div className="lp-cart-items">
                       {items.map(it => (
                         <div key={it.clave} className="lp-cart-item">
@@ -396,8 +486,12 @@ export default function CartDrawer({
                             )}
                           </div>
                           <div className="lp-cart-item-info">
-                            <span className="lp-cart-item-nombre">{it.nombre}</span>
-                            {it.ofertaNombre && <span className="lp-cart-item-variante">{it.ofertaNombre}</span>}
+                            {/* Con oferta, el nombre de la oferta ES lo que se compró
+                                (un bump de Implementa se guarda sobre la línea del
+                                producto ancla): mismo criterio que el resumen del
+                                formulario, `ofertaNombre || nombre`. */}
+                            <span className="lp-cart-item-nombre">{it.ofertaNombre || it.nombre}</span>
+                            {it.componenteVarianteNombre && <span className="lp-cart-item-variante">{it.componenteVarianteNombre}</span>}
                             {it.varianteNombre && <span className="lp-cart-item-variante">{it.varianteNombre}</span>}
                             <span className="lp-cart-item-precio">{formatPrecio(it.precio)}</span>
                           </div>
@@ -415,6 +509,41 @@ export default function CartDrawer({
                       ))}
                     </div>
 
+                    {orderBumpsVisibles.length > 0 && (
+                      <section className="lp-cart-section" aria-label="Completá tu pedido">
+                        <h4 className="lp-cart-section-title">Completá tu pedido</h4>
+                        {orderBumpsVisibles.map(renderTarjetaBump)}
+                        {orderBumpsOcultos > 0 && (
+                          <button type="button" className="lp-cart-bumps-more" onClick={() => setMostrarBumpsExtra(true)}>
+                            Ver {orderBumpsOcultos} oferta{orderBumpsOcultos === 1 ? '' : 's'} más
+                          </button>
+                        )}
+                      </section>
+                    )}
+
+                    {crossSellsVisibles.length > 0 && (
+                      <section className="lp-cart-section" aria-label="También te puede interesar">
+                        <h4 className="lp-cart-section-title">También te puede interesar</h4>
+                        <div className="lp-cross-list">
+                          {crossSellsVisibles.map(item => (
+                            <div key={item.content_id || `${item.tipo}-${item.referencia_id}`} className="lp-cross">
+                              <div className="lp-cross-media">
+                                {item.imagen ? <img src={getMediaUrl(item.imagen)} alt="" /> : <ImageOff size={14} />}
+                              </div>
+                              <div className="lp-cross-info">
+                                <span className="lp-cross-nombre">{item.nombre}</span>
+                                <span className="lp-cross-precio">{formatPrecio(item.precio)}</span>
+                              </div>
+                              <button type="button" className="lp-cross-add" onClick={() => onAgregarCrossSell(item)} aria-label={`Agregar ${item.nombre}`}>
+                                <Plus size={14} /> Agregar
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                    </div>
+
                     <footer className="lp-cart-footer">
                       <div className="lp-cart-subtotal">
                         <span>Total</span>
@@ -423,6 +552,7 @@ export default function CartDrawer({
                       <button type="button" className="lp-cart-checkout" onClick={avanzarDesdeCarrito}>
                         Finalizar pedido
                       </button>
+                      <p className="lp-cart-footnote">En el siguiente paso completás tus datos de entrega.</p>
                     </footer>
                   </>
                 )}
@@ -630,8 +760,8 @@ export default function CartDrawer({
                   {(orderBumps.length > 0 || complementosAgregados.length > 0) && (
                     <section className="lp-cart-bumps" aria-label="Ofertas especiales del checkout">
                       <div className="lp-cart-bumps-head">
-                        <span><Zap size={14} /> Oferta especial del checkout</span>
-                        <small>Complementos útiles para esta compra</small>
+                        <span><Zap size={14} /> Antes de terminar</span>
+                        <small>Sumalo ahora y llega en el mismo envío.</small>
                       </div>
 
                       {complementosAgregados.length > 0 && (
@@ -645,48 +775,7 @@ export default function CartDrawer({
                         </div>
                       )}
 
-                      {orderBumpsVisibles.map(({ item, oferta }) => {
-                        const detalle = textoBump(item, oferta);
-                        const imagenOferta = detalle.imagen || item.imagen;
-                        const bumpCompleto = ofertaCheckoutPublicable(item, oferta);
-                        const beneficios = normalizarBeneficiosOferta(oferta?.beneficios);
-                        return (
-                          <article key={oferta.id} className="lp-cart-bump">
-                            <div className="lp-cart-bump-media">
-                              {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={16} />}
-                            </div>
-                            <div className="lp-cart-bump-info">
-                              <h4>{detalle.titulo}</h4>
-                              {detalle.descripcion && <p>{detalle.descripcion}</p>}
-                              {beneficios.length > 0 && (
-                                <ul className="lp-cart-bump-benefits">
-                                  {beneficios.map(beneficio => (
-                                    <li key={beneficio}><Check size={12} /> {beneficio}</li>
-                                  ))}
-                                </ul>
-                              )}
-                              <div className="lp-cart-bump-price">
-                                {detalle.ahorro > 0 && <del>{formatPrecio(detalle.precioNormal)}</del>}
-                                <strong>{bumpCompleto ? `+${formatPrecio(detalle.precioFinal)}` : 'Completá precio e imagen'}</strong>
-                                {detalle.ahorro > 0 && (
-                                  <span>
-                                    {`Ahorrás ${formatPrecio(detalle.ahorro)}${detalle.ahorroPorcentaje ? ` (${detalle.ahorroPorcentaje}%)` : ''}`}
-                                  </span>
-                                )}
-                              </div>
-                              <SelectorVarianteOferta oferta={oferta} />
-                              <button
-                                type="button"
-                                className="lp-cart-bump-add"
-                                onClick={() => onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta))}
-                                disabled={!bumpCompleto}
-                              >
-                                {bumpCompleto ? `Agregar por +${formatPrecio(detalle.precioFinal)}` : 'Completá producto, imagen y precio'}
-                              </button>
-                            </div>
-                          </article>
-                        );
-                      })}
+                      {orderBumpsVisibles.map(renderTarjetaBump)}
 
                       {orderBumpsOcultos > 0 && (
                         <button type="button" className="lp-cart-bumps-more" onClick={() => setMostrarBumpsExtra(true)}>
@@ -902,6 +991,6 @@ export default function CartDrawer({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

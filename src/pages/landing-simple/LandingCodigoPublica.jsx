@@ -1,10 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import CodigoPreview from './CodigoPreview';
-import StoreFooterLegal from '../landing/StoreFooterLegal';
 import CartDrawer from '../landing/CartDrawer';
-import { ContactoSection } from './templates/sections';
 import { getMediaUrl } from '../../services/api';
 import { useStoreCart } from '../landing/useStoreCart';
+import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -19,6 +18,8 @@ import { useStoreCart } from '../landing/useStoreCart';
  * del documento contenedor mientras esta landing está montada.
  */
 function contactoDesdeData(data) {
+  // contacto_landing ya trae el fallback a los datos de la Tienda
+  // (onboarding / Configurar tienda), ver landing.service.js.
   return {
     whatsapp: data?.contacto_whatsapp || data?.contacto_landing?.whatsapp || '',
     telefono: data?.contacto_telefono || data?.contacto_landing?.telefono || '',
@@ -84,12 +85,6 @@ function textoLegibleSobre(fondo) {
   return blanco >= negro ? '#ffffff' : '#111827';
 }
 
-function rgba(hex, alpha) {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return `rgba(17,24,39,${alpha})`;
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-}
-
 function resolverItemCheckout(data, pedido) {
   const raw = String(pedido?.producto || '').trim();
   if (!raw) return null;
@@ -102,26 +97,6 @@ function resolverItemCheckout(data, pedido) {
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
 }
 
-function htmlTieneSelector(html, selector) {
-  return new RegExp(`(?:id|class)=["'][^"']*\\b${selector}\\b[^"']*["']`, 'i').test(html);
-}
-
-function codigoTieneProductos(codigo) {
-  const html = codigo?.html || '';
-  return htmlTieneSelector(html, 'productos')
-    || htmlTieneSelector(html, 'productos-grid')
-    || /data-gesicomm-checkout/i.test(html);
-}
-
-function codigoTieneContacto(codigo) {
-  return htmlTieneSelector(codigo?.html || '', 'contacto');
-}
-
-function codigoTieneFooter(codigo) {
-  const html = codigo?.html || '';
-  return /<footer(?:\s|>)/i.test(html) || htmlTieneSelector(html, 'footer');
-}
-
 export default function LandingCodigoPublica({ codigo, titulo, data = null, slug }) {
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
@@ -130,8 +105,31 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
   const tieneFooterEnCodigo = useMemo(() => codigoTieneFooter(codigo), [codigo?.html]);
-  const mostrarSistema = !!data;
-  const bordeSuave = rgba(tema.texto, 0.16);
+  // Colores reales de la landing, reportados por el iframe (variables
+  // --gc-* del prompt, o lo que se ve si el código no las define). Hasta
+  // que llegan se usa el tema guardado de la landing/tienda.
+  const [temaIframe, setTemaIframe] = useState(null);
+  const onTema = useCallback((t) => setTemaIframe(t), []);
+
+  const extras = useMemo(() => {
+    if (!data) return null;
+    const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/') && slug ? `/l/${slug}` : '';
+    return armarSeccionesSistema({
+      mostrarProductos: !tieneProductosEnCodigo,
+      mostrarContacto: !tieneContactoEnCodigo,
+      mostrarFooter: !tieneFooterEnCodigo,
+      productos: productos.map(p => ({ ...p, imagen: p.imagen ? getMediaUrl(p.imagen) : null })),
+      contacto,
+      nombreComercio: data?.titulo || data?.tienda?.nombre || 'Tienda',
+      basePath,
+      acento: tema.acento,
+    });
+  }, [data, slug, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
+
+  const apariencia = useMemo(() => ({
+    primario: temaIframe?.primario || tema.acento,
+    fondo: temaIframe?.fondo || tema.fondo,
+  }), [temaIframe, tema]);
 
   function abrirCheckout(pedido) {
     if (!data) return;
@@ -159,47 +157,15 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: tema.fondo, color: tema.texto }}>
-      <div style={{ height: '100vh', background: '#fff' }}>
-        <CodigoPreview codigo={codigo} titulo={titulo} onCheckout={abrirCheckout} />
-      </div>
-
-      {mostrarSistema && (
-        <>
-          {!tieneProductosEnCodigo && (
-            <ProductosSistema
-              productos={productos}
-              tema={tema}
-              bordeSuave={bordeSuave}
-              onComprar={(item) => abrirCheckout({ producto: `${item.tipo}:${item.referencia_id}` })}
-            />
-          )}
-          {!tieneContactoEnCodigo && (
-            <div style={{ backgroundColor: tema.fondo, color: tema.texto }}>
-              <ContactoSection
-                contacto={contacto}
-                acento={tema.acento}
-                tituloClase="font-bold"
-                bordeSuave={bordeSuave}
-                isMobile={false}
-              />
-            </div>
-          )}
-          {!tieneFooterEnCodigo && (
-            <StoreFooterLegal
-              tema={tema}
-              bordeSuave={bordeSuave}
-              nombreComercio={data?.titulo || data?.tienda?.nombre || 'Tienda'}
-              style={{ backgroundColor: tema.fondo }}
-            />
-          )}
-        </>
-      )}
+    <div style={{ height: '100vh', background: apariencia.fondo }}>
+      <CodigoPreview codigo={codigo} titulo={titulo} extras={extras} onCheckout={abrirCheckout} onTema={onTema} />
 
       <CartDrawer
         items={Array.from(cartState.carrito.values())}
         sugerencias={cartState.sugerenciasCarrito}
         onAgregarSugerencia={cartState.agregarSugerencia}
+        crossSells={cartState.crossSellsCarrito}
+        onAgregarCrossSell={cartState.agregarCrossSell}
         abierto={cartState.carritoAbierto}
         onAbrir={() => cartState.setCarritoAbierto(true)}
         onCerrar={() => cartState.setCarritoAbierto(false)}
@@ -209,76 +175,8 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
         deliveryCiudades={data?.delivery_ciudades || []}
+        apariencia={apariencia}
       />
     </div>
-  );
-}
-
-function ProductosSistema({ productos, tema, bordeSuave, onComprar }) {
-  if (!productos?.length) return null;
-  return (
-    <section
-      id="productos-seleccionados"
-      style={{
-        backgroundColor: tema.fondo,
-        color: tema.texto,
-        borderTop: `1px solid ${bordeSuave}`,
-        padding: '64px 24px',
-      }}
-    >
-      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-        <div style={{ marginBottom: 28 }}>
-          <p style={{ margin: '0 0 8px', color: tema.acento, fontWeight: 800, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Productos seleccionados
-          </p>
-          <h2 style={{ margin: 0, fontSize: 'clamp(28px, 4vw, 44px)', lineHeight: 1.05 }}>Comprá desde esta landing</h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
-          {productos.map(item => (
-            <article
-              key={item.content_id || `${item.tipo}-${item.referencia_id}`}
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 10,
-                border: `1px solid ${bordeSuave}`,
-                borderRadius: 14,
-                padding: 16,
-                backgroundColor: rgba(tema.texto, 0.04),
-              }}
-            >
-              {item.imagen && (
-                <img
-                  src={getMediaUrl(item.imagen)}
-                  alt={item.nombre}
-                  style={{ width: '100%', aspectRatio: '4 / 3', objectFit: 'cover', borderRadius: 10, background: rgba(tema.texto, 0.08) }}
-                />
-              )}
-              <span style={{ color: tema.acento, fontSize: 12, fontWeight: 800 }}>{item.tipo === 'combo' ? 'Combo' : 'Producto'}</span>
-              <h3 style={{ margin: 0, fontSize: 20 }}>{item.nombre}</h3>
-              {item.descripcion && <p style={{ margin: 0, color: rgba(tema.texto, 0.72), lineHeight: 1.45 }}>{item.descripcion}</p>}
-              <strong style={{ marginTop: 'auto', fontSize: 18 }}>
-                {Number(item.precio || 0).toLocaleString('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 })}
-              </strong>
-              <button
-                type="button"
-                onClick={() => onComprar(item)}
-                style={{
-                  border: 0,
-                  borderRadius: 10,
-                  padding: '12px 14px',
-                  backgroundColor: tema.acento,
-                  color: textoLegibleSobre(tema.acento),
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                Comprar ahora
-              </button>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
   );
 }

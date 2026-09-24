@@ -14,16 +14,16 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * iframe auto-alto se romperían), y no hace falta ningún ida y vuelta de
  * postMessage para medir alturas.
  */
-export default function CodigoPreview({ codigo, titulo, onError, onCheckout, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, onError, onCheckout, onTema, extras = null, className = '', style }) {
   const ref = useRef(null);
 
   const doc = useMemo(
-    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError }),
-    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError],
+    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, extras }),
+    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css],
   );
 
   useEffect(() => {
-    if (!onError && !onCheckout) return;
+    if (!onError && !onCheckout && !onTema) return;
     function alMensaje(e) {
       // El iframe tiene origen opaco (sandbox sin allow-same-origin), así
       // que e.origin es "null" y no sirve para validar: lo que identifica
@@ -31,10 +31,11 @@ export default function CodigoPreview({ codigo, titulo, onError, onCheckout, cla
       if (!ref.current || e.source !== ref.current.contentWindow) return;
       if (e.data?.tipo === 'gesicomm:error-codigo') onError?.(e.data.mensaje);
       if (e.data?.tipo === 'gesicomm:checkout') onCheckout?.(e.data);
+      if (e.data?.tipo === 'gesicomm:tema') onTema?.(e.data);
     }
     window.addEventListener('message', alMensaje);
     return () => window.removeEventListener('message', alMensaje);
-  }, [onError, onCheckout]);
+  }, [onError, onCheckout, onTema]);
 
   return (
     <iframe

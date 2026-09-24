@@ -59,15 +59,17 @@ function escaparCierreStyle(css) {
 
 /**
  * @param {{html?: string, css?: string, js?: string}} codigo
- * @param {{titulo?: string, reportarErrores?: boolean}} opciones
+ * @param {{titulo?: string, reportarErrores?: boolean, extras?: {html: string, css: string}}} opciones
  *   reportarErrores: manda los errores de ejecución del JS al contenedor
  *   por postMessage — lo usa el editor para mostrarlos; en la landing
  *   pública no hace falta.
+ *   extras: secciones de Gesicom (productos/contacto/footer) que se pegan
+ *   al final del <body>, ver seccionesSistemaCodigo.js. Ya vienen escapadas.
  * @returns {string} documento listo para el srcDoc del iframe
  */
 export function construirDocumentoCodigo(codigo, opciones = {}) {
   const { html = '', css = '', js = '' } = codigo || {};
-  const { titulo = '', reportarErrores = false } = opciones;
+  const { titulo = '', reportarErrores = false, extras = null } = opciones;
 
   // El puente de errores lo inyectamos nosotros, no el comercio: por eso
   // puede usar postMessage aunque el JS del comercio lo tenga prohibido.
@@ -81,6 +83,26 @@ window.addEventListener('unhandledrejection', function (e) {
 </script>` : '';
 
   const puenteGesicomm = `<script>
+// Tema de la landing → carrito. El carrito vive fuera del iframe y no puede
+// leer este CSS: se le mandan los colores. Primero las variables --gc-* que
+// pide el prompt de generación; si el código no las define, lo que se ve
+// (fondo del body, color de texto, fondo del primer botón de compra).
+(function () {
+  function opaco(c) { return c && c !== 'transparent' && c.replace(/ /g, '') !== 'rgba(0,0,0,0)' ? c : ''; }
+  function reportar() {
+    var raiz = getComputedStyle(document.documentElement);
+    var body = document.body ? getComputedStyle(document.body) : raiz;
+    var boton = document.querySelector('[data-gesicomm-checkout]');
+    var v = function (n) { return raiz.getPropertyValue(n).trim(); };
+    parent.postMessage({
+      tipo: 'gesicomm:tema',
+      primario: v('--gc-primario') || (boton ? opaco(getComputedStyle(boton).backgroundColor) : ''),
+      fondo: v('--gc-fondo') || opaco(body.backgroundColor) || opaco(raiz.backgroundColor) || '#ffffff',
+      texto: v('--gc-texto') || body.color
+    }, '*');
+  }
+  if (document.readyState === 'complete') reportar(); else window.addEventListener('load', reportar);
+})();
 document.addEventListener('click', function (e) {
   var el = e.target && e.target.closest ? e.target.closest('[data-gesicomm-checkout]') : null;
   if (!el) return;
@@ -109,9 +131,11 @@ html, body { margin: 0; padding: 0; }
 <style>
 ${escaparCierreStyle(css)}
 </style>
+${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 </head>
 <body>
 ${html || ''}
+${extras?.html || ''}
 ${puenteGesicomm}
 ${puenteErrores}
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y

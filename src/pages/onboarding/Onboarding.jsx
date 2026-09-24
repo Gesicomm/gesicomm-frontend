@@ -46,6 +46,12 @@ const FICHAS = [
   },
 ];
 
+/** "0981 123-456" → "595981123456". Vacío si no queda un número plausible. */
+function normalizarWhatsapp(valor) {
+  const digitos = String(valor || '').replace(/\D/g, '').replace(/^0/, '595');
+  return digitos.length >= 8 && digitos.length <= 15 ? digitos : '';
+}
+
 export default function Onboarding() {
   const navigate = useNavigate();
   const [verificando, setVerificando] = useState(true);
@@ -61,6 +67,9 @@ export default function Onboarding() {
   const [depositoDireccion, setDepositoDireccion] = useState('');
   const [depositoReferencia, setDepositoReferencia] = useState('');
   const [depositoTelefono, setDepositoTelefono] = useState('');
+  // Contacto público (opcional): queda en la Tienda y todas las landings lo
+  // heredan para su sección de contacto/redes.
+  const [redes, setRedes] = useState({ whatsapp: '', instagram: '', facebook: '', tiktok: '' });
   const [ficha, setFicha] = useState('');
   const [disponibilidad, setDisponibilidad] = useState(null);
   const [creando, setCreando] = useState(false);
@@ -165,6 +174,11 @@ export default function Onboarding() {
         deposito_direccion: depositoDireccion.trim(),
         deposito_referencia: depositoReferencia.trim(),
         deposito_telefono: depositoTelefono.trim(),
+        // wa.me y el backend piden solo dígitos con código de país.
+        whatsapp: normalizarWhatsapp(redes.whatsapp) || undefined,
+        instagram: redes.instagram.trim() || undefined,
+        facebook: redes.facebook.trim() || undefined,
+        tiktok: redes.tiktok.trim() || undefined,
         subdominio,
         onboarding: true,
         onboarding_ficha: continuarProductos ? ficha : null,
@@ -254,6 +268,29 @@ export default function Onboarding() {
               />
               <small>Solo si facturás. Podés dejarlo vacío.</small>
             </label>
+
+            <fieldset className="onb-redes">
+              <legend>¿Dónde te encuentran tus clientes? <em>(opcional)</em></legend>
+              <small>Se muestran en el contacto de tus landings. Podés cambiarlos después en Configurar tienda.</small>
+              <div className="onb-redes-grid">
+                <label className="onb-campo">
+                  <span>WhatsApp</span>
+                  <input value={redes.whatsapp} onChange={e => setRedes(r => ({ ...r, whatsapp: e.target.value }))} placeholder="0981 123 456" inputMode="tel" />
+                </label>
+                <label className="onb-campo">
+                  <span>Instagram</span>
+                  <input value={redes.instagram} onChange={e => setRedes(r => ({ ...r, instagram: e.target.value }))} placeholder="@mitienda" />
+                </label>
+                <label className="onb-campo">
+                  <span>Facebook</span>
+                  <input value={redes.facebook} onChange={e => setRedes(r => ({ ...r, facebook: e.target.value }))} placeholder="mitienda" />
+                </label>
+                <label className="onb-campo">
+                  <span>TikTok</span>
+                  <input value={redes.tiktok} onChange={e => setRedes(r => ({ ...r, tiktok: e.target.value }))} placeholder="@mitienda" />
+                </label>
+              </div>
+            </fieldset>
 
             <button type="submit" className="land-btn-primary onb-btn-full" disabled={!nombreValido || !subdominioOk || !documentoValido}>
               Continuar <ArrowRight size={15} />

@@ -34,3 +34,44 @@ export function ordenarOfertasCheckout(ofertas = [], idsConfigurados = new Set()
     return bConfigurada - aConfigurada;
   });
 }
+
+/**
+ * Cross-sell del carrito: otros productos del catálogo de la landing, a su
+ * precio normal (no es una oferta). Solo los que se pueden sumar con un
+ * toque — con imagen, precio, stock y sin variantes que elegir (esos
+ * necesitan pasar por su ficha). Primero los de la misma categoría que lo
+ * que ya está en el carrito.
+ *
+ * @param {Array} catalogo       items públicos de la landing (catalogo_items)
+ * @param {Array} itemsCarrito   valores del Map del carrito ({ contentId })
+ */
+export function calcularCrossSells(catalogo = [], itemsCarrito = [], max = 3) {
+  if (!itemsCarrito.length || !catalogo.length) return [];
+  const enCarrito = new Set(itemsCarrito.map(it => it.contentId));
+  // Lo que ya se ofrece como bump/upsell de algo del carrito no se repite
+  // acá a precio lleno: se vería el mismo producto a dos precios. El DTO
+  // del complemento no trae id, así que se compara por nombre.
+  const nombreClave = n => String(n || '').trim().toLowerCase();
+  const enOfertas = new Set(
+    itemsCarrito.flatMap(it => {
+      const ofertas = catalogo.find(i => i.content_id === it.contentId)?.ofertas || [];
+      return ofertas.flatMap(o => [o.producto_complementario, ...(o.productos_incluidos || [])])
+        .filter(Boolean)
+        .map(c => nombreClave(c.nombre));
+    })
+  );
+  const categorias = new Set(
+    itemsCarrito
+      .map(it => catalogo.find(i => i.content_id === it.contentId)?.categoria)
+      .filter(Boolean)
+  );
+  return catalogo
+    .filter(i => !enCarrito.has(i.content_id)
+      && !enOfertas.has(nombreClave(i.nombre))
+      && Number(i.precio) > 0
+      && i.imagen
+      && !(i.variantes?.length)
+      && (i.stock == null || i.stock > 0))
+    .sort((a, b) => (categorias.has(b.categoria) ? 1 : 0) - (categorias.has(a.categoria) ? 1 : 0))
+    .slice(0, max);
+}

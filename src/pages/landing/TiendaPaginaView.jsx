@@ -29,7 +29,7 @@ import StoreFooterLegal from './StoreFooterLegal';
 import VentaDirectaTemplate from '../funnel/templates/VentaDirectaTemplate';
 import FunnelCheckout from '../funnel/FunnelCheckout';
 import { mapPublicDtoToFunnelData } from '../funnel/mapFunnelToTemplateData';
-import { ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
+import { calcularCrossSells, ofertaCheckoutPublicable, ordenarOfertasCheckout } from './ofertasCheckout';
 import './landingPublica.css';
 
 registerLegacyBlocks();
@@ -202,6 +202,15 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     }
     return sugerencias;
   }, [data, catalogoCompleto, carrito]);
+
+  const crossSellsCarrito = useMemo(
+    () => calcularCrossSells(catalogoCompleto, Array.from(carrito.values())),
+    [catalogoCompleto, carrito],
+  );
+
+  function agregarCrossSell(item) {
+    agregarAlCarrito({ item, variante: null, oferta: null, cantidad: 1, precio: item.precio || 0 });
+  }
 
   function agregarSugerencia(item, oferta, componenteVariante = null) {
     // precio_efectivo es el que el backend va a cobrar por esta oferta
@@ -728,6 +737,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       items: Array.from(carrito.values()),
       sugerencias: sugerenciasCarrito,
       onAgregarSugerencia: agregarSugerencia,
+      crossSells: crossSellsCarrito,
+      onAgregarCrossSell: agregarCrossSell,
       abierto: carritoAbierto,
       onAbrir: () => setCarritoAbierto(true),
       onCerrar: () => setCarritoAbierto(false),
@@ -1089,6 +1100,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         items={Array.from(carrito.values())}
         sugerencias={sugerenciasCarrito}
         onAgregarSugerencia={agregarSugerencia}
+        crossSells={crossSellsCarrito}
+        onAgregarCrossSell={agregarCrossSell}
         abierto={carritoAbierto}
         onAbrir={() => setCarritoAbierto(true)}
         onCerrar={() => setCarritoAbierto(false)}

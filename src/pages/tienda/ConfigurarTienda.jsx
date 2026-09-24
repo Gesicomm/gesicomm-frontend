@@ -38,6 +38,11 @@ const FORM_INICIAL = {
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
+  email: '',
+  instagram: '',
+  facebook: '',
+  tiktok: '',
+  youtube: '',
   deposito_departamento: '',
   deposito_ciudad: '',
   deposito_direccion: '',
@@ -166,6 +171,11 @@ export default function ConfigurarTienda() {
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
+          email: data.email || '',
+          instagram: data.instagram || '',
+          facebook: data.facebook || '',
+          tiktok: data.tiktok || '',
+          youtube: data.youtube || '',
           deposito_departamento: data.deposito_departamento || '',
           deposito_ciudad: data.deposito_ciudad || '',
           deposito_direccion: data.deposito_direccion || '',
@@ -596,6 +606,37 @@ export default function ConfigurarTienda() {
                           <span className="tn-field-label">Teléfono <em>(opcional)</em></span>
                           <input value={form.telefono} onChange={e => handleChange('telefono', e.target.value)} placeholder="Solo si querés mostrar otro número" />
                           <span className="tn-field-hint">Se muestra como dato de contacto, no recibe los mensajes.</span>
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Email y redes sociales</h3>
+                      <p>Aparecen en la sección de contacto y el pie de todas tus landings. Si una landing tiene los suyos, se usan esos.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Email <em>(opcional)</em></span>
+                          <input type="email" value={form.email} onChange={e => handleChange('email', e.target.value)} placeholder="hola@mitienda.com" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Instagram <em>(opcional)</em></span>
+                          <input value={form.instagram} onChange={e => handleChange('instagram', e.target.value)} placeholder="@mitienda" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Facebook <em>(opcional)</em></span>
+                          <input value={form.facebook} onChange={e => handleChange('facebook', e.target.value)} placeholder="mitienda o link de la página" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">TikTok <em>(opcional)</em></span>
+                          <input value={form.tiktok} onChange={e => handleChange('tiktok', e.target.value)} placeholder="@mitienda" />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">YouTube <em>(opcional)</em></span>
+                          <input value={form.youtube} onChange={e => handleChange('youtube', e.target.value)} placeholder="@micanal" />
                         </label>
                       </div>
                     </div>

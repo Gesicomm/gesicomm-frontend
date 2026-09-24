@@ -81,6 +81,32 @@ function luminanciaRelativa(color) {
   return 0.2126 * canal(h.slice(0, 2)) + 0.7152 * canal(h.slice(2, 4)) + 0.0722 * canal(h.slice(4, 6));
 }
 
+/**
+ * Normaliza un color CSS a hex de 6 dígitos. Acepta #rgb, #rrggbb y
+ * rgb()/rgba() opacos — este último es lo que devuelve getComputedStyle,
+ * que es de donde sale el tema de una landing de "Lienzo en blanco".
+ * `null` si no se puede leer o si es (semi)transparente.
+ */
+export function normalizarColorHex(color) {
+  if (typeof color !== 'string') return null;
+  const c = color.trim();
+  const rgb = c.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)(?:[\s,/]+([\d.]+%?))?\s*\)$/i);
+  if (rgb) {
+    const alpha = rgb[4] == null ? 1 : (rgb[4].endsWith('%') ? parseFloat(rgb[4]) / 100 : parseFloat(rgb[4]));
+    if (alpha < 0.95) return null;
+    return `#${[rgb[1], rgb[2], rgb[3]].map(v => Math.min(255, Number(v)).toString(16).padStart(2, '0')).join('')}`;
+  }
+  let h = c.replace(/^#/, '');
+  if (h.length === 3) h = h.split('').map(x => x + x).join('');
+  return /^[0-9a-f]{6}$/i.test(h) ? `#${h.toLowerCase()}` : null;
+}
+
+/** true si el color es claro (fondo sobre el que se escribe con tinta oscura). */
+export function esColorClaro(color) {
+  const l = luminanciaRelativa(normalizarColorHex(color));
+  return l === null ? null : l > 0.4;
+}
+
 const TINTA_CLARA = '#ffffff';
 const TINTA_OSCURA = '#0b1211';
 const LUM_TINTA_OSCURA = 0.00545; // luminanciaRelativa(TINTA_OSCURA), constante
