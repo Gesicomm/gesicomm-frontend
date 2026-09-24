@@ -245,6 +245,12 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         componenteVarianteId: componenteVariante?.id || null,
         componenteVarianteNombre: componenteVariante?.nombre || null,
         precio,
+        // Precio de lista, para mostrar el ahorro en el carrito: el normal de
+        // la oferta (bump/upsell/pack) o el "antes" del producto. Con
+        // variante no se usa: precio_antes es del producto base.
+        precioAntes: oferta
+          ? (Number(oferta.precio_normal) || null)
+          : (variante ? null : (Number(item.precio_antes) || null)),
         cantidad: nuevaCantidad,
         imagen: componenteVariante?.imagenes?.[0] || oferta?.imagen || oferta?.producto_complementario?.imagen || item.imagenes?.[0] || item.imagen || null,
         stockMax: stockMax ?? null,

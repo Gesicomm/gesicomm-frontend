@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader, Sparkles, Zap, MapPin } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Gift, PartyPopper, Award, ShieldCheck, Banknote } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
@@ -407,23 +407,31 @@ export default function CartDrawer({
     const imagenOferta = detalle.imagen || item.imagen;
     const completo = ofertaCheckoutPublicable(item, oferta);
     const beneficios = normalizarBeneficiosOferta(oferta?.beneficios).slice(0, 3);
+    const agregar = () => onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta));
+    // Order bump "de checkbox" (el formato clásico que más convierte): la
+    // franja de arriba ES la acción — una casilla grande "Sí, sumalo" que se
+    // lee como decisión de un toque, no como otro producto más para evaluar.
     return (
       <article key={oferta.id} className="lp-bump">
-        <div className="lp-bump-tag">
-          <Zap size={12} />
-          <span>{detalle.ahorro > 0 ? `Solo en este pedido · Ahorrás ${formatPrecio(detalle.ahorro)}` : 'Solo en este pedido'}</span>
-        </div>
+        <button type="button" className="lp-bump-check" onClick={agregar} disabled={!completo}>
+          <span className="lp-bump-box" aria-hidden="true"><Check size={14} /></span>
+          <span className="lp-bump-cta">
+            {completo ? <>Sí, sumalo a mi pedido por <b>{formatPrecio(detalle.precioFinal)}</b></> : 'Completá producto, imagen y precio'}
+          </span>
+          <ArrowRight size={16} className="lp-bump-arrow" aria-hidden="true" />
+        </button>
         <div className="lp-bump-body">
           <div className="lp-bump-media">
             {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={18} />}
+            {detalle.ahorroPorcentaje ? <span className="lp-bump-off">-{detalle.ahorroPorcentaje}%</span> : null}
           </div>
           <div className="lp-bump-info">
+            <span className="lp-bump-eyebrow"><Zap size={11} /> Solo en este pedido</span>
             <h4>{detalle.titulo}</h4>
             {detalle.descripcion && <p>{detalle.descripcion}</p>}
             <div className="lp-bump-price">
               <strong>{completo ? formatPrecio(detalle.precioFinal) : 'Falta precio'}</strong>
               {detalle.ahorro > 0 && <del>{formatPrecio(detalle.precioNormal)}</del>}
-              {detalle.ahorroPorcentaje ? <span>-{detalle.ahorroPorcentaje}%</span> : null}
             </div>
           </div>
         </div>
@@ -433,19 +441,18 @@ export default function CartDrawer({
           </ul>
         )}
         <SelectorVarianteOferta oferta={oferta} />
-        <button
-          type="button"
-          className="lp-bump-add"
-          onClick={() => onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta))}
-          disabled={!completo}
-        >
-          {completo ? <><Plus size={15} /> Agregar a mi pedido</> : 'Completá producto, imagen y precio'}
-        </button>
       </article>
     );
   }
 
   const crossSellsVisibles = (onAgregarCrossSell ? crossSells : []).slice(0, 3);
+  // Ahorro real del carrito: precio de lista (precioAntes, lo guarda el
+  // carrito al agregar) contra lo que se cobra. Nunca se inventa: una línea
+  // sin precioAntes no suma ahorro.
+  const ahorroCarrito = items.reduce(
+    (s, it) => s + Math.max(0, (Number(it.precioAntes) || 0) - (Number(it.precio) || 0)) * it.cantidad, 0,
+  );
+  const mejorAhorroBump = orderBumps.reduce((max, { item, oferta }) => Math.max(max, detalleOfertaCheckout(item, oferta).ahorro), 0);
 
   return (
     <div ref={rootRef} className="lp-cart-root" data-cart-modo={modo} style={varsTema}>
@@ -463,8 +470,11 @@ export default function CartDrawer({
             {paso === 'carrito' && (
               <>
                 <header className="lp-cart-head">
-                  <h3><ShoppingCart size={16} /> Tu pedido</h3>
-                  <button type="button" className="lp-cart-close" onClick={cerrar}><X size={18} /></button>
+                  <h3>
+                    <ShoppingCart size={17} /> Tu carrito
+                    {cantidadTotal > 0 && <span className="lp-cart-count">{cantidadTotal}</span>}
+                  </h3>
+                  <button type="button" className="lp-cart-close" onClick={cerrar} aria-label="Cerrar"><X size={18} /></button>
                 </header>
 
                 {items.length === 0 ? (
@@ -474,9 +484,26 @@ export default function CartDrawer({
                   </div>
                 ) : (
                   <>
+                    {/* Barra de recompensa: arriba de todo, es lo primero que se
+                        lee. Con ahorro celebra lo ganado; si todavía no hay, avisa
+                        que abajo hay una oferta (sin inventar montos). */}
+                    {ahorroCarrito > 0 ? (
+                      <div className="lp-cart-reward lp-cart-reward--ok" role="status">
+                        <PartyPopper size={16} />
+                        <span>¡Genial! Estás ahorrando <b>{formatPrecio(ahorroCarrito)}</b> en este pedido</span>
+                      </div>
+                    ) : mejorAhorroBump > 0 ? (
+                      <div className="lp-cart-reward">
+                        <Gift size={16} />
+                        <span>Tenés una oferta exclusiva abajo: ahorrá hasta <b>{formatPrecio(mejorAhorroBump)}</b></span>
+                      </div>
+                    ) : null}
+
                     <div className="lp-cart-scroll">
                     <div className="lp-cart-items">
-                      {items.map(it => (
+                      {items.map(it => {
+                        const antes = Number(it.precioAntes) || 0;
+                        return (
                         <div key={it.clave} className="lp-cart-item">
                           <div className="lp-cart-item-media">
                             {it.imagen ? (
@@ -493,25 +520,29 @@ export default function CartDrawer({
                             <span className="lp-cart-item-nombre">{it.ofertaNombre || it.nombre}</span>
                             {it.componenteVarianteNombre && <span className="lp-cart-item-variante">{it.componenteVarianteNombre}</span>}
                             {it.varianteNombre && <span className="lp-cart-item-variante">{it.varianteNombre}</span>}
-                            <span className="lp-cart-item-precio">{formatPrecio(it.precio)}</span>
+                            <span className="lp-cart-item-precio">
+                              <b>{formatPrecio(it.precio * it.cantidad)}</b>
+                              {antes > it.precio && <del>{formatPrecio(antes * it.cantidad)}</del>}
+                            </span>
                           </div>
                           <div className="lp-cart-item-acciones">
-                            <div className="lp-cart-stepper">
-                              <button type="button" onClick={() => onCantidad(it.clave, -1)}><Minus size={12} /></button>
-                              <span>{it.cantidad}</span>
-                              <button type="button" onClick={() => onCantidad(it.clave, 1)} disabled={it.stockMax != null && it.cantidad >= it.stockMax}><Plus size={12} /></button>
-                            </div>
-                            <button type="button" className="lp-cart-quitar" onClick={() => onQuitar(it.clave)} title="Quitar">
-                              <Trash2 size={13} />
+                            <button type="button" className="lp-cart-quitar" onClick={() => onQuitar(it.clave)} aria-label={`Quitar ${it.ofertaNombre || it.nombre}`}>
+                              <Trash2 size={14} />
                             </button>
+                            <div className="lp-cart-stepper">
+                              <button type="button" onClick={() => onCantidad(it.clave, -1)} aria-label="Restar uno"><Minus size={13} /></button>
+                              <span>{it.cantidad}</span>
+                              <button type="button" onClick={() => onCantidad(it.clave, 1)} disabled={it.stockMax != null && it.cantidad >= it.stockMax} aria-label="Sumar uno"><Plus size={13} /></button>
+                            </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {orderBumpsVisibles.length > 0 && (
-                      <section className="lp-cart-section" aria-label="Completá tu pedido">
-                        <h4 className="lp-cart-section-title">Completá tu pedido</h4>
+                      <section className="lp-cart-section" aria-label="Oferta para tu pedido">
+                        <h4 className="lp-cart-section-title">Aprovechá antes de terminar</h4>
                         {orderBumpsVisibles.map(renderTarjetaBump)}
                         {orderBumpsOcultos > 0 && (
                           <button type="button" className="lp-cart-bumps-more" onClick={() => setMostrarBumpsExtra(true)}>
@@ -521,38 +552,61 @@ export default function CartDrawer({
                       </section>
                     )}
 
+                    {/* Cross-sell: DEBAJO del contenido del carrito (Baymard:
+                        nunca arriba de lo que el cliente ya eligió) y 2-3
+                        tarjetas en carrusel. La medalla sale de la etiqueta que
+                        el comercio le pone al producto en la landing ("Más
+                        vendido", "Nuevo"…) — `badge` queda como gancho para una
+                        medalla calculada por ventas más adelante. */}
                     {crossSellsVisibles.length > 0 && (
-                      <section className="lp-cart-section" aria-label="También te puede interesar">
-                        <h4 className="lp-cart-section-title">También te puede interesar</h4>
-                        <div className="lp-cross-list">
-                          {crossSellsVisibles.map(item => (
-                            <div key={item.content_id || `${item.tipo}-${item.referencia_id}`} className="lp-cross">
-                              <div className="lp-cross-media">
-                                {item.imagen ? <img src={getMediaUrl(item.imagen)} alt="" /> : <ImageOff size={14} />}
-                              </div>
-                              <div className="lp-cross-info">
-                                <span className="lp-cross-nombre">{item.nombre}</span>
-                                <span className="lp-cross-precio">{formatPrecio(item.precio)}</span>
-                              </div>
-                              <button type="button" className="lp-cross-add" onClick={() => onAgregarCrossSell(item)} aria-label={`Agregar ${item.nombre}`}>
-                                <Plus size={14} /> Agregar
-                              </button>
-                            </div>
-                          ))}
+                      <section className="lp-cart-section" aria-label="Clientes también llevan">
+                        <h4 className="lp-cart-section-title">Clientes también llevan</h4>
+                        <div className="lp-cross-rail">
+                          {crossSellsVisibles.map(item => {
+                            const medalla = item.badge || item.etiqueta;
+                            const antes = Number(item.precio_antes) || 0;
+                            return (
+                              <article key={item.content_id || `${item.tipo}-${item.referencia_id}`} className="lp-cross-card">
+                                <div className="lp-cross-card-media">
+                                  {item.imagen ? <img src={getMediaUrl(item.imagen)} alt="" /> : <ImageOff size={16} />}
+                                  {medalla && <span className="lp-cross-medal"><Award size={11} /> {medalla}</span>}
+                                </div>
+                                <span className="lp-cross-card-nombre">{item.nombre}</span>
+                                <span className="lp-cross-card-precio">
+                                  <b>{formatPrecio(item.precio)}</b>
+                                  {antes > item.precio && <del>{formatPrecio(antes)}</del>}
+                                </span>
+                                <button type="button" className="lp-cross-card-add" onClick={() => onAgregarCrossSell(item)} aria-label={`Agregar ${item.nombre}`}>
+                                  <Plus size={14} /> Agregar
+                                </button>
+                              </article>
+                            );
+                          })}
                         </div>
                       </section>
                     )}
                     </div>
 
                     <footer className="lp-cart-footer">
-                      <div className="lp-cart-subtotal">
-                        <span>Total</span>
-                        <strong>{formatPrecio(subtotal)}</strong>
+                      <div className="lp-cart-lines">
+                        {ahorroCarrito > 0 && (
+                          <div className="lp-cart-line lp-cart-line--ahorro">
+                            <span>Ahorro</span>
+                            <strong>− {formatPrecio(ahorroCarrito)}</strong>
+                          </div>
+                        )}
+                        <div className="lp-cart-subtotal">
+                          <span>Total</span>
+                          <strong>{formatPrecio(subtotal)}</strong>
+                        </div>
                       </div>
-                      <button type="button" className="lp-cart-checkout" onClick={avanzarDesdeCarrito}>
-                        Finalizar pedido
+                      <button type="button" className="lp-cart-checkout lp-cart-checkout--hero" onClick={avanzarDesdeCarrito}>
+                        Finalizar compra <ArrowRight size={18} />
                       </button>
-                      <p className="lp-cart-footnote">En el siguiente paso completás tus datos de entrega.</p>
+                      <ul className="lp-cart-trust">
+                        <li><ShieldCheck size={14} /> Compra segura</li>
+                        <li><Banknote size={14} /> Podés pagar al recibir</li>
+                      </ul>
                     </footer>
                   </>
                 )}
@@ -852,6 +906,12 @@ export default function CartDrawer({
                   )}
 
                   <section className="lp-checkout-total-box" aria-label="Total del pedido">
+                    {ahorroCarrito > 0 && (
+                      <div className="lp-cart-line lp-cart-line--ahorro">
+                        <span>Ahorrás en este pedido</span>
+                        <strong>− {formatPrecio(ahorroCarrito)}</strong>
+                      </div>
+                    )}
                     <div className="lp-cart-subtotal">
                       <span>Productos</span>
                       <strong>{formatPrecio(subtotal)}</strong>
