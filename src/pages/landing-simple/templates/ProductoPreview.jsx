@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ImageOff } from 'lucide-react';
+import { FormattedText } from '../../../components/FormattedText';
 import { getMediaUrl } from '../../../services/api';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import { RedesSocialesFooter, ImagenProductoHover } from './sections';
 import { hexToRgba, resolverTemaPorSlug } from './themeUtils';
 import RichText from '../../../components/RichText';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
-import { MediaProducto, MiniaturaMediaProducto, normalizarGaleriaProducto, claveMedioProducto } from './mediaGaleria';
 
 
 /**
@@ -33,7 +33,7 @@ export default function ProductoPreview({ producto, ofertas, imagenes, descripci
   const paqueteSeleccionado = paquetes.find(o => Number(o.id) === Number(ofertaSeleccionadaId)) || null;
   const precio = paqueteSeleccionado ? (paqueteSeleccionado.precio_efectivo ?? paqueteSeleccionado.precio) : precioBase;
 
-  const galeria = normalizarGaleriaProducto(imagenes || []);
+  const galeria = (imagenes || []).map(i => i.url);
   const imagenActual = galeria[indiceImagen] || producto?.imagen || null;
   const itemsRelacionados = Array.isArray(relacionados) ? relacionados : [];
   const tituloRelacionados = (relacionadosTitulo && relacionadosTitulo.trim()) ? relacionadosTitulo.trim() : 'Productos relacionados';
@@ -63,22 +63,22 @@ export default function ProductoPreview({ producto, ofertas, imagenes, descripci
           <div className="flex flex-col gap-3">
             <div className="aspect-square rounded-2xl overflow-hidden flex items-center justify-center" style={{ backgroundColor: hexToRgba(t.texto, 0.06) }}>
               {imagenActual ? (
-                <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={producto.nombre} /></div>
+                <img src={getMediaUrl(imagenActual)} alt={producto.nombre} className="w-full h-full object-cover" />
               ) : (
                 <ImageOff size={40} style={{ color: hexToRgba(t.texto, 0.25) }} />
               )}
             </div>
             {galeria.length > 1 && (
               <div className="flex gap-2">
-                {galeria.map((medio, idx) => (
+                {galeria.map((url, idx) => (
                   <button
-                    key={claveMedioProducto(medio, idx)}
+                    key={url + idx}
                     type="button"
                     onClick={() => setIndiceImagen(idx)}
                     className="w-14 h-14 rounded-lg overflow-hidden shrink-0"
                     style={{ border: idx === indiceImagen ? `2px solid ${t.acento}` : `1px solid ${bordeSuave}` }}
                   >
-                    <MiniaturaMediaProducto medio={medio} alt="" />
+                    <img src={getMediaUrl(url)} alt="" className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -181,7 +181,7 @@ export default function ProductoPreview({ producto, ofertas, imagenes, descripci
                   <ChevronDown size={15} style={{ color: t.acento, transform: preguntaAbierta === idx ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
                 </button>
                 {preguntaAbierta === idx && (
-                  <RichText text={f.respuesta} className="mt-2 text-sm" style={{ color: hexToRgba(t.texto, 0.6) }} />
+                  <FormattedText content={f.respuesta} className="mt-2 text-sm" style={{ color: hexToRgba(t.texto, 0.6) }} />
                 )}
               </div>
               ))

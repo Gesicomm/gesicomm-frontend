@@ -11,8 +11,6 @@ import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
 import { analizarVideo, NOMBRE_PLATAFORMA } from '../video';
-import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
-import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './techProductPage.css';
 
 /**
@@ -49,8 +47,7 @@ export default function TechProductPage({
   onClickRelacionado = null,
 }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
-  // {} = "Estándar" (sin variante elegida, precio base del producto).
-  const [seleccion, setSeleccion] = useState({});
+  const [varianteId, setVarianteId] = useState(null);
   const [packId, setPackId] = useState(null);
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
   // Video abierto en el lightbox (solo los que se pueden incrustar).
@@ -60,10 +57,7 @@ export default function TechProductPage({
   const vars = useMemo(() => calcularVariables(t), [t.fondo, t.texto, t.acento]);
 
   const variantes = item?.variantes || [];
-  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const variante = resolverVariante(item, seleccion);
-  // Una variante agotada se puede elegir para ver su foto, pero no comprar.
-  const agotada = varianteAgotada(variante);
+  const variante = variantes.find(v => String(v.id) === String(varianteId)) || null;
 
   // Paquetes del mismo producto ("llevá 2 y pagá menos"). Son las Ofertas
   // con estrategia 'normal' que el comercio carga en "Ofertas"; hasta ahora
@@ -76,11 +70,12 @@ export default function TechProductPage({
   const precioUnitario = variante?.precio_efectivo ?? item?.precio;
   const precio = pack ? (pack.precio_efectivo ?? pack.precio) : precioUnitario;
 
-  // La variante solo toma el asiento principal: videos e imágenes generales
-  // siguen en la galería porque también venden y explican el producto.
-  const galeria = galeriaConVariantePromovida(item?.imagenes || [], variante);
+  // Si la variante elegida tiene fotos propias, manda la variante: es la que
+  // el cliente está mirando. Si no cargaron ninguna, se sigue viendo la
+  // galería del producto en vez de dejar el escenario vacío.
+  const galeria = variante?.imagenes?.length ? variante.imagenes : (item?.imagenes || []);
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, varianteId]);
 
   useEffect(() => {
     if (!videoAbierto) return undefined;
@@ -88,6 +83,9 @@ export default function TechProductPage({
     document.addEventListener('keydown', alTeclear);
     return () => document.removeEventListener('keydown', alTeclear);
   }, [videoAbierto]);
+  useEffect(() => {
+    if (varianteId && !variantes.some(v => String(v.id) === String(varianteId))) setVarianteId(null);
+  }, [variantes, varianteId]);
 
   useEffect(() => {
     if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
@@ -101,12 +99,12 @@ export default function TechProductPage({
     else comprar();
   };
 
-  const comprar = () => !agotada && onComprar && onComprar({ variante, pack, precio });
+  const comprar = () => onComprar && onComprar({ variante, pack, precio });
   // Agregar al carrito NO puede caer a comprar() si falta el handler: son
   // dos acciones distintas y abrir el formulario de compra cuando el
   // cliente solo quiso guardar el producto es lo peor que puede hacer un
   // botón. Sin handler, el botón directamente no se muestra.
-  const agregar = () => !agotada && onAgregar && onAgregar({ variante, pack, precio });
+  const agregar = () => onAgregar && onAgregar({ variante, pack, precio });
 
   const imagenActual = galeria[indiceImagen] || galeria[0] || null;
 
@@ -157,32 +155,35 @@ export default function TechProductPage({
 
       {/* 2 · Hero ─────────────────────────────────────────────────── */}
       <section className="tpp-hero tpp-wrap" id="tpp-hero">
-        {/* Miniaturas debajo de la foto principal, misma regla que el resto
-            de plantillas: galería limpia y comercial. */}
+        {/* Miniaturas en columna a la izquierda de la foto grande, como en
+            la referencia: en una ficha de electrónica las fotos son el
+            argumento de venta y así se ven todas de una, sin empujar el
+            precio y el botón más abajo del pliegue. En pantallas angostas
+            vuelven a una fila horizontal debajo (ver el CSS). */}
         <div className="tpp-galeria">
-          <div className={`tpp-escenario ${imagenActual ? '' : 'vacia'}`}>
-            {imagenActual
-              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
-              : <ImageOff size={44} />}
-            {ficha.hero.etiqueta && <span className="tpp-etiqueta-nueva">{ficha.hero.etiqueta}</span>}
-          </div>
           {galeria.length > 1 && (
             <div className="tpp-miniaturas" role="tablist" aria-label="Fotos del producto">
-              {galeria.map((medio, i) => (
+              {galeria.map((url, i) => (
                 <button
                   type="button"
-                  key={claveMedioProducto(medio, i)}
+                  key={url + i}
                   role="tab"
                   aria-selected={i === indiceImagen}
-                  aria-label={`Medio ${i + 1} de ${galeria.length}`}
+                  aria-label={`Foto ${i + 1} de ${galeria.length}`}
                   className={`tpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <MiniaturaMediaProducto medio={medio} alt="" />
+                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
                 </button>
               ))}
             </div>
           )}
+          <div className={`tpp-escenario ${imagenActual ? '' : 'vacia'}`}>
+            {imagenActual
+              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
+              : <ImageOff size={44} />}
+            {ficha.hero.etiqueta && <span className="tpp-etiqueta-nueva">{ficha.hero.etiqueta}</span>}
+          </div>
         </div>
 
         <div className={`tpp-hero-copy ${claseTitulo}`}>
@@ -274,41 +275,30 @@ export default function TechProductPage({
                 <button
                   type="button"
                   className={`tpp-variante ${!variante ? 'activa' : ''}`}
-                  onClick={() => setSeleccion({})}
+                  onClick={() => setVarianteId(null)}
                 >
                   Estándar
                   {item.precio != null && <small>{formatPrecio(item.precio)}</small>}
                 </button>
+                {variantes.map(v => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`tpp-variante ${String(v.id) === String(varianteId) ? 'activa' : ''}`}
+                    onClick={() => setVarianteId(v.id)}
+                    disabled={v.stock != null && v.stock <= 0}
+                    title={v.stock != null && v.stock <= 0 ? 'Sin stock' : undefined}
+                  >
+                    {/* La foto de la variante, si el comercio la cargó: se
+                        elige mucho más rápido un color viéndolo que leyéndolo. */}
+                    {v.imagenes?.[0] && (
+                      <img className="tpp-variante-foto" src={getMediaUrl(v.imagenes[0])} alt="" loading="lazy" />
+                    )}
+                    {v.nombre}
+                    {v.precio_efectivo != null && <small>{formatPrecio(v.precio_efectivo)}</small>}
+                  </button>
+                ))}
               </div>
-              {gruposOpciones.map(grupo => (
-                <div className="tpp-variantes" key={grupo.nombre} style={{ marginTop: '0.5rem' }}>
-                  {grupo.valores.map(valor => {
-                    const activo = seleccion[grupo.nombre] === valor;
-                    const estado = estadoValor(item, grupo.nombre, valor, seleccion);
-                    const previa = activo ? variante : resolverVariante(item, { ...seleccion, [grupo.nombre]: valor });
-                    const imagenValor = variantes.find(v =>
-                      (v.valoresOpcion || []).some(vo => vo.opcion === grupo.nombre && vo.valor === valor) && v.imagenes?.[0]
-                    )?.imagenes?.[0];
-                    return (
-                      <button
-                        key={valor}
-                        type="button"
-                        className={`tpp-variante ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
-                        onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                        disabled={estado === 'inexistente'}
-                        title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
-                      >
-                        {imagenValor && (
-                          <img className="tpp-variante-foto" src={getMediaUrl(imagenValor)} alt="" loading="lazy" />
-                        )}
-                        {valor}
-                        {previa?.precio_efectivo != null && <small>{formatPrecio(previa.precio_efectivo)}</small>}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-              {agotada && <p className="tpp-variante-agotada">Esta opción está sin stock por ahora.</p>}
             </>
           )}
 
@@ -360,7 +350,7 @@ export default function TechProductPage({
 
         <div className="tpp-panel tpp-acciones">
           {onAgregar && (
-            <button type="button" className="tpp-cta" onClick={agregar} disabled={agotada}>
+            <button type="button" className="tpp-cta" onClick={agregar}>
               {ficha.hero.cta_texto || 'Añadir al carrito'}
             </button>
           )}
@@ -368,7 +358,6 @@ export default function TechProductPage({
             type="button"
             className={onAgregar ? 'tpp-cta-oscuro' : 'tpp-cta'}
             onClick={comprar}
-            disabled={agotada}
           >
             {ficha.hero.cta_secundario || 'Comprar ahora'}
           </button>
@@ -539,7 +528,7 @@ export default function TechProductPage({
                   <figure>
                     <span className="tpp-duelo-foto">
                       <img
-                        src={getMediaUrl((ficha.comparativa.imagen_nosotros || '').trim() || imagenPrincipalDeGaleria(item.imagenes) || '')}
+                        src={getMediaUrl((ficha.comparativa.imagen_nosotros || '').trim() || item.imagenes[0] || '')}
                         alt={ficha.comparativa.nosotros}
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
@@ -614,7 +603,7 @@ export default function TechProductPage({
         <section className="tpp-seccion tpp-wrap" id="tpp-faq">
           <TituloSeccion numero={11} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--tpp-accent']} onAccent={vars['--tpp-on-accent']} mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
-            <p className="tpp-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
+            <p className="tpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="tpp-faq-grid">
               {item.faq.map((f, i) => (
@@ -623,7 +612,7 @@ export default function TechProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={17} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} className="tpp-faq-respuesta" />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
                 </div>
               ))}
             </div>
@@ -730,16 +719,12 @@ export default function TechProductPage({
             <X size={20} />
           </button>
           <div className="tpp-lightbox-marco" onClick={e => e.stopPropagation()}>
-            {videoAbierto.tipo === 'video' ? (
-              <video src={videoAbierto.embed} controls playsInline />
-            ) : (
-              <iframe
-                src={videoAbierto.embed}
-                title="Video del producto"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            )}
+            <iframe
+              src={videoAbierto.embed}
+              title="Video del producto"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         </div>
       ), document.body)}
@@ -872,10 +857,7 @@ function calcularVariables(t) {
   // Se prefiere blanco mientras llegue a 3:1 (mínimo AA para texto grande
   // en negrita, que es lo único que se pinta sobre el acento). Cuando no
   // llega, se cae a texto oscuro: si no, el botón queda ilegible.
-  // Ver comentario en BasicoProductPage.jsx: elegir el color de MÁS
-  // contraste de los dos, no un corte binario, evita textos casi
-  // invisibles con acentos de luminancia media.
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
 
   const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
   const onBand = sobre(band);

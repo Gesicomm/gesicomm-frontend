@@ -11,9 +11,6 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
-import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
-import useSeleccionVariante from '../../../../lib/useSeleccionVariante';
-import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './fitnessProductPage.css';
 
 /**
@@ -62,26 +59,15 @@ export default function FitnessProductPage({
   const packs = item?.packs || [];
   const packElegido = packs.find(p => String(p.id) === String(packElegidoId)) || null;
 
-  const tieneVariantes = (item?.variantes || []).length > 0;
-  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const [seleccion, setSeleccion] = useSeleccionVariante(item);
-  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
-  // Una variante agotada se puede elegir para ver su foto, pero no comprar.
-  const agotada = varianteAgotada(variante);
-
   // El precio que se muestra arriba y en la barra fija sigue al paquete
-  // elegido (paquete y variante no se combinan, igual que en la ficha
-  // Tech); si no hay paquete, sigue a la variante; si no hay ninguno, el
-  // del producto.
-  const precioMostrado = packElegido
-    ? precioUnitarioDePack(packElegido) * (Number(packElegido.unidades) || 1)
-    : (variante ? variante.precio_efectivo : item?.precio);
+  // elegido, igual que en el checkout — si no hay ninguno, el del producto.
+  const precioMostrado = packElegido ? precioUnitarioDePack(packElegido) * (Number(packElegido.unidades) || 1) : item?.precio;
 
   useEffect(() => {
     if (packElegidoId && !packs.some(p => String(p.id) === String(packElegidoId))) setPackElegidoId(null);
   }, [packs, packElegidoId]);
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
 
   if (!item) return null;
 
@@ -93,13 +79,9 @@ export default function FitnessProductPage({
 
   // Firma única en las tres fichas: siempre un objeto con lo elegido. Así
   // el editor y la landing publicada consumen lo mismo sin adivinar tipos.
-  const comprar = () => !agotada && onComprar && onComprar({ variante, pack: packElegido, precio: precioMostrado });
+  const comprar = () => onComprar && onComprar({ variante: null, pack: packElegido, precio: precioMostrado });
 
-  // La variante solo toma el asiento principal: videos e imágenes generales
-  // siguen en la galería porque también venden y explican el producto.
-  const galeria = galeriaConVariantePromovida(item.imagenes, variante);
-  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
-  const imagenResumen = imagenPrincipalDeGaleria(galeria);
+  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
 
   // El diseño supone un título corto y golpeado, pero los nombres reales del
   // catálogo son descriptivos ("AdelFit - Suplemento natural para bajar de
@@ -150,22 +132,22 @@ export default function FitnessProductPage({
         <div className="fpp-hero-galeria">
           <div className={`fpp-hero-imagen ${imagenActual ? '' : 'vacia'}`}>
             {imagenActual
-              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
+              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
               : <ImageOff size={44} />}
             {item.descuentoPct > 0 && (
               <span className="fpp-hero-badge-descuento">-{item.descuentoPct}%</span>
             )}
           </div>
-          {galeria.length > 1 && (
+          {item.imagenes.length > 1 && (
             <div className="fpp-miniaturas">
-              {galeria.map((medio, i) => (
+              {item.imagenes.map((url, i) => (
                 <button
                   type="button"
-                  key={claveMedioProducto(medio, i)}
+                  key={url + i}
                   className={`fpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <MiniaturaMediaProducto medio={medio} alt="" />
+                  <img src={getMediaUrl(url)} alt="" />
                 </button>
               ))}
             </div>
@@ -201,33 +183,7 @@ export default function FitnessProductPage({
             </p>
           )}
 
-          {tieneVariantes && gruposOpciones.map(grupo => (
-            <div className="fpp-variantes" key={grupo.nombre}>
-              <span className="fpp-variantes-label">{grupo.nombre}:</span>
-              <div className="fpp-variantes-pills">
-                {grupo.valores.map(valor => {
-                  const activo = seleccion[grupo.nombre] === valor;
-                  const estado = estadoValor(item, grupo.nombre, valor, seleccion);
-                  return (
-                    <button
-                      key={valor}
-                      type="button"
-                      className={`fpp-variante-pill ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
-                      onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                      disabled={estado === 'inexistente'}
-                      title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
-                    >
-                      {valor}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {agotada && <p className="fpp-variante-agotada">Esta opción está sin stock por ahora.</p>}
-
-          <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar} disabled={agotada && !packs.length}>
+          <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar}>
             {ficha.hero.cta_texto || 'Comprar ahora'} <span aria-hidden="true">→</span>
           </button>
 
@@ -283,7 +239,7 @@ export default function FitnessProductPage({
                   badge={ficha.ofertas.badge_individual}
                   nombre={ficha.ofertas.etiqueta_individual || 'Individual'}
                   subtitulo="1 unidad"
-                  imagen={imagenResumen}
+                  imagen={item.imagenes[0] || null}
                   precioUnitario={item.precio}
                   precioAntes={item.precioAntes}
                   ahorro={null}
@@ -301,7 +257,7 @@ export default function FitnessProductPage({
                       badge={conf.badge}
                       nombre={pack.nombre}
                       subtitulo={conf.subtitulo || `${unidades} unidades`}
-                      imagen={pack.imagen || conf.imagen || imagenResumen}
+                      imagen={pack.imagen || conf.imagen || item.imagenes[0] || null}
                       precioUnitario={precioUnitarioDePack(pack)}
                       precioAntes={item.precio != null && unidades > 1 ? item.precio : null}
                       ahorro={ahorroDePack(pack, item.precio)}
@@ -326,7 +282,7 @@ export default function FitnessProductPage({
               )}
 
               <div className="fpp-packs-cta">
-                <button type="button" className="fpp-cta" onClick={comprar} disabled={agotada}>
+                <button type="button" className="fpp-cta" onClick={comprar}>
                   {ficha.hero.cta_texto || 'Comprar ahora'}
                 </button>
               </div>
@@ -464,7 +420,7 @@ export default function FitnessProductPage({
         <section className="fpp-seccion fpp-wrap" id="fpp-faq">
           <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} acento={vars['--fpp-accent']} onAccent={vars['--fpp-on-accent']} mostrarNumero={previewMode} />
           {item.faq.length === 0 ? (
-            <p className="fpp-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
+            <p className="fpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="fpp-faq-grid">
               {item.faq.map((f, i) => (
@@ -473,7 +429,7 @@ export default function FitnessProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={17} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} className="fpp-faq-respuesta" />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
                 </div>
               ))}
             </div>
@@ -535,7 +491,7 @@ export default function FitnessProductPage({
               {ficha.cta_final.titulo && <h2>{ficha.cta_final.titulo}</h2>}
               {ficha.cta_final.texto && <p>{ficha.cta_final.texto}</p>}
             </div>
-            <button type="button" className="fpp-cierre-cta" onClick={packs.length ? irAOfertas : comprar} disabled={agotada && !packs.length}>
+            <button type="button" className="fpp-cierre-cta" onClick={packs.length ? irAOfertas : comprar}>
               {ficha.cta_final.cta_texto || 'Comprar ahora'}
               {ficha.cta_final.cta_nota && <small>{ficha.cta_final.cta_nota}</small>}
             </button>
@@ -554,7 +510,7 @@ export default function FitnessProductPage({
           <b>{precioMostrado != null ? formatPrecio(precioMostrado) : ''}</b>
           {packElegido && <small>{packElegido.nombre}</small>}
         </div>
-        <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar} disabled={agotada && !packs.length}>
+        <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar}>
           {ficha.hero.cta_texto || 'Comprar ahora'}
         </button>
       </div>
@@ -682,10 +638,7 @@ function calcularVariables(t) {
   // blanco sobre el color de marca es lo que el cliente espera de un botón.
   // Cuando no llega (celeste claro: 2,4:1) se cae a texto oscuro, que ahí
   // da 7,9:1. Sin esto, un acento claro deja el botón ilegible.
-  // Ver comentario en BasicoProductPage.jsx: elegir el color de MÁS
-  // contraste de los dos, no un corte binario, evita textos casi
-  // invisibles con acentos de luminancia media.
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
 
   // Las franjas de anuncio y garantías van en un tono contrastante contra el
   // cuerpo: si la landing es clara, casi negro; si ya es oscura, un escalón

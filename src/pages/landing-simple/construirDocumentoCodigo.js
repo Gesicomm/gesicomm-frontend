@@ -21,8 +21,6 @@
  * (salvo lo que el guardado le quite).
  */
 
-import { runtimeGesicomm } from './runtimeGesicomm';
-
 // El sandbox del iframe. allow-same-origin NO va acá y no debe agregarse:
 // combinado con allow-scripts anula el aislamiento por completo.
 export const SANDBOX_CODIGO = [
@@ -49,24 +47,6 @@ const CSP = [
   "base-uri 'none'",
 ].join('; ');
 
-// Los separadores de línea se construyen por código y no como escape
-// en un literal: más de una herramienta los "normaliza" al carácter real
-// y el regex queda roto.
-const SEPARADOR_LINEA = new RegExp(String.fromCharCode(0x2028), 'g');
-const SEPARADOR_PARRAFO = new RegExp(String.fromCharCode(0x2029), 'g');
-
-/**
- * JSON seguro para meter dentro de un <script>: `<` escapado corta
- * cualquier `</script>` que venga en un nombre o descripción de producto,
- * y U+2028/U+2029 rompen el parseo de JS aunque sean JSON válido.
- */
-function jsonEnScript(valor) {
-  return JSON.stringify(valor ?? {})
-    .replace(/</g, '\\u003c')
-    .replace(SEPARADOR_LINEA, '\\u2028')
-    .replace(SEPARADOR_PARRAFO, '\\u2029');
-}
-
 /** Evita que un `</script>` dentro del JS del comercio cierre el <script> del documento. */
 function escaparCierreScript(js) {
   return String(js || '').replace(/<\/(script)/gi, '<\\/$1');
@@ -76,13 +56,6 @@ function escaparCierreScript(js) {
 function escaparCierreStyle(css) {
   return String(css || '').replace(/<\/(style)/gi, '<\\/$1');
 }
-
-const SYSTEM_CSS = `
-/* Los upsells no viven dentro de la ficha: son una etapa del checkout. */
-[data-gesicomm-lista="ofertas_upsell"] {
-  display: none !important;
-}
-`;
 
 /**
  * @param {{html?: string, css?: string, js?: string}} codigo

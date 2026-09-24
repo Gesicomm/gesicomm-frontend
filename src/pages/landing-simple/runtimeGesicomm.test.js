@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { construirDocumentoCodigo } from './construirDocumentoCodigo';
+import { datosRuntimePublico, datosRuntimePreview } from './datosRuntime';
 import { PLANTILLA_INICIO, PLANTILLA_PRODUCTO, PLANTILLA_ESTRELLA, PLANTILLA_COMBOS, plantillaInicioPara, formatoDeBase } from './plantillasBaseCodigo';
 
 /**
@@ -350,5 +351,66 @@ describe('runtime — order bump en la ficha', () => {
     expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout')).toEqual([
       expect.objectContaining({ producto: 'air-fryer-26l', oferta: null, abrir: true }),
     ]);
+  });
+});
+
+describe('order bump y upsell de punta a punta (datos del backend → ficha)', () => {
+  // Forma exacta que arma LandingService.obtenerPublica para un producto con
+  // un bump y un upsell ya marcados en Configurar venta.
+  const itemBackend = {
+    content_id: 'air-fryer-26l', referencia_id: 10, tipo: 'producto', nombre: 'Air Fryer 2.6L',
+    precio: 145735, imagen: 'https://cdn.test/air.jpg', imagenes: ['https://cdn.test/air.jpg'], stock: 5, variantes: [],
+    ofertas: [
+      {
+        id: 90, nombre: 'Canasto extra', estrategia: 'order_bump', precio_normal: 90000, precio_order_bump: 63000,
+        precio_efectivo: 63000, imagen: null,
+        producto_complementario: { nombre: 'Canasto', imagen: 'https://cdn.test/canasto.jpg' },
+      },
+      {
+        id: 91, nombre: 'Kit de moldes', estrategia: 'upsell', precio_normal: 70000, precio_order_bump: 55000,
+        precio_efectivo: 55000, imagen: null,
+        producto_complementario: { nombre: 'Moldes', imagen: 'https://cdn.test/moldes.jpg' },
+      },
+    ],
+  };
+  const data = (ofertasMarcadas) => ({
+    content: { venta: { configurado: true, tipo: 'catalogo', cross_sell: { activo: true, ofertas: ofertasMarcadas } } },
+    catalogo_items: [itemBackend],
+  });
+
+  it('marcadas: el bump se pinta en la ficha con su foto y precio, el upsell llega a los datos', () => {
+    const datos = datosRuntimePublico(data([90, 91]), 'tienda', itemBackend);
+    expect(datos.producto.ofertas.map(o => o.id)).toEqual([90, 91]);
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    const casilla = document.querySelector('.bump input[data-gesicomm-bump]');
+    expect(casilla).not.toBeNull();
+    expect(document.querySelector('.bump').textContent).toContain('Canasto extra');
+    expect(document.querySelector('.bump img').getAttribute('src')).toBe('https://cdn.test/canasto.jpg');
+  });
+
+  it('sin marcar en la landing: no aparecen', () => {
+    const datos = datosRuntimePublico(data([]), 'tienda', itemBackend);
+    expect(datos.producto.ofertas).toEqual([]);
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    expect(document.querySelector('.bump input[data-gesicomm-bump]')).toBeNull();
+  });
+});
+
+describe('preview del editor con ofertas del panel', () => {
+  it('muestra el bump marcado con la foto del producto que suma y el upsell con su precio promocional', () => {
+    const productos = [
+      { id: 10, tipo: 'producto', slug: 'air', nombre: 'Air', precio_efectivo: 145000, imagen: 'https://cdn.test/air.jpg' },
+      { id: 20, tipo: 'producto', slug: 'canasto', nombre: 'Canasto', precio_efectivo: 90000, imagen: 'https://cdn.test/canasto.jpg' },
+    ];
+    const ofertas = [
+      { id: 90, estrategia: 'order_bump', nombre: 'Canasto', producto_ancla_id: 10, precio_normal: 90000, precio_order_bump: 63000, componentes: [{ producto_id: 20 }] },
+      { id: 91, estrategia: 'upsell', nombre: 'Otra', producto_ancla_id: 10, precio_normal: 70000, precio_order_bump: 55000, componentes: [{ producto_id: 10 }] },
+    ];
+    const venta = { configurado: true, cross_sell: { activo: true, ofertas: [90, 91] } };
+    const datos = datosRuntimePreview({ productos, venta, vista: 'producto', productoId: 'air', ofertas });
+    const [bump, upsell] = datos.producto.ofertas;
+    expect(bump.imagen).toBe('https://cdn.test/canasto.jpg');
+    expect(upsell.precio_efectivo).toBe(55000);
+    expect(upsell.imagen).toBe('https://cdn.test/air.jpg');
   });
 });

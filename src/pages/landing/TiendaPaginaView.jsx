@@ -652,10 +652,9 @@ export default function TiendaPaginaView({ data, slug, productId }) {
   
   // LIENZO EN BLANCO — la landing es el HTML/CSS/JS que escribió el
   // comercio (ver pages/landing-simple/). Nada de lo que viene abajo
-  // aplica: tiene su propio carrito, su checkout y su ficha de producto
-  // (content.vistas.producto), todo dentro de LandingCodigoPublica. Va lo
-  // más arriba posible, apenas pasan los estados de carga, justamente
-  // porque no comparte NADA con los otros modos.
+  // aplica: no hay secciones, ni carrito, ni checkout, ni páginas de
+  // producto. Va lo más arriba posible, apenas pasan los estados de
+  // carga, justamente porque no comparte NADA con los otros modos.
   if (data?.template?.kind === 'codigo') {
     return (
       <LandingCodigoPublica
@@ -663,7 +662,6 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         titulo={data.seo?.titulo || data.titulo || data.tienda?.nombre}
         data={data}
         slug={slug}
-        productId={productId}
       />
     );
   }

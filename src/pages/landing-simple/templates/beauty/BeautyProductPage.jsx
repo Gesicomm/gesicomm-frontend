@@ -9,9 +9,6 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
-import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
-import useSeleccionVariante from '../../../../lib/useSeleccionVariante';
-import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './beautyProductPage.css';
 
 /**
@@ -23,10 +20,9 @@ import './beautyProductPage.css';
  * preview y publicada se desincronizaron por tener dos componentes
  * dibujando lo mismo. Si aparece un tercer lugar, llama a este componente.
  *
- * `previewMode` solo muestra ayudas del editor: evita navegar fuera del
- * editor, muestra carteles de secciones vacías y numera los títulos para
- * orientar al usuario. La landing publicada conserva el mismo contenido sin
- * esas guías.
+ * `previewMode` NO cambia el diseño: solo evita navegar fuera del editor y
+ * muestra un cartel en las secciones que el comercio activó pero todavía no
+ * cargó. Cualquier otra diferencia entre preview y publicada es un bug.
  *
  * Estructura fija de 12 secciones, contenido 100% editable — ver
  * fichaBeauty.js para de dónde sale cada una.
@@ -55,20 +51,9 @@ export default function BeautyProductPage({
 
   const packs = item?.packs || [];
   const pack = packs.find(p => String(p.id) === String(packId)) || null;
+  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : item?.precio;
 
-  const tieneVariantes = (item?.variantes || []).length > 0;
-  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const [seleccion, setSeleccion] = useSeleccionVariante(item);
-  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
-  // Una variante agotada se puede elegir para ver su foto, pero no comprar
-  // (ni suelta ni en paquete: el paquete también lleva la variante).
-  const agotada = varianteAgotada(variante);
-
-  // Paquete y variante no se combinan (misma regla que en Fitness/Tech):
-  // el paquete manda si hay uno elegido, si no sigue la variante.
-  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : (variante ? variante.precio_efectivo : item?.precio);
-
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
   useEffect(() => {
     if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
   }, [packs, packId]);
@@ -90,21 +75,17 @@ export default function BeautyProductPage({
     else comprar();
   };
 
-  const comprar = () => !agotada && onComprar && onComprar({ variante, pack, precio });
+  const comprar = () => onComprar && onComprar({ variante: null, pack, precio });
   // Agregar al carrito NO puede caer a comprar(): son acciones distintas y
   // abrir el formulario cuando la clienta solo quiso guardar el producto es
   // lo peor que puede hacer un botón. Sin handler, el botón no se muestra.
-  const agregar = (elegido) => !agotada && onAgregar && onAgregar({
-    variante,
+  const agregar = (elegido) => onAgregar && onAgregar({
+    variante: null,
     pack: elegido ?? pack,
     precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
   });
 
-  // La variante solo toma el asiento principal: videos e imágenes generales
-  // siguen en la galería porque también venden y explican el producto.
-  const galeria = galeriaConVariantePromovida(item.imagenes, variante);
-  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
-  const imagenResumen = imagenPrincipalDeGaleria(galeria);
+  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
 
   // Igual que en las otras fichas: el CSS no puede medir el texto y los
   // nombres del catálogo son descriptivos, no titulares cortos.
@@ -146,20 +127,20 @@ export default function BeautyProductPage({
         <div className="bpp-galeria">
           <div className={`bpp-foto ${imagenActual ? '' : 'vacia'}`}>
             {imagenActual
-              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
+              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
               : <ImageOff size={44} />}
           </div>
-          {galeria.length > 1 && (
+          {item.imagenes.length > 1 && (
             <div className="bpp-miniaturas">
-              {galeria.map((medio, i) => (
+              {item.imagenes.map((url, i) => (
                 <button
                   type="button"
-                  key={claveMedioProducto(medio, i)}
-                  aria-label={`Medio ${i + 1} de ${galeria.length}`}
+                  key={url + i}
+                  aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
                   className={`bpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <MiniaturaMediaProducto medio={medio} alt="" />
+                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -226,7 +207,7 @@ export default function BeautyProductPage({
       {ficha.precio.activo && (
         <section className="bpp-seccion bpp-wrap" id="bpp-ofertas">
           <div className="bpp-ofertas-encabezado">
-            <TituloSeccion numero={4} texto={ficha.precio.titulo} vars={vars} mostrarNumero={previewMode} />
+            <TituloSeccion numero={4} texto={ficha.precio.titulo} vars={vars} />
             {ficha.precio.suscripcion.activo && (
               <label className="bpp-suscripcion">
                 <span>{ficha.precio.suscripcion.titulo || 'Suscribite y ahorrá'}</span>
@@ -240,32 +221,6 @@ export default function BeautyProductPage({
             )}
           </div>
 
-          {tieneVariantes && gruposOpciones.map(grupo => (
-            <div className="bpp-variantes" key={grupo.nombre}>
-              <span className="bpp-variantes-label">{grupo.nombre}:</span>
-              <div className="bpp-variantes-pills">
-                {grupo.valores.map(valor => {
-                  const activo = seleccion[grupo.nombre] === valor;
-                  const estado = estadoValor(item, grupo.nombre, valor, seleccion);
-                  return (
-                    <button
-                      key={valor}
-                      type="button"
-                      className={`bpp-variante-pill ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
-                      onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                      disabled={estado === 'inexistente'}
-                      title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
-                    >
-                      {valor}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {agotada && <p className="bpp-variante-agotada">Esta opción está sin stock por ahora.</p>}
-
           {packs.length === 0 ? (
             previewMode ? (
               <p className="bpp-vacio">
@@ -277,13 +232,12 @@ export default function BeautyProductPage({
                 <TarjetaPack
                   elegido
                   nombre={ficha.precio.etiqueta_individual || '1 unidad'}
-                  imagen={imagenResumen}
+                  imagen={item.imagenes[0]}
                   precio={item.precio}
                   precioAntes={item.precioAntes}
                   nota={ficha.precio.nota_pack}
                   cta={ficha.precio.cta_pack}
                   onElegir={() => setPackId(null)}
-                  agotada={agotada}
                   onAgregar={onAgregar ? () => agregar(null) : null}
                 />
               </div>
@@ -293,14 +247,13 @@ export default function BeautyProductPage({
               <TarjetaPack
                 elegido={!pack}
                 nombre={ficha.precio.etiqueta_individual || '1 unidad'}
-                imagen={imagenResumen}
+                imagen={item.imagenes[0]}
                 precio={item.precio}
                 precioAntes={item.precioAntes}
                 notaPrecio="Precio normal"
                 nota={ficha.precio.nota_pack}
                 cta={ficha.precio.cta_pack}
                 onElegir={() => setPackId(null)}
-                agotada={agotada}
                 onAgregar={onAgregar ? () => agregar(null) : null}
               />
               {packs.map(p => {
@@ -313,13 +266,12 @@ export default function BeautyProductPage({
                     badge={conf.badge}
                     nombre={p.nombre}
                     subtitulo={conf.subtitulo || `${unidades} unidades`}
-                    imagen={p.imagen || imagenResumen}
+                    imagen={p.imagen || item.imagenes[0]}
                     precio={p.precio_efectivo ?? p.precio}
                     ahorro={ahorroDePack(p, item.precio)}
                     nota={ficha.precio.nota_pack}
                     cta={ficha.precio.cta_pack}
                     onElegir={() => setPackId(p.id)}
-                    agotada={agotada}
                     onAgregar={onAgregar ? () => agregar(p) : null}
                   />
                 );
@@ -338,7 +290,7 @@ export default function BeautyProductPage({
 
           {!onAgregar && (
             <div className="bpp-ofertas-cta">
-              <button type="button" className="bpp-cta" onClick={comprar} disabled={agotada}>
+              <button type="button" className="bpp-cta" onClick={comprar}>
                 {ficha.precio.cta_pack || 'Comprar ahora'}
               </button>
             </div>
@@ -350,7 +302,7 @@ export default function BeautyProductPage({
       {ficha.beneficios.activo && (beneficios.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-seccion--fondo">
           <div className="bpp-wrap">
-            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
             {beneficios.length === 0 ? (
               <p className="bpp-vacio">
                 Se cargan en <b>Vista del producto</b>.
@@ -376,7 +328,7 @@ export default function BeautyProductPage({
       {/* 6 · Ingredientes premium ─────────────────────────────────── */}
       {ficha.ingredientes.activo && (ingredientes.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} vars={vars} centrado />
           {ingredientes.length === 0 ? (
             <p className="bpp-vacio">
               Se cargan en <b>Mis Productos → Vista del producto</b> (Beauty), y sirven en todas tus landings.
@@ -401,7 +353,7 @@ export default function BeautyProductPage({
       {ficha.resultados.activo && (resultados.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-seccion--fondo">
           <div className="bpp-wrap">
-            <TituloSeccion numero={7} texto={ficha.resultados.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+            <TituloSeccion numero={7} texto={ficha.resultados.titulo} vars={vars} centrado />
             {resultados.length === 0 ? (
               <p className="bpp-vacio">
                 Cargá los testimonios en <b>Mis Productos → Vista del producto</b>.
@@ -440,7 +392,7 @@ export default function BeautyProductPage({
       {/* 8 · Cómo funciona ────────────────────────────────────────── */}
       {ficha.como_funciona.activo && (pasos.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} vars={vars} centrado />
           {pasos.length === 0 ? (
             <p className="bpp-vacio">
               La rutina paso a paso se carga en <b>Mis Productos → Vista del producto</b> (Beauty).
@@ -480,9 +432,9 @@ export default function BeautyProductPage({
       {/* 10 · Preguntas frecuentes ────────────────────────────────── */}
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
           {item.faq.length === 0 ? (
-            <p className="bpp-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
+            <p className="bpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="bpp-faq-grid">
               {item.faq.map((f, i) => (
@@ -491,7 +443,7 @@ export default function BeautyProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={16} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} className="bpp-faq-respuesta" />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
                 </div>
               ))}
             </div>
@@ -503,7 +455,7 @@ export default function BeautyProductPage({
       {ficha.upsells.activo && item.relacionados.length > 0 && (
         <section className="bpp-seccion bpp-seccion--fondo">
           <div className="bpp-wrap">
-            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} vars={vars} centrado />
             <div className="bpp-upsells">
               {item.relacionados.map(r => {
                 const precioRel = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
@@ -581,22 +533,20 @@ export default function BeautyProductPage({
 
 /* ── Piezas internas ──────────────────────────────────────────────── */
 
-function TituloSeccion({ numero, texto, vars, centrado = false, mostrarNumero = false }) {
+function TituloSeccion({ numero, texto, vars, centrado = false }) {
   if (!texto) return null;
   return (
     <div className={`bpp-seccion-titulo ${centrado ? 'es-centrado' : ''}`}>
-      {mostrarNumero && (
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'grid', placeItems: 'center', width: 26, height: 26,
-            borderRadius: '50%', background: vars['--bpp-accent'], color: vars['--bpp-on-accent'],
-            fontSize: 12, fontWeight: 900, flexShrink: 0,
-          }}
-        >
-          {numero}
-        </span>
-      )}
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'grid', placeItems: 'center', width: 26, height: 26,
+          borderRadius: '50%', background: vars['--bpp-accent'], color: vars['--bpp-on-accent'],
+          fontSize: 12, fontWeight: 900, flexShrink: 0,
+        }}
+      >
+        {numero}
+      </span>
       <h2>{texto}</h2>
     </div>
   );
@@ -620,7 +570,7 @@ function Estrellas({ valor = 5, tamano = 14 }) {
  */
 function TarjetaPack({
   elegido, badge, nombre, subtitulo, imagen, precio, precioAntes,
-  ahorro, notaPrecio, nota, cta, agotada = false, onElegir, onAgregar,
+  ahorro, notaPrecio, nota, cta, onElegir, onAgregar,
 }) {
   return (
     <div className={`bpp-pack ${elegido ? 'elegido' : ''}`}>
@@ -642,9 +592,9 @@ function TarjetaPack({
             : null}
       </button>
       {onAgregar && (
-        <button type="button" className="bpp-pack-cta" onClick={onAgregar} disabled={agotada}>
-          {agotada ? 'Sin stock' : (cta || 'Agregar al carrito')}
-          {nota && !agotada && <small>{nota}</small>}
+        <button type="button" className="bpp-pack-cta" onClick={onAgregar}>
+          {cta || 'Agregar al carrito'}
+          {nota && <small>{nota}</small>}
         </button>
       )}
     </div>
@@ -702,10 +652,7 @@ function Contador({ desde }) {
 function calcularVariables(t) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
-  // Ver comentario en BasicoProductPage.jsx: elegir el color de MÁS
-  // contraste de los dos, no un corte binario, evita textos casi
-  // invisibles con acentos de luminancia media.
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
 
   const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
 

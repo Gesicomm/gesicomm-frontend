@@ -97,7 +97,6 @@ function textoUpsell(item, oferta) {
  */
 export default function CartDrawer({
   items, sugerencias = [], onAgregarSugerencia, abierto, onAbrir, onCerrar, onCantidad, onQuitar, onConfirmarPedido, onValidarCupon, pasarelas = [], deliveryCiudades = [],
-  apariencia = {},
   // Solo los usa la vista previa del editor (ver LandingSimpleEditor.jsx):
   // arrancar directo en el paso donde vive lo que se está armando, en vez
   // de obligar a un click en "Finalizar pedido" + llenar el formulario
@@ -151,8 +150,13 @@ export default function CartDrawer({
   // viene `apariencia`, o leyendo --l-bg ya resuelto del contenedor.
   const rootRef = useRef(null);
   const [modoDetectado, setModoDetectado] = useState(null);
-  const primarioTema = normalizarColorHex(apariencia?.primario);
+  // Acepta los dos formatos que circularon: { primario, fondo, modo } y el
+  // anterior { acento, claro | modoClaro } — así cualquier llamador sigue
+  // funcionando sin tener que adaptarse.
+  const primarioTema = normalizarColorHex(apariencia?.primario || apariencia?.acento);
+  const claroBool = apariencia?.claro ?? apariencia?.modoClaro;
   const modoExplicito = apariencia?.modo
+    || (typeof claroBool === 'boolean' ? (claroBool ? 'claro' : 'oscuro') : null)
     || (apariencia?.fondo != null ? (esColorClaro(apariencia.fondo) ? 'claro' : 'oscuro') : null);
 
   useLayoutEffect(() => {
@@ -286,80 +290,6 @@ export default function CartDrawer({
           </div>
         ))}
       </div>
-    );
-  }
-
-  function TarjetaBump({ item, oferta }) {
-    const detalle = textoBump(item, oferta);
-    const imagenOferta = detalle.imagen || item.imagen;
-    const bumpCompleto = ofertaCheckoutPublicable(item, oferta);
-    const tituloFlag = detalle.ahorro > 0
-      ? `Oferta exclusiva · Ahorrá ${formatPrecio(detalle.ahorro)}`
-      : 'Oferta exclusiva para tu pedido';
-
-    return (
-      <label className={`lp-bump ${bumpCompleto ? '' : 'is-disabled'}`} aria-label={`Agregar ${detalle.titulo} al pedido`}>
-        <span className="lp-bump-flag"><Zap size={12} /> {tituloFlag}</span>
-        <span className="lp-bump-body">
-          <input
-            type="checkbox"
-            className="lp-bump-check"
-            checked={false}
-            onChange={() => bumpCompleto && onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta))}
-            disabled={!bumpCompleto}
-          />
-          <span className="lp-bump-control" aria-hidden="true">+</span>
-          <span className="lp-bump-media">
-            {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={16} />}
-          </span>
-          <span className="lp-bump-copy">
-            <span className="lp-bump-kicker">Sumalo a tu pedido por solo {formatPrecio(detalle.precioFinal)}</span>
-            <strong>{detalle.titulo}</strong>
-            {detalle.descripcion && <span className="lp-bump-text">{detalle.descripcion}</span>}
-            <span className="lp-bump-prices">
-              <b>{bumpCompleto ? formatPrecio(detalle.precioFinal) : 'Completá precio e imagen'}</b>
-              {detalle.ahorro > 0 && <s>{formatPrecio(detalle.precioNormal)}</s>}
-              {detalle.ahorro > 0 && <em>Ahorrás {formatPrecio(detalle.ahorro)}</em>}
-            </span>
-            <SelectorVarianteOferta oferta={oferta} />
-          </span>
-          {bumpCompleto && <span className="lp-bump-action">Agregar a mi pedido</span>}
-        </span>
-      </label>
-    );
-  }
-
-  function BumpsCheckout() {
-    if (orderBumps.length === 0 && complementosAgregados.length === 0) return null;
-    return (
-      <section className="lp-bumps" aria-label="Ofertas especiales del checkout">
-        {complementosAgregados.map(it => (
-          <label key={it.clave} className="lp-bump is-checked">
-            <span className="lp-bump-flag"><Check size={12} /> Oferta agregada</span>
-            <span className="lp-bump-body">
-              <input type="checkbox" className="lp-bump-check" checked onChange={() => onQuitar(it.clave)} aria-label={`Quitar ${it.ofertaNombre || it.nombre}`} />
-              <span className="lp-bump-control" aria-hidden="true"><Check size={14} /></span>
-              <span className="lp-bump-media">
-                {it.imagen ? <img src={getMediaUrl(it.imagen)} alt="" /> : <ImageOff size={16} />}
-              </span>
-              <span className="lp-bump-copy">
-                <span className="lp-bump-kicker">Incluido en tu pedido</span>
-                <strong>{it.ofertaNombre || it.nombre}</strong>
-                <span className="lp-bump-prices"><b>+{formatPrecio(it.precio * it.cantidad)}</b></span>
-              </span>
-              <span className="lp-bump-action">Quitar</span>
-            </span>
-          </label>
-        ))}
-
-        {orderBumpsVisibles.map(({ item, oferta }) => <TarjetaBump key={oferta.id} item={item} oferta={oferta} />)}
-
-        {orderBumpsOcultos > 0 && (
-          <button type="button" className="lp-cart-bumps-more" onClick={() => setMostrarBumpsExtra(true)}>
-            Ver {orderBumpsOcultos} oferta{orderBumpsOcultos === 1 ? '' : 's'} más
-          </button>
-        )}
-      </section>
     );
   }
 
@@ -540,11 +470,7 @@ export default function CartDrawer({
 
       {abierto && (
         <div className="lp-cart-overlay" onClick={cerrar} role="presentation">
-          <aside
-            className={`lp-cart-drawer ${apariencia?.claro ? 'lp-cart-drawer--claro' : ''}`}
-            style={apariencia?.acento ? { '--l-primary': apariencia.acento, '--l-on-primary': apariencia.onAcento || '#ffffff' } : undefined}
-            onClick={e => e.stopPropagation()}
-          >
+          <aside className="lp-cart-drawer" onClick={e => e.stopPropagation()}>
 
             {paso === 'carrito' && (
               <>
@@ -665,8 +591,6 @@ export default function CartDrawer({
                       </section>
                     )}
                     </div>
-
-                    <BumpsCheckout />
 
                     <footer className="lp-cart-footer">
                       <div className="lp-cart-lines">
@@ -1043,8 +967,12 @@ export default function CartDrawer({
           cliente (por encima del propio drawer, que sigue ahí atrás) para
           que se lea como una pregunta que hay que responder antes de seguir. */}
       {abierto && mostrarUpsellPopup && upsells.length > 0 && (
-        <div className="lp-upsell-overlay" role="presentation">
+        <div className="lp-upsell-overlay" role="presentation" onClick={declinarUpsell}>
           <div className="lp-upsell-modal" onClick={e => e.stopPropagation()}>
+            <button type="button" className="lp-upsell-modal-close" onClick={declinarUpsell} title="Cerrar" disabled={enviando}>
+              <X size={16} />
+            </button>
+
             {upsells.map(({ item, oferta }) => {
               const detalle = textoUpsell(item, oferta);
               const beneficios = beneficiosUpsell(detalle, oferta);
@@ -1053,7 +981,6 @@ export default function CartDrawer({
                 <article key={oferta.id} className="lp-upsell-offer">
                   <div className="lp-upsell-header">
                     <span className="lp-upsell-eyebrow"><Sparkles size={14} /> Oferta exclusiva para tu pedido</span>
-                    <h2>Esperá, tenemos una oferta para vos</h2>
                   </div>
 
                   <div className="lp-upsell-grid">
@@ -1109,9 +1036,9 @@ export default function CartDrawer({
                         onClick={() => aceptarUpsell(item, oferta, componenteVarianteDe(oferta))}
                         disabled={enviando || !upsellCompleto}
                       >
-                        {upsellCompleto ? <><Plus size={18} /> Sí, agregar por {formatPrecio(detalle.precioFinal)}</> : 'Completá producto, imagen y precio'}
+                        {upsellCompleto ? `Sí, agregar por ${formatPrecio(detalle.precioFinal)}` : 'Completá producto, imagen y precio'}
                       </button>
-                      <p className="lp-upsell-microcopy"><Check size={14} /> Se agregará con un solo clic, sin volver a completar tus datos.</p>
+                      <p className="lp-upsell-microcopy">Se agregará con un solo clic. No tendrás que volver a completar tus datos.</p>
                     </div>
                   </div>
                 </article>
@@ -1124,7 +1051,7 @@ export default function CartDrawer({
               onClick={declinarUpsell}
               disabled={enviando}
             >
-              No gracias, continuar con mi pedido
+              Continuar sin agregar
             </button>
           </div>
         </div>

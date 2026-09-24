@@ -13,40 +13,14 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * código del comercio se comportan como en una página normal (con un
  * iframe auto-alto se romperían), y no hace falta ningún ida y vuelta de
  * postMessage para medir alturas.
- *
- * `datos` es lo que lee el runtime de adentro (window.Gesicomm, ver
- * runtimeGesicomm.js): catálogo, producto de la ficha, recomendados. Los
- * clics del runtime vuelven por postMessage y se reparten en onCheckout /
- * onNavegar / onEvento.
  */
 export default function CodigoPreview({ codigo, titulo, onError, onCheckout, onTema, extras = null, className = '', style }) {
   const ref = useRef(null);
 
-  // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
-  // `n` cambia en cada pedido para poder repetir el mismo. Se reenvía al
-  // cargar el iframe, porque al cambiar de vista el documento es nuevo.
-  const resaltarRef = useRef(resaltar);
-  resaltarRef.current = resaltar;
-  function enviarResaltado() {
-    const r = resaltarRef.current;
-    if (!r?.lista || !ref.current?.contentWindow) return;
-    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:resaltar', lista: r.lista }, '*');
-  }
-  useEffect(() => { enviarResaltado(); }, [resaltar?.n]);
-
-  // `datos` se compara serializado: el contenedor lo arma con useMemo, pero
-  // si cambia de identidad sin cambiar de contenido no hay que recargar el
-  // iframe (se reiniciaría el JS del comercio y el scroll del visitante).
-  const datosJson = useMemo(() => JSON.stringify(datos ?? null), [datos]);
   const doc = useMemo(
     () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, extras }),
     [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script],
   );
-
-  // Refs para los handlers: se registran una sola vez y siempre llaman a
-  // la versión más nueva, sin re-suscribir el listener en cada render.
-  const handlers = useRef({});
-  handlers.current = { onError, onCheckout, onNavegar, onEvento, onCatalogo };
 
   useEffect(() => {
     if (!onError && !onCheckout && !onTema) return;
@@ -66,7 +40,6 @@ export default function CodigoPreview({ codigo, titulo, onError, onCheckout, onT
   return (
     <iframe
       ref={ref}
-      onLoad={() => setTimeout(enviarResaltado, 150)}
       title={titulo || 'Vista previa de la landing'}
       srcDoc={doc}
       sandbox={SANDBOX_CODIGO}

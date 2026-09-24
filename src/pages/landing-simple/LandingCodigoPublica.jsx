@@ -89,6 +89,7 @@ function textoLegibleSobre(fondo) {
 function resolverItemCheckout(data, pedido) {
   const raw = String(pedido?.producto || '').trim();
   if (!raw) return null;
+  const items = data?.catalogo_items || data?.items || [];
   const colon = raw.match(/^(producto|combo):(\d+)$/);
   if (colon) {
     const [, tipo, id] = colon;
@@ -100,22 +101,8 @@ function resolverItemCheckout(data, pedido) {
 export default function LandingCodigoPublica({ codigo, titulo, data = null, slug }) {
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
-  // Todo producto que la landing mostró: la primera página que vino con la
-  // landing + cada página que el visitante pidió después. Comprar desde la
-  // página 7 tiene que encontrar el producto (y el carrito, sus ofertas).
-  const [extras, setExtras] = useState([]);
-  useEffect(() => { setExtras([]); }, [data]);
-  const productos = useMemo(() => {
-    const base = data?.catalogo_items || data?.items || [];
-    if (!extras.length) return base;
-    const ids = new Set(base.map(i => i.content_id));
-    return [...base, ...extras.filter(i => !ids.has(i.content_id))];
-  }, [data, extras]);
+  const productos = useMemo(() => data?.catalogo_items || data?.items || [], [data]);
   const cartState = useStoreCart(slug, data, productos);
-  const datosRuntime = useMemo(
-    () => (data ? datosRuntimePublico(data, slug, productoPublico) : null),
-    [data, slug, productoPublico],
-  );
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
   const tieneFooterEnCodigo = useMemo(() => codigoTieneFooter(codigo), [codigo?.html]);
@@ -152,7 +139,7 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
 
   function abrirCheckout(pedido) {
     if (!data) return;
-    const item = resolverItemCheckout(productos, pedido);
+    const item = resolverItemCheckout(data, pedido);
     if (!item) return;
     const cantidad = Number(pedido?.cantidad || 1) || 1;
     cartState.agregarAlCarrito({
@@ -187,9 +174,7 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
 
       <CartDrawer
         items={Array.from(cartState.carrito.values())}
-        sugerencias={crossSellActivo
-          ? cartState.sugerenciasCarrito.filter(s => ofertaCruzadaVisible(s.oferta, data?.content?.venta))
-          : []}
+        sugerencias={cartState.sugerenciasCarrito}
         onAgregarSugerencia={cartState.agregarSugerencia}
         crossSells={cartState.crossSellsCarrito}
         onAgregarCrossSell={cartState.agregarCrossSell}

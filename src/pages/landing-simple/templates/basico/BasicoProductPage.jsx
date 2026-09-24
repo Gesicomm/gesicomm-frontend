@@ -9,9 +9,6 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
-import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
-import useSeleccionVariante from '../../../../lib/useSeleccionVariante';
-import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria, resolverFondoGaleria } from '../mediaGaleria';
 import './basicoProductPage.css';
 
 /**
@@ -23,10 +20,9 @@ import './basicoProductPage.css';
  * preview y publicada se desincronizaron por tener dos componentes
  * dibujando lo mismo. Si aparece un tercer lugar, llama a este componente.
  *
- * `previewMode` solo muestra ayudas del editor: evita navegar fuera del
- * editor, muestra carteles de secciones vacías y numera los títulos para
- * orientar al usuario. La landing publicada conserva el mismo contenido sin
- * esas guías.
+ * `previewMode` NO cambia el diseño: solo evita navegar fuera del editor y
+ * muestra un cartel en las secciones que el comercio activó pero todavía no
+ * cargó. Cualquier otra diferencia entre preview y publicada es un bug.
  *
  * Estructura fija de 13 secciones + el footer de siempre, contenido 100%
  * editable — ver fichaBasico.js para de dónde sale cada una.
@@ -54,20 +50,9 @@ export default function BasicoProductPage({
 
   const packs = item?.packs || [];
   const pack = packs.find(p => String(p.id) === String(packId)) || null;
+  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : item?.precio;
 
-  const tieneVariantes = (item?.variantes || []).length > 0;
-  const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const [seleccion, setSeleccion] = useSeleccionVariante(item);
-  const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
-  // Una variante agotada se puede elegir para ver su foto, pero no comprar
-  // (ni suelta ni en paquete: el paquete también lleva la variante).
-  const agotada = varianteAgotada(variante);
-
-  // Paquete y variante no se combinan (misma regla que en Fitness/Beauty/
-  // Tech): el paquete manda si hay uno elegido, si no sigue la variante.
-  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : (variante ? variante.precio_efectivo : item?.precio);
-
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, variante?.id]);
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
   useEffect(() => {
     if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
   }, [packs, packId]);
@@ -88,28 +73,24 @@ export default function BasicoProductPage({
     else comprar();
   };
 
-  const comprar = () => !agotada && onComprar && onComprar({ variante, pack, precio });
+  const comprar = () => onComprar && onComprar({ variante: null, pack, precio });
   // Agregar al carrito NO puede caer a comprar(): son acciones distintas y
   // abrir el formulario cuando alguien solo quiso guardar el producto es lo
   // peor que puede hacer un botón. Sin handler, el botón no se muestra.
-  const agregar = (elegido) => !agotada && onAgregar && onAgregar({
-    variante,
+  const agregar = (elegido) => onAgregar && onAgregar({
+    variante: null,
     pack: elegido ?? pack,
     precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
   });
 
-  // La variante solo toma el asiento principal: videos e imágenes generales
-  // siguen en la galería porque también venden y explican el producto.
-  const galeria = galeriaConVariantePromovida(item.imagenes, variante);
-  const imagenActual = galeria[indiceImagen] || galeria[0] || null;
-  const imagenResumen = imagenPrincipalDeGaleria(galeria);
+  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
 
   const tituloTexto = (ficha.hero.titulo || item.nombre || '').trim();
   const largoTitulo = tituloTexto.length + (ficha.hero.titulo_destacado || '').length;
   const claseTitulo = largoTitulo > 78 ? 'es-muy-largo' : largoTitulo > 38 ? 'es-largo' : '';
 
   const descripcionTexto = ficha.descripcion.texto || item.descripcion;
-  const imagenNosotros = ficha.comparacion.imagen_nosotros || imagenPrincipalDeGaleria(item.imagenes) || null;
+  const imagenNosotros = ficha.comparacion.imagen_nosotros || item.imagenes[0] || null;
 
   return (
     <div className={`bsc-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
@@ -143,24 +124,24 @@ export default function BasicoProductPage({
 
       {/* 2 · Hero ─────────────────────────────────────────────────── */}
       <section className="bsc-hero bsc-wrap" id="bsc-hero">
-        <div className="bsc-hero-visual" style={{ '--lsp-galeria-fondo': resolverFondoGaleria(ficha.hero) }}>
+        <div className="bsc-hero-visual">
           {ficha.hero.etiqueta && <span className="bsc-hero-badge">{ficha.hero.etiqueta}</span>}
           <div className="bsc-hero-foto">
             {imagenActual
-              ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
+              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
               : <ImageOff size={44} />}
           </div>
-          {galeria.length > 1 && (
+          {item.imagenes.length > 1 && (
             <div className="bsc-miniaturas">
-              {galeria.slice(0, 5).map((medio, i) => (
+              {item.imagenes.slice(0, 5).map((url, i) => (
                 <button
                   type="button"
-                  key={claveMedioProducto(medio, i)}
-                  aria-label={`Medio ${i + 1} de ${galeria.length}`}
+                  key={url + i}
+                  aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
                   className={`bsc-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <MiniaturaMediaProducto medio={medio} alt="" />
+                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -200,7 +181,7 @@ export default function BasicoProductPage({
       {/* 3 · Oferta y precio ──────────────────────────────────────── */}
       {ficha.precio.activo && item.precio != null && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={3} texto={ficha.precio.titulo} vars={vars} mostrarNumero={previewMode} />
+          <TituloSeccion numero={3} texto={ficha.precio.titulo} vars={vars} />
           <div className="bsc-precio-caja">
             <div>
               {ficha.precio.etiqueta_oferta && (
@@ -222,33 +203,7 @@ export default function BasicoProductPage({
       {/* 4 · Opciones de compra ───────────────────────────────────── */}
       {ficha.opciones.activo && (
         <section className="bsc-seccion bsc-wrap" id="bsc-opciones">
-          <TituloSeccion numero={4} texto={ficha.opciones.titulo} vars={vars} mostrarNumero={previewMode} />
-
-          {tieneVariantes && gruposOpciones.map(grupo => (
-            <div className="bsc-variantes" key={grupo.nombre}>
-              <span className="bsc-variantes-label">{grupo.nombre}:</span>
-              <div className="bsc-variantes-pills">
-                {grupo.valores.map(valor => {
-                  const activo = seleccion[grupo.nombre] === valor;
-                  const estado = estadoValor(item, grupo.nombre, valor, seleccion);
-                  return (
-                    <button
-                      key={valor}
-                      type="button"
-                      className={`bsc-variante-pill ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
-                      onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                      disabled={estado === 'inexistente'}
-                      title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
-                    >
-                      {valor}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {agotada && <p className="bsc-variante-agotada">Esta opción está sin stock por ahora.</p>}
+          <TituloSeccion numero={4} texto={ficha.opciones.titulo} vars={vars} />
 
           {packs.length === 0 && previewMode ? (
             <p className="bsc-vacio">
@@ -260,14 +215,13 @@ export default function BasicoProductPage({
               <TarjetaPack
                 elegido={!pack}
                 nombre={ficha.opciones.etiqueta_individual || '1 unidad'}
-                imagen={imagenResumen}
+                imagen={item.imagenes[0]}
                 precio={item.precio}
                 precioAntes={item.precioAntes}
                 notaPrecio={packs.length > 0 ? 'Precio normal' : null}
                 nota={ficha.opciones.nota_pack}
                 cta={ficha.opciones.cta_pack}
                 onElegir={() => setPackId(null)}
-                agotada={agotada}
                 onAgregar={onAgregar ? () => agregar(null) : null}
               />
               {packs.map(p => {
@@ -280,13 +234,12 @@ export default function BasicoProductPage({
                     badge={conf.badge}
                     nombre={p.nombre}
                     subtitulo={conf.subtitulo || `${unidades} unidades`}
-                    imagen={p.imagen || imagenResumen}
+                    imagen={p.imagen || item.imagenes[0]}
                     precio={p.precio_efectivo ?? p.precio}
                     ahorro={ahorroDePack(p, item.precio)}
                     nota={ficha.opciones.nota_pack}
                     cta={ficha.opciones.cta_pack}
                     onElegir={() => setPackId(p.id)}
-                    agotada={agotada}
                     onAgregar={onAgregar ? () => agregar(p) : null}
                   />
                 );
@@ -298,7 +251,7 @@ export default function BasicoProductPage({
               es este botón; con carrito, cada tarjeta ya tiene el suyo. */}
           {!onAgregar && (
             <div className="bsc-opciones-cta">
-              <button type="button" className="bsc-cta" onClick={comprar} disabled={agotada}>
+              <button type="button" className="bsc-cta" onClick={comprar}>
                 {ficha.opciones.cta_pack || 'Comprar ahora'}
               </button>
             </div>
@@ -310,7 +263,7 @@ export default function BasicoProductPage({
       {ficha.beneficios.activo && (beneficios.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-seccion--fondo">
           <div className="bsc-wrap">
-            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
             {beneficios.length === 0 ? (
               <p className="bsc-vacio">
                 Se cargan en <b>Vista del producto</b>.
@@ -336,7 +289,7 @@ export default function BasicoProductPage({
       {/* 6 · Descripción del producto ─────────────────────────────── */}
       {ficha.descripcion.activo && (descripcionTexto || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={6} texto={ficha.descripcion.titulo} vars={vars} mostrarNumero={previewMode} />
+          <TituloSeccion numero={6} texto={ficha.descripcion.titulo} vars={vars} />
           {!descripcionTexto ? (
             <p className="bsc-vacio">
               El texto sale de la descripción del producto, o se escribe en <b>Vista del producto</b>.
@@ -360,7 +313,7 @@ export default function BasicoProductPage({
       {/* 7 · Usos y aplicaciones ──────────────────────────────────── */}
       {ficha.usos.activo && (pasos.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={7} texto={ficha.usos.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={7} texto={ficha.usos.titulo} vars={vars} centrado />
           {pasos.length === 0 ? (
             <p className="bsc-vacio">
               Los pasos de uso se cargan en <b>Vista del producto</b>.
@@ -395,7 +348,7 @@ export default function BasicoProductPage({
       {/* 9 · Comparación ──────────────────────────────────────────── */}
       {ficha.comparacion.activo && (comparaciones.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={9} texto={ficha.comparacion.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={9} texto={ficha.comparacion.titulo} vars={vars} centrado />
           {comparaciones.length === 0 ? (
             <p className="bsc-vacio">
               Agregá las características a comparar en <b>Vista del producto</b>.
@@ -424,9 +377,9 @@ export default function BasicoProductPage({
       {/* 10 · Preguntas frecuentes ────────────────────────────────── */}
       {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
           {item.faq.length === 0 ? (
-            <p className="bsc-vacio">Cargá las preguntas desde esta misma sección, en el editor.</p>
+            <p className="bsc-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
           ) : (
             <div className="bsc-faq-grid">
               {item.faq.map((f, i) => (
@@ -435,7 +388,7 @@ export default function BasicoProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={16} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} className="bsc-faq-respuesta" />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
                 </div>
               ))}
             </div>
@@ -447,7 +400,7 @@ export default function BasicoProductPage({
       {ficha.relacionados.activo && item.relacionados.length > 0 && (
         <section className="bsc-seccion bsc-seccion--fondo">
           <div className="bsc-wrap">
-            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.relacionados.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.relacionados.titulo} vars={vars} centrado />
             <div className="bsc-relacionados">
               {item.relacionados.map(r => {
                 const precioRel = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
@@ -460,7 +413,7 @@ export default function BasicoProductPage({
                         imagenes={(r.imagenes || []).map(getMediaUrl)}
                         imagen={r.imagen ? getMediaUrl(r.imagen) : null}
                         alt={r.nombre}
-                        imgClassName="w-full h-full object-contain transition-opacity duration-500 ease-out"
+                        imgClassName="transition-opacity duration-500 ease-out"
                         fallback={<ImageOff size={22} />}
                       />
                     </span>
@@ -488,7 +441,7 @@ export default function BasicoProductPage({
       {/* 12 · Garantía y devoluciones ─────────────────────────────── */}
       {ficha.garantias.activo && (garantias.length > 0 || ficha.garantias.texto) && (
         <section className="bsc-seccion bsc-wrap">
-          <TituloSeccion numero={12} texto={ficha.garantias.titulo} vars={vars} centrado mostrarNumero={previewMode} />
+          <TituloSeccion numero={12} texto={ficha.garantias.titulo} vars={vars} centrado />
           {garantias.length > 0 && (
             <div className="bsc-garantias-grid">
               {garantias.map((g, i) => {
@@ -562,22 +515,20 @@ function nombreCategoria(categoria) {
   return typeof categoria === 'string' ? categoria : (categoria.nombre || '');
 }
 
-function TituloSeccion({ numero, texto, vars, centrado = false, mostrarNumero = false }) {
+function TituloSeccion({ numero, texto, vars, centrado = false }) {
   if (!texto) return null;
   return (
     <div className={`bsc-seccion-titulo ${centrado ? 'es-centrado' : ''}`}>
-      {mostrarNumero && (
-        <span
-          aria-hidden="true"
-          style={{
-            display: 'grid', placeItems: 'center', width: 28, height: 28,
-            borderRadius: '50%', background: vars['--bsc-accent'], color: vars['--bsc-on-accent'],
-            fontSize: 13, fontWeight: 900, flexShrink: 0,
-          }}
-        >
-          {numero}
-        </span>
-      )}
+      <span
+        aria-hidden="true"
+        style={{
+          display: 'grid', placeItems: 'center', width: 28, height: 28,
+          borderRadius: '50%', background: vars['--bsc-accent'], color: vars['--bsc-on-accent'],
+          fontSize: 13, fontWeight: 900, flexShrink: 0,
+        }}
+      >
+        {numero}
+      </span>
       <h2>{texto}</h2>
     </div>
   );
@@ -627,7 +578,7 @@ function LadoComparacion({ titulo, imagen, items, campo, esOtros = false }) {
  */
 function TarjetaPack({
   elegido, badge, nombre, subtitulo, imagen, precio, precioAntes,
-  ahorro, notaPrecio, nota, cta, agotada = false, onElegir, onAgregar,
+  ahorro, notaPrecio, nota, cta, onElegir, onAgregar,
 }) {
   return (
     <div className={`bsc-pack ${elegido ? 'elegido' : ''}`}>
@@ -649,9 +600,9 @@ function TarjetaPack({
             : null}
       </button>
       {onAgregar && (
-        <button type="button" className="bsc-pack-cta" onClick={onAgregar} disabled={agotada}>
-          {agotada ? 'Sin stock' : (cta || 'Agregar al carrito')}
-          {nota && !agotada && <small>{nota}</small>}
+        <button type="button" className="bsc-pack-cta" onClick={onAgregar}>
+          {cta || 'Agregar al carrito'}
+          {nota && <small>{nota}</small>}
         </button>
       )}
     </div>
@@ -713,12 +664,7 @@ function Contador({ desde }) {
 function calcularVariables(t) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
-  // Un solo umbral fijo (contraste >= 3 contra blanco) clasificaba mal los
-  // acentos de luminancia media — un teal, por ejemplo, "pasaba" el corte
-  // por poco y el texto quedaba casi invisible sobre ese mismo teal. Elegir
-  // el color que da MÁS contraste de los dos (en vez de un corte binario)
-  // nunca da un resultado casi ilegible.
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
 
   const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
 

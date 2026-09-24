@@ -1445,18 +1445,6 @@ button.lp-tier-card--imagen {
   box-shadow: -15px 0 50px rgba(0, 0, 0, 0.6);
   animation: lp-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.lp-cart-drawer.lp-cart-drawer--claro {
-  --lp-cart-bg: #ffffff;
-  --lp-cart-surface: #f7f9fc;
-  --lp-cart-surface-2: #f1f4f8;
-  --lp-cart-text: #10202f;
-  --lp-cart-muted: #506172;
-  --lp-cart-soft: #6b7a8a;
-  --lp-cart-border: rgba(16, 32, 47, 0.14);
-  --lp-cart-border-soft: rgba(16, 32, 47, 0.08);
-  color-scheme: light;
-  box-shadow: -18px 0 50px rgba(16, 32, 47, 0.18);
-}
 @keyframes lp-slide-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
@@ -2303,13 +2291,13 @@ button.lp-tier-card--imagen {
 .lp-upsell-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(9px);
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(8px);
   z-index: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 4vw, 3rem);
+  padding: 1.5rem;
   animation: lp-fade-in 0.15s ease;
 }
 .lp-upsell-modal {
@@ -2330,28 +2318,44 @@ button.lp-tier-card--imagen {
   --l-card-bg: var(--lp-cart-surface-2);
   position: relative;
   width: 100%;
-  max-width: 860px;
-  max-height: min(90vh, 760px);
+  max-width: 640px;
+  max-height: min(88vh, 680px);
   overflow-y: auto;
   background:
     radial-gradient(100% 90% at 0% 0%, color-mix(in srgb, var(--l-primary) 16%, transparent) 0%, transparent 55%),
     var(--l-modal-bg, #151923);
   border: 1px solid color-mix(in srgb, var(--l-text, #f8fafc) 14%, transparent);
   border-radius: 20px;
-  padding: clamp(1.6rem, 3vw, 2.25rem);
+  padding: 1.4rem;
   color: var(--l-text, #f8fafc);
   font-family: var(--l-font, inherit);
   box-shadow: 0 34px 100px -18px rgba(0, 0, 0, 0.88), 0 0 0 1px rgba(255, 255, 255, 0.05);
   animation: lp-modal-pop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
+.lp-upsell-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: color-mix(in srgb, var(--l-text, #f8fafc) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--l-text, #f8fafc) 12%, transparent);
+  color: var(--l-text, #f8fafc);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 999px;
+  display: flex;
+  opacity: 0.78;
+}
+.lp-upsell-modal-close:hover {
+  opacity: 1;
+  background: color-mix(in srgb, var(--l-text, #f8fafc) 13%, transparent);
+}
 .lp-upsell-offer {
   display: flex;
   flex-direction: column;
-  gap: 1.3rem;
+  gap: 1rem;
 }
 .lp-upsell-header {
-  display: grid;
-  gap: 0.7rem;
+  padding-right: 2.5rem;
 }
 .lp-upsell-eyebrow {
   display: inline-flex;
@@ -2369,20 +2373,10 @@ button.lp-tier-card--imagen {
   line-height: 1.1;
   text-transform: uppercase;
 }
-.lp-upsell-header h2 {
-  margin: 0;
-  max-width: 34rem;
-  color: var(--l-text, #f8fafc);
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
-  line-height: 1.15;
-  font-weight: 950;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
 .lp-upsell-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.95fr) minmax(0, 1.05fr);
-  gap: clamp(1.35rem, 3vw, 2rem);
+  grid-template-columns: minmax(190px, 0.88fr) minmax(0, 1.12fr);
+  gap: 1.25rem;
   align-items: center;
 }
 .lp-upsell-media {
@@ -2397,9 +2391,8 @@ button.lp-tier-card--imagen {
 .lp-upsell-media img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
-  background: #ffffff;
 }
 .lp-upsell-media-placeholder {
   width: 100%;
@@ -2422,13 +2415,13 @@ button.lp-tier-card--imagen {
 .lp-upsell-copy {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
   min-width: 0;
 }
 .lp-upsell-title {
   margin: 0;
   color: var(--l-text, #f8fafc);
-  font-size: clamp(1.55rem, 3.2vw, 2.15rem);
+  font-size: clamp(1.45rem, 3vw, 2rem);
   line-height: 1.05;
   font-weight: 950;
   letter-spacing: 0;
@@ -2462,8 +2455,8 @@ button.lp-tier-card--imagen {
 .lp-upsell-pricebox {
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
-  padding: 0.2rem 0 0.35rem;
+  gap: 0.2rem;
+  padding-top: 0.15rem;
 }
 .lp-upsell-before {
   color: var(--l-text-muted, #94a3b8);
@@ -2480,7 +2473,7 @@ button.lp-tier-card--imagen {
 }
 .lp-upsell-now strong {
   display: block;
-  font-size: clamp(2rem, 4.2vw, 3rem);
+  font-size: clamp(1.65rem, 3.2vw, 2.25rem);
   line-height: 1.05;
   letter-spacing: 0;
 }
@@ -2495,62 +2488,37 @@ button.lp-tier-card--imagen {
   font-weight: 900;
 }
 .lp-upsell-primary {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.6rem !important;
-  width: 100% !important;
-  min-height: 68px !important;
-  margin-top: 0.25rem !important;
-  border: 1px solid rgba(255, 255, 255, 0.26) !important;
-  border-radius: 14px !important;
-  background:
-    linear-gradient(135deg,
-      color-mix(in srgb, var(--l-primary, #16a36a) 62%, #34d399 38%),
-      color-mix(in srgb, var(--l-primary, #16a36a) 78%, #10b981 22%)
-    ) !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
-  font-family: inherit !important;
-  font-size: clamp(1.05rem, 1.9vw, 1.22rem) !important;
-  font-weight: 950 !important;
-  line-height: 1.12 !important;
-  text-transform: uppercase !important;
-  cursor: pointer !important;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.34) !important;
-  box-shadow:
-    0 0 0 4px rgba(255, 255, 255, 0.08),
-    0 22px 48px color-mix(in srgb, var(--l-primary, #16a36a) 55%, rgba(0, 0, 0, 0.45)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  background: var(--l-primary);
+  color: var(--l-on-primary, #0b1211);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 950;
+  line-height: 1.15;
+  cursor: pointer;
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--l-primary) 42%, transparent);
   transition: transform 0.15s ease, filter 0.15s ease;
-}
-.lp-upsell-primary svg {
-  color: currentColor !important;
-  stroke-width: 3 !important;
 }
 .lp-upsell-primary:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.08);
 }
 .lp-upsell-primary:disabled {
-  opacity: 0.62 !important;
+  opacity: 0.58;
   cursor: not-allowed;
 }
 .lp-upsell-microcopy {
-  margin: -0.15rem 0 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
+  margin: -0.25rem 0 0;
   color: var(--l-text-muted, #94a3b8);
-  font-size: 0.8rem;
-  font-weight: 750;
+  font-size: 0.74rem;
   line-height: 1.35;
   text-align: center;
-}
-.lp-upsell-microcopy svg {
-  flex: 0 0 auto;
-  color: var(--l-primary);
 }
 .lp-upsell-decline {
   width: 100%;
@@ -2559,8 +2527,8 @@ button.lp-tier-card--imagen {
   border: none;
   color: color-mix(in srgb, var(--l-text, #f8fafc) 70%, transparent);
   font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 850;
+  font-size: 0.85rem;
+  font-weight: 750;
   cursor: pointer;
   padding: 0.35rem;
 }
@@ -2612,34 +2580,27 @@ button.lp-tier-card--imagen {
   color: var(--l-text, #f8fafc);
 }
 .lp-cart-checkout {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 0.55rem;
-  background:
-    linear-gradient(135deg,
-      color-mix(in srgb, var(--l-primary, #16a36a) 62%, #34d399 38%),
-      color-mix(in srgb, var(--l-primary, #16a36a) 82%, #059669 18%)
-    ) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  background: var(--l-primary);
+  color: var(--l-on-primary, #0b1211);
+  border: none;
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 700;
   padding: 0.85rem 1.2rem;
   border-radius: var(--l-radius-sm, 10px);
   cursor: pointer;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.26);
   transition: filter 0.15s, transform 0.1s;
-  box-shadow:
-    0 10px 28px color-mix(in srgb, var(--l-primary, #16a36a) 42%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--l-primary) 30%, transparent);
 }
 .lp-cart-checkout:hover:not(:disabled) {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
 .lp-cart-checkout:disabled {
-  opacity: 0.58;
+  opacity: 0.72;
   cursor: not-allowed;
   box-shadow: none;
 }
