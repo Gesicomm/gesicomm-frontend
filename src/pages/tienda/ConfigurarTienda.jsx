@@ -5,11 +5,15 @@ import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
-  ArrowRight, Palette
+  ArrowRight, Palette, ImagePlus, Mail, MapPin, Share2,
+  AtSign, Link2, User, Phone, Video
 } from 'lucide-react';
+
+
 import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
 import { useDebounce } from '../../hooks/useDebounce';
+import { getMediaUrl } from '../../services/api';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
 import PagoParConfig from './PagoParConfig';
 import DominioPropio from './DominioPropio';
@@ -30,6 +34,7 @@ function slugifyLigero(texto) {
 
 const FORM_INICIAL = {
   nombre: '',
+  subdominio_manual: '', // prefijo URL editable independiente del nombre
   documento: '',
   ruc: '',
   color_primario: '#10b981',
@@ -38,6 +43,16 @@ const FORM_INICIAL = {
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
+  nombre_contacto: '',
+  canal_contacto: 'whatsapp',
+  email_contacto: '',
+  instagram: '',
+  facebook: '',
+  twitter: '',
+  tiktok: '',
+  youtube: '',
+  direccion_publica: '',
+  ciudad_publica: '',
   deposito_departamento: '',
   deposito_ciudad: '',
   deposito_direccion: '',
@@ -49,6 +64,7 @@ const FORM_INICIAL = {
   google_analytics_id: '',
   tiktok_pixel_id: '',
 };
+
 
 // El orden sigue el recorrido de una tienda nueva: primero quién sos y dónde
 // se publica tu catálogo, después por dónde te escriben, después cómo cobrás,
@@ -129,6 +145,12 @@ export default function ConfigurarTienda() {
   const ultimaConsulta = useRef(0);
   const textareaRef = useRef(null);
 
+  // El logo va por su propio endpoint (multipart) y se guarda al instante,
+  // independiente de "Guardar cambios".
+  const logoInputRef = useRef(null);
+  const [subiendoLogo, setSubiendoLogo] = useState(false);
+  const [errorLogo, setErrorLogo] = useState(null);
+
   // El access token nunca vuelve del backend (ni cifrado) — solo un flag
   // de si ya hay uno guardado (tienda.meta_access_token_configurado).
   const [metaTokenNuevo, setMetaTokenNuevo] = useState('');
@@ -136,15 +158,18 @@ export default function ConfigurarTienda() {
   const [mostrarToken, setMostrarToken] = useState(false);
   const [mostrarGuiaCapi, setMostrarGuiaCapi] = useState(false);
 
-  // El subdominio no es un campo aparte: es siempre el nombre de la tienda
-  // slugificado. Si no está disponible, la usuaria cambia el nombre, no un
-  // campo de URL independiente. Cambiar el nombre de una tienda ya
-  // publicada cambia su URL pública — cualquier link ya compartido
-  // (WhatsApp, anuncios) deja de funcionar. Se avisa en el formulario
-  // antes de guardar.
-  const subdominioDerivado = slugifyLigero(form.nombre);
+  // Ahora el subdominio es un campo manual independiente del nombre.
+  // Al tipear en "Prefijo URL" se autoformatea con slugifyLigero.
+  // Si la tienda tiene dominio propio, el subdominio no cambia aunque el nombre varíe.
+  const subdominioDerivado = slugifyLigero(form.subdominio_manual || form.nombre);
+  const tieneDominioPropio = Boolean(tienda?.dominio_propio);
   const subdominioCambia = !tienda || subdominioDerivado !== tienda.subdominio;
+  const debeValidarSubdominio = subdominioCambia && !tieneDominioPropio;
   const subdominioDebounced = useDebounce(subdominioDerivado, 500);
+  const urlPublica = tieneDominioPropio
+    ? tienda.dominio_propio
+    : `${subdominioDerivado || 'tu-tienda'}.${tienda?.dominio_base || 'gesicomm.com'}`;
+
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -158,6 +183,7 @@ export default function ConfigurarTienda() {
       if (data) {
         setForm({
           nombre: data.nombre || '',
+          subdominio_manual: data.subdominio || '',
           documento: data.documento || '',
           ruc: data.ruc || '',
           color_primario: data.color_primario || FORM_INICIAL.color_primario,
@@ -166,6 +192,16 @@ export default function ConfigurarTienda() {
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
+          nombre_contacto: data.nombre_contacto || '',
+          canal_contacto: data.canal_contacto || 'whatsapp',
+          email_contacto: data.email_contacto || '',
+          instagram: data.instagram || '',
+          facebook: data.facebook || '',
+          twitter: data.twitter || '',
+          tiktok: data.tiktok || '',
+          youtube: data.youtube || '',
+          direccion_publica: data.direccion_publica || '',
+          ciudad_publica: data.ciudad_publica || '',
           deposito_departamento: data.deposito_departamento || '',
           deposito_ciudad: data.deposito_ciudad || '',
           deposito_direccion: data.deposito_direccion || '',
@@ -178,6 +214,7 @@ export default function ConfigurarTienda() {
           tiktok_pixel_id: data.tiktok_pixel_id || '',
         });
       }
+
     } catch (err) {
       setError('No se pudo cargar la información de tu tienda.');
     } finally {
@@ -203,11 +240,11 @@ export default function ConfigurarTienda() {
     }, { replace: true });
   }
 
-  // Chequeo de disponibilidad en vivo — solo hace falta consultar cuando
-  // el subdominio derivado del nombre difiere del que ya tiene guardado
-  // (si no cambió, no hay nada que validar).
+  // Chequeo de disponibilidad en vivo: solo aplica cuando la URL pública es
+  // el subdominio de Gesicomm. Con dominio propio, el subdominio queda como
+  // respaldo y el nombre no tiene por qué estar disponible como URL.
   useEffect(() => {
-    if (!subdominioCambia || !subdominioDebounced || subdominioDebounced.length < 3) {
+    if (!debeValidarSubdominio || !subdominioDebounced || subdominioDebounced.length < 3) {
       setDisponibilidad(null);
       return;
     }
@@ -216,7 +253,44 @@ export default function ConfigurarTienda() {
     tiendaService.disponibilidadSubdominio(subdominioDebounced)
       .then(res => { if (idConsulta === ultimaConsulta.current) setDisponibilidad(res); })
       .catch(() => { if (idConsulta === ultimaConsulta.current) setDisponibilidad({ valido: false, disponible: false, motivo: 'Error al verificar.' }); });
-  }, [subdominioDebounced, subdominioCambia]);
+  }, [subdominioDebounced, debeValidarSubdominio]);
+
+  async function subirLogo(e) {
+    const archivo = e.target.files?.[0];
+    e.target.value = '';
+    if (!archivo) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
+      return setErrorLogo('Solo se permiten imágenes JPG, PNG o WebP.');
+    }
+    if (archivo.size > 5 * 1024 * 1024) {
+      return setErrorLogo('El logo no puede pesar más de 5 MB.');
+    }
+    setErrorLogo(null);
+    setSubiendoLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append('imagen', archivo);
+      const actualizada = await tiendaService.subirLogo(formData);
+      setTienda(prev => ({ ...prev, logo_imagen: actualizada.logo_imagen }));
+    } catch (err) {
+      setErrorLogo(err.response?.data?.message || 'No se pudo subir el logo.');
+    } finally {
+      setSubiendoLogo(false);
+    }
+  }
+
+  async function quitarLogo() {
+    setErrorLogo(null);
+    setSubiendoLogo(true);
+    try {
+      await tiendaService.eliminarLogo();
+      setTienda(prev => ({ ...prev, logo_imagen: null }));
+    } catch (err) {
+      setErrorLogo(err.response?.data?.message || 'No se pudo quitar el logo.');
+    } finally {
+      setSubiendoLogo(false);
+    }
+  }
 
   function handleChange(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
@@ -252,18 +326,25 @@ export default function ConfigurarTienda() {
     setOk(false);
 
     if (!form.nombre.trim()) return setError('El nombre de tu tienda es obligatorio.');
-    if (subdominioCambia) {
+    if (debeValidarSubdominio) {
       if (!subdominioDerivado || subdominioDerivado.length < 3) {
-        return setError('Ese nombre no alcanza para generar una URL válida — probá con un nombre más largo, con letras o números.');
+        return setError('El prefijo URL no es suficientemente largo — usá al menos 3 letras o números.');
       }
       if (disponibilidad && (disponibilidad.valido === false || disponibilidad.disponible === false)) {
-        return setError(disponibilidad.motivo || 'Ese nombre ya está en uso por otra tienda — probá con otro.');
+        return setError(disponibilidad.motivo || 'Ese prefijo URL ya está en uso — probá con otro.');
       }
     }
 
     setGuardando(true);
     try {
-      const payload = { ...form, subdominio: subdominioDerivado };
+      // subdominio_manual es campo interno de UI — no lo mandamos al backend.
+      // En su lugar mandamos `subdominio` con el valor ya slugificado.
+      const { subdominio_manual, ...resto } = form;
+      const payload = { ...resto };
+      if (!tienda || !tieneDominioPropio) {
+        payload.subdominio = subdominioDerivado;
+      }
+
       const tokenFueIngresado = Boolean(metaTokenNuevo.trim());
       const tokenFueEliminado = eliminarMetaToken;
 
@@ -398,8 +479,58 @@ export default function ConfigurarTienda() {
                       <div className="tn-fields">
                         <label className="tn-field">
                           <span className="tn-field-label">Nombre de la tienda</span>
-                          <input value={form.nombre} onChange={e => handleChange('nombre', e.target.value)} />
+                          <input
+                            value={form.nombre}
+                            onChange={e => handleChange('nombre', e.target.value)}
+                            placeholder="Ej: Gesicom Store"
+                          />
+                          <span className="tn-field-hint">El nombre visible para tus clientes. No afecta la URL si ya la personalizaste.</span>
                         </label>
+
+                        {!tieneDominioPropio && (
+                          <div className="tn-field">
+                            <span className="tn-field-label">Prefijo URL <em>(subdominio)</em></span>
+                            <div className="tn-url-prefix-wrap">
+                              <input
+                                className="tn-url-prefix-input"
+                                value={form.subdominio_manual}
+                                onChange={e => handleChange('subdominio_manual', slugifyLigero(e.target.value))}
+                                placeholder={slugifyLigero(form.nombre) || 'tu-tienda'}
+                                maxLength={63}
+                              />
+                              <span className="tn-url-prefix-suffix">.{tienda?.dominio_base || 'gesicomm.com'}</span>
+                            </div>
+                            <span className="tn-field-hint">
+                              La parte antes del punto en tu dirección web. Solo letras minúsculas, números y guiones.
+                              {form.subdominio_manual ? '' : ' Si lo dejás vacío se genera del nombre automáticamente.'}
+                            </span>
+
+                            {debeValidarSubdominio && (
+                              <div className="tn-disponibilidad tn-disponibilidad-inline">
+                                {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
+                                {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
+                                  <span className="tn-check ok"><Check size={12} /> URL disponible</span>
+                                )}
+                                {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
+                                  <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="tn-field">
+                          <span className="tn-field-label">URL pública</span>
+                          <div className="tn-url-readonly">
+                            <Globe size={14} />
+                            <code>{urlPublica}</code>
+                          </div>
+                          <span className="tn-field-hint">
+                            {tieneDominioPropio
+                              ? 'Usa tu dominio propio; el subdominio de Gesicomm queda como respaldo.'
+                              : 'Así se ve tu catálogo y tus landings para los clientes.'}
+                          </span>
+                        </div>
 
                         <label className="tn-field">
                           <span className="tn-field-label">Cédula del titular</span>
@@ -412,45 +543,66 @@ export default function ConfigurarTienda() {
                           <input value={form.ruc} onChange={e => handleChange('ruc', e.target.value)} placeholder="Ej: 80012345-6" />
                           <span className="tn-field-hint">Solo si facturás. Podés dejarlo vacío.</span>
                         </label>
-
-                        <div className="tn-field">
-                          <span className="tn-field-label">URL pública</span>
-                          <div className="tn-url-readonly">
-                            <Globe size={14} />
-                            <code>{subdominioDerivado || 'tu-tienda'}.{tienda?.dominio_base || 'gesicomm.com'}</code>
-                          </div>
-                          <span className="tn-field-hint">Se genera automáticamente a partir del nombre.</span>
-                        </div>
                       </div>
 
-                      {subdominioCambia && (
-                        <div className="tn-disponibilidad">
-                          {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
-                          {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
-                            <span className="tn-check ok"><Check size={12} /> URL disponible</span>
-                          )}
-                          {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
-                            <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
-                          )}
-                        </div>
-                      )}
-
-                      {subdominioCambia && !!tienda && (
+                      {debeValidarSubdominio && !!tienda && (
                         <p className="tn-warning">
                           <AlertCircle size={14} />
-                          <span><strong>Atención:</strong> Cambiar el nombre va a modificar la URL pública de tu catálogo y de todas tus landings. Links que ya hayas compartido dejarán de funcionar.</span>
+                          <span><strong>Atención:</strong> Cambiar el prefijo URL va a modificar la URL pública de tu catálogo y de todas tus landings. Links que ya hayas compartido dejarán de funcionar.</span>
                         </p>
                       )}
                     </div>
                   </section>
 
+
                   {/* Branding */}
                   <section className="tn-group">
                     <div className="tn-group-head">
                       <h3><Palette size={16} /> Branding</h3>
-                      <p>Estos colores se aplican al catálogo público y a las landings. Si editás el tema desde el armador, también se reflejan acá.</p>
+                      <p>El logo y los colores se aplican al catálogo público y a las landings. Si editás el tema desde el armador, también se reflejan acá.</p>
                     </div>
                     <div className="tn-group-body">
+                      <div className="tn-logo-field">
+                        <span className="tn-field-label">Logo</span>
+                        <div className="tn-logo-row">
+                          <button
+                            type="button"
+                            className={`tn-logo-preview ${tienda?.logo_imagen ? 'con-logo' : ''}`}
+                            onClick={() => logoInputRef.current?.click()}
+                            disabled={subiendoLogo}
+                            aria-label={tienda?.logo_imagen ? 'Cambiar logo' : 'Subir logo'}
+                          >
+                            {subiendoLogo
+                              ? <Loader size={18} className="spin-icon" />
+                              : tienda?.logo_imagen
+                                ? <img src={getMediaUrl(tienda.logo_imagen)} alt="Logo de la tienda" />
+                                : <ImagePlus size={20} />}
+                          </button>
+                          <div className="tn-logo-actions">
+                            <div className="tn-logo-buttons">
+                              <button type="button" className="btn-secondary" onClick={() => logoInputRef.current?.click()} disabled={subiendoLogo}>
+                                {tienda?.logo_imagen ? 'Cambiar logo' : 'Subir logo'}
+                              </button>
+                              {tienda?.logo_imagen && (
+                                <button type="button" className="btn-secondary" onClick={quitarLogo} disabled={subiendoLogo}>
+                                  <Trash2 size={14} /> Quitar
+                                </button>
+                              )}
+                            </div>
+                            <span className="tn-field-hint">
+                              PNG con fondo transparente, JPG o WebP (máx. 5 MB). Se guarda al subirlo y aparece en todas tus páginas que no tengan un logo propio.
+                            </span>
+                            {errorLogo && <span className="tn-logo-error"><AlertCircle size={12} /> {errorLogo}</span>}
+                          </div>
+                          <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={subirLogo}
+                            hidden
+                          />
+                        </div>
+                      </div>
                       <div className="tn-brand-grid">
                         <label className="tn-color-field">
                           <span className="tn-field-label">Color principal</span>
@@ -580,31 +732,187 @@ export default function ConfigurarTienda() {
               {tab === 'contacto' && (
                 <div className="tn-tab-content" key="contacto">
 
+                  {/* Canales de contacto */}
                   <section className="tn-group">
                     <div className="tn-group-head">
                       <h3>Canales de contacto</h3>
-                      <p>El número de WhatsApp es el que recibe las consultas que salen de tus landings.</p>
+                      <p>Datos de contacto que ven tus clientes en el catálogo y tus landings.</p>
                     </div>
                     <div className="tn-group-body">
                       <div className="tn-fields">
                         <label className="tn-field">
-                          <span className="tn-field-label">WhatsApp</span>
-                          <input value={form.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)} placeholder="Ej: 595981234567" />
-                          <span className="tn-field-hint">Con código de país, sin espacios ni signos.</span>
+                          <span className="tn-field-label"><User size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Nombre de contacto <em>(opcional)</em></span>
+                          <input
+                            value={form.nombre_contacto}
+                            onChange={e => handleChange('nombre_contacto', e.target.value)}
+                            placeholder="Ej: Martín García o Gesicom Soporte"
+                          />
+                          <span className="tn-field-hint">Nombre visible en la sección de contacto de tu tienda pública.</span>
                         </label>
+
+                        <div className="tn-field">
+                          <span className="tn-field-label">Canal preferido</span>
+                          <div className="tn-canal-selector">
+                            {[
+                              { value: 'whatsapp', label: 'WhatsApp' },
+                              { value: 'email',    label: 'Email' },
+                              { value: 'telefono', label: 'Teléfono' },
+                              { value: 'instagram',label: 'Instagram' },
+                            ].map(op => (
+                              <button
+                                key={op.value}
+                                type="button"
+                                className={`tn-canal-chip ${form.canal_contacto === op.value ? 'activo' : ''}`}
+                                onClick={() => handleChange('canal_contacto', op.value)}
+                              >
+                                {op.label}
+                              </button>
+                            ))}
+                          </div>
+                          <span className="tn-field-hint">El botón principal de contacto en tus landings usará este canal.</span>
+                        </div>
+
                         <label className="tn-field">
-                          <span className="tn-field-label">Teléfono <em>(opcional)</em></span>
+                          <span className="tn-field-label"><Phone size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> WhatsApp</span>
+                          <input value={form.whatsapp} onChange={e => handleChange('whatsapp', e.target.value)} placeholder="Ej: 595981234567" />
+                          <span className="tn-field-hint">Con código de país, sin espacios ni signos. Recibe las consultas de tus landings.</span>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label"><Phone size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Teléfono <em>(opcional)</em></span>
                           <input value={form.telefono} onChange={e => handleChange('telefono', e.target.value)} placeholder="Solo si querés mostrar otro número" />
-                          <span className="tn-field-hint">Se muestra como dato de contacto, no recibe los mensajes.</span>
+                          <span className="tn-field-hint">Se muestra como dato de contacto adicional, no recibe los mensajes de las landings.</span>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label"><Mail size={13} style={{ display: 'inline', verticalAlign: 'middle' }} /> Email de contacto <em>(opcional)</em></span>
+                          <input
+                            type="email"
+                            value={form.email_contacto}
+                            onChange={e => handleChange('email_contacto', e.target.value)}
+                            placeholder="Ej: contacto@tutienda.com"
+                          />
                         </label>
                       </div>
                     </div>
                   </section>
 
+                  {/* Redes sociales */}
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3>Redes sociales</h3>
+                      <p>Se muestran como íconos de enlace en tu catálogo y tus landings. Podés dejar vacías las que no usés.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label tn-field-label-icon">
+                            <AtSign size={14} /> Instagram
+                          </span>
+                          <div className="tn-social-input-wrap">
+                            <span className="tn-social-prefix">@</span>
+                            <input
+                              value={form.instagram}
+                              onChange={e => handleChange('instagram', e.target.value.replace(/^@/, ''))}
+                              placeholder="tu_handle"
+                            />
+                          </div>
+                          <span className="tn-field-hint">Solo el nombre de usuario, sin @.</span>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label tn-field-label-icon">
+                            <Link2 size={14} /> Facebook
+                          </span>
+                          <div className="tn-social-input-wrap">
+                            <span className="tn-social-prefix">fb.com/</span>
+                            <input
+                              value={form.facebook}
+                              onChange={e => handleChange('facebook', e.target.value)}
+                              placeholder="tupagina"
+                            />
+                          </div>
+                          <span className="tn-field-hint">Handle o nombre de página de Facebook.</span>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label tn-field-label-icon">
+                            <AtSign size={14} /> Twitter / X
+                          </span>
+                          <div className="tn-social-input-wrap">
+                            <span className="tn-social-prefix">@</span>
+                            <input
+                              value={form.twitter}
+                              onChange={e => handleChange('twitter', e.target.value.replace(/^@/, ''))}
+                              placeholder="tu_handle"
+                            />
+                          </div>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label tn-field-label-icon">
+                            <AtSign size={14} /> TikTok
+                          </span>
+                          <div className="tn-social-input-wrap">
+                            <span className="tn-social-prefix">@</span>
+                            <input
+                              value={form.tiktok}
+                              onChange={e => handleChange('tiktok', e.target.value.replace(/^@/, ''))}
+                              placeholder="tu_handle"
+                            />
+                          </div>
+                        </label>
+
+                        <label className="tn-field">
+                          <span className="tn-field-label tn-field-label-icon">
+                            <Video size={14} /> YouTube
+                          </span>
+                          <div className="tn-social-input-wrap">
+                            <span className="tn-social-prefix">youtube.com/</span>
+                            <input
+                              value={form.youtube}
+                              onChange={e => handleChange('youtube', e.target.value)}
+                              placeholder="@tucanal o c/tucanal"
+                            />
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Ubicación pública */}
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3><MapPin size={15} style={{ display: 'inline', verticalAlign: 'middle' }} /> Dirección pública</h3>
+                      <p>La dirección de tu local o punto de atención, visible en el catálogo. Distinta de la dirección de depósito logístico.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-fields">
+                        <label className="tn-field">
+                          <span className="tn-field-label">Ciudad / Localidad <em>(opcional)</em></span>
+                          <input
+                            value={form.ciudad_publica}
+                            onChange={e => handleChange('ciudad_publica', e.target.value)}
+                            placeholder="Ej: Asunción, Paraguay"
+                          />
+                        </label>
+                        <label className="tn-field">
+                          <span className="tn-field-label">Dirección <em>(opcional)</em></span>
+                          <input
+                            value={form.direccion_publica}
+                            onChange={e => handleChange('direccion_publica', e.target.value)}
+                            placeholder="Ej: Av. España 1234, Edificio Central piso 3"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* Mensaje de WhatsApp */}
                   <section className="tn-group">
                     <div className="tn-group-head">
                       <h3>Mensaje de WhatsApp</h3>
-                      <p>El texto que se envía cuando un cliente toca “Consultar” o “Finalizar pedido”.</p>
+                      <p>El texto que se envía cuando un cliente toca "Consultar" o "Finalizar pedido".</p>
                     </div>
                     <div className="tn-group-body">
                       <div className="tn-msg-grid">
@@ -660,6 +968,8 @@ export default function ConfigurarTienda() {
                   </section>
                 </div>
               )}
+
+
 
               {/* ═════════════════════ TAB: PAGOS ═════════════════════════ */}
               {tab === 'pasarelas' && (

@@ -4,6 +4,8 @@ import { CreditCard, Pencil, Plus, Trash2, X, Percent } from "lucide-react"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { getMetodosPago, createMetodoPago, updateMetodoPago, deleteMetodoPago } from "../../services/courierApi"
 import "./courier.css"
+import "../productos/productos.css"
+
 
 const emptyForm = {
   nombre: "",

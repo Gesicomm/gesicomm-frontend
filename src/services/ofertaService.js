@@ -7,6 +7,11 @@ export const ofertaService = {
   listarPorProducto: (productoId, { soloActivas = false } = {}) =>
     API.get(`/productos/${productoId}/ofertas`, { params: soloActivas ? { soloActivas: true } : {} }).then(r => r.data),
 
+  // Todas las ofertas ACTIVAS de la tienda, con su producto (producto_ancla).
+  // estrategias: ['order_bump', 'upsell'] para ventas cruzadas.
+  listarTodas: ({ estrategias = [] } = {}) =>
+    API.get('/ofertas', { params: estrategias.length ? { estrategias: estrategias.join(',') } : {} }).then(r => r.data),
+
   crear: (productoId, payload) =>
     API.post(`/productos/${productoId}/ofertas`, payload).then(r => r.data),
 

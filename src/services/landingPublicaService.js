@@ -40,7 +40,7 @@ export async function obtenerLandingPublica(slug) {
  */
 export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   const {
-    pagina, porPagina, orden, disponibilidad, categoria, etiqueta, precioMin, precioMax,
+    pagina, porPagina, orden, disponibilidad, categoria, etiqueta, precioMin, precioMax, busqueda,
   } = opciones;
   const params = new URLSearchParams({ vista: 'catalogo' });
   if (pagina) params.set('pagina', pagina);
@@ -51,6 +51,7 @@ export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   if (etiqueta && etiqueta !== 'todas') params.set('etiqueta', etiqueta);
   if (precioMin !== undefined && precioMin !== null && precioMin !== '') params.set('precioMin', precioMin);
   if (precioMax !== undefined && precioMax !== null && precioMax !== '') params.set('precioMax', precioMax);
+  if (busqueda) params.set('q', String(busqueda).slice(0, 80));
 
   const path = slug ? `/api/l/${encodeURIComponent(slug)}?${params}` : `/api/l/?${params}`;
   const res = await fetch(path, { credentials: 'include' });

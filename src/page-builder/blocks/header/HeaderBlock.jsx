@@ -29,7 +29,9 @@ export const HeaderBlock = ({ content, settings }) => {
 
   // Configuración del Header
   const navLinks = settings.nav_links || []; // Formato: [{ label, type, href, target_id }]
-  const logoImagen = settings.logo_imagen;
+  // Logo propio del bloque; si no tiene, el de la página (que ya viene
+  // resuelto como landing || tienda desde el backend y el preview).
+  const logoImagen = settings.logo_imagen || page.logo_imagen;
   const logoTexto = content.logo_texto || page.titulo;
   const mostrarBuscador = !!page.filtros?.buscador;
   const cantidadCarrito = data.cantidadCarrito || 0;

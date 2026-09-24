@@ -1601,6 +1601,7 @@ export default function LandingEditor() {
                         }}
                         diseno={{ radio_bordes: form.radio_bordes, fuente: form.fuente }}
                         contacto={{ whatsapp: form.mostrar_whatsapp ? tienda?.whatsapp : null }}
+                        logoImagen={landing?.logo_imagen || tienda?.logo_imagen}
                         banner={form.mostrar_banner && bannerTieneContenido ? {
                           imagen: landing?.banner_imagen || null,
                           titulo: form.banner_titulo,

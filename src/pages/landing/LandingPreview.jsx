@@ -107,6 +107,9 @@ function SectionWrapper({ id, name, selected, style, children, onSelect, onReord
 
 export default function LandingPreview({
   titulo, descripcion, filtros, items, tema, diseno, contacto, banner, urlPublica,
+  // Logo heredado (landing propia || tienda), igual que page.logo_imagen
+  // del DTO público: el Header lo usa si no tiene logo propio.
+  logoImagen,
   secciones, mostrarTestimonios, testimonios, mostrarFaq, faqs,
   seccionSeleccionadaId, onSelectSeccion, viewportMode,
   onReorderSeccion, onDeleteSeccion,
@@ -199,6 +202,7 @@ export default function LandingPreview({
       theme: tema,
       page: {
         titulo: titulo,
+        logo_imagen: logoImagen || null,
         contacto,
         slug: '',
         redes: seccionesOrdenadas.find(s => s.tipo === 'header')?.config?.redes_sociales || {},
@@ -252,7 +256,7 @@ export default function LandingPreview({
         onTogglePreviewCheckout: onTogglePreviewCheckout || noop,
       }
     };
-  }, [itemsPreview, contacto, seccionesOrdenadas, tema, previewCheckoutAbierto, onTogglePreviewCheckout]);
+  }, [itemsPreview, contacto, seccionesOrdenadas, tema, previewCheckoutAbierto, onTogglePreviewCheckout, logoImagen]);
 
   return (
     <>

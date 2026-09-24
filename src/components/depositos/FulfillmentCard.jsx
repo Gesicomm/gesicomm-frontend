@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { tiendaService } from '../../services/tiendaService';
 import { useDebounce } from '../../hooks/useDebounce';
 import FulfillmentCoverageViewer from '../fulfillment/FulfillmentCoverageViewer';
@@ -202,9 +203,16 @@ export default function FulfillmentCard({ onCambio }) {
     return (
       <button
         type="button"
-        disabled={deshabilitada}
-        onClick={() => setModalidad(valor)}
-        className={`flex-1 rounded-lg border-2 p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+        onClick={() => {
+          if (deshabilitada) {
+            toast.error(motivo || 'Opción no disponible');
+            return;
+          }
+          setModalidad(valor);
+        }}
+        className={`flex-1 rounded-lg border-2 p-4 text-left transition-colors ${
+          deshabilitada ? 'cursor-not-allowed opacity-60' : ''
+        } ${
           activa ? 'border-primary bg-primary/5' : 'border-border bg-surface hover:border-primary/50'
         }`}
       >

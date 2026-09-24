@@ -330,6 +330,74 @@
   box-shadow: 0 0 0 2px var(--vit-accent-soft);
 }
 
+/* Logo: se guarda al subirlo, fuera del "Guardar cambios". */
+.tn-logo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tn-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.tn-logo-preview {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 1px dashed var(--vit-border);
+  border-radius: 12px;
+  /* Damero para que se note la transparencia del PNG. */
+  background:
+    repeating-conic-gradient(color-mix(in srgb, var(--color-fg) 5%, transparent) 0% 25%, transparent 0% 50%)
+    50% / 14px 14px,
+    var(--vit-bg);
+  color: var(--vit-muted);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.tn-logo-preview:hover:not(:disabled) { border-color: var(--vit-accent); color: var(--vit-accent); }
+.tn-logo-preview:disabled { cursor: progress; }
+.tn-logo-preview.con-logo { border-style: solid; }
+.tn-logo-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.tn-logo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 220px;
+}
+
+.tn-logo-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.tn-logo-buttons .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tn-logo-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: #ef4444;
+}
+
 /* Esta pantalla carga landing.css para reutilizar piezas del constructor.
    Aislamos el botón primario para que en modo oscuro no herede texto negro
    de una landing o template. */
@@ -1046,17 +1114,6 @@
 
 .dp-nota { font-size: 0.72rem !important; font-style: italic; line-height: 1.45; }
 
-.dp-tip {
-  font-size: 0.76rem;
-  color: var(--vit-muted);
-  white-space: pre-line;
-  padding: 0.75rem;
-  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
-  border-radius: 8px;
-  line-height: 1.5;
-}
-.dp-tip strong { display: block; margin-bottom: 0.25rem; color: var(--vit-text); }
-
 
 /* --- Dominio propio conectado ------------------------------------------ */
 .dp-conectado {
@@ -1191,3 +1248,139 @@
   color: var(--vit-muted-2) !important;
   font-style: italic;
 }
+
+/* ─── Prefijo URL (subdominio manual) ───────────────────────────────────── */
+.tn-url-prefix-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--vit-bg);
+  transition: border-color 0.15s;
+}
+.tn-url-prefix-wrap:focus-within {
+  border-color: var(--vit-accent-fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vit-accent-fg) 14%, transparent);
+}
+.tn-url-prefix-input {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--vit-text);
+  min-width: 0;
+}
+.tn-url-prefix-suffix {
+  padding: 0.55rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--vit-muted);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border-left: 1px solid var(--vit-border);
+  white-space: nowrap;
+  font-family: monospace;
+  user-select: none;
+}
+
+/* Disponibilidad inline (dentro del campo de prefijo) */
+.tn-disponibilidad-inline {
+  margin-top: 0.35rem;
+}
+
+/* ─── Canal preferido de contacto ──────────────────────────────────────── */
+.tn-canal-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+.tn-canal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--vit-border);
+  background: transparent;
+  color: var(--vit-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tn-canal-chip:hover {
+  border-color: var(--vit-accent-fg);
+  color: var(--vit-accent-fg);
+}
+.tn-canal-chip.activo {
+  background: color-mix(in srgb, var(--vit-accent-fg) 14%, transparent);
+  border-color: var(--vit-accent-fg);
+  color: var(--vit-accent-fg);
+}
+
+/* ─── Redes sociales — input con prefijo fijo ───────────────────────────── */
+.tn-social-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--vit-bg);
+  transition: border-color 0.15s;
+}
+.tn-social-input-wrap:focus-within {
+  border-color: var(--vit-accent-fg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vit-accent-fg) 14%, transparent);
+}
+.tn-social-prefix {
+  padding: 0.55rem 0.6rem 0.55rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--vit-muted);
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  border-right: 1px solid var(--vit-border);
+  white-space: nowrap;
+  user-select: none;
+  font-family: monospace;
+}
+.tn-social-input-wrap input {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--vit-text);
+  min-width: 0;
+}
+.tn-field-label-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ─── Embed de Métodos de Pago — fix tabla apretada ────────────────────── */
+/* MetodosPagoCrud usa .prod-table (definido en productos.css) que incluye
+   min-width: 960px y border-collapse. El contenedor tn-embed-metodos-pago
+   necesita overflow-x para que la tabla sea scrollable en pantallas angostas
+   y no quede aplastada por el contenedor padre. */
+.tn-embed-metodos-pago {
+  overflow-x: auto;
+  border-radius: 12px;
+}
+.tn-embed-metodos-pago > div {
+  min-width: 620px;
+}
+/* La tabla dentro del embed queda bien con el overflowX del padre */
+.tn-embed-metodos-pago .prod-table {
+  min-width: unset;
+}
+.tn-embed-metodos-pago table {
+  min-width: 100%;
+}
+
+

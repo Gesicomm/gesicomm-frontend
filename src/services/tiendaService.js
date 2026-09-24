@@ -4,6 +4,13 @@ export const tiendaService = {
   obtener: () => API.get('/mi-tienda').then(r => r.data),
   crear: (payload) => API.post('/mi-tienda', payload).then(r => r.data),
   actualizar: (payload) => API.put('/mi-tienda', payload).then(r => r.data),
+  // Logo de la tienda: default de todas las landings sin logo propio. Se
+  // guarda al subirlo, no con el PUT de "Guardar cambios".
+  subirLogo: (formData) =>
+    API.post('/mi-tienda/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+  eliminarLogo: () => API.delete('/mi-tienda/logo').then(r => r.data),
   disponibilidadSubdominio: (sub) => API.get('/mi-tienda/subdominio/disponibilidad', { params: { sub } }).then(r => r.data),
 
   // Cómo entrega el comercio lo que vende (modalidad de fulfillment).

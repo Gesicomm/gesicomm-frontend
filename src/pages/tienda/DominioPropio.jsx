@@ -31,8 +31,13 @@ import { tiendaService } from '../../services/tiendaService';
 const ALIAS = {
   tipo: 'Type · Record type',
   nombre: 'Host · Name · Nombre del registro · Subdominio',
-  valor: 'Value · Content · Points to · Apunta a · IPv4 address · Destino',
+  valor: 'IPv4 address · Value · Content · Points to · Apunta a',
 };
+
+/** El valor de un registro A es una IP: llamarlo "Valor" no coincide con ningún panel. */
+function etiquetaValor(tipo) {
+  return tipo === 'A' ? 'Dirección IP (IPv4)' : 'Valor';
+}
 
 function CampoCopiable({ etiqueta, valor, alias }) {
   const [copiado, setCopiado] = useState(false);
@@ -272,7 +277,7 @@ export default function DominioPropio({ tienda, onActualizado }) {
             <div className="dp-registro">
               <CampoCopiable etiqueta="Tipo" valor={principal?.tipo} alias={ALIAS.tipo} />
               <CampoCopiable etiqueta="Nombre" valor={nombreRegistro} alias={ALIAS.nombre} />
-              <CampoCopiable etiqueta="Valor" valor={principal?.valor} alias={ALIAS.valor} />
+              <CampoCopiable etiqueta={etiquetaValor(principal?.tipo)} valor={principal?.valor} alias={ALIAS.valor} />
               <div className="dp-campo">
                 <div className="dp-campo-cab">
                   <span className="dp-campo-nombre">TTL</span>
@@ -315,7 +320,7 @@ export default function DominioPropio({ tienda, onActualizado }) {
                   <React.Fragment key={i}>
                     <CampoCopiable etiqueta="Tipo" valor={r.tipo} />
                     <CampoCopiable etiqueta="Nombre" valor={r.nombre} />
-                    <CampoCopiable etiqueta="Valor" valor={r.valor} />
+                    <CampoCopiable etiqueta={etiquetaValor(r.tipo)} valor={r.valor} />
                   </React.Fragment>
                 ))}
               </div>
@@ -335,13 +340,6 @@ export default function DominioPropio({ tienda, onActualizado }) {
           El certificado de seguridad (HTTPS) no lo tenés que configurar: lo emitimos nosotros
           automáticamente apenas el dominio quede verificado.
         </p>
-
-        {proveedorInfo?.instrucciones && (
-          <div className="dp-tip">
-            <strong>💡 Tip para {proveedorInfo.nombre}:</strong>
-            {proveedorInfo.instrucciones}
-          </div>
-        )}
       </div>
 
       <div className="dp-actions">

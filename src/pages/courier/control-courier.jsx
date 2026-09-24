@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+﻿import { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutGrid, PackageCheck, Plus, Printer, TrendingUp, HandCoins, Truck } from "lucide-react";
 import { verificarSesion } from "../../utils/auth";
@@ -148,6 +148,16 @@ export function ControlCourier() {
     }
     return acc;
   }, [envios]);
+
+  // Pedidos que requieren accion del comercio en abastecimiento:
+  // pendiente_pago = nunca pago, rechazado = fue rechazado y debe volver a pagar
+  const pagosPendientesCount = useMemo(
+    () => envios.filter(e =>
+      e.abastecimiento_estado === 'pendiente_pago' ||
+      e.abastecimiento_estado === 'rechazado'
+    ).length,
+    [envios]
+  );
 
   const handleChangeEstado = async (id, nuevoEstado, envioDirecto = null) => {
     if (nuevoEstado === "Confirmado") {
@@ -366,7 +376,7 @@ export function ControlCourier() {
         </div>
 
         <nav className="courier-tabs" aria-label="Secciones de pedidos">
-          <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />}>
+          <TabButton active={tab === "tablero"} onClick={() => seleccionarTab("tablero")} icon={<LayoutGrid size={16} />} badge={pagosPendientesCount}>
             Tablero
           </TabButton>
           <TabButton active={tab === "delivery"} onClick={() => seleccionarTab("delivery")} icon={<Truck size={16} />}>
@@ -529,15 +539,39 @@ export function ControlCourier() {
   );
 }
 
-function TabButton({ active, onClick, icon, children }) {
+function TabButton({ active, onClick, icon, children, badge }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`tab-btn ${active ? 'active' : ''}`}
+      style={{ position: 'relative' }}
     >
       {icon}
       {children}
+      {badge > 0 && (
+        <span style={{
+          position: 'absolute',
+          top: '-7px',
+          right: '-8px',
+          background: '#ef4444',
+          color: '#fff',
+          borderRadius: '999px',
+          fontSize: '10px',
+          fontWeight: 700,
+          minWidth: '18px',
+          height: '18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 4px',
+          lineHeight: 1,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
+          border: '2px solid var(--color-bg)',
+        }}>
+          {badge}
+        </span>
+      )}
     </button>
   );
 }

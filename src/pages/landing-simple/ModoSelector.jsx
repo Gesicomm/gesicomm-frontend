@@ -66,9 +66,9 @@ export default function ModoSelector({ onCreada }) {
         />
         <Opcion
           icono={Code2}
-          titulo="Lienzo en blanco"
-          descripcion="Empezás de cero y escribís vos el HTML, el CSS y el JavaScript. La página queda exactamente como la programes."
-          puntos={['Control total del diseño', 'Vista previa en vivo mientras escribís', 'Requiere saber HTML y CSS']}
+          titulo="Lienzo en blanco (HTML)"
+          descripcion="Primero elegís qué vendés (catálogo, producto único o combos). Después escribís el HTML, el CSS y el JavaScript, o lo generás con IA usando los prompts que te armamos."
+          puntos={['Control total del diseño, con ficha para cada producto', 'Carrito, PagoPar, pedidos y tracking ya conectados', 'Prompts para IA por vista y código base incluido']}
           accion="Empezar en blanco"
           onClick={usarLienzoBlanco}
           cargando={creando}

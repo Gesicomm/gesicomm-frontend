@@ -386,3 +386,20 @@ html {
         color: var(--color-fg-subtle);
     }
 }
+
+/* Fondo de los modales que se abren con createPortal (className="modal-overlay").
+   Estaba solo en courier.css, que se carga recién al entrar a Courier: sin
+   haber pasado por ahí, el modal "Nueva oferta" (Productos y el paso de
+   venta de las landings) quedaba sin estilo, fuera de la vista, y parecía
+   que el botón no hacía nada. */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}

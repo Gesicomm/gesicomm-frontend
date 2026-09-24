@@ -13,32 +13,75 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * código del comercio se comportan como en una página normal (con un
  * iframe auto-alto se romperían), y no hace falta ningún ida y vuelta de
  * postMessage para medir alturas.
+ *
+ * `datos` es lo que lee el runtime de adentro (window.Gesicomm, ver
+ * runtimeGesicomm.js): catálogo, producto de la ficha, recomendados. Los
+ * clics del runtime vuelven por postMessage y se reparten en onCheckout /
+ * onNavegar / onEvento.
  */
-export default function CodigoPreview({ codigo, titulo, onError, onCheckout, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, onError, onCheckout, onNavegar, onEvento, onCatalogo, resaltar, className = '', style }) {
   const ref = useRef(null);
 
+  // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
+  // `n` cambia en cada pedido para poder repetir el mismo. Se reenvía al
+  // cargar el iframe, porque al cambiar de vista el documento es nuevo.
+  const resaltarRef = useRef(resaltar);
+  resaltarRef.current = resaltar;
+  function enviarResaltado() {
+    const r = resaltarRef.current;
+    if (!r?.lista || !ref.current?.contentWindow) return;
+    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:resaltar', lista: r.lista }, '*');
+  }
+  useEffect(() => { enviarResaltado(); }, [resaltar?.n]);
+
+  // `datos` se compara serializado: el contenedor lo arma con useMemo, pero
+  // si cambia de identidad sin cambiar de contenido no hay que recargar el
+  // iframe (se reiniciaría el JS del comercio y el scroll del visitante).
+  const datosJson = useMemo(() => JSON.stringify(datos ?? null), [datos]);
   const doc = useMemo(
-    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError }),
-    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError],
+    () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson) }),
+    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, datosJson],
   );
 
+  // Refs para los handlers: se registran una sola vez y siempre llaman a
+  // la versión más nueva, sin re-suscribir el listener en cada render.
+  const handlers = useRef({});
+  handlers.current = { onError, onCheckout, onNavegar, onEvento, onCatalogo };
+
   useEffect(() => {
-    if (!onError && !onCheckout) return;
     function alMensaje(e) {
       // El iframe tiene origen opaco (sandbox sin allow-same-origin), así
       // que e.origin es "null" y no sirve para validar: lo que identifica
       // al emisor es que sea ESTE iframe.
       if (!ref.current || e.source !== ref.current.contentWindow) return;
-      if (e.data?.tipo === 'gesicomm:error-codigo') onError?.(e.data.mensaje);
-      if (e.data?.tipo === 'gesicomm:checkout') onCheckout?.(e.data);
+      const h = handlers.current;
+      const tipo = e.data?.tipo;
+      if (tipo === 'gesicomm:error-codigo') h.onError?.(e.data.mensaje);
+      if (tipo === 'gesicomm:checkout') h.onCheckout?.(e.data);
+      if (tipo === 'gesicomm:navegar') h.onNavegar?.(e.data);
+      if (tipo === 'gesicomm:evento') h.onEvento?.(e.data);
+      // Página del catálogo: el iframe no tiene red, la pide el contenedor
+      // y se la devuelve con el mismo id (el runtime descarta respuestas
+      // viejas si el visitante ya cambió de filtro).
+      if (tipo === 'gesicomm:catalogo' && h.onCatalogo) {
+        const pedido = e.data;
+        const ventana = e.source;
+        Promise.resolve(h.onCatalogo(pedido))
+          .then(res => ({ ...res, error: false }))
+          .catch(() => ({ error: true }))
+          .then(res => {
+            try { ventana.postMessage({ tipo: 'gesicomm:catalogo-respuesta', id: pedido.id, modo: pedido.modo, ...res }, '*'); } catch { /* iframe desmontado */ }
+          });
+      }
     }
     window.addEventListener('message', alMensaje);
     return () => window.removeEventListener('message', alMensaje);
-  }, [onError, onCheckout]);
+  }, []);
 
   return (
     <iframe
       ref={ref}
+      onLoad={() => setTimeout(enviarResaltado, 150)}
       title={titulo || 'Vista previa de la landing'}
       srcDoc={doc}
       sandbox={SANDBOX_CODIGO}

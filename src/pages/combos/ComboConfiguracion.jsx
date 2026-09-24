@@ -161,10 +161,17 @@ export default function ComboConfiguracion({ asTab = false }) {
 
         <div className="combo-editor-grid">
           <div>
-            <div className="combo-section-label">CPA proyectado (%)</div>
+            <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span>CPA proyectado (%)</span>
+              <Info
+                size={13}
+                style={{ cursor: 'help', color: 'var(--color-fg-subtle)' }}
+                title="El CPA proyectado se calcula sobre el ticket de venta."
+              />
+            </div>
             <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={cpa} onChange={e => setCpa(e.target.value)} />
             <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
-              Costo por Adquisición como porcentaje del precio de venta. Ej: 20 = 20%.
+              Costo por Adquisición como porcentaje proyectado sobre el ticket de venta. Ej: 20 = 20%.
             </div>
           </div>
           <div>
