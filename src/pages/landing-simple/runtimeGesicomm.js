@@ -235,10 +235,13 @@ export function runtimeGesicomm() {
       case 'solo_productos': base = productos.filter(function (p) { return p.tipo === 'producto'; }); break;
       case 'recomendados': base = datos.recomendados || []; break;
       case 'ofertas': base = productoActual ? (productoActual.ofertas || []) : []; break;
-      case 'ofertas_bump':
       case 'ofertas_upsell':
+        // Los upsells ya no son un bloque de ficha. Gesicomm los muestra como
+        // una etapa del checkout, después de que el cliente completa sus datos.
+        return [];
+      case 'ofertas_bump':
       case 'ofertas_pack':
-        var estrategia = { ofertas_bump: 'order_bump', ofertas_upsell: 'upsell', ofertas_pack: 'normal' }[nombre];
+        var estrategia = { ofertas_bump: 'order_bump', ofertas_pack: 'normal' }[nombre];
         base = (productoActual ? (productoActual.ofertas || []) : []).filter(function (o) { return o.estrategia === estrategia; });
         break;
       case 'variantes': base = productoActual ? (productoActual.variantes || []) : []; break;

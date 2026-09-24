@@ -77,6 +77,13 @@ function escaparCierreStyle(css) {
   return String(css || '').replace(/<\/(style)/gi, '<\\/$1');
 }
 
+const SYSTEM_CSS = `
+/* Los upsells no viven dentro de la ficha: son una etapa del checkout. */
+[data-gesicomm-lista="ofertas_upsell"] {
+  display: none !important;
+}
+`;
+
 /**
  * @param {{html?: string, css?: string, js?: string}} codigo
  * @param {{titulo?: string, reportarErrores?: boolean}} opciones
@@ -122,6 +129,9 @@ html, body { margin: 0; padding: 0; }
 </style>
 <style>
 ${escaparCierreStyle(css)}
+</style>
+<style>
+${SYSTEM_CSS}
 </style>
 </head>
 <body>

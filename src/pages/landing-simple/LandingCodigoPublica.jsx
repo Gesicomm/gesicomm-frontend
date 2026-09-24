@@ -167,6 +167,11 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const tieneFooterEnCodigo = useMemo(() => codigoTieneFooter(codigo), [codigo?.html]);
   const mostrarSistema = !!data;
   const bordeSuave = rgba(tema.texto, 0.16);
+  const cartApariencia = useMemo(() => ({
+    acento: tema.acento,
+    onAcento: textoLegibleSobre(tema.acento),
+    claro: (luminancia(tema.fondo) ?? 1) > 0.62,
+  }), [tema]);
   // Ventas cruzadas apagadas en la configuración de venta → el carrito no sugiere nada.
   const crossSellActivo = data?.content?.venta?.cross_sell?.activo !== false;
 
@@ -353,6 +358,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         onValidarCupon={cartState.validarCupon}
         pasarelas={data?.checkout?.pasarelas || []}
         deliveryCiudades={data?.delivery_ciudades || []}
+        apariencia={cartApariencia}
       />
     </div>
   );

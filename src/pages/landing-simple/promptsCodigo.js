@@ -49,7 +49,7 @@ Valores de data-gesicomm-lista:
 - "combos": solo combos
 - "recomendados": productos sugeridos (en la ficha: relacionados con el producto actual)
 - "ofertas_bump": (solo ficha) order bumps del producto actual — ver "Order bump" abajo
-- "ofertas_upsell": (solo ficha) upsells: una mejora para quien ya decidió comprar
+- "ofertas_upsell": NO la uses en la ficha. Los upsells los muestra Gesicomm como popup/etapa del checkout después de que el cliente completa sus datos.
 - "ofertas_pack": (solo ficha) paquetes del mismo producto (Llevá 2, Llevá 3)
 - "ofertas": (solo ficha) todas las anteriores juntas
 - "variantes": (solo ficha) talles / colores del producto actual
@@ -80,7 +80,7 @@ Datos de la tienda: data-gesicomm-tienda="nombre|logo|email|telefono|whatsapp|di
 - data-gesicomm-agregar → agrega sin abrir el carrito (muestra "Agregado").
 - data-gesicomm-ver → abre la ficha del producto (cada producto tiene su propia página).
 - data-gesicomm-inicio → vuelve al inicio.
-- data-gesicomm-oferta → dentro de una lista de ofertas (upsell o paquete), agrega esa oferta al carrito.
+- data-gesicomm-oferta → dentro de una lista de paquetes, agrega esa oferta al carrito. No lo uses para upsells en la ficha.
 - <input type="checkbox" data-gesicomm-bump> → dentro de "ofertas_bump": marcada, la oferta se suma sola cuando se toca "Comprar" del producto. El runtime le pone la clase "is-checked" al elemento raíz del template: estilá ese estado.
 
 ## Order bump (lo que dicen los datos)
@@ -144,7 +144,7 @@ function contexto({ tienda, venta, productos }) {
     : '(todavía no hay productos elegidos)';
   const lineaCategorias = categorias.length ? `\nCategorías: ${categorias.slice(0, 40).join(', ')}` : '';
   const extras = [];
-  if (venta?.cross_sell?.activo !== false) extras.push('Ofertas ACTIVAS: en la ficha, "ofertas_bump" como casilla ARRIBA del botón de compra; "ofertas_upsell" y "ofertas_pack" debajo (el carrito además sugiere los upsells solo).');
+  if (venta?.cross_sell?.activo !== false) extras.push('Ofertas ACTIVAS: en la ficha, "ofertas_bump" va ARRIBA del botón de compra; "ofertas_pack" puede ir debajo. NO pongas "ofertas_upsell" en la ficha: Gesicomm lo muestra como etapa del checkout.');
   else extras.push('Ofertas desactivadas: no incluyas ninguna lista de ofertas.');
   if (venta?.recomendados?.activo !== false) {
     extras.push(`Recomendados ACTIVOS: en la ficha incluí la lista "recomendados"${venta?.recomendados?.titulo ? ` con el título "${venta.recomendados.titulo}"` : ''}.`);
@@ -207,11 +207,11 @@ const VISTA_PRODUCTO = `## Qué tenés que construir: la FICHA DE PRODUCTO
 Es UNA sola plantilla que Gesicomm usa para TODOS los productos: no escribas el nombre de ninguno. Todo sale de data-gesicomm-bind (fuera de listas = el producto que se está viendo).
 1. Barra de anuncio y header (el logo vuelve al inicio con data-gesicomm-inicio).
 2. Migas: Inicio (data-gesicomm-inicio) / categoría.
-3. Dos columnas en desktop, una en mobile (order bump arriba del botón de compra; upsell y paquetes debajo):
+3. Dos columnas en desktop, una en mobile (order bump arriba del botón de compra; paquetes debajo si existen; upsell fuera de la ficha):
    - Galería: imagen principal (<img data-gesicomm-bind="imagen" data-gesicomm-imagen-principal>) y miniaturas (lista "imagenes"; al tocarlas cambian la principal).
    - Info: categoría, nombre (h1), precio, precio tachado, descuento, descripción corta, variantes (lista "variantes" con título "Elegí una opción"; estilá .is-selected y [data-agotado]), cantidad (data-gesicomm-cantidad-input), botón grande "Comprar ahora" (data-gesicomm-comprar), "Agregar al carrito" (data-gesicomm-agregar) y "Consultar por WhatsApp" (data-gesicomm-whatsapp).
    - Justo ARRIBA del botón de compra: "ofertas_bump" (casilla, ver "Order bump").
-   - Debajo del botón: "ofertas_upsell" ("Mejorá tu compra") y "ofertas_pack" ("Llevá más y ahorrá"), con botón data-gesicomm-oferta.
+   - Debajo del botón: solo "ofertas_pack" ("Llevá más y ahorrá"), con botón data-gesicomm-oferta. No agregues "Mejorá tu compra" ni "ofertas_upsell" en esta zona.
    - Mini garantías: pago seguro, envío, atención.
 4. Descripción larga (bind "descripcion_larga", respetando saltos de línea con white-space: pre-line).
 5. Recomendados (lista "recomendados") con data-gesicomm-agregar y data-gesicomm-ver.

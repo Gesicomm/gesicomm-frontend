@@ -678,26 +678,6 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
         </div>
       </div>
 
-      <!-- Upsell: una mejora para quien ya decidió comprar. -->
-      <div data-gesicomm-lista="ofertas_upsell">
-        <div class="block-title">Mejorá tu compra</div>
-        <div class="offers">
-          <template>
-            <div class="upsell">
-              <img data-gesicomm-bind="imagen" alt="">
-              <div>
-                <h4 data-gesicomm-bind="nombre"></h4>
-                <p data-gesicomm-bind="descripcion"></p>
-                <span class="price" data-gesicomm-bind="precio"></span>
-                <span class="price-old" data-gesicomm-bind="precio_antes"></span>
-                <span class="offer-save" data-gesicomm-bind="ahorro"></span>
-              </div>
-              <button class="button-primary" type="button" data-gesicomm-oferta>Sumar al carrito</button>
-            </div>
-          </template>
-        </div>
-      </div>
-
       <div class="mini-trust">
         <div><strong>Pago seguro</strong>PagoPar o efectivo</div>
         <div><strong>Envío</strong>Costo visible antes de pagar</div>

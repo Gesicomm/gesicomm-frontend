@@ -249,7 +249,7 @@ export default function LogisticaAbastecimientoModal({ envio, open, onClose, onP
                       {tipoLogistica === 'GESICOMM' && <Check size={10} className="text-white" />}
                     </div>
                     <h3 className={`m-0 text-[15px] font-semibold ${tipoLogistica === 'GESICOMM' ? 'text-primary' : 'text-fg'}`}>
-                      Despacha Gesicomm
+                      Despacha Gesicom
                     </h3>
                   </div>
                   <p className="m-0 pl-7 text-[13px] text-fg-muted">

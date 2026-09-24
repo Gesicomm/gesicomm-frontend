@@ -1569,6 +1569,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                 onValidarCupon={() => {
                   throw new Error('Los cupones no se pueden probar desde la vista previa.');
                 }}
+                apariencia={datosPreview?.tema ? {
+                  acento: datosPreview.tema.acento,
+                  onAcento: tintaSobre(datosPreview.tema.acento),
+                  claro: tintaSobre(datosPreview.tema.fondo) === '#111827',
+                } : undefined}
               />
             </div>
           )}

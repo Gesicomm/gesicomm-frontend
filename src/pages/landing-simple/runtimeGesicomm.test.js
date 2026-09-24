@@ -316,18 +316,18 @@ describe('runtime — order bump en la ficha', () => {
   const fryer = { ...airFryer, ofertas: [bump, upsell] };
   const datos = { vista: 'producto', tienda: {}, productos: [fryer], producto: fryer, recomendados: [] };
 
-  it('el bump es una casilla arriba del botón de compra; el upsell va aparte, con su botón', () => {
+  it('el bump es una casilla arriba del botón de compra; el upsell no se renderiza en la ficha', () => {
     const { document } = montar(PLANTILLA_PRODUCTO, datos);
     const casilla = document.querySelector('.bump input[data-gesicomm-bump]');
     expect(casilla).not.toBeNull();
     expect(casilla.checked).toBe(false); // nunca marcada de antemano
     expect(document.querySelector('.bump [data-gesicomm-bind="ahorro"]').textContent).toBe('Ahorrás Gs 27.000');
-    // Orden en la página: bump → botón de compra → upsell.
+    // Orden en la página: bump → botón de compra. El upsell va en checkout.
     const bumpEl = document.querySelector('.bumps');
     const comprar = document.querySelector('.buy-row [data-gesicomm-comprar]');
-    const upsellEl = document.querySelector('.upsell');
     expect(bumpEl.compareDocumentPosition(comprar) & 4).toBeTruthy();
-    expect(comprar.compareDocumentPosition(upsellEl) & 4).toBeTruthy();
+    expect(document.querySelector('[data-gesicomm-lista="ofertas_upsell"]')).toBeNull();
+    expect(document.querySelector('.upsell')).toBeNull();
   });
 
   it('marcado, se suma al tocar Comprar (antes que el producto); desmarcado, no', () => {
