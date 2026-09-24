@@ -4,6 +4,7 @@ import CartDrawer from '../landing/CartDrawer';
 import { getMediaUrl } from '../../services/api';
 import { useStoreCart } from '../landing/useStoreCart';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
+import { CSS_BUMP_CODIGO, datosBumpsCodigo, scriptBumpCodigo } from './bumpCodigo';
 
 /**
  * La landing pública de una tienda que eligió "Lienzo en blanco": el
@@ -114,7 +115,7 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
   const extras = useMemo(() => {
     if (!data) return null;
     const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/') && slug ? `/l/${slug}` : '';
-    return armarSeccionesSistema({
+    const secciones = armarSeccionesSistema({
       mostrarProductos: !tieneProductosEnCodigo,
       mostrarContacto: !tieneContactoEnCodigo,
       mostrarFooter: !tieneFooterEnCodigo,
@@ -124,6 +125,11 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
       basePath,
       acento: tema.acento,
     });
+    return {
+      html: secciones.html,
+      css: `${secciones.css}\n${CSS_BUMP_CODIGO}`,
+      script: scriptBumpCodigo(datosBumpsCodigo(productos, getMediaUrl)),
+    };
   }, [data, slug, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
 
   const apariencia = useMemo(() => ({
@@ -143,6 +149,12 @@ export default function LandingCodigoPublica({ codigo, titulo, data = null, slug
       cantidad,
       precio: item.precio || 0,
     });
+    // Order bump marcado en la landing (ver bumpCodigo.js): se agrega como
+    // la misma oferta que ofrece el carrito, con su precio promocional.
+    for (const ofertaId of pedido?.ofertas || []) {
+      const oferta = (item.ofertas || []).find(o => Number(o.id) === Number(ofertaId));
+      if (oferta) cartState.agregarSugerencia(item, oferta);
+    }
     cartState.setCarritoAbierto(true);
   }
 

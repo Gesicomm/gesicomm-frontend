@@ -10,6 +10,14 @@ import { vitrinaService } from '../../services/vitrinaService';
 import CodigoPreview from './CodigoPreview';
 import { getMediaUrl } from '../../services/api';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
+import { CSS_BUMP_CODIGO } from './bumpCodigo';
+
+// En el editor no hay ofertas cargadas: el marcador del bump se muestra como
+// un recuadro que avisa dónde va a aparecer, en vez de quedar invisible.
+const CSS_BUMP_EDITOR = `
+[data-gesicomm-bump]:empty { display: block; margin: 16px 0; padding: 14px; border-radius: 14px; border: 1.5px dashed color-mix(in srgb, var(--gc-primario, #16a34a) 60%, transparent); font: 600 13px system-ui, sans-serif; opacity: .8; }
+[data-gesicomm-bump]:empty::before { content: "Acá se muestra el order bump de este producto (se configura en Mis productos → Ofertas)"; }
+`;
 import { urlPublicaLanding } from './urlPublicaLanding';
 
 /**
@@ -82,6 +90,7 @@ function bloqueProductosHtml(productos = []) {
       `      <h3>${escaparHtml(p.nombre)}</h3>`,
       p.descripcion ? `      <p>${escaparHtml(p.descripcion)}</p>` : '',
       precio ? `      <strong>${precio}</strong>` : '',
+      `      <div data-gesicomm-bump="${p.tipo}:${p.id}"></div>`,
       `      <button class="producto-cta" data-gesicomm-checkout="${p.tipo}:${p.id}">Comprar ahora</button>`,
       '    </article>',
     ].filter(Boolean).join('\n');
@@ -158,7 +167,9 @@ function armarPromptProductos(productos = [], tienda) {
     'Poné también background: var(--gc-fondo) y color: var(--gc-texto) en el body. Podés agregar otras variables propias, pero estas cuatro tienen que existir con estos nombres.',
     '',
     'CHECKOUT: cada botón de compra debe usar data-gesicomm-checkout="producto:ID" o data-gesicomm-checkout="combo:ID". Ese botón abre el carrito real de Gesicom (datos de entrega, PagoPar, order bump, upsell y cross-sell).',
-    'No armes carrito, formulario de compra, order bumps, upsells ni cupones en el HTML: el checkout de Gesicom los muestra solo, con las ofertas configuradas en cada producto.',
+    'ORDER BUMP: justo arriba del botón de compra de cada producto poné <div data-gesicomm-bump="producto:ID"></div> (vacío). Gesicom dibuja ahí la oferta configurada con su precio, ahorro e imagen, y el botón pasa a mostrar el total ("Comprar ahora · Gs 160.000"). NO armes el order bump a mano con un checkbox: no estaría conectado al pedido.',
+    'CANTIDAD (opcional): si ponés un selector de cantidad, usá <input type="number" min="1" value="1" data-gesicomm-cantidad-de="producto:ID">.',
+    'No armes carrito, formulario de compra, upsells ni cupones en el HTML: el checkout de Gesicom los muestra solo, con las ofertas configuradas en cada producto.',
     '',
     'CONTACTO Y FOOTER: no los incluyas. Gesicom agrega al final la sección de contacto con las redes sociales de la tienda y el footer con los enlaces legales, con los colores de la landing.',
     '',
@@ -356,7 +367,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       ['whatsapp', 'telefono', 'email', 'direccion', 'ciudad', 'pais', 'horarios', 'instagram', 'facebook', 'tiktok', 'youtube', 'twitter']
         .map(k => [k, campo(k)])
     );
-    return armarSeccionesSistema({
+    const secciones = armarSeccionesSistema({
       mostrarProductos: !codigoTieneProductos(codigoPreview),
       mostrarContacto: !codigoTieneContacto(codigoPreview),
       mostrarFooter: !codigoTieneFooter(codigoPreview),
@@ -371,6 +382,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       nombreComercio: ajustes.titulo || tienda?.nombre || 'Tu tienda',
       acento: tienda?.color_primario || null,
     });
+    return { ...secciones, css: `${secciones.css}\n${CSS_BUMP_CODIGO}\n${CSS_BUMP_EDITOR}` };
   }, [landing, tienda, productosSeleccionados, codigoPreview, ajustes.titulo]);
   const promptProductos = useMemo(
     () => armarPromptProductos(productosSeleccionados, tienda),

@@ -59,12 +59,14 @@ function escaparCierreStyle(css) {
 
 /**
  * @param {{html?: string, css?: string, js?: string}} codigo
- * @param {{titulo?: string, reportarErrores?: boolean, extras?: {html: string, css: string}}} opciones
+ * @param {{titulo?: string, reportarErrores?: boolean, extras?: {html: string, css: string, script?: string}}} opciones
  *   reportarErrores: manda los errores de ejecución del JS al contenedor
  *   por postMessage — lo usa el editor para mostrarlos; en la landing
  *   pública no hace falta.
  *   extras: secciones de Gesicom (productos/contacto/footer) que se pegan
  *   al final del <body>, ver seccionesSistemaCodigo.js. Ya vienen escapadas.
+ *   extras.script: runtime del order bump (bumpCodigo.js), antes del puente
+ *   de checkout porque este lee lo que el cliente marcó.
  * @returns {string} documento listo para el srcDoc del iframe
  */
 export function construirDocumentoCodigo(codigo, opciones = {}) {
@@ -107,10 +109,18 @@ document.addEventListener('click', function (e) {
   var el = e.target && e.target.closest ? e.target.closest('[data-gesicomm-checkout]') : null;
   if (!el) return;
   e.preventDefault();
+  var producto = String(el.getAttribute('data-gesicomm-checkout') || '');
+  // Cantidad: el input data-gesicomm-cantidad-de del producto (si la landing
+  // lo tiene) o el atributo fijo data-gesicomm-cantidad. Ofertas: las que el
+  // cliente marcó en el bump de Gesicom (ver bumpCodigo.js).
+  var cantidad = el.hasAttribute('data-gesicomm-cantidad')
+    ? Number(el.getAttribute('data-gesicomm-cantidad')) || 1
+    : (window.__gesicommCantidad ? window.__gesicommCantidad(producto) : 1);
   parent.postMessage({
     tipo: 'gesicomm:checkout',
-    producto: String(el.getAttribute('data-gesicomm-checkout') || ''),
-    cantidad: Number(el.getAttribute('data-gesicomm-cantidad') || '1') || 1
+    producto: producto,
+    cantidad: cantidad,
+    ofertas: window.__gesicommBumps ? window.__gesicommBumps(producto) : []
   }, '*');
 });
 </script>`;
@@ -136,6 +146,7 @@ ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 <body>
 ${html || ''}
 ${extras?.html || ''}
+${extras?.script ? `<script>\n${escaparCierreScript(extras.script)}\n</script>` : ''}
 ${puenteGesicomm}
 ${puenteErrores}
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y

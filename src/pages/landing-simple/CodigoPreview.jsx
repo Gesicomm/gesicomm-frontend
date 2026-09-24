@@ -19,7 +19,7 @@ export default function CodigoPreview({ codigo, titulo, onError, onCheckout, onT
 
   const doc = useMemo(
     () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, extras }),
-    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css],
+    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script],
   );
 
   useEffect(() => {
