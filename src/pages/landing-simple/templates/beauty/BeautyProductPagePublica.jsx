@@ -57,11 +57,18 @@ export default function BeautyProductPagePublica({
 
   if (!item) return null;
 
-  // Un paquete trae su precio total: es otra forma de comprar lo mismo.
-  const precioDe = ({ pack } = {}) => (pack ? (pack.precio_efectivo ?? pack.precio) : item.precio);
+  // Un paquete trae su precio total y no se combina con la variante: son
+  // dos formas distintas de comprar el mismo producto (mismo criterio que
+  // Tech/Básico).
+  const precioDe = ({ variante, pack } = {}) => (
+    pack ? (pack.precio_efectivo ?? pack.precio) : (variante?.precio_efectivo ?? item.precio)
+  );
   const agregarCompra = (eleccion) => onAgregar && onAgregar({
     item,
-    variante: null,
+    // Sin esto el checkout vendía "el producto" a secas, sin registrar
+    // qué variante (color/talla) eligió el cliente ni descontar su stock
+    // propio.
+    variante: eleccion?.variante || null,
     oferta: eleccion?.pack || null,
     cantidad: 1,
     precio: precioDe(eleccion),

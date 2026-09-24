@@ -14,6 +14,9 @@ import OfertasProductoTab from './OfertasProductoTab';
 import FichaRubroTab from './FichaRubroTab';
 import ProductLandingPreview from './ProductLandingPreview';
 import FaqPanel from '../landing-simple/panels/FaqPanel';
+import { estiloVisualMedio } from '../landing-simple/templates/mediaGaleria';
+import { calcularRecorteInteligente } from './imagenRecorte';
+import { ImagenCardCompacta, EditorEncuadreModal } from './ImagenEncuadreCards';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity,
@@ -28,6 +31,23 @@ function fmt(n, decimals = 0) {
 }
 function fmtGs(n)  { return n !== null && n !== undefined ? 'Gs ' + fmt(n) : '—'; }
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
+
+function prepararImagenFormData(img) {
+  const fd = new FormData();
+  fd.append('imagen', img.file);
+  fd.append('visual_modo', img.visual_modo || 'contain');
+  fd.append('focal_x', String(img.focal_x ?? 50));
+  fd.append('focal_y', String(img.focal_y ?? 50));
+  fd.append('zoom', String(img.zoom ?? 1));
+  fd.append('auto_trim', img.auto_trim === false ? 'false' : 'true');
+  if (img.es_principal) fd.append('es_principal', 'true');
+  if (img.variante_id) fd.append('variante_id', String(img.variante_id));
+  return fd;
+}
+
+function estiloImagenGaleria(img) {
+  return estiloVisualMedio(img);
+}
 
 // Firma estable de una combinación de Opciones (ej: [{opcion:'Color',valor:'Negro'}])
 // para matchear una fila del formulario contra la variante ya guardada en
@@ -340,6 +360,8 @@ export default function ProductForm() {
   const [faq, setFaq] = useState([]);
   const [imagenesNuevas, setImagenesNuevas] = useState([]); // Para imágenes en cola (nuevo prod)
   const [subiendoImg, setSubiendoImg] = useState(false);
+  const [previewSubida, setPreviewSubida] = useState([]);
+  const [previewContexto, setPreviewContexto] = useState(null); // 'galeria' | { tipo: 'variante', rhfKey }
   // Imagen elegida para cada variante, indexada por su _rhfKey. Se sube
   // recién después de guardar: hasta ese momento la variante puede no
   // existir todavía en base y la imagen necesita un variante_id real.
@@ -716,11 +738,11 @@ export default function ProductForm() {
   const subirImagenesDeVariantes = async (productoId, variantesDelForm) => {
     const pendientes = variantesFields
       .map((field, i) => ({
-        archivo: imagenesVariante[field._rhfKey]?.file,
+        archivoMeta: imagenesVariante[field._rhfKey],
         nombre: (variantesDelForm[i]?.nombre || '').trim(),
         firma: firmaDeValores(variantesDelForm[i]?.valores),
       }))
-      .filter(v => v.archivo && (v.nombre || v.firma));
+      .filter(v => v.archivoMeta?.file && (v.nombre || v.firma));
     if (!pendientes.length) return;
 
     const guardadas = await productService.variantes(productoId).catch(() => []);
@@ -732,13 +754,14 @@ export default function ProductForm() {
       .filter(([firma]) => firma));
     const porNombre = new Map(guardadas.map(v => [String(v.nombre).trim().toLowerCase(), v.id]));
 
-    for (const { archivo, nombre, firma } of pendientes) {
+    for (const { archivoMeta, nombre, firma } of pendientes) {
       const varianteId = (firma && porFirma.get(firma)) || porNombre.get(nombre.toLowerCase());
       if (!varianteId) continue;
       try {
-        const fd = new FormData();
-        fd.append('imagen', archivo);
-        fd.append('variante_id', varianteId);
+        const fd = prepararImagenFormData({
+          ...archivoMeta,
+          variante_id: varianteId,
+        });
         await productService.subirImagen(productoId, fd);
       } catch (e) {
         console.error(`Error subiendo la imagen de la variante "${nombre || firma}"`, e);
@@ -817,23 +840,20 @@ export default function ProductForm() {
 
       if (esEdicion) {
         await productService.actualizar(id, payload);
-        for (const file of imagenesNuevas.map(i => i.file)) {
-          const fd = new FormData();
-          fd.append('imagen', file);
-          await productService.subirImagen(id, fd);
+        for (const imgObj of imagenesNuevas) {
+          await productService.subirImagen(id, prepararImagenFormData(imgObj));
         }
         await subirImagenesDeVariantes(id, data.variantes);
-        // Se queda en esta misma ficha — antes mandaba de vuelta al listado
-        // aunque solo se hubiera tocado, por ejemplo, la pestaña Venta, y
-        // había que volver a entrar para seguir editando otra cosa.
-        setAviso('Cambios guardados.');
+        // Vuelve al listado (igual que al crear): quedarse en la misma
+        // ficha después de guardar dejaba la barra "Cambios sin guardar"
+        // sin limpiarse (isDirty de react-hook-form no se resetea con un
+        // simple aviso), así que parecía que no había guardado aunque sí.
+        navigate('/mi-catalogo?filtro=mios');
       } else {
         const nuevo = await productService.crear(payload);
         for (const imgObj of imagenesNuevas) {
           try {
-            const fd = new FormData();
-            fd.append('imagen', imgObj.file);
-            await productService.subirImagen(nuevo.id, fd);
+            await productService.subirImagen(nuevo.id, prepararImagenFormData(imgObj));
           } catch (e) {
             console.error('Error subiendo imagen', e);
           }
@@ -864,47 +884,154 @@ export default function ProductForm() {
       return;
     }
 
-    if (!esEdicion) {
-      const nuevasPreview = files.map((file, idx) => ({
-        id: Date.now() + idx,
-        file,
-        url: URL.createObjectURL(file),
-        es_principal: (imagenesNuevas.length === 0 && idx === 0)
+    const nuevasPreview = files.map((file, idx) => ({
+      id: `${Date.now()}-${idx}`,
+      file,
+      url: URL.createObjectURL(file),
+      es_principal: totalActual === 0 && idx === 0,
+      visual_modo: 'contain',
+      focal_x: 50,
+      focal_y: 50,
+      zoom: 1,
+      auto_trim: true,
+    }));
+    setPreviewContexto('galeria');
+    setPreviewSubida(nuevasPreview);
+    e.target.value = '';
+  };
+
+  const abrirPreviewVariante = (rhfKey, file) => {
+    if (!file) return;
+    setPreviewContexto({ tipo: 'variante', rhfKey });
+    setPreviewSubida([{
+      id: `variante-${rhfKey}-${Date.now()}`,
+      file,
+      url: URL.createObjectURL(file),
+      visual_modo: 'contain',
+      focal_x: 50,
+      focal_y: 50,
+      zoom: 1,
+      auto_trim: true,
+    }]);
+  };
+
+  const actualizarPreviewSubida = (imageId, cambios) => {
+    setPreviewSubida(prev => prev.map(img => img.id === imageId ? { ...img, ...cambios } : img));
+  };
+
+  // Preset = auto_trim + visual_modo juntos, para no tener que explicarle al
+  // comercio qué combinación de checkbox + toggle corresponde a cada caso.
+  const PRESETS_IMAGEN = {
+    producto: { auto_trim: true, visual_modo: 'contain' },
+    infografia: { auto_trim: false, visual_modo: 'contain' },
+  };
+
+  const elegirPresetPreview = (imageId, preset) => {
+    actualizarPreviewSubida(imageId, { preset, ...PRESETS_IMAGEN[preset] });
+  };
+
+  // El recorte se calcula client-side (mismo criterio que sharp en el
+  // backend: fondo por esquinas + piso del 35%) solo para mostrar "cómo va a
+  // quedar" antes de subir. El archivo que se guarda de verdad lo procesa el
+  // backend — esto es una previsualización, no el resultado final.
+  useEffect(() => {
+    const pendientes = previewSubida.filter(img => img.recorte === undefined);
+    if (!pendientes.length) return;
+    let cancelado = false;
+    (async () => {
+      for (const img of pendientes) {
+        try {
+          const recorte = await calcularRecorteInteligente(img.url);
+          if (!cancelado) actualizarPreviewSubida(img.id, { recorte });
+        } catch {
+          if (!cancelado) actualizarPreviewSubida(img.id, { recorte: null });
+        }
+      }
+    })();
+    return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewSubida]);
+
+  const cancelarPreviewSubida = () => {
+    previewSubida.forEach(img => {
+      if (img.url?.startsWith('blob:')) URL.revokeObjectURL(img.url);
+    });
+    setPreviewSubida([]);
+    setPreviewContexto(null);
+  };
+
+  const confirmarPreviewSubida = async () => {
+    if (!previewSubida.length) return;
+
+    if (previewContexto?.tipo === 'variante') {
+      const img = previewSubida[0];
+      const prev = imagenesVariante[previewContexto.rhfKey];
+      if (prev?.url?.startsWith('blob:') && prev.url !== img.url) URL.revokeObjectURL(prev.url);
+      setImagenesVariante(prevState => ({
+        ...prevState,
+        [previewContexto.rhfKey]: {
+          file: img.file,
+          url: img.url,
+          visual_modo: img.visual_modo || 'contain',
+          focal_x: img.focal_x ?? 50,
+          focal_y: img.focal_y ?? 50,
+          zoom: img.zoom ?? 1,
+          auto_trim: img.auto_trim !== false,
+        },
       }));
-      setImagenesNuevas(imgs => [...imgs, ...nuevasPreview]);
-      e.target.value = '';
+      setPreviewSubida([]);
+      setPreviewContexto(null);
+      return;
+    }
+
+    if (!esEdicion) {
+      setImagenesNuevas(imgs => [...imgs, ...previewSubida]);
+      setPreviewSubida([]);
+      setPreviewContexto(null);
       return;
     }
 
     setSubiendoImg(true);
     setError(null);
-    let subidas = [];
-    let errores = [];
-    for (const file of files) {
+    const subidas = [];
+    const errores = [];
+    for (const img of previewSubida) {
       try {
-        const fd = new FormData();
-        fd.append('imagen', file);
-        const nueva = await productService.subirImagen(id, fd);
+        const nueva = await productService.subirImagen(id, prepararImagenFormData(img));
         subidas.push(nueva);
+        if (img.url?.startsWith('blob:')) URL.revokeObjectURL(img.url);
       } catch (err) {
-        errores.push(err.response?.data?.message || `Error al subir la imagen.`);
+        errores.push(err.response?.data?.message || 'Error al subir la imagen.');
       }
     }
-    
-    if (subidas.length > 0) {
-      setImagenes(imgs => [...imgs, ...subidas]);
-    }
-    if (errores.length > 0) {
-      setError(errores.join('\n'));
-    }
-
+    if (subidas.length > 0) setImagenes(imgs => [...imgs, ...subidas]);
+    if (errores.length > 0) setError(errores.join('\n'));
+    setPreviewSubida([]);
+    setPreviewContexto(null);
     setSubiendoImg(false);
-    e.target.value = '';
+  };
+
+  const actualizarEncuadreImagen = async (imgId, cambios, esNueva = false, { persistir = true } = {}) => {
+    if (esNueva) {
+      setImagenesNuevas(imgs => imgs.map(i => i.id === imgId ? { ...i, ...cambios } : i));
+      return;
+    }
+    setImagenes(imgs => imgs.map(i => i.id === imgId ? { ...i, ...cambios } : i));
+    if (!persistir || !esEdicion) return;
+    try {
+      await productService.actualizarImagen(id, imgId, cambios);
+    } catch {
+      setError('No se pudo actualizar el encuadre de la imagen.');
+    }
   };
 
   const eliminarImagen = async (imgId, esNueva = false) => {
     if (esNueva) {
-      setImagenesNuevas(imgs => imgs.filter(i => i.id !== imgId));
+      setImagenesNuevas(imgs => {
+        const encontrada = imgs.find(i => i.id === imgId);
+        if (encontrada?.url?.startsWith('blob:')) URL.revokeObjectURL(encontrada.url);
+        return imgs.filter(i => i.id !== imgId);
+      });
       return;
     }
     try {
@@ -918,6 +1045,68 @@ export default function ProductForm() {
       await productService.actualizarImagen(id, imgId, { es_principal: true });
       setImagenes(imgs => imgs.map(i => ({ ...i, es_principal: i.id === imgId })));
     } catch { setError('Error al actualizar imagen.'); }
+  };
+
+  // Editor de encuadre: un único modal reutilizado tanto para fotos ya
+  // guardadas como para las que todavía están en cola — antes cada tarjeta
+  // de la grilla mostraba sus propios sliders siempre visibles, lo que
+  // mezclaba la galería con la edición técnica y hacía ilegible la sección.
+  const [editandoEncuadre, setEditandoEncuadre] = useState(null); // { imgId, esNueva } | null
+
+  const abrirEditorEncuadre = (imgId, esNueva) => setEditandoEncuadre({ imgId, esNueva });
+  const cerrarEditorEncuadre = () => setEditandoEncuadre(null);
+
+  const aplicarEditorEncuadre = (draft) => {
+    if (!editandoEncuadre) return;
+    actualizarEncuadreImagen(editandoEncuadre.imgId, draft, editandoEncuadre.esNueva);
+    cerrarEditorEncuadre();
+  };
+
+  const imagenEnEdicion = editandoEncuadre
+    ? (editandoEncuadre.esNueva
+      ? imagenesNuevas.find(i => i.id === editandoEncuadre.imgId)
+      : imagenes.find(i => i.id === editandoEncuadre.imgId))
+    : null;
+
+  // Reprocesar: regenera la versión optimizada desde el original que ya está
+  // guardado en R2 (nunca se vuelve a subir el archivo, nunca se toca el
+  // original) — pensado para las fotos que ya están en el producto y
+  // quedaron con margen de sobra por el trimThreshold viejo.
+  const [reprocesando, setReprocesando] = useState(null); // { imgId, paso: 'elegir'|'trabajando'|'resultado', preset, visual_modo, anterior, nuevo }
+
+  const abrirReprocesar = (img) => {
+    setReprocesando({
+      imgId: img.id,
+      paso: 'elegir',
+      preset: 'producto',
+      visual_modo: img.visual_modo || 'contain',
+      anterior: null,
+      nuevo: null,
+    });
+  };
+
+  const cerrarReprocesar = () => setReprocesando(null);
+
+  const confirmarReprocesar = async () => {
+    if (!reprocesando) return;
+    const { imgId, preset, visual_modo } = reprocesando;
+    setReprocesando(prev => ({ ...prev, paso: 'trabajando' }));
+    try {
+      const resultado = await productService.reprocesarImagen(id, imgId, {
+        ...PRESETS_IMAGEN[preset],
+        visual_modo,
+      });
+      setImagenes(imgs => imgs.map(i => i.id === imgId ? resultado : i));
+      setReprocesando(prev => ({
+        ...prev,
+        paso: 'resultado',
+        anterior: resultado.anterior_url,
+        nuevo: resultado.url,
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || 'No se pudo reprocesar la imagen.');
+      setReprocesando(null);
+    }
   };
 
   const handleCrearCategoria = async () => {
@@ -1225,36 +1414,12 @@ export default function ProductForm() {
 
             <div className="form-group">
               <label htmlFor="prod-tags">
-                Tags <span className="hint">(separados por coma)</span>
+                Tags <span className="hint">(SEO y posicionamiento interno, sepáralos por coma)</span>
               </label>
               <input
                 id="prod-tags"
                 {...register('tags')}
                 placeholder="verano, oferta, nuevo"
-              />
-            </div>
-
-            <div className="form-group full">
-              <label htmlFor="prod-desc-corta">
-                Descripción corta <span className="hint">(para listados)</span>
-              </label>
-              <input
-                id="prod-desc-corta"
-                {...register('descripcion_corta')}
-                maxLength={500}
-                placeholder="Breve descripción del producto..."
-              />
-            </div>
-
-            <div className="form-group full">
-              <label htmlFor="prod-desc-larga">
-                Descripción <span className="hint">(detalle completo)</span>
-              </label>
-              <textarea
-                id="prod-desc-larga"
-                {...register('descripcion_larga')}
-                rows={5}
-                placeholder="Descripción detallada del producto..."
               />
             </div>
           </div>
@@ -1835,10 +2000,7 @@ export default function ProductForm() {
                           e.target.value = '';
                           if (!file) return;
                           setError(null);
-                          setImagenesVariante(prev => ({
-                            ...prev,
-                            [field._rhfKey]: { file, url: URL.createObjectURL(file) },
-                          }));
+                          abrirPreviewVariante(field._rhfKey, file);
                         }}
                       />
                     </label>
@@ -2029,10 +2191,7 @@ export default function ProductForm() {
                                 e.target.value = '';
                                 if (!file) return;
                                 setError(null);
-                                setImagenesVariante(prev => ({
-                                  ...prev,
-                                  [field._rhfKey]: { file, url: URL.createObjectURL(file) },
-                                }));
+                                abrirPreviewVariante(field._rhfKey, file);
                               }}
                             />
                           </label>
@@ -2106,53 +2265,30 @@ export default function ProductForm() {
             <ImageIcon size={14} /> Fotos del producto
           </div>
 
+          <p className="field-hint imagen-flujo-pasos">
+            1. Subí tus fotos &nbsp;→&nbsp; 2. Elegí cómo querés mostrarlas &nbsp;→&nbsp; 3. Ajustá el encuadre si hace falta &nbsp;→&nbsp; 4. Aplicá los cambios
+          </p>
+
           <div className="imagenes-grid">
             {[...imagenes].sort((a, b) => a.orden - b.orden).map(img => (
-              <div
+              <ImagenCardCompacta
                 key={img.id}
-                className={`imagen-card ${img.es_principal ? 'principal' : ''}`}
-              >
-                <img src={getMediaUrl(img.url)} alt={img.alt_text || 'Imagen del producto'} />
-                <div className="imagen-actions">
-                  <button
-                    type="button"
-                    className="btn-icon"
-                    title="Marcar como principal"
-                    onClick={() => marcarPrincipal(img.id)}
-                  >
-                    <Star size={13} fill={img.es_principal ? 'currentColor' : 'none'} />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-icon danger"
-                    title="Eliminar imagen"
-                    onClick={() => eliminarImagen(img.id, false)}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                {img.es_principal && <span className="img-principal-badge">Principal</span>}
-              </div>
+                img={img}
+                onEditarEncuadre={() => abrirEditorEncuadre(img.id, false)}
+                onMarcarPrincipal={() => marcarPrincipal(img.id)}
+                onReprocesar={() => abrirReprocesar(img)}
+                onEliminar={() => eliminarImagen(img.id, false)}
+              />
             ))}
 
             {imagenesNuevas.map(img => (
-              <div
+              <ImagenCardCompacta
                 key={img.id}
-                className={`imagen-card nueva-img ${img.es_principal ? 'principal' : ''}`}
-              >
-                <img src={getMediaUrl(img.url)} alt="Nueva" />
-                <div className="imagen-actions">
-                  <button
-                    type="button"
-                    className="btn-icon danger"
-                    title="Eliminar"
-                    onClick={() => eliminarImagen(img.id, true)}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                <span className="img-principal-badge pending">Pendiente</span>
-              </div>
+                img={img}
+                esNueva
+                onEditarEncuadre={() => abrirEditorEncuadre(img.id, true)}
+                onEliminar={() => eliminarImagen(img.id, true)}
+              />
             ))}
 
             <label className="imagen-upload-btn">
@@ -2171,9 +2307,224 @@ export default function ProductForm() {
             </label>
           </div>
           <p className="field-hint">
-            JPG, PNG o WEBP. Recomendado: 1200x1200 para galería; si subís otra proporción, se recorta visualmente para mantener prolija la landing. El servidor redimensiona y convierte a WebP automáticamente.
+            JPG, PNG o WEBP. Se conserva el original y se genera una versión optimizada para la galería.
           </p>
         </div>
+
+        {imagenEnEdicion && (
+          <EditorEncuadreModal
+            img={imagenEnEdicion}
+            esNueva={!!editandoEncuadre?.esNueva}
+            onCancelar={cerrarEditorEncuadre}
+            onAplicar={aplicarEditorEncuadre}
+          />
+        )}
+
+        {previewSubida.length > 0 && (
+          <div className="imagen-preview-overlay" role="dialog" aria-modal="true" aria-label="Vista previa de imagenes">
+            <div className="imagen-preview-modal">
+              <div className="imagen-preview-head">
+                <div>
+                  <span className="product-preview-kicker">
+                    {previewContexto?.tipo === 'variante' ? 'Foto de variante' : 'Galería del producto'}
+                  </span>
+                  <h3>Revisá cómo van a quedar las imágenes</h3>
+                  <p>Se conserva el original y se genera una versión optimizada para la landing.</p>
+                </div>
+                <button type="button" className="btn-icon" onClick={cancelarPreviewSubida} aria-label="Cerrar">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="imagen-preview-lista">
+                {previewSubida.map(img => {
+                  const recorteAplicado = img.auto_trim !== false && img.recorte?.aplicado;
+                  const urlDespues = recorteAplicado ? img.recorte.recortadaUrl : img.url;
+                  return (
+                  <div className="imagen-preview-item" key={img.id}>
+                    <div className="imagen-preview-comparacion">
+                      <div className="imagen-preview-comparacion-col">
+                        <span className="imagen-preview-comparacion-label">Antes</span>
+                        <div className="imagen-preview-stage">
+                          <img src={img.url} alt={img.file.name} style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
+                        </div>
+                      </div>
+                      <div className="imagen-preview-comparacion-col">
+                        <span className="imagen-preview-comparacion-label">Después (así se ve en la landing)</span>
+                        <div className="imagen-preview-stage">
+                          {img.recorte === undefined
+                            ? <span className="imagen-preview-calculando">Calculando recorte…</span>
+                            : <img src={urlDespues} alt={img.file.name} style={estiloImagenGaleria(img)} />}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="imagen-preview-controls">
+                      <strong>{img.file.name}</strong>
+                      <div className="imagen-preview-segmented" role="group" aria-label="Tipo de imagen">
+                        <button
+                          type="button"
+                          className={img.preset === 'infografia' ? '' : 'active'}
+                          onClick={() => elegirPresetPreview(img.id, 'producto')}
+                          title="Elimina márgenes vacíos y muestra el producto completo"
+                        >
+                          Producto
+                        </button>
+                        <button
+                          type="button"
+                          className={img.preset === 'infografia' ? 'active' : ''}
+                          onClick={() => elegirPresetPreview(img.id, 'infografia')}
+                          title="Conserva la composición completa, sin recorte automático"
+                        >
+                          Infografía / Banner
+                        </button>
+                      </div>
+                      <label className="imagen-preview-check">
+                        <input
+                          type="checkbox"
+                          checked={img.auto_trim !== false}
+                          onChange={e => actualizarPreviewSubida(img.id, { auto_trim: e.target.checked, preset: null })}
+                        />
+                        Recortar márgenes automáticamente
+                      </label>
+                      <div className="imagen-preview-segmented" role="group" aria-label="Modo de visualización">
+                        <button
+                          type="button"
+                          className={img.visual_modo !== 'cover' ? 'active' : ''}
+                          onClick={() => actualizarPreviewSubida(img.id, { visual_modo: 'contain' })}
+                        >
+                          Mostrar imagen completa
+                        </button>
+                        <button
+                          type="button"
+                          className={img.visual_modo === 'cover' ? 'active' : ''}
+                          onClick={() => actualizarPreviewSubida(img.id, { visual_modo: 'cover' })}
+                        >
+                          Rellenar marco
+                        </button>
+                      </div>
+                      <label>
+                        Zoom <span className="editor-encuadre-valor">{Math.round((img.zoom ?? 1) * 100)}%</span>
+                        <input
+                          type="range"
+                          min="100"
+                          max="300"
+                          value={Math.round((img.zoom ?? 1) * 100)}
+                          onChange={e => actualizarPreviewSubida(img.id, { zoom: Number(e.target.value) / 100 })}
+                        />
+                      </label>
+                      <label>
+                        Posición horizontal
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={img.focal_x ?? 50}
+                          onChange={e => actualizarPreviewSubida(img.id, { focal_x: Number(e.target.value) })}
+                        />
+                      </label>
+                      <label>
+                        Posición vertical
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={img.focal_y ?? 50}
+                          onChange={e => actualizarPreviewSubida(img.id, { focal_y: Number(e.target.value) })}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  );
+                })}
+              </div>
+
+              <div className="imagen-preview-footer">
+                <button type="button" className="btn-secondary" onClick={cancelarPreviewSubida}>Cancelar</button>
+                <button type="button" className="btn-primary" onClick={confirmarPreviewSubida} disabled={subiendoImg}>
+                  {subiendoImg ? 'Subiendo...' : 'Confirmar imágenes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {reprocesando && (
+          <div className="imagen-preview-overlay" role="dialog" aria-modal="true" aria-label="Reprocesar imagen">
+            <div className="imagen-preview-modal imagen-reprocesar-modal">
+              <div className="imagen-preview-head">
+                <div>
+                  <span className="product-preview-kicker">Reprocesar imagen</span>
+                  <h3>Regenerar desde el original</h3>
+                  <p>El archivo original se conserva siempre — esto solo vuelve a generar la versión optimizada de la galería.</p>
+                </div>
+                <button type="button" className="btn-icon" onClick={cerrarReprocesar} aria-label="Cerrar">
+                  <X size={16} />
+                </button>
+              </div>
+
+              {reprocesando.paso === 'elegir' && (
+                <>
+                  <div className="imagen-preview-controls">
+                    <div className="imagen-preview-segmented" role="group" aria-label="Tipo de imagen">
+                      <button
+                        type="button"
+                        className={reprocesando.preset === 'infografia' ? '' : 'active'}
+                        onClick={() => setReprocesando(prev => ({ ...prev, preset: 'producto' }))}
+                      >
+                        Producto
+                      </button>
+                      <button
+                        type="button"
+                        className={reprocesando.preset === 'infografia' ? 'active' : ''}
+                        onClick={() => setReprocesando(prev => ({ ...prev, preset: 'infografia' }))}
+                      >
+                        Infografía / Banner
+                      </button>
+                    </div>
+                    <p className="field-hint">
+                      {reprocesando.preset === 'infografia'
+                        ? 'Sin recorte automático: conserva toda la composición.'
+                        : 'Elimina márgenes vacíos y muestra el producto completo (modo Completa).'}
+                    </p>
+                  </div>
+                  <div className="imagen-preview-footer">
+                    <button type="button" className="btn-secondary" onClick={cerrarReprocesar}>Cancelar</button>
+                    <button type="button" className="btn-primary" onClick={confirmarReprocesar}>Reprocesar</button>
+                  </div>
+                </>
+              )}
+
+              {reprocesando.paso === 'trabajando' && (
+                <div className="imagen-preview-controls">
+                  <div className="spinner-sm" />
+                  <p>Regenerando desde el original…</p>
+                </div>
+              )}
+
+              {reprocesando.paso === 'resultado' && (
+                <>
+                  <div className="imagen-preview-comparacion">
+                    <div className="imagen-preview-comparacion-col">
+                      <span className="imagen-preview-comparacion-label">Antes</span>
+                      <div className="imagen-preview-stage">
+                        <img src={getMediaUrl(reprocesando.anterior)} alt="Antes" style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
+                      </div>
+                    </div>
+                    <div className="imagen-preview-comparacion-col">
+                      <span className="imagen-preview-comparacion-label">Después</span>
+                      <div className="imagen-preview-stage">
+                        <img src={getMediaUrl(reprocesando.nuevo)} alt="Después" style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="imagen-preview-footer">
+                    <button type="button" className="btn-primary" onClick={cerrarReprocesar}>Listo</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className={`tab-content ${tabActiva === 'marketing' ? 'active' : ''}`}>
           <div className="product-view-workspace">

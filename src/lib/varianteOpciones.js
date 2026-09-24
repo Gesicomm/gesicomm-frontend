@@ -78,6 +78,49 @@ export function seleccionDeVariante(item, variante) {
 }
 
 /**
+ * La variante que arranca elegida al abrir la ficha: la primera con stock,
+ * o la primera a secas si están todas agotadas.
+ */
+export function seleccionInicial(item) {
+  const variantes = item?.variantes || [];
+  if (variantes.length === 0) return {};
+  const conStock = variantes.find(v => v.stock == null || v.stock > 0);
+  return seleccionDeVariante(item, conStock || variantes[0]);
+}
+
+/** `stock` null/undefined = no se controla (preview sin datos): no cuenta como agotada. */
+export function varianteAgotada(variante) {
+  return !!variante && variante.stock != null && variante.stock <= 0;
+}
+
+/**
+ * Estado de un botón de valor dentro del selector:
+ * - 'disponible': hay una variante con stock para esa combinación.
+ * - 'agotado': la combinación existe pero sin stock. Se puede elegir igual
+ *   (para ver su foto, como en Shopify); lo que se bloquea es la compra.
+ * - 'inexistente': esa combinación nunca se cargó. Botón deshabilitado.
+ */
+export function estadoValor(item, opcionNombre, valor, seleccionActual) {
+  if (valorDisponible(item, opcionNombre, valor, seleccionActual)) return 'disponible';
+
+  const variantes = item?.variantes || [];
+  const esLegacy = !(Array.isArray(item?.opciones) && item.opciones.length > 0);
+  if (esLegacy) {
+    return variantes.some(x => normalizar(x.nombre) === normalizar(valor)) ? 'agotado' : 'inexistente';
+  }
+
+  const combinacionDeseada = Object.entries({ ...seleccionActual, [opcionNombre]: valor })
+    .filter(([, v]) => v);
+  const existe = variantes.some(v => {
+    const propios = v.valoresOpcion || [];
+    return combinacionDeseada.every(([op, val]) =>
+      propios.some(p => normalizar(p.opcion) === normalizar(op) && normalizar(p.valor) === normalizar(val))
+    );
+  });
+  return existe ? 'agotado' : 'inexistente';
+}
+
+/**
  * Si hay alguna variante con stock que contenga `valor` de `opcionNombre`
  * junto con el resto de la selección actual. A propósito NO exige que la
  * selección esté completa (a diferencia de resolverVariante): sirve para

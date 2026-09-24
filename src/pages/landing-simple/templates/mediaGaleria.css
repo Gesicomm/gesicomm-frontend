@@ -1,27 +1,36 @@
 .lsp-media-frame {
   position: relative;
   width: 100%;
-  height: 100%;
-  min-height: inherit;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: #09090b;
+  /* El marco principal queda blanco aunque el escenario use otro fondo:
+     evita filetes laterales del color de galería en fotos de producto. */
+  background: #fff;
 }
 
 .lsp-media-frame > img,
+.lsp-media-frame > .lsp-media-img {
+  display: block;
+  border: 0;
+}
+
 .lsp-media-frame > video,
 .lsp-media-frame > iframe {
   width: 100%;
   height: 100%;
   display: block;
   border: 0;
-  object-fit: cover;
+  object-fit: contain;
+  background: #fff;
 }
 
 .lsp-media-frame > iframe {
-  background: #000;
+  background: #f7f7f5;
 }
 
 .lsp-media-link {
@@ -33,10 +42,11 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  color: #fff;
+  color: #1f2937;
   text-decoration: none;
   text-align: center;
   padding: 1rem;
+  background: #f7f7f5;
 }
 
 .lsp-media-link svg {
@@ -60,8 +70,8 @@
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   color: #0f172a;
   pointer-events: none;
 }
@@ -91,30 +101,30 @@
   position: relative;
   width: 100%;
   height: 100%;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  background: #111827;
+  background: var(--lsp-galeria-fondo, #fff);
 }
 
 .lsp-media-thumb-video {
-  background:
-    radial-gradient(circle at 70% 22%, rgba(59, 130, 246, 0.48), transparent 34%),
-    linear-gradient(135deg, #111827 0%, #1f2937 48%, #020617 100%);
+  background: #f3f4f6;
 }
 
 .lsp-media-thumb-video::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(2, 6, 23, 0.08), rgba(2, 6, 23, 0.42));
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.04), rgba(2, 6, 23, 0.22));
   pointer-events: none;
 }
 
-.lsp-media-thumb img {
-  width: 100%;
-  height: 100%;
+.lsp-media-thumb img,
+.lsp-media-thumb-img {
   display: block;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .lsp-media-thumb-fallback {
@@ -122,7 +132,7 @@
   height: 100%;
   display: grid;
   place-items: center;
-  color: #fff;
+  color: #334155;
 }
 
 .lsp-media-fallback-mark {
@@ -131,7 +141,6 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.12);
 }

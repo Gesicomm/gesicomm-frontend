@@ -64,6 +64,13 @@ const GRUPOS = [
       { clave: 'ABASTECIMIENTO_BANCO_CI_RUC', label: 'CI / RUC', placeholder: '80012345-6' },
       { clave: 'ABASTECIMIENTO_BANCO_NUMERO_CUENTA', label: 'Número de cuenta', placeholder: '000-1234567' },
       {
+        clave: 'ABASTECIMIENTO_TRANSFERENCIA_NOTA',
+        label: 'Nota para la transferencia',
+        placeholder: 'Ej: En el concepto escribí la referencia que figura en la solicitud.',
+        multilinea: true,
+        ayuda: 'Se muestra junto a los datos bancarios. La referencia única de cada solicitud se agrega automáticamente.',
+      },
+      {
         clave: 'ABASTECIMIENTO_ALIAS_TIPO',
         label: 'Tipo de alias',
         opciones: [
@@ -218,6 +225,14 @@ export default function Parametros() {
                             <option key={op.value} value={op.value}>{op.label}</option>
                           ))}
                         </select>
+                      ) : campo.multilinea ? (
+                        <textarea
+                          value={valores[campo.clave] || ''}
+                          onChange={e => cambiar(campo.clave, e.target.value)}
+                          placeholder={campo.placeholder}
+                          rows={3}
+                          spellCheck={false}
+                        />
                       ) : (
                         <input
                           type={campo.secreto ? 'password' : (campo.tipo || 'text')}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader, Sparkles, Zap } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, Check, Loader, Sparkles, Zap, MapPin } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
@@ -528,68 +528,81 @@ export default function CartDrawer({
                     </div>
                   </label>
 
-                  {opcionesDelivery.length > 0 ? (
-                    <label className="lp-checkout-field">
-                      <span>Ciudad y departamento <em>*</em></span>
-                      <input
-                        required
-                        list="lp-delivery-ciudades"
-                        value={ciudadDeliveryInput}
-                        onChange={e => actualizarCiudadDelivery(e.target.value)}
-                        placeholder="Buscá tu ciudad..."
-                      />
-                      <datalist id="lp-delivery-ciudades">
-                        {opcionesDelivery.map(op => (
-                          <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio, { items, paymentMethod: form.payment_method }) || undefined} />
-                        ))}
-                      </datalist>
-                      {detalleDelivery && (
-                        <small className="lp-checkout-delivery-hint">
-                          {etiquetaDelivery(opcionDeliverySeleccionada)} · {detalleDelivery}
-                        </small>
-                      )}
-                    </label>
-                  ) : (
-                    <>
+                  {/* Ciudad/departamento, dirección y referencia son un
+                      solo bloque conceptual ("adónde entregamos"): antes
+                      eran 3-4 campos sueltos mezclados con el resto del
+                      formulario, sin distinguirse de nombre/cédula/celular.
+                      Agrupados en una tarjeta propia, igual que ya se hace
+                      con el medio de pago (.lp-checkout-payment-methods) más
+                      abajo. */}
+                  <section className="lp-checkout-address" aria-label="Dirección de entrega">
+                    <div className="lp-checkout-address-head">
+                      <MapPin size={14} /> <span>Dirección de entrega</span>
+                    </div>
+
+                    {opcionesDelivery.length > 0 ? (
                       <label className="lp-checkout-field">
-                        <span>Ciudad <em>*</em></span>
+                        <span>Ciudad y departamento <em>*</em></span>
                         <input
                           required
-                          value={form.ciudad}
-                          onChange={e => actualizarCampo('ciudad', e.target.value)}
-                          placeholder="Ciudad"
+                          list="lp-delivery-ciudades"
+                          value={ciudadDeliveryInput}
+                          onChange={e => actualizarCiudadDelivery(e.target.value)}
+                          placeholder="Buscá tu ciudad..."
                         />
+                        <datalist id="lp-delivery-ciudades">
+                          {opcionesDelivery.map(op => (
+                            <option key={op.id} value={op.label} label={descripcionDelivery(op, false, formatPrecio, { items, paymentMethod: form.payment_method }) || undefined} />
+                          ))}
+                        </datalist>
+                        {detalleDelivery && (
+                          <small className="lp-checkout-delivery-hint">
+                            {etiquetaDelivery(opcionDeliverySeleccionada)} · {detalleDelivery}
+                          </small>
+                        )}
                       </label>
+                    ) : (
+                      <div className="lp-checkout-address-row">
+                        <label className="lp-checkout-field">
+                          <span>Ciudad <em>*</em></span>
+                          <input
+                            required
+                            value={form.ciudad}
+                            onChange={e => actualizarCampo('ciudad', e.target.value)}
+                            placeholder="Ciudad"
+                          />
+                        </label>
 
-                      <label className="lp-checkout-field">
-                        <span>Departamento</span>
-                        <input
-                          value={form.departamento}
-                          onChange={e => actualizarCampo('departamento', e.target.value)}
-                          placeholder="Departamento"
-                        />
-                      </label>
-                    </>
-                  )}
+                        <label className="lp-checkout-field">
+                          <span>Departamento</span>
+                          <input
+                            value={form.departamento}
+                            onChange={e => actualizarCampo('departamento', e.target.value)}
+                            placeholder="Departamento"
+                          />
+                        </label>
+                      </div>
+                    )}
 
-                  <label className="lp-checkout-field">
-                    <span>Dirección <em>*</em></span>
-                    <input
-                      required
-                      value={form.direccion}
-                      onChange={e => actualizarCampo('direccion', e.target.value)}
-                      placeholder="Nombre de la calle y número de casa"
-                    />
-                  </label>
+                    <label className="lp-checkout-field">
+                      <span>Dirección <em>*</em></span>
+                      <input
+                        required
+                        value={form.direccion}
+                        onChange={e => actualizarCampo('direccion', e.target.value)}
+                        placeholder="Nombre de la calle y número de casa"
+                      />
+                    </label>
 
-                  <label className="lp-checkout-field">
-                    <span>Referencia</span>
-                    <input
-                      value={form.referencia}
-                      onChange={e => actualizarCampo('referencia', e.target.value)}
-                      placeholder="Opcional — un punto conocido cerca"
-                    />
-                  </label>
+                    <label className="lp-checkout-field">
+                      <span>Referencia</span>
+                      <input
+                        value={form.referencia}
+                        onChange={e => actualizarCampo('referencia', e.target.value)}
+                        placeholder="Opcional — un punto conocido cerca"
+                      />
+                    </label>
+                  </section>
 
                   <label className="lp-checkout-terminos">
                     <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)} />

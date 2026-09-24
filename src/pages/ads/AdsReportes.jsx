@@ -132,7 +132,7 @@ export default function AdsReportes({ irA, onImportar, refrescoExterno }) {
           titulo={hayFiltros ? 'Ningún reporte coincide con los filtros' : 'Todavía no importaste ningún reporte'}
           descripcion={hayFiltros
             ? 'Probá con otro texto o quitá el filtro de estado.'
-            : 'Exportá "Rendimiento de campaña" desde Meta Ads Manager en .csv e importalo acá. El resto lo relaciona Gesicomm.'}
+            : 'Exportá "Rendimiento de campaña" desde Meta Ads Manager en .csv e importalo acá. El resto lo relaciona Gesicom.'}
         >
           {!hayFiltros && (
             <button type="button" className="btn-primary mt-1" onClick={onImportar}>

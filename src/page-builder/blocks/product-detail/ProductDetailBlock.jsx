@@ -431,7 +431,7 @@ export const ProductDetailBlock = ({ content, settings }) => {
               </div>
               {stockConocido && (
                 <span className={`lp-product-stock-badge ${sinStock ? 'agotado' : 'disponible'}`}>
-                  {sinStock ? 'Sin stock' : `✓ ${stock} disponibles`}
+                  {sinStock ? 'Sin stock' : '✓ En stock'}
                 </span>
               )}
             </div>

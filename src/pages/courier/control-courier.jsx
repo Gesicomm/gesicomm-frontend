@@ -330,7 +330,7 @@ export function ControlCourier() {
   };
 
   return (
-    <div className="prod-page" style={{ minHeight: '100vh', maxWidth: '100%' }}>
+    <div className="prod-page courier-page" style={{ minHeight: '100vh', maxWidth: '100%' }}>
       <div className="courier-header">
         <div className="courier-header-main">
           <div className="prod-header-left">

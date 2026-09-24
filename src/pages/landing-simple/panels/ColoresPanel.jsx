@@ -19,13 +19,22 @@ const CAMPOS = [
  * LandingService.validarPayload. null = el template usa su propia paleta
  * por defecto (ver templates/*.jsx).
  */
-export default function ColoresPanel({ draft, onCampo, templateSlug }) {
+export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
   // Paleta que la landing está usando de verdad: lo que el comercio pisó,
   // y donde no pisó nada, el default del template activo. Sin esto el panel
   // arrancaba con los tres selectores en negro y los campos de texto
   // vacíos — no mostraba en ningún lado los colores reales de la página.
+  // "texto" tiene una capa intermedia extra: antes del default fijo del
+  // template, hereda el color secundario de Branding (mismo fallback que
+  // aplica el render real, ver landing.service.js/mapLandingToTemplateData.js)
+  // — si no, el placeholder mostraba #000000 aunque la página ya pintaba el
+  // texto con el color de Branding.
   const temaActual = resolverTemaPorSlug(
-    { fondo: draft.color_fondo, texto: draft.color_texto, acento: draft.color_primario },
+    {
+      fondo: draft.color_fondo,
+      texto: draft.color_texto || tienda?.color_secundario,
+      acento: draft.color_primario,
+    },
     templateSlug,
   );
 

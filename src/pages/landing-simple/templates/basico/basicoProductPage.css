@@ -109,40 +109,88 @@
 }
 .bsc-hero-visual {
   position: relative;
-  min-height: 430px;
-  background: var(--bsc-accent-suave);
+  overflow: hidden;
+  /* La foto principal vive sobre blanco para que el color de galería no
+     aparezca como un borde accidental alrededor del producto. */
+  background: #fff;
   /* Columna y no `place-items: center`: las miniaturas iban en absolute
      sobre la foto y quedaban encima del producto. Como fila debajo, la foto
      se queda con el alto que sobra y nada se pisa. */
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 14px;
   padding: 24px;
   align-self: stretch;
 }
 .bsc-hero-foto {
-  flex: 1;
-  min-height: 0;
   width: 100%;
-  display: grid; place-items: center;
+  display: grid;
+  place-items: center;
   color: var(--bsc-muted);
+  background: #fff;
+}
+.bsc-hero-foto .lsp-media-frame {
+  width: 100%;
 }
 .bsc-hero-foto img {
-  /* `block` y no `height:100%` dentro de un grid: el alto porcentual se
-     resuelve contra una fila que la propia imagen dimensiona, y termina
-     desbordando. Ya pasó en la comparación de Tecnología. */
+  /* El fit/posición lo define mediaGaleria según visual_modo / foco. */
   display: block;
-  max-width: 100%;
-  max-height: 380px;
-  object-fit: contain;
 }
 .bsc-hero-badge {
-  position: absolute; top: 20px; right: 20px;
-  background: var(--bsc-accent); color: var(--bsc-on-accent);
-  padding: 5px 12px; font-size: 11px; font-weight: 800;
-  text-transform: uppercase; letter-spacing: 0.4px;
+  position: absolute;
+  top: 42px;
+  right: -104px;
+  z-index: 2;
+  width: 320px;
+  overflow: hidden;
+  pointer-events: none;
+  transform: rotate(34deg);
+  transform-origin: center;
+  background: var(--bsc-accent);
+  color: var(--bsc-on-accent);
+  padding: 9px 44px;
+  box-shadow:
+    0 8px 18px var(--bsc-sombra),
+    inset 0 -9px 0 rgba(0, 0, 0, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .24);
+  font-size: 10.5px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  animation: bsc-ribbon-pulse 2.8s ease-in-out infinite;
+}
+
+.bsc-hero-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -65%;
+  width: 52%;
+  transform: skewX(-24deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .42), transparent);
+  animation: bsc-ribbon-shine 2.8s ease-in-out infinite;
+}
+
+@keyframes bsc-ribbon-pulse {
+  0%, 100% { transform: rotate(34deg) scale(1); filter: brightness(1); }
+  12% { transform: rotate(34deg) scale(1.06); filter: brightness(1.16); }
+  24% { transform: rotate(34deg) scale(.985); }
+  36% { transform: rotate(34deg) scale(1.025); }
+  50% { transform: rotate(34deg) scale(1); filter: brightness(1.06); }
+}
+
+@keyframes bsc-ribbon-shine {
+  0%, 42% { left: -65%; }
+  72%, 100% { left: 112%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bsc-hero-badge,
+  .bsc-hero-badge::after { animation: none; }
 }
 .bsc-miniaturas {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
@@ -151,10 +199,14 @@
 .bsc-miniatura {
   width: 54px; height: 54px; padding: 0;
   border: 1px solid var(--bsc-border-fuerte);
-  background: var(--bsc-bg); cursor: pointer; overflow: hidden;
+  background: var(--lsp-galeria-fondo, #fff); cursor: pointer; overflow: hidden;
+  box-sizing: border-box;
 }
-.bsc-miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.bsc-miniatura.activa { border: 2px solid var(--bsc-accent); }
+.bsc-miniatura img { width: 100%; height: 100%; display: block; }
+.bsc-miniatura.activa {
+  border: 2px solid var(--bsc-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bsc-accent) 28%, transparent);
+}
 
 .bsc-hero-copy { padding: 40px; }
 .bsc-eyebrow {
@@ -247,14 +299,23 @@
 .bsc-pack-nombre { font-weight: 800; font-size: 14px; }
 .bsc-pack-sub { color: var(--bsc-muted); font-size: 12px; }
 .bsc-pack-imagen {
-  /* Alto FIJO, no aspect-ratio: con ratio la imagen escala con el ancho de
-     la tarjeta y las ofertas quedaban gigantes. */
-  height: 120px; width: 100%;
+  /* Alto fijo para mantener compactas las ofertas sin perder presencia visual. */
+  position: relative;
+  height: 210px; width: 100%;
   display: grid; place-items: center;
-  margin: 8px 0;
+  margin: 12px 0 12px;
+  overflow: hidden;
+  background: var(--lsp-galeria-fondo, #fff);
   color: var(--bsc-muted);
 }
-.bsc-pack-imagen img { display: block; max-height: 120px; max-width: 100%; object-fit: contain; }
+.bsc-pack-imagen img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 .bsc-pack-precio { font-size: 22px; font-weight: 800; }
 .bsc-pack-elegir del { color: var(--bsc-muted); font-size: 12px; }
 .bsc-pack-ahorro {
@@ -294,6 +355,12 @@
 }
 .bsc-variante-pill.activa { background: var(--bsc-accent); color: var(--bsc-on-accent); }
 .bsc-variante-pill:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+/* Agotada: existe pero sin stock. Se puede elegir para ver su foto; la compra se bloquea. */
+.bsc-variante-pill.agotada { text-decoration: line-through; opacity: .6; }
+.bsc-variante-pill.agotada.activa { opacity: 1; }
+.bsc-variante-agotada { margin: 8px 0 0; font-size: 12px; opacity: .75; }
+.bsc-cta:disabled,
+.bsc-pack-cta:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 
 /* ── 5 · Beneficios ───────────────────────────────────────────────── */
 .bsc-beneficios {
@@ -400,16 +467,35 @@
 .bsc-compare-no { opacity: 0.5; }
 
 /* ── 10 · FAQ ─────────────────────────────────────────────────────── */
-.bsc-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.bsc-faq-item { background: var(--bsc-card); border: 1px solid var(--bsc-border); }
+.bsc-faq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 14px 16px;
+}
+.bsc-faq-item {
+  height: fit-content;
+  overflow: hidden;
+  background: var(--bsc-card);
+  border: 1px solid var(--bsc-border);
+}
 .bsc-faq-item.abierta { border-color: var(--bsc-accent-borde); }
 .bsc-faq-item > button {
-  width: 100%; border: 0; background: none; padding: 15px;
+  width: 100%; min-height: 58px; border: 0; background: none; padding: 17px 18px;
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer;
+  line-height: 1.35;
 }
+.bsc-faq-item > button svg { flex-shrink: 0; transition: transform .2s; }
 .bsc-faq-item.abierta > button svg { transform: rotate(180deg); }
-.bsc-faq-item p { margin: 0; padding: 0 15px 15px; color: var(--bsc-muted); font-size: 13px; }
+.bsc-faq-respuesta {
+  padding: 0 18px 18px;
+  color: var(--bsc-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.bsc-faq-respuesta > * { margin-top: 0; }
+.bsc-faq-respuesta > *:last-child { margin-bottom: 0; }
 
 /* ── 11 · Relacionados ────────────────────────────────────────────── */
 .bsc-relacionados {
@@ -506,7 +592,8 @@
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 860px) {
   .bsc-hero { grid-template-columns: 1fr; }
-  .bsc-hero-visual { min-height: 300px; }
+  .bsc-hero-visual { min-height: 0; }
+  .bsc-hero-badge { top: 32px; right: -80px; width: 248px; font-size: 8.6px; padding: 7px 34px; }
   .bsc-hero-copy { padding: 26px; }
   .bsc-hero-copy h1 { font-size: 30px; }
   .bsc-faq-grid { grid-template-columns: 1fr; }
@@ -519,7 +606,8 @@
 /* `.es-movil` es el preview del armador en modo móvil: no hay media query
    que lo alcance porque el viewport sigue siendo el del escritorio. */
 .bsc-root.es-movil .bsc-hero { grid-template-columns: 1fr; }
-.bsc-root.es-movil .bsc-hero-visual { min-height: 280px; }
+.bsc-root.es-movil .bsc-hero-visual { min-height: 0; }
+.bsc-root.es-movil .bsc-hero-badge { top: 32px; right: -80px; width: 248px; font-size: 8.6px; padding: 7px 34px; }
 .bsc-root.es-movil .bsc-hero-copy { padding: 22px; }
 .bsc-root.es-movil .bsc-hero-copy h1 { font-size: 26px; }
 .bsc-root.es-movil .bsc-faq-grid,

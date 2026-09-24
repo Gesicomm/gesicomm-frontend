@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PackageCheck } from 'lucide-react';
 import { AbastecimientoPanel } from '../courier/AbastecimientoPanel';
+import { SolicitudesAbastecimientoPanel } from './SolicitudesAbastecimientoPanel';
 import AbastecimientoTimelineModal from '../../components/abastecimiento/AbastecimientoTimelineModal';
 import '../productos/productos.css';
 import '../courier/courier.css';
@@ -13,6 +14,7 @@ import '../courier/courier.css';
  */
 export default function AbastecimientoAdmin() {
   const [timelineEnvio, setTimelineEnvio] = useState(null);
+  const [vista, setVista] = useState('ventas'); // 'ventas' | 'solicitudes'
 
   return (
     <div className="prod-page" style={{ minHeight: '100vh', maxWidth: '100%' }}>
@@ -31,7 +33,27 @@ export default function AbastecimientoAdmin() {
       </div>
 
       <main className="courier-container" style={{ marginTop: '1.25rem' }}>
-        <AbastecimientoPanel onAbrirTimeline={(envio) => setTimelineEnvio(envio)} />
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={() => setVista('ventas')}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${vista === 'ventas' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-2'}`}
+          >
+            Abastecimiento por venta
+          </button>
+          <button
+            type="button"
+            onClick={() => setVista('solicitudes')}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${vista === 'solicitudes' ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-2'}`}
+          >
+            Solicitudes de comercios
+          </button>
+        </div>
+        {vista === 'ventas' ? (
+          <AbastecimientoPanel onAbrirTimeline={(envio) => setTimelineEnvio(envio)} />
+        ) : (
+          <SolicitudesAbastecimientoPanel />
+        )}
       </main>
 
       <AbastecimientoTimelineModal

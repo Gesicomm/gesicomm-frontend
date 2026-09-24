@@ -52,13 +52,22 @@ export default function FitnessProductPagePublica({
 
   if (!item) return null;
 
-  const precioDe = (pack) => (pack ? (pack.precio_efectivo ?? pack.precio) : item.precio);
-  const agregarCompra = (pack) => onAgregar && onAgregar({
+  // Un paquete trae su precio total y no se combina con la variante: son
+  // dos formas distintas de comprar el mismo producto (mismo criterio que
+  // Tech/Beauty/Básico).
+  const precioDe = ({ variante, pack } = {}) => (
+    pack ? (pack.precio_efectivo ?? pack.precio) : (variante?.precio_efectivo ?? item.precio)
+  );
+  const agregarCompra = (eleccion) => onAgregar && onAgregar({
     item,
-    variante: null,
-    oferta: pack || null,
+    // eleccion es {variante, pack, precio} (ver comprar() en
+    // FitnessProductPage) — sin esto el color/talla elegido nunca llegaba
+    // al carrito, y "oferta" podía terminar siendo el objeto eleccion
+    // entero en vez de null cuando no se elegía ningún pack.
+    variante: eleccion?.variante || null,
+    oferta: eleccion?.pack || null,
     cantidad: 1,
-    precio: precioDe(pack),
+    precio: precioDe(eleccion),
   });
 
   return (
@@ -71,7 +80,7 @@ export default function FitnessProductPagePublica({
       previewMode={false}
       onVolver={onVolver}
       onClickRelacionado={onClickRelacionado}
-      onComprar={(eleccion) => agregarCompra(eleccion?.pack || eleccion || null)}
+      onComprar={agregarCompra}
     />
   );
 }

@@ -128,8 +128,8 @@ export default function ComboProductPage({
 
           <section className="cmb-hero cmb-wrap" id="cmb-hero">
             <div className="cmb-hero-visual">
-              {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
               <div className={`cmb-hero-foto ${!imagenActual ? 'sin-imagen' : ''}`}>
+                {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
                 {imagenActual
                   ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
                   : (
@@ -542,7 +542,10 @@ function calcularVariables(t) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
   const fondoPagina = fondoEsOscuro ? fondo : '#FFFFFF';
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
+  // Ver comentario en BasicoProductPage.jsx: elegir el color de MÁS
+  // contraste de los dos, no un corte binario, evita textos casi
+  // invisibles con acentos de luminancia media.
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
   const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
 
   return {

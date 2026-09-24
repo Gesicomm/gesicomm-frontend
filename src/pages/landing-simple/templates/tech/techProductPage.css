@@ -90,54 +90,101 @@
 .tpp-galeria {
   position: sticky;
   top: 20px;
-  display: grid;
-  grid-template-columns: 62px minmax(0, 1fr);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 12px;
 }
-
-/* Sin miniaturas la foto ocupa las dos columnas, en vez de dejar una
-   franja vacía a la izquierda. */
-.tpp-galeria > .tpp-escenario:only-child { grid-column: 1 / -1; }
 
 .tpp-escenario {
   position: relative;
   display: grid;
   place-items: center;
-  aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 16px;
-  background:
-    radial-gradient(circle at 50% 45%, var(--tpp-accent-halo) 0, transparent 62%),
-    var(--tpp-surface);
+  background: #fff;
 }
 
-.tpp-escenario img { width: 100%; height: 100%; object-fit: cover; }
-.tpp-escenario.vacia { color: var(--tpp-muted); }
+.tpp-escenario .lsp-media-frame {
+  width: 100%;
+  border-radius: 16px;
+}
+
+.tpp-escenario img { display: block; }
+.tpp-escenario.vacia {
+  color: var(--tpp-muted);
+  aspect-ratio: 4 / 3;
+  background: #fff;
+}
 
 .tpp-etiqueta-nueva {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 5px 11px;
-  border-radius: 4px;
-  background: var(--tpp-accent);
+  top: 42px;
+  right: -104px;
+  z-index: 3;
+  width: 320px;
+  overflow: hidden;
+  pointer-events: none;
+  transform: rotate(34deg);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tpp-accent) 82%, #fff 18%) 0%,
+    var(--tpp-accent) 46%,
+    color-mix(in srgb, var(--tpp-accent) 78%, #000 22%) 100%
+  );
   color: var(--tpp-on-accent);
+  padding: 9px 44px;
+  box-shadow:
+    0 10px 18px rgba(0, 0, 0, .16),
+    inset 0 -10px 0 rgba(0, 0, 0, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .24);
   font-size: 10px;
   font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
   letter-spacing: .04em;
   text-transform: uppercase;
+  white-space: nowrap;
+  animation: tpp-ribbon-pulse 2.8s ease-in-out infinite;
+}
+
+.tpp-etiqueta-nueva::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -65%;
+  width: 52%;
+  transform: skewX(-24deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .42), transparent);
+  animation: tpp-ribbon-shine 2.8s ease-in-out infinite;
+}
+
+@keyframes tpp-ribbon-pulse {
+  0%, 100% { transform: rotate(34deg) scale(1); filter: brightness(1); }
+  12% { transform: rotate(34deg) scale(1.06); filter: brightness(1.16); }
+  24% { transform: rotate(34deg) scale(.985); }
+  36% { transform: rotate(34deg) scale(1.025); }
+  50% { transform: rotate(34deg) scale(1); filter: brightness(1.06); }
+}
+
+@keyframes tpp-ribbon-shine {
+  0%, 42% { left: -65%; }
+  72%, 100% { left: 112%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tpp-etiqueta-nueva,
+  .tpp-etiqueta-nueva::after { animation: none; }
 }
 
 .tpp-miniaturas {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
-  /* Con muchas fotos la columna scrollea sola en vez de estirar el hero. */
-  max-height: 100%;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  order: 2;
 }
+
+.tpp-escenario { order: 1; }
 
 .tpp-miniatura {
   width: 62px;
@@ -147,11 +194,15 @@
   overflow: hidden;
   border: 1px solid var(--tpp-border);
   border-radius: 9px;
-  background: var(--tpp-surface);
+  background: #fff;
+  box-sizing: border-box;
 }
 
-.tpp-miniatura.activa { border: 2px solid var(--tpp-accent); }
-.tpp-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.tpp-miniatura.activa {
+  border: 2px solid var(--tpp-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tpp-accent) 28%, transparent);
+}
+.tpp-miniatura img { width: 100%; height: 100%; display: block; }
 
 .tpp-eyebrow {
   margin: 0;
@@ -337,6 +388,11 @@
 
 .tpp-variante.activa { border-color: var(--tpp-accent); color: var(--tpp-accent); font-weight: 900; }
 .tpp-variante:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+/* Agotada: existe pero sin stock. Se puede elegir para ver su foto; la compra se bloquea. */
+.tpp-variante.agotada { text-decoration: line-through; opacity: .6; }
+.tpp-variante.agotada.activa { opacity: 1; }
+.tpp-variante-agotada { margin: 8px 0 0; font-size: 12px; opacity: .75; }
+.tpp-cta-oscuro:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 .tpp-variante small { display: block; margin-top: 2px; font-size: 10px; opacity: .75; font-weight: 600; }
 
 /* Paquetes: filas anchas, no pastillas. A diferencia de una variante
@@ -711,8 +767,20 @@
 
 /* ── 11 · FAQ ─────────────────────────────────────────────────────── */
 
-.tpp-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
-.tpp-faq-item { border-top: 1px solid var(--tpp-border); }
+.tpp-faq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 14px 18px;
+}
+.tpp-faq-item {
+  height: fit-content;
+  overflow: hidden;
+  border: 1px solid var(--tpp-border);
+  border-radius: 8px;
+  background: var(--tpp-card);
+}
+.tpp-faq-item.abierta { border-color: var(--tpp-border-fuerte); }
 
 .tpp-faq-item button {
   display: flex;
@@ -720,18 +788,27 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 15px 6px;
+  min-height: 58px;
+  padding: 17px 18px;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
   font-size: 12px;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .tpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; }
 .tpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--tpp-accent); }
-.tpp-faq-item p { margin: 0; padding: 0 6px 15px; color: var(--tpp-muted); font-size: 11.5px; line-height: 1.6; }
+.tpp-faq-respuesta {
+  padding: 0 18px 18px;
+  color: var(--tpp-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.tpp-faq-respuesta > * { margin-top: 0; }
+.tpp-faq-respuesta > *:last-child { margin-bottom: 0; }
 
 /* ── 12 · Complementos ────────────────────────────────────────────── */
 
@@ -881,6 +958,7 @@
 .tpp-root.es-movil .tpp-galeria { position: static; display: flex; flex-direction: column; }
 .tpp-root.es-movil .tpp-miniaturas { flex-direction: row; flex-wrap: wrap; order: 2; overflow-y: visible; }
 .tpp-root.es-movil .tpp-escenario { order: 1; }
+.tpp-root.es-movil .tpp-etiqueta-nueva { top: 32px; right: -80px; width: 248px; font-size: 8.6px; padding: 7px 34px; }
 .tpp-root.es-movil .tpp-compra,
 .tpp-root.es-movil .tpp-specs-grid,
 .tpp-root.es-movil .tpp-faq-grid { grid-template-columns: 1fr; }
@@ -960,6 +1038,7 @@
   .tpp-galeria { position: static; display: flex; flex-direction: column; }
   .tpp-miniaturas { flex-direction: row; flex-wrap: wrap; order: 2; overflow-y: visible; }
   .tpp-escenario { order: 1; }
+  .tpp-etiqueta-nueva { top: 32px; right: -80px; width: 248px; font-size: 8.6px; padding: 7px 34px; }
   .tpp-compra, .tpp-specs-grid, .tpp-faq-grid { grid-template-columns: 1fr; }
   .tpp-seccion { padding: 32px 0; }
   .tpp-beneficio { border-right: 0; border-bottom: 1px solid var(--tpp-border); }

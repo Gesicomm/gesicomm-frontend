@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPublica from './pages/landing/LandingPublica';
 
@@ -32,6 +33,7 @@ const ConfigurarTienda = lazy(() => import('./pages/tienda/ConfigurarTienda'));
 const DepositosPage = lazy(() => import('./pages/tienda/DepositosPage'));
 const InventarioPage = lazy(() => import('./pages/inventario/InventarioPage'));
 const NuevoIngresoPage = lazy(() => import('./pages/inventario/NuevoIngresoPage'));
+const IngresoDetalle = lazy(() => import('./pages/inventario/IngresoDetalle'));
 const Planes = lazy(() => import('./pages/planes/Planes'));
 const CheckoutPlan = lazy(() => import('./pages/planes/CheckoutPlan'));
 const PublicCheckoutPlan = lazy(() => import('./pages/planes/PublicCheckoutPlan'));
@@ -44,9 +46,13 @@ const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const ControlCourier = lazy(() => import('./pages/courier/control-courier').then(m => ({ default: m.ControlCourier })));
 const AbastecimientoAdmin = lazy(() => import('./pages/abastecimiento/AbastecimientoAdmin'));
+const SolicitudAbastecimientoDetalle = lazy(() => import('./pages/abastecimiento/SolicitudAbastecimientoDetalle'));
+const MisAbastecimientos = lazy(() => import('./pages/abastecimiento/MisAbastecimientos'));
 const RedFulfillment = lazy(() => import('./pages/fulfillment/RedFulfillment'));
 const CentroFulfillmentDetalle = lazy(() => import('./pages/fulfillment/CentroDetalle'));
 const ProveedoresLogisticos = lazy(() => import('./pages/fulfillment/ProveedoresLogisticos'));
+const IngresosFulfillmentAdmin = lazy(() => import('./pages/fulfillment/IngresosFulfillmentAdmin'));
+const PedidosPrepararGesicomm = lazy(() => import('./pages/fulfillment/PedidosPrepararGesicomm'));
 const SeguimientoConfig = lazy(() => import('./pages/courier/SeguimientoConfig').then(m => ({ default: m.SeguimientoConfig })));
 const EducacionView = lazy(() => import('./pages/educacion/EducacionView'));
 const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
@@ -200,6 +206,7 @@ import ThemeProvider from './components/public/ThemeProvider';
 function App() {
   return (
     <ThemeProvider>
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <Router>
         <InicializarPixelPlataforma />
         <Suspense fallback={
@@ -263,9 +270,18 @@ function App() {
 
         {/* Otras secciones */}
         <Route path="/orders" element={
-          <AdminRoute><DashboardLayout><ControlCourier /></DashboardLayout></AdminRoute>
+          <RequireTienda><DynamicLayout><ControlCourier /></DynamicLayout></RequireTienda>
         } />
         {/* Abastecimiento: sección propia, no una pestaña dentro de Pedidos. */}
+        <Route path="/abastecimiento/solicitudes/:id" element={
+          <AdminRoute><DashboardLayout><SolicitudAbastecimientoDetalle /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/mis-abastecimientos" element={
+          <RequireTienda><DynamicLayout><MisAbastecimientos /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/mis-abastecimientos/:id" element={
+          <RequireTienda><DynamicLayout><SolicitudAbastecimientoDetalle /></DynamicLayout></RequireTienda>
+        } />
         <Route path="/abastecimiento" element={
           <AdminRoute><DashboardLayout><AbastecimientoAdmin /></DashboardLayout></AdminRoute>
         } />
@@ -281,6 +297,17 @@ function App() {
         } />
         <Route path="/fulfillment/centros/:id" element={
           <AdminRoute><DashboardLayout><CentroFulfillmentDetalle /></DashboardLayout></AdminRoute>
+        } />
+        {/* Bandeja admin del inbound (Camino 2): stock propio del comercio
+            que va hacia un Centro de Fulfillment de Gesicomm. */}
+        <Route path="/fulfillment/ingresos" element={
+          <AdminRoute><DashboardLayout><IngresosFulfillmentAdmin /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/fulfillment/ingresos/:id" element={
+          <AdminRoute><DashboardLayout><IngresoDetalle /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/fulfillment/pedidos-a-preparar" element={
+          <AdminRoute><DashboardLayout><PedidosPrepararGesicomm /></DashboardLayout></AdminRoute>
         } />
         <Route path="/customers" element={
           <AdminRoute><DashboardLayout><div><h1>Clientes</h1><p>En construcción</p></div></DashboardLayout></AdminRoute>
@@ -381,6 +408,9 @@ function App() {
         } />
         <Route path="/inventario/nuevo" element={
           <RequireTienda><DynamicLayout><NuevoIngresoPage /></DynamicLayout></RequireTienda>
+        } />
+        <Route path="/inventario/:id" element={
+          <RequireTienda><DynamicLayout><IngresoDetalle /></DynamicLayout></RequireTienda>
         } />
         {/* Planes: /planes es la pantalla que ve el comercio (catálogo de
             lib/planesCatalogo.js); /admin/planes es donde el admin edita ese

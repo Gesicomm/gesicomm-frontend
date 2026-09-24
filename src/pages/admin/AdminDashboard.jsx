@@ -166,7 +166,7 @@ export default function AdminDashboard() {
         <article className="ad-panel ad-span-8">
           <div className="ad-panel-head">
             <div>
-              <h2>Caja Gesicomm</h2>
+              <h2>Caja Gesicom</h2>
               <p>Incluye suscripciones y abastecimiento. El neto descuenta comisión estimada de PagoPar.</p>
             </div>
             <Link to="/admin/tracking-pagos" className="ad-link">

@@ -10,7 +10,7 @@ import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import FichaBeautyPanel from './FichaBeautyPanel';
 import FichaBasicoPanel from './FichaBasicoPanel';
 import FichaComboPanel from './FichaComboPanel';
-import { claveMedioProducto, MiniaturaMediaProducto, normalizarMedioProducto } from '../templates/mediaGaleria';
+import { claveMedioProducto, GALERIA_FONDOS, MiniaturaMediaProducto, normalizarMedioProducto } from '../templates/mediaGaleria';
 import '../../landing/landing.css';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
@@ -85,6 +85,22 @@ export default function ProductoPanel({
       ? medios
       : (imagenes || []).map(img => ({ tipo: 'imagen', id: img.id, imagen_id: img.id, url: img.url, es_principal: img.es_principal }))
   ), [medios, imagenes]);
+
+  // Fondo de galería: por ahora vive en ficha_basico.hero (ver
+  // fichaBasico.js) — el único de los 4 templates ya wireado acá. En
+  // Fitness/Tech/Beauty el control simplemente no aparece todavía, en vez
+  // de aparecer y no hacer nada.
+  const heroBasicoResuelto = fichaBasicoResuelta?.hero || {};
+  const galeriaFondo = fichaBasico?.hero?.galeria_fondo || heroBasicoResuelto.galeria_fondo || 'blanco';
+  const galeriaFondoColor = fichaBasico?.hero?.galeria_fondo_color || heroBasicoResuelto.galeria_fondo_color || '';
+
+  function actualizarGaleriaFondo(cambios) {
+    if (!onFichaBasico) return;
+    onFichaBasico({
+      ...(fichaBasico || {}),
+      hero: { ...(fichaBasico?.hero || heroBasicoResuelto || {}), ...cambios },
+    });
+  }
 
   // ProductPicker llama onToggle con el item completo — necesitamos
   // traducir eso a agregar/quitar del array de relacionados.
@@ -247,6 +263,52 @@ export default function ProductoPanel({
                 </button>
               </form>
             </div>
+
+            {/* ─── Fondo de galería ─────────────────────────────────── */}
+            {fichaBasicoActiva && (
+              <div>
+                <label className="block text-xs font-semibold text-fg/60 mb-1.5">Fondo de galería</label>
+                <p className="text-[11px] text-fg/35 mb-2 leading-relaxed">
+                  El color detrás de las fotos y miniaturas. No modifica las imágenes.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {Object.entries(GALERIA_FONDOS).filter(([clave]) => clave !== 'personalizado').map(([clave, { label, hex }]) => (
+                    <button
+                      key={clave}
+                      type="button"
+                      onClick={() => actualizarGaleriaFondo({ galeria_fondo: clave })}
+                      title={label}
+                      aria-label={label}
+                      className={`w-7 h-7 rounded-full border-2 transition-colors ${galeriaFondo === clave ? 'border-fg' : 'border-fg/15 hover:border-fg/40'}`}
+                      style={{ background: hex, boxShadow: hex === '#FFFFFF' ? 'inset 0 0 0 1px rgba(0,0,0,0.08)' : 'none' }}
+                    />
+                  ))}
+                  <label
+                    title="Personalizado"
+                    className={`w-7 h-7 rounded-full border-2 cursor-pointer relative overflow-hidden shrink-0 ${galeriaFondo === 'personalizado' ? 'border-fg' : 'border-fg/15 hover:border-fg/40'}`}
+                    style={{ background: /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(galeriaFondoColor) ? galeriaFondoColor : 'conic-gradient(red,yellow,lime,cyan,blue,magenta,red)' }}
+                  >
+                    <input
+                      type="color"
+                      value={/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(galeriaFondoColor) ? galeriaFondoColor : '#ffffff'}
+                      onChange={e => actualizarGaleriaFondo({ galeria_fondo: 'personalizado', galeria_fondo_color: e.target.value })}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      aria-label="Elegir color personalizado"
+                    />
+                  </label>
+                  {galeriaFondo === 'personalizado' && (
+                    <input
+                      type="text"
+                      value={galeriaFondoColor}
+                      onChange={e => actualizarGaleriaFondo({ galeria_fondo: 'personalizado', galeria_fondo_color: e.target.value })}
+                      placeholder="#RRGGBB"
+                      maxLength={7}
+                      className={`${CAMPO} w-24 text-xs`}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* ─── Descripción ──────────────────────────────────────── */}
             {/* Un combo todavía no tiene override de descripción por
@@ -464,9 +526,14 @@ export default function ProductoPanel({
                   eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
                   lead: descripcion || '',
                   descripcion: descripcion || '',
+                  faqTitulo: faqTitulo || 'Preguntas frecuentes',
                 }}
                 modo="producto"
                 onChange={onFichaBasico}
+                faq={faq}
+                onFaqChange={onFaqChange}
+                faqTitulo={faqTitulo}
+                onFaqTitulo={onFaqTitulo}
               />
             )}
 

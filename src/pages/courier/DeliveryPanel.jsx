@@ -12,6 +12,10 @@ function normalizarRegla(regla) {
   return {
     departamento: regla.departamento || "",
     ciudad: regla.ciudad || "",
+    ciudad_id: regla.ciudad_id || null,
+    departamento_id: regla.departamento_id || null,
+    pais_id: regla.pais_id || null,
+    tipo_cobertura: regla.tipo_cobertura || "CIUDAD",
     courier_id: regla.courier_id ? String(regla.courier_id) : "",
     tipo_pago: regla.tipo_pago || "Ambos",
     rango_min: Number(regla.rango_min) || 0,
@@ -32,6 +36,10 @@ function paraApi(filas) {
     .map(f => ({
       departamento: f.departamento.trim() || null,
       ciudad: f.ciudad.trim(),
+      ciudad_id: f.ciudad_id || null,
+      departamento_id: f.departamento_id || null,
+      pais_id: f.pais_id || null,
+      tipo_cobertura: f.tipo_cobertura || "CIUDAD",
       courier_id: f.courier_id || null,
       tipo_pago: f.tipo_pago || "Ambos",
       rango_min: Number(f.rango_min) || 0,

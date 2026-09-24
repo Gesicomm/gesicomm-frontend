@@ -91,16 +91,18 @@
   position: relative;
   display: grid;
   place-items: center;
-  aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 20px;
-  background:
-    radial-gradient(circle at 60% 35%, var(--bpp-accent-suave) 0, transparent 62%),
-    var(--bpp-surface);
+  background: #fff;
 }
 
-.bpp-foto img { width: 100%; height: 100%; object-fit: cover; }
-.bpp-foto.vacia { color: var(--bpp-muted); }
+.bpp-foto .lsp-media-frame {
+  width: 100%;
+  border-radius: 20px;
+}
+
+.bpp-foto img { display: block; }
+.bpp-foto.vacia { color: var(--bpp-muted); aspect-ratio: 4 / 3; background: #fff; }
 
 .bpp-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -112,11 +114,15 @@
   overflow: hidden;
   border: 1px solid var(--bpp-border);
   border-radius: 12px;
-  background: var(--bpp-surface);
+  background: #fff;
+  box-sizing: border-box;
 }
 
-.bpp-miniatura.activa { border: 2px solid var(--bpp-accent); }
-.bpp-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.bpp-miniatura.activa {
+  border: 2px solid var(--bpp-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bpp-accent) 28%, transparent);
+}
+.bpp-miniatura img { width: 100%; height: 100%; display: block; }
 
 .bpp-eyebrow {
   display: flex;
@@ -369,18 +375,27 @@
 .bpp-pack-sub { color: var(--bpp-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
 
 .bpp-pack-imagen {
-  display: block;
+  position: relative;
+  display: grid;
+  place-items: center;
   width: 100%;
-  height: 130px;
-  margin: 8px 0;
+  height: 210px;
+  margin: 12px 0 12px;
   overflow: hidden;
   border-radius: 12px;
-  background: var(--bpp-surface);
+  background: var(--lsp-galeria-fondo, #fff);
   color: var(--bpp-muted);
 }
 
-.bpp-pack-imagen img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.bpp-pack-imagen > svg { margin: 50px auto 0; display: block; }
+.bpp-pack-imagen img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.bpp-pack-imagen > svg { margin: 0; display: block; }
 
 .bpp-pack-precio { font-size: 22px; font-weight: 900; letter-spacing: -.02em; }
 .bpp-pack del { color: var(--bpp-muted); font-size: 11px; }
@@ -446,6 +461,12 @@
 }
 .bpp-variante-pill.activa { border-color: var(--bpp-accent); background: var(--bpp-accent-suave); color: var(--bpp-accent); }
 .bpp-variante-pill:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+/* Agotada: existe pero sin stock. Se puede elegir para ver su foto; la compra se bloquea. */
+.bpp-variante-pill.agotada { text-decoration: line-through; opacity: .6; }
+.bpp-variante-pill.agotada.activa { opacity: 1; }
+.bpp-variante-agotada { margin: 8px 0 0; font-size: 12px; opacity: .75; }
+.bpp-cta:disabled,
+.bpp-pack-cta:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 
 /* ── 5 · Beneficios ───────────────────────────────────────────────── */
 
@@ -573,7 +594,12 @@
 
 /* ── 10 · FAQ ─────────────────────────────────────────────────────── */
 
-.bpp-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+.bpp-faq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 14px 20px;
+}
 
 .bpp-faq-item {
   border: 1px solid var(--bpp-border);
@@ -589,18 +615,27 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 14px 16px;
+  min-height: 58px;
+  padding: 17px 18px;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
   font-size: 12.5px;
   font-weight: 600;
+  line-height: 1.35;
 }
 
 .bpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; color: var(--bpp-muted); }
 .bpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--bpp-accent); }
-.bpp-faq-item p { margin: 0; padding: 0 16px 14px; color: var(--bpp-muted); font-size: 11.5px; line-height: 1.6; }
+.bpp-faq-respuesta {
+  padding: 0 18px 18px;
+  color: var(--bpp-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.bpp-faq-respuesta > * { margin-top: 0; }
+.bpp-faq-respuesta > *:last-child { margin-bottom: 0; }
 
 /* ── 11 · Complementos ────────────────────────────────────────────── */
 

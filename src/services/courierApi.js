@@ -25,6 +25,11 @@ export const getDeliveryZonas = async () => {
   return data;
 };
 
+export const getCourierGeografia = async (filtros = {}) => {
+  const { data } = await api.post('/couriers/geografia', filtros);
+  return data;
+};
+
 /**
  * Reemplaza tarifas de delivery. `courierIds` acota el alcance: sin él el
  * backend borra TODAS las del comercio y reescribe lo que llegue, así que un
@@ -62,8 +67,18 @@ export const createEnvio = async (envioData) => {
  * los campos del formulario (ciudad, dirección, courier, método de pago,
  * facturación, etc.) — el backend solo toca los campos que vienen definidos.
  */
+export const listarPedidosParaPrepararGesicomm = async () => {
+  const { data } = await api.get('/envios/gesicomm/pendientes');
+  return data;
+};
+
 export const updateEstadoEnvio = async (id, datos) => {
   const { data } = await api.put(`/envios/${id}/estado`, datos);
+  return data;
+};
+
+export const getProveedorLogisticoMatch = async (id) => {
+  const { data } = await api.get(`/envios/${id}/proveedor-logistico-sugerido`);
   return data;
 };
 

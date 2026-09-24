@@ -22,6 +22,8 @@ export const productService = {
     }).then(r => r.data),
   actualizarImagen: (productoId, imgId, data) =>
     API.put(`/productos/${productoId}/imagenes/${imgId}`, data).then(r => r.data),
+  reprocesarImagen: (productoId, imgId, data) =>
+    API.post(`/productos/${productoId}/imagenes/${imgId}/reprocesar`, data).then(r => r.data),
   eliminarImagen: (productoId, imgId) =>
     API.delete(`/productos/${productoId}/imagenes/${imgId}`).then(r => r.data),
 };

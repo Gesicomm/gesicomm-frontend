@@ -160,7 +160,9 @@
   background: rgba(245, 158, 11, 0.08);
 }
 
-.pa-campo input {
+.pa-campo input,
+.pa-campo select,
+.pa-campo textarea {
   width: 100%;
   box-sizing: border-box;
   background: var(--vit-bg);
@@ -173,8 +175,13 @@
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.pa-campo input::placeholder { color: var(--vit-muted-2); font-family: inherit; }
-.pa-campo input:focus {
+.pa-campo input::placeholder,
+.pa-campo textarea::placeholder { color: var(--vit-muted-2); font-family: inherit; }
+.pa-campo select option { background: var(--vit-bg); color: var(--vit-text); }
+.pa-campo textarea { resize: vertical; min-height: 86px; }
+.pa-campo input:focus,
+.pa-campo select:focus,
+.pa-campo textarea:focus {
   border-color: var(--vit-accent);
   box-shadow: 0 0 0 2px var(--vit-accent-soft);
 }

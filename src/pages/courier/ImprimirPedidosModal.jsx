@@ -80,6 +80,12 @@ export function ImprimirPedidosModal({ open, onClose, envios = [], fechaDesde, o
     return {};
   };
 
+  const getPagoLabel = (envio) => {
+    if (envio.estado === "Entregado" && envio.metodo_pago) return envio.metodo_pago;
+    const pagoAnticipado = envio.pago_anticipado === true || envio.pago_anticipado === 1 || String(envio.pago_anticipado).toLowerCase() === "true";
+    return pagoAnticipado ? "Pago anticipado" : "Contra entrega";
+  };
+
   // Regla @page dinamica segun preset de medida
   const getPageStyleRule = () => {
     if (presetTamano === "4x6") return `@page { size: 101mm 152mm; margin: 0; }`;
@@ -450,10 +456,10 @@ function EtiquetaPedidoItem({ envio, tituloHeader, presetClass, customStyle, men
       {mensaje?.posicion === 'centro' && blockMensaje}
       {qr?.posicion === 'centro' && blockQR}
 
-      {/* Sección Inferior: Monto, Método de Pago, Obs y Firmas */}
+      {/* Sección Inferior: Monto, condición/método de pago, Obs y Firmas */}
       <div>
         <div className="etiqueta-row" style={{ marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div><strong>MÉTODO DE PAGO:</strong> {envio.metodo_pago || 'Efectivo'}</div>
+          <div><strong>PAGO:</strong> {getPagoLabel(envio)}</div>
           <div><strong>DELIVERY:</strong> {formatGs(envio.costo_envio || 0)}</div>
         </div>
 

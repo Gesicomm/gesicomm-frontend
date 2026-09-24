@@ -149,7 +149,7 @@ export function MetodosPagoCrud() {
                   </span>
                 </td>
                 <td style={{ textAlign: 'right' }}>
-                  <div className="action-btns" style={{ justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                     <button type="button" className="btn-icon" onClick={() => openEdit(m)}>
                       <Pencil size={15} />
                     </button>

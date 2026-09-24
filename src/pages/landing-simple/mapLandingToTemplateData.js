@@ -128,7 +128,9 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
     },
     tema: {
       fondo: draft?.color_fondo || null,
-      texto: draft?.color_texto || null,
+      // Sin override propio, hereda el color secundario de Branding en vez
+      // de caer directo al negro/blanco fijo del template.
+      texto: draft?.color_texto || tienda?.color_secundario || null,
       acento: draft?.color_primario || null,
     },
   };
@@ -205,7 +207,7 @@ export function mapPublicDtoToTemplateData(dto) {
     },
     tema: {
       fondo: dto?.tema?.fondo || null,
-      texto: dto?.tema?.texto || null,
+      texto: dto?.tema?.texto || dto?.tema?.secundario || null,
       acento: dto?.tema?.primario || null,
     },
   };

@@ -24,7 +24,7 @@ export const TIPOS = [
   {
     valor: 'FLOTA_PROPIA',
     etiqueta: 'Flota propia',
-    ayuda: 'Vehículos que maneja Gesicomm.',
+    ayuda: 'Vehículos que maneja Gesicom.',
   },
 ];
 

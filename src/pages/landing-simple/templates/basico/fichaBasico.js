@@ -70,6 +70,11 @@ export const DEFAULTS_BASICO = {
     lead: '',                // vacío = la descripción del producto
     caracteristicas: [],     // vacío = los beneficios del producto
     cta_texto: 'Comprar ahora — envío gratis',
+    // Fondo del escenario de la galería (marco + miniaturas + espacios
+    // alrededor) — una propiedad visual del bloque, no de las fotos en sí.
+    // Ver GALERIA_FONDOS/resolverFondoGaleria en mediaGaleria.jsx.
+    galeria_fondo: 'blanco',       // blanco|negro|gris_claro|gris_medio|personalizado
+    galeria_fondo_color: '',       // hex, solo cuando galeria_fondo==='personalizado'
   },
 
   precio: {

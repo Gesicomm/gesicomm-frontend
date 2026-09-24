@@ -37,10 +37,10 @@ function imagenesOrdenadas(imagenes = [], imagenesNuevas = []) {
   return [
     ...[...imagenes].sort((a, b) => (a.orden || 0) - (b.orden || 0)),
     ...imagenesNuevas,
-  ].map(img => img?.url).filter(Boolean);
+  ].filter(img => img?.url);
 }
 
-function variantesPreview(variantes = [], precioBase = 0) {
+function variantesPreview(variantes = [], precioBase = 0, imagenes = []) {
   return variantes
     // Con Opciones, la fila no trae `nombre` tipeado — se deriva de
     // `valores` (mismo criterio que el backend). Las combinaciones
@@ -50,14 +50,18 @@ function variantesPreview(variantes = [], precioBase = 0) {
     .filter(v => v.nombre)
     .map((v, idx) => {
       const diferencial = Number(v.precio_diferencial) || 0;
+      const id = v.id || `preview-${idx}`;
       return {
-        id: v.id || `preview-${idx}`,
+        id,
         nombre: v.nombre,
         sku_variante: v.sku_variante || '',
         stock: Number(v.stock) || 0,
         precio_diferencial: diferencial,
         precio_efectivo: Math.max(0, Number(precioBase) + diferencial),
         valoresOpcion: v.valores || [],
+        imagenes: v.id
+          ? (imagenes || []).filter(img => img.variante_id === v.id)
+          : [],
       };
     });
 }
@@ -110,7 +114,7 @@ export default function ProductLandingPreview({
       precio_antes: Number(precioAncla) > Number(precio) ? Number(precioAncla) : null,
       imagenes: imagenesOrdenadas(imagenes, imagenesNuevas),
       ofertas,
-      variantes: tieneVariantes ? variantesPreview(variantes, precio || 0) : [],
+      variantes: tieneVariantes ? variantesPreview(variantes, precio || 0, imagenesOrdenadas(imagenes, imagenesNuevas)) : [],
       opciones: tieneVariantes
         ? (opciones || [])
           .map(o => ({ nombre: (o.nombre || '').trim(), orden: o.orden || 0, valores: (o.valores || []).map(v => (v.valor || '').trim()).filter(Boolean) }))

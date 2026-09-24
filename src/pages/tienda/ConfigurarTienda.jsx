@@ -5,7 +5,7 @@ import {
   Save, Check, X, Loader, AlertCircle, Globe, Sparkles, Crown,
   ShieldCheck, Trash2, Eye, EyeOff, HelpCircle, CheckCircle2, Info,
   Store, MessageCircle, BarChart3, MousePointerClick, CreditCard, Coins,
-  ArrowRight, MapPin
+  ArrowRight, Palette
 } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
 import { planesService } from '../../services/planesService';
@@ -28,15 +28,13 @@ function slugifyLigero(texto) {
     .slice(0, 63);
 }
 
-// Los colores de la tienda (color_primario/secundario/fondo) NO están acá a
-// propósito: se editan en cada landing, desde su propio editor. Al no viajar
-// en el payload, TiendaService.camposEditables ni los toca (solo asigna los
-// campos !== undefined), así que los valores guardados quedan intactos y las
-// landings que no definen color propio los siguen heredando como default.
 const FORM_INICIAL = {
   nombre: '',
   documento: '',
   ruc: '',
+  color_primario: '#10b981',
+  color_secundario: '#059669',
+  color_fondo: '#0a0a0a',
   whatsapp: '',
   telefono: '',
   mensaje_contacto: 'Hola, me interesa {producto}',
@@ -64,7 +62,7 @@ const TABS = [
     label: 'Tienda',
     icono: Store,
     titulo: 'Tu tienda',
-    desc: 'Cómo se llama tu negocio, dónde se publica y bajo qué dominio. Los colores se configuran en cada landing, desde su propio editor.',
+    desc: 'Cómo se llama tu negocio, dónde se publica, bajo qué dominio y con qué identidad visual sale tu marca.',
   },
   {
     id: 'contacto',
@@ -72,13 +70,6 @@ const TABS = [
     icono: MessageCircle,
     titulo: 'Contacto',
     desc: 'Por dónde te escriben tus clientes y con qué mensaje te llegan.',
-  },
-  {
-    id: 'deposito',
-    label: 'Depósito',
-    icono: MapPin,
-    titulo: 'Dirección de depósito',
-    desc: 'Adónde te enviamos la mercadería vendida de productos que administra Gesicomm. No es la dirección de entrega de tus clientes.',
   },
   {
     id: 'pasarelas',
@@ -169,6 +160,9 @@ export default function ConfigurarTienda() {
           nombre: data.nombre || '',
           documento: data.documento || '',
           ruc: data.ruc || '',
+          color_primario: data.color_primario || FORM_INICIAL.color_primario,
+          color_secundario: data.color_secundario || FORM_INICIAL.color_secundario,
+          color_fondo: data.color_fondo || FORM_INICIAL.color_fondo,
           whatsapp: data.whatsapp || '',
           telefono: data.telefono || '',
           mensaje_contacto: data.mensaje_contacto || FORM_INICIAL.mensaje_contacto,
@@ -450,6 +444,74 @@ export default function ConfigurarTienda() {
                     </div>
                   </section>
 
+                  {/* Branding */}
+                  <section className="tn-group">
+                    <div className="tn-group-head">
+                      <h3><Palette size={16} /> Branding</h3>
+                      <p>Estos colores se aplican al catálogo público y a las landings. Si editás el tema desde el armador, también se reflejan acá.</p>
+                    </div>
+                    <div className="tn-group-body">
+                      <div className="tn-brand-grid">
+                        <label className="tn-color-field">
+                          <span className="tn-field-label">Color principal</span>
+                          <span className="tn-color-control">
+                            <input
+                              type="color"
+                              value={form.color_primario || FORM_INICIAL.color_primario}
+                              onChange={e => handleChange('color_primario', e.target.value)}
+                              aria-label="Color principal"
+                            />
+                            <input
+                              value={form.color_primario || ''}
+                              onChange={e => handleChange('color_primario', e.target.value)}
+                              placeholder="#10B981"
+                              maxLength={7}
+                            />
+                          </span>
+                          <span className="tn-field-hint">Botones, enlaces y acentos de la marca.</span>
+                        </label>
+
+                        <label className="tn-color-field">
+                          <span className="tn-field-label">Color secundario</span>
+                          <span className="tn-color-control">
+                            <input
+                              type="color"
+                              value={form.color_secundario || FORM_INICIAL.color_secundario}
+                              onChange={e => handleChange('color_secundario', e.target.value)}
+                              aria-label="Color secundario"
+                            />
+                            <input
+                              value={form.color_secundario || ''}
+                              onChange={e => handleChange('color_secundario', e.target.value)}
+                              placeholder="#059669"
+                              maxLength={7}
+                            />
+                          </span>
+                          <span className="tn-field-hint">Refuerzos visuales y estados destacados.</span>
+                        </label>
+
+                        <label className="tn-color-field">
+                          <span className="tn-field-label">Fondo de marca</span>
+                          <span className="tn-color-control">
+                            <input
+                              type="color"
+                              value={form.color_fondo || FORM_INICIAL.color_fondo}
+                              onChange={e => handleChange('color_fondo', e.target.value)}
+                              aria-label="Fondo de marca"
+                            />
+                            <input
+                              value={form.color_fondo || ''}
+                              onChange={e => handleChange('color_fondo', e.target.value)}
+                              placeholder="#0A0A0A"
+                              maxLength={7}
+                            />
+                          </span>
+                          <span className="tn-field-hint">Base visual para landings en modo oscuro.</span>
+                        </label>
+                      </div>
+                    </div>
+                  </section>
+
                   {/* Dónde se publica */}
                   <section className="tn-group">
                     <div className="tn-group-head">
@@ -593,43 +655,6 @@ export default function ConfigurarTienda() {
                             )}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-              )}
-
-              {/* ═════════════════ TAB: DIRECCIÓN DE DEPÓSITO ═════════════ */}
-              {tab === 'deposito' && (
-                <div className="tn-tab-content" key="deposito">
-                  <section className="tn-group">
-                    <div className="tn-group-head">
-                      <h3>Gestión de depósitos</h3>
-                      <p>
-                        La administración de las direcciones donde recibís mercadería se ha
-                        trasladado a una nueva sección donde podés gestionar múltiples depósitos.
-                      </p>
-                    </div>
-                    <div className="tn-group-body">
-                      <div className="rounded-lg border border-border bg-surface-50 p-6 text-center">
-                        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <MapPin size={24} />
-                        </div>
-                        <h4 className="m-0 mb-2 text-base font-semibold text-fg">
-                          Nueva sección de Depósitos
-                        </h4>
-                        <p className="m-0 mx-auto mb-6 max-w-sm text-sm text-fg-muted">
-                          Ahora podés crear y administrar múltiples depósitos para tus flujos logísticos, 
-                          además de activar o desactivar direcciones según necesites.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => navigate('/mi-tienda/depositos')}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-5 font-semibold text-white transition-colors hover:bg-primary-hover"
-                        >
-                          Ir a gestionar depósitos
-                          <ArrowRight size={16} />
-                        </button>
                       </div>
                     </div>
                   </section>

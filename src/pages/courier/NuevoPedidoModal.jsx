@@ -100,7 +100,7 @@ function buildFormFromEnvio(envio) {
       direccion: "",
       referencia: "",
       link_maps: "",
-      metodo_pago: "Efectivo",
+      metodo_pago: "",
       metodo_pago_id: "",
       quiere_factura: false,
       razon_social: "",
@@ -151,8 +151,8 @@ function buildFormFromEnvio(envio) {
     direccion: envio.direccion || "",
     referencia: envio.referencia || "",
     link_maps: envio.link_maps || "",
-    metodo_pago: envio.metodo_pago || "Efectivo",
-    metodo_pago_id: envio.metodo_pago_id || "",
+    metodo_pago: envio.estado === "Entregado" ? (envio.metodo_pago || "") : "",
+    metodo_pago_id: envio.estado === "Entregado" ? (envio.metodo_pago_id || "") : "",
     quiere_factura: tieneFactura,
     razon_social: envio.razon_social || (tieneFactura ? nombreCompleto : ""),
     ruc: envio.ruc || "",
@@ -271,17 +271,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
       const metodosActivos = (dataMetodos || []).filter(m => m.activo);
       setMetodosPago(metodosActivos);
-      if (metodosActivos.length > 0) {
-        setForm(prev => {
-          if (prev.metodo_pago_id && metodosActivos.some(m => m.id === Number(prev.metodo_pago_id))) {
-            return prev;
-          }
-          const porNombre = prev.metodo_pago && metodosActivos.find(m => m.nombre.toLowerCase() === prev.metodo_pago.toLowerCase());
-          const porDefecto = metodosActivos.find(m => m.nombre.toLowerCase().includes('efectivo'));
-          const elegido = porNombre || porDefecto || metodosActivos[0];
-          return { ...prev, metodo_pago: elegido.nombre, metodo_pago_id: elegido.id };
-        });
-      }
     } catch (err) {
       console.error("Error al cargar datos iniciales:", err);
     }
@@ -366,13 +355,17 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       }
     };
 
-    deliveryZonas.forEach(z => agregar({ ciudad: z.ciudad, departamento: z.departamento }));
+    deliveryZonas
+      .filter(z => z.tipo_cobertura !== 'RESTO_PAIS')
+      .forEach(z => agregar({ ciudad: z.ciudad, departamento: z.departamento }));
 
     couriers.forEach(c => {
       if (c.tarifas && Array.isArray(c.tarifas)) {
-        c.tarifas.forEach(t => {
-          agregar({ ciudad: t.ciudad_zona, departamento: t.departamento });
-        });
+        c.tarifas
+          .filter(t => t.tipo_cobertura !== 'RESTO_PAIS')
+          .forEach(t => {
+            agregar({ ciudad: t.ciudad_zona, departamento: t.departamento });
+          });
       }
     });
 
@@ -464,18 +457,6 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       }
       return nextForm;
     });
-  };
-
-  // Solo fija QUIÉN cobra y a nombre de qué método — ya no toca la tarifa
-  // de delivery. Eso ahora depende de "Pago anticipado" (ver más abajo),
-  // no de qué método puntual se elija.
-  const handleMetodoPagoChange = (metodoPagoId) => {
-    const metodo = metodosPago.find(m => m.id === Number(metodoPagoId));
-    setForm(prev => ({
-      ...prev,
-      metodo_pago_id: metodoPagoId,
-      metodo_pago: metodo ? metodo.nombre : prev.metodo_pago,
-    }));
   };
 
   // "¿Contra entrega o ya pagó?" — nada que ver con qué método puntual se
@@ -742,12 +723,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       return;
     }
 
-    const metodoSeleccionado = metodosPago.find(m => m.id === Number(form.metodo_pago_id));
+    const formSinMetodoPago = { ...form };
+    delete formSinMetodoPago.metodo_pago;
+    delete formSinMetodoPago.metodo_pago_id;
     const comunes = {
-      ...form,
+      ...formSinMetodoPago,
       courier_id: form.courier_id ? Number(form.courier_id) : null,
-      metodo_pago_id: form.metodo_pago_id ? Number(form.metodo_pago_id) : null,
-      comision_pct_aplicada: metodoSeleccionado ? Number(metodoSeleccionado.comision_porcentaje) : 0,
       costo_envio: Number(form.costo_envio) || 0,
       delivery_a_cargo: deliveryLoPagaNegocio ? "negocio" : "cliente",
       pago_anticipado: form.pago_anticipado === true,

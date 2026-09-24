@@ -112,32 +112,79 @@
 
 .fpp-hero-imagen {
   position: relative;
-  aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
   overflow: hidden;
   border-radius: 18px;
-  background: var(--fpp-surface);
+  background: #fff;
+}
+
+.fpp-hero-imagen .lsp-media-frame {
+  width: 100%;
+  border-radius: 18px;
 }
 
 .fpp-hero-imagen img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  display: block;
 }
 
-.fpp-hero-imagen.vacia { color: var(--fpp-muted); }
+.fpp-hero-imagen.vacia {
+  color: var(--fpp-muted);
+  aspect-ratio: 4 / 3;
+  background: #fff;
+}
 
 .fpp-hero-badge-descuento {
   position: absolute;
-  top: 14px;
-  left: 14px;
-  padding: 5px 11px;
-  border-radius: 999px;
+  top: 42px;
+  right: -104px;
+  z-index: 3;
+  width: 320px;
+  overflow: hidden;
+  pointer-events: none;
+  transform: rotate(34deg);
   background: var(--fpp-accent);
   color: var(--fpp-on-accent);
-  font-size: 11px;
+  padding: 9px 44px;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, .16),
+    inset 0 -9px 0 rgba(0, 0, 0, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .24);
+  font-size: 10px;
   font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: fpp-ribbon-pulse 2.8s ease-in-out infinite;
+}
+
+.fpp-hero-badge-descuento::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 -65%;
+  width: 52%;
+  transform: skewX(-24deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .42), transparent);
+  animation: fpp-ribbon-shine 2.8s ease-in-out infinite;
+}
+
+@keyframes fpp-ribbon-pulse {
+  0%, 100% { transform: rotate(34deg) scale(1); filter: brightness(1); }
+  12% { transform: rotate(34deg) scale(1.06); filter: brightness(1.16); }
+  24% { transform: rotate(34deg) scale(.985); }
+  36% { transform: rotate(34deg) scale(1.025); }
+  50% { transform: rotate(34deg) scale(1); filter: brightness(1.06); }
+}
+
+@keyframes fpp-ribbon-shine {
+  0%, 42% { left: -65%; }
+  72%, 100% { left: 112%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fpp-hero-badge-descuento,
+  .fpp-hero-badge-descuento::after { animation: none; }
 }
 
 .fpp-miniaturas { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -149,11 +196,15 @@
   overflow: hidden;
   border: 1px solid var(--fpp-border);
   border-radius: 10px;
-  background: var(--fpp-surface);
+  background: #fff;
+  box-sizing: border-box;
 }
 
-.fpp-miniatura.activa { border: 2px solid var(--fpp-accent); }
-.fpp-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+.fpp-miniatura.activa {
+  border: 2px solid var(--fpp-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--fpp-accent) 28%, transparent);
+}
+.fpp-miniatura img { width: 100%; height: 100%; display: block; }
 
 .fpp-eyebrow {
   margin: 0;
@@ -266,6 +317,11 @@
 }
 .fpp-variante-pill.activa { border-color: var(--fpp-accent); background: var(--fpp-accent-suave); color: var(--fpp-accent); }
 .fpp-variante-pill:disabled { opacity: .4; cursor: not-allowed; text-decoration: line-through; }
+/* Agotada: existe pero sin stock. Se puede elegir para ver su foto; la compra se bloquea. */
+.fpp-variante-pill.agotada { text-decoration: line-through; opacity: .6; }
+.fpp-variante-pill.agotada.activa { opacity: 1; }
+.fpp-variante-agotada { margin: 8px 0 0; font-size: 12px; opacity: .75; }
+.fpp-cierre-cta:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
 
 .fpp-microcopy {
   display: flex;
@@ -400,27 +456,29 @@
 .fpp-pack-nombre { font-size: 14px; font-weight: 900; text-transform: uppercase; }
 .fpp-pack-sub { color: var(--fpp-muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; }
 
-/* Alto FIJO (no aspect-ratio): con aspect-ratio la foto escalaba con el
-   ancho de la tarjeta y en pocas tarjetas se volvía gigante — ver la nota
-   de arriba en .fpp-packs. width/height explícitos + object-fit: cover en
-   el <img> (nunca max-width/max-height solos): sin una caja de tamaño
-   fijo contra la cual recortar, el navegador no tiene garantizado aplicar
-   bien `object-fit`, y con fotos reales (no renders de producto con fondo
-   transparente) el resultado podía verse estirado o mal recortado según
-   la relación de aspecto de cada imagen subida. */
+/* Alto fijo: evita que pocas tarjetas se estiren demasiado y mantiene la
+   imagen completa aunque el archivo subido tenga una relación incómoda. */
 .fpp-pack-imagen {
+  position: relative;
   width: 100%;
-  height: 130px;
-  margin: 6px 0;
+  height: 210px;
+  margin: 12px 0 12px;
   border-radius: 8px;
-  background: var(--fpp-surface);
+  background: var(--lsp-galeria-fondo, #fff);
   overflow: hidden;
   color: var(--fpp-muted);
   display: grid;
   place-items: center;
 }
 
-.fpp-pack-imagen img { width: 100%; height: 100%; object-fit: cover; }
+.fpp-pack-imagen img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 .fpp-pack-precio-normal { color: var(--fpp-muted); font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
 
@@ -605,9 +663,21 @@
 
 /* ── 10 · FAQ ─────────────────────────────────────────────────────── */
 
-.fpp-faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.fpp-faq-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 14px 18px;
+}
 
-.fpp-faq-item { border-top: 1px solid var(--fpp-border); }
+.fpp-faq-item {
+  height: fit-content;
+  overflow: hidden;
+  border: 1px solid var(--fpp-border);
+  border-radius: 10px;
+  background: var(--fpp-card);
+}
+.fpp-faq-item.abierta { border-color: var(--fpp-border-fuerte); }
 
 .fpp-faq-item button {
   display: flex;
@@ -615,18 +685,27 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 16px 6px;
+  min-height: 58px;
+  padding: 17px 18px;
   border: 0;
   background: none;
   color: inherit;
   text-align: left;
   font-size: 12.5px;
   font-weight: 700;
+  line-height: 1.35;
 }
 
 .fpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; }
 .fpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--fpp-accent); }
-.fpp-faq-item p { margin: 0; padding: 0 6px 16px; color: var(--fpp-muted); font-size: 11.5px; line-height: 1.6; }
+.fpp-faq-respuesta {
+  padding: 0 18px 18px;
+  color: var(--fpp-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.fpp-faq-respuesta > * { margin-top: 0; }
+.fpp-faq-respuesta > *:last-child { margin-bottom: 0; }
 
 /* ── 11 · Complementarios ─────────────────────────────────────────── */
 
@@ -751,6 +830,7 @@
 .fpp-root.es-movil .fpp-wrap { width: calc(100% - 28px); }
 .fpp-root.es-movil .fpp-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 0; }
 .fpp-root.es-movil .fpp-hero-galeria { position: static; }
+.fpp-root.es-movil .fpp-hero-badge-descuento { top: 32px; right: -80px; width: 248px; font-size: 8.6px; padding: 7px 34px; }
 .fpp-root.es-movil .fpp-hero h1 { font-size: 34px; }
 .fpp-root.es-movil .fpp-faq-grid { grid-template-columns: 1fr; }
 .fpp-root.es-movil .fpp-seccion { padding: 38px 0; }
@@ -765,6 +845,7 @@
   .fpp-wrap { width: calc(100% - 28px); }
   .fpp-hero { grid-template-columns: 1fr; gap: 26px; padding: 30px 0; }
   .fpp-hero-galeria { position: static; }
+  .fpp-hero-badge-descuento { top: 32px; right: -80px; width: 248px; font-size: 8.6px; padding: 7px 34px; }
   .fpp-hero h1 { font-size: 34px; }
   .fpp-faq-grid { grid-template-columns: 1fr; }
   .fpp-seccion { padding: 38px 0; }

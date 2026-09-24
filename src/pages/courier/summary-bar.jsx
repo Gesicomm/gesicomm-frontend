@@ -45,8 +45,9 @@ export function SummaryBar({ envios = [], couriers = [] }) {
       const esDevuelto = estadoNorm === "Devuelto";
       const esEntregado = estadoNorm === "Entregado" || estadoNorm === "Rendido";
       
-      const metodo = e.metodo_pago || "Efectivo";
-      const esPrepago = metodo === "Transferencia" || metodo === "Pagado";
+      const pagoAnticipado = e.pago_anticipado === true || e.pago_anticipado === 1 || String(e.pago_anticipado).toLowerCase() === "true";
+      const metodo = e.metodo_pago || "";
+      const esPrepago = pagoAnticipado || metodo === "Transferencia" || metodo === "Pagado";
 
       // 1. Cobros en Efectivo o POS (se cobran por courier únicamente cuando están Entregados o Rendidos)
       if (esEntregado && !esPrepago) {
@@ -73,8 +74,9 @@ export function SummaryBar({ envios = [], couriers = [] }) {
       const esDevuelto = estadoNorm === "Devuelto";
       const esEntregado = estadoNorm === "Entregado" || estadoNorm === "Rendido";
       
-      const metodo = e.metodo_pago || "Efectivo";
-      const esPrepago = metodo === "Transferencia" || metodo === "Pagado";
+      const pagoAnticipado = e.pago_anticipado === true || e.pago_anticipado === 1 || String(e.pago_anticipado).toLowerCase() === "true";
+      const metodo = e.metodo_pago || "";
+      const esPrepago = pagoAnticipado || metodo === "Transferencia" || metodo === "Pagado";
 
       if (esEntregado) {
         facturacion += (Number(e.monto) || 0);

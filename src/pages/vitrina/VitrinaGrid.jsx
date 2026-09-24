@@ -3,15 +3,16 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
-  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket,
+  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck
 } from 'lucide-react';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CuponesModal from './CuponesModal';
-import { getMediaUrl } from '../../services/api';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
 import { verificarSesion } from '../../utils/auth';
+import AbastecerseModal from '../../components/depositos/AbastecerseModal';
+import { ImagenProductoHover } from '../landing-simple/templates/sections.jsx';
 import './vitrina.css';
 
 /* ─── Constantes ─────────────────────────────────────────────────────── */
@@ -132,7 +133,7 @@ function PrecioEditable({ item, onGuardar }) {
 }
 
 /* ─── Componente: card ────────────────────────────────────────────────── */
-function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, filtro }) {
+function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, onAbastecer, filtro }) {
   const esCombo = item.tipo === 'combo';
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
@@ -156,15 +157,18 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
           {badge.label}
         </span>
 
-        {/* Imagen o placeholder */}
-        {item.imagen ? (
-          <img src={getMediaUrl(item.imagen)} alt={item.nombre} loading="lazy" />
-        ) : (
-          <div className={`vit-card-media-placeholder ${esCombo ? 'combo' : ''}`}>
-            {esCombo ? <Layers size={32} /> : <ImageOff size={28} />}
-            <span>{esCombo ? 'Combo' : 'Sin imagen'}</span>
-          </div>
-        )}
+        {/* Imagen o placeholder — con más de una foto, rota la galería al pasar el mouse */}
+        <ImagenProductoHover
+          imagenes={item.imagenes}
+          imagen={item.imagen}
+          alt={item.nombre}
+          fallback={
+            <div className={`vit-card-media-placeholder ${esCombo ? 'combo' : ''}`}>
+              {esCombo ? <Layers size={32} /> : <ImageOff size={28} />}
+              <span>{esCombo ? 'Combo' : 'Sin imagen'}</span>
+            </div>
+          }
+        />
 
         {/* Checkbox de selección */}
         <span
@@ -239,6 +243,19 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
             <ChevronRight size={13} className="vit-card-action-arrow" />
           </button>
 
+          {!esEditable && item.tipo === 'producto' && (
+            <button
+              type="button"
+              className="vit-card-action"
+              style={{ flexShrink: 0, color: 'var(--color-primary, #2563eb)', fontWeight: 600 }}
+              onClick={(e) => { e.stopPropagation(); onAbastecer(item); }}
+              title="Pedir stock a mi depósito"
+            >
+              <Truck size={13} />
+              Abastecerme
+            </button>
+          )}
+
           {esEditable && (
             <button
               type="button"
@@ -267,6 +284,7 @@ export default function VitrinaGrid() {
   const [busqueda, setBusqueda]   = useState('');
   const [orden, setOrden]         = useState('nombre');
   const [seleccionSensibilidad, setSeleccionSensibilidad] = useState(null);
+  const [productoAbastecer, setProductoAbastecer] = useState(null);
   const [categoriasUnicas, setCategoriasUnicas] = useState([]);
   const [proveedoresUnicos, setProveedoresUnicos] = useState([]);
   const [usuarioActual, setUsuarioActual] = useState(null);
@@ -630,6 +648,7 @@ export default function VitrinaGrid() {
               onVerSensibilidad={setSeleccionSensibilidad}
               usuarioActual={usuarioActual}
               onEditarProducto={(id) => navigate(`/products/${id}/editar`)}
+              onAbastecer={(prod) => setProductoAbastecer(prod)}
               filtro={filtro}
             />
           ))}
@@ -658,6 +677,12 @@ export default function VitrinaGrid() {
           onClose={() => setSeleccionSensibilidad(null)}
         />
       )}
+
+      <AbastecerseModal
+        producto={productoAbastecer}
+        open={!!productoAbastecer}
+        onClose={() => setProductoAbastecer(null)}
+      />
 
       <CuponesModal
         abierto={cuponesAbierto}

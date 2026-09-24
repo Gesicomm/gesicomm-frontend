@@ -57,6 +57,22 @@ export default function NotificationBell({
   const handleNotificationClick = async (notification) => {
     setIsOpen(false);
     await onMarkAsRead(notification.id);
+    // Este tipo apunta a un ingreso puntual, no a una seccion fija: la ruta
+    // depende del entidad_id de cada notificacion.
+    if (notification.tipo === 'INGRESO_INVENTARIO_CONFIRMADO' && notification.entidad_id) {
+      navigate(`/fulfillment/ingresos/${notification.entidad_id}`);
+      return;
+    }
+    // Comprobante subido lo ve solo el admin (validar/rechazar); el rechazo
+    // lo ve solo el comercio dueño de la solicitud (reenviar comprobante).
+    if (notification.tipo === 'SOLICITUD_ABASTECIMIENTO_COMPROBANTE_SUBIDO' && notification.entidad_id) {
+      navigate(`/abastecimiento/solicitudes/${notification.entidad_id}`);
+      return;
+    }
+    if (notification.tipo === 'SOLICITUD_ABASTECIMIENTO_PAGO_RECHAZADO' && notification.entidad_id) {
+      navigate(`/mis-abastecimientos/${notification.entidad_id}`);
+      return;
+    }
     const destino = RUTA_POR_TIPO[notification.tipo] || (notification.envio_id ? '/mis-pedidos' : null);
     if (destino) navigate(destino);
   };

@@ -13,7 +13,7 @@ const PASOS_INICIALES = [
 ];
 
 const PASOS_VIA_GESICOMM = [
-  { id: 'en_transito_a_gesicomm', label: 'En tránsito a Gesicomm', icon: Truck },
+  { id: 'en_transito_a_gesicomm', label: 'En tránsito a Gesicom', icon: Truck },
   { id: 'recibido_en_gesicomm', label: 'Recibido en Gesicomm', icon: Warehouse },
 ];
 

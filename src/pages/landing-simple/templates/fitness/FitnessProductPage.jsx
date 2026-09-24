@@ -11,7 +11,8 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
-import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
+import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
+import useSeleccionVariante from '../../../../lib/useSeleccionVariante';
 import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './fitnessProductPage.css';
 
@@ -63,12 +64,10 @@ export default function FitnessProductPage({
 
   const tieneVariantes = (item?.variantes || []).length > 0;
   const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const [seleccion, setSeleccion] = useState(() => {
-    if (!tieneVariantes) return {};
-    const conStock = item.variantes.find(v => v.stock > 0);
-    return seleccionDeVariante(item, conStock || item.variantes[0]);
-  });
+  const [seleccion, setSeleccion] = useSeleccionVariante(item);
   const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
+  // Una variante agotada se puede elegir para ver su foto, pero no comprar.
+  const agotada = varianteAgotada(variante);
 
   // El precio que se muestra arriba y en la barra fija sigue al paquete
   // elegido (paquete y variante no se combinan, igual que en la ficha
@@ -94,7 +93,7 @@ export default function FitnessProductPage({
 
   // Firma única en las tres fichas: siempre un objeto con lo elegido. Así
   // el editor y la landing publicada consumen lo mismo sin adivinar tipos.
-  const comprar = () => onComprar && onComprar({ variante, pack: packElegido, precio: precioMostrado });
+  const comprar = () => !agotada && onComprar && onComprar({ variante, pack: packElegido, precio: precioMostrado });
 
   // La variante solo toma el asiento principal: videos e imágenes generales
   // siguen en la galería porque también venden y explican el producto.
@@ -208,15 +207,15 @@ export default function FitnessProductPage({
               <div className="fpp-variantes-pills">
                 {grupo.valores.map(valor => {
                   const activo = seleccion[grupo.nombre] === valor;
-                  const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                  const estado = estadoValor(item, grupo.nombre, valor, seleccion);
                   return (
                     <button
                       key={valor}
                       type="button"
-                      className={`fpp-variante-pill ${activo ? 'activa' : ''}`}
+                      className={`fpp-variante-pill ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
                       onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                      disabled={!disponible}
-                      title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                      disabled={estado === 'inexistente'}
+                      title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
                     >
                       {valor}
                     </button>
@@ -226,7 +225,9 @@ export default function FitnessProductPage({
             </div>
           ))}
 
-          <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar}>
+          {agotada && <p className="fpp-variante-agotada">Esta opción está sin stock por ahora.</p>}
+
+          <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar} disabled={agotada && !packs.length}>
             {ficha.hero.cta_texto || 'Comprar ahora'} <span aria-hidden="true">→</span>
           </button>
 
@@ -325,7 +326,7 @@ export default function FitnessProductPage({
               )}
 
               <div className="fpp-packs-cta">
-                <button type="button" className="fpp-cta" onClick={comprar}>
+                <button type="button" className="fpp-cta" onClick={comprar} disabled={agotada}>
                   {ficha.hero.cta_texto || 'Comprar ahora'}
                 </button>
               </div>
@@ -472,7 +473,7 @@ export default function FitnessProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={17} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} className="fpp-faq-respuesta" />}
                 </div>
               ))}
             </div>
@@ -534,7 +535,7 @@ export default function FitnessProductPage({
               {ficha.cta_final.titulo && <h2>{ficha.cta_final.titulo}</h2>}
               {ficha.cta_final.texto && <p>{ficha.cta_final.texto}</p>}
             </div>
-            <button type="button" className="fpp-cierre-cta" onClick={packs.length ? irAOfertas : comprar}>
+            <button type="button" className="fpp-cierre-cta" onClick={packs.length ? irAOfertas : comprar} disabled={agotada && !packs.length}>
               {ficha.cta_final.cta_texto || 'Comprar ahora'}
               {ficha.cta_final.cta_nota && <small>{ficha.cta_final.cta_nota}</small>}
             </button>
@@ -553,7 +554,7 @@ export default function FitnessProductPage({
           <b>{precioMostrado != null ? formatPrecio(precioMostrado) : ''}</b>
           {packElegido && <small>{packElegido.nombre}</small>}
         </div>
-        <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar}>
+        <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar} disabled={agotada && !packs.length}>
           {ficha.hero.cta_texto || 'Comprar ahora'}
         </button>
       </div>
@@ -681,7 +682,10 @@ function calcularVariables(t) {
   // blanco sobre el color de marca es lo que el cliente espera de un botón.
   // Cuando no llega (celeste claro: 2,4:1) se cae a texto oscuro, que ahí
   // da 7,9:1. Sin esto, un acento claro deja el botón ilegible.
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
+  // Ver comentario en BasicoProductPage.jsx: elegir el color de MÁS
+  // contraste de los dos, no un corte binario, evita textos casi
+  // invisibles con acentos de luminancia media.
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
 
   // Las franjas de anuncio y garantías van en un tono contrastante contra el
   // cuerpo: si la landing es clara, casi negro; si ya es oscura, un escalón

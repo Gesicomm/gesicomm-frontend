@@ -10,6 +10,7 @@ import { cerrarSesion } from '../utils/auth';
 import ThemeToggle from './public/ThemeToggle';
 import { authTrackingService } from '../services/authTrackingService';
 import { getConteoPorAbastecimiento } from '../services/courierApi';
+import { solicitudAbastecimientoService } from '../services/solicitudAbastecimiento.service';
 
 const NAV_LINK = 'flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg';
 const NAV_LINK_ACTIVE = 'relative bg-primary/10 text-primary-text hover:bg-primary/10 hover:text-primary-text before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-0.5 before:rounded-full before:bg-primary';
@@ -55,6 +56,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
   const [alertasAccesos, setAlertasAccesos] = useState(0);
   const [alertasPagos, setAlertasPagos] = useState(0);
   const [pagosAbastecimientoAValidar, setPagosAbastecimientoAValidar] = useState(0);
+  const [solicitudesAValidar, setSolicitudesAValidar] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
@@ -75,6 +77,12 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
     // este número siempre refleja lo que falta hacer.
     getConteoPorAbastecimiento({})
       .then((conteos) => { if (!cancelado) setPagosAbastecimientoAValidar(Number(conteos?.pago_enviado) || 0); })
+      .catch(() => {});
+    // Mismo criterio: cuenta real de solicitudes de comercios (Camino 3) con
+    // comprobante subido y esperando validacion — comparte el badge del link
+    // "Abastecimiento", que ya agrupa las dos pestanas (por venta y de comercios).
+    solicitudAbastecimientoService.listar({ estado: 'pago_enviado' })
+      .then((rows) => { if (!cancelado) setSolicitudesAValidar(Array.isArray(rows) ? rows.length : 0); })
       .catch(() => {});
     window.addEventListener('auth-tracking:updated', cargarAlertas);
     return () => {
@@ -209,9 +217,11 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
               path: '/abastecimiento',
               label: 'Abastecimiento',
               icon: <PackageCheck />,
-              badge: pagosAbastecimientoAValidar > 0 ? pagosAbastecimientoAValidar : null,
+              badge: (pagosAbastecimientoAValidar + solicitudesAValidar) > 0 ? (pagosAbastecimientoAValidar + solicitudesAValidar) : null,
             })}
             {renderLink({ path: '/fulfillment', label: 'Fulfillment', icon: <Network /> })}
+            {renderLink({ path: '/fulfillment/ingresos', label: 'Ingresos a Fulfillment', icon: <PackageCheck /> })}
+            {renderLink({ path: '/fulfillment/pedidos-a-preparar', label: 'Pedidos a preparar', icon: <Package /> })}
             {renderLink({ path: '/fulfillment/proveedores', label: 'Proveedores logísticos', icon: <Truck /> })}
           </ul>
 
@@ -225,7 +235,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
           <ul className="m-0 flex list-none flex-col gap-1 p-0">
             {renderLink({ path: '/orders', label: 'Delivery', icon: <Truck />, state: { tab: 'delivery' } })}
             {renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin /> })}
-            {renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck /> })}
+            {renderLink({ path: '/inventario', label: 'Inventario y envíos', icon: <PackageCheck /> })}
           </ul>
 
           <div className="mb-1.5 mt-5 px-3 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle">

@@ -9,8 +9,9 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
-import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
-import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
+import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
+import useSeleccionVariante from '../../../../lib/useSeleccionVariante';
+import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria, resolverFondoGaleria } from '../mediaGaleria';
 import './basicoProductPage.css';
 
 /**
@@ -56,12 +57,11 @@ export default function BasicoProductPage({
 
   const tieneVariantes = (item?.variantes || []).length > 0;
   const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const [seleccion, setSeleccion] = useState(() => {
-    if (!tieneVariantes) return {};
-    const conStock = item.variantes.find(v => v.stock > 0);
-    return seleccionDeVariante(item, conStock || item.variantes[0]);
-  });
+  const [seleccion, setSeleccion] = useSeleccionVariante(item);
   const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
+  // Una variante agotada se puede elegir para ver su foto, pero no comprar
+  // (ni suelta ni en paquete: el paquete también lleva la variante).
+  const agotada = varianteAgotada(variante);
 
   // Paquete y variante no se combinan (misma regla que en Fitness/Beauty/
   // Tech): el paquete manda si hay uno elegido, si no sigue la variante.
@@ -88,11 +88,11 @@ export default function BasicoProductPage({
     else comprar();
   };
 
-  const comprar = () => onComprar && onComprar({ variante, pack, precio });
+  const comprar = () => !agotada && onComprar && onComprar({ variante, pack, precio });
   // Agregar al carrito NO puede caer a comprar(): son acciones distintas y
   // abrir el formulario cuando alguien solo quiso guardar el producto es lo
   // peor que puede hacer un botón. Sin handler, el botón no se muestra.
-  const agregar = (elegido) => onAgregar && onAgregar({
+  const agregar = (elegido) => !agotada && onAgregar && onAgregar({
     variante,
     pack: elegido ?? pack,
     precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
@@ -143,7 +143,7 @@ export default function BasicoProductPage({
 
       {/* 2 · Hero ─────────────────────────────────────────────────── */}
       <section className="bsc-hero bsc-wrap" id="bsc-hero">
-        <div className="bsc-hero-visual">
+        <div className="bsc-hero-visual" style={{ '--lsp-galeria-fondo': resolverFondoGaleria(ficha.hero) }}>
           {ficha.hero.etiqueta && <span className="bsc-hero-badge">{ficha.hero.etiqueta}</span>}
           <div className="bsc-hero-foto">
             {imagenActual
@@ -230,15 +230,15 @@ export default function BasicoProductPage({
               <div className="bsc-variantes-pills">
                 {grupo.valores.map(valor => {
                   const activo = seleccion[grupo.nombre] === valor;
-                  const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                  const estado = estadoValor(item, grupo.nombre, valor, seleccion);
                   return (
                     <button
                       key={valor}
                       type="button"
-                      className={`bsc-variante-pill ${activo ? 'activa' : ''}`}
+                      className={`bsc-variante-pill ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
                       onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                      disabled={!disponible}
-                      title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                      disabled={estado === 'inexistente'}
+                      title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
                     >
                       {valor}
                     </button>
@@ -247,6 +247,8 @@ export default function BasicoProductPage({
               </div>
             </div>
           ))}
+
+          {agotada && <p className="bsc-variante-agotada">Esta opción está sin stock por ahora.</p>}
 
           {packs.length === 0 && previewMode ? (
             <p className="bsc-vacio">
@@ -265,6 +267,7 @@ export default function BasicoProductPage({
                 nota={ficha.opciones.nota_pack}
                 cta={ficha.opciones.cta_pack}
                 onElegir={() => setPackId(null)}
+                agotada={agotada}
                 onAgregar={onAgregar ? () => agregar(null) : null}
               />
               {packs.map(p => {
@@ -283,6 +286,7 @@ export default function BasicoProductPage({
                     nota={ficha.opciones.nota_pack}
                     cta={ficha.opciones.cta_pack}
                     onElegir={() => setPackId(p.id)}
+                    agotada={agotada}
                     onAgregar={onAgregar ? () => agregar(p) : null}
                   />
                 );
@@ -294,7 +298,7 @@ export default function BasicoProductPage({
               es este botón; con carrito, cada tarjeta ya tiene el suyo. */}
           {!onAgregar && (
             <div className="bsc-opciones-cta">
-              <button type="button" className="bsc-cta" onClick={comprar}>
+              <button type="button" className="bsc-cta" onClick={comprar} disabled={agotada}>
                 {ficha.opciones.cta_pack || 'Comprar ahora'}
               </button>
             </div>
@@ -431,7 +435,7 @@ export default function BasicoProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={16} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} className="bsc-faq-respuesta" />}
                 </div>
               ))}
             </div>
@@ -623,7 +627,7 @@ function LadoComparacion({ titulo, imagen, items, campo, esOtros = false }) {
  */
 function TarjetaPack({
   elegido, badge, nombre, subtitulo, imagen, precio, precioAntes,
-  ahorro, notaPrecio, nota, cta, onElegir, onAgregar,
+  ahorro, notaPrecio, nota, cta, agotada = false, onElegir, onAgregar,
 }) {
   return (
     <div className={`bsc-pack ${elegido ? 'elegido' : ''}`}>
@@ -645,9 +649,9 @@ function TarjetaPack({
             : null}
       </button>
       {onAgregar && (
-        <button type="button" className="bsc-pack-cta" onClick={onAgregar}>
-          {cta || 'Agregar al carrito'}
-          {nota && <small>{nota}</small>}
+        <button type="button" className="bsc-pack-cta" onClick={onAgregar} disabled={agotada}>
+          {agotada ? 'Sin stock' : (cta || 'Agregar al carrito')}
+          {nota && !agotada && <small>{nota}</small>}
         </button>
       )}
     </div>
@@ -709,7 +713,12 @@ function Contador({ desde }) {
 function calcularVariables(t) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
+  // Un solo umbral fijo (contraste >= 3 contra blanco) clasificaba mal los
+  // acentos de luminancia media — un teal, por ejemplo, "pasaba" el corte
+  // por poco y el texto quedaba casi invisible sobre ese mismo teal. Elegir
+  // el color que da MÁS contraste de los dos (en vez de un corte binario)
+  // nunca da un resultado casi ilegible.
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
 
   const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
 

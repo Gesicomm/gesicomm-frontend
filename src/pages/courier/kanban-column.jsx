@@ -6,6 +6,7 @@ import { OrderCard } from "./order-card"
 
 export function KanbanColumn({
   estado,
+  meta: metaProp,
   envios,
   couriers,
   draggingId,
@@ -13,14 +14,21 @@ export function KanbanColumn({
   onDragEndCard,
   onDropCard,
   onChangeEstado,
+  onAbrirSeguimiento,
+  onAbrirTimelineAbastecimiento,
+  onAccionSiguiente,
+  isAdmin,
+  readOnly = false,
+  emptyText = "Sin envíos",
 }) {
   const [isOver, setIsOver] = useState(false)
-  const meta = STATUS[estado]
-  const total = envios.reduce((sum, e) => sum + e.monto, 0)
+  const meta = metaProp || STATUS[estado]
+  const total = envios.reduce((sum, e) => sum + (Number(e.monto) || 0), 0)
 
   return (
     <section
       onDragOver={(e) => {
+        if (readOnly) return
         e.preventDefault()
         e.dataTransfer.dropEffect = "move"
         if (!isOver) setIsOver(true)
@@ -29,11 +37,12 @@ export function KanbanColumn({
         if (!e.currentTarget.contains(e.relatedTarget)) setIsOver(false)
       }}
       onDrop={(e) => {
+        if (readOnly) return
         e.preventDefault()
         setIsOver(false)
         onDropCard(estado)
       }}
-      className={`kanban-column ${isOver ? 'is-over' : ''}`}
+      className={`kanban-column ${isOver ? 'is-over' : ''} ${readOnly ? 'is-readonly' : ''}`}
       aria-label={`Columna ${meta.label}`}
     >
       <div className="kanban-col-header">
@@ -54,7 +63,7 @@ export function KanbanColumn({
             className={`empty-state ${isOver ? 'is-over' : ''}`}
             style={{ padding: '2rem', border: '1px dashed var(--color-border-strong)', background: 'transparent' }}
           >
-            {isOver ? "Soltar aquí" : "Sin envíos"}
+            {isOver ? "Soltar aquí" : emptyText}
           </div>
         ) : (
           envios.map((envio) => (
@@ -66,6 +75,11 @@ export function KanbanColumn({
               onDragStart={onDragStartCard}
               onDragEnd={onDragEndCard}
               onChangeEstado={onChangeEstado}
+              onAbrirSeguimiento={onAbrirSeguimiento}
+              onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
+              onAccionSiguiente={onAccionSiguiente}
+              isAdmin={isAdmin}
+              readOnly={readOnly}
             />
           ))
         )}

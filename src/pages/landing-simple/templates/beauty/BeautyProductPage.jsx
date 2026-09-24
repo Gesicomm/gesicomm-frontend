@@ -9,7 +9,8 @@ import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
-import { agruparOpciones, resolverVariante, valorDisponible, seleccionDeVariante } from '../../../../lib/varianteOpciones';
+import { agruparOpciones, resolverVariante, estadoValor, varianteAgotada } from '../../../../lib/varianteOpciones';
+import useSeleccionVariante from '../../../../lib/useSeleccionVariante';
 import { MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto, imagenPrincipalDeGaleria } from '../mediaGaleria';
 import './beautyProductPage.css';
 
@@ -57,12 +58,11 @@ export default function BeautyProductPage({
 
   const tieneVariantes = (item?.variantes || []).length > 0;
   const gruposOpciones = useMemo(() => agruparOpciones(item), [item]);
-  const [seleccion, setSeleccion] = useState(() => {
-    if (!tieneVariantes) return {};
-    const conStock = item.variantes.find(v => v.stock > 0);
-    return seleccionDeVariante(item, conStock || item.variantes[0]);
-  });
+  const [seleccion, setSeleccion] = useSeleccionVariante(item);
   const variante = tieneVariantes ? resolverVariante(item, seleccion) : null;
+  // Una variante agotada se puede elegir para ver su foto, pero no comprar
+  // (ni suelta ni en paquete: el paquete también lleva la variante).
+  const agotada = varianteAgotada(variante);
 
   // Paquete y variante no se combinan (misma regla que en Fitness/Tech):
   // el paquete manda si hay uno elegido, si no sigue la variante.
@@ -90,11 +90,11 @@ export default function BeautyProductPage({
     else comprar();
   };
 
-  const comprar = () => onComprar && onComprar({ variante, pack, precio });
+  const comprar = () => !agotada && onComprar && onComprar({ variante, pack, precio });
   // Agregar al carrito NO puede caer a comprar(): son acciones distintas y
   // abrir el formulario cuando la clienta solo quiso guardar el producto es
   // lo peor que puede hacer un botón. Sin handler, el botón no se muestra.
-  const agregar = (elegido) => onAgregar && onAgregar({
+  const agregar = (elegido) => !agotada && onAgregar && onAgregar({
     variante,
     pack: elegido ?? pack,
     precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
@@ -246,15 +246,15 @@ export default function BeautyProductPage({
               <div className="bpp-variantes-pills">
                 {grupo.valores.map(valor => {
                   const activo = seleccion[grupo.nombre] === valor;
-                  const disponible = valorDisponible(item, grupo.nombre, valor, seleccion);
+                  const estado = estadoValor(item, grupo.nombre, valor, seleccion);
                   return (
                     <button
                       key={valor}
                       type="button"
-                      className={`bpp-variante-pill ${activo ? 'activa' : ''}`}
+                      className={`bpp-variante-pill ${activo ? 'activa' : ''} ${estado === 'agotado' ? 'agotada' : ''}`}
                       onClick={() => setSeleccion(prev => ({ ...prev, [grupo.nombre]: valor }))}
-                      disabled={!disponible}
-                      title={!disponible ? 'Sin stock o combinación no disponible' : undefined}
+                      disabled={estado === 'inexistente'}
+                      title={estado === 'agotado' ? 'Sin stock' : estado === 'inexistente' ? 'Combinación no disponible' : undefined}
                     >
                       {valor}
                     </button>
@@ -263,6 +263,8 @@ export default function BeautyProductPage({
               </div>
             </div>
           ))}
+
+          {agotada && <p className="bpp-variante-agotada">Esta opción está sin stock por ahora.</p>}
 
           {packs.length === 0 ? (
             previewMode ? (
@@ -281,6 +283,7 @@ export default function BeautyProductPage({
                   nota={ficha.precio.nota_pack}
                   cta={ficha.precio.cta_pack}
                   onElegir={() => setPackId(null)}
+                  agotada={agotada}
                   onAgregar={onAgregar ? () => agregar(null) : null}
                 />
               </div>
@@ -297,6 +300,7 @@ export default function BeautyProductPage({
                 nota={ficha.precio.nota_pack}
                 cta={ficha.precio.cta_pack}
                 onElegir={() => setPackId(null)}
+                agotada={agotada}
                 onAgregar={onAgregar ? () => agregar(null) : null}
               />
               {packs.map(p => {
@@ -315,6 +319,7 @@ export default function BeautyProductPage({
                     nota={ficha.precio.nota_pack}
                     cta={ficha.precio.cta_pack}
                     onElegir={() => setPackId(p.id)}
+                    agotada={agotada}
                     onAgregar={onAgregar ? () => agregar(p) : null}
                   />
                 );
@@ -333,7 +338,7 @@ export default function BeautyProductPage({
 
           {!onAgregar && (
             <div className="bpp-ofertas-cta">
-              <button type="button" className="bpp-cta" onClick={comprar}>
+              <button type="button" className="bpp-cta" onClick={comprar} disabled={agotada}>
                 {ficha.precio.cta_pack || 'Comprar ahora'}
               </button>
             </div>
@@ -486,7 +491,7 @@ export default function BeautyProductPage({
                     <span>{f.pregunta}</span>
                     <ChevronDown size={16} />
                   </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
+                  {preguntaAbierta === i && <RichText text={f.respuesta} className="bpp-faq-respuesta" />}
                 </div>
               ))}
             </div>
@@ -615,7 +620,7 @@ function Estrellas({ valor = 5, tamano = 14 }) {
  */
 function TarjetaPack({
   elegido, badge, nombre, subtitulo, imagen, precio, precioAntes,
-  ahorro, notaPrecio, nota, cta, onElegir, onAgregar,
+  ahorro, notaPrecio, nota, cta, agotada = false, onElegir, onAgregar,
 }) {
   return (
     <div className={`bpp-pack ${elegido ? 'elegido' : ''}`}>
@@ -637,9 +642,9 @@ function TarjetaPack({
             : null}
       </button>
       {onAgregar && (
-        <button type="button" className="bpp-pack-cta" onClick={onAgregar}>
-          {cta || 'Agregar al carrito'}
-          {nota && <small>{nota}</small>}
+        <button type="button" className="bpp-pack-cta" onClick={onAgregar} disabled={agotada}>
+          {agotada ? 'Sin stock' : (cta || 'Agregar al carrito')}
+          {nota && !agotada && <small>{nota}</small>}
         </button>
       )}
     </div>
@@ -697,7 +702,10 @@ function Contador({ desde }) {
 function calcularVariables(t) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
+  // Ver comentario en BasicoProductPage.jsx: elegir el color de MÁS
+  // contraste de los dos, no un corte binario, evita textos casi
+  // invisibles con acentos de luminancia media.
+  const sobre = (color) => (contraste(color, '#FFFFFF') >= contraste(color, '#111111') ? '#FFFFFF' : '#111111');
 
   const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
 

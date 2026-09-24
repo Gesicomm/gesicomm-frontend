@@ -31,6 +31,11 @@ function normalizar(valor) {
  * departamento cargado: ahí sí importa, porque alguien lo cargó a propósito.
  */
 function tarifaCoincide(t, ciudadNorm, departamentoNorm) {
+  if (t.tipo_cobertura === 'RESTO_PAIS') return true;
+  if (t.tipo_cobertura === 'RESTO_DEPARTAMENTO') {
+    const departamentoTarifa = normalizar(t.departamento);
+    return !departamentoNorm || !departamentoTarifa || departamentoTarifa === departamentoNorm;
+  }
   const departamentoTarifa = normalizar(t.departamento);
   return normalizar(t.ciudad || t.ciudad_zona) === ciudadNorm
     && (!departamentoNorm || !departamentoTarifa || departamentoTarifa === departamentoNorm);
@@ -42,8 +47,15 @@ function elegirTarifa(tarifas, targetTipoPago, cantEval, departamentoNorm = '') 
   // para "Central" y otra comodín sin departamento — se podía terminar
   // eligiendo la comodín solo porque era más barata, ignorando la que
   // alguien configuró específicamente para ese departamento.
-  const esEspecifica = (t) => !!departamentoNorm && normalizar(t.departamento) === departamentoNorm;
+  const coberturaPrioridad = (t) => {
+    if (t.tipo_cobertura === 'RESTO_PAIS') return 2;
+    if (t.tipo_cobertura === 'RESTO_DEPARTAMENTO') return 1;
+    return 0;
+  };
+  const esEspecifica = (t) => coberturaPrioridad(t) === 0 && !!departamentoNorm && normalizar(t.departamento) === departamentoNorm;
   const ordenadas = [...(tarifas || [])].sort((a, b) => {
+    const cobertura = coberturaPrioridad(a) - coberturaPrioridad(b);
+    if (cobertura !== 0) return cobertura;
     const especificidad = Number(esEspecifica(b)) - Number(esEspecifica(a));
     if (especificidad !== 0) return especificidad;
     return (Number(a.costo) || 0) - (Number(b.costo) || 0);

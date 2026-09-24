@@ -26,21 +26,54 @@ const fmtPrecio = (num) => new Intl.NumberFormat('es-PY', { style: 'currency', c
  * `previewMode` únicamente cambia el cartel de "catálogo vacío" (todavía no
  * se agregó ningún producto) y el badge "Editar" al pasar el mouse por una
  * tarjeta — cualquier otra diferencia visual con la página pública es un bug.
+ *
+ * Modo controlado (`filtrosControlados` + `onFiltrosControladosChange`):
+ * lo usa CatalogoPublico.jsx porque el catálogo público pagina del lado del
+ * servidor — `productos` ya viene filtrado/ordenado/recortado a UNA
+ * página, así que acá no hay que volver a filtrarlo, solo mostrar los
+ * controles y avisar al padre qué cambió para que pida la página de nuevo.
+ * Sin esas props (CatalogoPreview.jsx, el editor) el componente sigue
+ * siendo no-controlado: filtra/ordena en memoria sobre el array completo,
+ * exactamente como antes.
  */
 export default function CatalogoView({
   productos, titulo, descripcion, tema, bordeSuave, onClickProducto, previewMode = false, gridClassName = 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+  filtrosControlados = null, onFiltrosControladosChange = null,
+  categoriasDisponibles = null, etiquetasDisponibles = null, totalResultados = null,
+  paginacion = null, onCambiarPagina = null, cargando = false,
 }) {
-  const [filtroOrden, setFiltroOrden] = useState('destacados');
-  const [filtroPrecioMin, setFiltroPrecioMin] = useState('');
-  const [filtroPrecioMax, setFiltroPrecioMax] = useState('');
-  const [filtroDisponibilidad, setFiltroDisponibilidad] = useState('todos');
-  const [filtroCategoria, setFiltroCategoria] = useState('todas');
-  const [filtroEtiqueta, setFiltroEtiqueta] = useState('todas');
+  const modoControlado = !!filtrosControlados;
 
-  const categoriasUnicas = Array.from(new Set(productos.map(p => p.categoria).filter(Boolean))).sort();
-  const etiquetasUnicas = Array.from(new Set(productos.map(p => p.etiqueta).filter(Boolean))).sort();
+  const [filtroOrdenState, setFiltroOrdenState] = useState('destacados');
+  const [filtroPrecioMinState, setFiltroPrecioMinState] = useState('');
+  const [filtroPrecioMaxState, setFiltroPrecioMaxState] = useState('');
+  const [filtroDisponibilidadState, setFiltroDisponibilidadState] = useState('todos');
+  const [filtroCategoriaState, setFiltroCategoriaState] = useState('todas');
+  const [filtroEtiquetaState, setFiltroEtiquetaState] = useState('todas');
 
-  const filteredAndSortedProducts = productos.filter(p => {
+  const filtroOrden = modoControlado ? (filtrosControlados.orden ?? 'destacados') : filtroOrdenState;
+  const filtroPrecioMin = modoControlado ? (filtrosControlados.precioMin ?? '') : filtroPrecioMinState;
+  const filtroPrecioMax = modoControlado ? (filtrosControlados.precioMax ?? '') : filtroPrecioMaxState;
+  const filtroDisponibilidad = modoControlado ? (filtrosControlados.disponibilidad ?? 'todos') : filtroDisponibilidadState;
+  const filtroCategoria = modoControlado ? (filtrosControlados.categoria ?? 'todas') : filtroCategoriaState;
+  const filtroEtiqueta = modoControlado ? (filtrosControlados.etiqueta ?? 'todas') : filtroEtiquetaState;
+
+  function setFiltroOrden(v) { modoControlado ? onFiltrosControladosChange({ orden: v }) : setFiltroOrdenState(v); }
+  function setFiltroPrecioMin(v) { modoControlado ? onFiltrosControladosChange({ precioMin: v }) : setFiltroPrecioMinState(v); }
+  function setFiltroPrecioMax(v) { modoControlado ? onFiltrosControladosChange({ precioMax: v }) : setFiltroPrecioMaxState(v); }
+  function setFiltroDisponibilidad(v) { modoControlado ? onFiltrosControladosChange({ disponibilidad: v }) : setFiltroDisponibilidadState(v); }
+  function setFiltroCategoria(v) { modoControlado ? onFiltrosControladosChange({ categoria: v }) : setFiltroCategoriaState(v); }
+  function setFiltroEtiqueta(v) { modoControlado ? onFiltrosControladosChange({ etiqueta: v }) : setFiltroEtiquetaState(v); }
+
+  const categoriasUnicas = categoriasDisponibles ?? Array.from(new Set(productos.map(p => p.categoria).filter(Boolean))).sort();
+  const etiquetasUnicas = etiquetasDisponibles ?? Array.from(new Set(productos.map(p => p.etiqueta).filter(Boolean))).sort();
+
+  // En modo controlado `productos` YA es la página filtrada/ordenada que
+  // pidió el padre — filtrar/ordenar de nuevo acá sería, en el mejor caso,
+  // redundante, y en el peor (si algún campo no coincidiera 1:1 con el
+  // criterio del backend) mostraría una grilla recortada distinta de lo
+  // que dice la barra de filtros.
+  const filteredAndSortedProducts = modoControlado ? productos : productos.filter(p => {
     if (filtroPrecioMin && p.precio < Number(filtroPrecioMin)) return false;
     if (filtroPrecioMax && p.precio > Number(filtroPrecioMax)) return false;
     // Disponibilidad: `stock` es null cuando el producto no rastrea stock
@@ -60,11 +93,15 @@ export default function CatalogoView({
 
   const hayFiltrosActivos = filtroPrecioMin || filtroPrecioMax || filtroDisponibilidad !== 'todos' || filtroCategoria !== 'todas' || filtroEtiqueta !== 'todas';
   function limpiarFiltros() {
-    setFiltroPrecioMin('');
-    setFiltroPrecioMax('');
-    setFiltroDisponibilidad('todos');
-    setFiltroCategoria('todas');
-    setFiltroEtiqueta('todas');
+    if (modoControlado) {
+      onFiltrosControladosChange({ precioMin: '', precioMax: '', disponibilidad: 'todos', categoria: 'todas', etiqueta: 'todas' });
+      return;
+    }
+    setFiltroPrecioMinState('');
+    setFiltroPrecioMaxState('');
+    setFiltroDisponibilidadState('todos');
+    setFiltroCategoriaState('todas');
+    setFiltroEtiquetaState('todas');
   }
 
   const inputClase = 'bg-transparent px-3 py-2 rounded-lg text-sm font-medium outline-none transition-colors';
@@ -152,7 +189,7 @@ export default function CatalogoView({
         )}
 
         <span className="ml-auto text-sm" style={{ color: hexToRgba(tema.texto, 0.5) }}>
-          {filteredAndSortedProducts.length} producto{filteredAndSortedProducts.length === 1 ? '' : 's'}
+          {(totalResultados ?? filteredAndSortedProducts.length)} producto{(totalResultados ?? filteredAndSortedProducts.length) === 1 ? '' : 's'}
         </span>
       </div>
 
@@ -172,7 +209,7 @@ export default function CatalogoView({
           )}
         </div>
       ) : (
-        <div className={`grid gap-4 md:gap-6 ${gridClassName}`}>
+        <div className={`grid gap-4 md:gap-6 ${gridClassName}`} style={cargando ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
           {filteredAndSortedProducts.map((p) => {
             const agotado = p.stock != null && p.stock <= 0;
             const enOferta = p.precioAntes != null && p.precio != null && Number(p.precioAntes) > Number(p.precio);
@@ -224,6 +261,36 @@ export default function CatalogoView({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Paginador — solo en modo controlado y con más de una página. Antes
+          el catálogo traía TODOS los productos de una: en una tienda con
+          cientos de items eso era el pedido más pesado de toda la landing
+          pública (ver memoria de performance del catálogo). */}
+      {paginacion && paginacion.totalPaginas > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-10">
+          <button
+            type="button"
+            onClick={() => onCambiarPagina(paginacion.pagina - 1)}
+            disabled={paginacion.pagina <= 1 || cargando}
+            className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
+            style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+          >
+            Anterior
+          </button>
+          <span className="text-sm" style={{ color: hexToRgba(tema.texto, 0.6) }}>
+            Página {paginacion.pagina} de {paginacion.totalPaginas}
+          </span>
+          <button
+            type="button"
+            onClick={() => onCambiarPagina(paginacion.pagina + 1)}
+            disabled={paginacion.pagina >= paginacion.totalPaginas || cargando}
+            className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70"
+            style={{ border: `1px solid ${bordeSuave}`, color: tema.texto }}
+          >
+            Siguiente
+          </button>
         </div>
       )}
     </div>

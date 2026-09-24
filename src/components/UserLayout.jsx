@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
-  Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign
+  Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -133,6 +133,7 @@ const UserLayout = ({ children }) => {
     const active = isActive(item.path) || (item.prefix && isActivePrefix(item.prefix));
     const menuKey = item.menuKey || item.path.replace('/', '');
     const bloqueo = checkBloqueo(menuKey);
+    const danger = !bloqueo && item.danger;
 
     return (
       <li key={item.path} className="sidebar-item">
@@ -142,10 +143,10 @@ const UserLayout = ({ children }) => {
           className={`sidebar-link ${active ? 'active' : ''} ${bloqueo ? 'locked-link' : ''}`}
           style={bloqueo ? { opacity: 0.65 } : {}}
         >
-          <span className="sidebar-icon">
+          <span className="sidebar-icon" style={danger ? { color: '#ef4444' } : {}}>
             {bloqueo ? <Lock size={14} style={{ color: '#fbbf24' }} /> : item.icon}
           </span>
-          <span style={{ flex: 1 }}>{item.label}</span>
+          <span style={{ flex: 1, ...(danger ? { color: '#ef4444', fontWeight: 600 } : {}) }}>{item.label}</span>
           {bloqueo && (
             <span style={{
               fontSize: '10px',
@@ -188,6 +189,7 @@ const UserLayout = ({ children }) => {
       </li>
     );
   };
+
 
   return (
     <div className="dashboard-layout user-layout-container">
@@ -259,10 +261,13 @@ const UserLayout = ({ children }) => {
                 label: 'Pedidos', 
                 icon: <ShoppingCart size={14} />, 
                 menuKey: 'mis-pedidos',
-                badgeDanger: vencidosCount > 0 ? `${vencidosCount} pendientes` : null 
+                danger: vencidosCount > 0
               })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin size={14} />, menuKey: 'mi-tienda-depositos' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck size={14} />, menuKey: 'inventario' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icon: <Truck size={14} />, menuKey: 'mis-abastecimientos' })}
+              {/* {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })} */}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
             </ul>
           </div>

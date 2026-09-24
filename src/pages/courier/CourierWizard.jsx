@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Bike,
   Building2,
@@ -7,11 +7,13 @@ import {
   MapPin,
   Phone,
   Plus,
+  Search,
   Trash2,
   Truck,
   X,
 } from "lucide-react";
 import CurrencyInput from "../../components/CurrencyInput";
+import { getCourierGeografia } from "../../services/courierApi";
 
 const VEHICULOS = ["Moto", "Auto", "Camioneta", "Bicicleta"];
 const TIPOS_PAGO = ["Ambos", "Al Recibir", "Anticipado"];
@@ -49,33 +51,143 @@ export function rangoPreview(rango) {
   return `${rangoLabel(rango)} · ${rango.tipo_pago || "Ambos"} · ${precioLabel(rango.costo)} · ${entrega}`;
 }
 
-const nuevoRango = () => ({
+const nuevoRango = (overrides = {}) => ({
   tipo_pago: "Ambos",
-  rango_min: 0,
+  rango_min: 1,
   rango_max: "",
   costo: 0,
   tiempo_entrega_hs: "En el día",
   activo: true,
+  ...overrides,
 });
 
-const nuevaCiudad = () => ({ _id: Math.random().toString(36).slice(2, 11), departamento: "", ciudad: "", rangos: [nuevoRango()] });
+const nuevaConfiguracion = (overrides = {}) => {
+  const tipoPago = overrides.tipo_pago || "Ambos";
+  const tiempoEntrega = overrides.tiempo_entrega_hs || "En el día";
+  const activo = overrides.activo !== false;
+  return {
+    _id: Math.random().toString(36).slice(2, 11),
+    tipo_pago: tipoPago,
+    tiempo_entrega_hs: tiempoEntrega,
+    activo,
+    rangos: overrides.rangos?.length
+      ? overrides.rangos
+      : [nuevoRango({ tipo_pago: tipoPago, tiempo_entrega_hs: tiempoEntrega, activo })],
+  };
+};
+
+function siguienteRangoDesde(rango) {
+  const minActual = Math.max(1, Number(rango?.rango_min) || 1);
+  const maxActual = rango?.rango_max === "" || rango?.rango_max === null || rango?.rango_max === undefined
+    ? minActual
+    : Number(rango.rango_max) || minActual;
+  return nuevoRango({
+    tipo_pago: rango?.tipo_pago || "Ambos",
+    rango_min: maxActual + 1,
+    tiempo_entrega_hs: rango?.tiempo_entrega_hs || "En el día",
+  });
+}
+
+function configuracionesDeCiudad(ciudad) {
+  if (ciudad?.configuraciones?.length) return ciudad.configuraciones;
+  const rangos = ciudad?.rangos?.length ? ciudad.rangos : [nuevoRango()];
+  return [nuevaConfiguracion({
+    tipo_pago: rangos[0]?.tipo_pago || "Ambos",
+    tiempo_entrega_hs: rangos[0]?.tiempo_entrega_hs || "En el día",
+    activo: rangos[0]?.activo !== false,
+    rangos,
+  })];
+}
+
+function totalRangosCiudad(ciudad) {
+  return configuracionesDeCiudad(ciudad).reduce((acc, config) => acc + (config.rangos?.length || 0), 0);
+}
+
+function rangoPreviewConfig(config, rango) {
+  const entrega = config.tiempo_entrega_hs?.trim() || "sin tiempo estimado";
+  return `${rangoLabel(rango)} · ${config.tipo_pago || "Ambos"} · ${precioLabel(rango.costo)} · ${entrega}`;
+}
+
+const normalizarTexto = (valor = "") => String(valor).trim().toLowerCase();
+
+const claveCiudad = (ciudad) => {
+  if (ciudad?.ciudad_id) return `id:${ciudad.ciudad_id}`;
+  return `txt:${normalizarTexto(ciudad?.departamento)}::${normalizarTexto(ciudad?.ciudad)}`;
+};
+
+const claveCatalogo = (ciudad, departamento) => (
+  `txt:${normalizarTexto(departamento?.nombre)}::${normalizarTexto(ciudad?.nombre)}`
+);
+
+const nuevaCiudadDesdeCatalogo = (ciudad, departamento) => ({
+  _id: Math.random().toString(36).slice(2, 11),
+  key: `id:${ciudad.id}`,
+  ciudad_id: ciudad.id,
+  departamento_id: departamento?.id ?? null,
+  pais_id: departamento?.pais_id ?? null,
+  departamento: departamento?.nombre || "",
+  ciudad: ciudad.nombre || "",
+  configuraciones: [nuevaConfiguracion()],
+});
+
+const nuevaCoberturaInterior = (paisId = 1) => ({
+  _id: Math.random().toString(36).slice(2, 11),
+  key: "RESTO_PAIS",
+  ciudad_id: null,
+  departamento_id: null,
+  pais_id: paisId || 1,
+  tipo_cobertura: "RESTO_PAIS",
+  departamento: "",
+  ciudad: "Otras ciudades",
+  configuraciones: [nuevaConfiguracion()],
+});
+
+function esCoberturaInterior(ciudad) {
+  return ciudad?.tipo_cobertura === "RESTO_PAIS";
+}
 
 function draftInicial(courier, reglas) {
   const ciudades = [];
   (reglas || []).forEach(regla => {
-    const key = `${String(regla.departamento || "").trim().toLowerCase()}::${String(regla.ciudad || "").trim().toLowerCase()}`;
+    const key = regla.tipo_cobertura === "RESTO_PAIS"
+      ? "RESTO_PAIS"
+      : `${String(regla.departamento || "").trim().toLowerCase()}::${String(regla.ciudad || "").trim().toLowerCase()}`;
     let destino = ciudades.find(c => c.key === key);
     if (!destino) {
-      destino = { _id: Math.random().toString(36).slice(2, 11), key, departamento: regla.departamento || "", ciudad: regla.ciudad || "", rangos: [] };
+      destino = {
+        _id: Math.random().toString(36).slice(2, 11),
+        key,
+        ciudad_id: regla.ciudad_id || null,
+        departamento_id: regla.departamento_id || null,
+        pais_id: regla.pais_id || null,
+        tipo_cobertura: regla.tipo_cobertura || "CIUDAD",
+        departamento: regla.departamento || "",
+        ciudad: regla.ciudad || "",
+        configuraciones: [],
+      };
       ciudades.push(destino);
     }
-    destino.rangos.push({
-      tipo_pago: regla.tipo_pago || "Ambos",
+    const tipoPago = regla.tipo_pago || "Ambos";
+    const tiempoEntrega = regla.tiempo_entrega_hs || "En el día";
+    const activo = regla.activo !== false;
+    let config = destino.configuraciones.find(c => (
+      c.tipo_pago === tipoPago &&
+      c.tiempo_entrega_hs === tiempoEntrega &&
+      c.activo === activo
+    ));
+    if (!config) {
+      config = nuevaConfiguracion({
+        tipo_pago: tipoPago,
+        tiempo_entrega_hs: tiempoEntrega,
+        activo,
+        rangos: [],
+      });
+      destino.configuraciones.push(config);
+    }
+    config.rangos.push({
       rango_min: Number(regla.rango_min) || 0,
       rango_max: regla.rango_max === null || regla.rango_max === undefined ? "" : regla.rango_max,
       costo: Number(regla.costo) || 0,
-      tiempo_entrega_hs: regla.tiempo_entrega_hs || "",
-      activo: regla.activo !== false,
     });
   });
 
@@ -86,7 +198,7 @@ function draftInicial(courier, reglas) {
       vehiculo: courier?.vehiculo || "Moto",
       activo: courier?.activo !== false,
     },
-    ciudades: ciudades.length ? ciudades.slice().reverse() : [nuevaCiudad()],
+    ciudades: ciudades.length ? ciudades.slice().reverse() : [],
   };
 }
 
@@ -106,6 +218,9 @@ export function CourierWizard({
   const [draft, setDraft] = useState(() => draftInicial(courier, reglas));
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  const [geo, setGeo] = useState([]);
+  const [departamentoId, setDepartamentoId] = useState(null);
+  const [busquedaCiudad, setBusquedaCiudad] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -116,6 +231,45 @@ export function CourierWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  useEffect(() => {
+    if (!open || paso !== "ciudades" || geo.length > 0) return;
+    getCourierGeografia({ conCiudades: true })
+      .then((data) => {
+        const lista = data || [];
+        setGeo(lista);
+        setDepartamentoId((prev) => prev ?? lista[0]?.id ?? null);
+      })
+      .catch(() => setError("No se pudo cargar el catálogo de ciudades."));
+  }, [open, paso, geo.length]);
+
+  const departamento = useMemo(
+    () => geo.find((d) => Number(d.id) === Number(departamentoId)) || null,
+    [geo, departamentoId],
+  );
+
+  const ciudadesVisibles = useMemo(() => {
+    const texto = busquedaCiudad.trim().toLowerCase();
+    const lista = departamento?.ciudades || [];
+    if (!texto) return lista;
+    return lista.filter((c) => String(c.nombre || "").toLowerCase().includes(texto));
+  }, [departamento, busquedaCiudad]);
+
+  const ciudadesSeleccionadas = useMemo(() => {
+    const set = new Set();
+    draft.ciudades.forEach((ciudad) => {
+      set.add(claveCiudad(ciudad));
+      if (ciudad.departamento && ciudad.ciudad) {
+        set.add(`txt:${normalizarTexto(ciudad.departamento)}::${normalizarTexto(ciudad.ciudad)}`);
+      }
+    });
+    return set;
+  }, [draft.ciudades]);
+
+  const tieneCoberturaInterior = useMemo(
+    () => draft.ciudades.some(esCoberturaInterior),
+    [draft.ciudades],
+  );
+
   if (!open) return null;
 
   function setCourier(campo, valor) {
@@ -123,46 +277,132 @@ export function CourierWizard({
     setDraft(prev => ({ ...prev, courier: { ...prev.courier, [campo]: valor } }));
   }
 
-  function setCiudad(indice, campo, valor) {
-    setError("");
-    setDraft(prev => ({
-      ...prev,
-      ciudades: prev.ciudades.map((c, i) => i === indice ? { ...c, [campo]: valor } : c),
-    }));
-  }
-
-  function agregarCiudad() {
-    setDraft(prev => ({ ...prev, ciudades: [nuevaCiudad(), ...prev.ciudades] }));
-  }
-
   function eliminarCiudad(indice) {
     setDraft(prev => ({ ...prev, ciudades: prev.ciudades.filter((_, i) => i !== indice) }));
   }
 
-  function setRango(ciudadIndice, rangoIndice, campo, valor) {
+  function alternarCiudadCatalogo(ciudad) {
+    if (!departamento) return;
+    setError("");
+    const claves = new Set([`id:${ciudad.id}`, claveCatalogo(ciudad, departamento)]);
+    setDraft(prev => {
+      const existente = prev.ciudades.find(c => claves.has(claveCiudad(c)) || claves.has(claveCatalogo({ nombre: c.ciudad }, { nombre: c.departamento })));
+      if (existente) {
+        return { ...prev, ciudades: prev.ciudades.filter(c => c !== existente) };
+      }
+      return { ...prev, ciudades: [nuevaCiudadDesdeCatalogo(ciudad, departamento), ...prev.ciudades] };
+    });
+  }
+
+  function alternarCoberturaInterior() {
+    setError("");
+    setDraft(prev => {
+      if (prev.ciudades.some(esCoberturaInterior)) {
+        return { ...prev, ciudades: prev.ciudades.filter(c => !esCoberturaInterior(c)) };
+      }
+      const paisId = geo[0]?.pais_id || departamento?.pais_id || 1;
+      return { ...prev, ciudades: [nuevaCoberturaInterior(paisId), ...prev.ciudades] };
+    });
+  }
+
+  function setConfiguracion(ciudadIndice, configIndice, campo, valor) {
     setError("");
     setDraft(prev => ({
       ...prev,
       ciudades: prev.ciudades.map((c, i) => i !== ciudadIndice ? c : {
         ...c,
-        rangos: c.rangos.map((r, j) => j === rangoIndice ? { ...r, [campo]: valor } : r),
+        configuraciones: configuracionesDeCiudad(c).map((config, j) => (
+          j === configIndice ? { ...config, [campo]: valor } : config
+        )),
       }),
     }));
   }
 
-  function agregarRango(ciudadIndice) {
-    setDraft(prev => ({
-      ...prev,
-      ciudades: prev.ciudades.map((c, i) => i !== ciudadIndice ? c : { ...c, rangos: [...c.rangos, nuevoRango()] }),
-    }));
-  }
-
-  function eliminarRango(ciudadIndice, rangoIndice) {
+  function setRango(ciudadIndice, configIndice, rangoIndice, campo, valor) {
+    setError("");
     setDraft(prev => ({
       ...prev,
       ciudades: prev.ciudades.map((c, i) => i !== ciudadIndice ? c : {
         ...c,
-        rangos: c.rangos.filter((_, j) => j !== rangoIndice),
+        configuraciones: configuracionesDeCiudad(c).map((config, j) => (
+          j !== configIndice ? config : {
+            ...config,
+            rangos: config.rangos.map((r, k) => k === rangoIndice ? { ...r, [campo]: valor } : r),
+          }
+        )),
+      }),
+    }));
+  }
+
+  function agregarRango(ciudadIndice, configIndice) {
+    setDraft(prev => ({
+      ...prev,
+      ciudades: prev.ciudades.map((c, i) => {
+        if (i !== ciudadIndice) return c;
+        return {
+          ...c,
+          configuraciones: configuracionesDeCiudad(c).map((config, j) => {
+            if (j !== configIndice) return config;
+            const rangos = config.rangos.length ? config.rangos : [nuevoRango()];
+            const ultimo = rangos[rangos.length - 1];
+            return {
+              ...config,
+              rangos: [
+                ...rangos,
+                siguienteRangoDesde({
+                  ...ultimo,
+                  tipo_pago: config.tipo_pago,
+                  tiempo_entrega_hs: config.tiempo_entrega_hs,
+                  activo: config.activo,
+                }),
+              ],
+            };
+          }),
+        };
+      }),
+    }));
+  }
+
+  function eliminarRango(ciudadIndice, configIndice, rangoIndice) {
+    setDraft(prev => ({
+      ...prev,
+      ciudades: prev.ciudades.map((c, i) => i !== ciudadIndice ? c : {
+        ...c,
+        configuraciones: configuracionesDeCiudad(c).map((config, j) => (
+          j !== configIndice ? config : {
+            ...config,
+            rangos: config.rangos.filter((_, k) => k !== rangoIndice),
+          }
+        )),
+      }),
+    }));
+  }
+
+  function agregarConfiguracion(ciudadIndice) {
+    setDraft(prev => ({
+      ...prev,
+      ciudades: prev.ciudades.map((c, i) => {
+        if (i !== ciudadIndice) return c;
+        const configuraciones = configuracionesDeCiudad(c);
+        const usados = new Set(configuraciones.map(config => config.tipo_pago));
+        const tipoSugerido = TIPOS_PAGO.find(tp => !usados.has(tp)) || "Ambos";
+        return {
+          ...c,
+          configuraciones: [
+            ...configuraciones,
+            nuevaConfiguracion({ tipo_pago: tipoSugerido }),
+          ],
+        };
+      }),
+    }));
+  }
+
+  function eliminarConfiguracion(ciudadIndice, configIndice) {
+    setDraft(prev => ({
+      ...prev,
+      ciudades: prev.ciudades.map((c, i) => i !== ciudadIndice ? c : {
+        ...c,
+        configuraciones: configuracionesDeCiudad(c).filter((_, j) => j !== configIndice),
       }),
     }));
   }
@@ -180,15 +420,18 @@ export function CourierWizard({
     if (new Set(claves).size !== claves.length) {
       return "Repetiste una ciudad. Juntá sus rangos en una sola tarjeta.";
     }
-    if (conNombre.some(c => c.rangos.length === 0)) {
-      return "Cada ciudad necesita al menos un rango de cantidad.";
+    if (conNombre.some(c => configuracionesDeCiudad(c).length === 0)) {
+      return "Cada ciudad necesita al menos una configuración.";
+    }
+    if (conNombre.some(c => configuracionesDeCiudad(c).some(config => !config.rangos?.length))) {
+      return "Cada configuración necesita al menos un rango de cantidad.";
     }
 
-    const rangoInvalido = conNombre.some(c => c.rangos.some(r => (
+    const rangoInvalido = conNombre.some(c => configuracionesDeCiudad(c).some(config => config.rangos.some(r => (
       Number(r.rango_min) < 0 ||
       (r.rango_max !== "" && r.rango_max !== null && Number(r.rango_max) < Number(r.rango_min)) ||
       Number(r.costo) < 0
-    )));
+    ))));
     if (rangoInvalido) {
       return "Revisá los rangos: la cantidad máxima debe ser mayor o igual a la mínima y el costo no puede ser negativo.";
     }
@@ -214,16 +457,20 @@ export function CourierWizard({
 
     const reglasFinales = draft.ciudades
       .filter(c => c.ciudad.trim())
-      .flatMap(c => c.rangos.map(r => ({
-        departamento: c.departamento.trim(),
-        ciudad: c.ciudad.trim(),
-        tipo_pago: r.tipo_pago || "Ambos",
-        rango_min: Number(r.rango_min) || 0,
-        rango_max: r.rango_max === "" || r.rango_max === null ? "" : Number(r.rango_max),
-        costo: Number(r.costo) || 0,
-        tiempo_entrega_hs: r.tiempo_entrega_hs?.trim() || "",
-        activo: r.activo !== false,
-      })));
+      .flatMap(c => configuracionesDeCiudad(c).flatMap(config => config.rangos.map(r => ({
+          departamento: c.departamento.trim(),
+          ciudad: c.ciudad.trim(),
+          ciudad_id: c.ciudad_id || null,
+          departamento_id: c.departamento_id || null,
+          pais_id: c.pais_id || null,
+          tipo_cobertura: c.tipo_cobertura || "CIUDAD",
+          tipo_pago: config.tipo_pago || "Ambos",
+          rango_min: Number(r.rango_min) || 0,
+          rango_max: r.rango_max === "" || r.rango_max === null ? "" : Number(r.rango_max),
+          costo: Number(r.costo) || 0,
+          tiempo_entrega_hs: config.tiempo_entrega_hs?.trim() || "",
+          activo: config.activo !== false,
+        }))));
 
     setGuardando(true);
     try {
@@ -272,7 +519,7 @@ export function CourierWizard({
 
   const activeIndex = PASOS.findIndex(([key]) => key === paso);
   const ciudadesValidas = draft.ciudades.filter(c => c.ciudad.trim());
-  const totalRangos = ciudadesValidas.reduce((acc, c) => acc + c.rangos.length, 0);
+  const totalRangos = ciudadesValidas.reduce((acc, c) => acc + totalRangosCiudad(c), 0);
 
   return (
     <div style={styles.overlay} onClick={onClose}>
@@ -397,68 +644,139 @@ export function CourierWizard({
                   <div>
                     <h4 style={styles.sectionTitle}>Ciudades que cubre</h4>
                     <p style={styles.sectionHelp}>
-                      Cada ciudad queda asignada a este courier. Dentro de cada una definís el costo según la cantidad de productos.
+                      Elegí ciudades del catálogo por departamento. Después configurás los rangos y costos de cada una.
                     </p>
                   </div>
-                  <button type="button" className="btn-secondary" onClick={agregarCiudad}>
-                    <Plus size={15} /> Agregar ciudad
-                  </button>
                 </div>
+
+                <section style={styles.cityPicker}>
+                  <div style={styles.cityPickerControls}>
+                    <Field label="Departamento">
+                      <select
+                        className="form-input"
+                        value={departamentoId ?? ""}
+                        onChange={e => setDepartamentoId(Number(e.target.value))}
+                        disabled={geo.length === 0}
+                      >
+                        {geo.length === 0 ? (
+                          <option value="">Cargando ciudades...</option>
+                        ) : geo.map((d) => (
+                          <option key={d.id} value={d.id}>{d.nombre}</option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Buscar ciudad">
+                      <div style={styles.inputWrap}>
+                        <Search size={16} style={styles.inputIcon} />
+                        <input
+                          type="search"
+                          className="form-input"
+                          style={styles.iconInput}
+                          value={busquedaCiudad}
+                          onChange={e => setBusquedaCiudad(e.target.value)}
+                          placeholder="Filtrar ciudad..."
+                        />
+                      </div>
+                    </Field>
+                  </div>
+
+                  <div style={styles.cityList} aria-label="Ciudades disponibles">
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.cityOption,
+                        ...styles.cityOptionWide,
+                        ...(tieneCoberturaInterior ? styles.cityOptionSelected : {}),
+                      }}
+                      onClick={alternarCoberturaInterior}
+                    >
+                      <span style={{
+                        ...styles.cityCheck,
+                        ...(tieneCoberturaInterior ? styles.cityCheckSelected : {}),
+                      }}>
+                        {tieneCoberturaInterior && <CheckCircle2 size={12} />}
+                      </span>
+                      <span>
+                        Otras ciudades / interior
+                        <small style={styles.cityOptionMeta}>Precio para ciudades sin tarifa propia</small>
+                      </span>
+                    </button>
+                    {ciudadesVisibles.length === 0 ? (
+                      <div style={styles.cityEmpty}>
+                        {geo.length === 0 ? "Cargando catálogo..." : "No encontramos ciudades en este departamento."}
+                      </div>
+                    ) : ciudadesVisibles.map((c) => {
+                      const seleccionada = ciudadesSeleccionadas.has(`id:${c.id}`) || ciudadesSeleccionadas.has(claveCatalogo(c, departamento));
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          style={{
+                            ...styles.cityOption,
+                            ...(seleccionada ? styles.cityOptionSelected : {}),
+                          }}
+                          onClick={() => alternarCiudadCatalogo(c)}
+                        >
+                          <span style={{
+                            ...styles.cityCheck,
+                            ...(seleccionada ? styles.cityCheckSelected : {}),
+                          }}>
+                            {seleccionada && <CheckCircle2 size={12} />}
+                          </span>
+                          <span>{c.nombre}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                {draft.ciudades.length === 0 && (
+                  <div style={styles.emptySelection}>
+                    Seleccioná una o más ciudades del catálogo para configurar las tarifas.
+                  </div>
+                )}
 
                 {draft.ciudades.map((ciudad, ciudadIndice) => (
                   <section key={ciudad._id || ciudadIndice} style={styles.cityCard}>
                     <div style={styles.cityCardHeader}>
                       <span style={styles.cityBadge}>
                         <MapPin size={14} />
-                        {ciudad.ciudad.trim() || `Ciudad ${ciudadIndice + 1}`}
+                        {esCoberturaInterior(ciudad) ? "Otras ciudades / interior" : (ciudad.ciudad.trim() || `Ciudad ${ciudadIndice + 1}`)}
+                        {ciudad.departamento && !esCoberturaInterior(ciudad) ? <small style={styles.cityBadgeMeta}>· {ciudad.departamento}</small> : null}
+                        {esCoberturaInterior(ciudad) ? <small style={styles.cityBadgeMeta}>· fallback</small> : null}
                       </span>
-                      {draft.ciudades.length > 1 && (
+                      <div style={styles.cityCardActions}>
                         <button
                           type="button"
                           className="btn-icon danger"
                           onClick={() => eliminarCiudad(ciudadIndice)}
                           title="Quitar ciudad"
-                          aria-label={`Quitar ciudad ${ciudadIndice + 1}`}
+                          aria-label={`Quitar ${esCoberturaInterior(ciudad) ? "otras ciudades" : ciudad.ciudad || "ciudad"}`}
                         >
                           <Trash2 size={15} />
                         </button>
-                      )}
+                      </div>
                     </div>
 
-                    <div style={styles.twoCols}>
-                      <Field label="Departamento">
-                        <input
-                          className="form-input"
-                          value={ciudad.departamento}
-                          onChange={e => setCiudad(ciudadIndice, "departamento", e.target.value)}
-                          placeholder="Central"
-                        />
-                      </Field>
-                      <Field label="Ciudad">
-                        <input
-                          className="form-input"
-                          value={ciudad.ciudad}
-                          onChange={e => setCiudad(ciudadIndice, "ciudad", e.target.value)}
-                          placeholder="Luque"
-                        />
-                      </Field>
-                    </div>
-
-                    <div style={styles.rangosStack}>
-                      {ciudad.rangos.map((rango, rangoIndice) => (
-                        <RangoEditor
-                          key={rangoIndice}
-                          numero={rangoIndice + 1}
-                          rango={rango}
-                          puedeEliminar={ciudad.rangos.length > 1}
-                          onChange={(campo, valor) => setRango(ciudadIndice, rangoIndice, campo, valor)}
-                          onRemove={() => eliminarRango(ciudadIndice, rangoIndice)}
+                    <div style={styles.configStack}>
+                      {configuracionesDeCiudad(ciudad).map((config, configIndice) => (
+                        <TarifaConfigEditor
+                          key={config._id || configIndice}
+                          numero={configIndice + 1}
+                          config={config}
+                          puedeEliminar={configuracionesDeCiudad(ciudad).length > 1}
+                          onSharedChange={(campo, valor) => setConfiguracion(ciudadIndice, configIndice, campo, valor)}
+                          onRangeChange={(rangoIndice, campo, valor) => setRango(ciudadIndice, configIndice, rangoIndice, campo, valor)}
+                          onAddRange={() => agregarRango(ciudadIndice, configIndice)}
+                          onRemoveRange={(rangoIndice) => eliminarRango(ciudadIndice, configIndice, rangoIndice)}
+                          onRemoveConfig={() => eliminarConfiguracion(ciudadIndice, configIndice)}
                         />
                       ))}
-                      <button type="button" className="btn-secondary" onClick={() => agregarRango(ciudadIndice)}>
-                        <Plus size={15} /> Agregar rango a {ciudad.ciudad.trim() || "esta ciudad"}
-                      </button>
                     </div>
+
+                    <button type="button" style={styles.addConfigButton} onClick={() => agregarConfiguracion(ciudadIndice)}>
+                      <Plus size={14} /> Agregar otra configuración (ej. distinto método de pago)
+                    </button>
                   </section>
                 ))}
               </div>
@@ -481,10 +799,14 @@ export function CourierWizard({
                 {ciudadesValidas.map((ciudad, index) => (
                   <div key={index} style={styles.summaryItem}>
                     <strong style={styles.summaryCity}>
-                      {ciudad.ciudad}, {ciudad.departamento || "Sin departamento"}
+                      {esCoberturaInterior(ciudad) ? "Otras ciudades / interior" : `${ciudad.ciudad}, ${ciudad.departamento || "Sin departamento"}`}
                     </strong>
-                    {ciudad.rangos.map((rango, j) => (
-                      <span key={j} style={styles.summaryRange}>{rangoPreview(rango)}</span>
+                    {configuracionesDeCiudad(ciudad).flatMap((config, configIndex) => (
+                      config.rangos.map((rango, rangoIndex) => (
+                        <span key={`${configIndex}-${rangoIndex}`} style={styles.summaryRange}>
+                          {rangoPreviewConfig(config, rango)}
+                        </span>
+                      ))
                     ))}
                   </div>
                 ))}
@@ -516,92 +838,117 @@ export function CourierWizard({
   );
 }
 
-function RangoEditor({ numero, rango, puedeEliminar, onChange, onRemove }) {
-  const sinLimite = rango.rango_max === "" || rango.rango_max === null || rango.rango_max === undefined;
-
+function TarifaConfigEditor({
+  numero,
+  config,
+  puedeEliminar,
+  onSharedChange,
+  onRangeChange,
+  onAddRange,
+  onRemoveRange,
+  onRemoveConfig,
+}) {
+  const rangos = config.rangos.length ? config.rangos : [nuevoRango()];
   return (
-    <div style={styles.rangoCard}>
-      <div style={styles.rangoHeader}>
+    <div style={styles.configCard}>
+      <div style={styles.configHeader}>
         <div>
-          <strong style={styles.rangoTitle}>Rango {numero}</strong>
-          <p style={styles.rangoPreview}>{rangoPreview(rango)}</p>
+          <strong style={styles.configTitle}>Configuración {numero}</strong>
+          <span style={styles.configMeta}>
+            {config.tipo_pago || "Ambos"} · {rangos.length} rango{rangos.length === 1 ? "" : "s"}
+          </span>
         </div>
         {puedeEliminar && (
-          <button type="button" className="btn-icon danger" onClick={onRemove} title="Eliminar rango" aria-label="Eliminar rango">
-            <Trash2 size={15} />
+          <button
+            type="button"
+            style={styles.removeConfigButton}
+            onClick={onRemoveConfig}
+            title="Eliminar configuración"
+          >
+            Eliminar
           </button>
         )}
       </div>
 
-      <div style={styles.twoCols}>
-        <Field label="Cantidad mínima de productos">
+      <div style={styles.configGrid}>
+        <Field label="Método de pago aceptado">
+          <select className="form-input" value={config.tipo_pago} onChange={e => onSharedChange("tipo_pago", e.target.value)}>
+            {TIPOS_PAGO.map(tp => <option key={tp} value={tp}>{tp}</option>)}
+          </select>
+        </Field>
+        <Field label="Tiempo estimado de entrega">
           <input
-            type="number"
-            min="0"
             className="form-input"
-            value={rango.rango_min}
-            onChange={e => onChange("rango_min", Number(e.target.value))}
+            value={config.tiempo_entrega_hs}
+            onChange={e => onSharedChange("tiempo_entrega_hs", e.target.value)}
+            placeholder="En el día"
           />
         </Field>
-        <Field label="Cantidad máxima de productos">
-          <input
-            type="number"
-            min="0"
-            className="form-input"
-            value={sinLimite ? "" : rango.rango_max}
-            onChange={e => onChange("rango_max", e.target.value === "" ? "" : Number(e.target.value))}
-            placeholder="Sin límite"
-            disabled={sinLimite}
-          />
-        </Field>
+      </div>
+
+      <div style={styles.rangosPanel}>
+        <span style={styles.rangosTitle}>Costo de envío según cantidad de productos</span>
+        <div style={styles.rangosRows}>
+          {rangos.map((rango, rangoIndice) => (
+            <div key={rangoIndice} style={styles.rangeRow}>
+              <Field label="Desde">
+                <input
+                  type="number"
+                  min="1"
+                  className="form-input"
+                  value={rango.rango_min}
+                  onChange={e => onRangeChange(rangoIndice, "rango_min", Number(e.target.value))}
+                />
+              </Field>
+              <Field label="Hasta">
+                <input
+                  type="number"
+                  min="1"
+                  className="form-input"
+                  value={rango.rango_max ?? ""}
+                  onChange={e => onRangeChange(rangoIndice, "rango_max", e.target.value === "" ? "" : Number(e.target.value))}
+                  placeholder="sin tope"
+                />
+              </Field>
+              <div style={styles.rangeCostAction}>
+                <Field label="Costo total (Gs.)">
+                  <CurrencyInput
+                    className="form-input"
+                    value={rango.costo}
+                    onChange={val => onRangeChange(rangoIndice, "costo", val)}
+                    prefix="Gs "
+                    style={styles.moneyInput}
+                  />
+                </Field>
+                {rangos.length > 1 && (
+                  <button
+                    type="button"
+                    style={styles.inlineRemoveButton}
+                    onClick={() => onRemoveRange(rangoIndice)}
+                    title="Quitar rango"
+                    aria-label={`Quitar rango ${rangoIndice + 1}`}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button type="button" style={styles.addRangeButton} onClick={onAddRange}>
+          <Plus size={13} /> Agregar rango
+        </button>
       </div>
 
       <label style={styles.toggle}>
         <input
           type="checkbox"
-          checked={sinLimite}
-          onChange={e => onChange("rango_max", e.target.checked ? "" : Number(rango.rango_min) || 0)}
+          checked={config.activo !== false}
+          onChange={e => onSharedChange("activo", e.target.checked)}
           style={styles.checkbox}
         />
-        Sin límite máximo
+        Tarifa activa
       </label>
-
-      <div style={styles.twoCols}>
-        <Field label="Método de pago aceptado">
-          <select className="form-input" value={rango.tipo_pago} onChange={e => onChange("tipo_pago", e.target.value)}>
-            {TIPOS_PAGO.map(tp => <option key={tp} value={tp}>{tp}</option>)}
-          </select>
-        </Field>
-        <Field label="Costo de envío">
-          <CurrencyInput
-            className="form-input"
-            value={rango.costo}
-            onChange={val => onChange("costo", val)}
-            prefix="Gs "
-            style={styles.moneyInput}
-          />
-        </Field>
-      </div>
-
-      <div style={styles.twoCols}>
-        <Field label="Tiempo estimado de entrega">
-          <input
-            className="form-input"
-            value={rango.tiempo_entrega_hs}
-            onChange={e => onChange("tiempo_entrega_hs", e.target.value)}
-            placeholder="En el día"
-          />
-        </Field>
-        <label style={{ ...styles.toggle, alignSelf: "end", paddingBottom: "0.55rem" }}>
-          <input
-            type="checkbox"
-            checked={rango.activo !== false}
-            onChange={e => onChange("activo", e.target.checked)}
-            style={styles.checkbox}
-          />
-          Rango activo
-        </label>
-      </div>
     </div>
   );
 }
@@ -691,7 +1038,7 @@ const styles = {
     background: "color-mix(in srgb, var(--color-success) 12%, transparent)",
   },
   stepCurrent: {
-    borderColor: "var(--color-primary)",
+    border: "1px solid var(--color-primary)",
     boxShadow: "0 0 0 1px var(--color-primary)",
   },
   stepDot: {
@@ -754,6 +1101,90 @@ const styles = {
     color: "var(--color-fg-muted)",
     fontSize: "0.78rem",
   },
+  cityPicker: {
+    display: "grid",
+    gap: "0.75rem",
+    padding: "0.85rem",
+    borderRadius: 12,
+    border: "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
+    background: "color-mix(in srgb, var(--color-primary) 5%, transparent)",
+  },
+  cityPickerControls: {
+    display: "grid",
+    gridTemplateColumns: "minmax(150px, 0.65fr) minmax(180px, 1fr)",
+    gap: "0.75rem",
+  },
+  cityList: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(145px, 1fr))",
+    gap: "0.45rem",
+    maxHeight: 220,
+    overflowY: "auto",
+    padding: "0.15rem",
+  },
+  cityOption: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.45rem",
+    minHeight: 36,
+    border: "1px solid color-mix(in srgb, var(--color-fg) 9%, transparent)",
+    borderRadius: 9,
+    background: "color-mix(in srgb, var(--color-fg) 3%, transparent)",
+    color: "var(--color-fg)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "0.8rem",
+    fontWeight: 750,
+    padding: "0.45rem 0.55rem",
+    textAlign: "left",
+    transition: "all 0.15s ease",
+  },
+  cityOptionSelected: {
+    border: "1px solid color-mix(in srgb, var(--color-primary) 42%, transparent)",
+    background: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
+    color: "var(--color-primary-text)",
+  },
+  cityOptionWide: {
+    gridColumn: "1 / -1",
+  },
+  cityOptionMeta: {
+    display: "block",
+    marginTop: 2,
+    color: "var(--color-fg-muted)",
+    fontSize: "0.72rem",
+    fontWeight: 650,
+  },
+  cityCheck: {
+    flex: "0 0 auto",
+    display: "grid",
+    placeItems: "center",
+    width: 17,
+    height: 17,
+    borderRadius: 5,
+    border: "1px solid color-mix(in srgb, var(--color-fg) 24%, transparent)",
+    color: "#fff",
+  },
+  cityCheckSelected: {
+    border: "1px solid var(--color-primary)",
+    background: "var(--color-primary)",
+  },
+  cityEmpty: {
+    gridColumn: "1 / -1",
+    padding: "0.9rem",
+    borderRadius: 9,
+    border: "1px dashed color-mix(in srgb, var(--color-fg) 14%, transparent)",
+    color: "var(--color-fg-muted)",
+    fontSize: "0.82rem",
+    textAlign: "center",
+  },
+  emptySelection: {
+    padding: "1rem",
+    borderRadius: 12,
+    border: "1px dashed color-mix(in srgb, var(--color-fg) 14%, transparent)",
+    color: "var(--color-fg-muted)",
+    fontSize: "0.84rem",
+    textAlign: "center",
+  },
   cityCard: {
     display: "grid",
     gap: "0.9rem",
@@ -767,53 +1198,152 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     gap: "0.75rem",
+    flexWrap: "wrap",
+  },
+  cityCardActions: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.45rem",
+    flexWrap: "wrap",
   },
   cityBadge: {
     display: "inline-flex",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: "0.4rem",
     fontSize: "0.85rem",
     fontWeight: 850,
     color: "var(--color-fg)",
   },
-  rangosStack: {
-    display: "grid",
-    gap: "0.7rem",
+  cityBadgeMeta: {
+    color: "var(--color-fg-muted)",
+    fontSize: "0.75rem",
+    fontWeight: 750,
   },
-  rangoCard: {
+  configStack: {
     display: "grid",
-    gap: "0.8rem",
-    padding: "0.9rem",
+    gap: "0.85rem",
+  },
+  configCard: {
+    display: "grid",
+    gap: "0.85rem",
+    padding: "0.95rem",
     borderRadius: 10,
-    border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
-    background: "var(--color-canvas)",
+    border: "1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)",
+    background: "color-mix(in srgb, var(--color-canvas) 86%, transparent)",
   },
-  rangoHeader: {
+  configHeader: {
     display: "flex",
     justifyContent: "space-between",
-    gap: "0.8rem",
     alignItems: "flex-start",
+    gap: "0.8rem",
+    flexWrap: "wrap",
   },
-  rangoTitle: {
-    display: "block",
-    fontSize: "0.88rem",
+  configTitle: {
     color: "var(--color-fg)",
+    fontSize: "0.9rem",
+    fontWeight: 850,
   },
-  rangoPreview: {
-    margin: "0.25rem 0 0",
-    fontSize: "0.76rem",
+  configMeta: {
+    display: "block",
+    marginTop: 3,
     color: "var(--color-fg-muted)",
+    fontSize: "0.76rem",
+    fontWeight: 700,
   },
-  twoCols: {
+  removeConfigButton: {
+    border: "none",
+    background: "transparent",
+    color: "var(--color-danger)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "0.76rem",
+    fontWeight: 800,
+    padding: "0.1rem 0",
+  },
+  configGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-    gap: "0.85rem",
+    gridTemplateColumns: "minmax(150px, 0.9fr) minmax(170px, 1fr)",
+    gap: "0.8rem",
+    paddingBottom: "0.85rem",
+    borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
+  },
+  rangosPanel: {
+    display: "grid",
+    gap: "0.55rem",
+  },
+  rangosTitle: {
+    display: "block",
+    color: "var(--color-fg-muted)",
+    fontSize: "0.8rem",
+    fontWeight: 750,
+  },
+  rangosRows: {
+    display: "grid",
+    gap: "0.75rem",
+  },
+  rangeRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+    gap: "0.65rem 0.75rem",
+    alignItems: "end",
+    padding: "0.75rem",
+    borderRadius: 10,
+    border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
+    background: "color-mix(in srgb, var(--color-fg) 3%, transparent)",
+  },
+  rangeCostAction: {
+    gridColumn: "1 / -1",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 36px",
+    gap: "0.6rem",
+    alignItems: "end",
+  },
+  inlineRemoveButton: {
+    width: 36,
+    height: 38,
+    display: "inline-grid",
+    placeItems: "center",
+    borderRadius: 8,
+    border: "1px solid color-mix(in srgb, var(--color-danger) 18%, transparent)",
+    background: "color-mix(in srgb, var(--color-danger) 7%, transparent)",
+    color: "var(--color-fg-muted)",
+    cursor: "pointer",
+  },
+  addRangeButton: {
+    width: "max-content",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "0.35rem",
+    padding: "0.15rem 0",
+    border: "none",
+    background: "transparent",
+    color: "var(--color-primary)",
+    fontSize: "0.78rem",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+  addConfigButton: {
+    width: "100%",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.45rem",
+    minHeight: 40,
+    borderRadius: 9,
+    border: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)",
+    background: "transparent",
+    color: "var(--color-fg)",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "0.82rem",
+    fontWeight: 850,
   },
   label: {
     color: "var(--color-fg-muted)",
-    fontSize: "0.8rem",
+    fontSize: "0.76rem",
     fontWeight: 700,
-    marginBottom: "0.35rem",
+    marginBottom: "0.28rem",
     display: "block",
   },
   inputWrap: {

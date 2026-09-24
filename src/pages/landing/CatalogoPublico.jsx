@@ -21,15 +21,30 @@ import { useStoreCart } from './useStoreCart';
  * en vez de un sidebar pesado — mismo criterio que una vidriera de
  * e-commerce estándar (grilla al frente, filtros livianos arriba).
  */
+const FILTROS_INICIALES = { orden: 'destacados', disponibilidad: 'todos', categoria: 'todas', etiqueta: 'todas', precioMin: '', precioMax: '' };
+
 export default function CatalogoPublico() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [estadoCarga, setEstadoCarga] = useState('cargando');
   const [data, setData] = useState(null);
+  const [filtros, setFiltros] = useState(FILTROS_INICIALES);
+  const [pagina, setPagina] = useState(1);
+  // Distinto del spinner de pantalla completa: esto es solo un dim sutil de
+  // la grilla mientras se pide una página/filtro nuevo, para no perder el
+  // scroll ni el layout en cada cambio (ver CatalogoView -> prop `cargando`).
+  const [cargandoPagina, setCargandoPagina] = useState(false);
 
+  // Todo filtro/orden/página se resuelve del lado del servidor: el
+  // catálogo puede tener más productos de los que trae esta página, así
+  // que filtrar solo lo ya cargado haría que una búsqueda por categoría no
+  // encuentre productos reales que cayeron en otra página (ver AskUserQuestion
+  // de esta sesión). setFiltros/setPagina.
   useEffect(() => {
     let activo = true;
-    obtenerCatalogoLandingPublica(slug)
+    const esPrimeraCarga = data === null;
+    if (!esPrimeraCarga) setCargandoPagina(true);
+    obtenerCatalogoLandingPublica(slug, { ...filtros, pagina })
       .then((res) => {
         if (!activo) return;
         if (res === null) return setEstadoCarga('no-encontrada');
@@ -39,9 +54,23 @@ export default function CatalogoPublico() {
       })
       .catch(() => {
         if (activo) setEstadoCarga('no-encontrada');
+      })
+      .finally(() => {
+        if (activo) setCargandoPagina(false);
       });
     return () => { activo = false; };
-  }, [slug]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, filtros, pagina]);
+
+  function handleFiltrosChange(patch) {
+    setFiltros(prev => ({ ...prev, ...patch }));
+    setPagina(1); // cualquier cambio de filtro vuelve a arrancar desde la página 1
+  }
+
+  function handleCambiarPagina(nuevaPagina) {
+    setPagina(nuevaPagina);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   useDocumentSeo(data ? `Catálogo - ${data.titulo || data.tienda?.nombre}` : 'Catálogo', data?.seo_descripcion || '');
 
@@ -146,6 +175,14 @@ export default function CatalogoPublico() {
           bordeSuave={bordeSuave}
           onClickProducto={(p) => navigate(linkProducto(p.id))}
           previewMode={false}
+          filtrosControlados={filtros}
+          onFiltrosControladosChange={handleFiltrosChange}
+          categoriasDisponibles={data?.categorias_disponibles || []}
+          etiquetasDisponibles={data?.etiquetas_disponibles || []}
+          totalResultados={data?.paginacion?.total ?? productos.length}
+          paginacion={data?.paginacion || null}
+          onCambiarPagina={handleCambiarPagina}
+          cargando={cargandoPagina}
         />
       </main>
       <CartDrawer

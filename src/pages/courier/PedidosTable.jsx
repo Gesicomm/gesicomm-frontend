@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Search, ChevronLeft, ChevronRight, RotateCcw, Filter, X,
-  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Tag, Clock, AlertCircle
+  ChevronDown, MapPin, Truck, User, MessageCircle, ClipboardList, Eye, Package, CreditCard, History, Hash, Tag, Clock,
+  Columns3, Table2, SlidersHorizontal
 } from "lucide-react";
 import { STATUS, STATUS_ORDER, formatGs } from "../../lib/courier";
 import { getEnviosPaginados, getConteoPorEstado, getConteoPorAbastecimiento, getResumenEntregados, getMetodosPago, deleteEnvio } from "../../services/courierApi";
@@ -10,6 +11,7 @@ import { canalVentaService } from "../../services/canalVentaService";
 import { seguimientoService } from "../../services/seguimiento.service";
 import { verificarSesion } from "../../utils/auth";
 import { numeroPedidoVisible } from "./pedidoNumero";
+import { KanbanBoard } from "./kanban-board";
 
 
 const LIMITE = 10;
@@ -510,8 +512,12 @@ export function PedidosTable({
   const [timelineExpandidoId, setTimelineExpandidoId] = useState(null);
   const [abastecimientoEstadoActivo, setAbastecimientoEstadoActivo] = useState(initialAbastecimientoEstado);
   const [filtros, setFiltros] = useState(() => filtrosBase);
+  const [vista, setVista] = useState("tabla");
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ data: [], total: 0, totalPages: 1 });
+  const [kanbanData, setKanbanData] = useState([]);
+  const [kanbanLoading, setKanbanLoading] = useState(false);
+  const [draggingId, setDraggingId] = useState(null);
   const [conteos, setConteos] = useState({});
   const [resumenEntregados, setResumenEntregados] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -600,6 +606,36 @@ export function PedidosTable({
     }
   }, [construirPayloadBase, soloAbastecimiento]);
 
+  // El kanban es un tablero por estado: tiene que mostrar TODOS los estados
+  // a la vez (una columna por cada uno), no solo la pestana de estado activa
+  // en la vista Tabla -- si se scopea a un solo estado, el resto de las
+  // columnas del tablero quedan vacias (bug reportado: 72 pedidos en
+  // Pendiente y 0 en las demas columnas aunque hubiera pedidos ahi).
+  const cargarKanban = useCallback(async (f) => {
+    if (soloAbastecimiento) return;
+    setKanbanLoading(true);
+    try {
+      const payloadBase = { ...construirPayloadBase(f), limit: 100 };
+
+      const acumulado = [];
+      let pageToLoad = 1;
+      let totalPages = 1;
+
+      do {
+        const res = await getEnviosPaginados({ ...payloadBase, page: pageToLoad });
+        acumulado.push(...(res?.data || []));
+        totalPages = Number(res?.totalPages) || 1;
+        pageToLoad += 1;
+      } while (pageToLoad <= totalPages);
+
+      setKanbanData(acumulado);
+    } catch (err) {
+      console.error("Error cargando tablero kanban:", err);
+    } finally {
+      setKanbanLoading(false);
+    }
+  }, [construirPayloadBase, soloAbastecimiento]);
+
   const handleEliminarPedido = async (envio) => {
     if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el pedido de ${envio.cliente || "Cliente"}? Esta acción no se puede deshacer y liberará cualquier stock reservado.`)) {
       return;
@@ -660,6 +696,14 @@ export function PedidosTable({
     return () => clearTimeout(timerRef.current);
   }, [filtros, page, estadoActivo, refrescarKey, cargar, cargarConteos, cargarResumenEntregados]);
 
+  useEffect(() => {
+    if (vista !== "kanban" || soloAbastecimiento) return;
+    const timer = setTimeout(() => {
+      cargarKanban(filtros);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [vista, soloAbastecimiento, filtros, refrescarKey, cargarKanban]);
+
   const setFiltro = (key, val) => {
     setFiltros((prev) => ({ ...prev, [key]: val }));
     setPage(1);
@@ -715,10 +759,27 @@ export function PedidosTable({
         row.id === item.id ? { ...row, estado: nuevoEstado } : row
       ),
     }));
+    setKanbanData((prev) => prev.map((row) =>
+      row.id === item.id ? { ...row, estado: nuevoEstado } : row
+    ));
 
     if (onChangeEstado) {
       onChangeEstado(item.id, nuevoEstado, item);
     }
+  };
+
+  const handleKanbanDrop = (nuevoEstado) => {
+    if (!draggingId) return;
+    const item = kanbanData.find((row) => row.id === draggingId);
+    setDraggingId(null);
+    if (!item) return;
+    handleItemEstadoChange(item, nuevoEstado);
+  };
+
+  const handleKanbanChangeEstado = (id, nuevoEstado) => {
+    const item = kanbanData.find((row) => row.id === id);
+    if (!item) return;
+    handleItemEstadoChange(item, nuevoEstado);
   };
 
   const handleAccionSiguiente = (item, accion) => {
@@ -755,11 +816,43 @@ export function PedidosTable({
     }
   };
 
-  const hayFiltros = Object.entries(filtros).some(([, v]) => v !== "" && v !== "TODOS");
+  const hayFiltros = Object.entries(filtros).some(([, v]) =>
+    typeof v === "boolean" ? v : v !== "" && v !== "TODOS"
+  );
+  const filtrosSecundariosActivos = [
+    filtros.courier_id !== "TODOS" && {
+      key: "courier_id",
+      label: couriers.find((c) => String(c.id) === String(filtros.courier_id))?.nombre || "Sin courier",
+      reset: "TODOS",
+    },
+    filtros.confirmador.trim() && { key: "confirmador", label: `Confirmador: ${filtros.confirmador.trim()}`, reset: "" },
+    filtros.canal_venta_id !== "TODOS" && {
+      key: "canal_venta_id",
+      label: canalesVenta.find((c) => String(c.id) === String(filtros.canal_venta_id))?.nombre || "Canal",
+      reset: "TODOS",
+    },
+    filtros.producto.trim() && { key: "producto", label: `Producto: ${filtros.producto.trim()}`, reset: "" },
+    filtros.metodo_pago_id !== "TODOS" && {
+      key: "metodo_pago_id",
+      label: metodosPagoList.find((m) => String(m.id) === String(filtros.metodo_pago_id))?.nombre || "Método de pago",
+      reset: "TODOS",
+    },
+    filtros.etiqueta_id !== "TODOS" && { key: "etiqueta_id", label: "Etiqueta aplicada", reset: "TODOS" },
+    filtros.plantilla_id !== "TODOS" && { key: "plantilla_id", label: "Plantilla aplicada", reset: "TODOS" },
+    filtros.seguimiento_pendiente && { key: "seguimiento_pendiente", label: "Seguimiento pendiente", reset: false },
+    filtros.seguimiento_vencido && { key: "seguimiento_vencido", label: "Seguimiento vencido", reset: false },
+  ].filter(Boolean);
   const esAdmin = usuarioActual?.rol === "administrador";
   const esTabAbastecimiento = !soloAbastecimiento && estadoActivo === TAB_ABASTECIMIENTO_ID;
 
   const envios = data.data || [];
+  const porDespacharHoy = Number(conteos.Preparado || 0);
+  // Viene del backend (agregado sobre TODOS los pedidos filtrados, sin
+  // paginar y sin restringir a un solo estado) para que el numero sea el
+  // mismo en Tabla y en Kanban -- antes se sumaba solo lo cargado en
+  // memoria en cada vista (10 filas en la tabla, o solo el estado activo
+  // en el kanban), y por eso el total no coincidia entre ambas.
+  const totalVisibleACobrar = Number(conteos.total_visible_a_cobrar || 0);
   const tableColSpan = soloAbastecimiento ? 9 : 10;
   const pagosAbastecimientoPendientes = envios.filter((e) => e.accion_siguiente?.tipo === "pagar_abastecimiento");
   const totalAbastecimientoPendiente = pagosAbastecimientoPendientes.reduce(
@@ -875,7 +968,7 @@ export function PedidosTable({
           </div>
         </div>
       ) : (
-        <div style={{ display: "flex", gap: "0.4rem", overflowX: "auto", paddingBottom: "0.3rem" }}>
+        <div className="pt-status-tabs" role="tablist" aria-label="Estados del pedido">
           {STATUS_ORDER.map((st) => {
             const cfg = STATUS[st] || {};
             const active = estadoActivo === st;
@@ -888,37 +981,11 @@ export function PedidosTable({
                 key={st}
                 type="button"
                 onClick={() => handleSelectEstado(st)}
-                style={{
-                  padding: "0.45rem 0.9rem",
-                  borderRadius: "999px",
-                  border: active
-                    ? `1px solid ${cfg.chipText}`
-                    : tieneAlertas
-                    ? "1px solid var(--color-danger)"
-                    : "1px solid var(--color-border)",
-                  background: active
-                    ? cfg.chipBg
-                    : tieneAlertas
-                    ? "color-mix(in srgb, var(--color-danger) 10%, var(--color-surface-2))"
-                    : "var(--color-surface-2)",
-                  color: active
-                    ? cfg.chipText
-                    : tieneAlertas
-                    ? "var(--color-danger)"
-                    : "var(--color-fg-muted)",
-                  fontSize: "0.8rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  flexShrink: 0,
-                  transition: "all 0.15s ease",
-                }}
+                className={`pt-status-chip ${active ? "active" : ""} ${tieneAlertas ? "has-alert" : ""}`}
+                style={active ? { borderColor: cfg.chipText, background: cfg.chipBg, color: cfg.chipText } : undefined}
               >
                 {cfg.label || st}
-                <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos[st] ?? 0})</span>
+                <span>{conteos[st] ?? 0}</span>
                 {tieneAlertas && (
                   <span
                     title={`${vencidosSeguimiento} seguimiento(s) pendientes de contactar`}
@@ -946,25 +1013,11 @@ export function PedidosTable({
                   key="abastecimiento-seguimiento-tab"
                   type="button"
                   onClick={() => handleSelectEstado(TAB_ABASTECIMIENTO_ID)}
-                  style={{
-                    padding: "0.45rem 0.9rem",
-                    borderRadius: "999px",
-                    border: estadoActivo === TAB_ABASTECIMIENTO_ID ? `1px solid ${TAB_ABASTECIMIENTO_CFG.chipText}` : "1px solid var(--color-border)",
-                    background: estadoActivo === TAB_ABASTECIMIENTO_ID ? TAB_ABASTECIMIENTO_CFG.chipBg : "var(--color-surface-2)",
-                    color: estadoActivo === TAB_ABASTECIMIENTO_ID ? TAB_ABASTECIMIENTO_CFG.chipText : "var(--color-fg-muted)",
-                    fontSize: "0.8rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    whiteSpace: "nowrap",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                    flexShrink: 0,
-                    transition: "all 0.15s ease",
-                  }}
+                  className={`pt-status-chip ${estadoActivo === TAB_ABASTECIMIENTO_ID ? "active" : ""}`}
+                  style={estadoActivo === TAB_ABASTECIMIENTO_ID ? { borderColor: TAB_ABASTECIMIENTO_CFG.chipText, background: TAB_ABASTECIMIENTO_CFG.chipBg, color: TAB_ABASTECIMIENTO_CFG.chipText } : undefined}
                 >
                   {TAB_ABASTECIMIENTO_CFG.label}
-                  <span style={{ opacity: 0.7, fontWeight: 500 }}>({conteos.abastecimiento_pagado ?? 0})</span>
+                  <span>{conteos.abastecimiento_pagado ?? 0}</span>
                 </button>
               ),
             ];
@@ -972,78 +1025,20 @@ export function PedidosTable({
         </div>
       )}
 
-      {/* ── Snapshot visual de pedidos en curso (Actionable) ── */}
       {!soloAbastecimiento && (
-        <div style={{
-          display: "flex", gap: "1rem", marginTop: "1rem", flexWrap: "wrap"
-        }}>
-          {[
-            { st: "Pendiente", icon: <User size={16} />, label: "Pendientes", color: "var(--color-fg-muted)", border: "color-mix(in srgb, var(--color-fg) 10%, transparent)" },
-            {
-              st: "EnSeguimiento",
-              icon: <MessageCircle size={16} />,
-              label: "En seguimiento de contacto",
-              color: "#3b82f6",
-              border: (conteos?.seguimiento_vencidos > 0)
-                ? "color-mix(in srgb, var(--color-danger) 45%, transparent)"
-                : "color-mix(in srgb, #3b82f6 25%, transparent)",
-              badgeExtra: (conteos?.seguimiento_vencidos > 0)
-                ? `${conteos.seguimiento_vencidos} por contactar`
-                : null
-            },
-            { st: "Confirmado", icon: <Package size={16} />, label: "Confirmados", color: "var(--color-info)", border: "color-mix(in srgb, var(--color-info) 20%, transparent)" },
-            { st: TAB_ABASTECIMIENTO_ID, icon: <CreditCard size={16} />, label: "Pagado, en seguimiento", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 25%, transparent)", count: conteos.abastecimiento_pagado },
-            { st: "Preparado", icon: <ClipboardList size={16} />, label: "Por despachar", color: "var(--color-warning)", border: "color-mix(in srgb, var(--color-warning) 20%, transparent)" },
-            { st: "Despachado", icon: <Truck size={16} />, label: "En tránsito", color: "var(--color-primary-text)", border: "color-mix(in srgb, var(--color-primary) 20%, transparent)" },
-            { st: "Reprogramado", icon: <History size={16} />, label: "Reprogramados", color: "var(--color-danger)", border: "color-mix(in srgb, var(--color-danger) 20%, transparent)" }
-          ].map(item => (
-            <div
-              key={item.st}
-              onClick={() => handleSelectEstado(item.st)}
-              style={{
-                flex: "1 1 140px",
-                padding: "1rem",
-                borderRadius: "12px",
-                background: estadoActivo === item.st
-                  ? "color-mix(in srgb, var(--color-primary) 10%, var(--color-canvas))"
-                  : "var(--color-canvas)",
-                border: `1px solid ${item.border}`,
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.5rem",
-                cursor: "pointer",
-                transition: "transform 0.15s ease, border-color 0.15s ease",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", color: item.color }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  {item.icon}
-                  <span style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase" }}>{item.label}</span>
-                </div>
-                {item.badgeExtra && (
-                  <span style={{
-                    fontSize: "0.68rem",
-                    fontWeight: 800,
-                    padding: "2px 6px",
-                    borderRadius: "6px",
-                    background: "color-mix(in srgb, var(--color-danger) 15%, transparent)",
-                    color: "var(--color-danger)",
-                    border: "1px solid color-mix(in srgb, var(--color-danger) 30%, transparent)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "3px"
-                  }}>
-                    <AlertCircle size={10} />
-                    {item.badgeExtra}
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--color-fg)" }}>
-                {item.count ?? conteos[item.st] ?? 0}
-              </div>
-            </div>
-          ))}
-        </div>
+        <details className="pt-ops-summary">
+          <summary>
+            <span>Resumen operativo</span>
+            <strong>{conteos.Pendiente ?? 0} pendientes</strong>
+          </summary>
+          <div className="pt-ops-grid">
+            <ResumenItem label="Pedidos pendientes" value={String(conteos.Pendiente ?? 0)} />
+            <ResumenItem label="Requieren contacto" value={String(conteos.seguimiento_vencidos ?? 0)} color={(conteos.seguimiento_vencidos ?? 0) > 0 ? "var(--color-danger)" : undefined} />
+            <ResumenItem label="Por despachar hoy" value={String(porDespacharHoy)} color={porDespacharHoy > 0 ? "var(--color-warning)" : undefined} />
+            <ResumenItem label="Reprogramados" value={String(conteos.Reprogramado ?? 0)} />
+            <ResumenItem label="Total visible a cobrar" value={formatGs(totalVisibleACobrar)} color="var(--color-success)" />
+          </div>
+        </details>
       )}
 
       {/* ── Resumen financiero minimalista — solo en Entregados (plan sección 22) ── */}
@@ -1102,6 +1097,34 @@ export function PedidosTable({
           </div>
         </div>
       )}
+
+      <div className="pt-viewbar">
+        <div className="pt-viewbar-copy">
+          <span>Vista de pedidos</span>
+          <strong>{vista === "kanban" ? "Tablero kanban" : "Tabla operativa"}</strong>
+        </div>
+
+        {!soloAbastecimiento && (
+          <div className="pt-view-switch" role="group" aria-label="Cambiar vista de pedidos">
+            <button
+              type="button"
+              className={vista === "tabla" ? "active" : ""}
+              onClick={() => setVista("tabla")}
+            >
+              <Table2 size={15} />
+              Tabla
+            </button>
+            <button
+              type="button"
+              className={vista === "kanban" ? "active" : ""}
+              onClick={() => setVista("kanban")}
+            >
+              <Columns3 size={15} />
+              Kanban
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ── Toolbar de filtros principales ── */}
       <div className="pt-toolbar" style={{ marginTop: "0.75rem" }}>
@@ -1195,17 +1218,14 @@ export function PedidosTable({
           />
         </label>
 
-        {/* Más filtros toggle */}
         <button
           type="button"
           className={`pt-filter-toggle ${masFilters ? "active" : ""}`}
           onClick={() => setMasFilters((o) => !o)}
         >
-          <Filter size={14} />
-          Más
-          {(filtros.courier_id !== "TODOS" || filtros.canal_venta_id !== "TODOS" || filtros.confirmador || filtros.producto.trim() || filtros.metodo_pago_id !== "TODOS") && (
-            <span className="pt-filter-dot" />
-          )}
+          <SlidersHorizontal size={14} />
+          Más filtros
+          {filtrosSecundariosActivos.length > 0 && <span className="pt-filter-dot" />}
         </button>
 
         {/* Reset */}
@@ -1221,9 +1241,30 @@ export function PedidosTable({
         </span>
       </div>
 
+      {filtrosSecundariosActivos.length > 0 && (
+        <div className="pt-active-filters" aria-label="Filtros activos">
+          {filtrosSecundariosActivos.map((filtro) => (
+            <button
+              key={filtro.key}
+              type="button"
+              onClick={() => setFiltro(filtro.key, filtro.reset)}
+              title="Quitar filtro"
+            >
+              {filtro.label}
+              <X size={12} />
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Filtros extra ── */}
       {masFilters && (
-        <div className="pt-extra-filters">
+      <div className="pt-extra-filters">
+          <div className="pt-extra-title">
+            <Filter size={14} />
+            Filtros
+          </div>
+
           <label className="pt-extra-label">
             <Truck size={13} />
             <select
@@ -1319,10 +1360,37 @@ export function PedidosTable({
               </label>
             </>
           )}
-        </div>
+      </div>
       )}
 
       {/* ── Tabla ── */}
+      {vista === "kanban" && !soloAbastecimiento ? (
+        <div className="pt-kanban-wrap" aria-busy={kanbanLoading}>
+          {kanbanLoading && kanbanData.length === 0 ? (
+            <div className="pt-empty">
+              <span className="pt-spinner" /> Cargando tablero...
+            </div>
+          ) : kanbanData.length === 0 ? (
+            <div className="pt-empty">
+              No hay pedidos que coincidan con los filtros.
+            </div>
+          ) : (
+            <KanbanBoard
+              envios={kanbanData}
+              couriers={couriers}
+              draggingId={draggingId}
+              onDragStartCard={setDraggingId}
+              onDragEndCard={() => setDraggingId(null)}
+              onDropCard={handleKanbanDrop}
+              onChangeEstado={handleKanbanChangeEstado}
+              onAbrirSeguimiento={onAbrirSeguimiento}
+              onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
+              onAccionSiguiente={handleAccionSiguiente}
+              isAdmin={esAdmin}
+            />
+          )}
+        </div>
+      ) : (
       <div className="pt-table-wrap">
         <table className="pt-table">
           <thead>
@@ -1341,12 +1409,12 @@ export function PedidosTable({
                   <th className="pt-th">Ciudad</th>
                 </>
               )}
-              <th className="pt-th">Producto / Oferta</th>
+              <th className="pt-th pt-th-product">Producto / Oferta</th>
               <th className="pt-th pt-th-num">Total</th>
-              {!soloAbastecimiento && <th className="pt-th">Courier</th>}
-              <th className="pt-th">Estado</th>
+              {!soloAbastecimiento && <th className="pt-th pt-th-courier">Courier</th>}
+              <th className="pt-th pt-th-state">Estado</th>
               {soloAbastecimiento && <th className="pt-th">Abastecimiento</th>}
-              <th className="pt-th">Acción</th>
+              <th className="pt-th pt-th-action">Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -1400,7 +1468,7 @@ export function PedidosTable({
                       onAbrirDetalle && onAbrirDetalle(e);
                     }}
                   >
-                    <td className="pt-td pt-td-id">
+                    <td className="pt-td pt-td-id" data-label="Pedido">
                       <span>#{numeroPedidoVisible(e)}</span>
                       {esAdmin && Number(e.id) !== Number(e.numero_pedido) && (
                         <span style={{ display: "block", marginTop: "2px", color: "var(--color-fg-subtle)", fontSize: "0.68rem", fontWeight: 600 }}>
@@ -1408,7 +1476,7 @@ export function PedidosTable({
                         </span>
                       )}
                     </td>
-                    <td className="pt-td pt-td-fecha">
+                    <td className="pt-td pt-td-fecha" data-label="Fecha">
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                         <span style={{ color: "var(--color-fg)", fontWeight: 500 }}>{fechaVisual}</span>
                         {horaVisual && (
@@ -1420,26 +1488,26 @@ export function PedidosTable({
                     </td>
                     {soloAbastecimiento ? (
                       <>
-                        <td className="pt-td pt-td-ciudad">
+                        <td className="pt-td pt-td-ciudad" data-label="Depósito">
                           <span>{e.Usuario?.Tienda?.deposito_direccion || "Sin dirección cargada"}</span>
                           <span className="pt-depto">
                             {[e.Usuario?.Tienda?.deposito_ciudad, e.Usuario?.Tienda?.deposito_departamento].filter(Boolean).join(" · ") || "—"}
                           </span>
                         </td>
-                        <td className="pt-td">
+                        <td className="pt-td" data-label="Contacto">
                           <span>{e.Usuario?.Tienda?.deposito_telefono || e.Usuario?.Tienda?.whatsapp || "—"}</span>
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="pt-td">
+                        <td className="pt-td" data-label="Cliente">
                           <span className="pt-cliente-nombre">
                             {[e.nombre_cliente, e.apellido_cliente].filter(Boolean).join(" ") ||
                               e.cliente ||
                               "—"}
                           </span>
                         </td>
-                        <td className="pt-td">
+                        <td className="pt-td" data-label="Teléfono">
                           <span className="pt-phone-cell" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
                             <span>{e.telefono || "—"}</span>
                             {e.recordatorio_vencido ? (
@@ -1503,7 +1571,7 @@ export function PedidosTable({
                             )}
                           </span>
                         </td>
-                        <td className="pt-td pt-td-ciudad">
+                        <td className="pt-td pt-td-ciudad" data-label="Ciudad">
                           <span>{e.ciudad || "—"}</span>
                           {e.departamento && <span className="pt-depto">{e.departamento}</span>}
                         </td>
@@ -1511,18 +1579,19 @@ export function PedidosTable({
                     )}
                     <td
                       className="pt-td pt-td-items"
+                      data-label="Producto"
                       title={items.map((i) => `${i.nombre_producto} x${i.cantidad}`).join(", ")}
                     >
                       {resumenItems}
                     </td>
-                    <td className="pt-td pt-td-num">
+                    <td className="pt-td pt-td-num" data-label="Total">
                       <span>{formatGs(e.monto)}</span>
                       {e.costo_envio > 0 && (
                         <span className="pt-delivery">+{formatGs(e.costo_envio)}</span>
                       )}
                     </td>
                     {!soloAbastecimiento && (
-                    <td className="pt-td">
+                    <td className="pt-td" data-label="Courier">
                       {e.Courier ? (
                         <span className="pt-courier">{e.Courier.nombre}</span>
                       ) : (
@@ -1530,7 +1599,7 @@ export function PedidosTable({
                       )}
                     </td>
                     )}
-                    <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
+                    <td className="pt-td" data-label="Estado" onClick={(ev) => ev.stopPropagation()}>
                       <EstadoBadgeDropdown
                         estado={e.estado}
                         onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
@@ -1542,11 +1611,11 @@ export function PedidosTable({
                       )}
                     </td>
                     {soloAbastecimiento && (
-                      <td className="pt-td">
+                      <td className="pt-td" data-label="Abastecimiento">
                         <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
                       </td>
                     )}
-                    <td className="pt-td" onClick={(ev) => ev.stopPropagation()}>
+                    <td className="pt-td" data-label="Acción" onClick={(ev) => ev.stopPropagation()}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
                         <AccionPrincipal
                           envio={e}
@@ -1606,9 +1675,10 @@ export function PedidosTable({
           </tbody>
         </table>
       </div>
+      )}
 
       {/* ── Paginación ── */}
-      {data.totalPages > 1 && (
+      {vista === "tabla" && data.totalPages > 1 && (
         <div className="pt-pagination">
           <button
             className="pt-pag-btn"

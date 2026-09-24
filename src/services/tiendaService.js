@@ -8,6 +8,7 @@ export const tiendaService = {
 
   // Cómo entrega el comercio lo que vende (modalidad de fulfillment).
   obtenerFulfillment: () => API.get('/mi-tienda/fulfillment').then(r => r.data),
+  listarDepositosFulfillment: (payload) => API.post('/mi-tienda/fulfillment/depositos', payload).then(r => r.data),
   guardarFulfillment: (modalidad, depositoId) =>
     API.put('/mi-tienda/fulfillment', { modalidad, depositoId }).then(r => r.data),
 

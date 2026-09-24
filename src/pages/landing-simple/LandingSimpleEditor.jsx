@@ -1348,7 +1348,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   />
                 )}
                 {tab === 'colores' && (
-                  <ColoresPanel draft={draft} onCampo={campo} templateSlug={templateSlug} />
+                  <ColoresPanel draft={draft} onCampo={campo} templateSlug={templateSlug} tienda={tienda} />
                 )}
                 {tab === 'catalogo' && (
                   <CatalogoPanel items={items} catalogo={catalogo} onChange={setItems} draft={draft} onCampo={campo} onEditarProducto={abrirProducto} onPrecioVentaGuardado={actualizarPrecioCatalogo} />
@@ -1653,7 +1653,7 @@ function PreviewContent({
     const variantesParaFicha = productoVariantes.map(v => ({
       ...v,
       precio_efectivo: Math.max(0, precioBaseVariantes + (Number(v.precio_diferencial) || 0)),
-      imagenes: (productoImagenes || []).filter(img => img.variante_id === v.id).map(img => img.url),
+      imagenes: (productoImagenes || []).filter(img => img.variante_id === v.id),
     }));
 
     // Ficha rediseñada (Fitness). Es EL MISMO componente que monta la

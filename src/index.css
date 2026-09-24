@@ -91,11 +91,12 @@
     --color-fg-muted: #6b7280;
     --color-fg-subtle: #4b5563;
 
-    /* Azul Profundo para elementos primarios */
-    --color-primary: #0d1b3d;
-    --color-primary-hover: #172a54;
-    --color-primary-active: #08122c;
-    --color-primary-text: #0d1b3d;
+    /* Azul vibrante en modo claro */
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-active: #1e40af;
+    --color-primary-fg: #ffffff;
+    --color-primary-text: #2563eb;
 
     /* Oro Digital de marca: #FFC107 */
     --color-accent: #ffc107;
@@ -124,10 +125,12 @@
     --color-fg-muted: #94a3b8;
     --color-fg-subtle: #64748b;
 
-    --color-primary: #1e3a75;
-    --color-primary-hover: #294c96;
-    --color-primary-active: #152b57;
-    --color-primary-text: #7d9bd6;
+    /* Azul vibrante con alto brillo en modo oscuro */
+    --color-primary: #3b82f6;
+    --color-primary-hover: #60a5fa;
+    --color-primary-active: #2563eb;
+    --color-primary-fg: #ffffff;
+    --color-primary-text: #60a5fa;
 
     --color-accent: #ffc107;
     --color-accent-hover: #ffcf4d;

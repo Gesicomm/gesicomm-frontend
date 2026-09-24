@@ -30,8 +30,29 @@ export async function obtenerLandingPublica(slug) {
   return res.json();
 }
 
-export async function obtenerCatalogoLandingPublica(slug) {
-  const path = slug ? `/api/l/${encodeURIComponent(slug)}?vista=catalogo` : '/api/l/?vista=catalogo';
+/**
+ * @param {string|undefined} slug
+ * @param {object} [opciones] - { pagina, porPagina, orden, disponibilidad, categoria, etiqueta, precioMin, precioMax }
+ *   Los filtros se mandan al backend (no se filtra en el navegador): el
+ *   catálogo puede tener más productos de los que trae esta página, así
+ *   que filtrar solo lo ya cargado haría que una búsqueda por categoría no
+ *   encuentre productos reales que cayeron en otra página.
+ */
+export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
+  const {
+    pagina, porPagina, orden, disponibilidad, categoria, etiqueta, precioMin, precioMax,
+  } = opciones;
+  const params = new URLSearchParams({ vista: 'catalogo' });
+  if (pagina) params.set('pagina', pagina);
+  if (porPagina) params.set('porPagina', porPagina);
+  if (orden) params.set('orden', orden);
+  if (disponibilidad && disponibilidad !== 'todos') params.set('disponibilidad', disponibilidad);
+  if (categoria && categoria !== 'todas') params.set('categoria', categoria);
+  if (etiqueta && etiqueta !== 'todas') params.set('etiqueta', etiqueta);
+  if (precioMin !== undefined && precioMin !== null && precioMin !== '') params.set('precioMin', precioMin);
+  if (precioMax !== undefined && precioMax !== null && precioMax !== '') params.set('precioMax', precioMax);
+
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}?${params}` : `/api/l/?${params}`;
   const res = await fetch(path, { credentials: 'include' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('No se pudo cargar el catálogo.');

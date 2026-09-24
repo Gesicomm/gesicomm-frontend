@@ -2104,7 +2104,7 @@ button.lp-tier-card--imagen {
   border: none;
   border-radius: 12px;
   background: var(--l-primary);
-  color: #fff;
+  color: var(--l-on-primary, #0b1211);
   font-family: inherit;
   font-size: 0.92rem;
   font-weight: 950;
@@ -2285,6 +2285,41 @@ button.lp-tier-card--imagen {
   font-size: 0.76rem;
   line-height: 1.35;
 }
+/* Tarjeta "Dirección de entrega" — agrupa ciudad/departamento, dirección y
+   referencia en un solo bloque visual, mismo criterio que
+   .lp-checkout-payment-methods más abajo (fondo sutil + borde + radio 12px). */
+.lp-checkout-address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.15rem 0;
+  padding: 0.85rem;
+  background: color-mix(in srgb, var(--l-text, #f8fafc) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--l-text, #f8fafc) 10%, transparent);
+  border-radius: 12px;
+}
+.lp-checkout-address-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--l-text, #f8fafc);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+.lp-checkout-address-head svg {
+  color: var(--l-primary);
+  flex-shrink: 0;
+}
+.lp-checkout-address-row {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 0.7rem;
+}
+@media (max-width: 380px) {
+  .lp-checkout-address-row {
+    grid-template-columns: 1fr;
+  }
+}
 .lp-checkout-tel {
   display: flex;
   align-items: stretch;
@@ -2381,7 +2416,7 @@ button.lp-tier-card--imagen {
 .lp-checkout-submit {
   width: 100%;
   min-height: 48px;
-  color: #fff;
+  color: var(--l-on-primary, #0b1211);
   font-weight: 950;
   box-shadow: 0 12px 28px color-mix(in srgb, var(--l-primary) 28%, transparent);
 }

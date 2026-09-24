@@ -4,6 +4,86 @@ import { getMediaUrl } from '../../../services/api';
 import { analizarVideo, NOMBRE_PLATAFORMA } from './video';
 import './mediaGaleria.css';
 
+function numeroOFallback(valor, fallback) {
+  const n = Number(valor);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** 1 = sin zoom. Tope en 3x — más que eso ya pixela la versión optimizada de 1600px. */
+export function normalizarZoom(valor) {
+  return Math.min(3, Math.max(1, numeroOFallback(valor, 1)));
+}
+
+/**
+ * Fondo de la galería — una propiedad del ESCENARIO (marco + miniaturas +
+ * espacios alrededor), no de la imagen. Vive en `content.galeria_fondo`
+ * (+ `content.galeria_fondo_color` para el personalizado) de la landing, no
+ * en la imagen ni en el producto — así nunca se confunde con el recorte o
+ * el modo contain/cover, que sí son por imagen.
+ */
+export const GALERIA_FONDOS = {
+  blanco: { label: 'Blanco', hex: '#FFFFFF' },
+  negro: { label: 'Negro', hex: '#0B0B0E' },
+  gris_claro: { label: 'Gris claro', hex: '#F1F1F1' },
+  gris_medio: { label: 'Gris medio', hex: '#AFAFAF' },
+  personalizado: { label: 'Personalizado', hex: null },
+};
+
+const HEX_VALIDO = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+/** {modo, color} de `content` → el hex final a pintar. Blanco si no hay nada configurado. */
+export function resolverFondoGaleria(content) {
+  const modo = content?.galeria_fondo && GALERIA_FONDOS[content.galeria_fondo] ? content.galeria_fondo : 'blanco';
+  if (modo === 'personalizado') {
+    return HEX_VALIDO.test(content?.galeria_fondo_color || '') ? content.galeria_fondo_color : '#FFFFFF';
+  }
+  return GALERIA_FONDOS[modo].hex;
+}
+
+export function estiloVisualMedio(medio) {
+  const data = medio && typeof medio === 'object' ? medio : null;
+  const modo = data?.visual_modo === 'cover' ? 'cover' : 'contain';
+  const focalX = Math.min(100, Math.max(0, numeroOFallback(data?.focal_x, 50)));
+  const focalY = Math.min(100, Math.max(0, numeroOFallback(data?.focal_y, 50)));
+  const width = numeroOFallback(data?.width, null);
+  const height = numeroOFallback(data?.height, null);
+  const zoom = normalizarZoom(data?.zoom);
+
+  // `width/height: 100%` + object-fit es lo único que deja que la imagen
+  // ocupe el marco de verdad. Antes "contain" usaba width/height:auto con
+  // un tope en el ancho/alto NATURAL del archivo — object-fit nunca llegaba
+  // a agrandar nada, así que una foto ya recortada (más chica que el marco)
+  // se quedaba como un cuadrado de su tamaño real, flotando en un marco
+  // mucho más grande. Y "cover" (Rellenar marco) tenía el mismo tope, que le
+  // impedía cumplir su propio propósito de llenar el marco con fotos chicas.
+  const style = {
+    objectFit: modo,
+    objectPosition: `${focalX}% ${focalY}%`,
+    width: '100%',
+    height: '100%',
+  };
+
+  if (modo === 'contain') {
+    // "Rellenar marco" no lleva tope (tiene que llenar sí o sí, para eso
+    // existe). "Mostrar completa" sí lo lleva, pero generoso (1.6x el
+    // tamaño real) — deja que la foto crezca para ocupar el marco sin
+    // llegar al upscale agresivo que la pixelaría.
+    style.maxWidth = width && width > 0 ? `min(100%, ${Math.round(width * 1.6)}px)` : '100%';
+    style.maxHeight = height && height > 0 ? `min(100%, ${Math.round(height * 1.6)}px)` : '100%';
+  }
+
+  // Zoom manual: acerca desde el mismo punto focal que ya define el
+  // encuadre, en vez de sumar un sistema de recorte aparte. El frame que
+  // envuelve la imagen (.lsp-media-frame / .lsp-media-thumb) ya tiene
+  // overflow:hidden, así que lo que se sale del marco simplemente se recorta.
+  if (zoom > 1) {
+    style.transform = `scale(${zoom})`;
+    style.transformOrigin = `${focalX}% ${focalY}%`;
+  }
+
+  return style;
+}
+
 export function urlDeMedio(medio) {
   if (!medio) return '';
   if (typeof medio === 'string') return medio;
@@ -29,12 +109,19 @@ export function normalizarMedioProducto(medio) {
     };
   }
 
+  const data = typeof medio === 'object' ? medio : null;
   return {
     tipo: 'imagen',
     url,
-    id: typeof medio === 'object' ? (medio.id || medio.imagen_id || medio.media_id || null) : null,
-    imagenId: typeof medio === 'object' ? (medio.imagen_id || medio.id || null) : null,
-    esPrincipal: typeof medio === 'object' ? !!medio.es_principal : false,
+    id: data ? (data.id || data.imagen_id || data.media_id || null) : null,
+    imagenId: data ? (data.imagen_id || data.id || null) : null,
+    esPrincipal: data ? !!data.es_principal : false,
+    visual_modo: data?.visual_modo === 'cover' ? 'cover' : 'contain',
+    focal_x: numeroOFallback(data?.focal_x, 50),
+    focal_y: numeroOFallback(data?.focal_y, 50),
+    zoom: normalizarZoom(data?.zoom),
+    width: numeroOFallback(data?.width, null),
+    height: numeroOFallback(data?.height, null),
   };
 }
 
@@ -103,7 +190,14 @@ export function MediaProducto({ medio, alt = '' }) {
   if (!m) return null;
 
   if (m.tipo === 'imagen') {
-    return <img src={getMediaUrl(m.url)} alt={alt} />;
+    return (
+      <img
+        className={`lsp-media-img lsp-media-img--${m.visual_modo}`}
+        src={getMediaUrl(m.url)}
+        alt={alt}
+        style={estiloVisualMedio(m)}
+      />
+    );
   }
 
   const video = m.video || analizarVideo(m.url);
@@ -142,8 +236,22 @@ export function MiniaturaMediaProducto({ medio, alt = '' }) {
   const m = normalizarMedioProducto(medio);
   if (!m) return null;
 
+  // Misma miniatura, mismo badge de tipo, tanto en el editor (ProductoPanel)
+  // como en la landing publicada — es un único componente, así que no hay
+  // forma de que uno muestre "Foto"/"Video" y el otro no.
   if (m.tipo === 'imagen') {
-    return <img src={getMediaUrl(m.url)} alt={alt} loading="lazy" />;
+    return (
+      <span className="lsp-media-thumb" title="Foto">
+        <img
+          className={`lsp-media-thumb-img lsp-media-img--${m.visual_modo}`}
+          src={getMediaUrl(m.url)}
+          alt={alt}
+          loading="lazy"
+          style={estiloVisualMedio(m)}
+        />
+        <span className="lsp-media-badge">FOTO</span>
+      </span>
+    );
   }
 
   const video = m.video || analizarVideo(m.url);
@@ -158,7 +266,7 @@ export function MiniaturaMediaProducto({ medio, alt = '' }) {
             <span className="lsp-media-fallback-mark"><Play size={15} fill="currentColor" /></span>
           </span>
         )}
-      <span className="lsp-media-badge">VID</span>
+      <span className="lsp-media-badge">VIDEO</span>
       <span className="lsp-media-play"><Play size={13} fill="currentColor" /></span>
     </span>
   );

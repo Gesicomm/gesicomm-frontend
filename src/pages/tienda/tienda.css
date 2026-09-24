@@ -152,6 +152,9 @@
 .tn-group-head { min-width: 0; }
 
 .tn-group-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
@@ -271,6 +274,86 @@
 .tn-msg-textarea:focus {
   border-color: var(--vit-accent);
   box-shadow: 0 0 0 2px var(--vit-accent-soft);
+}
+
+/* ─── Branding ───────────────────────────────────────────────────────── */
+.tn-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+}
+
+.tn-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.tn-color-control {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.tn-color-control input[type="color"] {
+  width: 44px;
+  height: 38px;
+  padding: 3px;
+  border: 1px solid var(--vit-border);
+  border-radius: 9px;
+  background: var(--vit-bg);
+  cursor: pointer;
+}
+
+.tn-color-control input[type="text"],
+.tn-color-control input:not([type]) {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: var(--vit-bg);
+  border: 1px solid var(--vit-border);
+  border-radius: 9px;
+  padding: 0.55rem 0.7rem;
+  color: var(--vit-text);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tn-color-control input[type="text"]:focus,
+.tn-color-control input:not([type]):focus {
+  border-color: var(--vit-accent);
+  box-shadow: 0 0 0 2px var(--vit-accent-soft);
+}
+
+/* Esta pantalla carga landing.css para reutilizar piezas del constructor.
+   Aislamos el botón primario para que en modo oscuro no herede texto negro
+   de una landing o template. */
+.tn-shell .land-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: var(--vit-accent) !important;
+  border-color: color-mix(in srgb, var(--vit-accent) 70%, #ffffff 18%) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tn-shell .land-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+  color: #ffffff !important;
+}
+
+.tn-shell .land-btn-primary:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.86) !important;
 }
 
 /* ─── URL pública (solo lectura) ──────────────────────────────────────── */
