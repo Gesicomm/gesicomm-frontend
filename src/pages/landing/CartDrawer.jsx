@@ -150,8 +150,13 @@ export default function CartDrawer({
   // viene `apariencia`, o leyendo --l-bg ya resuelto del contenedor.
   const rootRef = useRef(null);
   const [modoDetectado, setModoDetectado] = useState(null);
-  const primarioTema = normalizarColorHex(apariencia?.primario);
+  // Acepta los dos formatos que circularon: { primario, fondo, modo } y el
+  // anterior { acento, claro | modoClaro } — así cualquier llamador sigue
+  // funcionando sin tener que adaptarse.
+  const primarioTema = normalizarColorHex(apariencia?.primario || apariencia?.acento);
+  const claroBool = apariencia?.claro ?? apariencia?.modoClaro;
   const modoExplicito = apariencia?.modo
+    || (typeof claroBool === 'boolean' ? (claroBool ? 'claro' : 'oscuro') : null)
     || (apariencia?.fondo != null ? (esColorClaro(apariencia.fondo) ? 'claro' : 'oscuro') : null);
 
   useLayoutEffect(() => {
