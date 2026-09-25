@@ -241,7 +241,7 @@ const SECCIONES = [
             ],
             [
               'Eliminación al revocar el permiso',
-              'Al desconectar la integración se revocan y eliminan los tokens de inmediato y cesa la sincronización.',
+              'Al desconectar la integración se revocan y eliminan los tokens de inmediato y cesa la sincronización. (verificado en prueba controlada)',
             ],
             [
               'Seguridad de los datos de la plataforma',
@@ -256,10 +256,10 @@ const SECCIONES = [
 
         <Subseccion titulo="4.1 Alcance real de nuestra integración">
           <p>
-            Gesicom usa <strong>un solo producto</strong> de la plataforma de Meta: la Marketing
-            API, con los permisos <code>ads_management</code> y <code>business_management</code>.
-            No usamos Facebook Login como método de autenticación, no usamos la Pages API, no
-            usamos la Instagram Graph API y no usamos la WhatsApp Business Platform.
+            A la fecha de esta política (septiembre de 2026), Gesicom usa únicamente la Marketing API de Meta, con los permisos <code>ads_management</code> y <code>business_management</code>, para consultar el rendimiento de campañas de Facebook Ads. No está activa ninguna integración con Facebook Login, la Pages API, la Instagram Graph API ni la WhatsApp Business Platform.
+          </p>
+          <p>
+            Gesicom está desarrollando módulos adicionales que usarán otras APIs de Meta. Cada módulo se describirá en esta sección cuando esté activo, detallando los productos, permisos y datos involucrados.
           </p>
           <p>
             Lo declaramos explícitamente porque el principio de minimización de permisos es un
@@ -475,7 +475,7 @@ export default function Compliance() {
       descripcion="Cómo cumple Gesicom con el RGPD, la CCPA/CPRA, las Meta Platform Terms y la normativa de protección de datos de Latinoamérica, incluyendo el Data Deletion Callback de Meta, los DPA y la gestión de subprocesadores."
       resumen="Un resumen del marco normativo que nos aplica y de las medidas concretas con las que lo cumplimos. Incluye lo que sí tenemos y, con la misma claridad, lo que todavía no."
       ruta="/compliance"
-      actualizado="2026-08-03"
+      actualizado="2026-09-24"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     />

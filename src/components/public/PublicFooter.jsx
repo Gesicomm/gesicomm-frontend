@@ -63,6 +63,11 @@ export default function PublicFooter() {
             <p className="mt-1.5 text-xs text-fg-subtle">
               Soporte, privacidad y consultas legales.
             </p>
+
+            <div className="mt-6 border-t border-border pt-4 text-xs text-fg-muted">
+              <p>Gesicom es una plataforma desarrollada y operada por <strong>GESICOM E.A.S.</strong>, Paraguay.</p>
+              <p className="mt-1">RUC: 80178777-7 · Charles de Gaulle 1176 esquina de las palmeras</p>
+            </div>
           </div>
 
           {COLUMNAS.map((columna) => (

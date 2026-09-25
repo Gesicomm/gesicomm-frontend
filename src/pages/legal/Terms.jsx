@@ -57,8 +57,7 @@ const SECCIONES = [
             configuraciones.
           </li>
           <li>
-            <strong>Integraciones:</strong> las conexiones con plataformas de terceros, incluyendo
-            hoy únicamente Meta, para el seguimiento de campañas de Facebook Ads.
+            <strong>Integraciones:</strong> las conexiones con plataformas de terceros que el Cliente habilita desde su cuenta. A la fecha de estos Términos, la única integración activa es con Meta, mediante la Marketing API, para consultar el rendimiento de campañas de Facebook Ads. Gesicom está desarrollando integraciones adicionales que se incorporarán a esta definición cuando estén disponibles.
           </li>
           <li>
             <strong>Suscripción:</strong> el plan contratado, con su alcance funcional, sus límites
@@ -87,7 +86,7 @@ const SECCIONES = [
           Gesicom es una plataforma de software como servicio (SaaS) para administrar la operación
           de un negocio de comercio electrónico. Según el plan contratado, permite gestionar
           catálogo y productos, pedidos, inventario, clientes y CRM, logística y envíos, campañas
-          de marketing, métricas y reportes, usuarios y permisos, y múltiples tiendas y sucursales.
+          de marketing, métricas y reportes, usuarios y permisos, y múltiples tiendas y sucursales. Las funcionalidades de cada plan son las publicadas o comunicadas al momento de contratar. Las funciones en desarrollo no están incluidas en ningún plan hasta que Gesicom las habilite expresamente.
         </p>
         <p>
           El Servicio se presta en modalidad de acceso remoto: no se entrega ni se licencia una
@@ -204,9 +203,7 @@ const SECCIONES = [
               Usar listas de contactos obtenidas sin consentimiento o compradas a terceros.
             </li>
             <li>
-              Contactar por WhatsApp a personas que no hayan iniciado ellas la conversación, o
-              incumplir las políticas de mensajería de WhatsApp. El botón de tu vitrina existe
-              para que sea tu comprador quien te escriba primero.
+              Enviar comunicaciones por WhatsApp a personas que no hayan dado su consentimiento previo, incumplir las políticas de mensajería de WhatsApp (incluidas las reglas sobre plantillas aprobadas, ventanas de atención y opt-in), o usar la API de WhatsApp Business fuera de los casos y flujos que Gesicom habilite expresamente para el cliente.
             </li>
             <li>Omitir un mecanismo simple y efectivo de baja en las comunicaciones comerciales.</li>
           </ul>
@@ -353,8 +350,7 @@ const SECCIONES = [
 
         <Subseccion titulo="8.2 Meta y Facebook Ads">
           <p>
-            La integración con Meta solicita exactamente dos permisos —<code>ads_management</code>{' '}
-            y <code>business_management</code>— y su uso está sujeto a las Meta Platform Terms, las
+            La integración con Meta solicita los permisos mínimos necesarios para la funcionalidad activa —actualmente <code>ads_management</code> y <code>business_management</code>— sujetos a revisión conforme evolucione el producto. Su uso está sujeto a las Meta Platform Terms, las
             Developer Policies, las Community Standards y las Advertising Policies de Meta. En
             particular:
           </p>
@@ -386,6 +382,9 @@ const SECCIONES = [
             responde por lo que ocurra en esas conversaciones. El cumplimiento de las políticas de
             WhatsApp respecto del número que publicás, y de la normativa de protección de datos
             aplicable a esos intercambios, corresponde exclusivamente a vos.
+          </p>
+          <p>
+            Gesicom está desarrollando un módulo de integración con WhatsApp Business API. Cuando esté disponible, se describirá en una subsección específica de esta sección 8, con los permisos, datos y responsabilidades correspondientes.
           </p>
         </Subseccion>
       </>
@@ -1011,7 +1010,7 @@ export default function Terms() {
       descripcion="Condiciones de uso del servicio Gesicom: registro y cuenta, responsabilidades, propiedad intelectual, integración con Meta para Facebook Ads, suscripciones y reembolsos, limitación de responsabilidad, ley aplicable y resolución de conflictos."
       resumen="Estas condiciones regulan la relación entre Gesicom y quienes usan la plataforma. Definen qué podés hacer, qué nos comprometemos a hacer y qué pasa cuando algo sale mal."
       ruta="/terms"
-      actualizado="2026-09-10"
+      actualizado="2026-09-24"
       vigenteDesde="2026-09-10"
       secciones={SECCIONES}
     />

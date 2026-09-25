@@ -50,7 +50,7 @@ const CANALES_SIN_API = [
   {
     nombre: 'WhatsApp',
     color: '#25D366',
-    descripcion: 'Tus clientes van a poder enviarte mensajes directos y compartir enlaces de tus productos desde tu propia tienda hacia tu WhatsApp, sin depender de integraciones complejas.',
+    descripcion: 'El botón de tu vitrina genera un enlace wa.me que abre la aplicación de WhatsApp en el dispositivo de tu visitante. La conversación ocurre directamente entre esa persona y vos, fuera de Gesicom. Hoy no hay integración de mensajería dentro de la plataforma.',
   },
 ];
 
@@ -661,6 +661,10 @@ export default function Landing() {
           variants={staggerContainer}
           className="mt-16"
         >
+          <motion.div variants={fadeUp}>
+            <h3 className="mb-6 text-lg font-bold text-fg">Disponible actualmente</h3>
+          </motion.div>
+
           {INTEGRACIONES.map((integracion) => (
             <motion.div variants={fadeUp} key={integracion.nombre}>
               <div className="grid gap-x-10 gap-y-5 border-t border-border py-7 lg:grid-cols-[15rem_1fr] hover:bg-surface-2/30 transition-colors duration-300 px-4 rounded-xl -mx-4">
@@ -683,6 +687,13 @@ export default function Landing() {
               </div>
             </motion.div>
           ))}
+
+          <motion.div variants={fadeUp} className="mt-12 mb-6">
+            <h3 className="text-lg font-bold text-fg">En desarrollo</h3>
+            <p className="mt-2 text-sm leading-relaxed text-fg-muted max-w-3xl">
+              Estamos desarrollando conexiones para gestionar campañas y consultar sus resultados en Meta Ads; publicar contenido en páginas de Facebook y cuentas profesionales de Instagram; y gestionar conversaciones de Instagram y WhatsApp Business con asistencia de IA. Cada función se habilitará cuando esté implementada, cuente con los permisos correspondientes de Meta y sea autorizada por el cliente.
+            </p>
+          </motion.div>
 
           {CANALES_SIN_API.map((canal) => (
             <motion.div variants={fadeUp} key={canal.nombre}>

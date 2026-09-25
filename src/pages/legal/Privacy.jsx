@@ -11,7 +11,9 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          Gesicom («Gesicom», «nosotros») opera la plataforma de gestión de eCommerce disponible
+          Gesicom («Gesicom», «nosotros») es una plataforma desarrollada y operada por
+          <strong>GESICOM E.A.S.</strong>, con domicilio en Charles de Gaulle 1176 esquina de las palmeras,
+          Paraguay (RUC: 80178777-7). Opera la plataforma de gestión de eCommerce disponible
           en <strong>https://gesicomm.com</strong> y su API en <strong>https://api.gesicomm.com</strong>.
         </p>
         <p>
@@ -45,8 +47,9 @@ const SECCIONES = [
           <li>La aplicación web de Gesicom y el panel de administración.</li>
           <li>La API de Gesicom (api.gesicomm.com).</li>
           <li>
-            La integración con Meta que decidas conectar, para el seguimiento de tus campañas de
-            Facebook Ads. Es la única integración con acceso a datos que existe hoy.
+            La integración con Meta que decidas conectar, actualmente limitada a la consulta de 
+            rendimiento de campañas de Facebook Ads mediante la Marketing API. Las integraciones 
+            futuras se describen en la sección «Integraciones en desarrollo».
           </li>
           <li>
             Las tiendas y páginas públicas que publicás con Gesicom bajo un subdominio de
@@ -154,10 +157,10 @@ const SECCIONES = [
     contenido: (
       <>
         <p>
-          <strong>Meta es hoy la única plataforma externa que Gesicom integra.</strong> No hay
-          integración con Instagram, con WhatsApp Business Platform, con Shopify ni con ninguna
-          otra plataforma. Si alguna se agrega en el futuro, esta política se actualiza y se
-          notifica <strong>antes</strong> de activarla.
+          A la fecha de esta política (septiembre 2026), <strong>Meta es la única plataforma externa que Gesicom integra.</strong> No hay
+          integración activa con Instagram, con WhatsApp Business Platform, con Shopify ni con ninguna
+          otra plataforma. Si alguna se activa en el futuro, esta política se actualizará y se
+          notificará <strong>antes</strong> de que procese datos.
         </p>
         <p>
           La conexión es opcional: Gesicom solo accede a Meta si vos la habilitás explícitamente
@@ -178,9 +181,9 @@ const SECCIONES = [
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.2 Los dos únicos permisos que pedimos">
+        <Subseccion titulo="4.2 Permisos actuales de la integración con Meta (vigente desde agosto 2026)">
           <p>
-            Gesicom solicita exactamente dos permisos de la plataforma de Meta, y ninguno más:
+            A la fecha actual, Gesicom solicita exactamente dos permisos de la plataforma de Meta, y ninguno más:
           </p>
 
           <TablaLegal
@@ -197,7 +200,7 @@ const SECCIONES = [
                 'Identificador y nombre de los Business Managers y de las cuentas publicitarias que administrás.',
               ],
             ]}
-            notaAlPie="Podés verificar esta lista vos mismo: Meta muestra los permisos solicitados en su propia pantalla de autorización antes de que confirmes la conexión."
+            notaAlPie="Podés verificar esta lista vos mismo: Meta muestra los permisos solicitados en su propia pantalla de autorización antes de que confirmes la conexión. Esta lista corresponde al estado de la integración a la fecha de esta política. Si se agregan nuevos permisos, esta sección se actualizará con antelación a su activación."
           />
         </Subseccion>
 
@@ -215,6 +218,9 @@ const SECCIONES = [
             <li>Mensajes de Messenger, de Instagram Direct ni de WhatsApp.</li>
             <li>Catálogos de productos de Meta ni sus artículos.</li>
           </ul>
+          <p className="mt-4 text-sm text-fg-muted">
+            Estas exclusiones corresponden a los permisos actualmente solicitados. Si en el futuro se agregan módulos con otros permisos, esta sección se actualizará para reflejar qué datos adicionales se obtienen y para qué se usan.
+          </p>
         </Subseccion>
 
         <Subseccion titulo="4.4 No usamos Facebook Login para autenticarte">
@@ -249,6 +255,15 @@ const SECCIONES = [
             tus compradores por esa vía</strong>. El único número de WhatsApp que guardamos es{' '}
             <strong>el tuyo</strong>, el que configurás como contacto de tu tienda para que el
             enlace apunte a algún lado.
+          </p>
+        </Subseccion>
+
+        <Subseccion titulo="4.7 Integraciones en desarrollo">
+          <p>
+            Gesicom desarrolla funciones adicionales para la gestión de anuncios, páginas de Facebook, cuentas profesionales de Instagram y WhatsApp Business. Estas funciones no estarán disponibles para clientes ni tratarán sus datos mediante esas integraciones hasta que se implementen, se obtengan los permisos necesarios y el cliente autorice la conexión. Antes de activarlas, actualizaremos esta política para explicar qué datos se obtienen, para qué se usan, durante cuánto tiempo se conservan y cómo pueden eliminarse.
+          </p>
+          <p>
+            En particular, antes de activar cualquier agente de IA que procese conversaciones, completaremos esta sección con el proveedor real de IA, qué contenido se le transmite, la finalidad, el plazo de conservación y el procedimiento de eliminación.
           </p>
         </Subseccion>
       </>
@@ -1090,7 +1105,7 @@ export default function Privacy() {
       descripcion="Cómo Gesicom recopila, usa, comparte, protege y elimina los datos personales: qué información obtenemos de Meta al conectar Facebook Ads, con qué base legal, cuánto la conservamos y cómo ejercer tus derechos bajo el RGPD, la CCPA/CPRA y la normativa de Latinoamérica."
       resumen="Esta política explica qué datos trata Gesicom, por qué, durante cuánto tiempo y qué control tenés sobre ellos. Está escrita para que se entienda sin ser abogado, sin perder precisión jurídica."
       ruta="/privacy"
-      actualizado="2026-08-03"
+      actualizado="2026-09-24"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     >

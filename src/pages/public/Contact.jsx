@@ -222,6 +222,11 @@ export default function Contact() {
                 </div>
               </div>
             </div>
+
+            <div className="mt-8 rounded-xl border border-border bg-surface p-5 text-xs text-fg-muted leading-relaxed">
+              <p>Gesicom es una plataforma desarrollada y operada por <strong>GESICOM E.A.S.</strong>, Paraguay.</p>
+              <p className="mt-1">RUC: 80178777-7 · Charles de Gaulle 1176 esquina de las palmeras</p>
+            </div>
           </div>
 
           {/* ───── Formulario ───── */}

@@ -211,6 +211,9 @@ const SECCIONES = [
           </li>
           <li>Revocamos los tokens y eliminamos los datos obtenidos de Meta.</li>
         </ul>
+        <p className="mt-4 text-sm text-fg-muted">
+          (Flujo verificado en prueba controlada con cuenta de prueba, septiembre 2026)
+        </p>
         <p>
           La eliminación por esta vía alcanza a los datos obtenidos de las plataformas de Meta. Si
           además querés eliminar el resto de tu información en Gesicom, usá el método 1 o el
@@ -294,6 +297,9 @@ const SECCIONES = [
             <li>Los usuarios y empleados asociados a la cuenta.</li>
             <li>La configuración económica, los precios propios y los reportes.</li>
           </ul>
+          <p className="mt-4 mb-6 text-sm text-fg-muted">
+            Esta lista corresponde al estado actual del producto (septiembre 2026). Cuando se activen los módulos de mensajería (WhatsApp Business, Instagram DM) o de IA, se ampliará para incluir conversaciones, medios y datos procesados por el agente.
+          </p>
         </Subseccion>
 
         <Subseccion titulo="Puede conservarse, y por qué">
@@ -491,7 +497,7 @@ export default function DataDeletion() {
       descripcion="Cómo solicitar la eliminación completa de tus datos personales en Gesicom: desde tu cuenta, mediante el formulario público sin iniciar sesión, o desde la configuración de Meta. Plazo máximo de 30 días, con verificación de identidad y seguimiento por código."
       resumen="Podés pedir que eliminemos todos tus datos personales en cualquier momento, sin costo y sin dar explicaciones. Acá está el cómo, el cuándo y el qué se elimina exactamente."
       ruta="/data-deletion"
-      actualizado="2026-08-03"
+      actualizado="2026-09-24"
       vigenteDesde="2026-08-03"
       secciones={SECCIONES}
     />
