@@ -1872,6 +1872,43 @@
   color: var(--color-fg-subtle);
 }
 
+.oferta-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.oferta-modal-header h3 {
+  margin: 0;
+  min-width: 0;
+  color: var(--color-fg);
+  font-size: 1.05rem;
+  line-height: 1.2;
+}
+
+.oferta-modal-close {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-fg) 4%, transparent);
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.oferta-modal-close:hover {
+  border-color: color-mix(in srgb, var(--color-fg) 22%, transparent);
+  background: color-mix(in srgb, var(--color-fg) 8%, transparent);
+  color: var(--color-fg);
+}
+
 .rubro-checks {
   display: flex;
   flex-wrap: wrap;
@@ -2626,3 +2663,26 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Formulario de oferta por pasos ───────────────────────────────────────
+   Qué tipo de oferta → qué se suma → a qué precio → cómo se ve. Lo técnico
+   (código, tipo de contenido, fechas) queda plegado en "Más opciones". */
+.oferta-paso { padding: 1rem 0 1.1rem; border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent); }
+.oferta-paso:first-of-type { padding-top: 0.25rem; }
+.oferta-paso-titulo { margin-bottom: 0.6rem; color: var(--color-fg); font-size: 0.95rem; font-weight: 700; }
+.oferta-tipos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem; }
+.oferta-tipo {
+  display: grid; gap: 0.25rem; padding: 0.75rem 0.85rem; text-align: left;
+  color: var(--color-fg); background: var(--color-surface, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--color-fg) 12%, transparent); border-radius: 10px;
+  cursor: pointer; transition: border-color .15s ease, background .15s ease;
+}
+.oferta-tipo:hover { border-color: color-mix(in srgb, var(--color-fg) 28%, transparent); }
+.oferta-tipo.active { border-color: var(--color-accent, #ffc107); background: color-mix(in srgb, var(--color-accent, #ffc107) 9%, transparent); }
+.oferta-tipo:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.oferta-tipo strong { font-size: 0.88rem; }
+.oferta-tipo small { color: var(--color-fg-muted, #94a3b8); font-size: 0.74rem; line-height: 1.35; }
+.oferta-mas { margin-top: 1rem; }
+.oferta-mas > summary { color: var(--color-fg-muted, #94a3b8); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.oferta-mas > summary:hover { color: var(--color-fg); }
+@media (max-width: 640px) { .oferta-tipos { grid-template-columns: 1fr; } }

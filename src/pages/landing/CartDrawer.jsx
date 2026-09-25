@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Gift, PartyPopper, Award, ShieldCheck, Banknote } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Award, ShieldCheck, Banknote } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
@@ -69,9 +69,11 @@ function textoBump(item, oferta) {
   const titulo = esNombreInterno(oferta?.nombre)
     ? `Completá tu compra con ${nombreComplemento}`
     : (oferta?.nombre || `Sumá ${nombreComplemento}`);
+  // Sin descripción del comercio no se inventa una: la tarjeta ya dice qué
+  // es, cuánto cuesta y cuánto se ahorra.
   const descripcion = oferta?.descripcion && !esNombreInterno(oferta.descripcion)
     ? oferta.descripcion
-    : `Se suma a tu pedido con un toque.`;
+    : '';
   return { ...detalle, titulo, descripcion };
 }
 
@@ -155,9 +157,12 @@ export default function CartDrawer({
   // funcionando sin tener que adaptarse.
   const primarioTema = normalizarColorHex(apariencia?.primario || apariencia?.acento);
   const claroBool = apariencia?.claro ?? apariencia?.modoClaro;
+  // Un fondo que no se puede leer (nombre de color, hsl, color-mix) da null:
+  // antes eso caía en 'oscuro' y pintaba un drawer negro sobre una landing blanca.
+  const fondoClaro = apariencia?.fondo != null ? esColorClaro(apariencia.fondo) : null;
   const modoExplicito = apariencia?.modo
     || (typeof claroBool === 'boolean' ? (claroBool ? 'claro' : 'oscuro') : null)
-    || (apariencia?.fondo != null ? (esColorClaro(apariencia.fondo) ? 'claro' : 'oscuro') : null);
+    || (fondoClaro === null ? null : (fondoClaro ? 'claro' : 'oscuro'));
 
   useLayoutEffect(() => {
     if (modoExplicito || !rootRef.current) return;
@@ -168,7 +173,7 @@ export default function CartDrawer({
     if (claro !== null) setModoDetectado(claro ? 'claro' : 'oscuro');
   }, [modoExplicito, abierto]);
 
-  const modo = modoExplicito || modoDetectado || 'oscuro';
+  const modo = modoExplicito || modoDetectado || 'claro';
   const varsTema = primarioTema
     ? { '--l-primary': primarioTema, '--l-on-primary': tintaSobre(primarioTema) }
     : undefined;
@@ -406,45 +411,41 @@ export default function CartDrawer({
    * todo el ancho abajo. Con imagen + texto + botón en una sola fila, en
    * los 400px del drawer el título quedaba en una columna de 60px, una
    * palabra por renglón.
+   *
+   * Cada dato aparece una sola vez: el ahorro en la bandera, el precio junto
+   * al tachado y la acción en el botón. Antes el precio salía dos veces, el
+   * ahorro tres (bandera, "-29%" y tachado) y había un "+" además del botón
+   * para la misma acción: la tarjeta se leía amontonada.
    */
   function renderTarjetaBump({ item, oferta }) {
     const detalle = textoBump(item, oferta);
     const imagenOferta = detalle.imagen || item.imagen;
     const completo = ofertaCheckoutPublicable(item, oferta);
-    const beneficios = normalizarBeneficiosOferta(oferta?.beneficios).slice(0, 3);
     const agregar = () => onAgregarSugerencia(item, oferta, componenteVarianteDe(oferta));
-    // Order bump "de checkbox" (el formato clásico que más convierte): la
-    // franja de arriba ES la acción — una casilla grande "Sí, sumalo" que se
-    // lee como decisión de un toque, no como otro producto más para evaluar.
     return (
-      <article key={oferta.id} className="lp-bump">
-        <button type="button" className="lp-bump-check" onClick={agregar} disabled={!completo}>
-          <span className="lp-bump-box" aria-hidden="true"><Check size={14} /></span>
-          <span className="lp-bump-cta">
-            {completo ? <>Sí, sumalo a mi pedido por <b>{formatPrecio(detalle.precioFinal)}</b></> : 'Completá producto, imagen y precio'}
+      <article key={oferta.id} className={`lp-bump ${completo ? '' : 'is-disabled'}`}>
+        <button type="button" className="lp-bump-card" onClick={agregar} disabled={!completo}>
+          <span className="lp-bump-flag">
+            <span><Sparkles size={12} /> Oferta exclusiva</span>
+            {detalle.ahorro > 0 && <b>Ahorrás {formatPrecio(detalle.ahorro)}</b>}
           </span>
-          <ArrowRight size={16} className="lp-bump-arrow" aria-hidden="true" />
+          <span className="lp-bump-body">
+            <span className="lp-bump-media">
+              {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={18} />}
+            </span>
+            <span className="lp-bump-info">
+              <span className="lp-bump-title">{detalle.titulo}</span>
+              {detalle.descripcion && <span className="lp-bump-desc">{detalle.descripcion}</span>}
+              <span className="lp-bump-price">
+                <strong>{completo ? formatPrecio(detalle.precioFinal) : 'Falta precio'}</strong>
+                {detalle.ahorro > 0 && <del>{formatPrecio(detalle.precioNormal)}</del>}
+              </span>
+            </span>
+            <span className="lp-bump-action">
+              {completo ? <><Plus size={15} /> Agregar a mi pedido</> : 'Revisar oferta'}
+            </span>
+          </span>
         </button>
-        <div className="lp-bump-body">
-          <div className="lp-bump-media">
-            {imagenOferta ? <img src={getMediaUrl(imagenOferta)} alt="" /> : <ImageOff size={18} />}
-            {detalle.ahorroPorcentaje ? <span className="lp-bump-off">-{detalle.ahorroPorcentaje}%</span> : null}
-          </div>
-          <div className="lp-bump-info">
-            <span className="lp-bump-eyebrow"><Zap size={11} /> Solo en este pedido</span>
-            <h4>{detalle.titulo}</h4>
-            {detalle.descripcion && <p>{detalle.descripcion}</p>}
-            <div className="lp-bump-price">
-              <strong>{completo ? formatPrecio(detalle.precioFinal) : 'Falta precio'}</strong>
-              {detalle.ahorro > 0 && <del>{formatPrecio(detalle.precioNormal)}</del>}
-            </div>
-          </div>
-        </div>
-        {beneficios.length > 0 && (
-          <ul className="lp-bump-benefits">
-            {beneficios.map(b => <li key={b}><Check size={12} /> {b}</li>)}
-          </ul>
-        )}
         <SelectorVarianteOferta oferta={oferta} />
       </article>
     );
@@ -457,12 +458,11 @@ export default function CartDrawer({
   const ahorroCarrito = items.reduce(
     (s, it) => s + Math.max(0, (Number(it.precioAntes) || 0) - (Number(it.precio) || 0)) * it.cantidad, 0,
   );
-  const mejorAhorroBump = orderBumps.reduce((max, { item, oferta }) => Math.max(max, detalleOfertaCheckout(item, oferta).ahorro), 0);
 
   return (
     <div ref={rootRef} className="lp-cart-root" data-cart-modo={modo} style={varsTema}>
       {cantidadTotal > 0 && !abierto && (
-        <button type="button" className="lp-cart-fab" onClick={onAbrir}>
+        <button type="button" className="lp-cart-fab" onClick={onAbrir} aria-label={`Abrir carrito (${cantidadTotal} ${cantidadTotal === 1 ? 'producto' : 'productos'})`}>
           <ShoppingCart size={20} />
           <span className="lp-cart-fab-badge">{cantidadTotal}</span>
         </button>
@@ -489,21 +489,9 @@ export default function CartDrawer({
                   </div>
                 ) : (
                   <>
-                    {/* Barra de recompensa: arriba de todo, es lo primero que se
-                        lee. Con ahorro celebra lo ganado; si todavía no hay, avisa
-                        que abajo hay una oferta (sin inventar montos). */}
-                    {ahorroCarrito > 0 ? (
-                      <div className="lp-cart-reward lp-cart-reward--ok" role="status">
-                        <PartyPopper size={16} />
-                        <span>¡Genial! Estás ahorrando <b>{formatPrecio(ahorroCarrito)}</b> en este pedido</span>
-                      </div>
-                    ) : mejorAhorroBump > 0 ? (
-                      <div className="lp-cart-reward">
-                        <Gift size={16} />
-                        <span>Tenés una oferta exclusiva abajo: ahorrá hasta <b>{formatPrecio(mejorAhorroBump)}</b></span>
-                      </div>
-                    ) : null}
-
+                    {/* Sin barra de recompensa arriba: repetía el "Ahorro" del
+                        pie y la oferta que se ve justo debajo, y le comía al
+                        scroll el alto que necesitan los productos. */}
                     <div className="lp-cart-scroll">
                     <div className="lp-cart-items">
                       {items.map(it => {
@@ -558,36 +546,38 @@ export default function CartDrawer({
                     )}
 
                     {/* Cross-sell: DEBAJO del contenido del carrito (Baymard:
-                        nunca arriba de lo que el cliente ya eligió) y 2-3
-                        tarjetas en carrusel. La medalla sale de la etiqueta que
-                        el comercio le pone al producto en la landing ("Más
-                        vendido", "Nuevo"…) — `badge` queda como gancho para una
-                        medalla calculada por ventas más adelante. */}
+                        nunca arriba de lo que el cliente ya eligió), 2-3 filas
+                        compactas. En carrusel, en los 400px del drawer la
+                        tercera tarjeta quedaba cortada y los nombres en dos
+                        palabras. La medalla sale de la etiqueta que el
+                        comercio le pone al producto ("Más vendido", "Nuevo"…). */}
                     {crossSellsVisibles.length > 0 && (
                       <section className="lp-cart-section" aria-label="Clientes también llevan">
                         <h4 className="lp-cart-section-title">Clientes también llevan</h4>
-                        <div className="lp-cross-rail">
+                        <ul className="lp-cross-list">
                           {crossSellsVisibles.map(item => {
                             const medalla = item.badge || item.etiqueta;
                             const antes = Number(item.precio_antes) || 0;
                             return (
-                              <article key={item.content_id || `${item.tipo}-${item.referencia_id}`} className="lp-cross-card">
-                                <div className="lp-cross-card-media">
+                              <li key={item.content_id || `${item.tipo}-${item.referencia_id}`} className="lp-cross-row">
+                                <span className="lp-cross-row-media">
                                   {item.imagen ? <img src={getMediaUrl(item.imagen)} alt="" /> : <ImageOff size={16} />}
-                                  {medalla && <span className="lp-cross-medal"><Award size={11} /> {medalla}</span>}
-                                </div>
-                                <span className="lp-cross-card-nombre">{item.nombre}</span>
-                                <span className="lp-cross-card-precio">
-                                  <b>{formatPrecio(item.precio)}</b>
-                                  {antes > item.precio && <del>{formatPrecio(antes)}</del>}
                                 </span>
-                                <button type="button" className="lp-cross-card-add" onClick={() => onAgregarCrossSell(item)} aria-label={`Agregar ${item.nombre}`}>
+                                <span className="lp-cross-row-info">
+                                  {medalla && <span className="lp-cross-medal"><Award size={11} /> {medalla}</span>}
+                                  <span className="lp-cross-row-nombre">{item.nombre}</span>
+                                  <span className="lp-cross-row-precio">
+                                    <b>{formatPrecio(item.precio)}</b>
+                                    {antes > item.precio && <del>{formatPrecio(antes)}</del>}
+                                  </span>
+                                </span>
+                                <button type="button" className="lp-cross-row-add" onClick={() => onAgregarCrossSell(item)} aria-label={`Agregar ${item.nombre}`}>
                                   <Plus size={14} /> Agregar
                                 </button>
-                              </article>
+                              </li>
                             );
                           })}
-                        </div>
+                        </ul>
                       </section>
                     )}
                     </div>
@@ -967,12 +957,8 @@ export default function CartDrawer({
           cliente (por encima del propio drawer, que sigue ahí atrás) para
           que se lea como una pregunta que hay que responder antes de seguir. */}
       {abierto && mostrarUpsellPopup && upsells.length > 0 && (
-        <div className="lp-upsell-overlay" role="presentation" onClick={declinarUpsell}>
+        <div className="lp-upsell-overlay" role="presentation">
           <div className="lp-upsell-modal" onClick={e => e.stopPropagation()}>
-            <button type="button" className="lp-upsell-modal-close" onClick={declinarUpsell} title="Cerrar" disabled={enviando}>
-              <X size={16} />
-            </button>
-
             {upsells.map(({ item, oferta }) => {
               const detalle = textoUpsell(item, oferta);
               const beneficios = beneficiosUpsell(detalle, oferta);
@@ -981,6 +967,7 @@ export default function CartDrawer({
                 <article key={oferta.id} className="lp-upsell-offer">
                   <div className="lp-upsell-header">
                     <span className="lp-upsell-eyebrow"><Sparkles size={14} /> Oferta exclusiva para tu pedido</span>
+                    <h2>Esperá, tenemos una oferta para vos</h2>
                   </div>
 
                   <div className="lp-upsell-grid">
@@ -1036,9 +1023,9 @@ export default function CartDrawer({
                         onClick={() => aceptarUpsell(item, oferta, componenteVarianteDe(oferta))}
                         disabled={enviando || !upsellCompleto}
                       >
-                        {upsellCompleto ? `Sí, agregar por ${formatPrecio(detalle.precioFinal)}` : 'Completá producto, imagen y precio'}
+                        {upsellCompleto ? <><Plus size={18} /> Sí, agregar por {formatPrecio(detalle.precioFinal)}</> : 'Completá producto, imagen y precio'}
                       </button>
-                      <p className="lp-upsell-microcopy">Se agregará con un solo clic. No tendrás que volver a completar tus datos.</p>
+                      <p className="lp-upsell-microcopy"><Check size={14} /> Se agregará con un solo clic, sin volver a completar tus datos.</p>
                     </div>
                   </div>
                 </article>
@@ -1051,7 +1038,7 @@ export default function CartDrawer({
               onClick={declinarUpsell}
               disabled={enviando}
             >
-              Continuar sin agregar
+              No gracias, continuar con mi pedido
             </button>
           </div>
         </div>

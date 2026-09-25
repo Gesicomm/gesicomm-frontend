@@ -123,12 +123,15 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     expect(document.querySelector('h1[data-gesicomm-bind="nombre"]').textContent).toBe('Remera');
     expect(document.querySelectorAll('[data-gesicomm-variante-id]')).toHaveLength(2);
     expect(document.querySelector('[data-gesicomm-variante-id="1"]').hasAttribute('data-agotado')).toBe(true);
-    expect(document.querySelectorAll('[data-gesicomm-oferta-id]')).toHaveLength(1);
+    // El paquete de la remera aparece en "Elegí tu oferta", junto a 1 unidad.
+    expect(document.querySelectorAll('.paquete')).toHaveLength(2);
     expect(document.querySelectorAll('#relacionados [data-gesicomm-item]')).toHaveLength(1);
   });
 
   it('no deja comprar sin elegir variante, y con variante manda variante y cantidad', () => {
-    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, datos);
+    // Sin paquetes, para que la cantidad salga del campo de cantidad.
+    const remeraSola = { ...remera, ofertas: [] };
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, { ...datos, productos: [airFryer, remeraSola], producto: remeraSola });
     click('.buy-row [data-gesicomm-comprar]');
     expect(mensajes.some(m => m.tipo === 'gesicomm:checkout')).toBe(false);
 
@@ -142,10 +145,14 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'remera', variante: 2, cantidad: 3 }));
   });
 
-  it('comprar una oferta manda su id', () => {
+  it('comprar un paquete manda su id (y pide el talle antes)', () => {
     const { mensajes, click } = montar(PLANTILLA_PRODUCTO, datos);
-    click('[data-gesicomm-oferta]');
-    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'remera', oferta: 77 }));
+    click('.paquete[data-gesicomm-paquete="77"]');
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes.some(m => m.tipo === 'gesicomm:checkout')).toBe(false);
+    click('[data-gesicomm-variante-id="2"]');
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'remera', oferta: 77, variante: 2 }));
   });
 
   it('una variante sin stock no se puede elegir', () => {
@@ -282,10 +289,12 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
 describe('páginas base por formato', () => {
   const combo = { ...airFryer, id: 'combo-3', referencia_id: 3, tipo: 'combo', nombre: 'Pack cocina', productos_incluidos: ['Air Fryer', 'Canasto'], descuento_pct: 15 };
 
-  it('cada formato tiene su base, marcada para reconocerla', () => {
+  it('hay un solo inicio base (la tienda); las bases viejas se siguen reconociendo', () => {
+    // "Combos primero" es orden y "Directo en un producto" abre la ficha:
+    // ningún formato tiene ya su propio inicio.
     expect(plantillaInicioPara('catalogo')).toBe(PLANTILLA_INICIO);
-    expect(plantillaInicioPara('producto_unico')).toBe(PLANTILLA_ESTRELLA);
-    expect(plantillaInicioPara('combos')).toBe(PLANTILLA_COMBOS);
+    expect(plantillaInicioPara('producto_unico')).toBe(PLANTILLA_INICIO);
+    expect(plantillaInicioPara('combos')).toBe(PLANTILLA_INICIO);
     expect(formatoDeBase(PLANTILLA_ESTRELLA.html)).toBe('producto_unico');
     expect(formatoDeBase('<h1>mío</h1>')).toBeNull();
   });
@@ -431,5 +440,178 @@ describe('preview del editor con ofertas del panel', () => {
     expect(bump.imagen).toBe('https://cdn.test/canasto.jpg');
     expect(upsell.precio_efectivo).toBe(55000);
     expect(upsell.imagen).toBe('https://cdn.test/air.jpg');
+  });
+});
+
+describe('redes de la tienda (data-gesicomm-redes)', () => {
+  it('pinta un link por red cargada en Mi Tienda y arma URLs seguras', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      productos: [airFryer],
+      tienda: { nombre: 'Ecom', whatsapp: '0981 123 456', instagram: '@ecom.py', facebook: 'https://facebook.com/ecompy', tiktok: 'javascript:alert(1)' },
+    });
+    const redes = [...document.querySelectorAll('[data-gesicomm-redes] .gc-red')];
+    expect(redes.map(a => a.textContent)).toEqual(['WhatsApp', 'Instagram', 'Facebook']);
+    expect(redes[0].getAttribute('href')).toBe('https://wa.me/595981123456');
+    expect(redes[1].getAttribute('href')).toBe('https://instagram.com/ecom.py');
+    expect(redes[2].getAttribute('href')).toBe('https://facebook.com/ecompy');
+    expect(redes[1].className).toBe('gc-red gc-red--instagram');
+    expect(redes[1].getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('sin redes el contenedor se oculta: nada de títulos vacíos', () => {
+    const { document } = montar(PLANTILLA_INICIO, { productos: [airFryer], tienda: { nombre: 'Ecom' } });
+    const cont = document.querySelector('[data-gesicomm-redes]');
+    expect(cont.children).toHaveLength(0);
+    expect(cont.style.display).toBe('none');
+  });
+});
+
+describe('secciones de Gesicom dentro del documento', () => {
+  it('van antes del footer de la landing, no debajo', () => {
+    const html = construirDocumentoCodigo(
+      { html: '<main>hola</main><footer class="pie">pie</footer>' },
+      { extras: { html: '<section id="contacto">contacto</section>', css: '' } },
+    );
+    expect(html.indexOf('id="contacto"')).toBeLessThan(html.indexOf('<footer class="pie"'));
+  });
+
+  it('sin footer propio van al final del contenido', () => {
+    const html = construirDocumentoCodigo(
+      { html: '<main>hola</main>' },
+      { extras: { html: '<footer class="gcx-footer">legal</footer>', css: '' } },
+    );
+    expect(html.indexOf('<main>hola</main>')).toBeLessThan(html.indexOf('gcx-footer">legal'));
+  });
+});
+
+describe('ficha: combos que traen el producto', () => {
+  it('muestra solo los combos que incluyen el producto de la ficha', () => {
+    const producto = { ...airFryer, referencia_id: 10 };
+    const conFryer = { id: 'combo-1', referencia_id: 1, tipo: 'combo', nombre: 'Kit fryer + canasto', precio: 200000, imagen: null, imagenes_url: [], combo_productos: [10, 8], variantes: [], ofertas: [], url: '/combo-1' };
+    const sinFryer = { id: 'combo-2', referencia_id: 2, tipo: 'combo', nombre: 'Kit remeras', precio: 90000, imagen: null, imagenes_url: [], combo_productos: [11], variantes: [], ofertas: [], url: '/combo-2' };
+    const datos = { vista: 'producto', tienda: {}, productos: [producto, conFryer, sinFryer], producto, recomendados: [] };
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    const tarjetas = document.querySelectorAll('#combos-producto [data-gesicomm-item]');
+    expect(tarjetas).toHaveLength(1);
+    expect(tarjetas[0].querySelector('[data-gesicomm-bind="nombre"]').textContent).toBe('Kit fryer + canasto');
+  });
+
+  it('sin combos para ese producto, la sección no se ve', () => {
+    const datos = { vista: 'producto', tienda: {}, productos: [airFryer], producto: airFryer, recomendados: [] };
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    expect(document.querySelector('#combos-producto').style.display).toBe('none');
+  });
+});
+
+describe('ficha que vende: contenido real del producto', () => {
+  const img = 'https://cdn.test/a.jpg';
+  const data = (items) => ({ content: { venta: { configurado: true } }, catalogo_items: items });
+  const producto = {
+    content_id: 'adelfit', referencia_id: 8, tipo: 'producto', nombre: 'AdelFit', precio: 169000, precio_antes: 210000,
+    imagen: img, imagenes: [img], variantes: [], ofertas: [],
+    propuesta_valor: 'Controlá el apetito.',
+    beneficios: [{ titulo: 'Menos ansiedad' }, { titulo: 'Más energía', texto: 'Todo el día' }, { titulo: '' }],
+    confianza: [{ texto: 'Registro sanitario' }],
+    preguntas_frecuentes: [{ pregunta: '¿Dosis?', respuesta: 'Dos por día' }, { pregunta: 'sin respuesta', respuesta: '' }],
+  };
+
+  it('pinta promesa, highlights, garantías y preguntas; el ahorro barato va en %', () => {
+    const datos = datosRuntimePublico(data([producto]), 'x', producto);
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    expect(document.querySelector('.pdp-promesa').textContent).toBe('Controlá el apetito.');
+    expect([...document.querySelectorAll('.highlights li')].map(l => l.textContent)).toEqual(['Menos ansiedad', 'Más energía']);
+    expect(document.querySelectorAll('.garantias li')).toHaveLength(1);
+    expect(document.querySelectorAll('.faq-item')).toHaveLength(1);
+    expect(document.querySelector('.pdp-prices .badge-off').textContent).toBe('Ahorrás 20%');
+    // No es combo: lo propio de un combo no se ve.
+    expect(document.querySelector('.pdp-separado').style.display).toBe('none');
+    expect(document.querySelector('#incluye').style.display).toBe('none');
+  });
+
+  it('producto caro (≥ Gs 750.000): el ahorro se dice en guaraníes', () => {
+    const caro = { ...producto, precio: 900000, precio_antes: 1200000 };
+    const datos = datosRuntimePublico(data([caro]), 'x', caro);
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    expect(document.querySelector('.pdp-prices .badge-off').textContent).toBe('Ahorrás Gs 300.000');
+  });
+
+  it('combo: precio por separado como ancla y qué incluye cada producto', () => {
+    const combo = { content_id: 'combo-3', referencia_id: 3, tipo: 'combo', nombre: 'Kit', precio: 288000, imagen: img, imagenes: [img], variantes: [], ofertas: [],
+      productos_combo: [{ id: 8, nombre: 'AdelFit', precio: 169000, cantidad: 1, imagen: img }, { id: 9, nombre: 'Articumina', precio: 170000, cantidad: 2, imagen: img }] };
+    const datos = datosRuntimePublico(data([combo]), 'x', combo);
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    expect(document.querySelector('.pdp-separado').textContent).toBe('Por separado: Gs 509.000');
+    expect(document.querySelectorAll('.incluye-card')).toHaveLength(2);
+    expect(document.querySelector('.incluye-total').textContent).toMatch(/Por separado: Gs 509\.000 · En combo: Gs 288\.000/);
+  });
+});
+
+describe('ficha: elegí tu oferta (paquetes por cantidad)', () => {
+  const pack2 = { id: 21, nombre: 'Lleva 2 por un descuento imperdible', estrategia: 'normal', precio_efectivo: 250000, unidades: 2 };
+  const pack3 = { id: 22, nombre: 'Lleva 3', estrategia: 'normal', precio_efectivo: 349000, unidades: 3 };
+  const prod = { ...airFryer, precio: 169000, precio_antes: null, descuento_pct: 0, ofertas: [pack3, pack2] };
+  const datos = { vista: 'producto', tienda: {}, productos: [prod], producto: prod, recomendados: [] };
+
+  it('1 unidad + los paquetes ordenados, con precio por unidad, ahorro y "Mejor precio"; arranca en Pack x2', () => {
+    const { document } = montar(PLANTILLA_PRODUCTO, datos);
+    const opciones = [...document.querySelectorAll('.paquete')];
+    expect(opciones.map(o => o.querySelector('.paquete-titulo').textContent)).toEqual(['1 unidad', 'Pack x2', 'Pack x3']);
+    expect(opciones[1].getAttribute('aria-checked')).toBe('true');
+    expect(opciones[1].querySelector('.paquete-unidad').textContent).toBe('Gs 125.000 c/u');
+    expect(opciones[1].querySelector('.paquete-ahorro span').textContent).toBe('Ahorrás Gs 88.000');
+    expect(opciones[1].querySelector('s').textContent).toBe('Gs 338.000');
+    // Sin etiquetas configuradas: solo "Mayor ahorro", que se calcula.
+    expect(opciones[2].querySelector('.paquete-etiqueta').textContent).toBe('Mayor ahorro');
+    expect(opciones[1].querySelector('.paquete-etiqueta').style.display).toBe('none');
+    expect(opciones[1].querySelector('.paquete-ahorro em').textContent).toBe('26% OFF');
+    expect(opciones[1].querySelector('.paquete-x').textContent).toBe('x2');
+    expect(opciones[1].querySelector('.paquete-foto img').getAttribute('src')).toBe(prod.imagen);
+    expect(document.querySelector('.buy-row [data-gesicomm-cta]').textContent).toBe('Comprar Pack x2');
+    // Con paquetes no hay campo de cantidad: la cantidad la da el paquete.
+    expect(document.querySelector('[data-gesicomm-cantidad-input]').style.display).toBe('none');
+    expect(document.querySelector('.buy-row [data-gesicomm-total]').textContent).toBe('Gs 250.000');
+  });
+
+  it('elegir otra opción cambia el total, y comprar lleva el paquete elegido', () => {
+    const { document, mensajes, click } = montar(PLANTILLA_PRODUCTO, datos);
+    click('.paquete[data-gesicomm-paquete="22"]');
+    expect(document.querySelector('.buy-row [data-gesicomm-total]').textContent).toBe('Gs 349.000');
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ oferta: 22, abrir: true });
+    expect(mensajes.some(m => m.tipo === 'gesicomm:evento' && m.nombre === 'PaqueteElegido')).toBe(true);
+
+    click('.paquete[data-gesicomm-paquete="unidad"]');
+    click('.buy-row [data-gesicomm-comprar]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({ oferta: null, cantidad: 1 });
+  });
+
+  it('sin paquetes, el selector no aparece y vuelve el campo de cantidad', () => {
+    const solo = { ...prod, ofertas: [] };
+    const { document } = montar(PLANTILLA_PRODUCTO, { ...datos, productos: [solo], producto: solo });
+    expect(document.querySelector('.paquetes').style.display).toBe('none');
+    expect(document.querySelector('[data-gesicomm-cantidad-input]').style.display).toBe('');
+  });
+});
+
+describe('ficha: etiquetas y paquete destacado (Configurar venta)', () => {
+  const pack2 = { id: 21, nombre: 'x', estrategia: 'normal', precio_efectivo: 250000, unidades: 2 };
+  const pack3 = { id: 22, nombre: 'y', estrategia: 'normal', precio_efectivo: 349000, unidades: 3 };
+  const prod = { ...airFryer, precio: 169000, precio_antes: null, descuento_pct: 0, ofertas: [pack2, pack3] };
+
+  it('usa las etiquetas del comercio y arranca en el destacado', () => {
+    const venta = { paquetes: { 21: { etiqueta: 'Más elegido', destacado: false }, 22: { etiqueta: 'Ideal para 1 mes', destacado: true } } };
+    const { document } = montar(PLANTILLA_PRODUCTO, { vista: 'producto', tienda: {}, venta, productos: [prod], producto: prod, recomendados: [] });
+    const opciones = [...document.querySelectorAll('.paquete')];
+    expect(opciones[1].querySelector('.paquete-etiqueta').textContent).toBe('Más elegido');
+    expect(opciones[2].querySelector('.paquete-etiqueta').textContent).toBe('Ideal para 1 mes');
+    expect(opciones[2].classList.contains('is-destacado')).toBe(true);
+    expect(opciones[2].getAttribute('aria-checked')).toBe('true');
+    expect(document.querySelector('.buy-row [data-gesicomm-cta]').textContent).toBe('Comprar Pack x3');
+  });
+
+  it('con 1 unidad elegida, el botón vuelve a "Comprar ahora"', () => {
+    const { document, click } = montar(PLANTILLA_PRODUCTO, { vista: 'producto', tienda: {}, productos: [prod], producto: prod, recomendados: [] });
+    click('.paquete[data-gesicomm-paquete="unidad"]');
+    expect(document.querySelector('.buy-row [data-gesicomm-cta]').textContent).toBe('Comprar ahora');
   });
 });

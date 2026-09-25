@@ -111,10 +111,23 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // Ficha de producto: una sola plantilla (content.vistas.producto) que el
   // runtime llena con el producto de la URL. Si el comercio todavía no la
   // escribió se usa la ficha base: ningún producto se queda sin página.
-  const productoPublico = productId ? (data?.producto || null) : null;
+  // "Directo en un producto" (venta.abrir_en): la dirección de la landing
+  // muestra la ficha del producto principal (el primero de la selección),
+  // sin redirigir, así el link del anuncio queda limpio.
+  const abreEnFicha = !productId && data?.content?.venta?.abrir_en === 'producto';
+  const principalDeLanding = (() => {
+    if (!abreEnFicha) return null;
+    const lista = (data?.catalogo_items || data?.items || []).filter(i => i.tipo === 'producto');
+    const id = Number(data?.content?.venta?.principal_id);
+    return lista.find(i => Number(i.referencia_id) === id) || lista[0] || null;
+  })();
+  const productoPublico = productId ? (data?.producto || null) : principalDeLanding;
   const esFicha = !!productoPublico;
+  // Ficha propia de ESTE producto (si el comercio le armó una) → la general
+  // → la base.
+  const fichaPropia = esFicha ? data?.content?.vistas?.productos?.[productoPublico.content_id] : null;
   const codigo = esFicha
-    ? (data?.content?.vistas?.producto?.html ? data.content.vistas.producto : PLANTILLA_PRODUCTO)
+    ? (fichaPropia?.html ? fichaPropia : (data?.content?.vistas?.producto?.html ? data.content.vistas.producto : PLANTILLA_PRODUCTO))
     : codigoInicio;
 
   const tema = useMemo(() => temaDesdeData(data), [data]);
@@ -144,9 +157,12 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // landing blanca.
   const [temaIframe, setTemaIframe] = useState(null);
   const onTema = useCallback((t) => setTemaIframe(t), []);
+  // El respaldo del fondo es blanco y no el de la tienda: el fondo de marca
+  // viene oscuro por defecto y pintaba carrito y contenedor de negro durante
+  // la carga (o siempre, si el iframe no llegaba a reportar).
   const cartApariencia = useMemo(() => ({
     primario: temaIframe?.primario || tema.acento,
-    fondo: temaIframe?.fondo || tema.fondo,
+    fondo: temaIframe?.fondo || '#ffffff',
   }), [temaIframe, tema]);
 
   // Productos (si el código no tiene grilla), contacto y footer legal de la

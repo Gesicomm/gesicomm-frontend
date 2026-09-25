@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { ofertaService } from '../../services/ofertaService';
@@ -192,6 +192,8 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const { id: idParam } = useParams();
   const id = landingInicial?.id ?? idParam;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const previewOnly = searchParams.get('preview_only') == '1';
 
   const [landing, setLanding] = useState(landingInicial || null);
   const [tienda, setTienda] = useState(null);
@@ -614,7 +616,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [productoAviso, setProductoAviso] = useState('');
 
   // Viewport y Sidebar
-  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [sidebarVisible, setSidebarVisible] = useState(!previewOnly);
   const [viewportMode, setViewportMode] = useState('desktop'); // desktop | tablet | mobile
   const [desktopScale, setDesktopScale] = useState(1);
   const containerRef = useRef(null);

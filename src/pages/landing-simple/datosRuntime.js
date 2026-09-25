@@ -83,13 +83,19 @@ function ofertasRuntime(item, venta) {
     .filter(o => o.estrategia === 'normal' || (ofertaCheckoutPublicable(o) && ofertaCruzadaVisible(o, venta)))
     .map(o => {
       const detalle = detalleOfertaCheckout(o);
+      const precioOferta = detalle.precioFinal || o.precio_efectivo || o.precio;
+      // Paquete ("3 AdelFit por Gs 300.000"): el ancla es lo que costarían
+      // las mismas unidades sueltas (3 × precio del producto).
+      const sueltas = o.estrategia === 'normal' && Number(o.unidades) > 1 ? Number(o.unidades) * (Number(item.precio) || 0) : 0;
       return conAhorro({
         id: o.id,
         nombre: o.nombre,
         estrategia: o.estrategia,
         descripcion: o.descripcion || null,
-        precio_efectivo: detalle.precioFinal || o.precio_efectivo || o.precio,
-        precio_normal: detalle.precioNormal && detalle.precioNormal > detalle.precioFinal ? detalle.precioNormal : null,
+        precio_efectivo: precioOferta,
+        precio_normal: sueltas > precioOferta
+          ? sueltas
+          : (detalle.precioNormal && detalle.precioNormal > detalle.precioFinal ? detalle.precioNormal : null),
         imagen: media(detalle.imagen) || media(item.imagen),
         unidades: o.unidades || null,
       });
@@ -129,6 +135,10 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     })),
     ofertas: ofertasRuntime(item, venta),
     productos_incluidos: item.productos_incluidos || null,
+    // Ids de los productos del combo (principal + complementarios): la
+    // ficha de cada producto muestra "Llevalo en combo" con estos.
+    combo_productos: item.tipo === 'combo' ? (item.productos_combo || []).map(p => Number(p.id)) : [],
+    ...contenidoFicha(item),
     url: urlProducto(slug, item.content_id),
   };
 }
@@ -153,15 +163,63 @@ function ofertaPanelARuntime(o, imagenDeProducto = () => null) {
   const imgsComponente = componente?.producto?.imagenes || [];
   const imagenComponente = (imgsComponente.find(i => i.es_principal) || imgsComponente[0])?.url
     || imagenDeProducto(componente?.producto_id ?? componente?.producto?.id);
+  // Paquete: cuántas unidades del mismo producto trae (componente ancla).
+  const ancla = (o.componentes || []).find(c => Number(c.producto_id) === Number(o.producto_ancla_id));
   return conAhorro({
     id: o.id,
     nombre: o.nombre,
     estrategia: o.estrategia,
     descripcion: o.descripcion || null,
+    unidades: o.estrategia === 'normal' ? (Number(ancla?.cantidad) || null) : null,
     precio_efectivo: efectivo,
     precio_normal: normal > efectivo ? normal : null,
     imagen: media(o.imagen_url || o.imagen || imagenComponente),
   });
+}
+
+/**
+ * Lo que la ficha necesita para vender, cargado en Productos → "Vista del
+ * producto": propuesta de valor, beneficios, garantías y preguntas. Solo
+ * datos reales: si el producto no los tiene, la sección se oculta sola.
+ * En un combo, además, qué trae y cuánto costaría por separado (el ancla
+ * del ahorro).
+ */
+export function contenidoFicha(item) {
+  const beneficios = (Array.isArray(item.beneficios) ? item.beneficios : [])
+    .filter(b => String(b?.titulo || '').trim())
+    .map(b => ({ titulo: String(b.titulo).trim(), texto: String(b.texto || '').trim() || null, icono: b.icono || null }));
+  const confianza = (Array.isArray(item.confianza) ? item.confianza : [])
+    .map(c => ({ texto: String(c?.texto || c?.titulo || '').trim(), icono: c?.icono || null }))
+    .filter(c => c.texto);
+  const preguntas = (Array.isArray(item.preguntas_frecuentes) ? item.preguntas_frecuentes : [])
+    .filter(f => String(f?.pregunta || '').trim() && String(f?.respuesta || '').trim())
+    .map(f => ({ pregunta: String(f.pregunta).trim(), respuesta: String(f.respuesta).trim() }));
+  const comboIncluye = item.tipo === 'combo'
+    ? (item.productos_combo || []).map(p => ({
+      id: Number(p.id),
+      nombre: p.nombre,
+      imagen: media(p.imagen),
+      precio: Number(p.precio) || null,
+      cantidad: Number(p.cantidad) > 1 ? `x${Number(p.cantidad)}` : null,
+      content_id: p.slug || null,
+    }))
+    : [];
+  const separado = comboIncluye.reduce((s, p, i) => s + (Number(item.productos_combo[i]?.precio) || 0) * (Number(item.productos_combo[i]?.cantidad) || 1), 0);
+  const precio = Number(item.precio) || 0;
+  const antes = Number(item.precio_antes) || (separado > precio ? separado : 0);
+  return {
+    propuesta_valor: String(item.propuesta_valor || '').trim() || null,
+    sobre: String(item.sobre_este_producto || '').trim() || null,
+    beneficios,
+    confianza,
+    preguntas,
+    combo_incluye: comboIncluye,
+    precio_separado: item.tipo === 'combo' && separado > precio ? separado : null,
+    // Ahorro del producto o combo: lo usan los binds "ahorro" y "ahorro_texto".
+    ahorro: antes > precio && precio > 0 ? antes - precio : 0,
+    precio_antes: antes > precio ? antes : (item.precio_antes || null),
+    descuento_pct: antes > precio && precio > 0 ? Math.round((1 - precio / antes) * 100) : (item.descuento_pct || 0),
+  };
 }
 
 /** Item del catálogo del panel (vitrina) → item del runtime, para el preview del editor. */
@@ -191,6 +249,8 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto) {
     variantes: [],
     ofertas: ofertas.map(o => ofertaPanelARuntime(o, imagenDeProducto)),
     productos_incluidos: item.productos_incluidos || null,
+    combo_productos: item.tipo === 'combo' ? (item.productos_combo || []).map(p => Number(p.id)) : [],
+    ...contenidoFicha({ ...item, precio, precio_antes: precioAntes }),
     url: '#',
   };
 }
@@ -231,6 +291,12 @@ function tiendaRuntime(data) {
   return {
     nombre: data?.tienda?.nombre || data?.titulo || '',
     logo: media(data?.logo_imagen || data?.tienda?.logo_imagen),
+    // Branding de Mi Tienda → variables --tienda-* (construirDocumentoCodigo).
+    colores: data?.tienda?.colores || {
+      primario: data?.tema?.primario || null,
+      secundario: data?.tema?.secundario || null,
+      fondo: null,
+    },
     whatsapp: c.whatsapp || t.whatsapp || data?.contacto_whatsapp || '',
     telefono: c.telefono || t.telefono || '',
     email: c.email || t.email || '',
@@ -239,6 +305,8 @@ function tiendaRuntime(data) {
     instagram: c.instagram || t.instagram || '',
     facebook: c.facebook || t.facebook || '',
     tiktok: c.tiktok || t.tiktok || '',
+    youtube: c.youtube || t.youtube || '',
+    twitter: c.twitter || t.twitter || '',
   };
 }
 
@@ -253,7 +321,7 @@ export function datosRuntimePublico(data, slug, productoPublico) {
   return {
     vista: producto ? 'producto' : 'inicio',
     tienda: tiendaRuntime(data),
-    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '' } : null,
+    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {} } : null,
     // paginado: la respuesta trae solo la primera página; el resto lo pide
     // el runtime (ver onCatalogo en LandingCodigoPublica).
     catalogo: {
@@ -274,7 +342,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
   ofertas
-    .filter(o => ['order_bump', 'upsell'].includes(o.estrategia) && ofertaCruzadaVisible(o, venta))
+    .filter(o => o.estrategia === 'normal' || (['order_bump', 'upsell'].includes(o.estrategia) && ofertaCruzadaVisible(o, venta)))
     .forEach(o => {
       const k = Number(o.producto_ancla_id);
       porProducto.set(k, [...(porProducto.get(k) || []), o]);
@@ -290,6 +358,11 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     tienda: {
       nombre: tienda?.nombre || '',
       logo: media(tienda?.logo_imagen),
+      colores: {
+        primario: tienda?.color_primario || null,
+        secundario: tienda?.color_secundario || null,
+        fondo: tienda?.color_fondo || null,
+      },
       whatsapp: tienda?.whatsapp || tienda?.telefono || '',
       telefono: tienda?.telefono || '',
       email: tienda?.email || '',
@@ -298,8 +371,10 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
       instagram: tienda?.instagram || '',
       facebook: tienda?.facebook || '',
       tiktok: tienda?.tiktok || '',
+      youtube: tienda?.youtube || '',
+      twitter: tienda?.twitter || '',
     },
-    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '' } : null,
+    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {} } : null,
     // En el editor está toda la selección en memoria: filtra y ordena el
     // propio runtime, sin servidor.
     catalogo: { total: catalogo.length, por_pagina: 24, paginado: false },

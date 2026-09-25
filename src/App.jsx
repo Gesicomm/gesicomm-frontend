@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPublica from './pages/landing/LandingPublica';
+import TestRenderer from './pages/landing-v2/TestRenderer';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -40,6 +41,7 @@ const PublicCheckoutPlan = lazy(() => import('./pages/planes/PublicCheckoutPlan'
 const ResultadoPago = lazy(() => import('./pages/planes/ResultadoPago'));
 const ParametrosAdmin = lazy(() => import('./pages/admin/Parametros'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const EliminacionDatosAdmin = lazy(() => import('./pages/admin/EliminacionDatos'));
 const AdminPlanes = lazy(() => import('./pages/planes/AdminPlanes'));
 const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
 const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
@@ -83,6 +85,8 @@ const DevFichaTech = lazy(() => import('./pages/landing-simple/templates/tech/__
 const DevFichaBeauty = lazy(() => import('./pages/landing-simple/templates/beauty/__DevFichaBeauty'));
 const DevFichaBasico = lazy(() => import('./pages/landing-simple/templates/basico/__DevFichaBasico'));
 const DevProductoPanel = lazy(() => import('./pages/landing-simple/templates/beauty/__DevProductoPanel'));
+// Lienzo en blanco publicado con catálogo falso (bump, upsell, cross-sell): /dev/lienzo[/:productId].
+const DevLienzo = lazy(() => import('./pages/landing-simple/__DevLienzo'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
@@ -227,6 +231,7 @@ function App() {
             El Data Deletion Callback en cambio es del backend:
             POST https://api.gesicomm.com/api/meta/data-deletion-callback
             ───────────────────────────────────────────────────────── */}
+        <Route path="/test-builder" element={<TestRenderer />} />
         <Route path="/" element={<RaizSegunHostname />} />
         <Route path="/privacy" element={<PaginaPublica><Privacy /></PaginaPublica>} />
         <Route path="/terms" element={<PaginaPublica><Terms /></PaginaPublica>} />
@@ -243,6 +248,8 @@ function App() {
         <Route path="/dev/ficha-beauty" element={<DevFichaBeauty />} />
         <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
+        <Route path="/dev/lienzo" element={<DevLienzo />} />
+        <Route path="/dev/lienzo/:productId" element={<DevLienzo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -436,6 +443,9 @@ function App() {
         } />
         <Route path="/admin/tracking-pagos" element={
           <AdminRoute><DashboardLayout><AuthTracking modo="pagos" /></DashboardLayout></AdminRoute>
+        } />
+        <Route path="/admin/eliminacion-datos" element={
+          <AdminRoute><DashboardLayout><EliminacionDatosAdmin /></DashboardLayout></AdminRoute>
         } />
         {/* Cada tienda tiene 3 páginas fijas (Inicio/Catálogo/Contacto, ver
             landing.service.js asegurarPaginasFijas). /mi-landing garantiza

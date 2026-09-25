@@ -3,11 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
-  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck
+  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, Download, Upload, Grid
 } from 'lucide-react';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CuponesModal from './CuponesModal';
+import ImportarPreciosModal from './ImportarPreciosModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
 import { verificarSesion } from '../../utils/auth';
@@ -17,10 +18,11 @@ import './vitrina.css';
 
 /* ─── Constantes ─────────────────────────────────────────────────────── */
 const FILTROS = [
-  { valor: 'todos',    label: 'Todos' },
-  { valor: 'producto', label: 'Productos' },
-  { valor: 'combo',    label: 'Combos' },
+  { valor: 'producto', label: 'Productos Gesicom' },
   { valor: 'mios',     label: 'Mis productos' },
+  { valor: 'combo',    label: 'Combos Gesicom' },
+  { valor: 'mis-combos', label: 'Mis combos' },
+  { valor: 'todos',    label: 'Todos' },
 ];
 
 const ORDEN_OPTIONS = [
@@ -403,12 +405,44 @@ export default function VitrinaGrid() {
     }
   }
 
+  const [exportando, setExportando] = useState(false);
+  const [errorExportar, setErrorExportar] = useState(null);
+  const [importarAbierto, setImportarAbierto] = useState(false);
+
+  async function exportarExcel() {
+    setExportando(true);
+    setErrorExportar(null);
+    try {
+      const blob = await vitrinaService.exportarPreciosExcel();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mi-catalogo-precios_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      // Con responseType 'blob' el JSON de error también llega como Blob.
+      let mensaje = 'No se pudo exportar el catálogo.';
+      try {
+        const data = err.response?.data;
+        if (data instanceof Blob) mensaje = JSON.parse(await data.text()).message || mensaje;
+      } catch { /* respuesta no-JSON: queda el mensaje genérico */ }
+      setErrorExportar(mensaje);
+    } finally {
+      setExportando(false);
+    }
+  }
+
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
     try {
-      const solamenteMios = filtro === 'mios';
-      const tipoQuery = filtro === 'mios' ? 'todos' : filtro;
+      const solamenteMios = filtro === 'mios' || filtro === 'mis-combos';
+      let tipoQuery = filtro;
+      if (filtro === 'mios') tipoQuery = 'producto';
+      if (filtro === 'mis-combos') tipoQuery = 'combo';
 
       const data = await vitrinaService.catalogoPaginado({
         page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: tipoQuery, solamenteMios
@@ -467,23 +501,31 @@ export default function VitrinaGrid() {
           </div>
         </div>
 
-        <div className="vit-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => navigate('/combos')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
-          >
-            <Layers size={16} /> Mis combos
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => armarCombo([])}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
-          >
-            <Layers size={16} /> Armar combo
-          </button>
+        <div className="vit-header-actions" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
+          {!enOnboarding && (
+            <>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={exportarExcel}
+                disabled={exportando}
+                title="Descargar todo el catálogo con sus precios en Excel"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+              >
+                {exportando ? <Loader size={16} className="spin-icon" /> : <Download size={16} />}
+                {exportando ? 'Exportando…' : 'Exportar Excel'}
+              </button>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setImportarAbierto(true)}
+                title="Actualizar precios de venta en masa desde el Excel exportado"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+              >
+                <Upload size={16} /> Importar precios
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="btn-secondary"
@@ -499,6 +541,14 @@ export default function VitrinaGrid() {
             style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
           >
             <Plus size={16} /> Agregar Mis Productos
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => armarCombo([])}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Layers size={16} /> Armar mi combo
           </button>
         </div>
       </div>
@@ -532,6 +582,12 @@ export default function VitrinaGrid() {
         </div>
       )}
 
+      {errorExportar && (
+        <div className="vit-inline-error" role="alert">
+          <AlertCircle size={16} /> {errorExportar}
+        </div>
+      )}
+
       {errorGenerarLanding && (
         <div className="vit-inline-error" role="alert">
           <AlertCircle size={16} /> {errorGenerarLanding}
@@ -560,7 +616,11 @@ export default function VitrinaGrid() {
               className={`vit-filter-btn ${filtro === f.valor ? 'active' : ''}`}
               onClick={() => setFiltro(f.valor)}
             >
+              {f.valor === 'producto' && <Package size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.valor === 'mios' && <UserCheck size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+              {f.valor === 'combo' && <Box size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+              {f.valor === 'mis-combos' && <Layers size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+              {f.valor === 'todos' && <Grid size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.label}
             </button>
           ))}
@@ -629,6 +689,8 @@ export default function VitrinaGrid() {
               ? `Sin resultados para "${busqueda}"`
               : filtro === 'mios'
                 ? 'No tenés productos cargados por tu cuenta.'
+              : filtro === 'mis-combos'
+                ? 'Todavía no armaste ningún combo.'
                 : filtro === 'combo'
                   ? 'Todavía no hay combos disponibles.'
                   : filtro === 'producto'
@@ -682,6 +744,12 @@ export default function VitrinaGrid() {
         producto={productoAbastecer}
         open={!!productoAbastecer}
         onClose={() => setProductoAbastecer(null)}
+      />
+
+      <ImportarPreciosModal
+        abierto={importarAbierto}
+        onCerrar={() => setImportarAbierto(false)}
+        onAplicado={() => cargar()}
       />
 
       <CuponesModal

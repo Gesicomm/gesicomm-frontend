@@ -40,6 +40,7 @@
  *   data-gesicomm-cantidad-input   input numérico de cantidad en la ficha
  *   data-gesicomm-total            total en vivo de la ficha (producto × cantidad + bumps marcados)
  *   data-gesicomm-whatsapp[="texto"] abre el WhatsApp de la tienda
+ *   data-gesicomm-redes            links a las redes de la tienda (Mi Tienda); se oculta sin ninguna
  *   data-gesicomm-evento="Nombre"  registra un evento de tracking propio
  *   <form data-gesicomm-form="contacto"> consulta → WhatsApp + evento Lead
  *   data-gesicomm-link="contacto|catalogo|politica-privacidad|politica-reembolso|
@@ -180,16 +181,94 @@ export function runtimeGesicomm() {
   // order bumps marcados. Lo muestran los elementos data-gesicomm-total (ej.
   // dentro del botón: "Comprar ahora · Gs 160.000"), así marcar la oferta
   // da una confirmación inmediata de que se sumó.
+  // ─── Paquetes por cantidad ("Elegí tu oferta") ─────────────────────
+  // Cuando la ficha tiene la lista "paquetes", elegir el paquete ES elegir
+  // la cantidad: 1 unidad / Pack x2 / Pack x3, una sola decisión y un solo
+  // botón. paqueteElegido: null = 1 unidad; si no, el id de la oferta.
+  var paqueteElegido;
+  function paquetesDelProducto() {
+    return (productoActual && productoActual.ofertas || []).filter(function (o) { return o.estrategia === 'normal'; });
+  }
+  function hayPaquetes() {
+    return paquetesDelProducto().length > 0 && !!document.querySelector('[data-gesicomm-lista="paquetes"]');
+  }
+  function opcionesDePaquete() {
+    if (!productoActual) return [];
+    var unidad = Number(precioDe(productoActual, varianteElegida)) || 0;
+    var paquetes = paquetesDelProducto().slice().sort(function (a, b) { return (Number(a.unidades) || 99) - (Number(b.unidades) || 99); });
+    // Etiquetas y paquete destacado: los elige el comercio en Configurar
+    // venta (venta.paquetes). Sin nada configurado, solo "Mayor ahorro"
+    // (se calcula); un "Más elegido" nunca se inventa.
+    var conf = (datos.venta && datos.venta.paquetes) || {};
+    var imagen = productoActual.imagen || '';
+    var opciones = [{ id: 'unidad', titulo: '1 unidad', unidades: 1, unidades_texto: 'x1', imagen: imagen, precio_efectivo: unidad, precio_antes: null, por_unidad: null, ahorro: 0, ahorro_pct: '' }];
+    var hayEtiquetas = false;
+    var destacado = null;
+    paquetes.forEach(function (o) {
+      var u = Number(o.unidades) || 0;
+      var precio = Number(o.precio_efectivo) || 0;
+      var sueltas = u > 1 ? u * unidad : 0;
+      var ahorro = sueltas > precio ? sueltas - precio : 0;
+      var c = conf[o.id] || conf[String(o.id)] || {};
+      if (c.etiqueta) hayEtiquetas = true;
+      var op = {
+        id: String(o.id),
+        titulo: u > 1 ? 'Pack x' + u : (o.nombre || 'Paquete'),
+        unidades: u || null,
+        unidades_texto: u > 1 ? 'x' + u : '',
+        imagen: o.imagen || imagen,
+        precio_efectivo: precio,
+        precio_antes: ahorro ? sueltas : null,
+        por_unidad: u > 1 ? Math.round(precio / u) : null,
+        ahorro: ahorro,
+        ahorro_pct: ahorro ? Math.round((ahorro / sueltas) * 100) + '% OFF' : '',
+        etiqueta: c.etiqueta || '',
+        destacado: c.destacado === true,
+        oferta: o,
+      };
+      if (op.destacado && !destacado) destacado = op;
+      opciones.push(op);
+    });
+    if (!hayEtiquetas && opciones.length > 2) {
+      var mejor = null;
+      opciones.forEach(function (op) { if (op.ahorro > 0 && (!mejor || op.ahorro > mejor.ahorro)) mejor = op; });
+      if (mejor) mejor.etiqueta = 'Mayor ahorro';
+    }
+    if (paqueteElegido === undefined) {
+      // Arranca en el destacado; si no hay, en el primer paquete.
+      paqueteElegido = destacado ? destacado.id : (opciones[1] ? opciones[1].id : null);
+    }
+    return opciones;
+  }
+  function paqueteActual() {
+    if (!hayPaquetes() || !paqueteElegido || paqueteElegido === 'unidad') return null;
+    var p = null;
+    paquetesDelProducto().forEach(function (o) { if (String(o.id) === String(paqueteElegido)) p = o; });
+    return p;
+  }
+
   function pintarTotal() {
     var destinos = document.querySelectorAll('[data-gesicomm-total]');
     if (!destinos.length || !productoActual) return;
     var input = document.querySelector('[data-gesicomm-cantidad-input]');
-    var n = input ? parseInt(input.value, 10) : 1;
-    var total = (Number(precioDe(productoActual, varianteElegida)) || 0) * (n > 0 ? Math.min(n, 99) : 1);
+    var n = input && !hayPaquetes() ? parseInt(input.value, 10) : 1;
+    var paquete = paqueteActual();
+    var total = paquete
+      ? (Number(paquete.precio_efectivo) || 0)
+      : (Number(precioDe(productoActual, varianteElegida)) || 0) * (n > 0 ? Math.min(n, 99) : 1);
     (productoActual.ofertas || []).forEach(function (o) {
       if (bumpsElegidos[o.id]) total += Number(o.precio_efectivo) || 0;
     });
     for (var i = 0; i < destinos.length; i++) destinos[i].textContent = formatoPrecio(total);
+    // El texto del botón nombra lo que se compra: "Comprar Pack x2".
+    var ctas = document.querySelectorAll('[data-gesicomm-cta]');
+    for (var j = 0; j < ctas.length; j++) {
+      if (!ctas[j].hasAttribute('data-gesicomm-cta-original')) ctas[j].setAttribute('data-gesicomm-cta-original', ctas[j].textContent);
+      var original = ctas[j].getAttribute('data-gesicomm-cta-original');
+      var titulo = null;
+      if (paquete) opcionesDePaquete().forEach(function (op) { if (String(op.id) === String(paquete.id)) titulo = op.titulo; });
+      ctas[j].textContent = titulo ? 'Comprar ' + titulo : original;
+    }
   }
 
   function aplicarBind(el, item, extra) {
@@ -199,8 +278,18 @@ export function runtimeGesicomm() {
     switch (campo) {
       case 'precio': valor = formatoPrecio(item.precio_efectivo !== undefined ? item.precio_efectivo : precioDe(item, variante)); break;
       case 'precio_antes': valor = formatoPrecio(item.precio_antes || item.precio_normal); break;
+      case 'precio_separado': valor = formatoPrecio(item.precio_separado); break;
+      case 'por_unidad': valor = Number(item.por_unidad) > 0 ? formatoPrecio(item.por_unidad) + ' c/u' : ''; break;
       case 'descuento': valor = Number(item.descuento_pct) > 0 ? '-' + item.descuento_pct + '%' : ''; break;
       case 'ahorro': valor = Number(item.ahorro) > 0 ? 'Ahorrás ' + formatoPrecio(item.ahorro) : ''; break;
+      // Cómo se ve más grande el mismo ahorro ("regla del 100", J. Berger):
+      // en productos baratos el %, en caros el monto. Umbral ≈ USD 100.
+      case 'ahorro_texto':
+        valor = !(Number(item.ahorro) > 0) ? ''
+          : (Number(item.precio_antes || 0) < 750000 && Number(item.descuento_pct) > 0
+            ? 'Ahorrás ' + item.descuento_pct + '%'
+            : 'Ahorrás ' + formatoPrecio(item.ahorro));
+        break;
       case 'stock': valor = item.stock === null || item.stock === undefined ? '' : String(item.stock); break;
       case 'incluye': valor = Array.isArray(item.productos_incluidos) ? item.productos_incluidos.join(', ') : ''; break;
       case 'imagen': valor = item.imagen || item.url_imagen || ''; break;
@@ -243,12 +332,22 @@ export function runtimeGesicomm() {
   }
 
   // ─── Listas ───────────────────────────────────────────────────────────
+  var LISTAS_DE_DATOS = { beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1 };
+  var LISTA_PAQUETES = 'paquetes';
+
   function fuenteDeLista(nombre, el) {
     var base;
     switch (nombre) {
       case 'catalogo': return catalogoVista.items;
       case 'productos': base = productos; break;
       case 'combos': base = productos.filter(function (p) { return p.tipo === 'combo'; }); break;
+      // (solo ficha) los combos que traen el producto que se está viendo.
+      case 'combos_producto':
+        base = productoActual ? productos.filter(function (p) {
+          return p.tipo === 'combo' && Array.isArray(p.combo_productos)
+            && p.combo_productos.indexOf(Number(productoActual.referencia_id)) !== -1;
+        }) : [];
+        break;
       case 'solo_productos': base = productos.filter(function (p) { return p.tipo === 'producto'; }); break;
       case 'recomendados': base = datos.recomendados || []; break;
       case 'ofertas': base = productoActual ? (productoActual.ofertas || []) : []; break;
@@ -262,11 +361,19 @@ export function runtimeGesicomm() {
         base = (productoActual ? (productoActual.ofertas || []) : []).filter(function (o) { return o.estrategia === estrategia; });
         break;
       case 'variantes': base = productoActual ? (productoActual.variantes || []) : []; break;
+      // (solo ficha) contenido del producto cargado en Productos → Vista del producto.
+      case 'beneficios': base = productoActual ? (productoActual.beneficios || []) : []; break;
+      case 'confianza': base = productoActual ? (productoActual.confianza || []) : []; break;
+      case 'preguntas': base = productoActual ? (productoActual.preguntas || []) : []; break;
+      // (solo ficha de un combo) cada producto que trae, con su precio suelto.
+      case 'combo_incluye': base = productoActual ? (productoActual.combo_incluye || []) : []; break;
+      // (solo ficha) 1 unidad + los paquetes: el selector de cantidad/precio.
+      case 'paquetes': base = paquetesDelProducto().length ? opcionesDePaquete() : []; break;
       case 'imagenes': base = productoActual ? (productoActual.imagenes_url || []) : []; break;
       default: base = [];
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');
-    if (categoria && nombre.indexOf('ofertas') !== 0 && nombre !== 'variantes' && nombre !== 'imagenes') {
+    if (categoria && nombre.indexOf('ofertas') !== 0 && !LISTAS_DE_DATOS[nombre] && nombre !== 'variantes' && nombre !== 'imagenes') {
       var cat = categoria.toLowerCase();
       base = base.filter(function (p) { return String(p.categoria || '').toLowerCase() === cat; });
     }
@@ -327,6 +434,19 @@ export function runtimeGesicomm() {
           if (elegida) h.classList.add('is-selected');
           h.setAttribute('aria-pressed', elegida ? 'true' : 'false');
           bindDentro(h, { nombre: elemento.nombre, precio: elemento.precio_efectivo, stock: elemento.stock });
+        } else if (nombre === LISTA_PAQUETES) {
+          var elegido = String(elemento.id) === String(paqueteElegido || 'unidad');
+          h.setAttribute('data-gesicomm-paquete', elemento.id);
+          h.setAttribute('role', 'radio');
+          h.setAttribute('aria-checked', elegido ? 'true' : 'false');
+          h.classList.toggle('is-selected', elegido);
+          h.classList.toggle('is-destacado', !!elemento.destacado);
+          bindDentro(h, elemento);
+        } else if (LISTAS_DE_DATOS[nombre]) {
+          // No son productos: no se compran ni se abren (salvo un producto
+          // del combo que esté en la landing, que abre su ficha).
+          if (elemento.content_id) h.setAttribute('data-gesicomm-item', elemento.content_id);
+          bindDentro(h, elemento);
         } else if (nombre === 'imagenes') {
           bindDentro(h, { imagen: elemento, nombre: (productoActual && productoActual.nombre) || '' });
           h.setAttribute('data-gesicomm-imagen-idx', String(idx));
@@ -344,6 +464,21 @@ export function runtimeGesicomm() {
   function renderizar() {
     var listas = document.querySelectorAll('[data-gesicomm-lista]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
+    // data-gesicomm-si="campo": el bloque se ve solo si el producto de la
+    // ficha tiene ese dato (ej. "Por separado: …" solo en combos).
+    if (productoActual) productoActual.tiene_paquetes = paquetesDelProducto().length > 0 && !!document.querySelector('[data-gesicomm-lista="paquetes"]');
+    var inversos = document.querySelectorAll('[data-gesicomm-sin]');
+    for (var r = 0; r < inversos.length; r++) {
+      var datoInv = productoActual ? productoActual[inversos[r].getAttribute('data-gesicomm-sin')] : null;
+      var hayInv = Array.isArray(datoInv) ? datoInv.length > 0 : !!datoInv;
+      inversos[r].style.display = hayInv ? 'none' : '';
+    }
+    var condicionales = document.querySelectorAll('[data-gesicomm-si]');
+    for (var q = 0; q < condicionales.length; q++) {
+      var dato = productoActual ? productoActual[condicionales[q].getAttribute('data-gesicomm-si')] : null;
+      var hayDato = Array.isArray(dato) ? dato.length > 0 : (dato !== null && dato !== undefined && dato !== '' && dato !== 0 && dato !== false);
+      condicionales[q].style.display = hayDato ? '' : 'none';
+    }
     // Binds sueltos (fuera de listas) = el producto de la ficha, si lo hay.
     if (productoActual) {
       var sueltos = document.querySelectorAll('[data-gesicomm-bind]');
@@ -366,6 +501,52 @@ export function runtimeGesicomm() {
       } else {
         marcas[k].style.display = 'none';
       }
+    }
+    pintarRedes();
+  }
+
+  // ─── Redes de la tienda (data-gesicomm-redes) ─────────────────────────
+  // Salen de Mi Tienda / onboarding: la landing no las vuelve a pedir. Un
+  // link por red cargada, con la clase "gc-red gc-red--instagram" para que
+  // el diseño los estile; sin ninguna, el contenedor se oculta.
+  var REDES = [
+    ['whatsapp', 'WhatsApp', function (v) { var n = v.replace(/\D/g, '').replace(/^0/, '595'); return n ? 'https://wa.me/' + n : ''; }],
+    ['instagram', 'Instagram', function (v) { return 'https://instagram.com/' + v.replace(/^@/, ''); }],
+    ['facebook', 'Facebook', function (v) { return 'https://facebook.com/' + v.replace(/^@/, ''); }],
+    ['tiktok', 'TikTok', function (v) { return 'https://tiktok.com/@' + v.replace(/^@/, ''); }],
+    ['youtube', 'YouTube', function (v) { return 'https://youtube.com/@' + v.replace(/^@/, ''); }],
+    ['twitter', 'X', function (v) { return 'https://x.com/' + v.replace(/^@/, ''); }],
+  ];
+  function urlRed(red, valor) {
+    var v = String(valor || '').trim();
+    if (!v) return '';
+    if (/^https:\/\/[^\s"'<>]+$/i.test(v)) return v;
+    // WhatsApp se reduce a dígitos. Un usuario (@tienda) nunca lleva ":" ni
+    // espacios: lo que los tenga y no sea https se descarta.
+    if (red[0] !== 'whatsapp' && /[:\s"'<>]/.test(v)) return '';
+    return red[2](v);
+  }
+  function pintarRedes() {
+    var contenedores = document.querySelectorAll('[data-gesicomm-redes]');
+    if (!contenedores.length) return;
+    var tienda = datos.tienda || {};
+    for (var i = 0; i < contenedores.length; i++) {
+      var c = contenedores[i];
+      while (c.firstChild) c.removeChild(c.firstChild);
+      var hay = 0;
+      for (var r = 0; r < REDES.length; r++) {
+        var href = urlRed(REDES[r], tienda[REDES[r][0]]);
+        if (!href) continue;
+        var a = document.createElement('a');
+        a.className = 'gc-red gc-red--' + REDES[r][0];
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = REDES[r][1];
+        c.appendChild(a);
+        hay++;
+      }
+      c.style.display = hay ? '' : 'none';
     }
   }
 
@@ -582,7 +763,8 @@ export function runtimeGesicomm() {
     // tiene_variantes: los productos de una página pedida al servidor vienen
     // livianos, sin la lista de variantes — solo el aviso de que existen.
     var tieneVariantes = (item.variantes && item.variantes.length > 0) || !!item.tiene_variantes;
-    if (tieneVariantes && !variante && !opciones.oferta) {
+    // Un paquete elegido en el selector también necesita talle/color.
+    if (tieneVariantes && !variante && (!opciones.oferta || opciones.conBumps)) {
       // Desde una grilla no hay dónde elegir talle/color: se lleva a la
       // ficha, igual que el catálogo de los templates.
       if (!productoActual || productoActual.id !== item.id) { verProducto(item); return; }
@@ -594,7 +776,7 @@ export function runtimeGesicomm() {
     // Order bumps marcados en esta ficha: van al carrito junto con el
     // producto, antes de abrirlo, así el carrito ya los muestra.
     var bumps = [];
-    if (!opciones.oferta && productoActual && item.id === productoActual.id) {
+    if ((!opciones.oferta || opciones.conBumps) && productoActual && item.id === productoActual.id) {
       (productoActual.ofertas || []).forEach(function (o) { if (bumpsElegidos[o.id]) bumps.push(o); });
     }
     bumps.forEach(function (o) {
@@ -701,6 +883,17 @@ export function runtimeGesicomm() {
       comprar(productoActual, { oferta: oferta, variante: varianteElegida });
       return;
     }
+    if ((el = t.closest('[data-gesicomm-paquete]'))) {
+      e.preventDefault();
+      paqueteElegido = el.getAttribute('data-gesicomm-paquete');
+      var listaPaq = document.querySelectorAll('[data-gesicomm-lista="paquetes"]');
+      for (var lp = 0; lp < listaPaq.length; lp++) renderizarLista(listaPaq[lp]);
+      pintarTotal();
+      var elegidoPaq = paqueteActual();
+      // Para medir qué paquete se elige y cuál termina en compra.
+      enviar({ tipo: 'gesicomm:evento', nombre: 'PaqueteElegido', datos: { oferta: elegidoPaq ? elegidoPaq.id : null, unidades: elegidoPaq ? elegidoPaq.unidades || null : 1 } });
+      return;
+    }
     if ((el = t.closest('[data-gesicomm-variante-id]'))) {
       e.preventDefault();
       if (el.hasAttribute('data-agotado')) { toast('Esa opción no tiene stock.'); return; }
@@ -709,12 +902,20 @@ export function runtimeGesicomm() {
     }
     if ((el = t.closest('[data-gesicomm-comprar]'))) {
       e.preventDefault();
-      comprar(itemDeContexto(el, el.getAttribute('data-gesicomm-comprar')), { cantidad: cantidadElegida(el), variante: varianteElegida });
+      var itemComprar = itemDeContexto(el, el.getAttribute('data-gesicomm-comprar'));
+      var paqC = itemComprar === productoActual ? paqueteActual() : null;
+      comprar(itemComprar, paqC
+        ? { oferta: paqC, variante: varianteElegida, conBumps: true }
+        : { cantidad: hayPaquetes() && itemComprar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida });
       return;
     }
     if ((el = t.closest('[data-gesicomm-agregar]'))) {
       e.preventDefault();
-      comprar(itemDeContexto(el, el.getAttribute('data-gesicomm-agregar')), { cantidad: cantidadElegida(el), variante: varianteElegida, abrir: false });
+      var itemAgregar = itemDeContexto(el, el.getAttribute('data-gesicomm-agregar'));
+      var paqA = itemAgregar === productoActual ? paqueteActual() : null;
+      comprar(itemAgregar, paqA
+        ? { oferta: paqA, variante: varianteElegida, conBumps: true, abrir: false }
+        : { cantidad: hayPaquetes() && itemAgregar === productoActual ? 1 : cantidadElegida(el), variante: varianteElegida, abrir: false });
       return;
     }
     if ((el = t.closest('[data-gesicomm-ver]'))) {

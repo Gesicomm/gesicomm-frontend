@@ -51,7 +51,7 @@ describe('prompts por vista', () => {
   it('lleva el contrato, el tipo de venta y los IDs públicos de los productos', () => {
     const p = armarPromptVista('inicio', { tienda: { nombre: 'Mi Tienda' }, venta: { tipo: 'producto_unico' }, productos });
     expect(p).toContain('data-gesicomm-comprar');
-    expect(p).toContain('PRODUCTO ÚNICO');
+    expect(p).toContain('DIRECTO EN UN PRODUCTO');
     expect(p).toContain('ID: air-fryer');
     expect(p).toContain('Gs 145.735');
   });
@@ -59,5 +59,16 @@ describe('prompts por vista', () => {
   it('la ficha no pide la lista de ofertas si las ventas cruzadas están apagadas', () => {
     const p = armarPromptVista('producto', { venta: { cross_sell: { activo: false } }, productos });
     expect(p).toContain('Ofertas desactivadas');
+  });
+});
+
+describe('prompt de una ficha propia', () => {
+  it('es solo de ese producto y lleva sus datos reales', () => {
+    const producto = { id: 8, slug: 'adelfit', tipo: 'producto', nombre: 'AdelFit', propuesta_valor: 'Controlá el apetito', beneficios: [{ titulo: 'Menos ansiedad' }] };
+    const p = armarPromptVista('producto', { tienda: { nombre: 'sommix' }, venta: null, productos: [producto], fichaDe: producto });
+    expect(p).toContain('Esta ficha es SOLO para "AdelFit"');
+    expect(p).toContain('Propuesta de valor: Controlá el apetito');
+    expect(p).toContain('Beneficios: Menos ansiedad');
+    expect(p).toContain('"combo_incluye"');
   });
 });

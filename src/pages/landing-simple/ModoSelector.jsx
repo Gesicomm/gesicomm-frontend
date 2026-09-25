@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader, LayoutTemplate, Code2, ArrowRight } from 'lucide-react';
+import { Loader, LayoutTemplate, Code2, ArrowRight, Wand2 } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import TemplateSelector from './TemplateSelector';
+import AILandingWizard from './AILandingWizard';
 
 /**
  * Primera pantalla de "/landing" cuando el comercio todavía no tiene
@@ -47,6 +48,13 @@ export default function ModoSelector({ onCreada }) {
   if (modo === 'template') {
     return <TemplateSelector onCreada={onCreada} onVolver={() => setModo(null)} />;
   }
+  
+  if (modo === 'ia') {
+    return <AILandingWizard onCreada={(landing) => {
+      if (onCreada) onCreada(landing);
+      else navigate(`/landing/${landing.id}`, { replace: true });
+    }} />;
+  }
 
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto">
@@ -55,7 +63,15 @@ export default function ModoSelector({ onCreada }) {
 
       {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Opcion
+          icono={Wand2}
+          titulo="Generar con Inteligencia Artificial"
+          descripcion="Le contás a la IA qué querés vender y ella arma la landing, escribe los textos persuasivos y elige el diseño ideal."
+          puntos={['Landing lista en segundos', 'Textos persuasivos orientados a ventas', 'Podés modificarla en el editor después']}
+          accion="Usar IA Mágica"
+          onClick={() => setModo('ia')}
+        />
         <Opcion
           icono={LayoutTemplate}
           titulo="Con un template"

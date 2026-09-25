@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity, X } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
@@ -31,13 +31,46 @@ const ESTRATEGIAS = [
  * pueden tener un precio promocional propio (ver Oferta.js en el backend):
  * el resto se vende siempre a su precio normal.
  */
-const ESTRATEGIAS_CHECKOUT = ['order_bump'];
+// Igual que el backend (oferta.service.js y pricing.service.js): order bump
+// y upsell pueden tener precio con descuento. Acá estaba solo order_bump, así
+// que a un upsell no había forma de ponerle el precio de oferta.
+const ESTRATEGIAS_CHECKOUT = ['order_bump', 'upsell'];
+
+// Tipos visibles para el comercio. Internamente paquete y combo comparten
+// estrategia "normal", pero en UX son decisiones distintas.
+const OPCIONES_TIPO_OFERTA = [
+  { value: 'pack', titulo: 'Paquete', texto: 'Varias unidades del mismo producto.' },
+  { value: 'combo', titulo: 'Combo', texto: 'Productos diferentes vendidos juntos.' },
+  { value: 'order_bump', titulo: 'Order bump', texto: 'Producto complementario antes de terminar la compra.' },
+  { value: 'upsell', titulo: 'Upsell', texto: 'Oferta posterior cuando el producto ya está en el carrito.' },
+];
+
+/** Código interno cuando no lo cargan: legible y con sufijo para no repetirse. */
+function generarCodigoOferta(nombre) {
+  const base = String(nombre || 'OFERTA')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 18) || 'OFERTA';
+  return `${base}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+}
 
 const RESUMEN_OFERTAS = [
   {
-    id: 'normal',
+    id: 'all',
+    titulo: 'Todas',
+    descripcion: 'Todas las ofertas configuradas para este producto.',
+    icon: Tag,
+  },
+  {
+    id: 'pack',
     titulo: 'Paquetes',
     descripcion: 'El mismo producto en más cantidad a precio especial (ej. 2 x 770.000). Se eligen en su ficha.',
+    icon: Layers,
+  },
+  {
+    id: 'combo',
+    titulo: 'Combos',
+    descripcion: 'Productos diferentes vendidos juntos, con precio propio.',
     icon: Layers,
   },
   {
@@ -55,6 +88,25 @@ const RESUMEN_OFERTAS = [
 ];
 
 function fmtPct(n) { return n !== null && n !== undefined ? (Number(n) * 100).toFixed(2) + '%' : '—'; }
+
+function tipoVisibleOferta(oferta) {
+  const estrategia = oferta?.estrategia || 'normal';
+  if (estrategia === 'order_bump' || estrategia === 'upsell') return estrategia;
+  return oferta?.tipo_contenido === 'combo' ? 'combo' : 'pack';
+}
+
+const LABEL_TIPO_VISIBLE = {
+  pack: 'Paquete',
+  combo: 'Combo',
+  order_bump: 'Order bump',
+  upsell: 'Upsell',
+};
+
+function normalizarTipoCreacion(tipo) {
+  if (tipo === 'normal') return 'pack';
+  if (tipo === 'all') return 'pack';
+  return ['pack', 'combo', 'order_bump', 'upsell'].includes(tipo) ? tipo : 'pack';
+}
 
 function emptyForm(productoId) {
   return {
@@ -103,7 +155,12 @@ function BadgeRentabilidad({ status }) {
   return <span className={`combo-badge ${map[status]}`}>{labels[status]}</span>;
 }
 
-export default function OfertasProductoTab({ productoId, productoNombre, productoAnclaPrecioBase = 0, productoAnclaPrecioCosto = 0 }) {
+export default function OfertasProductoTab({
+  productoId, productoNombre, productoAnclaPrecioBase = 0, productoAnclaPrecioCosto = 0,
+  // Si llega un tipo contextual, abre directo el formulario correspondiente
+  // sin volver a pedirle al usuario la misma decisión.
+  crearAlAbrir = null,
+}) {
   const [ofertas, setOfertas] = useState([]);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [comboConfig, setComboConfig] = useState(null);
@@ -114,9 +171,12 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   const [editando, setEditando] = useState(null);
   const [descuentoSimulado, setDescuentoSimulado] = useState(0);
   const [mostrarDetalleEscenarios, setMostrarDetalleEscenarios] = useState(false);
-  const [estrategiaVista, setEstrategiaVista] = useState('normal');
+  const [estrategiaVista, setEstrategiaVista] = useState('all');
   const [form, setForm] = useState(() => emptyForm(productoId));
   const [guardando, setGuardando] = useState(false);
+  // true cuando el precio lo escribió la persona: desde ahí el precio
+  // calculado de los productos elegidos ya no lo pisa.
+  const precioManualRef = useRef(false);
   const [ofertaABorrar, setOfertaABorrar] = useState(null);
   // Variantes reales de cada producto elegido como componente — se traen on
   // demand (no de una vez para todo el catálogo) y se cachean por
@@ -169,32 +229,44 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     }
   }
 
-  function formPorEstrategia(estrategia) {
+  function formPorTipo(tipoOriginal) {
+    const tipo = normalizarTipoCreacion(tipoOriginal);
     const base = emptyForm(productoId);
     // Un order bump/upsell se vende como línea APARTE de la del producto
     // ancla (ver CartDrawer/FunnelCheckout) — el ancla nunca va en su
     // receta de componentes, así que ni siquiera se precarga acá (el
     // backend además la saca sola si de algún modo llegara a mandarse).
-    if (estrategia === 'order_bump' || estrategia === 'upsell') {
-      return { ...base, estrategia, tipo_contenido: 'combo', componentes: [] };
+    if (tipo === 'order_bump' || tipo === 'upsell') {
+      return { ...base, estrategia: tipo, tipo_contenido: 'combo', componentes: [] };
     }
-    // 'combo' (estrategia legacy, ya no se crea desde acá) SÍ reemplaza la
-    // compra entera en una sola línea, así que su receta sigue necesitando
-    // el ancla.
-    if (estrategia === 'combo') {
-      return { ...base, estrategia, tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
+    if (tipo === 'combo') {
+      return { ...base, estrategia: 'normal', tipo_contenido: 'combo', componentes: [{ producto_id: productoId, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
     }
     return { ...base, estrategia: 'normal', tipo_contenido: 'pack' };
   }
 
-  function openCrear(estrategia = estrategiaVista) {
+  const creadoAlAbrir = useRef(false);
+  useEffect(() => {
+    if (loading || !crearAlAbrir || creadoAlAbrir.current) return;
+    creadoAlAbrir.current = true;
+    const tipo = normalizarTipoCreacion(crearAlAbrir);
+    setEstrategiaVista(tipo);
+    openCrear(tipo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, crearAlAbrir]);
+
+  function openCrear(tipo = estrategiaVista) {
+    const tipoNormalizado = normalizarTipoCreacion(tipo);
+    precioManualRef.current = false;
     setEditando(null);
-    setForm(formPorEstrategia(estrategia));
+    setForm(formPorTipo(tipoNormalizado));
     setError(null);
     setOpen(true);
   }
 
   function openEditar(oferta) {
+    // Una oferta existente ya tiene su precio: no se recalcula solo.
+    precioManualRef.current = true;
     setEditando(oferta);
     setForm({
       codigo: oferta.codigo,
@@ -262,21 +334,11 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   // presentación simple del propio producto.
   //   - normal → no-normal: si estaba en "pack", pasa a "combo" y cantidad a 1.
   //   - no-normal → normal: si estaba en "combo", vuelve a "pack" y cantidad a 2.
-  function handleEstrategiaChange(nuevaEstrategia) {
-    setForm(f => {
-      if (nuevaEstrategia !== 'normal' && f.tipo_contenido === 'pack') {
-        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'combo', componentes: componentesCombo(f, nuevaEstrategia) };
-      }
-      if (nuevaEstrategia === 'normal' && f.tipo_contenido === 'combo') {
-        return { ...f, estrategia: nuevaEstrategia, tipo_contenido: 'pack', componentes: [{ producto_id: productoId, cantidad: 2, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
-      }
-      return { ...f, estrategia: nuevaEstrategia };
-    });
+  function handleTipoOfertaChange(tipo) {
+    precioManualRef.current = false;
+    setForm(formPorTipo(tipo));
   }
 
-  function addComponente() {
-    setForm(f => ({ ...f, componentes: [...f.componentes, { producto_id: '', cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] }));
-  }
   function updateComponente(idx, campo, valor) {
     setForm(f => {
       const nuevos = [...f.componentes];
@@ -294,7 +356,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
     setGuardando(true);
     try {
       const payload = {
-        codigo: form.codigo.trim(),
+        codigo: form.codigo.trim() || generarCodigoOferta(form.nombre),
         nombre: form.nombre.trim(),
         tipo_contenido: form.tipo_contenido,
         estrategia: form.estrategia,
@@ -426,7 +488,9 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
 
   const conteosPorEstrategia = useMemo(() => (
     RESUMEN_OFERTAS.reduce((acc, item) => {
-      acc[item.id] = ofertas.filter(oferta => (oferta.estrategia || 'normal') === item.id).length;
+      acc[item.id] = item.id === 'all'
+        ? ofertas.length
+        : ofertas.filter(oferta => tipoVisibleOferta(oferta) === item.id).length;
       return acc;
     }, {})
   ), [ofertas]);
@@ -491,11 +555,30 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       // Se reemplazan las filas vacías que hayan quedado de un "+" previo,
       // para no dejar una fila sin producto colgando debajo.
       const sinVacias = f.componentes.filter(c => c.producto_id);
-      return { ...f, componentes: [...sinVacias, { producto_id: id, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false }] };
+      const componente = { producto_id: id, cantidad: 1, descuento_porcentaje: 0, variante_id: null, permite_elegir_variante: false };
+      return { ...f, componentes: esBumpOUpsell ? [componente] : [...sinVacias, componente] };
     });
   }
 
-  const esPack = form.estrategia === 'normal';
+  const esPack = form.estrategia === 'normal' && form.tipo_contenido === 'pack';
+
+  // Precio de venta de lo que se suma en un order bump / upsell: la base del
+  // precio "sin descuento" de la oferta.
+  const precioComponentes = useMemo(() => {
+    if (!esBumpOUpsell) return 0;
+    return form.componentes
+      .filter(c => c.producto_id && Number(c.producto_id) !== Number(productoId))
+      .reduce((total, c) => {
+        const p = productosDisponibles.find(x => Number(x.id) === Number(c.producto_id));
+        const precio = Number(p?.precio_efectivo ?? p?.precio_base) || 0;
+        return total + precio * (Number(c.cantidad) || 1);
+      }, 0);
+  }, [esBumpOUpsell, form.componentes, productosDisponibles, productoId]);
+
+  useEffect(() => {
+    if (!esBumpOUpsell || precioManualRef.current || !precioComponentes) return;
+    setForm(f => (Number(f.precio) === precioComponentes ? f : { ...f, precio: precioComponentes }));
+  }, [esBumpOUpsell, precioComponentes]);
 
   const productoBase = useMemo(() => {
     const enCatalogo = productosDisponibles.find(x => Number(x.id) === Number(productoId));
@@ -527,7 +610,9 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   }, [productoBase.precio, unidadesPack, form.precio]);
 
   const ofertasVisibles = useMemo(
-    () => ofertas.filter(oferta => (oferta.estrategia || 'normal') === estrategiaVista),
+    () => estrategiaVista === 'all'
+      ? ofertas
+      : ofertas.filter(oferta => tipoVisibleOferta(oferta) === estrategiaVista),
     [ofertas, estrategiaVista]
   );
 
@@ -544,14 +629,13 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
   return (
     <div>
       <div className="form-section-title">
-        <Tag size={14} /> Ofertas comerciales
+        <Tag size={14} /> Ofertas de {productoNombre || 'este producto'}
         <button type="button" className="btn-primary" style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={() => openCrear()}>
           <Plus size={14} /> Nueva oferta
         </button>
       </div>
       <p className="field-hint">
-        El precio individual ya está en la pestaña Precios. Acá se administran presentaciones adicionales:
-        packs por cantidad, combos con otros productos, order bumps y upsells.
+        Estas ofertas aparecen cuando el cliente compra este producto. Acá se crean paquetes, combos, order bumps y upsells sin volver a elegir el producto disparador.
       </p>
 
       <div className="offer-strategy-grid">
@@ -586,7 +670,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
       ) : ofertasVisibles.length === 0 ? (
         <div className="combo-empty">
           <Layers size={24} opacity={0.3} />
-          <p>No hay ofertas en esta estrategia.</p>
+          <p>No hay ofertas en este tipo.</p>
           <button type="button" className="btn-primary" onClick={() => openCrear(estrategiaVista)}>
             <Plus size={14} /> Crear oferta
           </button>
@@ -622,10 +706,7 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                   <span className={`combo-badge ${oferta.activo ? 'activo' : 'borrador'}`}>
                     {oferta.activo ? '● Activo' : '○ Inactivo'}
                   </span>
-                  <span className="combo-badge activo" style={{ textTransform: 'capitalize' }}>{oferta.tipo_contenido}</span>
-                  {oferta.estrategia !== 'normal' && (
-                    <span className="combo-badge borrador" style={{ textTransform: 'capitalize' }}>{oferta.estrategia.replace('_', ' ')}</span>
-                  )}
+                  <span className="combo-badge borrador">{LABEL_TIPO_VISIBLE[tipoVisibleOferta(oferta)] || 'Oferta'}</span>
                 </div>
               </div>
 
@@ -693,10 +774,10 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
             style={{ background: 'var(--color-canvas)', border: '1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)', borderRadius: '1rem', width: '100%', maxWidth: '840px', color: 'var(--color-fg)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ padding: '1.75rem 1.75rem 1rem', flexShrink: 0, borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
-              <div className="modal-header" style={{ margin: 0 }}>
-                <h3 style={{ margin: 0 }}>{editando ? 'Editar oferta' : 'Nueva oferta'}</h3>
-                <button type="button" className="btn-icon" onClick={() => setOpen(false)}><X size={18} /></button>
+            <div style={{ padding: '1.25rem 1.5rem 1rem', flexShrink: 0, borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
+              <div className="oferta-modal-header">
+                <h3>{editando ? 'Editar oferta' : 'Nueva oferta'}</h3>
+                <button type="button" className="oferta-modal-close" aria-label="Cerrar" onClick={() => setOpen(false)}><X size={18} /></button>
               </div>
             </div>
             
@@ -708,145 +789,41 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               </div>
             )}
 
-            <div className="form-grid-2">
-              <div className="form-group">
-                <label>{esPack ? 'Nombre' : 'Título en el checkout'}</label>
-                <input
-                  value={form.nombre}
-                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                  placeholder={esPack ? 'Ej. Pack x3' : 'Ej: Sí, quiero sumar mi cargador con 20% OFF'}
-                  required
-                />
-                {form.estrategia === 'upsell' && (
-                  <small className="hint">
-                    Es el título grande del popup de mejora. Escribilo como un llamado a la acción — funciona mejor en primera persona y con el beneficio incluido.
-                  </small>
-                )}
-                {form.estrategia === 'order_bump' && (
-                  <small className="hint">
-                    Se usa como respaldo si dejás la Descripción de abajo vacía — en el checkout, la Descripción es la que se muestra como título grande.
-                  </small>
-                )}
-              </div>
-              <div className="form-group">
-                <label>Código interno <span className="hint">(estable, no depende del nombre)</span></label>
-                <input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value.toUpperCase() }))} placeholder="Ej. EAR-X3" required />
-              </div>
-              {/* En un Pack no se eligen: el tipo es "pack" por definición y la
-                  estrategia la fija la pestaña desde la que se está creando. */}
-              {!esPack && (
-                <>
-                  <div className="form-group">
-                    <label>Tipo de contenido</label>
-                    <select value={form.tipo_contenido} onChange={e => handleTipoContenidoChange(e.target.value)}>
-                      {TIPOS_CONTENIDO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Estrategia de venta</label>
-                    <select value={form.estrategia} onChange={e => handleEstrategiaChange(e.target.value)}>
-                      {ESTRATEGIAS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                    </select>
-                  </div>
-                </>
-              )}
-              <div className="form-group">
-                <label>{esPack ? 'Precio del paquete' : 'Precio normal'}</label>
-                <CurrencyInput value={form.precio} onChange={val => setForm(f => ({ ...f, precio: val }))} />
-                {esPack && (
-                  <p className="field-hint">
-                    Lo definís vos. No modifica el precio del producto ({formatMoney(productoBase.precio)}), que sigue vendiéndose igual por separado.
-                  </p>
-                )}
-                {(form.estrategia === 'order_bump' || form.estrategia === 'upsell') && (
-                  <p className="field-hint">
-                    Es el precio ADICIONAL que se cobra por sumar esto — nunca el total de la compra. "{productoNombre}" ya se cobra
-                    aparte, en su propia línea, con su propio precio.
-                  </p>
-                )}
-                {precioRecomendado !== null && Number(form.precio) !== precioRecomendado && (
-                  <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                    Recomendado según catálogo y descuentos: <strong>{formatMoney(precioRecomendado)}</strong>
-                    <button type="button" className="btn-ghost" style={{ padding: '0.1rem 0.5rem', fontSize: '0.72rem' }} onClick={() => setForm(f => ({ ...f, precio: precioRecomendado }))}>
-                      Usar
-                    </button>
-                  </p>
-                )}
-              </div>
-              {ESTRATEGIAS_CHECKOUT.includes(form.estrategia) && (
-                <div className="form-group">
-                  <label>Precio promocional en checkout <span className="hint">(opcional)</span></label>
-                  <CurrencyInput value={form.precio_order_bump} onChange={val => setForm(f => ({ ...f, precio_order_bump: val }))} />
-                  <p className="field-hint">
-                    Se cobra solo si el cliente acepta la oferta dentro del checkout. Vacío = se cobra el precio normal.
-                    El precio normal nunca se toca: es el que usa la reportería para medir cuánto costó el descuento.
-                  </p>
-                </div>
-              )}
-              {usuarioActual?.rol === 'administrador' && (
-                <div className="form-group">
-                  <label>Precio mínimo <span className="hint">(Límite de rentabilidad)</span></label>
-                  <CurrencyInput value={form.precio_minimo} onChange={val => setForm(f => ({ ...f, precio_minimo: val }))} />
-                </div>
-              )}
-              <div className="form-group full">
-                <label>Descripción (opcional)</label>
-                <input
-                  value={form.descripcion}
-                  onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
-                  placeholder={esPack ? 'Ej: Llevá 2 y pagá menos' : 'Ej: Envío incluido — solo por hoy'}
-                />
-                {form.estrategia === 'upsell' && (
-                  <small className="hint">
-                    Va debajo del título, en letra más chica — una línea corta de beneficio o urgencia (envío gratis, stock limitado, garantía). Opcional.
-                  </small>
-                )}
-                {form.estrategia === 'order_bump' && (
-                  <small className="hint">
-                    En el checkout, esto se muestra como el título grande de la casilla — escribilo como llamado a la acción. Si la dejás vacía, se usa el Título de arriba.
-                  </small>
-                )}
-              </div>
-              {/* Antes acá se pedía pegar una URL a mano, que en la práctica
-                  nadie tenía. Ahora se sube el archivo, igual que las fotos
-                  del producto, y es el mismo componente que usa el armador de
-                  landing — la foto es de la Oferta, así que se carga una vez
-                  y se ve en los dos lados. */}
-              <div className="form-group full">
-                <label>Imagen de la oferta <span className="hint">(opcional)</span></label>
-                <OfertaImagenPicker
-                  ofertaId={editando?.id || null}
-                  imagenUrl={form.imagen_url || null}
-                  archivo={form.imagen_archivo}
-                  respaldoUrl={productoBase.imagen}
-                  onChange={({ imagen_url, archivo }) => setForm(f => ({ ...f, imagen_url: imagen_url || '', imagen_archivo: archivo }))}
-                />
-              </div>
-              {/* Vigencia. Vacío = sin límite por ese lado; fuera de la ventana
-                  la oferta deja de mostrarse y de cobrarse sola, sin tener que
-                  acordarse de desactivarla a mano. */}
-              <div className="form-group">
-                <label>Desde <span className="hint">(opcional)</span></label>
-                <input type="date" value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} />
-              </div>
-              <div className="form-group">
-                <label>Hasta <span className="hint">(opcional)</span></label>
-                <input type="date" value={form.fecha_fin} onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))} />
-                {form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio && (
-                  <p className="field-hint" style={{ color: '#ef4444' }}>La fecha de fin no puede ser anterior a la de inicio.</p>
-                )}
+            {/* 1. Qué tipo de oferta — si se abrió desde una acción contextual ya viene elegido. */}
+            <div className="oferta-paso">
+              <div className="oferta-paso-titulo">¿Qué querés crear?</div>
+              <div className="oferta-tipos" role="radiogroup" aria-label="Tipo de oferta">
+                {OPCIONES_TIPO_OFERTA.map(op => {
+                  const activo = tipoVisibleOferta(form) === op.value;
+                  return (
+                  <button
+                    key={op.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={activo}
+                    className={`oferta-tipo ${activo ? 'active' : ''}`}
+                    onClick={() => handleTipoOfertaChange(op.value)}
+                  >
+                    <strong>{op.titulo}</strong>
+                    <small>{op.texto}</small>
+                  </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="form-section-title" style={{ marginTop: '1.25rem' }}>
-              {esPack ? 'Producto del paquete' : 'Componentes (receta de stock)'}
-              {!esPack && form.tipo_contenido === 'combo' && (
-                <button type="button" className="btn-ghost" style={{ marginLeft: 'auto' }} onClick={addComponente}>
-                  <Plus size={14} /> Agregar producto
-                </button>
+            {/* 2. Qué se suma. Una sola forma de elegir: "Elegir productos". */}
+            <div className="oferta-paso">
+              <div className="oferta-paso-titulo">
+                {esPack ? 'Producto del paquete' : form.tipo_contenido === 'pack' ? '¿Cuántas unidades?' : '¿Qué se suma a la compra?'}
+              </div>
+              {!esPack && form.tipo_contenido !== 'pack' && (
+                <p className="field-hint" style={{ marginTop: 0 }}>
+                  {esBumpOUpsell
+                    ? `Elegí un solo producto ofrecido cuando alguien compra "${productoNombre}". Si querés vender varios juntos, creá un combo.`
+                    : 'Los productos que forman el combo, además de este.'}
+                </p>
               )}
-            </div>
-
             {esPack ? (
               <>
                 {/* Contexto, no selector: el producto base ya lo definió la
@@ -929,13 +906,15 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
                 catalogo={catalogoPicker}
                 seleccion={seleccionPicker}
                 onToggle={togglePicker}
-                max={20}
+                max={esBumpOUpsell ? 1 : 20}
                 mostrarLista={false}
                 /* Por encima del modal de ofertas (.modal-overlay, z-index 1000). */
                 zIndexModal={1100}
               />
               {form.componentes.filter(c => c.producto_id).length === 0 && (
-                <p className="field-hint">Todavía no elegiste ningún producto para el combo.</p>
+                <p className="field-hint" style={{ marginTop: '0.5rem' }}>
+                  Tocá <strong>Elegir productos</strong> y marcá lo que se suma a la compra (por ejemplo, el accesorio o el complemento).
+                </p>
               )}
               {form.componentes.map((c, i) => {
                 const esAncla = c.producto_id && Number(c.producto_id) === Number(productoId);
@@ -1022,15 +1001,133 @@ export default function OfertasProductoTab({ productoId, productoNombre, product
               })}
               </>
             )}
-            {!esPack && (
-              <p className="field-hint">
-                {form.tipo_contenido === 'pack'
-                  ? 'Un "pack" es una presentación alternativa de este mismo producto (ej. "x3") — no puede incluir otros productos. Para combinar varios productos, elegí "Combo".'
-                  : form.estrategia === 'normal'
-                    ? 'Un "combo" agrupa varios productos — una fila por cada producto incluido. El % de descuento de cada uno alimenta el análisis de abajo, no cambia el Precio de la oferta.'
-                    : 'Los productos que agregues acá son lo que se suma de más al aceptar el bump/upsell — el producto principal nunca va en esta lista, se cobra siempre aparte.'}
-              </p>
-            )}
+            </div>
+
+            {/* 3. Precio: viene calculado de lo elegido; se puede cambiar. */}
+            <div className="oferta-paso">
+              <div className="oferta-paso-titulo">¿A qué precio?</div>
+              <div className="form-grid-2">
+              <div className="form-group">
+                <label>{esPack ? 'Precio del paquete' : esBumpOUpsell ? 'Precio de lo que se suma' : 'Precio del combo'}</label>
+                <CurrencyInput value={form.precio} onChange={val => { precioManualRef.current = true; setForm(f => ({ ...f, precio: val })); }} />
+                {esPack && (
+                  <p className="field-hint">
+                    Lo definís vos. No modifica el precio del producto ({formatMoney(productoBase.precio)}), que sigue vendiéndose igual por separado.
+                  </p>
+                )}
+                {esBumpOUpsell && (
+                  <p className="field-hint">
+                    {precioComponentes > 0
+                      ? <>Lo completamos con el precio de venta de lo que elegiste ({formatMoney(precioComponentes)}). Es el precio sin descuento: se muestra tachado.</>
+                      : 'Elegí arriba qué se suma y lo completamos con su precio de venta.'}
+                  </p>
+                )}
+                {precioRecomendado !== null && Number(form.precio) !== precioRecomendado && (
+                  <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    Recomendado según catálogo y descuentos: <strong>{formatMoney(precioRecomendado)}</strong>
+                    <button type="button" className="btn-ghost" style={{ padding: '0.1rem 0.5rem', fontSize: '0.72rem' }} onClick={() => setForm(f => ({ ...f, precio: precioRecomendado }))}>
+                      Usar
+                    </button>
+                  </p>
+                )}
+              </div>
+              {ESTRATEGIAS_CHECKOUT.includes(form.estrategia) && (
+                <div className="form-group">
+                  <label>Precio con la oferta <span className="hint">(lo que paga si la acepta)</span></label>
+                  <CurrencyInput value={form.precio_order_bump} onChange={val => setForm(f => ({ ...f, precio_order_bump: val }))} />
+                  {Number(form.precio) > 0 && (
+                    <p className="field-hint" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      {Number(form.precio_order_bump) > 0 && Number(form.precio_order_bump) < Number(form.precio)
+                        ? <>Ahorra {formatMoney(Number(form.precio) - Number(form.precio_order_bump))} ({Math.round((1 - Number(form.precio_order_bump) / Number(form.precio)) * 100)}%).</>
+                        : 'Vacío = se cobra el precio de arriba, sin descuento.'}
+                      {Number(form.precio_order_bump) !== Math.round(Number(form.precio) * 0.7) && (
+                        <button type="button" className="btn-ghost" style={{ padding: '0.1rem 0.5rem', fontSize: '0.72rem' }} onClick={() => setForm(f => ({ ...f, precio_order_bump: Math.round(Number(f.precio) * 0.7) }))}>
+                          Usar 30% menos: {formatMoney(Math.round(Number(form.precio) * 0.7))}
+                        </button>
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
+              {usuarioActual?.rol === 'administrador' && (
+                <div className="form-group">
+                  <label>Precio mínimo <span className="hint">(Límite de rentabilidad)</span></label>
+                  <CurrencyInput value={form.precio_minimo} onChange={val => setForm(f => ({ ...f, precio_minimo: val }))} />
+                </div>
+              )}
+              </div>
+            </div>
+
+            {/* 4. Cómo se ve para el cliente. */}
+            <div className="oferta-paso">
+              <div className="oferta-paso-titulo">¿Cómo se ve?</div>
+              <div className="form-grid-2">
+              <div className="form-group full">
+                <label>{esPack ? 'Nombre del paquete' : form.estrategia === 'order_bump' ? 'Título de la casilla' : 'Título de la oferta'}</label>
+                <input
+                  value={form.nombre}
+                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
+                  placeholder={esPack ? 'Ej. Llevá 2 y ahorrá' : form.estrategia === 'order_bump' ? 'Ej. Sí, sumá el canasto extra con 30% OFF' : 'Ej. ¿Lo querés con el kit de moldes?'}
+                  required
+                />
+                {esBumpOUpsell && (
+                  <small className="hint">
+                    Es la línea grande que ve el cliente. Funciona mejor en primera persona y con el beneficio: “Sí, sumá…”.
+                  </small>
+                )}
+              </div>
+              <div className="form-group full">
+                <label>Descripción <span className="hint">(opcional)</span></label>
+                <input
+                  value={form.descripcion}
+                  onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}
+                  placeholder={esPack ? 'Ej. Te dura el doble' : 'Ej. Llega junto con tu pedido'}
+                />
+                <small className="hint">Una frase corta debajo del título: el beneficio o un dato que dé confianza.</small>
+              </div>
+              <div className="form-group full">
+                <label>Imagen de la oferta <span className="hint">(opcional)</span></label>
+                <OfertaImagenPicker
+                  ofertaId={editando?.id || null}
+                  imagenUrl={form.imagen_url || null}
+                  archivo={form.imagen_archivo}
+                  respaldoUrl={productoBase.imagen}
+                  onChange={({ imagen_url, archivo }) => setForm(f => ({ ...f, imagen_url: imagen_url || '', imagen_archivo: archivo }))}
+                />
+              </div>
+              </div>
+            </div>
+
+            {/* 5. Lo técnico, plegado: casi nunca hace falta tocarlo. */}
+            <details className="oferta-mas">
+              <summary>Más opciones <span className="hint">(código interno, tipo de contenido, fechas)</span></summary>
+              <div className="form-grid-2" style={{ marginTop: '0.75rem' }}>
+              <div className="form-group">
+                <label>Código interno <span className="hint">(opcional)</span></label>
+                <input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value.toUpperCase() }))} placeholder="Se genera solo" />
+                <small className="hint">Sirve para reconocer la oferta en reportes. Si lo dejás vacío, lo generamos.</small>
+              </div>
+              {!esPack && (
+                <div className="form-group">
+                  <label>Tipo de contenido</label>
+                  <select value={form.tipo_contenido} onChange={e => handleTipoContenidoChange(e.target.value)}>
+                    {TIPOS_CONTENIDO.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+              )}
+              <div className="form-group">
+                <label>Desde <span className="hint">(opcional)</span></label>
+                <input type="date" value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))} />
+              </div>
+              <div className="form-group">
+                <label>Hasta <span className="hint">(opcional)</span></label>
+                <input type="date" value={form.fecha_fin} onChange={e => setForm(f => ({ ...f, fecha_fin: e.target.value }))} />
+                {form.fecha_inicio && form.fecha_fin && form.fecha_fin < form.fecha_inicio && (
+                  <p className="field-hint" style={{ color: '#ef4444' }}>La fecha de fin no puede ser anterior a la de inicio.</p>
+                )}
+              </div>
+              </div>
+            </details>
 
             {form.tipo_contenido === 'combo' && form.estrategia === 'normal' && (
               <div style={{ marginTop: '1.5rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)', paddingTop: '1rem' }}>

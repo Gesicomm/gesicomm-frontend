@@ -60,7 +60,7 @@ function firmaDeValores(valores) {
 const TABS = [
   { id: 'basica', label: 'Identidad', desc: 'Datos base, textos y fotos', level: 'Esencial', icon: <Package size={15} /> },
   { id: 'comercial', label: 'Precio', desc: 'Precio, descuento y margen', level: 'Esencial', icon: <DollarSign size={15} /> },
-  { id: 'stock', label: 'Inventario', desc: 'Stock, SKU y variantes', level: 'Recomendado', icon: <Layers size={15} /> },
+  { id: 'stock', label: 'Inventario', desc: 'Stock y variantes', level: 'Recomendado', icon: <Layers size={15} /> },
   { id: 'venta', label: 'Venta', desc: 'Packs, bumps y upsells', level: 'Avanzado', icon: <Tag size={15} /> },
   { id: 'marketing', label: 'Vista del producto', desc: 'Campos dinámicos, FAQ y preview', level: 'Recomendado', icon: <Eye size={15} /> },
   { id: 'publicacion', label: 'Publicacion', desc: 'Estado y visibilidad', level: 'Esencial', icon: <Settings size={15} /> },
@@ -315,6 +315,9 @@ export default function ProductForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const esEdicion = Boolean(id);
+  // null = todavía no se cargó el producto (o es alta nueva).
+  const [skuOriginal, setSkuOriginal] = useState(null);
+  const skuObligatorio = !esEdicion || Boolean(skuOriginal);
 
   const [tabActiva, setTabActiva] = useState('basica');
   const [previewDevice, setPreviewDevice] = useState('desktop');
@@ -474,6 +477,7 @@ export default function ProductForm() {
             navigate('/mi-catalogo', { replace: true });
             return;
           }
+          setSkuOriginal(p.sku || '');
           reset({
             nombre: p.nombre || '',
             categoria_id: p.categoria_id || '',
@@ -769,6 +773,12 @@ export default function ProductForm() {
     }
   };
 
+  // Nombre y SKU viven en la pestaña básica: si faltan y el usuario está
+  // en otra pestaña, el error quedaría escondido y "Guardar" no haría nada.
+  const alFallarValidacion = (errs) => {
+    if (errs.nombre || errs.sku) setTabActiva('basica');
+  };
+
   const onSubmit = async (data) => {
     setGuardando(true);
     setError(null);
@@ -778,7 +788,7 @@ export default function ProductForm() {
         nombre: data.nombre.trim(),
         categoria_id: data.categoria_id || null,
         proveedor_id: data.proveedor_id || null,
-        sku: data.sku || null,
+        sku: data.sku?.trim() || null,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         descripcion_corta: data.descripcion_corta || null,
         descripcion_larga: data.descripcion_larga || null,
@@ -1261,7 +1271,7 @@ export default function ProductForm() {
         <button
           className="btn-primary"
           type="button"
-          onClick={handleSubmit(onSubmit)}
+          onClick={handleSubmit(onSubmit, alFallarValidacion)}
           disabled={guardando}
         >
           <Save size={15} /> {guardando ? 'Guardando...' : 'Guardar'}
@@ -1289,7 +1299,7 @@ export default function ProductForm() {
       )}
 
       <form
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmit, alFallarValidacion)}
         className={`prod-form prod-workspace ${tabActiva === 'marketing' ? 'product-view-mode' : ''}`}
         noValidate
       >
@@ -1332,6 +1342,24 @@ export default function ProductForm() {
                 placeholder="Ej: Remera básica azul"
               />
               {errors.nombre && <span className="field-error">{errors.nombre.message}</span>}
+            </div>
+
+            {/* SKU obligatorio: es la clave con la que se identifica el
+                producto en la importación masiva de precios y en la carga
+                desde la API. Productos viejos que nunca tuvieron SKU se
+                pueden seguir editando sin cargarlo (el backend aplica la
+                misma regla). */}
+            <div className="form-group">
+              <label htmlFor="prod-sku">SKU {skuObligatorio && <span className="req">*</span>}</label>
+              <input
+                id="prod-sku"
+                {...register('sku', {
+                  validate: (v) => !skuObligatorio || Boolean(v?.trim()) || 'El SKU es obligatorio.',
+                })}
+                placeholder="CRE-300"
+                autoComplete="off"
+              />
+              {errors.sku && <span className="field-error">{errors.sku.message}</span>}
             </div>
 
             <div className="form-group">
@@ -1909,15 +1937,6 @@ export default function ProductForm() {
                 Mínimo en salón <span className="hint">(reponer desde depósito)</span>
               </label>
               <input id="prod-stock-min-salon" type="number" min="0" placeholder="Opcional" {...register('stock_minimo_salon')} />
-            </div>
-            <div className="form-group">
-              <label htmlFor="prod-sku">SKU</label>
-              <input
-                id="prod-sku"
-                {...register('sku')}
-                placeholder="CRE-300"
-                autoComplete="off"
-              />
             </div>
             <div className="form-group">
               <label htmlFor="prod-unidad">Unidad de medida</label>
@@ -2812,7 +2831,7 @@ export default function ProductForm() {
           <span>Cambios sin guardar</span>
           <div style={{ display: 'flex', gap: '0.6rem' }}>
             <button type="button" className="btn-secondary" onClick={() => reset()}>Descartar</button>
-            <button type="button" className="btn-primary" onClick={handleSubmit(onSubmit)}>
+            <button type="button" className="btn-primary" onClick={handleSubmit(onSubmit, alFallarValidacion)}>
               <Save size={14} /> Guardar
             </button>
           </div>

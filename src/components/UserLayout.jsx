@@ -256,19 +256,8 @@ const UserLayout = ({ children }) => {
           <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
             <ul className="sidebar-list">
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
-              {renderLink({ 
-                path: '/mis-pedidos', 
-                label: 'Pedidos', 
-                icon: <ShoppingCart size={14} />, 
-                menuKey: 'mis-pedidos',
-                danger: vencidosCount > 0
-              })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
               {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin size={14} />, menuKey: 'mi-tienda-depositos' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck size={14} />, menuKey: 'inventario' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icon: <Truck size={14} />, menuKey: 'mis-abastecimientos' })}
-              {/* {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })} */}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
             </ul>
           </div>
 
@@ -281,6 +270,30 @@ const UserLayout = ({ children }) => {
                   {renderLink({ path: '/mis-anuncios', label: 'Publicidad', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
                 </ul>
               </div>
+            </>
+          )}
+
+          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+            {usuario?.rol === 'solo_pedidos' ? 'VENTAS' : 'OPERACIONES'}
+          </div>
+          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+            <ul className="sidebar-list">
+              {renderLink({ 
+                path: '/mis-pedidos', 
+                label: 'Pedidos', 
+                icon: <ShoppingCart size={14} />, 
+                menuKey: 'mis-pedidos',
+                danger: vencidosCount > 0
+              })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck size={14} />, menuKey: 'inventario' })}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icon: <Truck size={14} />, menuKey: 'mis-abastecimientos' })}
+              {/* {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })} */}
+              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
+            </ul>
+          </div>
+
+          {usuario?.rol !== 'solo_pedidos' && (
+            <>
 
               <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>ANÁLISIS</div>
               <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>

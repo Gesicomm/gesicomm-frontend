@@ -1,13 +1,16 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
-  Eye, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2,
+  Eye, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
+import { comboAdminService } from '../../services/comboAdminService';
 import { contentIdPanel, datosRuntimePreview } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
 import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO } from './plantillasBaseCodigo';
+import { verificarSesion } from '../../utils/auth';
+import PhonePreviewShell from './PhonePreviewShell';
 
 // El MISMO editor de ofertas de la ficha de producto (precios, componentes,
 // margen, imagen): acá se abre en un panel lateral para crear o editar sin
@@ -40,23 +43,57 @@ const OfertasProductoTab = lazy(() => Promise.all([
 
 export const MAX_PRODUCTOS_MANUAL = 500; // = MAX_ITEMS_LIENZO del backend
 
-const FORMATOS = [
+// Antes había tres formatos (Catálogo, Producto estrella, Combos), cada uno
+// con su propia página de inicio. Pero todo lo que vende (ofertas, combos,
+// recomendados) vive en la ficha, así que se simplificó a una sola decisión:
+// dónde entra el cliente. `venta.tipo` se sigue guardando (derivado) para
+// las landings y los prompts de antes.
+const ENTRADAS = [
   {
-    key: 'catalogo',
-    titulo: 'Catálogo',
-    texto: 'Una tienda: todos tus productos con buscador, filtros y una ficha para cada uno.',
+    key: 'tienda',
+    diagrama: 'catalogo',
+    titulo: 'En tu tienda',
+    texto: 'Todos los productos con buscador y filtros. Cada uno tiene su ficha con ofertas, combos y recomendados.',
   },
   {
-    key: 'producto_unico',
-    titulo: 'Producto estrella',
-    texto: 'Una página de venta larga para un solo producto, con compra en un toque.',
-  },
-  {
-    key: 'combos',
-    titulo: 'Combos',
-    texto: 'Tus packs primero, mostrando qué incluye cada uno y cuánto se ahorra.',
+    key: 'producto',
+    diagrama: 'producto_unico',
+    titulo: 'Directo en un producto',
+    texto: 'La landing abre en la ficha del producto principal. Ideal para anuncios: sin un clic de más.',
   },
 ];
+
+const TIPOS_OFERTA_RAPIDA = [
+  {
+    key: 'pack',
+    titulo: 'Paquete',
+    subtitulo: 'Varias unidades del mismo producto',
+    texto: 'Ideal para x2, x3 o reposición. Se muestra en la ficha del producto.',
+  },
+  {
+    key: 'combo',
+    titulo: 'Combo',
+    subtitulo: 'Productos diferentes juntos',
+    texto: 'Para vender un kit armado con precio propio y margen calculado.',
+  },
+  {
+    key: 'order_bump',
+    titulo: 'Order bump',
+    subtitulo: 'Extra durante la compra',
+    texto: 'Un complemento simple antes de pagar. Usa un solo producto ofrecido.',
+  },
+  {
+    key: 'upsell',
+    titulo: 'Upsell',
+    subtitulo: 'Oferta posterior',
+    texto: 'Se propone después de agregar al carrito, sin cambiar el producto principal.',
+  },
+];
+
+const LABEL_TIPO_OFERTA_RAPIDA = TIPOS_OFERTA_RAPIDA.reduce((acc, item) => {
+  acc[item.key] = item.titulo;
+  return acc;
+}, {});
 
 const MODOS = [
   { key: 'manual', label: 'Uno por uno', ayuda: 'Marcás exactamente qué productos entran.' },
@@ -79,6 +116,28 @@ function formatearGs(n) {
 
 const precioPanel = item => item?.precio_efectivo ?? item?.precio_usuario ?? item?.precio_base ?? item?.precio ?? null;
 
+const normalizarTexto = valor => String(valor || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase();
+
+const nombreProveedorItem = item => (typeof item?.proveedor === 'string' ? item.proveedor : item?.proveedor?.nombre) || '';
+
+function itemEsPropio(item, usuarioActual) {
+  return !!usuarioActual && item?.creado_por != null && Number(item.creado_por) === Number(usuarioActual.id);
+}
+
+function itemPasaFiltroOrigen(item, filtro, usuarioActual) {
+  const propio = itemEsPropio(item, usuarioActual);
+  const gesicom = !propio;
+  if (filtro === 'todos') return true;
+  if (filtro === 'producto_gesicom') return item.tipo === 'producto' && gesicom;
+  if (filtro === 'producto_mio') return item.tipo === 'producto' && propio;
+  if (filtro === 'combo_gesicom') return item.tipo === 'combo' && gesicom;
+  if (filtro === 'combo_mio') return item.tipo === 'combo' && propio;
+  return true;
+}
+
 /**
  * Los productos del catálogo del panel que vende una regla de venta — el
  * mismo criterio que aplica el backend, para que el preview y los prompts
@@ -95,14 +154,22 @@ export function aplicarReglaVenta(catalogo, venta) {
   return venta.tipo === 'combos' ? [...c, ...p] : [...p, ...c];
 }
 
-const cargarOfertasTienda = () => ofertaService.listarTodas({ estrategias: ['order_bump', 'upsell'] });
+// Paquetes ('normal': "Llevá 3") incluidos: se crean y se ven acá también.
+const cargarOfertasTienda = () => ofertaService.listarTodas({ estrategias: ['order_bump', 'upsell', 'normal'] });
 
 export default function ConfigurarVentaCodigo({
   catalogo, inicial, onConfirmar, onVolver, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
   tienda = null, codigos = null,
+  // Error del guardado (viene del editor): sin esto, si el servidor
+  // rechazaba el guardado, el botón "no hacía nada" a la vista.
+  errorGuardado = null,
+  // Vuelve a pedir el catálogo (p. ej. después de activar un combo acá).
+  onRecargarCatalogo = null,
 }) {
   const ventaInicial = inicial?.venta || {};
-  const [tipo, setTipo] = useState(ventaInicial.tipo || 'catalogo');
+  const [abrirEn, setAbrirEn] = useState(ventaInicial.abrir_en || (ventaInicial.tipo === 'producto_unico' ? 'producto' : 'tienda'));
+  const [combosPrimero, setCombosPrimero] = useState(ventaInicial.combos_primero ?? ventaInicial.tipo === 'combos');
+  const tipo = abrirEn === 'producto' ? 'producto_unico' : (combosPrimero ? 'combos' : 'catalogo');
   const [modo, setModo] = useState(ventaInicial.seleccion || 'manual');
   const [categorias, setCategorias] = useState(() => new Set(ventaInicial.categorias || []));
   const [incluirCombos, setIncluirCombos] = useState(ventaInicial.incluir_combos !== false);
@@ -112,10 +179,22 @@ export default function ConfigurarVentaCodigo({
   const [principal, setPrincipal] = useState(() => (inicial?.seleccion?.[0] ? clave(inicial.seleccion[0]) : null));
   const [busqueda, setBusqueda] = useState('');
   const [busquedaCategoria, setBusquedaCategoria] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroTipo, setFiltroTipo] = useState('producto_gesicom');
+  const [usuarioActual, setUsuarioActual] = useState(null);
 
   const [crossActivo, setCrossActivo] = useState(ventaInicial.cross_sell?.activo !== false);
   const [ofertasElegidas, setOfertasElegidas] = useState(() => new Set(ventaInicial.cross_sell?.ofertas || []));
+  // Paquetes: etiqueta de cada uno ("Más elegido"…) y cuál se destaca.
+  const [confPaquetes, setConfPaquetes] = useState(() => ventaInicial.paquetes || {});
+  function cambiarPaquete(id, cambio) {
+    setConfPaquetes(prev => {
+      const siguiente = { ...prev };
+      // Un solo destacado: marcar uno desmarca los demás.
+      if (cambio.destacado) Object.keys(siguiente).forEach(k => { siguiente[k] = { ...siguiente[k], destacado: false }; });
+      siguiente[id] = { etiqueta: '', destacado: false, ...prev[id], ...cambio };
+      return siguiente;
+    });
+  }
   const [ofertas, setOfertas] = useState(null); // null = cargando
   const [errorOfertas, setErrorOfertas] = useState('');
   // Panel de ofertas: null cerrado · { producto: null } eligiendo producto ·
@@ -135,7 +214,8 @@ export default function ConfigurarVentaCodigo({
   const [resaltado, setResaltado] = useState(null); // { lista, n }
   const [avisoPreview, setAvisoPreview] = useState('');
   const [previewMovil, setPreviewMovil] = useState(false);
-  const [dispositivo, setDispositivo] = useState('movil'); // 'movil' | 'escritorio'
+  const [dispositivo, setDispositivo] = useState('escritorio'); // 'movil' | 'escritorio'
+  const [verDetalleError, setVerDetalleError] = useState(false);
   const [previewAmpliada, setPreviewAmpliada] = useState(false);
 
   // Todas las order bump / upsell activas de la tienda, de entrada: antes se
@@ -144,7 +224,11 @@ export default function ConfigurarVentaCodigo({
   const recargarOfertas = useCallback(() => {
     setErrorOfertas('');
     return cargarOfertas()
-      .then(lista => setOfertas(Array.isArray(lista) ? lista : []))
+      .then(lista => {
+        const limpia = Array.isArray(lista) ? lista : [];
+        setOfertas(limpia);
+        return limpia;
+      })
       .catch(() => {
         setOfertas(prev => prev || []);
         setErrorOfertas('No se pudieron cargar tus ofertas. Recargá la página para intentar de nuevo.');
@@ -153,12 +237,16 @@ export default function ConfigurarVentaCodigo({
   }, []);
 
   useEffect(() => { recargarOfertas(); }, [recargarOfertas]);
+  useEffect(() => {
+    verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
+  }, []);
 
   const todos = useMemo(() => [
     ...(catalogo?.productos || []).map(p => ({ ...p, tipo: 'producto' })),
     ...(catalogo?.combos || []).map(c => ({ ...c, tipo: 'combo' })),
   ], [catalogo]);
   const porClave = useMemo(() => new Map(todos.map(i => [clave(i), i])), [todos]);
+  const idsCombosCatalogo = useMemo(() => new Set((catalogo?.combos || []).map(c => Number(c.id))), [catalogo]);
 
   const categoriasDisponibles = useMemo(() => {
     const conteo = new Map();
@@ -195,12 +283,25 @@ export default function ConfigurarVentaCodigo({
     [seleccion],
   );
 
+  // Oferta sin foto propia → la del producto que ofrece (o la del mismo
+  // producto, si es un pack). Es lo que hace la landing publicada con
+  // producto_complementario; sin esto la vista previa mostraba el bump sin
+  // imagen y no se parecía a lo que ve el cliente.
+  const ofertasConImagen = useMemo(() => (ofertas || []).map(o => {
+    if (o.imagen_url) return o;
+    const componente = (o.componentes || []).find(c => Number(c.producto_id) !== Number(o.producto_ancla_id))
+      || (o.componentes || [])[0];
+    const prod = porClave.get(`producto:${Number(componente?.producto_id ?? o.producto_ancla_id)}`)
+      || porClave.get(`producto:${Number(o.producto_ancla_id)}`);
+    return prod?.imagen ? { ...o, imagen_url: prod.imagen } : o;
+  }), [ofertas, porClave]);
+
   // Ofertas agrupadas por el producto al que pertenecen (cada oferta se
   // guarda EN un producto: Productos → ficha → Ofertas). Se separan las de
   // productos de esta landing de las del resto de la tienda.
   const [ofertasDeLanding, ofertasDeOtros] = useMemo(() => {
     const grupos = new Map();
-    (ofertas || []).forEach(o => {
+    ofertasConImagen.forEach(o => {
       const id = Number(o.producto_ancla_id);
       if (!grupos.has(id)) grupos.set(id, { producto: o.producto_ancla, ofertas: [] });
       grupos.get(id).ofertas.push(o);
@@ -210,7 +311,7 @@ export default function ConfigurarVentaCodigo({
       todosGrupos.filter(([id]) => idsProductoEnLanding.has(id)),
       todosGrupos.filter(([id]) => !idsProductoEnLanding.has(id)),
     ];
-  }, [ofertas, idsProductoEnLanding]);
+  }, [ofertasConImagen, idsProductoEnLanding]);
   const [verOtrasOfertas, setVerOtrasOfertas] = useState(false);
 
   // La configuración tal como quedaría guardada — la usan el preview y el
@@ -221,6 +322,14 @@ export default function ConfigurarVentaCodigo({
     seleccion: modo,
     categorias: Array.from(categorias),
     incluir_combos: incluirCombos,
+    abrir_en: abrirEn,
+    combos_primero: abrirEn === 'tienda' && combosPrimero,
+    paquetes: confPaquetes,
+    // El producto que abre la landing en "Directo en un producto" (con una
+    // regla no hay items guardados que lo pongan primero).
+    principal_id: abrirEn === 'producto'
+      ? (Number(String(principal || clave(seleccion.find(i => i.tipo === 'producto') || {})).split(':')[1]) || null)
+      : null,
     cross_sell: { activo: crossActivo, ofertas: Array.from(ofertasElegidas) },
     recomendados: {
       activo: recoActivo,
@@ -229,7 +338,7 @@ export default function ConfigurarVentaCodigo({
       max: recoMax,
       titulo: recoTitulo,
     },
-  }), [tipo, modo, categorias, incluirCombos, crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo]);
+  }), [tipo, abrirEn, combosPrimero, confPaquetes, principal, seleccion, modo, categorias, incluirCombos, crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo]);
 
   function sumarProducto(productoId) {
     const k = `producto:${Number(productoId)}`;
@@ -250,20 +359,39 @@ export default function ConfigurarVentaCodigo({
     // Y se muestra en la vista previa, en la ficha de ese producto.
     if (!elegida) {
       const prod = porClave.get(`producto:${Number(oferta.producto_ancla_id)}`);
-      if (prod) verDonde('producto', 'ofertas', contentIdPanel(prod));
+      if (prod) verOfertaEnFicha(oferta, prod);
     }
   }
 
   // Al cerrar el panel se vuelve a pedir la lista: lo creado o editado ahí
   // aparece acá sin recargar la página.
+  // Lo que se crea desde este panel queda MARCADO para esta landing: antes
+  // había que volver a tildarlo en la lista y, si no, no aparecía en la
+  // ficha ni en el carrito (una landing configurada solo muestra lo marcado).
   function cerrarPanelOfertas() {
+    const antes = new Set((ofertas || []).map(o => Number(o.id)));
     setPanelOfertas(null);
-    recargarOfertas();
+    recargarOfertas().then(lista => {
+      const nuevas = (lista || []).filter(o => !antes.has(Number(o.id)));
+      if (!nuevas.length) return;
+      setOfertasElegidas(prev => new Set([...prev, ...nuevas.map(o => o.id)]));
+      setCrossActivo(true);
+      const primera = nuevas[0];
+      if (!esRegla) sumarProducto(primera.producto_ancla_id);
+      const prod = porClave.get(`producto:${Number(primera.producto_ancla_id)}`);
+      if (prod) verOfertaEnFicha(primera, prod);
+    });
   }
 
   function nombreProductoOferta(productoId) {
     const o = (ofertas || []).find(x => Number(x.producto_ancla_id) === Number(productoId));
     return o?.producto_ancla?.nombre || `Producto #${productoId}`;
+  }
+
+  // Aunque haya un solo producto en la landing, se pregunta cuál querés
+  // editar: así no parece que el sistema eligió el producto por su cuenta.
+  function abrirNuevaOferta(tipoOferta = null) {
+    setPanelOfertas({ producto: null, estrategia: tipoOferta });
   }
 
   function abrirOfertasDe(productoId) {
@@ -292,10 +420,10 @@ export default function ConfigurarVentaCodigo({
   }
 
   const visiblesManual = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    return todos.filter(i => (filtroTipo === 'todos' || i.tipo === filtroTipo)
-      && (!q || i.nombre?.toLowerCase().includes(q) || i.categoria?.toLowerCase().includes(q)));
-  }, [todos, busqueda, filtroTipo]);
+    const q = normalizarTexto(busqueda.trim());
+    return todos.filter(i => itemPasaFiltroOrigen(i, filtroTipo, usuarioActual)
+      && (!q || [i.nombre, i.categoria, nombreProveedorItem(i)].some(valor => normalizarTexto(valor).includes(q))));
+  }, [todos, busqueda, filtroTipo, usuarioActual]);
 
   function elegirVisibles() {
     setManual(prev => {
@@ -312,6 +440,7 @@ export default function ConfigurarVentaCodigo({
   const inicioEsBase = !codigos?.inicio?.html?.trim()
     || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL)
     || !!formatoDeBase(codigos.inicio.html);
+  const abreEnFicha = abrirEn === 'producto';
   const codigoInicioPreview = inicioEsBase ? plantillaInicioPara(tipo) : codigos.inicio;
   const codigoFichaPreview = codigos?.producto?.html ? codigos.producto : PLANTILLA_PRODUCTO;
 
@@ -325,10 +454,22 @@ export default function ConfigurarVentaCodigo({
     productos: productosPreview,
     tienda,
     venta: ventaActual,
-    vista: vistaPreview,
-    productoId: productoFicha ? contentIdPanel(productoFicha) : null,
-    ofertas: ofertas || [],
-  }), [productosPreview, tienda, ventaActual, vistaPreview, productoFicha, ofertas]);
+    vista: abreEnFicha ? 'producto' : vistaPreview,
+    productoId: abreEnFicha && vistaPreview === 'inicio' && seleccion[0]
+      ? contentIdPanel(seleccion[0])
+      : (productoFicha ? contentIdPanel(productoFicha) : null),
+    ofertas: ofertasConImagen,
+  }), [productosPreview, tienda, ventaActual, vistaPreview, productoFicha, ofertasConImagen, abreEnFicha, seleccion]);
+
+  // Dónde se ve cada tipo de oferta en la ficha (para resaltarla en la vista previa).
+  function verOfertaEnFicha(oferta, producto) {
+    if (oferta.estrategia === 'upsell') {
+      verDonde('producto', null, contentIdPanel(producto));
+      setAvisoPreview('El upsell no va en la ficha: aparece en el carrito, después de agregar el producto.');
+      return;
+    }
+    verDonde('producto', oferta.estrategia === 'normal' ? 'paquetes' : 'ofertas_bump', contentIdPanel(producto));
+  }
 
   function verDonde(vista, lista = null, productoId = null) {
     setVistaPreview(vista);
@@ -347,12 +488,11 @@ export default function ConfigurarVentaCodigo({
       setAvisoPreview('Todavía no marcaste ninguna oferta. Marcá una y la vas a ver acá, debajo del botón de compra.');
       return;
     }
-    verDonde('producto', 'ofertas', contentIdPanel(conOfertas));
+    verDonde('producto', 'ofertas_bump', contentIdPanel(conOfertas));
   }
 
   function verRecomendados() {
-    if (tipo === 'producto_unico') verDonde('inicio', 'recomendados');
-    else verDonde('producto', 'recomendados');
+    verDonde('producto', 'recomendados');
   }
 
   const alNavegarPreview = useCallback((p) => {
@@ -371,7 +511,6 @@ export default function ConfigurarVentaCodigo({
     if (modo === 'categoria' && !categorias.size) return 'Elegí al menos una categoría.';
     if (!seleccion.length) return modo === 'manual' ? 'Marcá al menos un producto.' : 'Esta selección no tiene productos en venta.';
     if (excedeManual) return `Uno por uno admite hasta ${MAX_PRODUCTOS_MANUAL}. Para más, usá “Todo el catálogo”.`;
-    if (tipo === 'combos' && !seleccion.some(i => i.tipo === 'combo')) return 'El formato Combos necesita al menos un combo en la selección.';
     return null;
   })();
 
@@ -403,14 +542,15 @@ export default function ConfigurarVentaCodigo({
     );
   }
 
-  const formato = FORMATOS.find(f => f.key === tipo);
   const resumenProductos = modo === 'todos'
     ? 'Todo el catálogo'
     : `${seleccion.length.toLocaleString('es-PY')} producto${seleccion.length === 1 ? '' : 's'}`;
   const resumenOfertas = !crossActivo || !ofertasElegidas.size
-    ? 'sin ofertas'
+    ? 'Sin ofertas'
     : `${ofertasElegidas.size} oferta${ofertasElegidas.size === 1 ? '' : 's'}`;
-  const resumenReco = !recoActivo ? 'sin recomendados' : (recoModo === 'auto' ? 'recomendados automáticos' : `${recoItems.length} recomendados`);
+  const resumenReco = !recoActivo
+    ? 'sin recomendados'
+    : (recoModo === 'auto' ? 'recomendados automáticos' : `${recoItems.length} recomendado${recoItems.length === 1 ? '' : 's'} a mano`);
 
   const propsVistaPrevia = {
     vista: vistaPreview,
@@ -418,7 +558,7 @@ export default function ConfigurarVentaCodigo({
     productos: productosPreview,
     productoFicha,
     onProducto: id => { setProductoPreview(id); setResaltado(null); },
-    codigo: vistaPreview === 'producto' ? codigoFichaPreview : codigoInicioPreview,
+    codigo: vistaPreview === 'producto' || abreEnFicha ? codigoFichaPreview : codigoInicioPreview,
     datos: datosPreview,
     resaltado,
     aviso: avisoPreview,
@@ -434,7 +574,7 @@ export default function ConfigurarVentaCodigo({
     <div className="h-full flex flex-col bg-canvas">
       <div className="flex-1 min-h-0 flex">
         {/* Configuración */}
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <header className="mb-7">
               <button
@@ -452,25 +592,25 @@ export default function ConfigurarVentaCodigo({
             </header>
 
             <div className="space-y-5">
-              {/* Formato */}
+              {/* Dónde entra el cliente */}
               <Bloque
-                titulo="Formato"
-                ayuda="Cambia cómo se arma la página de inicio. Probá cada uno y mirá la vista previa."
+                titulo="¿Dónde entra el cliente?"
+                ayuda="La ficha de cada producto ya trae todo lo que vende: order bump, upsell, combos y recomendados."
                 verDonde={() => verDonde('inicio')}
               >
-                <div role="radiogroup" aria-label="Formato de venta" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {FORMATOS.map(f => {
-                    const activo = tipo === f.key;
+                <div role="radiogroup" aria-label="Dónde entra el cliente" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {ENTRADAS.map(f => {
+                    const activo = abrirEn === f.key;
                     return (
                       <button
                         key={f.key}
                         type="button"
                         role="radio"
                         aria-checked={activo}
-                        onClick={() => { setTipo(f.key); verDonde('inicio'); }}
+                        onClick={() => { setAbrirEn(f.key); verDonde('inicio'); }}
                         className={`group text-left rounded-xl border p-3 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${activo ? 'border-accent bg-accent/[0.07]' : 'border-border hover:border-border-strong bg-surface'}`}
                       >
-                        <Diagrama tipo={f.key} activo={activo} />
+                        <Diagrama tipo={f.diagrama} activo={activo} />
                         <div className="mt-3 flex items-center justify-between gap-2">
                           <span className="font-semibold text-fg">{f.titulo}</span>
                           <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${activo ? 'border-accent bg-accent' : 'border-border-strong'}`}>
@@ -482,9 +622,21 @@ export default function ConfigurarVentaCodigo({
                     );
                   })}
                 </div>
-                {!inicioEsBase && (
+                {abrirEn === 'tienda' && (
+                  <label className="mt-3 flex items-start gap-2 text-sm text-fg cursor-pointer">
+                    <input type="checkbox" checked={combosPrimero} onChange={e => { setCombosPrimero(e.target.checked); verDonde('inicio', 'catalogo'); }} className="w-4 h-4 mt-0.5 accent-primary" />
+                    <span>
+                      Mostrar los combos primero
+                      <span className="block text-xs text-fg-muted">En el catálogo, tus combos aparecen antes que los productos sueltos.</span>
+                    </span>
+                  </label>
+                )}
+                {abrirEn === 'producto' && (
+                  <p className="mt-3 text-xs text-fg-muted">Elegí cuál es el producto principal abajo, en Productos. Los demás aparecen en su ficha como combos, ofertas o recomendados.</p>
+                )}
+                {!inicioEsBase && abrirEn === 'tienda' && (
                   <p className="mt-3 text-xs text-fg-muted">
-                    Tu inicio ya tiene un diseño propio: el formato cambia el orden de los productos y lo que se le pide a la IA, no tu HTML.
+                    Tu inicio ya tiene un diseño propio: esto cambia el orden de los productos, no tu HTML.
                   </p>
                 )}
               </Bloque>
@@ -493,7 +645,7 @@ export default function ConfigurarVentaCodigo({
               <Bloque
                 titulo="Productos"
                 ayuda={MODOS.find(m => m.key === modo)?.ayuda}
-                verDonde={() => verDonde('inicio', tipo === 'combos' ? 'combos' : (tipo === 'producto_unico' ? 'productos' : 'catalogo'))}
+                verDonde={() => (abreEnFicha ? verDonde('inicio') : verDonde('inicio', 'catalogo'))}
               >
                 <div role="tablist" aria-label="Cómo elegir los productos" className="flex w-full sm:w-auto sm:inline-flex rounded-lg bg-surface-2 p-1 mb-4">
                   {MODOS.map(m => (
@@ -510,26 +662,34 @@ export default function ConfigurarVentaCodigo({
                   ))}
                 </div>
 
+                <CombosSinPublicar
+                  idsVisibles={idsCombosCatalogo}
+                  onActivado={onRecargarCatalogo}
+                  formatoCombos={tipo === 'combos'}
+                />
+
                 {modo === 'manual' && (
                   <div>
                     <div className="flex flex-col sm:flex-row gap-2">
-                      <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar por nombre o categoría" etiqueta="Buscar productos" />
+                      <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar por nombre, categoría o proveedor" etiqueta="Buscar productos" />
                       <select
                         value={filtroTipo}
                         onChange={e => setFiltroTipo(e.target.value)}
                         aria-label="Tipo"
                         className="h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg"
                       >
-                        <option value="todos">Productos y combos</option>
-                        <option value="producto">Solo productos</option>
-                        <option value="combo">Solo combos</option>
+                        <option value="producto_gesicom">Productos Gesicom</option>
+                        <option value="producto_mio">Mis productos</option>
+                        <option value="combo_gesicom">Combos Gesicom</option>
+                        <option value="combo_mio">Mis combos</option>
+                        <option value="todos">Todos</option>
                       </select>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-[13px]">
                       <span className="text-fg-muted"><span className="font-mono text-fg">{manual.length}</span> marcados</span>
                       <div className="flex gap-4">
                         <button type="button" onClick={elegirVisibles} className="font-medium text-primary-text hover:underline">
-                          Marcar {busqueda || filtroTipo !== 'todos' ? 'estos' : 'todos'} ({visiblesManual.length})
+                          Marcar {busqueda ? 'estos' : 'todos'} ({visiblesManual.length})
                         </button>
                         {manual.length > 0 && (
                           <button type="button" onClick={() => setManual([])} className="font-medium text-fg-muted hover:text-fg">Desmarcar todo</button>
@@ -551,7 +711,7 @@ export default function ConfigurarVentaCodigo({
                               <span className="min-w-0 flex-1">
                                 <span className="block text-sm text-fg truncate">{item.nombre}</span>
                                 <span className="block text-xs text-fg-muted truncate">
-                                  {item.tipo === 'combo' ? 'Combo' : (item.categoria || 'Sin categoría')}
+                                  {[item.tipo === 'combo' ? 'Combo' : (item.categoria || 'Sin categoría'), nombreProveedorItem(item)].filter(Boolean).join(' · ')}
                                 </span>
                               </span>
                               <span className="font-mono text-xs text-fg-muted tabular-nums">{formatearGs(precioPanel(item))}</span>
@@ -611,10 +771,10 @@ export default function ConfigurarVentaCodigo({
 
                 {tipo === 'producto_unico' && seleccion.length > 0 && (
                   <label className="mt-4 block">
-                    <span className="block text-sm font-medium text-fg mb-1.5">Producto estrella</span>
+                    <span className="block text-sm font-medium text-fg mb-1.5">Producto principal (abre la landing)</span>
                     <select
                       value={principal || clave(seleccion[0])}
-                      onChange={e => { setPrincipal(e.target.value); verDonde('inicio', 'productos'); }}
+                      onChange={e => { setPrincipal(e.target.value); verDonde('inicio'); }}
                       className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg"
                     >
                       {seleccion.slice(0, 300).map(i => <option key={clave(i)} value={clave(i)}>{i.nombre}</option>)}
@@ -633,19 +793,42 @@ export default function ConfigurarVentaCodigo({
               >
                 {crossActivo && (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Concepto
-                        titulo="Order bump"
-                        texto="Una casilla en la ficha y el checkout: «Sumá el canasto por Gs 63.000». Se acepta con un toque."
-                      />
-                      <Concepto
-                        titulo="Upsell"
-                        texto="Una sugerencia en el carrito cuando el producto ya está agregado: «¿Lo querés con el kit?»."
-                      />
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-fg">Ofertas disponibles para esta landing</p>
+                        <p className="mt-1 text-[13px] text-fg-muted">
+                          Activá las ofertas que querés mostrar. Para crear o editar, primero elegís el producto que las dispara.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => abrirNuevaOferta()}
+                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold hover:bg-primary-hover shrink-0"
+                      >
+                        <Plus size={15} /> Nueva oferta
+                      </button>
                     </div>
-                    <p className="text-xs text-fg-muted">
-                      ¿Cross sell (venta cruzada)? Es ofrecer <em>otro</em> producto: se arma como order bump o como upsell.
-                    </p>
+
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-fg-muted">Crear directo</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="group" aria-label="Crear oferta por tipo">
+                        {TIPOS_OFERTA_RAPIDA.map(tipoOferta => (
+                          <button
+                            key={tipoOferta.key}
+                            type="button"
+                            onClick={() => abrirNuevaOferta(tipoOferta.key)}
+                            className="group text-left rounded-xl border border-border bg-surface px-3.5 py-3 transition-colors hover:border-primary/70 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                          >
+                            <span className="flex items-center justify-between gap-3">
+                              <span className="text-sm font-semibold text-fg">{tipoOferta.titulo}</span>
+                              <ArrowRight size={15} className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary-text" />
+                            </span>
+                            <span className="mt-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-warning">{tipoOferta.subtitulo}</span>
+                            <span className="mt-1 block text-[12px] leading-5 text-fg-muted">{tipoOferta.texto}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                     <div className="rounded-lg border border-border bg-surface-2/60 px-3.5 py-2.5 text-[13px] text-fg-muted">
                       <span className="font-semibold text-fg">¿De dónde salen?</span>{' '}
@@ -665,10 +848,10 @@ export default function ConfigurarVentaCodigo({
                             <p className="mt-1 text-[13px] text-fg-muted">Elegís el producto, qué le ofrecés y a qué precio.</p>
                             <button
                               type="button"
-                              onClick={() => setPanelOfertas({ producto: null })}
+                              onClick={() => abrirNuevaOferta()}
                               className="mt-3 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold hover:bg-primary-hover"
                             >
-                              <Plus size={15} /> Crear una oferta
+                              <Plus size={15} /> Crear primera oferta
                             </button>
                           </div>
                         ) : (
@@ -677,10 +860,10 @@ export default function ConfigurarVentaCodigo({
                               <p className="text-sm font-medium text-fg">Productos de esta landing con ofertas</p>
                               <button
                                 type="button"
-                                onClick={() => setPanelOfertas({ producto: null })}
+                                onClick={() => abrirNuevaOferta()}
                                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border text-sm font-medium text-fg hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                               >
-                                <Plus size={15} /> Oferta para otro producto
+                                <Plus size={15} /> Nueva oferta
                               </button>
                             </div>
                             {ofertasDeLanding.map(([productoId, grupo]) => (
@@ -692,6 +875,12 @@ export default function ConfigurarVentaCodigo({
                                 elegidas={ofertasElegidas}
                                 onAlternar={alternarOferta}
                                 onGestionar={() => abrirOfertasDe(productoId)}
+                                confPaquetes={confPaquetes}
+                                onCambiarPaquete={(id, cambio) => {
+                                  cambiarPaquete(id, cambio);
+                                  const prod = porClave.get(`producto:${productoId}`);
+                                  if (prod) verDonde('producto', 'paquetes', contentIdPanel(prod));
+                                }}
                               />
                             ))}
                           </>
@@ -741,9 +930,7 @@ export default function ConfigurarVentaCodigo({
               {/* Recomendados */}
               <Bloque
                 titulo="Productos recomendados"
-                ayuda={tipo === 'producto_unico'
-                  ? 'Una fila de complementos debajo del producto estrella.'
-                  : 'Una fila «Te puede gustar» al final de la ficha de cada producto.'}
+                ayuda="Una fila «Te puede gustar» al final de la ficha de cada producto."
                 interruptor={{ activo: recoActivo, onChange: setRecoActivo, etiqueta: 'Mostrar productos recomendados' }}
                 verDonde={recoActivo ? verRecomendados : null}
               >
@@ -843,7 +1030,7 @@ export default function ConfigurarVentaCodigo({
         </div>
 
         {/* Vista previa (escritorio ancho) */}
-        <aside className="hidden xl:flex w-[460px] shrink-0 border-l border-border bg-surface-2 flex-col min-h-0" aria-label="Vista previa">
+        <aside className="hidden xl:flex flex-1 min-w-0 border-l border-border bg-surface-2 flex-col min-h-0" aria-label="Vista previa">
           {vistaPrevia}
         </aside>
       </div>
@@ -853,11 +1040,29 @@ export default function ConfigurarVentaCodigo({
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-fg truncate">
-              {formato?.titulo} · <span className="font-mono font-normal">{resumenProductos}</span>
+              {ENTRADAS.find(e => e.key === abrirEn)?.titulo} · <span className="font-mono font-normal">{resumenProductos}</span>
             </p>
-            <p className={`text-xs truncate ${error ? 'text-danger' : bloqueo ? 'text-warning' : 'text-fg-muted'}`}>
-              {error || bloqueo || `Con ${resumenOfertas} y ${resumenReco}.`}
-            </p>
+            {errorGuardado ? (
+              <div className="text-xs text-danger">
+                <p className="font-semibold">
+                  No se pudo guardar: {errorGuardado.mensaje}
+                  {errorGuardado.detalles?.length > 0 && (
+                    <button type="button" onClick={() => setVerDetalleError(v => !v)} className="ml-2 underline font-normal">
+                      {verDetalleError ? 'Ocultar detalle' : 'Ver por qué'}
+                    </button>
+                  )}
+                </p>
+                {verDetalleError && (
+                  <ul className="mt-1 list-disc pl-4 space-y-0.5 max-h-24 overflow-y-auto">
+                    {errorGuardado.detalles.map((d, i) => <li key={i}>{d}</li>)}
+                  </ul>
+                )}
+              </div>
+            ) : (
+              <p className={`text-xs truncate ${error ? 'text-danger' : bloqueo ? 'text-warning' : 'text-fg-muted'}`}>
+                {error || bloqueo || `${resumenOfertas} · ${resumenReco}.`}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -900,10 +1105,11 @@ export default function ConfigurarVentaCodigo({
       {panelOfertas && (
         <PanelOfertas
           producto={panelOfertas.producto}
+          estrategia={panelOfertas.estrategia || null}
           productos={todos.filter(i => i.tipo === 'producto')}
           enLanding={idsProductoEnLanding}
-          onElegir={producto => setPanelOfertas({ producto })}
-          onCambiarProducto={() => setPanelOfertas({ producto: null })}
+          onElegir={producto => setPanelOfertas(p => ({ ...p, producto }))}
+          onCambiarProducto={() => setPanelOfertas(p => ({ ...p, producto: null }))}
           onCerrar={cerrarPanelOfertas}
         />
       )}
@@ -914,7 +1120,6 @@ export default function ConfigurarVentaCodigo({
 // Ancho real de una pantalla de escritorio: la vista previa de escritorio
 // renderiza la landing a este ancho y la achica para que entre.
 const ANCHO_ESCRITORIO = 1280;
-const ANCHO_MOVIL = 390;
 
 /**
  * Tamaño de un elemento, al vuelo (para escalar la vista de escritorio).
@@ -934,6 +1139,12 @@ function useTamano() {
       observador.current = new ResizeObserver(medir);
       observador.current.observe(nodo);
     }
+    // Respaldo: al pasar de oculto (pantalla chica) a visible, no todos los
+    // navegadores avisan por ResizeObserver y la vista quedaba en blanco.
+    const alRedimensionar = () => medir();
+    window.addEventListener('resize', alRedimensionar);
+    const desconectar = observador.current?.disconnect.bind(observador.current);
+    observador.current = { disconnect: () => { desconectar?.(); window.removeEventListener('resize', alRedimensionar); } };
   }, []);
   useEffect(() => () => observador.current?.disconnect(), []);
   return [ref, tam];
@@ -952,7 +1163,8 @@ function VistaPrevia({
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const [marcoRef, tam] = useTamano();
   const escritorio = dispositivo === 'escritorio';
-  const escala = escritorio && tam.w ? Math.min(1, tam.w / ANCHO_ESCRITORIO) : 1;
+  const anchoLienzo = escritorio && tam.w ? Math.max(ANCHO_ESCRITORIO, tam.w) : ANCHO_ESCRITORIO;
+  const escala = escritorio && tam.w ? Math.min(1, tam.w / anchoLienzo) : 1;
 
   const iframe = (
     <CodigoPreview
@@ -1037,7 +1249,8 @@ function VistaPrevia({
             Elegí productos y los vas a ver acá.
           </div>
         ) : escritorio ? (
-          // Ventana de navegador: la página a 1280px, achicada al ancho disponible.
+          // Ventana de navegador: 1280px como base, pero si el panel es mas
+          // ancho el iframe crece con el marco para no dejar una franja vacia.
           <div className="w-full h-full flex flex-col rounded-xl border border-border-strong overflow-hidden bg-white shadow-xl">
             <div className="h-7 shrink-0 flex items-center gap-1.5 px-3 bg-surface border-b border-border" aria-hidden="true">
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
@@ -1048,7 +1261,7 @@ function VistaPrevia({
               {tam.w > 0 && (
                 <div
                   style={{
-                    width: ANCHO_ESCRITORIO,
+                    width: anchoLienzo,
                     height: tam.h / escala,
                     transform: `scale(${escala})`,
                     transformOrigin: 'top left',
@@ -1060,12 +1273,9 @@ function VistaPrevia({
             </div>
           </div>
         ) : (
-          <div
-            className="w-full h-full rounded-[28px] border-[6px] border-fg/85 overflow-hidden bg-white shadow-xl"
-            style={{ maxWidth: ANCHO_MOVIL + 12 }}
-          >
+          <PhonePreviewShell>
             {iframe}
-          </div>
+          </PhonePreviewShell>
         )}
       </div>
     </>
@@ -1092,6 +1302,26 @@ const BUMP_MIN = 0.2;
 const BUMP_MAX = 0.4;
 
 /** "Cuesta el 30% de este producto" + si está en la franja que más se toma. */
+/**
+ * Por qué una oferta marcada NO va a aparecer en la landing, o null si se
+ * ve. Son las mismas reglas que aplican la landing publicada (backend:
+ * vigencia; frontend: ofertaCheckoutPublicable) — antes la oferta
+ * desaparecía sin ningún aviso.
+ */
+export function motivoOfertaOculta(oferta, hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' })) {
+  const desde = oferta.fecha_inicio ? String(oferta.fecha_inicio).slice(0, 10) : null;
+  const hasta = oferta.fecha_fin ? String(oferta.fecha_fin).slice(0, 10) : null;
+  if (desde && hoy < desde) return `Empieza el ${desde.split('-').reverse().join('/')}: hasta entonces no se muestra.`;
+  if (hasta && hoy > hasta) return `Venció el ${hasta.split('-').reverse().join('/')}: cambiá la fecha de fin para que vuelva a verse.`;
+  if (!(oferta.componentes || []).length) return 'No tiene producto para sumar: elegí qué producto ofrece.';
+  const normal = Number(oferta.precio_normal) || 0;
+  const promo = oferta.precio_order_bump != null ? Number(oferta.precio_order_bump) : null;
+  const final = promo ?? normal;
+  if (!(final > 0)) return 'No tiene precio: cargá el precio con la oferta.';
+  if (normal > 0 && final > normal) return 'El precio con la oferta es mayor que el normal: bajalo para que se muestre.';
+  return null;
+}
+
 function consejoPrecioBump(oferta, precioProducto) {
   const precio = Number(oferta.precio_order_bump ?? oferta.precio_normal) || 0;
   if (oferta.estrategia !== 'order_bump' || !precio || !precioProducto) return null;
@@ -1106,9 +1336,12 @@ function consejoPrecioBump(oferta, precioProducto) {
  * Un producto y sus ofertas: qué ofrece cada una, dónde aparece y a qué
  * precio. Marcar = mostrar en esta landing.
  */
-function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGestionar, onSumar, fuera }) {
+function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGestionar, onSumar, fuera, confPaquetes = {}, onCambiarPaquete = null }) {
+  const [abierto, setAbierto] = useState(true);
   const precioProducto = Number(precioPanel(producto)) || 0;
   const bumpsMarcados = ofertas.filter(o => o.estrategia === 'order_bump' && elegidas.has(o.id)).length;
+  const activas = ofertas.filter(o => o.estrategia === 'normal' || elegidas.has(o.id)).length;
+  const idLista = `grupo-ofertas-${producto?.id || nombre}`.replace(/[^a-zA-Z0-9_-]/g, '-');
   return (
     <div className={`rounded-xl border border-border overflow-hidden ${fuera ? 'opacity-80' : ''}`}>
       <div className="flex items-center gap-3 px-4 py-2.5 bg-surface-2">
@@ -1116,6 +1349,11 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
         <div className="min-w-0 flex-1">
           <p className="text-[11px] uppercase tracking-wide text-fg-muted">Cuando compran</p>
           <p className="text-sm font-semibold text-fg truncate">{nombre}</p>
+          {!abierto && (
+            <p className="mt-0.5 text-[11px] text-fg-muted">
+              {ofertas.length} oferta{ofertas.length === 1 ? '' : 's'} · {activas} activa{activas === 1 ? '' : 's'} en esta landing
+            </p>
+          )}
         </div>
         {onSumar && (
           <button type="button" onClick={onSumar} className="text-xs font-semibold text-primary-text hover:underline shrink-0">
@@ -1124,39 +1362,62 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
         )}
         <button
           type="button"
+          onClick={() => setAbierto(v => !v)}
+          aria-expanded={abierto}
+          aria-controls={idLista}
+          className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-border bg-surface text-xs font-medium text-fg-muted hover:text-fg hover:border-border-strong shrink-0"
+        >
+          {abierto ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          {abierto ? 'Minimizar' : 'Expandir'}
+        </button>
+        <button
+          type="button"
           onClick={onGestionar}
           className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border border-border bg-surface text-xs font-medium text-fg hover:border-border-strong shrink-0"
         >
           <Pencil size={12} /> Agregar o editar
         </button>
       </div>
-      {!fuera && bumpsMarcados > 1 && (
+      {abierto && !fuera && bumpsMarcados > 1 && (
         <p className="px-4 py-2 text-[11px] text-warning bg-warning/[0.07] border-t border-border">
           Marcaste {bumpsMarcados} order bumps para este producto. Una sola oferta fuerte suele rendir más que varias: dejá la más relevante.
         </p>
       )}
-      <ul className="divide-y divide-border">
+      {abierto && <ul id={idLista} className="divide-y divide-border">
         {ofertas.map(o => {
           const precio = o.precio_order_bump ?? o.precio_normal;
           const antes = o.precio_order_bump != null && Number(o.precio_normal) > Number(o.precio_order_bump) ? o.precio_normal : null;
           return (
             <li key={o.id}>
               <label className={`flex items-start gap-3 px-4 py-3 ${fuera ? 'cursor-default' : 'cursor-pointer hover:bg-surface-2'} transition-colors`}>
-                <input
-                  type="checkbox"
-                  checked={elegidas.has(o.id)}
-                  disabled={fuera}
-                  onChange={() => onAlternar?.(o)}
-                  aria-label={`Mostrar ${o.nombre} en esta landing`}
-                  className="w-4 h-4 mt-0.5 accent-primary shrink-0"
-                />
+                {o.estrategia === 'normal' ? (
+                  <Check size={16} className="mt-0.5 shrink-0 text-success" aria-label="Siempre visible en la ficha" />
+                ) : (
+                  <input
+                    type="checkbox"
+                    checked={elegidas.has(o.id)}
+                    disabled={fuera}
+                    onChange={() => onAlternar?.(o)}
+                    aria-label={`Mostrar ${o.nombre} en esta landing`}
+                    className="w-4 h-4 mt-0.5 accent-primary shrink-0"
+                  />
+                )}
+                {o.imagen_url
+                  ? <img src={getMediaUrl(o.imagen_url)} alt="" className="w-11 h-11 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
+                  : <span className="w-11 h-11 rounded-lg bg-surface-2 shrink-0" />}
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm text-fg">{o.nombre}</span>
                   <span className="block text-xs text-fg-muted mt-0.5">
-                    <span className="font-medium text-fg/80">{o.estrategia === 'order_bump' ? 'Order bump' : 'Upsell'}</span>
-                    {o.estrategia === 'order_bump' ? ' · en la ficha y el checkout' : ' · en el carrito'}
+                    <span className="font-medium text-fg/80">{{ order_bump: 'Order bump', upsell: 'Upsell', normal: 'Paquete' }[o.estrategia] || 'Oferta'}</span>
+                    {{ order_bump: ' · en la ficha y el checkout', upsell: ' · en el carrito', normal: ' · siempre en la ficha, en "Elegí tu oferta"' }[o.estrategia] || ''}
                   </span>
                   <span className="block text-xs text-fg-muted">Ofrece: {queOfrece(o)}</span>
+                  {(() => {
+                    const motivo = motivoOfertaOculta(o);
+                    return motivo && (
+                      <span className="block text-[11px] mt-1 text-danger">No se va a ver: {motivo}</span>
+                    );
+                  })()}
                   {!fuera && (() => {
                     const consejo = consejoPrecioBump(o, precioProducto);
                     return consejo && (
@@ -1169,19 +1430,135 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
                   {antes && <span className="block font-mono text-[11px] text-fg-muted line-through tabular-nums">{formatearGs(antes)}</span>}
                 </span>
               </label>
+              {o.estrategia === 'normal' && !fuera && onCambiarPaquete && (
+                <ConfigPaquete conf={confPaquetes[o.id] || {}} onCambiar={cambio => onCambiarPaquete(o.id, cambio)} />
+              )}
             </li>
           );
         })}
-      </ul>
+      </ul>}
     </div>
   );
 }
 
-function Concepto({ titulo, texto }) {
+/**
+ * Combos que existen pero no se pueden vender: un combo nuevo nace en
+ * BORRADOR y el catálogo solo trae los ACTIVOS (y con su producto base
+ * activo). Antes simplemente no aparecían y no había forma de saber por qué.
+ */
+function CombosSinPublicar({ idsVisibles, onActivado, formatoCombos }) {
+  const [combos, setCombos] = useState([]);
+  const [activando, setActivando] = useState(null);
+  const [error, setError] = useState('');
+
+  const cargar = useCallback(() => comboAdminService.listar()
+    .then(lista => setCombos(Array.isArray(lista) ? lista : []))
+    .catch(() => setCombos([])), []);
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const ocultos = combos.filter(c => !idsVisibles.has(Number(c.id)));
+  if (!ocultos.length) {
+    return formatoCombos && idsVisibles.size === 0 ? (
+      <p className="mb-4 rounded-xl border border-dashed border-border px-4 py-3 text-[13px] text-fg-muted">
+        Todavía no tenés combos. Crealos en{' '}
+        <a href="/combos" target="_blank" rel="noopener noreferrer" className="font-medium text-primary-text hover:underline">Combos</a>
+        {' '}y volvé a esta pantalla: aparecen solos.
+      </p>
+    ) : null;
+  }
+
+  async function activar(combo) {
+    setError('');
+    setActivando(combo.id);
+    try {
+      await comboAdminService.cambiarEstado(combo.id, 'ACTIVO');
+      await Promise.all([cargar(), onActivado?.()]);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'No se pudo activar el combo.');
+    } finally {
+      setActivando(null);
+    }
+  }
+
   return (
-    <div className="rounded-lg bg-surface-2 px-3.5 py-2.5">
-      <p className="text-[13px] font-semibold text-fg">{titulo}</p>
-      <p className="text-xs text-fg-muted mt-0.5 leading-snug">{texto}</p>
+    <div className="mb-4 rounded-xl border border-warning/40 bg-warning/[0.06] px-4 py-3">
+      <p className="text-[13px] font-semibold text-fg">
+        {ocultos.length === 1 ? 'Tenés 1 combo que no aparece acá' : `Tenés ${ocultos.length} combos que no aparecen acá`}
+      </p>
+      <p className="text-xs text-fg-muted mt-0.5">Solo se pueden vender los combos activos. Activalo y aparece en la lista para sumarlo a la landing (con su propia ficha).</p>
+      <ul className="mt-2 divide-y divide-border">
+        {ocultos.map(c => {
+          const borrador = c.estado === 'BORRADOR';
+          const activo = c.estado === 'ACTIVO';
+          return (
+            <li key={c.id} className="flex items-center gap-3 py-2">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm text-fg truncate">{c.nombre}</span>
+                <span className="block text-xs text-fg-muted">
+                  {activo
+                    ? `Activo, pero no entra al catálogo: revisá que su producto base${c.producto_padre?.nombre ? ` (${c.producto_padre.nombre})` : ''} esté activo`
+                    : borrador ? 'Borrador: nunca se activó' : 'Desactivado'}
+                </span>
+              </span>
+              {activo ? (
+                <a href="/productos" target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-semibold text-primary-text hover:underline">Ver producto</a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => activar(c)}
+                  disabled={activando === c.id}
+                  className="shrink-0 h-8 px-3 rounded-lg bg-fg text-canvas text-xs font-semibold disabled:opacity-60"
+                >
+                  {activando === c.id ? 'Activando…' : 'Activar'}
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {error && <p className="mt-1 text-xs text-danger">{error}</p>}
+    </div>
+  );
+}
+
+const ETIQUETAS_SUGERIDAS = ['Más elegido', 'Mayor ahorro', 'Recomendado', 'Ideal para 1 mes'];
+
+/**
+ * Cómo se presenta un paquete en "Elegí tu oferta": su etiqueta (editable,
+ * con sugerencias) y si es el destacado (arranca elegido y lleva la
+ * etiqueta llena). "Más elegido" es una afirmación del comercio: ponela
+ * cuando sea verdad.
+ */
+function ConfigPaquete({ conf, onCambiar }) {
+  const etiqueta = conf.etiqueta || '';
+  return (
+    <div className="px-4 pb-3 pl-11 space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-medium text-fg-muted mr-1">Etiqueta</span>
+        {ETIQUETAS_SUGERIDAS.map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onCambiar({ etiqueta: etiqueta === t ? '' : t })}
+            aria-pressed={etiqueta === t}
+            className={`h-6 px-2 rounded-full text-[11px] font-medium border ${etiqueta === t ? 'bg-fg text-canvas border-fg' : 'border-border text-fg-muted hover:text-fg'}`}
+          >
+            {t}
+          </button>
+        ))}
+        <input
+          value={etiqueta}
+          onChange={e => onCambiar({ etiqueta: e.target.value.slice(0, 24) })}
+          placeholder="O escribí la tuya"
+          maxLength={24}
+          aria-label="Etiqueta del paquete"
+          className="h-6 w-36 rounded-md border border-border bg-surface px-2 text-[11px] text-fg"
+        />
+      </div>
+      <label className="flex items-center gap-2 text-[12px] text-fg cursor-pointer">
+        <input type="checkbox" checked={!!conf.destacado} onChange={e => onCambiar({ destacado: e.target.checked })} className="w-3.5 h-3.5 accent-primary" />
+        Destacar este paquete <span className="text-fg-muted">(arranca elegido y resalta su etiqueta)</span>
+      </label>
     </div>
   );
 }
@@ -1243,8 +1620,9 @@ function ProductosIncluidos({ lista, vacio }) {
  * se ofrece cuando ese producto está en la compra); después se abre el
  * editor de ofertas de ese producto, el mismo de su ficha.
  */
-function PanelOfertas({ producto, productos, enLanding, onElegir, onCambiarProducto, onCerrar }) {
+function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar }) {
   const [busqueda, setBusqueda] = useState('');
+  const tipoElegido = LABEL_TIPO_OFERTA_RAPIDA[estrategia] || null;
 
   useEffect(() => {
     // Con el formulario de una oferta abierto (modal del editor), Escape no
@@ -1264,11 +1642,15 @@ function PanelOfertas({ producto, productos, enLanding, onElegir, onCambiarProdu
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label="Ofertas">
       <button type="button" aria-label="Cerrar" onClick={onCerrar} className="absolute inset-0 bg-black/40 cursor-default" />
-      <div className="relative w-full max-w-4xl h-full bg-canvas border-l border-border shadow-2xl flex flex-col">
+      <div className={`relative w-full ${producto ? 'max-w-4xl' : 'max-w-3xl'} h-full bg-canvas border-l border-border shadow-2xl flex flex-col`}>
         <div className="flex items-center justify-between gap-3 px-5 md:px-6 h-16 border-b border-border bg-surface shrink-0">
           <div className="min-w-0">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Ofertas en la compra</p>
-            <p className="text-[15px] font-semibold text-fg truncate">{producto ? `Cuando compran ${producto.nombre}` : '¿Con qué producto se ofrece?'}</p>
+            <p className="text-[15px] font-semibold text-fg truncate">
+              {producto
+                ? `${tipoElegido ? `${tipoElegido} de ` : 'Ofertas de '}${producto.nombre}`
+                : tipoElegido ? `Crear ${tipoElegido}: elegí el producto` : 'Elegí el producto a editar'}
+            </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {producto && (
@@ -1290,6 +1672,8 @@ function PanelOfertas({ producto, productos, enLanding, onElegir, onCambiarProdu
             <div className="p-4 md:p-6">
               <Suspense fallback={<p className="flex items-center gap-2 text-sm text-fg-muted"><Loader size={14} className="animate-spin" /> Abriendo el editor…</p>}>
                 <OfertasProductoTab
+                  key={`${producto.id}-${estrategia || ''}`}
+                  crearAlAbrir={estrategia}
                   productoId={producto.id}
                   productoNombre={producto.nombre}
                   productoAnclaPrecioBase={Number(precioPanel(producto)) || 0}
@@ -1298,9 +1682,13 @@ function PanelOfertas({ producto, productos, enLanding, onElegir, onCambiarProdu
               </Suspense>
             </div>
           ) : (
-            <div className="p-5 md:p-6 max-w-2xl">
+            <div className="p-5 md:p-6">
               <p className="text-sm text-fg-muted mb-3">
-                Elegí el producto que dispara la oferta: cuando alguien lo compre, le vas a ofrecer algo más.
+                {estrategia === 'pack' ? 'Elegí el producto al que pertenece el paquete. Ejemplo: AdelFit x2 o x3.'
+                  : estrategia === 'combo' ? 'Elegí el producto principal que dispara este combo. Después sumás los productos del kit.'
+                    : estrategia === 'order_bump' ? 'Elegí el producto principal donde se va a mostrar el order bump.'
+                      : estrategia === 'upsell' ? 'Elegí el producto principal que dispara el upsell.'
+                        : 'Elegí qué producto querés editar. Las ofertas se muestran cuando el cliente compra ese producto.'}
               </p>
               <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar producto" etiqueta="Buscar producto" />
               <ul className="mt-3 rounded-xl border border-border divide-y divide-border bg-surface">

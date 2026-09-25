@@ -3,17 +3,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone,
   PanelLeftClose, PanelLeftOpen, AlertTriangle, RefreshCw, Copy, Settings2, Home, ShoppingBag,
-  FileCode2, Wand2, Check,
+  FileCode2, Wand2, Check, Bot, X, Send, Loader2,
 } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
 import { vitrinaService } from '../../services/vitrinaService';
+import { ofertaService } from '../../services/ofertaService';
 import CodigoPreview from './CodigoPreview';
+import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
 import { PLANTILLA_PRODUCTO, plantillaInicioPara, formatoDeBase } from './plantillasBaseCodigo';
-import { PROMPT_MAESTRO, armarPromptVista } from './promptsCodigo';
+import { armarPromptVista } from './promptsCodigo';
 
 /**
  * Editor del modo "Lienzo en blanco". Dos pasos:
@@ -46,6 +48,22 @@ const VISTAS = [
 ];
 
 const CODIGO_VACIO = { html: '', css: '', js: '' };
+// Ficha propia de un producto: una vista más, con clave "propia:<content_id>".
+const PREFIJO_PROPIA = 'propia:';
+const clavePropia = contentId => `${PREFIJO_PROPIA}${contentId}`;
+
+/** content de la landing → códigos del editor (inicio, ficha general y fichas propias). */
+function codigosDesdeContent(content, fichaGeneralRespaldo = PLANTILLA_PRODUCTO) {
+  const vistas = content?.vistas || {};
+  const propias = Object.fromEntries(Object.entries(vistas.productos || {})
+    .filter(([, c]) => c?.html)
+    .map(([cid, c]) => [clavePropia(cid), { ...CODIGO_VACIO, ...c }]));
+  return {
+    inicio: { ...CODIGO_VACIO, ...(content?.codigo || {}) },
+    producto: vistas.producto?.html ? vistas.producto : fichaGeneralRespaldo,
+    ...propias,
+  };
+}
 // La base de inicio depende del formato de venta (catálogo, producto
 // estrella, combos); la ficha es una sola.
 const baseDe = (vista, tipo) => (vista === 'producto' ? PLANTILLA_PRODUCTO : plantillaInicioPara(tipo));
@@ -120,10 +138,9 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [venta, setVenta] = useState(landingInicial?.content?.venta || null);
   const [seleccion, setSeleccion] = useState([]);
   const [vista, setVista] = useState('inicio');
-  const [codigos, setCodigos] = useState(() => ({
-    inicio: { ...CODIGO_VACIO, ...(landingInicial?.content?.codigo || {}) },
-    producto: landingInicial?.content?.vistas?.producto?.html ? landingInicial.content.vistas.producto : PLANTILLA_PRODUCTO,
-  }));
+  const [codigos, setCodigos] = useState(() => codigosDesdeContent(landingInicial?.content));
+  // Fichas propias que se volvieron a la general (se mandan como null al guardar).
+  const [propiasBorradas, setPropiasBorradas] = useState(() => new Set());
   const [ajustes, setAjustes] = useState({ titulo: '', seo_titulo: '', seo_descripcion: '' });
   const [tab, setTab] = useState('html');
   const [guardando, setGuardando] = useState(false);
@@ -136,6 +153,18 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [viewportMode, setViewportMode] = useState('desktop');
   const [productoPreviewId, setProductoPreviewId] = useState(null);
   const [sinGuardar, setSinGuardar] = useState(false);
+  // Order bumps / upsells de la tienda: sin esto la ficha del preview nunca
+  // mostraba ofertas, aunque estuvieran creadas y marcadas en la venta.
+  const [ofertasTienda, setOfertasTienda] = useState([]);
+
+  // Asistente IA del editor: sigue la conversación que arrancó el wizard
+  // (ver AILandingWizard), pero SOBRE esta misma landing — "hacela más
+  // minimalista", "cambiá los colores" — en vez de tener que volver a
+  // /landing y perder esta landing para armar una nueva desde cero.
+  const [asistenteAbierto, setAsistenteAbierto] = useState(false);
+  const [promptIA, setPromptIA] = useState('');
+  const [regenerando, setRegenerando] = useState(false);
+  const [errorIA, setErrorIA] = useState('');
 
   // El preview se repinta con un borrador aparte y con retardo: recargar
   // el iframe en cada tecla hace que la landing parpadee sin parar y
@@ -155,10 +184,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       vitrinaService.catalogo().catch(() => ({ productos: [], combos: [] })),
     ]).then(([l, t, cat]) => {
       if (!activo) return;
-      const inicial = {
-        inicio: { ...CODIGO_VACIO, ...(l.content?.codigo || {}) },
-        producto: l.content?.vistas?.producto?.html ? l.content.vistas.producto : PLANTILLA_PRODUCTO,
-      };
+      const inicial = codigosDesdeContent(l.content);
       setLanding(l);
       setTienda(t);
       setCatalogo(cat);
@@ -190,8 +216,30 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     return () => clearTimeout(temporizador.current);
   }, [codigos]);
 
+  // Qué se edita: el inicio, la ficha general o la ficha propia del producto
+  // elegido en la ficha (si tiene). Todo lo de abajo trabaja sobre esta clave.
+  const productoFichaId = vista === 'producto' ? (productoPreviewId || (seleccion[0] ? contentIdPanel(seleccion[0]) : null)) : null;
+  const claveVista = productoFichaId && codigos[clavePropia(productoFichaId)] ? clavePropia(productoFichaId) : vista;
+  const esPropia = claveVista.startsWith(PREFIJO_PROPIA);
+  const nombreProductoFicha = seleccion.find(p => contentIdPanel(p) === productoFichaId)?.nombre || '';
+
+  function crearFichaPropia() {
+    if (!productoFichaId) return;
+    setCodigos(prev => ({ ...prev, [clavePropia(productoFichaId)]: { ...prev.producto } }));
+    setPropiasBorradas(prev => { const c = new Set(prev); c.delete(productoFichaId); return c; });
+    setSinGuardar(true);
+    setAviso(`Ficha propia de "${nombreProductoFicha}": arranca como una copia de la general. Lo que cambies acá (a mano o con el prompt) es solo para este producto.`);
+  }
+  function volverAFichaGeneral() {
+    if (!productoFichaId || !window.confirm(`¿Borrar la ficha propia de "${nombreProductoFicha}"? Va a usar la ficha general, como los demás productos.`)) return;
+    setCodigos(prev => { const c = { ...prev }; delete c[clavePropia(productoFichaId)]; return c; });
+    setPropiasBorradas(prev => new Set(prev).add(productoFichaId));
+    setSinGuardar(true);
+    setAviso(`"${nombreProductoFicha}" vuelve a usar la ficha general. Guardá para publicarlo.`);
+  }
+
   function escribir(clave, valor) {
-    setCodigos(prev => ({ ...prev, [vista]: { ...prev[vista], [clave]: valor } }));
+    setCodigos(prev => ({ ...prev, [claveVista]: { ...prev[claveVista], [clave]: valor } }));
     setAviso('');
     setSinGuardar(true);
   }
@@ -218,14 +266,20 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         seo_titulo: ajustes.seo_titulo,
         seo_descripcion: ajustes.seo_descripcion,
         codigo: codigosAGuardar.inicio,
-        vistas: { producto: codigosAGuardar.producto },
+        vistas: {
+          producto: codigosAGuardar.producto,
+          productos: {
+            ...Object.fromEntries([...propiasBorradas].map(cid => [cid, null])),
+            ...Object.fromEntries(Object.entries(codigosAGuardar)
+              .filter(([k]) => k.startsWith(PREFIJO_PROPIA))
+              .map(([k, c]) => [k.slice(PREFIJO_PROPIA.length), c])),
+          },
+        },
         ...(ventaAGuardar ? { venta: ventaAGuardar } : {}),
         items: seleccionAItems(itemsAGuardar, landing?.items),
       });
-      const guardados = {
-        inicio: { ...CODIGO_VACIO, ...(actualizada.content?.codigo || {}) },
-        producto: actualizada.content?.vistas?.producto?.html ? actualizada.content.vistas.producto : codigosAGuardar.producto,
-      };
+      const guardados = codigosDesdeContent(actualizada.content, codigosAGuardar.producto);
+      setPropiasBorradas(new Set());
       setLanding(actualizada);
       setVenta(actualizada.content?.venta || ventaAGuardar);
       setCodigos(guardados);
@@ -236,11 +290,71 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       return true;
     } catch (err) {
       const data = err?.response?.data;
-      setError(data?.message || 'No se pudo guardar.');
+      // Sin respuesta del servidor (caído, reiniciando) no hay data: se
+      // muestra el motivo real en vez de un "no se pudo" mudo.
+      setError(data?.message || (err?.response ? `el servidor respondió ${err.response.status}` : 'no hay conexión con el servidor. ¿Está levantado el backend?'));
       setErroresDetalle(data?.errores || []);
       return false;
     } finally {
       setGuardando(false);
+    }
+  }
+
+  // A qué vista le habla el Asistente IA: la que está abierta en el editor
+  // ahora mismo. Antes esto SIEMPRE tocaba "Inicio" sin importar qué
+  // pidiera el comercio — pedir "agregame la vista por productos" mientras
+  // se miraba Inicio terminaba reescribiendo Inicio, porque no había forma
+  // de apuntar a la ficha. Las fichas PROPIAS (por producto) todavía no
+  // tienen IA automática: el asistente edita la ficha general.
+  const targetIA = vista === 'producto' ? 'producto' : 'inicio';
+  const nombreTargetIA = targetIA === 'producto' ? 'la ficha de producto (general)' : 'el "Inicio"';
+
+  // Le pide a la IA que edite la vista actual de esta landing (mismo id,
+  // mismo slug, mismos productos configurados) con un prompt nuevo. El RAG
+  // recibe el código actual y edita sobre eso — si el resultado pierde
+  // demasiado (menos atributos data-gesicomm-*, sin botón de compra, mucho
+  // más corto) el backend lo rechaza en vez de guardarlo.
+  async function regenerarConIA() {
+    const texto = promptIA.trim();
+    if (texto.length < 5) {
+      setErrorIA('Escribí una descripción de al menos 5 caracteres.');
+      return;
+    }
+    if (esPropia) {
+      setErrorIA(`El asistente edita la ficha general, no la ficha propia de "${nombreProductoFicha}". Cambiá a "Ficha general" o usá la pestaña "Prompt IA".`);
+      return;
+    }
+    const codigoActual = codigos[targetIA];
+    if (
+      codigoActual?.html?.trim()
+      && !window.confirm(`La IA va a editar ${nombreTargetIA} de esta landing con tu pedido, conservando lo que no tenga que ver con él. ¿Seguir?`)
+    ) {
+      return;
+    }
+    setRegenerando(true);
+    setErrorIA('');
+    try {
+      const actualizada = await landingSimpleService.regenerarConIA(id, texto, targetIA);
+      const guardados = codigosDesdeContent(actualizada.content, codigos.producto);
+      setLanding(actualizada);
+      setCodigos(guardados);
+      setCodigosPreview(guardados);
+      setAjustes(a => ({
+        titulo: actualizada.titulo || a.titulo,
+        seo_titulo: actualizada.seo_titulo || a.seo_titulo,
+        seo_descripcion: actualizada.seo_descripcion || a.seo_descripcion,
+      }));
+      setAdvertencias(actualizada.codigo_advertencias || []);
+      setAviso(`La IA editó ${nombreTargetIA} de tu landing — ya está guardado. Revisá el preview.`);
+      setSinGuardar(false);
+      setPromptIA('');
+      setTab('html');
+    } catch (err) {
+      const data = err?.response?.data;
+      const detalle = Array.isArray(data?.errores) && data.errores.length ? ` ${data.errores.join(' ')}` : '';
+      setErrorIA((data?.message || (err?.response ? `el servidor respondió ${err.response.status}` : 'no hay conexión con el servidor.')) + detalle);
+    } finally {
+      setRegenerando(false);
     }
   }
 
@@ -251,8 +365,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     // retoques del comercio.
     const baseActual = formatoDeBase(codigos.inicio.html);
     const codigoInicialIntacto = !codigos.inicio.html.trim() || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL);
-    const cambiaFormatoBase = !!baseActual && baseActual !== nuevaVenta.tipo
-      && window.confirm('Cambiaste el formato. ¿Reemplazar la página de inicio por la base del formato nuevo? Se pierden los cambios que le hayas hecho al HTML de inicio.');
+    // Hay un solo inicio base (la tienda). Uno de los formatos viejos
+    // (Producto estrella / Combos) se ofrece cambiar, preguntando. Si la
+    // landing abre directo en un producto, el inicio no se muestra: no se toca.
+    const cambiaFormatoBase = !!baseActual && baseActual !== 'catalogo' && nuevaVenta.abrir_en !== 'producto'
+      && window.confirm('Tu inicio tiene el diseño de un formato anterior. ¿Reemplazarlo por la tienda? Se pierden los cambios que le hayas hecho al HTML de inicio.');
     const usarBase = codigoInicialIntacto || cambiaFormatoBase;
     const nuevosCodigos = usarBase ? { ...codigos, inicio: plantillaInicioPara(nuevaVenta.tipo) } : codigos;
     setSeleccion(nuevaSeleccion);
@@ -312,19 +429,19 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   function cargarBase() {
-    const actual = codigos[vista];
+    const actual = codigos[claveVista];
     const tieneAlgo = actual.html.trim() || actual.css.trim() || actual.js.trim();
     if (tieneAlgo && !window.confirm('Esto reemplaza el HTML, CSS y JS de esta vista por el código base. ¿Seguir?')) return;
-    setCodigos(prev => ({ ...prev, [vista]: baseDe(vista, venta?.tipo) }));
+    setCodigos(prev => ({ ...prev, [claveVista]: baseDe(vista, venta?.tipo) }));
     setSinGuardar(true);
     setAviso('Código base cargado. Guardá para publicarlo.');
   }
 
   function aplicarRespuestaIa(bloques) {
-    setCodigos(prev => ({ ...prev, [vista]: { ...prev[vista], ...bloques } }));
+    setCodigos(prev => ({ ...prev, [claveVista]: { ...prev[claveVista], ...bloques } }));
     setSinGuardar(true);
     setTab('html');
-    setAviso(`Código aplicado a ${vista === 'producto' ? 'la ficha de producto' : 'el inicio'}. Revisá el preview y guardá.`);
+    setAviso(`Código aplicado a ${esPropia ? `la ficha de "${nombreProductoFicha}"` : vista === 'producto' ? 'la ficha general' : 'el inicio'}. Revisá el preview y guardá.`);
   }
 
   // Tab dentro del textarea indenta en vez de saltar al control siguiente:
@@ -341,13 +458,25 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   const publicUrl = useMemo(() => urlPublicaLanding(tienda, landing), [tienda, landing]);
 
+  // Se piden al entrar al paso de código (también al volver de "Configurar
+  // venta", donde se pueden crear o editar ofertas).
+  useEffect(() => {
+    if (paso !== 'codigo') return;
+    let vivo = true;
+    ofertaService.listarTodas({ estrategias: ['order_bump', 'upsell'] })
+      .then(lista => { if (vivo) setOfertasTienda(Array.isArray(lista) ? lista : []); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [paso]);
+
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: seleccion,
     tienda,
     venta,
     vista,
     productoId: productoPreviewId,
-  }), [seleccion, tienda, venta, vista, productoPreviewId]);
+    ofertas: ofertasTienda,
+  }), [seleccion, tienda, venta, vista, productoPreviewId, ofertasTienda]);
 
   const nombrePorId = useMemo(
     () => new Map(seleccion.map(p => [contentIdPanel(p), p.nombre])),
@@ -388,10 +517,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     return (
       <ConfigurarVentaCodigo
         catalogo={catalogo}
+        onRecargarCatalogo={() => vitrinaService.catalogo().then(setCatalogo)}
         inicial={{ venta, seleccion }}
         guardando={guardando}
         onConfirmar={confirmarVenta}
         onVolver={volverDesdeVenta}
+        errorGuardado={error ? { mensaje: error, detalles: erroresDetalle } : null}
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}
         codigos={codigos}
@@ -400,10 +531,16 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   const tabActiva = TABS.find(t => t.key === tab);
-  const codigoVista = codigos[vista];
+  const codigoVista = codigos[claveVista];
+  // Ficha guardada antes de que existieran los bloques de ofertas: las
+  // ofertas marcadas nunca iban a tener dónde aparecer, sin ningún aviso.
+  const ofertasMarcadas = venta?.cross_sell?.activo !== false && (venta?.cross_sell?.ofertas || []).length > 0;
+  const fichaSinOfertas = ofertasMarcadas
+    && codigos.producto.html.trim()
+    && !/data-gesicomm-(lista=["']ofertas|bump)/.test(codigos.producto.html);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       <div className="h-14 border-b border-fg/10 shrink-0 flex items-center justify-between px-5 gap-3">
         <div className="flex items-center gap-4 min-w-0">
           <button
@@ -414,6 +551,15 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           >
             {sidebarVisible ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
             <span className="hidden sm:inline">{sidebarVisible ? 'Ocultar código' : 'Mostrar código'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAsistenteAbierto(v => !v)}
+            className={`flex items-center gap-1.5 p-2 text-xs font-semibold rounded-lg px-3 transition-colors ${asistenteAbierto ? 'bg-primary text-white' : 'bg-fg/5 text-fg/50 hover:text-fg'}`}
+            title="Seguir hablando con la IA sobre esta landing"
+          >
+            <Bot size={16} />
+            <span className="hidden sm:inline">Asistente IA</span>
           </button>
           <div className="min-w-0">
             <h1 className="text-sm font-bold truncate">{landing?.titulo || 'Landing en blanco'}</h1>
@@ -528,14 +674,51 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 </button>
               ))}
               <span className="ml-auto pr-1 text-[11px] text-fg/40">
-                Editando: <strong className="text-fg/70">{vista === 'producto' ? 'Ficha de producto' : 'Inicio'}</strong>
+                Editando: <strong className="text-fg/70">{esPropia ? `Ficha de ${nombreProductoFicha}` : vista === 'producto' ? 'Ficha general' : 'Inicio'}</strong>
               </span>
             </div>
+
+            {vista === 'producto' && seleccion.length > 0 && (
+              <div className="px-3 py-2.5 border-b border-fg/10 bg-fg/[0.03] space-y-2">
+                <label className="flex items-center gap-2 text-[11px] text-fg/60">
+                  <span className="shrink-0 font-semibold">Ficha de</span>
+                  <select
+                    value={productoFichaId || ''}
+                    onChange={e => setProductoPreviewId(e.target.value)}
+                    className="min-w-0 flex-1 bg-fg/5 border border-fg/10 rounded px-2 py-1 text-[12px] text-fg"
+                  >
+                    {seleccion.map(p => (
+                      <option key={contentIdPanel(p)} value={contentIdPanel(p)}>
+                        {codigos[clavePropia(contentIdPanel(p))] ? '★ ' : ''}{p.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div role="radiogroup" aria-label="Diseño de esta ficha" className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button" role="radio" aria-checked={!esPropia}
+                    onClick={() => { if (esPropia) volverAFichaGeneral(); }}
+                    className={`text-left rounded-lg border px-2.5 py-1.5 ${!esPropia ? 'border-fg/40 bg-fg/10' : 'border-fg/10 hover:border-fg/25'}`}
+                  >
+                    <span className="block text-[12px] font-semibold text-fg">Ficha general</span>
+                    <span className="block text-[10.5px] text-fg/50">La misma para todos los productos</span>
+                  </button>
+                  <button
+                    type="button" role="radio" aria-checked={esPropia}
+                    onClick={() => { if (!esPropia) crearFichaPropia(); }}
+                    className={`text-left rounded-lg border px-2.5 py-1.5 ${esPropia ? 'border-fg/40 bg-fg/10' : 'border-fg/10 hover:border-fg/25'}`}
+                  >
+                    <span className="block text-[12px] font-semibold text-fg">Propia de este producto</span>
+                    <span className="block text-[10.5px] text-fg/50">Su propio HTML y su propio prompt</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {tabActiva?.lenguaje ? (
               <div className="flex-1 min-h-0 flex flex-col">
                 <textarea
-                  key={`${vista}-${tab}`}
+                  key={`${claveVista}-${tab}`}
                   value={codigoVista[tabActiva.lenguaje] || ''}
                   onChange={e => escribir(tabActiva.lenguaje, e.target.value)}
                   onKeyDown={e => alTeclear(e, tabActiva.lenguaje)}
@@ -560,6 +743,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             ) : tab === 'prompts' ? (
               <PanelPrompts
                 vista={vista}
+                fichaDe={esPropia ? seleccion.find(p => contentIdPanel(p) === productoFichaId) : null}
                 tienda={tienda}
                 venta={venta}
                 seleccion={seleccion}
@@ -636,30 +820,122 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           </div>
           {vista === 'producto' && (
             <p className="px-3 py-1.5 text-[11px] text-fg/40 border-b border-fg/10">
-              Una sola ficha para todos los productos. En el preview no hay variantes ni ofertas: en la landing publicada salen las reales de cada producto.
+              {esPropia
+                ? `Ficha propia de ${nombreProductoFicha}: solo este producto se ve así. Los demás usan la ficha general.`
+                : 'Ficha general: la usan todos los productos que no tienen ficha propia (★).'} Las variantes aparecen solo en la landing publicada.
             </p>
           )}
-          <div className="flex-1 min-h-0 flex justify-center overflow-hidden">
-            <div style={{ width: ANCHOS_VIEWPORT[viewportMode], maxWidth: '100%', height: '100%' }}>
-              <CodigoPreview
-                key={`${generacion}-${viewportMode}-${vista}`}
-                codigo={codigosPreview[vista]}
-                titulo={ajustes.seo_titulo || ajustes.titulo}
-                datos={datosPreview}
-                onError={alErrorRuntime}
-                onCheckout={alCheckoutPreview}
-                onNavegar={alNavegarPreview}
-                onEvento={alEventoPreview}
-              />
+          {vista === 'inicio' && venta?.abrir_en === 'producto' && (
+            <div className="px-3 py-2 text-[12px] text-amber-200 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-3">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span className="flex-1">
+                Esta landing abre directo en la ficha de {seleccion.find(p => p.tipo === 'producto')?.nombre || 'tu producto principal'}: este inicio no se muestra. Diseñá la ficha.
+              </span>
+              <button type="button" onClick={() => setVista('producto')} className="shrink-0 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 font-semibold">
+                Ir a la ficha
+              </button>
             </div>
+          )}
+          {vista === 'producto' && fichaSinOfertas && (
+            <div className="px-3 py-2 text-[12px] text-amber-200 bg-amber-500/10 border-b border-amber-500/20 flex items-center gap-3">
+              <AlertTriangle size={14} className="shrink-0" />
+              <span className="flex-1">
+                Tu ficha no tiene lugar para order bump, así que esa oferta no se ve antes de comprar. Cargá la ficha base o agregá <code>data-gesicomm-lista="ofertas_bump"</code> arriba del botón principal. Los upsells no van en la ficha: Gesicomm los muestra como etapa del checkout.
+              </span>
+              <button type="button" onClick={cargarBase} className="shrink-0 px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 font-semibold">
+                Usar la ficha base
+              </button>
+            </div>
+          )}
+          <div className="flex-1 min-h-0 flex justify-center overflow-hidden">
+            {viewportMode === 'mobile' ? (
+              <PhonePreviewShell className="p-4">
+                <CodigoPreview
+                  key={`${generacion}-${viewportMode}-${claveVista}`}
+                  codigo={codigosPreview[claveVista] || codigosPreview[vista]}
+                  titulo={ajustes.seo_titulo || ajustes.titulo}
+                  datos={datosPreview}
+                  onError={alErrorRuntime}
+                  onCheckout={alCheckoutPreview}
+                  onNavegar={alNavegarPreview}
+                  onEvento={alEventoPreview}
+                />
+              </PhonePreviewShell>
+            ) : (
+              <div style={{ width: ANCHOS_VIEWPORT[viewportMode], maxWidth: '100%', height: '100%' }}>
+                <CodigoPreview
+                  key={`${generacion}-${viewportMode}-${claveVista}`}
+                  codigo={codigosPreview[claveVista] || codigosPreview[vista]}
+                  titulo={ajustes.seo_titulo || ajustes.titulo}
+                  datos={datosPreview}
+                  onError={alErrorRuntime}
+                  onCheckout={alCheckoutPreview}
+                  onNavegar={alNavegarPreview}
+                  onEvento={alEventoPreview}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {asistenteAbierto && (
+        <div className="absolute bottom-4 right-4 z-20 w-[380px] max-w-[calc(100vw-2rem)] bg-surface border border-fg/15 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="p-3 border-b border-fg/10 bg-fg/5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 text-primary flex items-center justify-center">
+                <Bot size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-fg truncate">Asistente IA</p>
+                <p className="text-[11px] text-fg/50 truncate">Le pide cambios a {nombreTargetIA}</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => setAsistenteAbierto(false)} className="p-1.5 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg shrink-0" title="Cerrar">
+              <X size={15} />
+            </button>
+          </div>
+          <div className="p-3 space-y-2.5">
+            <p className="text-xs text-fg/55 leading-relaxed">
+              {esPropia ? (
+                <>El asistente edita la <strong className="text-fg/75">ficha general</strong>, no la ficha propia de "{nombreProductoFicha}" — cambiá a "Ficha general" arriba, o usá la pestaña "Prompt IA" para esta.</>
+              ) : (
+                <>Pedile un ajuste puntual ("agregá una sección de beneficios", "hacela más minimalista") — edita <strong className="text-fg/75">{nombreTargetIA}</strong> conservando el resto. Para {vista === 'inicio' ? 'la ficha de producto' : 'el inicio'}, cambiá de vista arriba primero.</>
+              )}
+            </p>
+            {errorIA && <p className="text-xs text-danger">{errorIA}</p>}
+            <form
+              onSubmit={e => { e.preventDefault(); regenerarConIA(); }}
+              className="relative flex items-end gap-2"
+            >
+              <textarea
+                value={promptIA}
+                onChange={e => setPromptIA(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); regenerarConIA(); }
+                }}
+                rows={2}
+                disabled={regenerando || esPropia}
+                placeholder={esPropia ? 'No disponible para fichas propias todavía' : 'Ej: agregá una sección de beneficios...'}
+                className="flex-1 resize-none bg-fg/5 border border-fg/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-fg disabled:opacity-60"
+              />
+              <button
+                type="submit"
+                disabled={regenerando || esPropia || promptIA.trim().length < 5}
+                className="shrink-0 p-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                title={`Editar ${nombreTargetIA} con este prompt`}
+              >
+                {regenerando ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function PanelPrompts({ vista, tienda, venta, seleccion, onAplicar, onError, onElegirProductos }) {
+function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplicar, onError, onElegirProductos }) {
   const [estilo, setEstilo] = useState('');
   const [incluirBase, setIncluirBase] = useState(true);
   const [copiado, setCopiado] = useState('');
@@ -669,10 +945,12 @@ function PanelPrompts({ vista, tienda, venta, seleccion, onAplicar, onError, onE
   const prompt = useMemo(() => armarPromptVista(vista, {
     tienda,
     venta,
-    productos: seleccion,
+    // Ficha propia: el prompt es SOLO de ese producto.
+    productos: fichaDe ? [fichaDe] : seleccion,
+    fichaDe,
     estilo,
     base: incluirBase ? baseDe(vista, venta?.tipo) : null,
-  }), [vista, tienda, venta, seleccion, estilo, incluirBase]);
+  }), [vista, fichaDe, tienda, venta, seleccion, estilo, incluirBase]);
 
   async function copiar(texto, cual) {
     try {
@@ -760,28 +1038,25 @@ function PanelPrompts({ vista, tienda, venta, seleccion, onAplicar, onError, onE
       </label>
 
       <div>
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <span className="text-xs font-semibold text-fg/70">
-            Prompt de {nombreVista} · {seleccion.length} producto{seleccion.length === 1 ? '' : 's'}
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => copiar(PROMPT_MAESTRO, 'maestro')}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg"
-              title="Solo las reglas y el contrato, sin productos ni vista: sirve como instrucción fija de un GPT o proyecto"
-            >
-              {copiado === 'maestro' ? <Check size={13} /> : <Copy size={13} />} Maestro
-            </button>
-            <button
-              type="button"
-              onClick={() => copiar(prompt, 'vista')}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-fg text-canvas hover:bg-fg-muted"
-            >
-              {copiado === 'vista' ? <Check size={13} /> : <Copy size={13} />} {copiado === 'vista' ? 'Copiado' : 'Copiar prompt'}
-            </button>
-          </div>
+        {/* Un solo prompt para copiar. Había también "Solo las reglas" (el
+            maestro suelto), pero sin la tienda, sus colores, el logo ni los
+            productos la IA no sabía qué armar: el completo ya trae esas reglas. */}
+        <div className="rounded-xl border border-fg/25 bg-fg/5 p-3 flex flex-col mb-3">
+          <p className="text-sm font-semibold text-fg">Prompt {vista === 'producto' ? 'de la ficha' : 'del inicio'}</p>
+          <p className="text-xs text-fg/60 mt-1">
+            Todo en uno: las reglas de Gesicomm + tu tienda (nombre, colores, logo) + tus {seleccion.length} producto{seleccion.length === 1 ? '' : 's'} + lo que tiene que tener {nombreVista}{incluirBase ? ' + el código base' : ''}. Pegalo en un chat nuevo y la IA ya sabe todo.
+          </p>
+          <button
+            type="button"
+            onClick={() => copiar(prompt, 'vista')}
+            className="mt-2.5 self-start inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg text-canvas hover:bg-fg-muted"
+          >
+            {copiado === 'vista' ? <Check size={13} /> : <Copy size={13} />} {copiado === 'vista' ? 'Copiado' : `Copiar prompt ${vista === 'producto' ? 'de la ficha' : 'del inicio'}`}
+          </button>
         </div>
+        <span className="block text-xs font-semibold text-fg/70 mb-2">
+          Así queda el prompt completo {vista === 'producto' ? 'de la ficha' : 'del inicio'}
+        </span>
         <textarea
           value={prompt}
           readOnly

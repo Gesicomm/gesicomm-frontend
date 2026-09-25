@@ -164,7 +164,8 @@ export default function ConfigurarTienda() {
   const subdominioDerivado = slugifyLigero(form.subdominio_manual || form.nombre);
   const tieneDominioPropio = Boolean(tienda?.dominio_propio);
   const subdominioCambia = !tienda || subdominioDerivado !== tienda.subdominio;
-  const debeValidarSubdominio = subdominioCambia && !tieneDominioPropio;
+  // El prefijo se edita siempre (con dominio propio queda como respaldo).
+  const debeValidarSubdominio = subdominioCambia;
   const subdominioDebounced = useDebounce(subdominioDerivado, 500);
   const urlPublica = tieneDominioPropio
     ? tienda.dominio_propio
@@ -341,9 +342,7 @@ export default function ConfigurarTienda() {
       // En su lugar mandamos `subdominio` con el valor ya slugificado.
       const { subdominio_manual, ...resto } = form;
       const payload = { ...resto };
-      if (!tienda || !tieneDominioPropio) {
-        payload.subdominio = subdominioDerivado;
-      }
+      payload.subdominio = subdominioDerivado;
 
       const tokenFueIngresado = Boolean(metaTokenNuevo.trim());
       const tokenFueEliminado = eliminarMetaToken;
@@ -487,37 +486,38 @@ export default function ConfigurarTienda() {
                           <span className="tn-field-hint">El nombre visible para tus clientes. No afecta la URL si ya la personalizaste.</span>
                         </label>
 
-                        {!tieneDominioPropio && (
-                          <div className="tn-field">
-                            <span className="tn-field-label">Prefijo URL <em>(subdominio)</em></span>
-                            <div className="tn-url-prefix-wrap">
-                              <input
-                                className="tn-url-prefix-input"
-                                value={form.subdominio_manual}
-                                onChange={e => handleChange('subdominio_manual', slugifyLigero(e.target.value))}
-                                placeholder={slugifyLigero(form.nombre) || 'tu-tienda'}
-                                maxLength={63}
-                              />
-                              <span className="tn-url-prefix-suffix">.{tienda?.dominio_base || 'gesicomm.com'}</span>
-                            </div>
-                            <span className="tn-field-hint">
-                              La parte antes del punto en tu dirección web. Solo letras minúsculas, números y guiones.
-                              {form.subdominio_manual ? '' : ' Si lo dejás vacío se genera del nombre automáticamente.'}
-                            </span>
-
-                            {debeValidarSubdominio && (
-                              <div className="tn-disponibilidad tn-disponibilidad-inline">
-                                {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
-                                {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
-                                  <span className="tn-check ok"><Check size={12} /> URL disponible</span>
-                                )}
-                                {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
-                                  <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
-                                )}
-                              </div>
-                            )}
+                        <div className="tn-field">
+                          <span className="tn-field-label">Prefijo URL <em>(subdominio{tieneDominioPropio ? ', de respaldo' : ''})</em></span>
+                          <div className="tn-url-prefix-wrap">
+                            <input
+                              className="tn-url-prefix-input"
+                              value={form.subdominio_manual}
+                              onChange={e => handleChange('subdominio_manual', slugifyLigero(e.target.value))}
+                              placeholder={slugifyLigero(form.nombre) || 'tu-tienda'}
+                              maxLength={63}
+                            />
+                            <span className="tn-url-prefix-suffix">.{tienda?.dominio_base || 'gesicomm.com'}</span>
                           </div>
-                        )}
+                          <span className="tn-field-hint">
+                            {tieneDominioPropio
+                              ? `Tu dirección principal es ${tienda.dominio_propio}; esta queda como respaldo. `
+                              : 'La parte antes del punto en tu dirección web, independiente del nombre. '}
+                            Solo letras minúsculas, números y guiones.
+                            {form.subdominio_manual ? '' : ' Si lo dejás vacío se genera del nombre automáticamente.'}
+                          </span>
+
+                          {debeValidarSubdominio && (
+                            <div className="tn-disponibilidad tn-disponibilidad-inline">
+                              {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={12} className="spin-icon" /> Verificando disponibilidad...</span>}
+                              {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
+                                <span className="tn-check ok"><Check size={12} /> URL disponible</span>
+                              )}
+                              {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
+                                <span className="tn-check error"><X size={12} /> {disponibilidad.motivo || 'No disponible'}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
 
                         <div className="tn-field">
                           <span className="tn-field-label">URL pública</span>
@@ -745,7 +745,7 @@ export default function ConfigurarTienda() {
                           <input
                             value={form.nombre_contacto}
                             onChange={e => handleChange('nombre_contacto', e.target.value)}
-                            placeholder="Ej: Martín García o Gesicom Soporte"
+                            placeholder="Ej: Martín García"
                           />
                           <span className="tn-field-hint">Nombre visible en la sección de contacto de tu tienda pública.</span>
                         </label>

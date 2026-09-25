@@ -22,6 +22,7 @@
  */
 
 import { runtimeGesicomm } from './runtimeGesicomm';
+import { conMarcaTienda, cssMarcaTienda } from './marcaTiendaCodigo';
 
 // El sandbox del iframe. allow-same-origin NO va acá y no debe agregarse:
 // combinado con allow-scripts anula el aislamiento por completo.
@@ -77,10 +78,194 @@ function escaparCierreStyle(css) {
   return String(css || '').replace(/<\/(style)/gi, '<\\/$1');
 }
 
+/**
+ * Las secciones de Gesicom (productos/contacto) van ANTES del último
+ * <footer> de la landing, no pegadas al final del body: ahí quedaban debajo
+ * del pie, como un bloque suelto con otro estilo. Sin footer propio, al final
+ * (en ese caso las extras ya traen el footer legal de Gesicom).
+ */
+function cuerpoConExtras(html, extrasHtml) {
+  const cuerpo = String(html || '');
+  if (!extrasHtml) return cuerpo;
+  const i = cuerpo.search(/<footer(?:\s|>)(?![\s\S]*<footer(?:\s|>))/i);
+  return i === -1
+    ? `${cuerpo}\n${extrasHtml}`
+    : `${cuerpo.slice(0, i)}${extrasHtml}\n${cuerpo.slice(i)}`;
+}
+
 const SYSTEM_CSS = `
+/* El HTML generado por IA a veces deja body o un wrapper raiz con ancho fijo
+   (1024px/1200px). En el preview de escritorio eso produce una franja blanca
+   horrible a la derecha aunque la landing deberia ocupar todo el viewport. */
+html,
+body {
+  width: auto !important;
+  min-width: 100% !important;
+  max-width: none !important;
+}
+body {
+  overflow-x: hidden;
+}
+body > :where(header, main, footer, section, article, aside, nav, div) {
+  min-width: 100% !important;
+}
+
 /* Los upsells no viven dentro de la ficha: son una etapa del checkout. */
 [data-gesicomm-lista="ofertas_upsell"] {
   display: none !important;
+}
+
+/* Compatibilidad: landings guardadas antes del rediseño pueden seguir
+   teniendo el HTML viejo del order bump. Esta capa se inyecta después del CSS
+   del comercio para que la preview y la publicación no revivan el diseño
+   amarillo/punteado ni el control de formulario antiguo. */
+.bump:has(input[data-gesicomm-bump]) {
+  display: block !important;
+  overflow: hidden !important;
+  position: relative !important;
+  cursor: pointer !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 12%, transparent), transparent 62%),
+    var(--gc-superficie, var(--white, #fff)) !important;
+  border: 1.5px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 38%, var(--line, #dbe3ee)) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, .08) !important;
+}
+.bump:has(input[data-gesicomm-bump]:hover),
+.bump:has(input[data-gesicomm-bump]):hover {
+  border-color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  box-shadow: 0 18px 34px rgba(15, 23, 42, .12) !important;
+}
+.bump:has(input[data-gesicomm-bump]:checked) {
+  border-color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 13%, #fff), var(--gc-superficie, var(--white, #fff))) !important;
+}
+.bump input[data-gesicomm-bump] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-flag {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  padding: 8px 14px !important;
+  color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 14%, #fff) !important;
+  font-size: .72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: .05em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+}
+.bump:has(input[data-gesicomm-bump]:checked) .bump-flag {
+  color: #fff !important;
+  background: var(--gc-primario, var(--brand, #18a66b)) !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-body {
+  display: grid !important;
+  grid-template-columns: 68px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: center !important;
+  padding: 14px !important;
+}
+/* El botón va en su propia fila, a todo el ancho: en la misma fila que la
+   foto y el texto le dejaba al nombre una columna de ~70px (una palabra por
+   renglón) en cuanto la ficha se angostaba. */
+.bump:has(input[data-gesicomm-bump]):has(.bump-control) .bump-body {
+  grid-template-columns: 28px 68px minmax(0, 1fr) !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-control {
+  display: grid !important;
+  place-items: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: 2px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 64%, var(--line, #dbe3ee)) !important;
+  border-radius: 999px !important;
+  color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 10%, #fff) !important;
+}
+.bump:has(input[data-gesicomm-bump]:checked) .bump-control {
+  border-color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  background: var(--gc-primario, var(--brand, #18a66b)) !important;
+  color: #fff !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-img {
+  width: 68px !important;
+  height: 68px !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: contain !important;
+  background: #fff !important;
+  border: 1px solid rgba(15, 23, 42, .08) !important;
+  border-radius: 10px !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-copy {
+  display: grid !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-title {
+  color: var(--gc-texto, var(--ink, #0f172a)) !important;
+  font-weight: 850 !important;
+  line-height: 1.22 !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin: 0 14px 14px !important;
+  padding: 10px 14px !important;
+  color: #fff !important;
+  background: var(--gc-primario, var(--brand, #18a66b)) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  font-size: .78rem !important;
+  font-weight: 900 !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-action {
+  grid-column: 1 / -1 !important;
+  justify-self: stretch !important;
+  text-align: center !important;
+  padding: 10px 14px !important;
+  color: var(--gc-texto-sobre-primario, #fff) !important;
+  background: var(--gc-primario, var(--brand, #18a66b)) !important;
+  border-radius: 999px !important;
+  font-size: .76rem !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+.bump:has(input[data-gesicomm-bump]:checked) .bump-action {
+  color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  background: transparent !important;
+  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 38%, transparent) !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-dot {
+  display: none !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl-off,
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl-on {
+  font-size: 0 !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl-off > *,
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl-on > * {
+  display: none !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl-off::after {
+  content: "Agregar a mi pedido";
+  font-size: .78rem;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-ctrl-on::after {
+  content: "Quitar";
+  font-size: .78rem;
+}
+.bump:has(input[data-gesicomm-bump]:checked) .bump-ctrl {
+  color: var(--gc-primario, var(--brand, #18a66b)) !important;
+  background: transparent !important;
+  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 38%, transparent) !important;
 }
 `;
 
@@ -96,6 +281,9 @@ const SYSTEM_CSS = `
  *   datos: lo que lee el runtime (window.__GESICOMM__), ver datosRuntime.js.
  * @returns {string} documento listo para el srcDoc del iframe
  */
+// Branding de Mi Tienda (--tienda-*): ver marcaTiendaCodigo.js.
+export { cssMarcaTienda };
+
 export function construirDocumentoCodigo(codigo, opciones = {}) {
   const { html = '', css = '', js = '' } = codigo || {};
   const { titulo = '', reportarErrores = false, datos = null, extras = null } = opciones;
@@ -124,20 +312,56 @@ window.addEventListener('unhandledrejection', function (e) {
 // prompt; si el código no las define, lo que se ve (fondo del body, color
 // de texto, fondo del primer botón de compra).
 (function () {
-  function opaco(c) { return c && c !== 'transparent' && c.replace(/ /g, '') !== 'rgba(0,0,0,0)' ? c : ''; }
+  // Cualquier color CSS (white, hsl(), color-mix(), var() anidada) a #rrggbb
+  // pintándolo en un canvas de 1px: el carrito solo entiende hex/rgb, y un
+  // valor que no podía leer lo dejaba en modo oscuro sobre una landing blanca.
+  var lienzo = null;
+  function hex(c) {
+    c = String(c || '').trim();
+    if (!c || c === 'transparent') return '';
+    try {
+      lienzo = lienzo || document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      lienzo.clearRect(0, 0, 1, 1);
+      lienzo.fillStyle = '#000';
+      lienzo.fillStyle = c;
+      lienzo.fillRect(0, 0, 1, 1);
+      var p = lienzo.getImageData(0, 0, 1, 1).data;
+      if (p[3] < 240) return '';
+      return '#' + [p[0], p[1], p[2]].map(function (n) { return ('0' + n.toString(16)).slice(-2); }).join('');
+    } catch (e) { return ''; }
+  }
+  // Una variable puede valer var(--otra) o color-mix(): se resuelve en un
+  // elemento de prueba, que devuelve el color ya calculado.
+  function resolver(nombre) {
+    if (!getComputedStyle(document.documentElement).getPropertyValue(nombre).trim()) return '';
+    var prueba = document.createElement('span');
+    prueba.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;color:var(' + nombre + ')';
+    (document.body || document.documentElement).appendChild(prueba);
+    var c = getComputedStyle(prueba).color;
+    prueba.remove();
+    return hex(c);
+  }
+  var ultimo = '';
   function reportar() {
     var raiz = getComputedStyle(document.documentElement);
     var body = document.body ? getComputedStyle(document.body) : raiz;
     var boton = document.querySelector('[data-gesicomm-comprar], [data-gesicomm-checkout]');
-    var v = function (n) { return raiz.getPropertyValue(n).trim(); };
-    parent.postMessage({
+    var tema = {
       tipo: 'gesicomm:tema',
-      primario: v('--gc-primario') || (boton ? opaco(getComputedStyle(boton).backgroundColor) : ''),
-      fondo: v('--gc-fondo') || opaco(body.backgroundColor) || opaco(raiz.backgroundColor) || '#ffffff',
-      texto: v('--gc-texto') || body.color
-    }, '*');
+      primario: resolver('--gc-primario') || (boton ? hex(getComputedStyle(boton).backgroundColor) : ''),
+      fondo: resolver('--gc-fondo') || hex(body.backgroundColor) || hex(raiz.backgroundColor) || '#ffffff',
+      texto: resolver('--gc-texto') || hex(body.color)
+    };
+    var clave = tema.primario + tema.fondo + tema.texto;
+    if (clave === ultimo) return;
+    ultimo = clave;
+    parent.postMessage(tema, '*');
   }
-  if (document.readyState === 'complete') reportar(); else window.addEventListener('load', reportar);
+  // Apenas hay DOM (sin esperar las imágenes, que con un catálogo grande
+  // tardan) y de nuevo al terminar de cargar, por si una fuente o un
+  // estilo cambió los colores.
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', reportar); else reportar();
+  window.addEventListener('load', reportar);
 })();
 </script>`;
 
@@ -153,9 +377,10 @@ window.addEventListener('unhandledrejection', function (e) {
 <base target="_top">
 <style>
 html, body { margin: 0; padding: 0; }
+${cssMarcaTienda(datos?.tienda?.colores)}
 </style>
 <style>
-${escaparCierreStyle(css)}
+${escaparCierreStyle(conMarcaTienda(css))}
 </style>
 <style>
 ${SYSTEM_CSS}
@@ -163,8 +388,7 @@ ${SYSTEM_CSS}
 ${extras?.css ? `<style>\n${escaparCierreStyle(extras.css)}\n</style>` : ''}
 </head>
 <body>
-${html || ''}
-${extras?.html || ''}
+${cuerpoConExtras(html, extras?.html)}
 ${puenteGesicomm}
 ${puenteErrores}
 <!-- El codigo del comercio va en su propio script, en el nivel mas alto y

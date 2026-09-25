@@ -2152,30 +2152,29 @@ button.lp-tier-card--imagen {
 .lp-bump-benefits svg { flex: 0 0 auto; margin-top: 0.1rem; color: var(--lp-cart-success, #34d399); }
 .lp-bump .lp-cart-sugerencia-variantes { margin: 0; padding: 0 0.9rem 0.9rem; }
 
-/* ─── Cross-sell en carrusel ─────────────────────────────────────────── */
-.lp-cross-rail {
+/* ─── Cross-sell en lista ───────────────────────────────────────────────
+   Filas compactas [foto | nombre y precio | Agregar]: en los 400px del
+   drawer un carrusel cortaba la tercera tarjeta y el nombre. */
+.lp-cross-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 132px;
-  gap: 0.65rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 0.25rem;
-  scrollbar-width: thin;
+  gap: 0.5rem;
 }
-.lp-cross-card {
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.6rem;
+.lp-cross-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.6rem;
   border-radius: 14px;
   background: var(--lp-cart-surface-2, #171b28);
   border: 1px solid var(--lp-cart-border-soft, rgba(255, 255, 255, 0.08));
 }
-.lp-cross-card-media {
-  position: relative;
-  aspect-ratio: 4 / 3;
+.lp-cross-row-media {
+  width: 52px;
+  height: 52px;
   border-radius: 10px;
   background: #fff;
   display: flex;
@@ -2184,48 +2183,45 @@ button.lp-tier-card--imagen {
   color: #94a3b8;
   overflow: hidden;
 }
-.lp-cross-card-media img { width: 100%; height: 100%; object-fit: contain; }
+.lp-cross-row-media img { width: 100%; height: 100%; object-fit: contain; }
+.lp-cross-row-info { display: grid; gap: 0.15rem; min-width: 0; }
 .lp-cross-medal {
-  position: absolute;
-  top: 6px;
-  left: 6px;
+  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  max-width: calc(100% - 12px);
-  padding: 0.15rem 0.45rem;
+  max-width: 100%;
+  padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff;
+  background: color-mix(in srgb, #f59e0b 16%, transparent);
+  color: #b45309;
   font-size: 0.62rem;
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 3px 8px rgba(217, 119, 6, 0.35);
 }
-.lp-cross-card-nombre {
-  font-size: 0.76rem;
+.lp-cart-root:not([data-cart-modo="claro"]) .lp-cross-medal { color: #fbbf24; }
+.lp-cross-row-nombre {
+  font-size: 0.8rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.3;
   color: var(--lp-cart-text, #f8fafc);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.5em;
 }
-.lp-cross-card-precio { display: flex; align-items: baseline; gap: 0.35rem; flex-wrap: wrap; }
-.lp-cross-card-precio b { font-size: 0.82rem; font-weight: 800; color: var(--lp-cart-text, #f8fafc); }
-.lp-cross-card-precio del { font-size: 0.7rem; color: var(--lp-cart-soft, #94a3b8); }
-.lp-cross-card-add {
-  margin-top: auto;
+.lp-cross-row-precio { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; }
+.lp-cross-row-precio b { font-size: 0.84rem; font-weight: 800; color: var(--lp-cart-text, #f8fafc); }
+.lp-cross-row-precio del { font-size: 0.72rem; color: var(--lp-cart-soft, #94a3b8); }
+.lp-cross-row-add {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 0.25rem;
-  min-height: 34px;
-  border-radius: 10px;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
   border: 1.5px solid var(--l-primary);
   background: transparent;
   color: color-mix(in srgb, var(--l-primary) 80%, var(--lp-cart-text, #fff));
@@ -2235,7 +2231,8 @@ button.lp-tier-card--imagen {
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
-.lp-cross-card-add:hover { background: var(--l-primary); color: var(--l-on-primary, #0b1211); }
+.lp-cross-row-add:hover { background: var(--l-primary); color: var(--l-on-primary, #0b1211); }
+.lp-cross-row-add:focus-visible { outline: 3px solid color-mix(in srgb, var(--l-primary) 45%, transparent); outline-offset: 2px; }
 
 /* ─── Footer fijo ────────────────────────────────────────────────────── */
 .lp-cart-footer {
@@ -3622,4 +3619,249 @@ button.lp-tier-card--imagen {
   font-size: 0.72rem;
   line-height: 1.4;
   color: var(--l-text-muted);
+}
+
+/* ─── Overrides finales: bump y upsell comerciales ─────────────────────
+   Estas reglas viven al final para ganar sobre versiones anteriores del
+   drawer. Evitan que reaparezcan el checkbox viejo, el modal chico y el CTA
+   apagado cuando una landing fue creada antes del rediseño. */
+.lp-bump {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1.5px solid color-mix(in srgb, var(--l-primary) 42%, var(--lp-cart-border, rgba(15, 23, 42, .14)));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--l-primary) 12%, transparent), transparent 60%),
+    var(--lp-cart-surface-2, #fff);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, .10);
+}
+.lp-bump-card {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lp-bump-card:disabled {
+  cursor: not-allowed;
+  opacity: .68;
+}
+.lp-bump-card:hover:not(:disabled) .lp-bump-action {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.lp-bump-flag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  padding: .62rem .85rem;
+  color: var(--l-primary);
+  background: color-mix(in srgb, var(--l-primary) 14%, transparent);
+  font-size: .72rem;
+  font-weight: 950;
+  letter-spacing: .04em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+.lp-bump-flag span,
+.lp-bump-flag b {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-width: 0;
+}
+.lp-bump-flag b {
+  flex: 0 0 auto;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.lp-bump-body {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: .7rem .8rem;
+  align-items: center;
+  padding: .85rem .9rem .9rem;
+}
+.lp-bump-media {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, .08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+.lp-bump-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+  display: block;
+}
+.lp-bump-info {
+  display: grid;
+  gap: .3rem;
+  min-width: 0;
+}
+/* Tres renglones antes de cortar: el nombre es lo que el cliente evalúa. */
+.lp-bump-title {
+  color: var(--lp-cart-text, #0f172a);
+  font-size: .9rem;
+  font-weight: 800;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lp-bump-desc {
+  color: var(--lp-cart-muted, #475569);
+  font-size: .76rem;
+  line-height: 1.35;
+}
+.lp-bump-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .25rem .5rem;
+}
+.lp-bump-price strong {
+  color: var(--lp-cart-text, #0f172a);
+  font-size: 1rem;
+  font-weight: 900;
+}
+.lp-bump-price del {
+  color: var(--lp-cart-soft, #64748b);
+  font-size: .78rem;
+}
+.lp-bump-action {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  min-height: 42px;
+  padding: 0 .95rem;
+  border-radius: 999px;
+  background: var(--l-primary);
+  color: var(--l-on-primary, #fff);
+  font-size: .84rem;
+  font-weight: 850;
+  white-space: nowrap;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--l-primary) 24%, transparent);
+  transition: transform .15s ease, filter .15s ease;
+}
+.lp-bump-card:focus-visible { outline: none; }
+.lp-bump-card:focus-visible .lp-bump-action { outline: 3px solid color-mix(in srgb, var(--l-primary) 45%, transparent); outline-offset: 2px; }
+.lp-bump-control,
+.lp-bump-eyebrow,
+.lp-bump-off,
+.lp-bump-benefits,
+.lp-bump-check,
+.lp-bump-box,
+.lp-bump-arrow {
+  display: none !important;
+}
+
+.lp-upsell-overlay {
+  background: rgba(0, 0, 0, .72);
+  backdrop-filter: blur(9px);
+  padding: clamp(1rem, 3vw, 2.5rem);
+}
+.lp-upsell-modal {
+  max-width: 860px;
+  max-height: min(90vh, 760px);
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border-radius: 22px;
+}
+.lp-upsell-modal-close {
+  display: none !important;
+}
+.lp-upsell-header {
+  padding-right: 0;
+}
+.lp-upsell-header h2 {
+  margin: .85rem 0 0;
+  color: var(--l-text, #f8fafc);
+  font-size: clamp(1.25rem, 2.1vw, 1.7rem);
+  line-height: 1.08;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+.lp-upsell-grid {
+  grid-template-columns: minmax(260px, .95fr) minmax(0, 1.05fr);
+  gap: clamp(1.4rem, 3vw, 2rem);
+}
+.lp-upsell-media {
+  border-radius: 18px;
+  background: #fff;
+}
+.lp-upsell-media img {
+  object-fit: contain;
+}
+.lp-upsell-title {
+  font-size: clamp(1.55rem, 3.2vw, 2.35rem);
+}
+.lp-upsell-primary {
+  gap: .55rem;
+  min-height: 66px;
+  border-radius: 16px;
+  color: #fff !important;
+  font-size: clamp(1rem, 1.8vw, 1.15rem);
+  text-transform: uppercase;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .18);
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--l-primary) 46%, transparent);
+}
+.lp-upsell-microcopy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  margin: 0;
+  color: var(--l-text-muted, #cbd5e1);
+  font-size: .82rem;
+  font-weight: 750;
+  text-align: center;
+}
+.lp-upsell-microcopy svg {
+  flex: 0 0 auto;
+  color: var(--l-primary);
+}
+.lp-upsell-decline {
+  margin-top: 1.2rem;
+  color: color-mix(in srgb, var(--l-text, #f8fafc) 78%, transparent);
+  font-size: .92rem;
+  font-weight: 850;
+}
+
+@media (max-width: 620px) {
+  .lp-bump-flag {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .35rem;
+  }
+  .lp-bump-body {
+    grid-template-columns: 56px minmax(0, 1fr);
+    padding: .75rem;
+  }
+  .lp-bump-media {
+    width: 56px;
+    height: 56px;
+  }
+  .lp-upsell-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lp-upsell-media {
+    aspect-ratio: 16 / 11;
+  }
+  .lp-upsell-primary {
+    min-height: 58px;
+  }
 }

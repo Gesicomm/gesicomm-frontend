@@ -13,8 +13,8 @@ import { contentIdPanel } from './datosRuntime';
 
 const TIPOS_VENTA = {
   catalogo: 'CATÁLOGO: varios productos en una grilla, cada uno con su ficha. El objetivo es que el visitante encuentre rápido lo que busca y compre.',
-  producto_unico: 'PRODUCTO ÚNICO: una página de venta larga, enfocada en un solo producto (el principal). Todos los botones de compra apuntan a ese producto; el resto de la selección se muestra como complementos.',
-  combos: 'COMBOS Y PACKS: la oferta principal son los combos. Hay que destacar el ahorro frente a comprar cada producto por separado y qué incluye cada combo.',
+  producto_unico: 'DIRECTO EN UN PRODUCTO: la landing abre en la FICHA del producto principal (tráfico de anuncios). La ficha tiene que vender sola: beneficios, prueba, ofertas y compra sin salir de ella. Los otros productos aparecen como combos, ofertas o recomendados.',
+  combos: 'CATÁLOGO con los combos primero: en la grilla, los combos van antes que los productos sueltos. Destacá el ahorro de cada combo y qué incluye.',
 };
 
 function formatearGs(n) {
@@ -47,10 +47,12 @@ Valores de data-gesicomm-lista:
 - "productos": los primeros productos de la landing (destacados), productos y combos. Sirve para un hero o una franja de destacados, NO para listar todo el catálogo
 - "solo_productos": solo productos
 - "combos": solo combos
+- "combos_producto": (solo ficha) los combos que traen el producto que se está viendo ("Llevalo en combo y ahorrá"). Ponelo en la ficha, debajo de la compra
 - "recomendados": productos sugeridos (en la ficha: relacionados con el producto actual)
 - "ofertas_bump": (solo ficha) order bumps del producto actual — ver "Order bump" abajo
 - "ofertas_upsell": NO la uses en la ficha. Los upsells los muestra Gesicomm como popup/etapa del checkout después de que el cliente completa sus datos.
-- "ofertas_pack": (solo ficha) paquetes del mismo producto (Llevá 2, Llevá 3)
+- "paquetes": (solo ficha) "Elegí tu oferta": 1 unidad + los paquetes del mismo producto (Pack x2, Pack x3), ver la ficha más abajo
+- "ofertas_pack": (vieja, no la uses) los mismos paquetes como lista suelta
 - "ofertas": (solo ficha) todas las anteriores juntas
 - "variantes": (solo ficha) talles / colores del producto actual
 - "imagenes": (solo ficha) galería del producto actual
@@ -73,7 +75,8 @@ nombre, descripcion, descripcion_larga, precio, precio_antes (tachado), descuent
 - Dentro de un <template>, el campo es del elemento de esa lista.
 - Fuera de una lista, en la FICHA, el campo es del producto que se está viendo.
 - Si un campo no tiene dato (sin precio_antes, sin etiqueta), el elemento se oculta solo: no pongas texto de relleno.
-Datos de la tienda: data-gesicomm-tienda="nombre|logo|email|telefono|whatsapp|direccion|instagram|facebook". El total de productos: data-gesicomm-total.
+Datos de la tienda: data-gesicomm-tienda="nombre|logo|email|telefono|whatsapp|direccion|instagram|facebook|tiktok". El total de productos: data-gesicomm-total.
+Redes sociales: poné un contenedor vacío <div data-gesicomm-redes></div> (en el footer y/o en la sección de contacto). Gesicomm lo llena con un <a class="gc-red gc-red--instagram"> por cada red que la tienda cargó en su configuración (WhatsApp, Instagram, Facebook, TikTok, YouTube, X) y lo oculta si no hay ninguna. Estilá .gc-red (y .gc-red--whatsapp, etc. si querés colores por red). NUNCA escribas usuarios ni links de redes a mano, ni un título "Redes sociales" suelto fuera de ese contenedor: si la tienda no tiene redes quedaría vacío.
 
 ## Acciones (en botones o links)
 - data-gesicomm-comprar → agrega al carrito y lo abre. Sin valor usa el producto de la tarjeta o de la ficha. Con valor apunta a uno fijo: data-gesicomm-comprar="ID".
@@ -110,6 +113,19 @@ Un producto con variantes comprado desde una grilla lleva a su ficha para elegir
 Definí la paleta con estas variables CSS exactas en :root y usalas en todo el CSS; el carrito y el checkout de Gesicom las leen para pintarse con los mismos colores de la página:
 :root { --gc-primario: #xxxxxx; --gc-texto-sobre-primario: #xxxxxx; --gc-fondo: #xxxxxx; --gc-texto: #xxxxxx; }
 (botones y acentos / texto encima del primario / fondo principal sólido / texto principal). Poné background: var(--gc-fondo) y color: var(--gc-texto) en el body. Podés sumar variables propias, pero estas cuatro tienen que existir con estos nombres.
+Los colores de la marca los define la tienda (Mi Tienda → Branding, ver "Esta tienda") y la landing TIENE que usarlos. Gesicomm los inyecta ya combinados entre sí (el texto siempre es legible sobre su fondo, sea claro u oscuro):
+- --tienda-primario, --tienda-texto-sobre-primario → botones y acentos
+- --tienda-primario-texto → el primario cuando se usa como color de texto (links, íconos)
+- --tienda-secundario, --tienda-texto-sobre-secundario → segundo color de la marca: usalo en etiquetas, badges, destacados, íconos
+- --tienda-destacado → el secundario como color de texto (etiquetas sobre el fondo, "Ahorrás…")
+- --tienda-fondo, --tienda-texto, --tienda-texto-suave → fondo de la página y sus textos
+- --tienda-superficie, --tienda-linea → tarjetas y bordes
+- --tienda-banda, --tienda-banda-texto → barras y secciones que se distinguen del fondo (barra superior, oferta final)
+Usalos siempre con un hex de respaldo, así la landing sigue a la tienda si cambia su Branding:
+:root { --gc-primario: var(--tienda-primario, #hex); --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #hex); --gc-fondo: var(--tienda-fondo, #hex); --gc-texto: var(--tienda-texto, #hex); }
+El fondo y el texto van SIEMPRE juntos (--tienda-fondo con --tienda-texto; tarjetas con --tienda-superficie y --tienda-texto): nunca mezcles uno de la tienda con uno fijo tuyo. No inventes otra paleta de marca.
+Todas las secciones (incluido el footer) tienen que verse sobre el fondo de la página con buen contraste: si una sección usa un fondo propio (por ejemplo un footer oscuro), sus textos y links tienen que tener su propio color claro.
+El logo va con <img data-gesicomm-tienda="logo" alt=""> y el nombre con <span data-gesicomm-tienda="nombre"></span>: no los escribas a mano.
 
 ## Reglas de calidad
 - Mobile first: la mayoría de las visitas llegan desde anuncios de Instagram/Facebook en el celular. Probá mentalmente en 375px.
@@ -118,7 +134,7 @@ Definí la paleta con estas variables CSS exactas en :root y usalas en todo el C
 - Nada de testimonios, cifras de ventas, garantías ni certificaciones inventadas: si hace falta, dejá un marcador visible "[Reemplazar por testimonio real]".
 - Nada de urgencia falsa (contadores que se reinician, "quedan 2" inventado).
 - Fuentes: podés usar Google Fonts con <link> en el HTML (no con @import en el CSS). No uses otros scripts externos.
-- El footer tiene que tener estos links (son obligatorios para cobrar con PagoPar y para aprobar anuncios en Meta), escritos así, con su data-gesicomm-link: <a href="/contacto" data-gesicomm-link="contacto">, <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">, <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">, <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">, <a href="/politica-envio" data-gesicomm-link="politica-envio">, <a href="/aviso-legal" data-gesicomm-link="aviso-legal">. Gesicomm corrige la URL según dónde se publique la landing; no pongas dominios.
+- El footer tiene que tener estos links (son obligatorios para cobrar con PagoPar y para aprobar anuncios en Meta), escritos así, con su data-gesicomm-link: <a href="/contacto" data-gesicomm-link="contacto">, <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">, <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">, <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">, <a href="/politica-envio" data-gesicomm-link="politica-envio">, <a href="/aviso-legal" data-gesicomm-link="aviso-legal">. Gesicomm corrige la URL según dónde se publique la landing; no pongas dominios. En el footer poné también el contenedor de redes <div data-gesicomm-redes></div>.
 
 ## Formato de tu respuesta
 Devolvé exactamente tres bloques de código, en este orden: \`\`\`html (solo el contenido del <body>, sin <html>/<head>/<body>), \`\`\`css y \`\`\`js. Sin explicaciones entre medio.`;
@@ -134,6 +150,13 @@ function describirProducto(item, idx, principal) {
   if (precio) lineas.push(`   Precio de referencia: ${precio} (no lo escribas en el HTML)`);
   if (item.descripcion) lineas.push(`   Descripción: ${String(item.descripcion).slice(0, 400)}`);
   if (item.productos_incluidos?.length) lineas.push(`   Incluye: ${item.productos_incluidos.join(', ')}`);
+  // Lo cargado en Productos → Vista del producto: la IA escribe con esto, no inventa.
+  if (item.propuesta_valor) lineas.push(`   Propuesta de valor: ${String(item.propuesta_valor).slice(0, 300)}`);
+  const beneficios = (Array.isArray(item.beneficios) ? item.beneficios : []).map(b => b?.titulo).filter(Boolean);
+  if (beneficios.length) lineas.push(`   Beneficios: ${beneficios.slice(0, 8).join(' · ')}`);
+  if (item.sobre_este_producto) lineas.push(`   Sobre el producto: ${String(item.sobre_este_producto).slice(0, 600)}`);
+  const preguntas = (Array.isArray(item.preguntas_frecuentes) ? item.preguntas_frecuentes : []).length;
+  if (preguntas) lineas.push(`   Tiene ${preguntas} preguntas frecuentes cargadas (lista "preguntas").`);
   return lineas.join('\n');
 }
 
@@ -161,9 +184,15 @@ function contexto({ tienda, venta, productos }) {
     extras.push('Recomendados desactivados: no incluyas la lista "recomendados".');
   }
 
+  const marca = [
+    tienda?.color_primario && `principal ${tienda.color_primario}`,
+    tienda?.color_secundario && `secundario ${tienda.color_secundario}`,
+    tienda?.color_fondo && `fondo de marca ${tienda.color_fondo}`,
+  ].filter(Boolean).join(', ');
+
   return `## Esta tienda
 Nombre: ${nombre}
-Tipo de venta: ${TIPOS_VENTA[tipo] || TIPOS_VENTA.catalogo}
+${marca ? `Colores de la marca (Mi Tienda → Branding): ${marca}.\n` : ''}${tienda?.logo_imagen ? 'Tiene logo cargado: mostralo en el header.\n' : ''}Tipo de venta: ${TIPOS_VENTA[tipo] || TIPOS_VENTA.catalogo}
 ${extras.join('\n')}
 
 ## Productos de la landing (${productos.length})${lineaCategorias}
@@ -212,20 +241,53 @@ Poné un CTA fijo abajo en mobile (position: sticky/fixed) que compre el princip
 9. Contacto (WhatsApp + formulario data-gesicomm-form="contacto") y footer con links legales.`,
 };
 
+// Estructura de la ficha que más vende, con los datos que la sostienen:
+// - Baymard (usabilidad de fichas, 30.000+ puntuaciones): el 56% de los
+//   usuarios empieza mirando las imágenes; 64% busca el costo de envío y 60%
+//   la política de devolución en la ficha; estructurar la descripción en
+//   "highlights" aumenta el interés (78% de los sitios no lo hace).
+// - Spiegel Research Center (Northwestern): con 5 reseñas la probabilidad de
+//   compra sube 270% frente a 0 (solo reseñas REALES: nunca inventarlas).
+// - Regla del 100 (J. Berger): debajo de ~USD 100 el % se percibe mayor; arriba, el monto.
+// - Botón de compra fijo en el celular: en A/B tests publicados, +8% a +25%.
 const VISTA_PRODUCTO = `## Qué tenés que construir: la FICHA DE PRODUCTO
-Es UNA sola plantilla que Gesicomm usa para TODOS los productos: no escribas el nombre de ninguno. Todo sale de data-gesicomm-bind (fuera de listas = el producto que se está viendo).
-1. Barra de anuncio y header (el logo vuelve al inicio con data-gesicomm-inicio).
-2. Migas: Inicio (data-gesicomm-inicio) / categoría.
-3. Dos columnas en desktop, una en mobile (order bump arriba del botón de compra; paquetes debajo si existen; upsell fuera de la ficha):
-   - Galería: imagen principal (<img data-gesicomm-bind="imagen" data-gesicomm-imagen-principal>) y miniaturas (lista "imagenes"; al tocarlas cambian la principal).
-   - Info: categoría, nombre (h1), precio, precio tachado, descuento, descripción corta, variantes (lista "variantes" con título "Elegí una opción"; estilá .is-selected y [data-agotado]), cantidad (data-gesicomm-cantidad-input), botón grande "Comprar ahora" (data-gesicomm-comprar), "Agregar al carrito" (data-gesicomm-agregar) y "Consultar por WhatsApp" (data-gesicomm-whatsapp).
-   - Justo ARRIBA del botón de compra: "ofertas_bump" (casilla, ver "Order bump").
-   - Debajo del botón: solo "ofertas_pack" ("Llevá más y ahorrá"), con botón data-gesicomm-oferta. No agregues "Mejorá tu compra" ni "ofertas_upsell" en esta zona.
-   - Mini garantías: pago seguro, envío, atención.
-4. Descripción larga (bind "descripcion_larga", respetando saltos de línea con white-space: pre-line).
-5. Recomendados (lista "recomendados") con data-gesicomm-agregar y data-gesicomm-ver.
-6. Footer con los links legales.
-En mobile, el botón de compra tiene que quedar a la vista (barra fija abajo).`;
+Es UNA plantilla que Gesicomm llena con el producto que se está viendo: todo sale de data-gesicomm-bind (fuera de listas = el producto de la ficha). Si un dato no existe, el elemento se oculta solo: no escribas textos de relleno ni inventes reseñas, cifras o certificaciones.
+
+Estructura (en este orden; es la que más vende según la investigación de usabilidad de Baymard y datos de conversión):
+1. Barra de anuncio y header (logo con data-gesicomm-inicio).
+2. ARRIBA DEL PLIEGUE, dos columnas en desktop y una en mobile:
+   - Galería grande: <img data-gesicomm-bind="imagen" data-gesicomm-imagen-principal> + miniaturas (lista "imagenes"). Es lo primero que mira el 56% de la gente.
+   - Categoría, nombre (h1) y la PROMESA en una frase: bind "propuesta_valor".
+   - Precio grande, precio tachado ("precio_antes") y el ahorro con bind "ahorro_texto" (Gesicomm ya elige % o Gs según el precio).
+   - Si es un combo: <p data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p> y la lista "combo_incluye" (foto + nombre de cada producto que trae).
+   - 3 o 4 "highlights" con check: <ul data-gesicomm-lista="beneficios" data-gesicomm-limite="4"><template><li data-gesicomm-bind="titulo"></li></template></ul>.
+   - Variantes (lista "variantes", estilá .is-selected y [data-agotado]).
+   - Order bump ("ofertas_bump") justo ARRIBA del selector de oferta.
+   - "Elegí tu oferta": lista "paquetes". Gesicomm arma las opciones (1 unidad, Pack x2, Pack x3…) con binds "titulo", "etiqueta" ("Mejor precio", calculado), "precio", "precio_antes" (las unidades sueltas), "por_unidad" ("Gs 125.000 c/u") y "ahorro" ("Ahorrás Gs 88.000"). El elemento raíz del template es la TARJETA ENTERA clickeable (un <button>): el runtime le pone role="radio", aria-checked y la clase "is-selected"; estilá ese estado con un radio visible. Elegir el paquete ES elegir la cantidad y el botón de compra lo compra.
+   - Cantidad (data-gesicomm-cantidad-input) SOLO si el producto no tiene paquetes: ponele data-gesicomm-sin="tiene_paquetes". Después el botón grande "Comprar ahora · <span data-gesicomm-total></span>" (data-gesicomm-comprar). "Agregar al carrito" y WhatsApp como links secundarios.
+   - Pegado al botón: envío ("el costo lo ves antes de pagar"), pago (PagoPar o al recibir) y cambios (link data-gesicomm-link="reembolsos"); debajo la lista "confianza" (bind "texto": garantías que cargó la tienda).
+   - NO uses "ofertas_pack" (los paquetes van en "paquetes") ni "ofertas_upsell" en la ficha. No escribas textos de oferta vagos ("descuento imperdible"): los números concretos ya los dan los binds.
+3. DEBAJO DEL PLIEGUE:
+   - "Llevalo en combo y ahorrá": lista "combos_producto".
+   - Beneficios completos: lista "beneficios" con binds "titulo" y "texto".
+   - Si es un combo: sección <section data-gesicomm-si="combo_incluye"> con la lista "combo_incluye" (foto, nombre, "cantidad", precio suelto con bind "precio") y el total "Por separado vs En combo". Cada producto se puede ver por separado: el combo es la opción que conviene, no la única.
+   - Descripción: binds "sobre" y "descripcion_larga" (white-space: pre-line).
+   - Preguntas frecuentes: lista "preguntas" con <details><summary data-gesicomm-bind="pregunta"></summary><p data-gesicomm-bind="respuesta"></p></details>. Responden las dudas que frenan la compra.
+   - Recomendados (lista "recomendados").
+   - Cierre: nombre, precio y otro botón "Comprar ahora".
+4. Footer con los links legales.
+5. En mobile, una barra fija abajo con precio y "Comprar ahora" (data-gesicomm-comprar), y padding-bottom en el body para que no tape contenido.
+data-gesicomm-si="campo" muestra un bloque solo si el producto tiene ese dato (ej. "precio_separado", "combo_incluye", "beneficios").`;
+
+/**
+ * Ficha propia de UN producto: acá sí se puede escribir sobre ese producto
+ * (su historia, a quién le sirve), porque la página es solo suya. Los datos
+ * de venta (precio, stock, ofertas) siguen saliendo de los binds.
+ */
+function fichaPropia(producto) {
+  return `## Esta ficha es SOLO para "${producto.nombre}"
+No es la plantilla general: la ven únicamente quienes entran a este producto. Podés escribir textos y secciones pensados para él (a quién le sirve, cómo se usa, qué problema resuelve), usando lo que dicen sus datos de abajo. Precio, precio tachado, stock, variantes y ofertas tienen que seguir saliendo de data-gesicomm-bind y de las listas: nunca los escribas a mano. No inventes resultados, reseñas ni certificaciones: si no están en los datos, dejá un marcador visible "[Completar con dato real]".`;
+}
 
 function bloqueCodigoBase(base) {
   if (!base) return '';
@@ -254,13 +316,16 @@ ${base.js}
  *   estilo: indicaciones libres de diseño que escribe el comercio.
  *   base: si viene, el prompt incluye el código base de esa vista.
  */
-export function armarPromptVista(vista, { tienda, venta, productos = [], estilo = '', base = null }) {
+export function armarPromptVista(vista, { tienda, venta, productos = [], fichaDe = null, estilo = '', base = null }) {
   const especifico = vista === 'producto'
-    ? VISTA_PRODUCTO
-    : (VISTA_INICIO[venta?.tipo] || VISTA_INICIO.catalogo);
+    ? (fichaDe ? `${VISTA_PRODUCTO}
+
+${fichaPropia(fichaDe)}` : VISTA_PRODUCTO)
+    // Un solo inicio: la tienda (los formatos viejos de inicio ya no se ofrecen).
+    : VISTA_INICIO.catalogo;
   const estiloTexto = estilo.trim()
     ? `\n\n## Estilo visual pedido\n${estilo.trim()}`
-    : '\n\n## Estilo visual\nModerno, limpio y confiable, con un color de acento que combine con los productos. Tipografía legible, bordes redondeados y buen espacio en blanco.';
+    : '\n\n## Estilo visual\nModerno, limpio y confiable, con los colores de la marca de la tienda. Tipografía legible, bordes redondeados y buen espacio.';
   return `${PROMPT_MAESTRO}
 
 ${contexto({ tienda, venta, productos })}

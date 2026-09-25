@@ -9,6 +9,12 @@ export const landingSimpleService = {
 
   listar: () => API.get('/mis-landings-simples').then(r => r.data),
   crear: (templateId) => API.post('/mis-landings-simples', { template_id: templateId }).then(r => r.data),
+  crearDesdeIA: (prompt, items = []) => API.post('/mis-landings-simples/ai-draft', { prompt, items }).then(r => r.data),
+  // Vuelve a generar el HTML/CSS de una landing YA CREADA con un prompt
+  // nuevo — misma fila, mismo id, mismos productos (los de "Configurar
+  // venta"). A diferencia de crearDesdeIA, no crea otra landing.
+  // target: 'inicio' | 'producto' — a cuál de las dos vistas se le habla.
+  regenerarConIA: (id, prompt, target = 'inicio') => API.post(`/mis-landings-simples/${id}/ai-regenerar`, { prompt, target }).then(r => r.data),
   crearDesdeOnboarding: (templateSlug, items) =>
     API.post('/mis-landings-simples/onboarding', { template_slug: templateSlug, items }).then(r => r.data),
   // Lienzo en blanco (kind='codigo'): no lleva template_id — el template

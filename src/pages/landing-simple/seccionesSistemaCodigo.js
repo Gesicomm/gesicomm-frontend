@@ -33,7 +33,8 @@ export function codigoTieneContacto(codigo) {
   const html = codigo?.html || '';
   return htmlTieneSelector(html, 'contacto')
     || /data-gesicomm-form=["']contacto["']/i.test(html)
-    || /data-gesicomm-whatsapp\b/i.test(html);
+    || /data-gesicomm-whatsapp\b/i.test(html)
+    || /data-gesicomm-redes\b/i.test(html);
 }
 
 export function codigoTieneFooter(codigo) {

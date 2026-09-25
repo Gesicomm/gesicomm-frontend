@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Megaphone,
   Settings, LogOut, Tag, ChevronDown, ChevronRight, X,
-  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin, PackageCheck, Network
+  GraduationCap, Receipt, Truck, Sparkles, Store, Code2, BadgeDollarSign, ShieldCheck, KeyRound, CreditCard, Layers, MapPin, PackageCheck, Network, ShieldAlert
 } from 'lucide-react';
 import Logo from './public/Logo';
 import { cerrarSesion } from '../utils/auth';
@@ -203,6 +203,7 @@ const Sidebar = ({ mobileOpen = false, onClose = () => {} }) => {
             {renderLink({ path: '/admin/planes', label: 'Planes', icon: <BadgeDollarSign /> })}
             {renderLink({ path: '/admin/tracking-onboarding', label: 'Onboarding y login', icon: <ShieldCheck />, badge: alertasAccesos > 0 ? alertasAccesos : null })}
             {renderLink({ path: '/admin/tracking-pagos', label: 'Tracking de pagos', icon: <CreditCard />, badge: alertasPagos > 0 ? alertasPagos : null })}
+            {renderLink({ path: '/admin/eliminacion-datos', label: 'Eliminaci�n de datos', icon: <ShieldAlert /> })}
           </ul>
 
           {/* Operación: la infraestructura logística de la plataforma.

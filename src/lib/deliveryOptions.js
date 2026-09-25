@@ -21,10 +21,20 @@ export function prepararOpcionesDelivery(opciones) {
     .sort((a, b) => a.label.localeCompare(b.label, 'es'));
 }
 
+/**
+ * La opción que corresponde a lo que escribió el comprador: la etiqueta
+ * completa ("Asunción - Central") o, si nadie más se llama igual, solo la
+ * ciudad ("asuncion"). Antes solo valía la etiqueta exacta: quien tipeaba
+ * su ciudad sin elegir de la lista quedaba con el botón de compra
+ * bloqueado sin saber por qué.
+ */
 export function buscarOpcionDelivery(opciones, valor) {
   const buscado = normalizarDeliveryTexto(valor);
   if (!buscado) return null;
-  return opciones.find(op => normalizarDeliveryTexto(op.label) === buscado) || null;
+  const exacta = opciones.find(op => normalizarDeliveryTexto(op.label) === buscado);
+  if (exacta) return exacta;
+  const porCiudad = opciones.filter(op => normalizarDeliveryTexto(op.ciudad) === buscado);
+  return porCiudad.length === 1 ? porCiudad[0] : null;
 }
 
 export function cantidadItemsDelivery(items) {
