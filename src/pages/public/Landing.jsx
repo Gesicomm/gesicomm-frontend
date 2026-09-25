@@ -35,14 +35,9 @@ const REGISTRO_CLIENTES = [
 
 const INTEGRACIONES = [
   {
-    nombre: 'Meta Business & Ads',
-    color: '#0081FB',
-    descripcion: 'Conectá tu Business Manager para consultar el rendimiento de tus campañas junto al producto que promocionan.',
-  },
-  {
-    nombre: 'Meta Pixel',
+    nombre: 'Meta Pixel y Conversions API',
     color: '#3d5fa3',
-    descripcion: 'Agregá tu Pixel de seguimiento en un clic para que los eventos de tu tienda alimenten tus campañas.',
+    descripcion: 'Agregá tu ID de Pixel y token CAPI en un clic para que los eventos de tu tienda alimenten tus campañas. Esta integración no requiere inicio de sesión con Meta.',
   },
 ];
 
@@ -691,7 +686,7 @@ export default function Landing() {
           <motion.div variants={fadeUp} className="mt-12 mb-6">
             <h3 className="text-lg font-bold text-fg">En desarrollo</h3>
             <p className="mt-2 text-sm leading-relaxed text-fg-muted max-w-3xl">
-              Estamos desarrollando conexiones para gestionar campañas y consultar sus resultados en Meta Ads; publicar contenido en páginas de Facebook y cuentas profesionales de Instagram; y gestionar conversaciones de Instagram y WhatsApp Business con asistencia de IA. Cada función se habilitará cuando esté implementada, cuente con los permisos correspondientes de Meta y sea autorizada por el cliente.
+              Estamos desarrollando conexiones para gestionar campañas y consultar sus resultados en Meta Ads; publicar contenido en páginas de Facebook y cuentas profesionales de Instagram; y gestionar conversaciones de Instagram y WhatsApp Business con asistencia de IA. Cada función se habilitará cuando esté implementada, y cuente con los permisos correspondientes de Meta y sea autorizada por el cliente.
             </p>
           </motion.div>
 

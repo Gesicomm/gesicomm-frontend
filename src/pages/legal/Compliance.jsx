@@ -237,11 +237,11 @@ const SECCIONES = [
             ],
             [
               'Permisos mínimos necesarios',
-              'Cada integración solicita únicamente los permisos que su funcionalidad requiere.',
+              'Actualmente no se solicita ningún permiso a través de OAuth. Las futuras integraciones solicitarán únicamente los permisos que su funcionalidad requiera.',
             ],
             [
               'Eliminación al revocar el permiso',
-              'Al desconectar la integración se revocan y eliminan los tokens de inmediato y cesa la sincronización. (verificado en prueba controlada)',
+              'Al desconectar la integración se revocan y eliminan los tokens de inmediato y cesa la sincronización. (Preparado para cuando se activen integraciones con token; verificado en prueba controlada).',
             ],
             [
               'Seguridad de los datos de la plataforma',
@@ -256,10 +256,10 @@ const SECCIONES = [
 
         <Subseccion titulo="4.1 Alcance real de nuestra integración">
           <p>
-            A la fecha de esta política (septiembre de 2026), Gesicom usa únicamente la Marketing API de Meta, con los permisos <code>ads_management</code> y <code>business_management</code>, para consultar el rendimiento de campañas de Facebook Ads. No está activa ninguna integración con Facebook Login, la Pages API, la Instagram Graph API ni la WhatsApp Business Platform.
+            A la fecha de esta política (septiembre de 2026), Gesicom no tiene activa ninguna integración que consuma datos de la plataforma de Meta mediante OAuth. Únicamente permite al cliente ingresar su propio ID de Meta Pixel y token CAPI para enviar eventos desde su vitrina hacia Meta. No usamos Facebook Login, la Marketing API, la Pages API, la Instagram Graph API ni la WhatsApp Business Platform.
           </p>
           <p>
-            Gesicom está desarrollando módulos adicionales que usarán otras APIs de Meta. Cada módulo se describirá en esta sección cuando esté activo, detallando los productos, permisos y datos involucrados.
+            Gesicom está desarrollando módulos adicionales que usarán las APIs de Meta. Cada módulo se describirá en esta sección cuando esté activo, detallando los productos, permisos y datos involucrados.
           </p>
           <p>
             Lo declaramos explícitamente porque el principio de minimización de permisos es un

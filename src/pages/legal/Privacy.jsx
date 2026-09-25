@@ -47,8 +47,7 @@ const SECCIONES = [
           <li>La aplicación web de Gesicom y el panel de administración.</li>
           <li>La API de Gesicom (api.gesicomm.com).</li>
           <li>
-            La integración con Meta que decidas conectar, actualmente limitada a la consulta de 
-            rendimiento de campañas de Facebook Ads mediante la Marketing API. Las integraciones 
+            La integración con el Pixel de Meta y Conversions API, en caso de que configures tus identificadores. Las integraciones 
             futuras se describen en la sección «Integraciones en desarrollo».
           </li>
           <li>
@@ -167,59 +166,15 @@ const SECCIONES = [
           desde Configuración, y podés revocarla en cualquier momento.
         </p>
 
-        <Subseccion titulo="4.1 Información obtenida mediante OAuth">
+        <Subseccion titulo="4.1 Sin autenticación OAuth ni permisos de API">
           <p>
-            La conexión se establece mediante el protocolo <strong>OAuth 2.0</strong>. Eso
-            significa que <strong>nunca vemos ni recibimos tu contraseña</strong> de Facebook:
-            recibimos un token de acceso emitido por Meta, limitado a los permisos concedidos y
-            revocable por vos en cualquier momento, tanto desde Gesicom como desde tu propia
-            configuración de Facebook.
+            A la fecha actual, Gesicom <strong>no solicita ningún permiso</strong> de la plataforma de Meta mediante OAuth para consultar o gestionar datos (no usa <code>ads_management</code>, <code>business_management</code> ni ningún otro permiso).
           </p>
           <p>
-            Los tokens de acceso se almacenan <strong>cifrados con AES-256-GCM</strong>, nunca en
-            texto plano, y no se exponen en ninguna respuesta de la API ni en los registros.
+            Por lo tanto, no recibimos, accedemos ni tratamos datos de tus campañas de Facebook Ads, tu perfil personal, tus páginas, tus cuentas publicitarias ni tus contactos.
           </p>
-        </Subseccion>
-
-        <Subseccion titulo="4.2 Permisos actuales de la integración con Meta (vigente desde agosto 2026)">
-          <p>
-            A la fecha actual, Gesicom solicita exactamente dos permisos de la plataforma de Meta, y ninguno más:
-          </p>
-
-          <TablaLegal
-            encabezados={['Permiso', 'Para qué lo usamos', 'Qué obtenemos']}
-            filas={[
-              [
-                'ads_management',
-                'Leer el rendimiento de tus campañas de Facebook Ads y mostrarlo junto al producto y al margen que promocionan.',
-                'Campañas, conjuntos de anuncios y anuncios, con su objetivo, presupuesto, impresiones, clics, alcance, gasto y conversiones.',
-              ],
-              [
-                'business_management',
-                'Listar los Business Managers y las cuentas publicitarias a las que ya tenés acceso, para que elijas cuál conectar.',
-                'Identificador y nombre de los Business Managers y de las cuentas publicitarias que administrás.',
-              ],
-            ]}
-            notaAlPie="Podés verificar esta lista vos mismo: Meta muestra los permisos solicitados en su propia pantalla de autorización antes de que confirmes la conexión. Esta lista corresponde al estado de la integración a la fecha de esta política. Si se agregan nuevos permisos, esta sección se actualizará con antelación a su activación."
-          />
-        </Subseccion>
-
-        <Subseccion titulo="4.3 Lo que explícitamente NO recibimos de Meta">
-          <p>
-            Con esos dos permisos, Meta <strong>no</strong> nos entrega —y por lo tanto nunca
-            tratamos— nada de lo siguiente:
-          </p>
-          <ul>
-            <li>Tu perfil personal, tu nombre, tu foto o tu dirección de correo de Facebook.</li>
-            <li>Tu lista de amigos o cualquier dato de tus contactos.</li>
-            <li>Tus publicaciones, tu muro o el contenido de tu actividad personal.</li>
-            <li>Tus páginas de Facebook ni el contenido publicado en ellas.</li>
-            <li>Cuentas de Instagram, sus publicaciones o sus métricas.</li>
-            <li>Mensajes de Messenger, de Instagram Direct ni de WhatsApp.</li>
-            <li>Catálogos de productos de Meta ni sus artículos.</li>
-          </ul>
           <p className="mt-4 text-sm text-fg-muted">
-            Estas exclusiones corresponden a los permisos actualmente solicitados. Si en el futuro se agregan módulos con otros permisos, esta sección se actualizará para reflejar qué datos adicionales se obtienen y para qué se usan.
+            Si en el futuro se agregan módulos que requieran autorización mediante OAuth, esta sección se actualizará para reflejar qué permisos se solicitan, qué datos adicionales se obtienen y para qué se usan.
           </p>
         </Subseccion>
 
@@ -231,12 +186,12 @@ const SECCIONES = [
           </p>
         </Subseccion>
 
-        <Subseccion titulo="4.5 Meta Pixel en tu vitrina">
+        <Subseccion titulo="4.5 Meta Pixel y Conversions API en tu vitrina">
           <p>
-            Aparte de la conexión anterior, podés cargar el identificador de{' '}
-            <strong>tu propio Meta Pixel</strong> para que se dispare en la vitrina pública de tu
-            tienda. En ese caso Gesicom solo almacena ese identificador: los eventos de navegación
-            los recibe Meta directamente desde el navegador de tu visitante, y su tratamiento se
+            Podés cargar el identificador de{' '}
+            <strong>tu propio Meta Pixel</strong> y tu <strong>token de Conversions API (CAPI)</strong> para que se disparen eventos en la vitrina pública de tu
+            tienda. En ese caso Gesicom solo almacena esos identificadores: los eventos de navegación
+            los recibe Meta, y su tratamiento se
             rige por la política de datos de Meta. Sos vos, como titular de esa vitrina, quien
             responde por informarlo y por recabar el consentimiento de tus visitantes. Está
             detallado en la <Link to="/cookies">Política de Cookies</Link>.

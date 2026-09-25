@@ -57,7 +57,7 @@ const SECCIONES = [
             configuraciones.
           </li>
           <li>
-            <strong>Integraciones:</strong> las conexiones con plataformas de terceros que el Cliente habilita desde su cuenta. A la fecha de estos Términos, la única integración activa es con Meta, mediante la Marketing API, para consultar el rendimiento de campañas de Facebook Ads. Gesicom está desarrollando integraciones adicionales que se incorporarán a esta definición cuando estén disponibles.
+            <strong>Integraciones:</strong> las conexiones con plataformas de terceros que el Cliente habilita desde su cuenta. A la fecha de estos Términos, la única integración activa es la configuración manual del Meta Pixel y Conversions API. Gesicom está desarrollando integraciones adicionales mediante API que se incorporarán a esta definición cuando estén disponibles.
           </li>
           <li>
             <strong>Suscripción:</strong> el plan contratado, con su alcance funcional, sus límites
@@ -350,7 +350,7 @@ const SECCIONES = [
 
         <Subseccion titulo="8.2 Meta y Facebook Ads">
           <p>
-            La integración con Meta solicita los permisos mínimos necesarios para la funcionalidad activa —actualmente <code>ads_management</code> y <code>business_management</code>— sujetos a revisión conforme evolucione el producto. Su uso está sujeto a las Meta Platform Terms, las
+            Actualmente, Gesicom permite al Cliente ingresar su ID de Meta Pixel y token de Conversions API (CAPI) para enviar eventos desde su vitrina, pero no tiene integraciones activas mediante OAuth. Las futuras integraciones solicitarán los permisos mínimos necesarios (por ejemplo, <code>ads_management</code> y <code>business_management</code>) y su uso estará sujeto a las Meta Platform Terms, las
             Developer Policies, las Community Standards y las Advertising Policies de Meta. En
             particular:
           </p>
