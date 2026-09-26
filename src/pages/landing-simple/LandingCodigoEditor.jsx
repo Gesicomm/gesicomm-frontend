@@ -304,27 +304,28 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // ahora mismo. Antes esto SIEMPRE tocaba "Inicio" sin importar qué
   // pidiera el comercio — pedir "agregame la vista por productos" mientras
   // se miraba Inicio terminaba reescribiendo Inicio, porque no había forma
-  // de apuntar a la ficha. Las fichas PROPIAS (por producto) todavía no
-  // tienen IA automática: el asistente edita la ficha general.
-  const targetIA = vista === 'producto' ? 'producto' : 'inicio';
-  const nombreTargetIA = targetIA === 'producto' ? 'la ficha de producto (general)' : 'el "Inicio"';
+  // de apuntar a la ficha. Con una ficha PROPIA abierta, el asistente edita
+  // SOLO esa ficha (nunca la general ni la de otro producto) — así cada
+  // producto puede tener un diseño distinto ("este termo estilo outdoor",
+  // "este auricular tech futurista").
+  const targetIA = esPropia ? 'producto_especifico' : vista === 'producto' ? 'producto' : 'inicio';
+  const nombreTargetIA = esPropia
+    ? `la ficha propia de "${nombreProductoFicha}"`
+    : targetIA === 'producto' ? 'la ficha de producto (general)' : 'el "Inicio"';
 
   // Le pide a la IA que edite la vista actual de esta landing (mismo id,
   // mismo slug, mismos productos configurados) con un prompt nuevo. El RAG
   // recibe el código actual y edita sobre eso — si el resultado pierde
   // demasiado (menos atributos data-gesicomm-*, sin botón de compra, mucho
-  // más corto) el backend lo rechaza en vez de guardarlo.
+  // más corto) el backend lo rechaza (con un intento de corrección
+  // automática antes de mostrar el error).
   async function regenerarConIA() {
     const texto = promptIA.trim();
     if (texto.length < 5) {
       setErrorIA('Escribí una descripción de al menos 5 caracteres.');
       return;
     }
-    if (esPropia) {
-      setErrorIA(`El asistente edita la ficha general, no la ficha propia de "${nombreProductoFicha}". Cambiá a "Ficha general" o usá la pestaña "Prompt IA".`);
-      return;
-    }
-    const codigoActual = codigos[targetIA];
+    const codigoActual = codigos[claveVista];
     if (
       codigoActual?.html?.trim()
       && !window.confirm(`La IA va a editar ${nombreTargetIA} de esta landing con tu pedido, conservando lo que no tenga que ver con él. ¿Seguir?`)
@@ -334,7 +335,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     setRegenerando(true);
     setErrorIA('');
     try {
-      const actualizada = await landingSimpleService.regenerarConIA(id, texto, targetIA);
+      const actualizada = await landingSimpleService.regenerarConIA(id, texto, targetIA, esPropia ? productoFichaId : null);
       const guardados = codigosDesdeContent(actualizada.content, codigos.producto);
       setLanding(actualizada);
       setCodigos(guardados);
@@ -898,7 +899,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           <div className="p-3 space-y-2.5">
             <p className="text-xs text-fg/55 leading-relaxed">
               {esPropia ? (
-                <>El asistente edita la <strong className="text-fg/75">ficha general</strong>, no la ficha propia de "{nombreProductoFicha}" — cambiá a "Ficha general" arriba, o usá la pestaña "Prompt IA" para esta.</>
+                <>Edita <strong className="text-fg/75">solo la ficha de "{nombreProductoFicha}"</strong> — los demás productos no se tocan. Ej: "estilo outdoor premium", "look tech futurista".</>
               ) : (
                 <>Pedile un ajuste puntual ("agregá una sección de beneficios", "hacela más minimalista") — edita <strong className="text-fg/75">{nombreTargetIA}</strong> conservando el resto. Para {vista === 'inicio' ? 'la ficha de producto' : 'el inicio'}, cambiá de vista arriba primero.</>
               )}
@@ -915,13 +916,13 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); regenerarConIA(); }
                 }}
                 rows={2}
-                disabled={regenerando || esPropia}
-                placeholder={esPropia ? 'No disponible para fichas propias todavía' : 'Ej: agregá una sección de beneficios...'}
+                disabled={regenerando}
+                placeholder={esPropia ? 'Ej: estilo outdoor premium, tonos tierra...' : 'Ej: agregá una sección de beneficios...'}
                 className="flex-1 resize-none bg-fg/5 border border-fg/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-fg disabled:opacity-60"
               />
               <button
                 type="submit"
-                disabled={regenerando || esPropia || promptIA.trim().length < 5}
+                disabled={regenerando || promptIA.trim().length < 5}
                 className="shrink-0 p-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 title={`Editar ${nombreTargetIA} con este prompt`}
               >
@@ -1112,6 +1113,6 @@ const PLACEHOLDERS = {
 
 const AYUDAS = {
   html: 'Podés pegar una página completa: al guardar, su <style> y su <script> se mueven solos a las otras pestañas.',
-  css: 'Se inyecta en un <style> propio. @import no está permitido: usá <link> en el HTML o @font-face.',
+  css: 'Se inyecta en un <style> propio. @import no está permitido: la IA declara Google Fonts como recurso y Gesicomm las carga en el <head>.',
   js: 'Corre después del runtime de Gesicomm (window.Gesicomm). Sin fetch, localStorage ni acceso a la ventana contenedora.',
 };

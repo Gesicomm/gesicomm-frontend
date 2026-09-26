@@ -10,7 +10,7 @@
  * (StrictMode en dev invoca efectos dos veces).
  */
 
-let cargado = false;
+const pixelesInicializados = new Set();
 
 /**
  * Pixel propio de gesicomm.com (el sitio institucional y el panel), no el de
@@ -23,20 +23,24 @@ export const PIXEL_ID_GESICOMM = '3636737413142726';
 
 export function inicializarPixel(pixelId, opts = {}) {
   const { trackPageView = true } = opts;
-  if (!pixelId || cargado || typeof window === 'undefined') return;
-  if (window.fbq) { cargado = true; return; } // ya lo cargó otra instancia
+  const id = String(pixelId || '').trim();
+  if (!id || typeof window === 'undefined') return;
 
-  /* eslint-disable */
-  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-  document,'script','https://connect.facebook.net/en_US/fbevents.js');
-  /* eslint-enable */
+  if (!window.fbq) {
+    /* eslint-disable */
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    /* eslint-enable */
+  }
 
-  window.fbq('init', pixelId);
+  if (pixelesInicializados.has(id)) return;
+
+  window.fbq('init', id);
+  pixelesInicializados.add(id);
   if (trackPageView) window.fbq('track', 'PageView');
-  cargado = true;
 }
 
 /** UUID para deduplicar Pixel+CAPI — crypto.randomUUID con fallback para navegadores viejos/HTTP. */

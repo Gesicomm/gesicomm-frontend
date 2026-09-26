@@ -78,6 +78,32 @@ function escaparCierreStyle(css) {
   return String(css || '').replace(/<\/(style)/gi, '<\\/$1');
 }
 
+function linksFuentes(fonts) {
+  const urls = Array.isArray(fonts) ? fonts : [];
+  const limpias = [];
+  const vistos = new Set();
+  for (const valor of urls) {
+    try {
+      const url = new URL(String(valor || '').trim());
+      if (url.protocol !== 'https:' || url.hostname !== 'fonts.googleapis.com' || !url.pathname.startsWith('/css2')) continue;
+      const href = url.toString();
+      if (vistos.has(href)) continue;
+      vistos.add(href);
+      limpias.push(href);
+      if (limpias.length >= 4) break;
+    } catch {
+      // URL inválida: se ignora.
+    }
+  }
+  if (!limpias.length) return '';
+  const stylesheets = limpias.map(href => `<link rel="stylesheet" href="${href}">`).join('\n');
+  return [
+    '<link rel="preconnect" href="https://fonts.googleapis.com">',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+    stylesheets,
+  ].join('\n');
+}
+
 /**
  * Las secciones de Gesicom (productos/contacto) van ANTES del último
  * <footer> de la landing, no pegadas al final del body: ahí quedaban debajo
@@ -270,7 +296,7 @@ body > :where(header, main, footer, section, article, aside, nav, div) {
 `;
 
 /**
- * @param {{html?: string, css?: string, js?: string}} codigo
+ * @param {{html?: string, css?: string, js?: string, fonts?: string[]}} codigo
  * @param {{titulo?: string, reportarErrores?: boolean, datos?: object, extras?: {html: string, css: string}}} opciones
  *   reportarErrores: manda los errores de ejecución del JS al contenedor
  *   por postMessage — lo usa el editor para mostrarlos; en la landing
@@ -285,7 +311,7 @@ body > :where(header, main, footer, section, article, aside, nav, div) {
 export { cssMarcaTienda };
 
 export function construirDocumentoCodigo(codigo, opciones = {}) {
-  const { html = '', css = '', js = '' } = codigo || {};
+  const { html = '', css = '', js = '', fonts = [] } = codigo || {};
   const { titulo = '', reportarErrores = false, datos = null, extras = null } = opciones;
 
   // El puente de errores lo inyectamos nosotros, no el comercio: por eso
@@ -375,6 +401,7 @@ window.addEventListener('unhandledrejection', function (e) {
 <!-- Sin base target, un link dentro del iframe navegaría el iframe y
      dejaría la landing metida dentro de sí misma. -->
 <base target="_top">
+${linksFuentes(fonts)}
 <style>
 html, body { margin: 0; padding: 0; }
 ${cssMarcaTienda(datos?.tienda?.colores)}

@@ -128,6 +128,9 @@ export default function CartDrawer({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [resultado, setResultado] = useState(null);
+  // Qué falta completar, cuando el visitante intenta comprar con el
+  // formulario incompleto (ver primerFaltante / manejarSubmitFormulario).
+  const [faltante, setFaltante] = useState(null);
 
   // Cupón: `codigoCupon` es lo que se está tipeando; `cupon` es el que el
   // servidor ya validó (con su descuento en guaraníes). Son dos cosas
@@ -205,14 +208,37 @@ export default function CartDrawer({
   const cantidadTotal = items.reduce((s, it) => s + it.cantidad, 0);
   const subtotal = items.reduce((s, it) => s + it.precio * it.cantidad, 0);
   const pagaOnline = form.payment_method === 'pagopar';
-  const formularioValido = form.nombre_cliente.trim() && form.telefono.trim()
-    && form.ciudad.trim() && form.direccion.trim() && acepta
-    // PagoPar exige el documento del comprador para emitir el cobro.
-    && (!pagaOnline || form.documento.trim())
-    // Si pide factura, los datos fiscales dejan de ser opcionales.
-    && (!form.quiere_factura || (form.ruc.trim() && form.razon_social.trim()));
-
   const hasPagoPar = pasarelas.some(p => p.provider === 'pagopar');
+
+  /**
+   * Qué falta para poder comprar, en el orden en que aparece en el
+   * formulario. El botón ya no se deshabilita en silencio (antes se veía
+   * igual de activo y al tocarlo no pasaba nada): ahora el submit dice qué
+   * falta y lleva el foco a ese campo.
+   *
+   * La ciudad es el caso más traicionero: el input muestra lo que el
+   * visitante escribió aunque no corresponda a ninguna ciudad con envío
+   * (form.ciudad queda vacío), así que parecía completo y no lo estaba.
+   */
+  function primerFaltante() {
+    if (!form.nombre_cliente.trim()) return { campo: 'nombre_cliente', mensaje: 'Escribí tu nombre y apellido.' };
+    if (!form.telefono.trim()) return { campo: 'telefono', mensaje: 'Escribí tu número de celular.' };
+    if (!form.ciudad.trim()) {
+      return {
+        campo: 'ciudad',
+        mensaje: ciudadDeliveryInput.trim()
+          ? `No hacemos envíos a "${ciudadDeliveryInput.trim()}". Elegí tu ciudad de la lista.`
+          : 'Elegí tu ciudad de la lista.',
+      };
+    }
+    if (!form.direccion.trim()) return { campo: 'direccion', mensaje: 'Escribí la calle y el número.' };
+    if (pagaOnline && !form.documento.trim()) return { campo: 'documento', mensaje: 'Para pagar online necesitamos tu cédula.' };
+    if (form.quiere_factura && !form.ruc.trim()) return { campo: 'ruc', mensaje: 'Escribí el RUC para la factura.' };
+    if (form.quiere_factura && !form.razon_social.trim()) return { campo: 'razon_social', mensaje: 'Escribí la razón social para la factura.' };
+    if (!acepta) return { campo: 'acepta', mensaje: 'Marcá que aceptás que usemos tus datos para el pedido.' };
+    return null;
+  }
+
   const opcionesDelivery = useMemo(() => prepararOpcionesDelivery(deliveryCiudades), [deliveryCiudades]);
   const pedidoConEnvioIncluido = items.length > 0 && items.every(it => it.envioIncluido === true || it.envio_incluido === true);
   const opcionDeliverySeleccionada = opcionesDelivery.find(op =>
@@ -305,6 +331,7 @@ export default function CartDrawer({
     setAcepta(false);
     setResultado(null);
     setError(null);
+    setFaltante(null);
     setCuponAbierto(false);
     setMostrarBumpsExtra(false);
     setUpsellRevisado(false);
@@ -321,10 +348,12 @@ export default function CartDrawer({
 
   function actualizarCampo(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
+    setFaltante(prev => (prev?.campo === campo ? null : prev));
   }
 
   function actualizarCiudadDelivery(valor) {
     setCiudadDeliveryInput(valor);
+    setFaltante(prev => (prev?.campo === 'ciudad' ? null : prev));
     const opcion = buscarOpcionDelivery(opcionesDelivery, valor);
     if (opcion) {
       setForm(prev => ({ ...prev, ciudad: opcion.ciudad, departamento: opcion.departamento || '' }));
@@ -364,7 +393,20 @@ export default function CartDrawer({
 
   function manejarSubmitFormulario(e) {
     e.preventDefault();
-    if (!formularioValido) return;
+    const falta = primerFaltante();
+    if (falta) {
+      setFaltante(falta);
+      // Llevar al visitante al campo: el que falta puede estar fuera de la
+      // vista (el botón es sticky), así que sin esto el mensaje aparece y
+      // el campo queda arriba, sin que se entienda qué hay que tocar.
+      const el = rootRef.current?.querySelector(`[data-campo="${falta.campo}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus({ preventScroll: true });
+      }
+      return;
+    }
+    setFaltante(null);
     // El upsell se pregunta ACÁ, al terminar el formulario — no al salir del
     // carrito — porque recién ahí el cliente ya decidió que va a comprar.
     if (upsells.length > 0 && !upsellRevisado) {
@@ -619,13 +661,18 @@ export default function CartDrawer({
                   <button type="button" className="lp-cart-close" onClick={cerrar}><X size={18} /></button>
                 </header>
 
-                <form className="lp-checkout-form" onSubmit={manejarSubmitFormulario}>
+                {/* noValidate: la validación nativa del navegador mostraba
+                    su propio globo en inglés ("Please fill out this field")
+                    y cortaba el submit antes de que corriera la nuestra, que
+                    es la que sabe explicar el caso de la ciudad sin envío. */}
+                <form className="lp-checkout-form" noValidate onSubmit={manejarSubmitFormulario}>
                   {error && <p className="lp-checkout-error">{error}</p>}
 
                   <label className="lp-checkout-field">
                     <span>Nombre y Apellido <em>*</em></span>
                     <input
                       required
+                      data-campo="nombre_cliente"
                       value={form.nombre_cliente}
                       onChange={e => actualizarCampo('nombre_cliente', e.target.value)}
                       placeholder="Nombre y Apellido"
@@ -639,6 +686,7 @@ export default function CartDrawer({
                     <span>Cédula {pagaOnline && <em>*</em>}</span>
                     <input
                       required={pagaOnline}
+                      data-campo="documento"
                       value={form.documento}
                       onChange={e => actualizarCampo('documento', e.target.value)}
                       placeholder="Ej: 4123456"
@@ -673,6 +721,7 @@ export default function CartDrawer({
                         <span>Razón social <em>*</em></span>
                         <input
                           required
+                          data-campo="razon_social"
                           value={form.razon_social}
                           onChange={e => actualizarCampo('razon_social', e.target.value)}
                           placeholder="Nombre o empresa que va en la factura"
@@ -683,6 +732,7 @@ export default function CartDrawer({
                         <span>RUC <em>*</em></span>
                         <input
                           required
+                          data-campo="ruc"
                           value={form.ruc}
                           onChange={e => actualizarCampo('ruc', e.target.value)}
                           placeholder="Ej: 80012345-6"
@@ -700,6 +750,7 @@ export default function CartDrawer({
                       <span className="lp-checkout-tel-prefijo">+595</span>
                       <input
                         required
+                        data-campo="telefono"
                         value={form.telefono}
                         onChange={e => actualizarCampo('telefono', e.target.value)}
                         placeholder="9XX XXXXXX"
@@ -724,6 +775,7 @@ export default function CartDrawer({
                         <span>Ciudad y departamento <em>*</em></span>
                         <input
                           required
+                          data-campo="ciudad"
                           list="lp-delivery-ciudades"
                           value={ciudadDeliveryInput}
                           onChange={e => actualizarCiudadDelivery(e.target.value)}
@@ -746,6 +798,7 @@ export default function CartDrawer({
                           <span>Ciudad <em>*</em></span>
                           <input
                             required
+                            data-campo="ciudad"
                             value={form.ciudad}
                             onChange={e => actualizarCampo('ciudad', e.target.value)}
                             placeholder="Ciudad"
@@ -767,6 +820,7 @@ export default function CartDrawer({
                       <span>Dirección <em>*</em></span>
                       <input
                         required
+                        data-campo="direccion"
                         value={form.direccion}
                         onChange={e => actualizarCampo('direccion', e.target.value)}
                         placeholder="Nombre de la calle y número de casa"
@@ -784,7 +838,12 @@ export default function CartDrawer({
                   </section>
 
                   <label className="lp-checkout-terminos">
-                    <input type="checkbox" checked={acepta} onChange={e => setAcepta(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      data-campo="acepta"
+                      checked={acepta}
+                      onChange={e => { setAcepta(e.target.checked); setFaltante(prev => (prev?.campo === 'acepta' ? null : prev)); }}
+                    />
                     <span>Acepto que mis datos se usen para procesar este pedido.</span>
                   </label>
 
@@ -929,7 +988,14 @@ export default function CartDrawer({
                   </section>
 
                   <div className="lp-checkout-submit-wrap">
-                    <button type="submit" className="lp-cart-checkout lp-checkout-submit" disabled={!formularioValido || enviando}>
+                    {/* El botón ya no se apaga cuando falta un dato: apagado
+                        se veía casi igual que activo y el clic no hacía nada,
+                        sin decir por qué. Ahora deja tocarlo y el submit
+                        explica qué falta y lleva el foco a ese campo. */}
+                    {faltante && (
+                      <p className="lp-checkout-faltante" role="alert">{faltante.mensaje}</p>
+                    )}
+                    <button type="submit" className="lp-cart-checkout lp-checkout-submit" disabled={enviando}>
                       {enviando ? (<><Loader size={16} className="lp-spin" /> Enviando...</>) : <>Completar compra <span>{formatPrecio(totalVisible)}</span></>}
                     </button>
                   </div>
