@@ -37,6 +37,10 @@ AutomationAPI.interceptors.request.use(async (config) => {
 });
 
 // --- Calendario de contenido ---
+export const socialApi = {
+  uploadMedia: (formData) => AutomationAPI.post('/social/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+};
+
 export const contentApi = {
   listar: (params) => AutomationAPI.get('/content', { params }).then((r) => r.data),
   obtener: (id) => AutomationAPI.get(`/content/${id}`).then((r) => r.data),

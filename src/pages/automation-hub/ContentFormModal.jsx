@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, ArrowLeft, ArrowRight, Check, Video, GalleryHorizontal, CircleDashed } from 'lucide-react';
-import { contentApi } from '../../services/automationHubApi';
+import React, { useState, useRef } from 'react';
+import { X, ArrowLeft, ArrowRight, Check, Video, GalleryHorizontal, CircleDashed, Upload } from 'lucide-react';
+import { contentApi, socialApi } from '../../services/automationHubApi';
 
 const FORMATOS = [
   { value: 'R', label: 'Video / Reel', desc: 'Una pieza de video vertical, un solo copy.', icon: Video },
@@ -62,6 +62,9 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
   const [creado, setCreado] = useState(null);
+  const [file, setFile] = useState(null);
+  const [platforms, setPlatforms] = useState({ instagram: true, facebook: true });
+  const fileInputRef = useRef(null);
 
   const set = (campo) => (e) => setDatos((d) => ({ ...d, [campo]: e.target.value }));
   const esMultiSlide = datos.format === 'C' || datos.format === 'H';
@@ -90,10 +93,22 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
     setGuardando(true);
     setError('');
     try {
-      const nuevo = await contentApi.crear(datos);
+      let finalData = { 
+        ...datos, 
+        platforms: Object.keys(platforms).filter(k => platforms[k]) 
+      };
+
+      if (file) {
+        const formData = new FormData();
+        formData.append('video', file);
+        const res = await socialApi.uploadMedia(formData);
+        finalData.video_url = res.videoUrl;
+      }
+
+      const nuevo = await contentApi.crear(finalData);
       setCreado(nuevo); // muestra la confirmación en vez de cerrar de golpe
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo guardar el contenido.');
+      setError(err.response?.data?.error || err.response?.data?.message || 'No se pudo guardar el contenido.');
     } finally {
       setGuardando(false);
     }
@@ -266,6 +281,47 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                     className="h-4 w-4 rounded border-border" />
                   <label htmlFor="isTestCheck" className="text-xs font-semibold text-warning">
                     Marcar como contenido de prueba (No se contará en las analíticas)
+                  </label>
+                </div>
+
+                <div className="mt-2 border-t border-border pt-4">
+                  <label className="mb-2 block text-xs font-semibold text-fg-muted">Subir Archivo (Opcional)</label>
+                  <div 
+                    className="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-border bg-surface-2 p-6 hover:bg-surface-3 hover:border-primary/50 cursor-pointer transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      className="hidden" 
+                      accept="video/mp4,image/jpeg,image/png"
+                      onChange={(e) => setFile(e.target.files[0])}
+                    />
+                    <Upload size={24} className="mb-2 text-primary" />
+                    {file ? (
+                      <span className="text-sm font-semibold text-fg">{file.name}</span>
+                    ) : (
+                      <span className="text-sm text-fg-muted">Arrastrá un video (.mp4) o foto acá o hacé clic</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-2 flex gap-4">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-fg">
+                    <input 
+                      type="checkbox" 
+                      className="h-4 w-4 rounded border-border text-primary"
+                      checked={platforms.instagram}
+                      onChange={(e) => setPlatforms(p => ({...p, instagram: e.target.checked}))}
+                    /> Instagram Reels
+                  </label>
+                  <label className="flex items-center gap-2 text-sm font-semibold text-fg">
+                    <input 
+                      type="checkbox" 
+                      className="h-4 w-4 rounded border-border text-primary"
+                      checked={platforms.facebook}
+                      onChange={(e) => setPlatforms(p => ({...p, facebook: e.target.checked}))}
+                    /> Facebook Reels
                   </label>
                 </div>
               </div>
