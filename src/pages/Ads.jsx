@@ -30,7 +30,7 @@ import AdsEnVivo from './ads/AdsEnVivo';
 // no es partner de Meta, así que la app no puede pedir los permisos de
 // Marketing API que esa vista necesita. El código sigue en
 // ads/AdsEnVivo.jsx — prender esto lo devuelve como una sección más.
-const MOSTRAR_EN_VIVO = false;
+const MOSTRAR_EN_VIVO = true;
 
 const SECCIONES = [
   { id: 'resumen', label: 'Resumen', icono: LayoutDashboard, conPeriodo: true },

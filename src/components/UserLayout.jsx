@@ -252,82 +252,97 @@ const UserLayout = ({ children }) => {
         </header>
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
-          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>VENTAS</div>
-          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-            <ul className="sidebar-list">
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin size={14} />, menuKey: 'mi-tienda-depositos' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
-            </ul>
-          </div>
-
-          {usuario?.rol !== 'solo_pedidos' && (
+          
+          {sessionStorage.getItem('moduloActivo') !== 'marca_personal' ? (
             <>
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>MARKETING</div>
+              {/* --- MÓDULO: E-COMMERCE --- */}
+              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>VENTAS</div>
               <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
                 <ul className="sidebar-list">
-                  {renderLink({ path: '/landing', label: 'Páginas de venta', icon: <Sparkles size={14} />, menuKey: 'landing' })}
-                  {renderLink({ path: '/mis-anuncios', label: 'Publicidad', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
-                </ul>
-              </div>
-            </>
-          )}
-
-          <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
-            {usuario?.rol === 'solo_pedidos' ? 'VENTAS' : 'OPERACIONES'}
-          </div>
-          <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-            <ul className="sidebar-list">
-              {renderLink({ 
-                path: '/mis-pedidos', 
-                label: 'Pedidos', 
-                icon: <ShoppingCart size={14} />, 
-                menuKey: 'mis-pedidos',
-                danger: vencidosCount > 0
-              })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck size={14} />, menuKey: 'inventario' })}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icon: <Truck size={14} />, menuKey: 'mis-abastecimientos' })}
-              {/* {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/automatizacion', label: 'Canales de venta', icon: <Bot size={14} />, menuKey: 'canales-de-venta' })} */}
-              {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
-            </ul>
-          </div>
-
-          {usuario?.rol !== 'solo_pedidos' && (
-            <>
-
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>ANÁLISIS</div>
-              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                <ul className="sidebar-list">
-                  {renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
-                  {renderLink({ path: '/finanzas/costos-gastos', label: 'Control financiero', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
-                  {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
+                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
+                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin size={14} />, menuKey: 'mi-tienda-depositos' })}
+                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
                 </ul>
               </div>
 
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>APRENDIZAJE</div>
-              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                <ul className="sidebar-list">
-                  {renderLink({
-                    path: '/academia',
-                    label: 'Academia & Cursos',
-                    icon: <GraduationCap size={14} style={{ color: '#60a5fa' }} />,
-                    badge: 'PRO'
-                  })}
-                </ul>
-              </div>
-
-              {esPlanFundador && (
+              {usuario?.rol !== 'solo_pedidos' && (
                 <>
-                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>AFILIADOS</div>
+                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>MARKETING</div>
                   <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
                     <ul className="sidebar-list">
-                      {renderLink({ path: '/afiliados', label: 'Quiero ser afiliado', icon: <BadgeDollarSign size={14} />, menuKey: 'afiliados' })}
+                      {renderLink({ path: '/landing', label: 'Páginas de venta', icon: <Sparkles size={14} />, menuKey: 'landing' })}
+                      {renderLink({ path: '/mis-anuncios', label: 'Publicidad', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
                     </ul>
                   </div>
                 </>
               )}
+
+              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+                {usuario?.rol === 'solo_pedidos' ? 'VENTAS' : 'OPERACIONES'}
+              </div>
+              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                <ul className="sidebar-list">
+                  {renderLink({ 
+                    path: '/mis-pedidos', 
+                    label: 'Pedidos', 
+                    icon: <ShoppingCart size={14} />, 
+                    menuKey: 'mis-pedidos',
+                    danger: vencidosCount > 0
+                  })}
+                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck size={14} />, menuKey: 'inventario' })}
+                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icon: <Truck size={14} />, menuKey: 'mis-abastecimientos' })}
+                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
+                </ul>
+              </div>
+
+              {usuario?.rol !== 'solo_pedidos' && (
+                <>
+                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>ANÁLISIS</div>
+                  <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                    <ul className="sidebar-list">
+                      {renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
+                      {renderLink({ path: '/finanzas/costos-gastos', label: 'Control financiero', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
+                      {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
+                    </ul>
+                  </div>
+
+                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>APRENDIZAJE</div>
+                  <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                    <ul className="sidebar-list">
+                      {renderLink({
+                        path: '/academia',
+                        label: 'Academia & Cursos',
+                        icon: <GraduationCap size={14} style={{ color: '#60a5fa' }} />,
+                        badge: 'PRO'
+                      })}
+                    </ul>
+                  </div>
+
+                  {esPlanFundador && (
+                    <>
+                      <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>AFILIADOS</div>
+                      <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                        <ul className="sidebar-list">
+                          {renderLink({ path: '/afiliados', label: 'Quiero ser afiliado', icon: <BadgeDollarSign size={14} />, menuKey: 'afiliados' })}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          ) : (
+            <>
+              {/* --- MÓDULO: MARCA PERSONAL / AUTOMATION HUB --- */}
+              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>MARCA PERSONAL</div>
+              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+                <ul className="sidebar-list">
+                  {renderLink({ path: '/automatizacion', label: 'Automation Hub', icon: <Bot size={14} />, menuKey: 'automatizacion' })}
+                </ul>
+              </div>
             </>
           )}
+
         </nav>
 
         <footer className="sidebar-footer" style={{ borderTop: '1px solid var(--color-border)' }}>

@@ -45,6 +45,7 @@ const EliminacionDatosAdmin = lazy(() => import('./pages/admin/EliminacionDatos'
 const AdminPlanes = lazy(() => import('./pages/planes/AdminPlanes'));
 const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
 const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
+const SeleccionModulo = lazy(() => import('./pages/auth/SeleccionModulo'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
 const ControlCourier = lazy(() => import('./pages/courier/control-courier').then(m => ({ default: m.ControlCourier })));
 const AbastecimientoAdmin = lazy(() => import('./pages/abastecimiento/AbastecimientoAdmin'));
@@ -381,6 +382,11 @@ function App() {
         {/* Automatización de contenido — Gesicomm Automation Hub (backend independiente) */}
         <Route path="/automatizacion" element={
           <RequireTienda><UserLayout><AutomationHub /></UserLayout></RequireTienda>
+        } />
+
+        {/* Pantalla de Selección de Módulo */}
+        <Route path="/seleccionar-modulo" element={
+          <ProtectedRoute><SeleccionModulo /></ProtectedRoute>
         } />
 
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}

@@ -294,11 +294,9 @@ export default function Login() {
         email: formData.email,
         password: formData.password,
       });
-      const rutaDestino = res.usuario?.rol === 'administrador'
-        ? '/dashboard'
-        : res.usuario?.rol === 'solo_pedidos'
-          ? '/mis-pedidos'
-          : '/mi-catalogo';
+      const rutaDestino = res.usuario?.rol === 'solo_pedidos'
+        ? '/mis-pedidos'
+        : '/seleccionar-modulo';
       trackearEventoPersonalizado('Login', generarEventId());
       navigate(rutaDestino);
     } catch (err) {
@@ -385,11 +383,9 @@ export default function Login() {
       setTimeout(() => {
         const rutaDestino = tokenSuscripcion
           ? '/onboarding'
-          : res.usuario?.rol === 'administrador'
-            ? '/dashboard'
-            : res.usuario?.rol === 'solo_pedidos'
-              ? '/mis-pedidos'
-              : '/mi-catalogo';
+          : res.usuario?.rol === 'solo_pedidos'
+            ? '/mis-pedidos'
+            : '/seleccionar-modulo';
         navigate(rutaDestino);
       }, 1000);
     } catch (err) {
