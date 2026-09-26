@@ -4,49 +4,49 @@
 export const selectStylesDark = {
     control: (base, state) => ({
         ...base,
-        background: '#141416',
-        borderColor: state.isFocused ? 'var(--bg-primary)' : 'var(--border-border)',
+        background: 'var(--color-surface)',
+        borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
         boxShadow: 'none',
         borderRadius: '6px',
         padding: '0',
         minHeight: '38px',
         '&:hover': {
-            borderColor: 'var(--bg-primary)'
+            borderColor: 'var(--color-primary)'
         }
     }),
     menu: (base) => ({
         ...base,
-        background: '#141416',
-        border: '1px solid var(--border-border)',
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
         zIndex: 20
     }),
     option: (base, state) => ({
         ...base,
-        background: state.isFocused ? '#1a1a1c' : '#141416',
-        color: '#fff',
+        background: state.isFocused ? 'var(--color-surface-2)' : 'var(--color-surface)',
+        color: 'var(--color-fg)',
         cursor: 'pointer',
         fontSize: '0.85rem',
         '&:active': {
-            background: 'rgba(255, 255, 255, 0.1)'
+            background: 'var(--color-surface-3)'
         }
     }),
     singleValue: (base) => ({
         ...base,
-        color: '#fff',
+        color: 'var(--color-fg)',
         fontSize: '0.85rem'
     }),
     multiValue: (base) => ({
         ...base,
-        background: 'rgba(61, 95, 163, 0.15)',
+        background: 'var(--bg-primary-soft)',
     }),
     multiValueLabel: (base) => ({
         ...base,
-        color: '#fff',
+        color: 'var(--color-fg)',
         fontSize: '0.8rem'
     }),
     input: (base) => ({
         ...base,
-        color: '#fff',
+        color: 'var(--color-fg)',
         fontSize: '0.85rem'
     })
 };
