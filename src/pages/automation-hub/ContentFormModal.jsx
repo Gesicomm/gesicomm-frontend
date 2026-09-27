@@ -346,7 +346,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                     Ver video existente
                   </a>
                   <button type="button" onClick={() => handleSubmit(true)} className="text-xs bg-warning text-white px-3 py-1.5 rounded hover:bg-warning/80 font-bold ml-auto">
-                    Crear de todas formas (_0N)
+                    Crear de todas formas (-02, -03...)
                   </button>
                 </div>
               </div>
