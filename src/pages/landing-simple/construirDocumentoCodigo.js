@@ -78,6 +78,32 @@ function escaparCierreStyle(css) {
   return String(css || '').replace(/<\/(style)/gi, '<\\/$1');
 }
 
+function linksFuentes(fonts) {
+  const urls = Array.isArray(fonts) ? fonts : [];
+  const limpias = [];
+  const vistos = new Set();
+  for (const valor of urls) {
+    try {
+      const url = new URL(String(valor || '').trim());
+      if (url.protocol !== 'https:' || url.hostname !== 'fonts.googleapis.com' || !url.pathname.startsWith('/css2')) continue;
+      const href = url.toString();
+      if (vistos.has(href)) continue;
+      vistos.add(href);
+      limpias.push(href);
+      if (limpias.length >= 4) break;
+    } catch {
+      // URL inválida: se ignora.
+    }
+  }
+  if (!limpias.length) return '';
+  const stylesheets = limpias.map(href => `<link rel="stylesheet" href="${href}">`).join('\n');
+  return [
+    '<link rel="preconnect" href="https://fonts.googleapis.com">',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+    stylesheets,
+  ].join('\n');
+}
+
 /**
  * Las secciones de Gesicom (productos/contacto) van ANTES del último
  * <footer> de la landing, no pegadas al final del body: ahí quedaban debajo
@@ -94,6 +120,19 @@ function cuerpoConExtras(html, extrasHtml) {
 }
 
 const SYSTEM_CSS = `
+/* Contrato de marca: las landings IA usan --gc-* y Mi Tienda inyecta
+   --tienda-*. Esta capa se aplica al final para que la marca configurada
+   gane aunque el CSS generado haya dejado defaults fijos. */
+:root {
+  --gc-primario: var(--tienda-primario, #18a66b);
+  --gc-secundario: var(--tienda-secundario, #ffb547);
+  --gc-fondo: var(--tienda-fondo, #ffffff);
+  --gc-texto: var(--tienda-texto, #10202f);
+  --gc-texto-suave: var(--tienda-texto-suave, #506172);
+  --gc-superficie: var(--tienda-superficie, #ffffff);
+  --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #ffffff);
+}
+
 /* El HTML generado por IA a veces deja body o un wrapper raiz con ancho fijo
    (1024px/1200px). En el preview de escritorio eso produce una franja blanca
    horrible a la derecha aunque la landing deberia ocupar todo el viewport. */
@@ -105,9 +144,33 @@ body {
 }
 body {
   overflow-x: hidden;
+  background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
+  color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
 body > :where(header, main, footer, section, article, aside, nav, div) {
   min-width: 100% !important;
+}
+
+/* Las fotos reales del catálogo no son banners decorativos: si el CSS de IA
+   las fuerza a cover se cortan botellas, pulseras, cajas y combos. */
+img[data-gesicomm-bind="imagen"],
+[data-gesicomm-lista] img[data-gesicomm-bind="imagen"] {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: #fff !important;
+}
+[data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
+  overflow: hidden !important;
+  background: #fff !important;
+}
+[data-gesicomm-tienda="logo"] {
+  max-width: 160px !important;
+  max-height: 52px !important;
+  object-fit: contain !important;
 }
 
 /* Los upsells no viven dentro de la ficha: son una etapa del checkout. */
@@ -270,7 +333,7 @@ body > :where(header, main, footer, section, article, aside, nav, div) {
 `;
 
 /**
- * @param {{html?: string, css?: string, js?: string}} codigo
+ * @param {{html?: string, css?: string, js?: string, fonts?: string[]}} codigo
  * @param {{titulo?: string, reportarErrores?: boolean, datos?: object, extras?: {html: string, css: string}}} opciones
  *   reportarErrores: manda los errores de ejecución del JS al contenedor
  *   por postMessage — lo usa el editor para mostrarlos; en la landing
@@ -285,7 +348,7 @@ body > :where(header, main, footer, section, article, aside, nav, div) {
 export { cssMarcaTienda };
 
 export function construirDocumentoCodigo(codigo, opciones = {}) {
-  const { html = '', css = '', js = '' } = codigo || {};
+  const { html = '', css = '', js = '', fonts = [] } = codigo || {};
   const { titulo = '', reportarErrores = false, datos = null, extras = null } = opciones;
 
   // El puente de errores lo inyectamos nosotros, no el comercio: por eso
@@ -375,6 +438,7 @@ window.addEventListener('unhandledrejection', function (e) {
 <!-- Sin base target, un link dentro del iframe navegaría el iframe y
      dejaría la landing metida dentro de sí misma. -->
 <base target="_top">
+${linksFuentes(fonts)}
 <style>
 html, body { margin: 0; padding: 0; }
 ${cssMarcaTienda(datos?.tienda?.colores)}

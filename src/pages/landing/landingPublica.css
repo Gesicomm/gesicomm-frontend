@@ -2596,8 +2596,12 @@ button.lp-tier-card--imagen {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
+/* Apagado tiene que LEERSE como apagado: con opacity .72 y el color de
+   marca intacto se veía prácticamente igual que activo, así que el
+   visitante lo tocaba y no pasaba nada. */
 .lp-cart-checkout:disabled {
-  opacity: 0.72;
+  opacity: 0.55;
+  filter: grayscale(0.75);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -2807,6 +2811,20 @@ button.lp-tier-card--imagen {
   padding: 0.85rem 1.4rem 1.1rem;
   background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--l-modal-bg, #161a28) 94%, var(--lp-cart-shade, black)) 28%);
 }
+/* Qué falta para poder comprar — aparece pegado arriba del botón, que es
+   donde está mirando el visitante cuando intenta pagar. */
+.lp-checkout-faltante {
+  margin: 0 0 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, #f97316 16%, transparent);
+  border: 1px solid color-mix(in srgb, #f97316 45%, transparent);
+  color: #fdba74;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .lp-checkout-submit {
   width: 100%;
   min-height: 48px;

@@ -1,10 +1,10 @@
 /**
- * Construcción del link de WhatsApp — un solo lugar para las dos formas de
- * llegar ahí desde la landing pública: "Consultar" en una tarjeta (un solo
- * producto) y "Finalizar pedido" desde el carrito (varios). Comparten la
- * misma plantilla configurable (Tienda.mensaje_contacto, placeholders
- * {producto}, {precio}, {url}) para que el comportamiento sea predecible
- * en los dos casos.
+ * Construcción del link de WhatsApp.
+ *
+ * La plantilla editable de Mi tienda (Tienda.mensaje_contacto) se usa para
+ * consultas comerciales desde la landing: botones "Consultar", ficha de
+ * producto y CTAs de contacto. El checkout/pedido arma su propio mensaje con
+ * contexto de pedido para no mezclarlo con textos de seguimiento o courier.
  */
 
 function formatPrecio(n) {
@@ -34,6 +34,10 @@ function soloDigitos(tel) {
   return String(tel || '').replace(/\D/g, '');
 }
 
+function urlActual() {
+  return typeof window !== 'undefined' ? window.location.href : '';
+}
+
 /** @param {{whatsapp, mensaje, incluir_precio, incluir_url}} contacto @param {{nombre, precio}} item */
 export function armarLinkWhatsapp(contacto, item) {
   if (!contacto?.whatsapp) return null;
@@ -44,7 +48,7 @@ export function armarLinkWhatsapp(contacto, item) {
   let mensaje = aplicarPlantilla(plantilla, {
     nombre: item.nombre,
     precio: item.precio,
-    url: typeof window !== 'undefined' ? window.location.href : '',
+    url: urlActual(),
   });
 
   // Solo append si el flag booleano está activo Y la variable no está inline
@@ -58,10 +62,27 @@ export function armarLinkWhatsapp(contacto, item) {
 }
 
 /**
- * @param {{whatsapp, mensaje, incluir_precio, incluir_url}} contacto
- * @param {Array<{nombre, varianteNombre, cantidad, precio}>} items
+ * Mensaje de contacto genérico para botones de WhatsApp que no están atados
+ * a un producto puntual. Usa la plantilla editable, pero si esa plantilla
+ * pide {producto} cae a una consulta neutral para no dejar variables raras.
  */
-export function armarLinkWhatsappCarrito(contacto, items) {
+export function armarLinkWhatsappContacto(contacto, texto = '') {
+  if (!contacto?.whatsapp) return null;
+  const plantilla = texto || contacto.mensaje || 'Hola, quiero hacer una consulta.';
+  const mensaje = aplicarPlantilla(plantilla, {
+    nombre: 'este producto',
+    precio: null,
+    url: urlActual(),
+  }).replace(/\{precio\}/gi, '').trim();
+  return `https://wa.me/${soloDigitos(contacto.whatsapp)}?text=${encodeURIComponent(mensaje)}`;
+}
+
+/**
+ * @param {{whatsapp, incluir_precio, incluir_url}} contacto
+ * @param {Array<{nombre, varianteNombre, cantidad, precio}>} items
+ * @param {{numero_pedido?: number|string, pedido_id?: number|string}} pedido
+ */
+export function armarLinkWhatsappCarrito(contacto, items, pedido = {}) {
   if (!contacto?.whatsapp || items.length === 0) return null;
 
   const resumen = items.map(it => {
@@ -70,33 +91,14 @@ export function armarLinkWhatsappCarrito(contacto, items) {
     return `• ${it.cantidad}x ${it.nombre}${variante}${precio}`;
   }).join('\n');
 
-  const plantilla = contacto.mensaje || 'Hola, me interesa {producto}';
-  // La plantilla se pensó para UN producto ({producto} = nombre). Con
-  // varios, el placeholder pasa a introducir la lista en vez de un nombre
-  // suelto — mismo mecanismo, sin pedirle a la usuaria una plantilla aparte
-  // para el carrito.
-  let mensaje = plantilla.includes('{producto}')
-    ? plantilla.replace('{producto}', `estos productos:\n${resumen}`)
-    : `${plantilla}\n${resumen}`;
-
-  // {precio} en carrito → total
   const total = items.reduce((suma, it) => suma + it.precio * it.cantidad, 0);
-  const tieneInlinePrecio = /\{precio\}/i.test(mensaje);
-  if (tieneInlinePrecio) {
-    mensaje = mensaje.replace(/\{precio\}/gi, `Total: ${formatPrecio(total)}`);
-  }
-  // {url} inline
-  const tieneInlineUrl = /\{url\}/i.test(mensaje);
-  if (tieneInlineUrl) {
-    mensaje = mensaje.replace(/\{url\}/gi, window.location.href);
-  }
+  const numero = pedido.numero_pedido || pedido.pedido_id;
+  const encabezado = numero
+    ? `Hola, hice el pedido #${numero}.`
+    : 'Hola, quiero confirmar este pedido.';
+  let mensaje = `${encabezado}\n\nProductos:\n${resumen}\nTotal: ${formatPrecio(total)}`;
 
-  if (contacto.incluir_precio && !tieneInlinePrecio) {
-    mensaje += `\nTotal: ${formatPrecio(total)}`;
-  }
-  if (contacto.incluir_url && !tieneInlineUrl) {
-    mensaje += `\n${window.location.href}`;
-  }
+  if (contacto.incluir_url) mensaje += `\n${urlActual()}`;
 
   return `https://wa.me/${soloDigitos(contacto.whatsapp)}?text=${encodeURIComponent(mensaje)}`;
 }
