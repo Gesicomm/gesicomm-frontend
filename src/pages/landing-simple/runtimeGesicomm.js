@@ -129,6 +129,30 @@ export function runtimeGesicomm() {
     return 'Gs ' + Math.round(n).toLocaleString('es-PY');
   }
 
+  function aplicarPlantillaWhatsapp(plantilla, item) {
+    var msg = String(plantilla || '');
+    var producto = item || productoActual || productos[0] || null;
+    var precio = producto ? precioDe(producto, varianteElegida) : null;
+    msg = msg.replace(/\{producto\}/gi, producto && producto.nombre ? producto.nombre : 'este producto');
+    msg = msg.replace(/\{precio\}/gi, precio ? formatoPrecio(precio) : '');
+    msg = msg.replace(/\{url\}/gi, window.location.href);
+    return msg.replace(/[ \t]+\n/g, '\n').trim();
+  }
+
+  function mensajeWhatsapp(texto) {
+    var tienda = datos.tienda || {};
+    var plantilla = texto || tienda.mensaje || (productoActual ? 'Hola, me interesa {producto}' : 'Hola, quiero hacer una consulta.');
+    var msg = aplicarPlantillaWhatsapp(plantilla, productoActual);
+    var tienePrecioInline = /\{precio\}/i.test(plantilla);
+    var tieneUrlInline = /\{url\}/i.test(plantilla);
+    if (tienda.incluir_precio && productoActual && !tienePrecioInline) {
+      var precio = precioDe(productoActual, varianteElegida);
+      if (precio) msg += '\nPrecio: ' + formatoPrecio(precio);
+    }
+    if (tienda.incluir_url && !tieneUrlInline) msg += '\n' + window.location.href;
+    return msg;
+  }
+
   function buscar(id) {
     if (id === null || id === undefined || id === '') return null;
     var clave = String(id).trim();
@@ -937,8 +961,7 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-whatsapp]'))) {
       e.preventDefault();
       var texto = el.getAttribute('data-gesicomm-whatsapp');
-      if (!texto && productoActual) texto = 'Hola! Quiero consultar por ' + productoActual.nombre;
-      whatsapp(texto);
+      whatsapp(mensajeWhatsapp(texto));
       return;
     }
     if ((el = t.closest('[data-gesicomm-evento]'))) {

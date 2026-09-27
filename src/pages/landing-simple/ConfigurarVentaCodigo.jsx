@@ -160,6 +160,7 @@ const cargarOfertasTienda = () => ofertaService.listarTodas({ estrategias: ['ord
 export default function ConfigurarVentaCodigo({
   catalogo, inicial, onConfirmar, onVolver, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
   tienda = null, codigos = null,
+  disenoPendienteIA = false,
   // Error del guardado (viene del editor): sin esto, si el servidor
   // rechazaba el guardado, el botón "no hacía nada" a la vista.
   errorGuardado = null,
@@ -563,6 +564,7 @@ export default function ConfigurarVentaCodigo({
     resaltado,
     aviso: avisoPreview,
     inicioEsBase,
+    disenoPendienteIA,
     onNavegar: alNavegarPreview,
     onComprar: alComprarPreview,
     dispositivo,
@@ -1078,7 +1080,7 @@ export default function ConfigurarVentaCodigo({
             className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-primary text-primary-fg text-sm font-semibold transition-colors hover:bg-primary-hover disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {guardando && <Loader size={15} className="animate-spin" />}
-            Guardar y armar el diseño
+            {disenoPendienteIA ? 'Generar landing con IA' : 'Guardar y armar el diseño'}
             {!guardando && <ArrowRight size={15} />}
           </button>
         </div>
@@ -1158,12 +1160,12 @@ function useTamano() {
  */
 function VistaPrevia({
   vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar,
-  dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar,
+  dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
   const [marcoRef, tam] = useTamano();
   const escritorio = dispositivo === 'escritorio';
-  const anchoLienzo = escritorio && tam.w ? Math.max(ANCHO_ESCRITORIO, tam.w) : ANCHO_ESCRITORIO;
+  const anchoLienzo = ANCHO_ESCRITORIO;
   const escala = escritorio && tam.w ? Math.min(1, tam.w / anchoLienzo) : 1;
 
   const iframe = (
@@ -1239,7 +1241,9 @@ function VistaPrevia({
         <p className="flex items-start gap-1.5 text-[11px] text-fg-muted min-h-[16px]">
           {aviso
             ? <><MousePointerClick size={12} className="mt-px shrink-0 text-accent-text" /> {aviso}</>
-            : (vista === 'inicio' && !inicioEsBase ? 'Mostrando tu diseño actual.' : 'Diseño base: en el paso 2 lo cambiás a tu gusto.')}
+            : disenoPendienteIA
+              ? 'Vista previa comercial. Al guardar, la IA genera el HTML final con esta venta.'
+              : (vista === 'inicio' && !inicioEsBase ? 'Mostrando tu diseño actual.' : 'Diseño base: en el paso 2 lo cambiás a tu gusto.')}
         </p>
       </div>
 
@@ -1249,9 +1253,11 @@ function VistaPrevia({
             Elegí productos y los vas a ver acá.
           </div>
         ) : escritorio ? (
-          // Ventana de navegador: 1280px como base, pero si el panel es mas
-          // ancho el iframe crece con el marco para no dejar una franja vacia.
-          <div className="w-full h-full flex flex-col rounded-xl border border-border-strong overflow-hidden bg-white shadow-xl">
+          // Ventana de navegador: 1280px como base, centrada y escalada.
+          // No se estira a paneles más anchos porque muchas landings tienen
+          // layout de escritorio con ancho máximo; forzarlas dejaba una
+          // plancha blanca a la derecha que parecía código roto.
+          <div className="w-full max-w-[1280px] h-full flex flex-col rounded-xl border border-border-strong overflow-hidden bg-white shadow-xl">
             <div className="h-7 shrink-0 flex items-center gap-1.5 px-3 bg-surface border-b border-border" aria-hidden="true">
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />
               <span className="w-2.5 h-2.5 rounded-full bg-border-strong" />

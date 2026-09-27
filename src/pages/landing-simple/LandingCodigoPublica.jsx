@@ -26,6 +26,9 @@ import { useStoreCart } from '../landing/useStoreCart';
 function contactoDesdeData(data) {
   return {
     whatsapp: data?.contacto_whatsapp || data?.contacto_landing?.whatsapp || '',
+    mensaje: data?.contacto?.mensaje || '',
+    incluir_precio: !!data?.contacto?.incluir_precio,
+    incluir_url: !!data?.contacto?.incluir_url,
     telefono: data?.contacto_telefono || data?.contacto_landing?.telefono || '',
     email: data?.contacto_email || data?.contacto_landing?.email || '',
     direccion: data?.contacto_direccion || data?.contacto_landing?.direccion || '',

@@ -499,7 +499,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     let redirigido = false;
     // No redirigir a WhatsApp si hay una pasarela de pago (pago online) seleccionada.
     if (!resultado.payment_data?.payment_url && resultado.redirigir_whatsapp && contacto?.whatsapp) {
-      const link = armarLinkWhatsappCarrito(contacto, items);
+      const link = armarLinkWhatsappCarrito(contacto, items, resultado);
       if (link) {
         window.open(link, '_blank', 'noopener');
         redirigido = true;

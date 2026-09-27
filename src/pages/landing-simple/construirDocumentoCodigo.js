@@ -120,6 +120,19 @@ function cuerpoConExtras(html, extrasHtml) {
 }
 
 const SYSTEM_CSS = `
+/* Contrato de marca: las landings IA usan --gc-* y Mi Tienda inyecta
+   --tienda-*. Esta capa se aplica al final para que la marca configurada
+   gane aunque el CSS generado haya dejado defaults fijos. */
+:root {
+  --gc-primario: var(--tienda-primario, #18a66b);
+  --gc-secundario: var(--tienda-secundario, #ffb547);
+  --gc-fondo: var(--tienda-fondo, #ffffff);
+  --gc-texto: var(--tienda-texto, #10202f);
+  --gc-texto-suave: var(--tienda-texto-suave, #506172);
+  --gc-superficie: var(--tienda-superficie, #ffffff);
+  --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #ffffff);
+}
+
 /* El HTML generado por IA a veces deja body o un wrapper raiz con ancho fijo
    (1024px/1200px). En el preview de escritorio eso produce una franja blanca
    horrible a la derecha aunque la landing deberia ocupar todo el viewport. */
@@ -131,9 +144,33 @@ body {
 }
 body {
   overflow-x: hidden;
+  background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
+  color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
 body > :where(header, main, footer, section, article, aside, nav, div) {
   min-width: 100% !important;
+}
+
+/* Las fotos reales del catálogo no son banners decorativos: si el CSS de IA
+   las fuerza a cover se cortan botellas, pulseras, cajas y combos. */
+img[data-gesicomm-bind="imagen"],
+[data-gesicomm-lista] img[data-gesicomm-bind="imagen"] {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: #fff !important;
+}
+[data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
+  overflow: hidden !important;
+  background: #fff !important;
+}
+[data-gesicomm-tienda="logo"] {
+  max-width: 160px !important;
+  max-height: 52px !important;
+  object-fit: contain !important;
 }
 
 /* Los upsells no viven dentro de la ficha: son una etapa del checkout. */

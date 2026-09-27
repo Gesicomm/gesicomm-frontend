@@ -912,19 +912,20 @@ export default function ConfigurarTienda() {
 
                   <section className="tn-group">
                     <div className="tn-group-head">
-                      <h3>Mensaje de WhatsApp</h3>
-                      <p>El texto que se envía cuando un cliente toca "Consultar" o "Finalizar pedido".</p>
+                      <h3>Mensaje de WhatsApp para consultas</h3>
+                      <p>El texto editable que se envía cuando un cliente toca "Consultar" o un botón de WhatsApp en tus landings. Los pedidos usan otro mensaje con número, productos y total.</p>
                     </div>
                     <div className="tn-group-body">
                       <div className="tn-msg-grid">
                         <div className="tn-msg-builder">
-                          <span className="tn-field-label">Plantilla del mensaje</span>
+                          <span className="tn-field-label">Plantilla de consulta</span>
                           <textarea
                             ref={textareaRef}
                             className="tn-msg-textarea"
                             value={form.mensaje_contacto}
                             onChange={e => handleChange('mensaje_contacto', e.target.value)}
                             placeholder="Ej: Hola, me interesa {producto}"
+                            maxLength={300}
                             rows={3}
                           />
 

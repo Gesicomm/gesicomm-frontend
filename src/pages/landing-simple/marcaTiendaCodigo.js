@@ -179,6 +179,11 @@ export function conMarcaTienda(css) {
 
   // Cualquier diseño (también los de la IA): el contrato --gc-* con un hex fijo.
   s = s.replace(/(--gc-primario\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-primario, $2)');
+  s = s.replace(/(--gc-secundario\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-secundario, $2)');
+  s = s.replace(/(--gc-fondo\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-fondo, $2)');
+  s = s.replace(/(--gc-texto\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-texto, $2)');
+  s = s.replace(/(--gc-texto-suave\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-texto-suave, $2)');
+  s = s.replace(/(--gc-superficie\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-superficie, $2)');
   s = s.replace(/(--gc-texto-sobre-primario\s*:\s*)(#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b)/g, '$1var(--tienda-texto-sobre-primario, $2)');
   return s;
 }

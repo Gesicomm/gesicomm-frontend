@@ -56,11 +56,11 @@ function agotado(stock, variantes) {
 
 /**
  * Qué ventas cruzadas (order bump / upsell) muestra esta landing: SOLO las
- * que el comercio marcó en "Configurar venta". Antes, sin marcar ninguna se
- * mostraban todas las de los productos, y aparecían ofertas que nadie había
- * elegido para esta landing. Una landing que nunca pasó por ese paso (sin
- * venta configurada) conserva el comportamiento viejo: todas. Los paquetes
- * (estrategia normal) no pasan por acá: son presentaciones del producto.
+ * que el comercio marcó en "Configurar venta" o en el wizard de IA. Antes,
+ * sin marcar ninguna se mostraban todas las de los productos, y aparecían
+ * ofertas que nadie había elegido para esta landing. Una landing que nunca
+ * pasó por ese paso (sin venta configurada) conserva el comportamiento viejo:
+ * todas.
  */
 export function ofertaCruzadaVisible(oferta, venta) {
   if (!venta?.configurado) return true;
@@ -80,7 +80,7 @@ function conAhorro(oferta) {
 /** Ofertas que el HTML puede mostrar en la ficha: packs (normal) y ventas cruzadas publicables. */
 function ofertasRuntime(item, venta) {
   return (item.ofertas || [])
-    .filter(o => o.estrategia === 'normal' || (ofertaCheckoutPublicable(o) && ofertaCruzadaVisible(o, venta)))
+    .filter(o => ofertaCruzadaVisible(o, venta) && (o.estrategia === 'normal' || ofertaCheckoutPublicable(o)))
     .map(o => {
       const detalle = detalleOfertaCheckout(o);
       const precioOferta = detalle.precioFinal || o.precio_efectivo || o.precio;
@@ -298,6 +298,9 @@ function tiendaRuntime(data) {
       fondo: null,
     },
     whatsapp: c.whatsapp || t.whatsapp || data?.contacto_whatsapp || '',
+    mensaje: t.mensaje || '',
+    incluir_precio: !!t.incluir_precio,
+    incluir_url: !!t.incluir_url,
     telefono: c.telefono || t.telefono || '',
     email: c.email || t.email || '',
     direccion: [c.direccion || t.direccion, c.ciudad].filter(Boolean).join(', '),
