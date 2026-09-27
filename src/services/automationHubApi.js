@@ -38,7 +38,19 @@ AutomationAPI.interceptors.request.use(async (config) => {
 
 // --- Calendario de contenido ---
 export const socialApi = {
-  uploadMedia: (formData) => AutomationAPI.post('/social/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+  uploadMedia: async (file) => {
+    // 1. Pedir URL firmada
+    const { data: presignedData } = await AutomationAPI.get('/social/upload/presign', {
+      params: { filename: file.name, contentType: file.type }
+    });
+    // 2. Subir directo a R2
+    await fetch(presignedData.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file
+    });
+    return { videoUrl: presignedData.publicUrl };
+  },
 };
 
 export const contentApi = {

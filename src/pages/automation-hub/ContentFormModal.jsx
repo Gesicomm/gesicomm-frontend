@@ -18,11 +18,11 @@ const textareaClass = 'w-full rounded-md border border-border bg-surface-2 px-2 
 
 function limpiarSlug(v) {
   const sinTildes = (v || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
-  return sinTildes.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 18) || 'CONTENIDO';
+  return sinTildes.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 12) || 'CONT';
 }
 function previsualizarTrackingCode({ format, keyword, publish_date }) {
-  const fecha = String(publish_date || '').replace(/-/g, '');
-  return `${format}-${limpiarSlug(keyword)}-${fecha}-XXXXXX`;
+  const fecha = String(publish_date || '').slice(2).replace(/-/g, '');
+  return `${format}-${limpiarSlug(keyword)}-${fecha}-XXXX`;
 }
 // Mismo criterio que ManyChatFloatingAssistant.jsx: solo Historias usa una
 // plantilla distinta, Reel y Carrusel comparten la de "Reels / Posts".
@@ -99,9 +99,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
       };
 
       if (file) {
-        const formData = new FormData();
-        formData.append('video', file);
-        const res = await socialApi.uploadMedia(formData);
+        const res = await socialApi.uploadMedia(file);
         finalData.video_url = res.videoUrl;
       }
 
