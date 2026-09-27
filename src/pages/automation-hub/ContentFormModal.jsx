@@ -22,7 +22,7 @@ function limpiarSlug(v) {
 }
 function previsualizarTrackingCode({ format, keyword, publish_date }) {
   const fecha = String(publish_date || '').slice(2).replace(/-/g, '');
-  return `${format}-${limpiarSlug(keyword)}-${fecha}-XXXX`;
+  return `${format}-${limpiarSlug(keyword)}-${fecha}`;
 }
 // Mismo criterio que ManyChatFloatingAssistant.jsx: solo Historias usa una
 // plantilla distinta, Reel y Carrusel comparten la de "Reels / Posts".
@@ -60,6 +60,8 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
     is_test: false,
   });
   const [guardando, setGuardando] = useState(false);
+  const [conflicto, setConflicto] = useState(null);
+  const [uploadedUrl, setUploadedUrl] = useState(null);
   const [error, setError] = useState('');
   const [creado, setCreado] = useState(null);
   const [file, setFile] = useState(null);
@@ -270,7 +272,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                   </div>
                   <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Código único de tracking</div>
                   <div className="text-sm font-bold text-primary-text">{previsualizarTrackingCode(datos)}</div>
-                  <p className="m-0 mt-1 text-[10px] text-fg-subtle">Las X finales se generan solas al guardar — evitan choques si dos piezas comparten palabra clave y fecha.</p>
+                  <p className="m-0 mt-1 text-[10px] text-fg-subtle">Código único exacto que usarás en ManyChat.</p>
                 </div>
 
                 <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
@@ -325,6 +327,31 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
               </div>
             )}
 
+            {conflicto && (
+              <div className="rounded-md border border-warning bg-warning/10 p-4 shadow-sm relative">
+                <button type="button" onClick={() => setConflicto(null)} className="absolute top-2 right-2 text-warning hover:text-warning/70">
+                  <X size={16} />
+                </button>
+                <h4 className="text-warning text-sm font-bold flex items-center gap-2 mb-2">
+                  <AlertTriangle size={18} /> ¡Código de Rastreo Duplicado!
+                </h4>
+                <p className="text-xs text-fg mb-3">
+                  Ya existe un contenido programado en la misma fecha y con la misma palabra clave.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={onClose} className="text-xs bg-surface border border-border px-3 py-1.5 rounded text-fg hover:bg-surface-2 font-medium">
+                    Cancelar subida
+                  </button>
+                  <a href={`/automation-hub/content/${conflicto}`} target="_blank" rel="noreferrer" className="text-xs bg-surface border border-border px-3 py-1.5 rounded text-primary hover:bg-primary/10 font-medium">
+                    Ver video existente
+                  </a>
+                  <button type="button" onClick={() => handleSubmit(true)} className="text-xs bg-warning text-white px-3 py-1.5 rounded hover:bg-warning/80 font-bold ml-auto">
+                    Crear de todas formas (_0N)
+                  </button>
+                </div>
+              </div>
+            )}
+            
             {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
           </div>
 
