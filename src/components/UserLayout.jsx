@@ -362,7 +362,11 @@ const UserLayout = ({ children }) => {
             )}
           </div>
           <ul className="sidebar-list">
-            {renderLink({ path: '/configuracion', label: 'Configuración', icon: <Settings size={14} /> })}
+            {renderLink({ 
+              path: sessionStorage.getItem('moduloActivo') === 'marca_personal' ? '/automatizacion/configuracion' : '/configuracion', 
+              label: 'Configuración', 
+              icon: <Settings size={14} /> 
+            })}
             <li className="sidebar-item">
               <button className="logout-btn destructive" onClick={handleLogout} style={{ width: '100%' }}>
                 <span className="sidebar-icon"><LogOut size={14} /></span>
