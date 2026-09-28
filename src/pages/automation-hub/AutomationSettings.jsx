@@ -137,9 +137,11 @@ export default function AutomationSettings() {
     if (!confirm('¿Estás seguro de desconectar esta cuenta?')) return;
     try {
       await socialApi.deleteSocialAccount(id);
-      loadData();
+      setSuccess('Cuenta desconectada.');
+      cargarCuentas();
     } catch (err) {
-      setError('Error al desconectar la cuenta.');
+      console.error('Error desconectando cuenta:', err);
+      setError(err?.response?.data?.error || 'Error al desconectar la cuenta.');
     }
   };
 

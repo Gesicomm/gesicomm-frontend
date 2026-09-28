@@ -61,6 +61,7 @@ export const socialApi = {
     const token = await obtenerServiceToken();
     return `${automationApiURL}/social/auth/instagram?token=${encodeURIComponent(token)}`;
   },
+  deleteSocialAccount: (id) => AutomationAPI.delete(`/social/accounts/${id}`).then((r) => r.data),
 };
 
 export const contentApi = {
