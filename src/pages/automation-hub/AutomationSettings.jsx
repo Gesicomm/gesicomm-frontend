@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Store } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Store, Trash2 } from 'lucide-react';
 import { socialApi } from '../../services/automationHubApi';
 import PrivacidadDatosCard from '../../components/PrivacidadDatosCard';
 
