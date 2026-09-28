@@ -40,8 +40,8 @@ AutomationAPI.interceptors.request.use(async (config) => {
 export const socialApi = {
   uploadMedia: async (file) => {
     // 1. Pedir URL firmada
-    const { data: presignedData } = await AutomationAPI.get('/social/upload/presign', {
-      params: { filename: file.name, contentType: file.type }
+    const { data: presignedData } = await AutomationAPI.post('/social/upload/presign', {
+      filename: file.name, contentType: file.type
     });
     // 2. Subir directo a R2
     await fetch(presignedData.uploadUrl, {
