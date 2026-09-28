@@ -133,6 +133,16 @@ export default function AutomationSettings() {
     }
   };
 
+  const handleDisconnect = async (id) => {
+    if (!confirm('¿Estás seguro de desconectar esta cuenta?')) return;
+    try {
+      await socialApi.deleteSocialAccount(id);
+      loadData();
+    } catch (err) {
+      setError('Error al desconectar la cuenta.');
+    }
+  };
+
   const fbAccounts = accounts.filter(a => a.provider === 'facebook');
   const igAccounts = accounts.filter(a => a.provider === 'instagram');
 
@@ -211,8 +221,9 @@ export default function AutomationSettings() {
                 ) : fbAccounts.length > 0 ? (
                   <div className="space-y-2">
                     {fbAccounts.map(acc => (
-                      <div key={acc.id} className="text-sm text-success flex items-center gap-1 bg-success/10 px-2 py-1 rounded">
-                        <CheckCircle2 size={14} /> {acc.account_name}
+                      <div key={acc.id} className="text-sm text-success flex items-center justify-between gap-1 bg-success/10 px-2 py-1 rounded">
+                        <div className="flex items-center gap-1"><CheckCircle2 size={14} /> {acc.account_name}</div>
+                        <button type="button" onClick={() => handleDisconnect(acc.id)} className="text-danger hover:bg-danger/10 p-1 rounded transition-colors"><Trash2 size={14}/></button>
                       </div>
                     ))}
                   </div>
@@ -248,8 +259,9 @@ export default function AutomationSettings() {
                 ) : igAccounts.length > 0 ? (
                   <div className="space-y-2">
                     {igAccounts.map(acc => (
-                      <div key={acc.id} className="text-sm text-success flex items-center gap-1 bg-success/10 px-2 py-1 rounded">
-                        <CheckCircle2 size={14} /> {acc.account_name}
+                      <div key={acc.id} className="text-sm text-success flex items-center justify-between gap-1 bg-success/10 px-2 py-1 rounded">
+                        <div className="flex items-center gap-1"><CheckCircle2 size={14} /> {acc.account_name}</div>
+                        <button type="button" onClick={() => handleDisconnect(acc.id)} className="text-danger hover:bg-danger/10 p-1 rounded transition-colors"><Trash2 size={14}/></button>
                       </div>
                     ))}
                   </div>
