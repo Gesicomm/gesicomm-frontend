@@ -503,13 +503,18 @@ export function runtimeGesicomm() {
       var hayDato = Array.isArray(dato) ? dato.length > 0 : (dato !== null && dato !== undefined && dato !== '' && dato !== 0 && dato !== false);
       condicionales[q].style.display = hayDato ? '' : 'none';
     }
-    // Binds sueltos (fuera de listas) = el producto de la ficha, si lo hay.
-    if (productoActual) {
-      var sueltos = document.querySelectorAll('[data-gesicomm-bind]');
-      for (var j = 0; j < sueltos.length; j++) {
-        if (sueltos[j].closest('[data-gesicomm-lista]')) continue;
-        aplicarBind(sueltos[j], productoActual, { variante: varianteElegida });
-      }
+    // Binds sueltos (fuera de listas): el producto de la ficha, o el que
+    // declare data-gesicomm-item="content_id" en un ancestro. Eso último es
+    // lo que hace posible un bloque "producto protagonista" en el INICIO
+    // (hero con la foto y el precio de un producto), donde no hay ficha
+    // abierta y antes esos binds quedaban vacíos — una <img> sin src.
+    var sueltos = document.querySelectorAll('[data-gesicomm-bind]');
+    for (var j = 0; j < sueltos.length; j++) {
+      if (sueltos[j].closest('[data-gesicomm-lista]')) continue;
+      var contItem = sueltos[j].closest('[data-gesicomm-item]');
+      var itemSuelto = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : productoActual;
+      if (!itemSuelto) continue;
+      aplicarBind(sueltos[j], itemSuelto, itemSuelto === productoActual ? { variante: varianteElegida } : undefined);
     }
     pintarControlesCatalogo();
     pintarTotal();

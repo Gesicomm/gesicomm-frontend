@@ -157,7 +157,12 @@ img[data-gesicomm-bind="imagen"],
 [data-gesicomm-lista] img[data-gesicomm-bind="imagen"] {
   display: block !important;
   width: 100% !important;
-  height: 100% !important;
+  /* height: auto, NO 100%. Con 100% sobre una tarjeta de alto automático la
+     imagen se comía la tarjeta entera y el nombre, el precio y el botón de
+     comprar quedaban fuera, recortados por el overflow:hidden de la tarjeta:
+     la grilla mostraba solo fotos y no se podía comprar. El alto fijo se
+     aplica más abajo, solo dentro de un contenedor de media que sí lo tiene. */
+  height: auto !important;
   max-width: 100% !important;
   object-fit: contain !important;
   object-position: center !important;
@@ -166,6 +171,9 @@ img[data-gesicomm-bind="imagen"],
 [data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
   overflow: hidden !important;
   background: #fff !important;
+}
+[data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) img[data-gesicomm-bind="imagen"] {
+  height: 100% !important;
 }
 [data-gesicomm-tienda="logo"] {
   max-width: 160px !important;

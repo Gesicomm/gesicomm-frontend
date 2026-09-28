@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Suspense, lazy } from 'react';
 import {
+  ArrowLeft,
   ArrowRight,
   Bot,
   CalendarDays,
@@ -26,6 +27,8 @@ import { ofertaService } from '../../services/ofertaService';
 import CodigoPreview from './CodigoPreview';
 import ProductPicker from '../landing/ProductPicker';
 import { datosRuntimePreview } from './datosRuntime';
+// Pesado (arrastra el editor real de ofertas): solo se carga al llegar al paso.
+const PasoOfertas = lazy(() => import('./PasoOfertas'));
 import '../landing/landing.css';
 
 const SHORTCUTS = [
@@ -51,17 +54,9 @@ const PROGRESO = [
 
 const MENSAJE_INICIAL_PRODUCTOS = 'Primero elegi los productos y combos reales que van a entrar en esta landing. Despues marcamos ofertas, destacados y recien ahi le das el prompt a la IA.';
 
-const WIZARD_DARK_TOKENS = {
-  '--color-fg': '#f8fafc',
-  '--color-fg-muted': '#94a3b8',
-  '--color-fg-subtle': '#64748b',
-  '--color-primary': '#3b82f6',
-  '--color-primary-hover': '#60a5fa',
-  '--color-primary-text': '#60a5fa',
-  '--color-success': '#10b981',
-  '--color-warning': '#f59e0b',
-  '--color-danger': '#ef4444',
-};
+// El wizard usa los tokens de la app (bg-canvas, bg-surface, text-fg…), que
+// ya cambian solos con el tema. Antes acá se pisaban con una paleta oscura
+// fija y la pantalla quedaba en modo oscuro aunque la app estuviera en claro.
 
 function contentIdItem(item) {
   if (!item) return '';
@@ -170,18 +165,9 @@ export default function AILandingWizard({ onCreada }) {
       return;
     }
     setPaso('ofertas');
+    // El catálogo completo lo necesita el panel de creación: ahí se elige a
+    // qué producto se le suma la oferta, y puede ser uno que no esté en la landing.
     await cargarCatalogo();
-    setCargandoOfertas(true);
-    setErrorOfertas('');
-    try {
-      const lista = await ofertaService.listarTodas({ estrategias: ['normal', 'order_bump', 'upsell'] });
-      setOfertasTienda(Array.isArray(lista) ? lista : []);
-    } catch (err) {
-      setErrorOfertas(err?.response?.data?.message || 'No se pudieron cargar las ofertas.');
-      setOfertasTienda([]);
-    } finally {
-      setCargandoOfertas(false);
-    }
   };
 
   const avanzarAPrompt = (idsOfertas = Array.from(ofertasSeleccionadas)) => {
@@ -247,18 +233,45 @@ export default function AILandingWizard({ onCreada }) {
     setPaso('productos');
   };
 
+  // Vuelve un paso, sin perder lo elegido: es la salida que faltaba cuando
+  // ya habías pasado al prompt y querías corregir una oferta.
+  const volverAtras = () => {
+    if (paso === 'prompt') { setPaso('ofertas'); return; }
+    if (paso === 'ofertas') { setPaso('productos'); return; }
+    if (paso === 'error') { setPaso('prompt'); return; }
+  };
+  const puedeVolver = ['ofertas', 'prompt', 'error'].includes(paso);
+
   const puedeEnviar = input.trim() && paso === 'prompt' && paso !== 'generando';
   const productosElegidos = productosSeleccionados.size;
   const modoWorkspace = true;
 
   return (
     <div
-      className={`h-[calc(100vh-120px)] min-h-[680px] max-h-[900px] w-full rounded-[22px] bg-[#070b14] text-fg shadow-2xl ring-1 ring-white/8 ${modoWorkspace ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
-      style={WIZARD_DARK_TOKENS}
+      className={`h-[calc(100vh-120px)] min-h-[680px] max-h-[900px] w-full rounded-[22px] bg-canvas text-fg shadow-xl ring-1 ring-border ${modoWorkspace ? 'overflow-hidden' : 'overflow-y-auto overflow-x-hidden'}`}
       data-ai-wizard-root
     >
+      {paso === 'ofertas' ? (
+        // Ocupa el ancho completo: acá se crean ofertas de verdad y el
+        // formulario no entra en la columna del chat.
+        <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-fg-muted"><Loader2 size={16} className="mr-2 animate-spin" /> Abriendo tus ofertas…</div>}>
+          <PasoOfertas
+            productosSeleccionados={productosSeleccionados}
+            catalogo={catalogo}
+            ofertasElegidas={ofertasSeleccionadas}
+            setOfertasElegidas={setOfertasSeleccionadas}
+            destacados={destacadosSeleccionados}
+            setDestacados={setDestacadosSeleccionados}
+            onVolver={volverAProductos}
+            onContinuar={generarConOfertasElegidas}
+            onSaltear={generarSinOfertas}
+          />
+        </Suspense>
+      ) : (
       <div className={`${modoWorkspace ? 'grid h-full grid-cols-1 lg:grid-cols-[minmax(340px,37%)_minmax(0,63%)]' : 'flex min-h-full flex-col'}`}>
         <AssistantPanel
+          puedeVolver={puedeVolver}
+          volverAtras={volverAtras}
           modoWorkspace={modoWorkspace}
           mensajes={mensajes}
           paso={paso}
@@ -298,11 +311,14 @@ export default function AILandingWizard({ onCreada }) {
           setPreviewModo={setPreviewModo}
         />
       </div>
+      )}
     </div>
   );
 }
 
 function AssistantPanel({
+  puedeVolver,
+  volverAtras,
   modoWorkspace,
   mensajes,
   paso,
@@ -333,8 +349,8 @@ function AssistantPanel({
 }) {
   if (modoWorkspace) {
     return (
-      <section className="flex min-h-0 flex-col bg-[linear-gradient(180deg,rgba(18,28,51,0.96),rgba(9,14,26,0.98))] ring-1 ring-white/8 lg:ring-r" aria-label="Asistente IA">
-        <Header compact />
+      <section className="flex min-h-0 flex-col bg-surface ring-1 ring-border lg:ring-r" aria-label="Asistente IA">
+        <Header compact puedeVolver={puedeVolver} onVolver={volverAtras} />
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
           <MessageStack
             mensajes={mensajes}
@@ -357,7 +373,7 @@ function AssistantPanel({
             mensajesFinRef={mensajesFinRef}
           />
         </div>
-        <div className="shrink-0 bg-[#0a1020]/95 p-4 shadow-[0_-18px_40px_rgba(0,0,0,0.18)]">
+        <div className="shrink-0 border-t border-border bg-surface p-4">
           <Composer
             input={input}
             setInput={setInput}
@@ -373,13 +389,13 @@ function AssistantPanel({
   }
 
   return (
-    <section className="shrink-0 bg-[linear-gradient(180deg,rgba(20,31,56,0.96),rgba(10,16,32,0.98))] px-5 py-4" aria-label="Crear con IA">
+    <section className="shrink-0 bg-surface px-5 py-4" aria-label="Crear con IA">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-        <Header />
+        <Header puedeVolver={puedeVolver} onVolver={volverAtras} />
         {mensajes.length === 0 ? (
           <Onboarding onPick={usarPrompt} shortcutActivo={shortcutActivo} />
         ) : (
-          <div className="max-h-[210px] overflow-y-auto rounded-2xl bg-white/[0.035] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+          <div className="max-h-[210px] overflow-y-auto rounded-2xl bg-surface-2 p-4 ring-1 ring-border">
             <MessageStack
               mensajes={mensajes}
               paso={paso}
@@ -404,13 +420,13 @@ function AssistantPanel({
         )}
 
         {paso === 'productos' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/[0.045] px-4 py-3 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3 ring-1 ring-border">
             <span className="text-sm text-fg-muted">{productosElegidos ? `${productosElegidos} producto${productosElegidos === 1 ? '' : 's'} seleccionado${productosElegidos === 1 ? '' : 's'}` : 'Elegi al menos un producto para generar.'}</span>
             <button
               type="button"
               onClick={abrirPasoOfertas}
               disabled={productosElegidos === 0}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-fg transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               Elegir ofertas <ArrowRight size={15} />
             </button>
@@ -430,11 +446,11 @@ function AssistantPanel({
   );
 }
 
-function Header({ compact = false }) {
+function Header({ compact = false, puedeVolver = false, onVolver }) {
   return (
     <div className={`flex items-start justify-between gap-4 ${compact ? 'px-5 pb-4 pt-5' : ''}`}>
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary-text shadow-[0_0_30px_rgba(59,130,246,0.18)]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary-text">
           <Sparkles size={20} />
         </div>
         <div>
@@ -442,9 +458,13 @@ function Header({ compact = false }) {
           <p className="mt-1 text-sm text-fg-muted">Converti una idea en una landing lista para vender.</p>
         </div>
       </div>
-      {!compact && (
-        <button type="button" className="hidden rounded-xl bg-white/[0.055] px-3 py-2 text-xs font-semibold text-fg-muted transition hover:bg-white/[0.08] hover:text-fg sm:inline-flex">
-          Historial
+      {puedeVolver && (
+        <button
+          type="button"
+          onClick={onVolver}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-surface-2 px-3 text-xs font-semibold text-fg-muted transition hover:bg-surface-3 hover:text-fg"
+        >
+          <ArrowLeft size={14} /> Volver
         </button>
       )}
     </div>
@@ -479,7 +499,7 @@ function MessageStack({
           <div className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
             m.rol === 'user'
               ? 'rounded-br-md bg-primary text-white'
-              : 'rounded-bl-md bg-white/[0.055] text-fg shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]'
+              : 'rounded-bl-md bg-surface-2 text-fg ring-1 ring-border'
           }`}>
             <div className="whitespace-pre-wrap">{m.texto}</div>
 
@@ -499,21 +519,6 @@ function MessageStack({
         </div>
       ))}
 
-      {paso === 'ofertas' && (
-        <SelectorOfertas
-          productosSeleccionados={productosSeleccionados}
-          ofertas={ofertasTienda}
-          seleccionadas={ofertasSeleccionadas}
-          setSeleccionadas={setOfertasSeleccionadas}
-          destacados={destacadosSeleccionados}
-          setDestacados={setDestacadosSeleccionados}
-          cargando={cargandoOfertas}
-          error={errorOfertas}
-          onVolver={volverAProductos}
-          onGenerar={generarConOfertasElegidas}
-          onGenerarSinOfertas={generarSinOfertas}
-        />
-      )}
 
       {paso === 'generando' && (
         <div className="rounded-2xl bg-primary/10 p-4 shadow-[inset_0_0_0_1px_rgba(59,130,246,0.18)]">
@@ -545,7 +550,7 @@ function Composer({ input, setInput, puedeEnviar, paso, composerRef, enviarPromp
   return (
     <form
       onSubmit={enviarPrompt}
-      className={`mx-auto w-full rounded-2xl bg-white/[0.06] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.22),inset_0_0_0_1px_rgba(59,130,246,0.24)] transition focus-within:bg-white/[0.075] focus-within:shadow-[0_18px_50px_rgba(0,0,0,0.24),inset_0_0_0_1px_rgba(96,165,250,0.55)] ${compacto ? '' : 'max-w-5xl'}`}
+      className={`mx-auto w-full rounded-2xl bg-surface-2 p-3 ring-1 ring-border transition focus-within:ring-2 focus-within:ring-primary/60 ${compacto ? '' : 'max-w-5xl'}`}
     >
       <textarea
         ref={composerRef}
@@ -562,7 +567,7 @@ function Composer({ input, setInput, puedeEnviar, paso, composerRef, enviarPromp
         <button
           type="submit"
           disabled={!puedeEnviar}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-primary/10 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-white/[0.08] disabled:text-fg-subtle disabled:shadow-none"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-extrabold text-primary-fg shadow-lg shadow-primary/10 transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-surface-3 disabled:text-fg-subtle disabled:shadow-none"
         >
           Generar landing <ArrowRight size={16} />
         </button>
@@ -589,8 +594,8 @@ function Onboarding({ onPick, shortcutActivo }) {
             onClick={() => onPick(prompt, id)}
             className={`group min-h-[106px] rounded-2xl p-4 text-left transition hover:-translate-y-0.5 ${
               activo
-                ? 'bg-primary/16 shadow-[inset_0_0_0_1px_rgba(96,165,250,0.45),0_12px_30px_rgba(59,130,246,0.12)]'
-                : 'bg-white/[0.055] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.055)] hover:bg-primary/12 hover:shadow-[inset_0_0_0_1px_rgba(59,130,246,0.32)]'
+                ? 'bg-primary/12 ring-2 ring-primary/50'
+                : 'bg-surface-2 ring-1 ring-border hover:bg-primary/10 hover:ring-primary/40'
             }`}
           >
             <span className={`flex h-9 w-9 items-center justify-center rounded-xl text-primary-text transition ${activo ? 'bg-primary/28' : 'bg-primary/15 group-hover:bg-primary/25'}`}>
@@ -611,7 +616,7 @@ function Onboarding({ onPick, shortcutActivo }) {
               key={ejemplo}
               type="button"
               onClick={() => onPick(ejemplo, null)}
-              className="rounded-full bg-white/[0.05] px-3 py-2 text-xs font-medium text-fg-muted transition hover:bg-white/[0.085] hover:text-fg"
+              className="rounded-full bg-surface-2 px-3 py-2 text-xs font-medium text-fg-muted transition hover:bg-surface-3 hover:text-fg"
             >
               {ejemplo}
             </button>
@@ -624,7 +629,7 @@ function Onboarding({ onPick, shortcutActivo }) {
 
 function Avatar({ icono: Icono }) {
   return (
-    <div className="mt-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-fg-muted sm:flex">
+    <div className="mt-1 hidden h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-fg-muted sm:flex">
       <Icono size={15} />
     </div>
   );
@@ -632,7 +637,7 @@ function Avatar({ icono: Icono }) {
 
 function SelectorProductos({ productosSeleccionados, setProductosSeleccionados, catalogo, generarSinOfertas, abrirPasoOfertas }) {
   return (
-    <div className="mt-4 rounded-2xl bg-[#070b14] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
+    <div className="mt-4 rounded-2xl bg-surface p-4 ring-1 ring-border">
       <ProductPicker
         catalogo={catalogo || { productos: [], combos: [] }}
         seleccion={productosSeleccionados}
@@ -667,188 +672,9 @@ function SelectorProductos({ productosSeleccionados, setProductosSeleccionados, 
           type="button"
           onClick={abrirPasoOfertas}
           disabled={productosSeleccionados.size === 0}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-fg transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
         >
           Elegir ofertas <ArrowRight size={15} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function SelectorOfertas({
-  productosSeleccionados,
-  ofertas,
-  seleccionadas,
-  setSeleccionadas,
-  destacados,
-  setDestacados,
-  cargando,
-  error,
-  onVolver,
-  onGenerar,
-  onGenerarSinOfertas,
-}) {
-  const productos = Array.from(productosSeleccionados.values()).filter(p => p.tipo === 'producto');
-  const itemsSeleccionados = Array.from(productosSeleccionados.values());
-  const idsProductos = new Set(productos.map(p => Number(p.id)));
-  const porProducto = productos.map(producto => ({
-    producto,
-    ofertas: (ofertas || []).filter(o => Number(o.producto_ancla_id) === Number(producto.id)),
-  }));
-  const totalOfertas = porProducto.reduce((acc, grupo) => acc + grupo.ofertas.length, 0);
-
-  const alternar = (id) => {
-    setSeleccionadas(prev => {
-      const copia = new Set(prev);
-      if (copia.has(Number(id))) copia.delete(Number(id));
-      else copia.add(Number(id));
-      return copia;
-    });
-  };
-
-  const marcarTodas = () => {
-    setSeleccionadas(new Set((ofertas || [])
-      .filter(o => idsProductos.has(Number(o.producto_ancla_id)))
-      .map(o => Number(o.id))));
-  };
-
-  const alternarDestacado = (item) => {
-    const id = contentIdItem(item);
-    if (!id) return;
-    setDestacados(prev => {
-      const copia = new Set(prev);
-      if (copia.has(id)) copia.delete(id);
-      else copia.add(id);
-      return copia;
-    });
-  };
-
-  return (
-    <div className="mt-4 rounded-2xl bg-[#070b14] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold text-fg">Ofertas para estos productos</p>
-          <p className="mt-1 text-xs leading-relaxed text-fg-muted">
-            Marcá paquetes, order bumps o upsells. La IA va a usar esta selección para armar la landing.
-          </p>
-        </div>
-        {totalOfertas > 0 && (
-          <button type="button" onClick={marcarTodas} className="rounded-lg bg-white/[0.06] px-3 py-2 text-xs font-semibold text-fg-muted hover:text-fg">
-            Marcar todas
-          </button>
-        )}
-      </div>
-
-      {cargando ? (
-        <div className="mt-5 flex items-center gap-2 text-sm text-fg-muted">
-          <Loader2 size={16} className="animate-spin" /> Buscando ofertas...
-        </div>
-      ) : error ? (
-        <p className="mt-4 rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>
-      ) : productos.length === 0 ? (
-        <p className="mt-4 text-sm text-fg-muted">Elegí al menos un producto para ver sus ofertas.</p>
-      ) : totalOfertas === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-5 text-sm text-fg-muted">
-          Los productos elegidos no tienen ofertas activas todavía. Podés generar la landing igual con los productos seleccionados.
-        </p>
-      ) : (
-        <div className="mt-4 max-h-[330px] space-y-3 overflow-y-auto pr-1">
-          {porProducto.map(({ producto, ofertas: ofertasProducto }) => (
-            <div key={producto.id} className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="min-w-0 truncate text-sm font-semibold text-fg">{producto.nombre}</p>
-                <span className="shrink-0 text-[11px] font-semibold text-fg-subtle">
-                  {ofertasProducto.length || 'Sin'} oferta{ofertasProducto.length === 1 ? '' : 's'}
-                </span>
-              </div>
-              {ofertasProducto.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {ofertasProducto.map(oferta => {
-                    const activa = seleccionadas.has(Number(oferta.id));
-                    return (
-                      <label
-                        key={oferta.id}
-                        className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 transition ${
-                          activa ? 'border-primary/45 bg-primary/12' : 'border-white/8 bg-[#050811] hover:border-white/18'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={activa}
-                          onChange={() => alternar(oferta.id)}
-                          className="mt-1 h-4 w-4 accent-primary"
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-semibold text-fg">{oferta.nombre}</span>
-                          <span className="mt-0.5 block text-xs text-fg-muted">
-                            {nombreEstrategia(oferta.estrategia)}
-                            {precioOferta(oferta) ? ` · Gs ${precioOferta(oferta).toLocaleString('es-PY')}` : ''}
-                          </span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.035] p-3">
-        <div className="flex items-start gap-2">
-          <Star size={16} className="mt-0.5 shrink-0 text-warning" />
-          <div>
-            <p className="text-sm font-bold text-fg">Destacados para la IA</p>
-            <p className="mt-1 text-xs leading-relaxed text-fg-muted">
-              Marcá productos o combos que querés ver protagonistas en la home, recomendaciones o bloques destacados.
-            </p>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {itemsSeleccionados.map(item => {
-            const id = contentIdItem(item);
-            const activo = destacados.has(id);
-            return (
-              <button
-                key={`${item.tipo}:${item.id}`}
-                type="button"
-                onClick={() => alternarDestacado(item)}
-                className={`inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition ${
-                  activo ? 'border-warning/60 bg-warning/15 text-warning' : 'border-white/10 bg-[#050811] text-fg-muted hover:border-white/20 hover:text-fg'
-                }`}
-              >
-                <Star size={13} className={activo ? 'fill-current' : ''} />
-                <span className="truncate">{nombreItem(item)}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onVolver}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-fg/70 transition hover:text-fg"
-        >
-          Cambiar productos
-        </button>
-        <button
-          type="button"
-          onClick={onGenerarSinOfertas}
-          className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-fg/70 transition hover:text-fg"
-        >
-          Continuar sin ofertas
-        </button>
-        <button
-          type="button"
-          onClick={onGenerar}
-          disabled={cargando}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Continuar al prompt <ArrowRight size={15} />
         </button>
       </div>
     </div>
@@ -893,7 +719,7 @@ function PreviewPanel({ paso, landingGenerada, productosSeleccionados, onCreada,
   }, [modoWorkspace, previewModo]);
 
   return (
-    <section ref={previewRef} className={`${modoWorkspace ? 'hidden min-h-0 lg:flex' : 'flex flex-none'} flex-col bg-[#080d19]`} aria-label="Vista previa">
+    <section ref={previewRef} className={`${modoWorkspace ? 'hidden min-h-0 lg:flex' : 'flex flex-none'} flex-col bg-canvas`} aria-label="Vista previa">
       <div className={`${modoWorkspace ? 'max-w-none px-5 pb-5' : 'max-w-[min(90vw,1280px)] px-0 pb-6'} mx-auto flex ${modoWorkspace ? 'min-h-0 flex-1' : ''} w-full flex-col`}>
         <div className="flex shrink-0 items-end justify-between gap-4 py-4">
           <div>
@@ -915,8 +741,8 @@ function PreviewPanel({ paso, landingGenerada, productosSeleccionados, onCreada,
               onClick={estaLista ? () => onCreada(landingGenerada) : undefined}
               className={`inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold transition ${
                 estaLista
-                  ? 'bg-primary text-white shadow-lg shadow-primary/10 hover:bg-primary-hover'
-                  : 'bg-white/[0.05] text-fg-muted hover:bg-white/[0.085] hover:text-fg'
+                  ? 'bg-primary text-primary-fg shadow-lg shadow-primary/10 hover:bg-primary-hover'
+                  : 'bg-surface-2 text-fg-muted hover:bg-surface-3 hover:text-fg'
               }`}
             >
               <ExternalLink size={14} /> {botonFinal}
@@ -925,7 +751,7 @@ function PreviewPanel({ paso, landingGenerada, productosSeleccionados, onCreada,
         </div>
 
         {estaLista ? (
-          <div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-2xl bg-[#050811] shadow-2xl ring-1 ring-white/8">
+          <div className="flex min-h-0 flex-1 justify-center overflow-auto rounded-2xl bg-surface-2 shadow-xl ring-1 ring-border">
             <div className={`transition-all duration-200 ${framePreview.className}`} style={framePreview.style}>
               <CodigoPreview
                 codigo={landingGenerada.content?.codigo}
@@ -980,7 +806,7 @@ function DeviceButton({ icono: Icono, label, activo = false, onClick }) {
       className={`inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-semibold transition ${
         activo
           ? 'border-primary/35 bg-primary/15 text-primary-text'
-          : 'border-white/0 bg-white/[0.04] text-fg-muted hover:bg-white/[0.075] hover:text-fg'
+          : 'border-transparent bg-surface-2 text-fg-muted hover:bg-surface-3 hover:text-fg'
       }`}
       title={label}
     >
@@ -992,7 +818,7 @@ function DeviceButton({ icono: Icono, label, activo = false, onClick }) {
 
 function ActionButton({ icono: Icono, label }) {
   return (
-    <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-white/[0.055] px-3 py-2 text-xs font-semibold text-fg-muted transition hover:bg-white/[0.085] hover:text-fg">
+    <button type="button" className="inline-flex items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-xs font-semibold text-fg-muted transition hover:bg-surface-3 hover:text-fg">
       <Icono size={14} />
       {label}
     </button>
@@ -1002,14 +828,14 @@ function ActionButton({ icono: Icono, label }) {
 function BrowserCanvas({ generando, previewModo }) {
   const framePreview = getPreviewFrame(previewModo);
   return (
-    <div className={`relative flex flex-col overflow-hidden rounded-2xl bg-[#0d1323] shadow-2xl ring-1 ring-white/8 transition-all duration-200 ${framePreview.className}`} style={framePreview.style}>
-      <div className="flex h-12 items-center gap-3 bg-white/[0.045] px-4 shadow-[inset_0_-1px_0_rgba(255,255,255,0.06)]">
+    <div className={`relative flex flex-col overflow-hidden rounded-2xl bg-surface-2 shadow-xl ring-1 ring-border transition-all duration-200 ${framePreview.className}`} style={framePreview.style}>
+      <div className="flex h-12 items-center gap-3 border-b border-border bg-surface px-4">
         <div className="flex gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
         </div>
-        <div className="flex h-7 flex-1 items-center rounded-full border border-white/10 bg-[#070b14] px-4 text-xs text-fg-subtle">
+        <div className="flex h-7 flex-1 items-center rounded-full border border-border bg-canvas px-4 text-xs text-fg-subtle">
           tutienda.gesicomm.com
         </div>
       </div>
@@ -1018,7 +844,7 @@ function BrowserCanvas({ generando, previewModo }) {
         <LandingSkeleton />
       </div>
 
-      <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-[#060a13]/28 p-8 text-center backdrop-blur-[1px]">
+      <div className="relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-y-auto bg-canvas/25 p-8 text-center backdrop-blur-[1px]">
         <div className="max-w-md">
           {generando ? (
             <>

@@ -464,7 +464,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   useEffect(() => {
     if (paso !== 'codigo') return;
     let vivo = true;
-    ofertaService.listarTodas({ estrategias: ['order_bump', 'upsell'] })
+    // 'normal' son los paquetes (x2, x3): sin ellos la lista "paquetes"
+    // ("Elegí tu oferta") salía siempre vacía en el preview aunque el
+    // producto tuviera paquetes cargados y elegidos para esta landing.
+    ofertaService.listarTodas({ estrategias: ['normal', 'order_bump', 'upsell'] })
       .then(lista => { if (vivo) setOfertasTienda(Array.isArray(lista) ? lista : []); })
       .catch(() => {});
     return () => { vivo = false; };

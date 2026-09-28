@@ -1626,7 +1626,10 @@ function ProductosIncluidos({ lista, vacio }) {
  * se ofrece cuando ese producto está en la compra); después se abre el
  * editor de ofertas de ese producto, el mismo de su ficha.
  */
-function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar }) {
+// Lo usa también el paso de ofertas del wizard de IA (PasoOfertas): es el
+// mismo editor real de la ficha de producto, así una oferta creada desde la
+// IA es idéntica a una creada desde Productos.
+export function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar }) {
   const [busqueda, setBusqueda] = useState('');
   const tipoElegido = LABEL_TIPO_OFERTA_RAPIDA[estrategia] || null;
 
