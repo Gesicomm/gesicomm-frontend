@@ -4,6 +4,11 @@ import { AlertCircle, CheckCircle2, Store, Trash2 } from 'lucide-react';
 import { socialApi } from '../../services/automationHubApi';
 import PrivacidadDatosCard from '../../components/PrivacidadDatosCard';
 
+// El login de Instagram queda oculto hasta que el hub tenga cargados
+// INSTAGRAM_APP_ID e INSTAGRAM_APP_SECRET: sin esas variables el OAuth muere
+// con "Invalid platform app". Poner en true para volver a mostrarlo.
+const INSTAGRAM_LOGIN_HABILITADO = false;
+
 function FacebookIcon({ size = 18, className = "" }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -268,17 +273,23 @@ export default function AutomationSettings() {
                     ))}
                   </div>
                 ) : (
-                  <span className="text-xs text-warning block mt-2">No hay cuenta de IG conectada</span>
+                  <span className="text-xs text-fg-muted block mt-2">
+                    {INSTAGRAM_LOGIN_HABILITADO
+                      ? 'No hay cuenta de IG conectada'
+                      : 'Integración de Instagram no disponible por ahora.'}
+                  </span>
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={handleConnectInstagram}
-                className="w-full mt-2 rounded-md border border-pink-600/30 bg-pink-50 hover:bg-pink-100 text-pink-700 px-4 py-2 text-sm font-medium transition-colors"
-              >
-                Conectar Instagram
-              </button>
+              {INSTAGRAM_LOGIN_HABILITADO && (
+                <button
+                  type="button"
+                  onClick={handleConnectInstagram}
+                  className="w-full mt-2 rounded-md border border-pink-600/30 bg-pink-50 hover:bg-pink-100 text-pink-700 px-4 py-2 text-sm font-medium transition-colors"
+                >
+                  Conectar Instagram
+                </button>
+              )}
             </div>
 
           </div>

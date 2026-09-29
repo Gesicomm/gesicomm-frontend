@@ -75,6 +75,37 @@ function plantillaParaFormato(format) {
   return format === 'H' ? 'PLANTILLA - TRACKING HISTORIAS' : 'PLANTILLA - TRACKING REELS / POSTS';
 }
 
+// La programación se evalúa en la zona del tenant, no en la del navegador: si
+// alguien viaja o tiene el reloj en otra zona, la fecha válida sigue siendo la
+// misma que ve el backend.
+const ZONA_TENANT = 'America/Asuncion';
+const RE_FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+const RE_HORA_HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function hoyEnZonaTenant() {
+  return new Date().toLocaleDateString('sv-SE', { timeZone: ZONA_TENANT });
+}
+
+// Devuelve el mensaje de error, o null si la programación es válida. Replica el
+// criterio de resolverProgramacion() del hub, que es quien decide de verdad.
+function validarProgramacion(fecha, hora) {
+  if (!RE_FECHA_ISO.test(String(fecha || ''))) return 'Elegí una fecha de publicación válida.';
+  if (!RE_HORA_HHMM.test(String(hora || ''))) return 'Elegí una hora de publicación válida.';
+
+  const ahora = new Date();
+  const hoy = hoyEnZonaTenant();
+  const horaActual = ahora
+    .toLocaleTimeString('sv-SE', { timeZone: ZONA_TENANT, hour12: false })
+    .slice(0, 5);
+
+  // Comparación de strings: al ser ISO con ceros a la izquierda, el orden
+  // lexicográfico coincide con el cronológico.
+  if (`${fecha}T${hora}` <= `${hoy}T${horaActual}`) {
+    return 'La fecha y hora de publicación ya pasaron. Elegí un momento futuro.';
+  }
+  return null;
+}
+
 function ReelIllustration({ active }) {
   return (
     <div className={`relative flex h-12 w-9 shrink-0 flex-col justify-between rounded-lg border p-1 transition-colors ${
@@ -179,6 +210,8 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado, item
   };
   const cambiarSlide = (i, valor) => setDatos((d) => ({ ...d, slides: d.slides.map((s, idx) => (idx === i ? valor : s)) }));
 
+  const errorDeProgramacion = validarProgramacion(datos.publish_date, datos.publish_time);
+
   const irA = (n) => {
     if (n > 2 && (!datos.topic.trim() || !datos.keyword.trim())) {
       setError('El tema y la palabra clave / CTA son obligatorios.');
@@ -203,6 +236,13 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado, item
   };
 
   const handleSubmit = async (forzar = false) => {
+    // El backend valida igual (es la autoridad), pero avisar acá evita el viaje
+    // de ida y vuelta y que se pierda lo cargado en el formulario.
+    if (errorDeProgramacion) {
+      setError(errorDeProgramacion);
+      return;
+    }
+
     setGuardando(true);
     setError('');
     try {
@@ -571,13 +611,24 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado, item
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-fg-muted mb-1">Fecha</label>
-                      <input type="date" className={inputClass} value={datos.publish_date} onChange={set('publish_date')} />
+                      <input
+                        type="date"
+                        className={inputClass}
+                        value={datos.publish_date}
+                        min={hoyEnZonaTenant()}
+                        onChange={set('publish_date')}
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-fg-muted mb-1">Hora</label>
                       <input type="time" className={inputClass} value={datos.publish_time} onChange={set('publish_time')} />
                     </div>
                   </div>
+                  {errorDeProgramacion && (
+                    <div className="text-[11px] text-danger flex items-center gap-1">
+                      <AlertTriangle size={12} /> {errorDeProgramacion}
+                    </div>
+                  )}
                   <div className="text-[11px] text-fg-subtle pt-1 border-t border-border/50">
                     Zona horaria: <span className="font-semibold text-fg">America/Asuncion</span>
                   </div>
