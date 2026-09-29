@@ -5,7 +5,7 @@ import LivePreviewMockup from './LivePreviewMockup';
 
 const FORMATO_LABEL = { R: 'Video / Reel', C: 'Carrusel', H: 'Historias' };
 
-export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) {
+export default function ContentDetailModal({ item, onClose, onCambio, onEdit, setFloatingAssistantItem }) {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
   const [mediaSeleccionada, setMediaSeleccionada] = useState(0);
@@ -48,6 +48,11 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) 
 
   const abrirManyChat = () => {
     window.open('https://app.manychat.com/', '_blank', 'noopener,noreferrer');
+  };
+
+  const mostrarDatosManyChat = () => {
+    setFloatingAssistantItem?.({ item, manychatLink: link });
+    onClose();
   };
 
   const publicarAhora = async () => {
@@ -182,13 +187,22 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) 
               {link?.manually_prepared && !link?.linked && (
                 <p className="m-0 text-xs text-warning">Pendiente de vinculación — ver "Acciones pendientes".</p>
               )}
-              <button
-                type="button"
-                onClick={abrirManyChat}
-                className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-md border border-primary/25 bg-primary/5 text-xs font-semibold text-primary-text transition-colors hover:bg-primary/10"
-              >
-                <ExternalLink size={14} /> Ir a ManyChat
-              </button>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={mostrarDatosManyChat}
+                  className="flex h-9 items-center justify-center gap-2 rounded-md bg-primary text-xs font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+                >
+                  <Copy size={14} /> Ver datos para copiar
+                </button>
+                <button
+                  type="button"
+                  onClick={abrirManyChat}
+                  className="flex h-9 items-center justify-center gap-2 rounded-md border border-primary/25 bg-primary/5 text-xs font-semibold text-primary-text transition-colors hover:bg-primary/10"
+                >
+                  <ExternalLink size={14} /> Ir a ManyChat
+                </button>
+              </div>
             </div>
 
             {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
@@ -203,12 +217,6 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) 
               </button>
             )}
 
-            <button type="button"
-              onClick={abrirManyChat}
-              className="flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-surface-2 text-sm font-semibold text-fg transition-colors hover:bg-surface-3">
-              <ExternalLink size={15} /> Ir a ManyChat
-            </button>
-            
             {link?.prepared && !link?.manually_prepared && (
               <button type="button" disabled={procesando}
                 onClick={() => ejecutar(() => manychatApi.confirmarPreparacionManual(item.id))}

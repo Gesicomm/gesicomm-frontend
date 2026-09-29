@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, ChevronDown, ChevronUp, MessageCircle, X } from 'lucide-react';
+import { Copy, ChevronDown, ChevronUp, ExternalLink, MessageCircle, X } from 'lucide-react';
 
 // z-[900] a propósito: por debajo de los modales (z-[1000]) — si estuviera
 // encima tapaba los botones del panel de "Nuevo contenido".
@@ -22,12 +22,18 @@ export default function ManyChatFloatingAssistant({ item, manychatLink, onClose 
   const tag = manychatLink?.tag_name || item.tracking_code;
   const cta = item.keyword || '';
   const isStory = item.format === 'H';
+  const plantilla = isStory ? 'PLANTILLA - TRACKING HISTORIAS' : 'PLANTILLA - TRACKING REELS / POSTS';
+  const tracking = item.tracking_code || tag;
+
+  const abrirManyChat = () => {
+    window.open('https://app.manychat.com/', '_blank', 'noopener,noreferrer');
+  };
 
   if (minimizada) {
     return (
       <div className="fixed bottom-4 right-4 z-[900] flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 shadow-lg">
         <MessageCircle size={16} className="text-primary-text" />
-        <span className="text-sm font-semibold text-fg">Asistente ManyChat</span>
+        <span className="text-sm font-semibold text-fg">Datos ManyChat</span>
         <button
           type="button"
           aria-label="Expandir asistente"
@@ -51,7 +57,7 @@ export default function ManyChatFloatingAssistant({ item, manychatLink, onClose 
       <div className="flex items-center justify-between border-b border-border bg-surface-2 px-4 py-3 rounded-t-xl">
         <div className="flex items-center gap-2">
           <MessageCircle size={16} className="text-primary-text" />
-          <h3 className="m-0 text-sm font-semibold text-fg">Configuración ManyChat</h3>
+          <h3 className="m-0 text-sm font-semibold text-fg">Datos para ManyChat</h3>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -78,46 +84,43 @@ export default function ManyChatFloatingAssistant({ item, manychatLink, onClose 
         </div>
 
         <p className="m-0 text-xs text-fg-muted">
-          Duplica la plantilla correcta en ManyChat y usa estos datos para armar el trigger:
+          Copiá estos datos al duplicar la plantilla correspondiente en ManyChat.
         </p>
 
-        <div className="rounded-md border border-border bg-surface-2 p-2">
-          <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Plantilla a duplicar</div>
-          <div className="text-xs font-semibold text-fg">
-            {isStory ? 'PLANTILLA - TRACKING HISTORIAS' : 'PLANTILLA - TRACKING REELS / POSTS'}
+        {[
+          ['Palabra clave / CTA', cta || 'Pendiente', 'cta'],
+          ['Plantilla a duplicar', plantilla, 'plantilla'],
+          ['Código único de tracking', tracking || 'Pendiente', 'tracking'],
+        ].map(([label, value, clave]) => (
+          <div key={clave} className="rounded-md border border-border bg-surface-2 p-2">
+            <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">{label}</div>
+            <div className="flex items-center justify-between gap-2">
+              <strong className="min-w-0 break-words font-mono text-xs text-primary-text">{value}</strong>
+              <button
+                type="button"
+                onClick={() => copiar(clave, value)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-fg-muted hover:bg-surface-2 hover:text-fg"
+                title={`Copiar ${label}`}
+              >
+                {copiado === clave ? <span className="text-[10px] font-bold">OK</span> : <Copy size={13} />}
+              </button>
+            </div>
           </div>
-        </div>
+        ))}
 
-        <div className="rounded-md border border-border bg-surface-2 p-2">
-          <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Palabra CTA (Trigger)</div>
-          <div className="flex items-start justify-between gap-2">
-            <strong className="min-w-0 break-words text-sm text-primary-text">{cta}</strong>
-            <button
-              onClick={() => copiar('cta', cta)}
-              className="shrink-0 rounded border border-border bg-surface px-2 py-1 text-xs font-semibold text-fg hover:bg-surface-2"
-            >
-              {copiado === 'cta' ? 'Copiado' : 'Copiar'}
-            </button>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={abrirManyChat}
+          className="flex h-9 items-center justify-center gap-2 rounded-md bg-primary text-xs font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+        >
+          <ExternalLink size={14} /> Ir a ManyChat
+        </button>
 
-        <div className="rounded-md border border-border bg-surface-2 p-2">
-          <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Tag (Etiqueta final)</div>
-          <div className="flex items-center justify-between">
-            <strong className="truncate text-xs text-primary-text mr-2">{tag}</strong>
-            <button
-              onClick={() => copiar('tag', tag)}
-              className="rounded border border-border bg-surface px-2 py-1 text-xs font-semibold text-fg hover:bg-surface-2 shrink-0"
-            >
-              {copiado === 'tag' ? 'Copiado' : 'Copiar'}
-            </button>
-          </div>
-          {!manychatLink && (
-            <p className="m-0 mt-1 text-[10px] text-fg-subtle">
-              Todavía no existe en ManyChat — se crea solo al marcar la pieza como publicada.
-            </p>
-          )}
-        </div>
+        {!manychatLink && (
+          <p className="m-0 text-[10px] leading-relaxed text-fg-subtle">
+            Si el tag aún no existe en ManyChat, usá el tracking como referencia al preparar la automatización.
+          </p>
+        )}
 
         {isStory && (
           <div className="rounded-md border border-warning/30 bg-warning/10 p-2">

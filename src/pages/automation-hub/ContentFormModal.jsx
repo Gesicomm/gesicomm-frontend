@@ -157,21 +157,19 @@ function toStoredAsset(asset, uploadedFile) {
 
 async function fileToAsset(file) {
   const type = mediaKind(file);
+  const preview_url = URL.createObjectURL(file);
   let duration = null;
   if (type === 'video') {
     duration = await new Promise((resolve) => {
       const video = document.createElement('video');
-      const url = URL.createObjectURL(file);
       video.preload = 'metadata';
       video.onloadedmetadata = () => {
-        URL.revokeObjectURL(url);
         resolve(Number.isFinite(video.duration) ? video.duration : null);
       };
       video.onerror = () => {
-        URL.revokeObjectURL(url);
         resolve(null);
       };
-      video.src = url;
+      video.src = preview_url;
     });
   }
   return {
@@ -181,6 +179,7 @@ async function fileToAsset(file) {
     type,
     size: file.size,
     duration_seconds: duration,
+    preview_url,
     file,
   };
 }
@@ -288,23 +287,19 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
     const fuente = mediaAssets.length > 0 ? mediaAssets : mediasGuardadas;
     return fuente
       .map((asset) => ({
-        url: asset.file ? URL.createObjectURL(asset.file) : asset.url,
+        url: asset.preview_url || asset.url,
         type: asset.mime_type || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
         esLocal: !!asset.file,
       }))
       .filter((m) => m.url);
   }, [mediaAssets, mediasGuardadas]);
 
-  useEffect(() => () => {
-    medias.forEach((m) => { if (m.esLocal) URL.revokeObjectURL(m.url); });
-  }, [medias]);
-
   const destinos = Object.entries(platforms).filter(([, activo]) => activo).map(([nombre]) => nombre);
   const hayContenido = datos.topic || datos.script || datos.description;
   return (
-    <aside className="hidden border-l border-border bg-surface-2/60 p-5 lg:block">
-      <div className="sticky top-5">
-        <div className="mb-4">
+    <aside className="hidden min-h-0 overflow-y-auto border-l border-border bg-surface-2/60 p-4 lg:block">
+      <div className="space-y-3">
+        <div>
           <div className="text-[11px] font-bold uppercase tracking-wide text-fg-subtle">Vista previa</div>
           <h4 className="m-0 mt-1 text-base font-semibold text-fg">{datos.topic || 'Contenido sin tema'}</h4>
           <p className="m-0 mt-1 text-xs text-fg-muted">{labelFormato(datos.format)} · {datos.objective || 'Sin objetivo definido'}</p>
@@ -312,24 +307,23 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
 
         {/* El telefono va primero: al programar, lo que importa es ver como
             queda el video con el copy, no la ficha de datos. */}
-        <div className="mb-4 flex justify-center">
-          <div className="origin-top scale-[0.82] xl:scale-90 2xl:scale-100">
-            <LivePreviewMockup
-              format={datos.format}
-              text={datos.description || datos.script}
-              medias={medias}
-            />
-          </div>
+        <div className="flex justify-center">
+          <LivePreviewMockup
+            format={datos.format}
+            text={datos.description || datos.script}
+            medias={medias}
+            compact
+          />
         </div>
 
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="rounded-lg border border-border bg-surface p-3">
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="rounded-md bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase text-primary-text">
               {labelFormato(datos.format)}
             </span>
             <span className="font-mono text-[11px] font-semibold text-fg-muted">{datos.publish_date} · {datos.publish_time}</span>
           </div>
-          <div className="min-h-[160px] rounded-md border border-dashed border-border bg-surface-2 p-3">
+          <div className="max-h-32 min-h-[104px] overflow-y-auto rounded-md border border-dashed border-border bg-surface-2 p-3">
             {hayContenido ? (
               <div className="space-y-3">
                 <p className="m-0 text-sm font-semibold leading-relaxed text-fg">{datos.script || datos.angle || datos.topic}</p>
@@ -346,7 +340,7 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
                 )}
               </div>
             ) : (
-              <div className="flex h-[134px] items-center justify-center text-center text-xs text-fg-subtle">
+              <div className="flex h-20 items-center justify-center text-center text-xs text-fg-subtle">
                 La preview se completa mientras cargás la estrategia y el contenido.
               </div>
             )}
@@ -357,7 +351,7 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
           </div>
         </div>
 
-        <div className="mt-4 space-y-2 text-xs text-fg-muted">
+        <div className="space-y-2 pb-1 text-xs text-fg-muted">
           <div className="flex justify-between gap-3"><span>CTA</span><strong className="text-fg">{datos.keyword || 'Pendiente'}</strong></div>
           <div className="flex justify-between gap-3"><span>Archivos</span><strong className="max-w-[160px] truncate text-fg">{mediaAssets.length ? `${mediaAssets.length} cargado(s)` : 'Sin archivos'}</strong></div>
           {datos.format === 'H' && <div className="flex justify-between gap-3"><span>Corte</span><strong className="text-fg">{storySegmentSeconds}s por historia</strong></div>}
@@ -411,6 +405,22 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
     };
   });
   const fileInputRef = useRef(null);
+  const previewUrlsRef = useRef(new Set());
+
+  useEffect(() => () => {
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewUrlsRef.current.clear();
+  }, []);
+
+  const registrarPreviewUrl = (asset) => {
+    if (asset?.preview_url) previewUrlsRef.current.add(asset.preview_url);
+  };
+
+  const revocarPreviewUrl = (asset) => {
+    if (!asset?.preview_url) return;
+    URL.revokeObjectURL(asset.preview_url);
+    previewUrlsRef.current.delete(asset.preview_url);
+  };
 
   const set = (campo) => (e) => setDatos((d) => ({ ...d, [campo]: e.target.value }));
   const esMultiSlide = datos.format === 'C' || datos.format === 'H';
@@ -422,6 +432,11 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
   const channelLabel = datos.format === 'H' ? 'Historias' : datos.format === 'C' ? 'Carrusel' : 'Reels';
   const trackingEstimado = previsualizarTrackingCode(datos);
   const plantillaActual = plantillaParaFormato(datos.format);
+  const mediasGuardadas = useMemo(
+    () => (Array.isArray(itemToEdit?.media_assets) ? itemToEdit.media_assets : []),
+    [itemToEdit?.media_assets]
+  );
+  const mostrarPreview = mediaAssets.length > 0 || mediasGuardadas.some((asset) => asset?.url);
 
   const copiarTexto = async (clave, valor) => {
     try {
@@ -448,7 +463,11 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
       format,
       slides: (format === 'C' || format === 'H') && d.slides.length === 0 ? [''] : d.slides,
     }));
-    setMediaAssets((prev) => prev.slice(0, MEDIA_RULES[format].maxFiles));
+    setMediaAssets((prev) => {
+      const next = prev.slice(0, MEDIA_RULES[format].maxFiles);
+      prev.slice(next.length).forEach(revocarPreviewUrl);
+      return next;
+    });
   };
 
   const handleMediaFiles = async (files) => {
@@ -456,8 +475,13 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
     if (!incoming.length) return;
     setError('');
     const normalized = await Promise.all(incoming.map(fileToAsset));
+    normalized.forEach(registrarPreviewUrl);
     setMediaAssets((prev) => {
       const next = datos.format === 'R' ? normalized.slice(0, 1) : [...prev, ...normalized].slice(0, mediaRule.maxFiles);
+      const nextIds = new Set(next.map((asset) => asset.id));
+      [...prev, ...normalized].forEach((asset) => {
+        if (!nextIds.has(asset.id)) revocarPreviewUrl(asset);
+      });
       if ((datos.format === 'C' || datos.format === 'H') && next.length > datos.slides.length) {
         setDatos((d) => {
           const slides = [...d.slides];
@@ -470,7 +494,11 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
   };
 
   const quitarAsset = (id) => {
-    setMediaAssets((prev) => prev.filter((asset) => asset.id !== id));
+    setMediaAssets((prev) => {
+      const removido = prev.find((asset) => asset.id === id);
+      revocarPreviewUrl(removido);
+      return prev.filter((asset) => asset.id !== id);
+    });
   };
 
   const irA = (n) => {
@@ -490,6 +518,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
   };
 
   const handleSubmit = async (forzar = false) => {
+    const forceDuplicate = forzar === true;
     const publishDateTime = new Date(`${datos.publish_date}T${datos.publish_time || '00:00'}`);
     if (!datos.publish_date || !datos.publish_time || Number.isNaN(publishDateTime.getTime())) {
       setError('Definí una fecha y hora válidas para programar la publicación.');
@@ -511,7 +540,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
       let finalData = { 
         ...datos, 
         platforms: Object.keys(platforms).filter(k => platforms[k]),
-        force_duplicate: forzar,
+        force_duplicate: forceDuplicate,
       };
 
       let uploadedByAssetId = {};
@@ -546,7 +575,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
       if (itemToEdit) {
         onCreado(nuevo);
       } else {
-        setCreado(nuevo);
+        onCreado(nuevo);
       }
     } catch (err) {
       // Sin esto el motivo real queda invisible: el catch atrapa tanto los
@@ -677,7 +706,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
           </div>
         ) : (
         <form onSubmit={(e) => e.preventDefault()} className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className={`grid min-h-0 flex-1 overflow-hidden ${mostrarPreview ? 'lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]' : 'lg:grid-cols-1'}`}>
           <div className="flex flex-col gap-4 overflow-y-auto p-5">
 
             {/* PASO 1: Formato */}
@@ -1073,14 +1102,16 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
             
             {error && <div className="rounded-lg border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-xs font-medium text-danger">{error}</div>}
           </div>
-          <PreviewPanel
-            datos={datos}
-            platforms={platforms}
-            mediaAssets={mediaAssets}
-            publishingAssets={publishingAssets}
-            storySegmentSeconds={storySegmentSeconds}
-            mediasGuardadas={itemToEdit?.media_assets || []}
-          />
+          {mostrarPreview && (
+            <PreviewPanel
+              datos={datos}
+              platforms={platforms}
+              mediaAssets={mediaAssets}
+              publishingAssets={publishingAssets}
+              storySegmentSeconds={storySegmentSeconds}
+              mediasGuardadas={mediasGuardadas}
+            />
+          )}
           </div>
 
           {/* Footer del Modal */}
@@ -1104,7 +1135,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                 Continuar <ArrowRight size={15} />
               </button>
             ) : (
-              <button type="button" onClick={handleSubmit} disabled={guardando}
+              <button type="button" onClick={() => handleSubmit(false)} disabled={guardando}
                 className="flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg disabled:opacity-60">
                 <Check size={15} /> {guardando ? 'Guardando...' : 'Programar contenido'}
               </button>

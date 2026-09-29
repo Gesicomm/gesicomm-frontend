@@ -244,6 +244,12 @@ export default function AutomationHub() {
           onCreado={(creado) => {
             setModalNuevo(null);
             setItemToEdit(null);
+            if (creado) {
+              setFloatingAssistantItem({
+                item: creado,
+                manychatLink: creado.ManychatLink || null,
+              });
+            }
             cargarContenido();
           }}
         />

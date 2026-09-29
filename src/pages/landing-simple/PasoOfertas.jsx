@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, Loader2, Plus, ShoppingCart, Sparkles, Tag } from 'lucide-react';
+import { ArrowRight, Check, Layers, Loader2, Plus, ShoppingCart, Sparkles, Tag } from 'lucide-react';
 import { PanelOfertas } from './ConfigurarVentaCodigo';
+// El combo NO se arma con el formulario genérico de ofertas: tiene su propio
+// armador por fases (elegís el principal, sumás los complementarios con su
+// descuento, y ves precio y ganancia en vivo). Es el mismo criterio que la
+// sección Combos, y estaba escrito pero sin usar en ninguna pantalla.
+import ArmarComboPanel from './ArmarComboPanel';
 import { ofertaService } from '../../services/ofertaService';
 import { contentIdPanel } from './datosRuntime';
 
@@ -113,10 +118,13 @@ export default function PasoOfertas({
   onVolver,
   onContinuar,
   onSaltear,
+  onComboCreado,
 }) {
   const [ofertas, setOfertas] = useState(null);
   const [error, setError] = useState('');
   const [panel, setPanel] = useState(null);
+  // { principal } — el armador de combos, aparte del panel de ofertas.
+  const [combo, setCombo] = useState(null);
 
   const items = useMemo(() => Array.from(productosSeleccionados.values()), [productosSeleccionados]);
   const productos = useMemo(() => items.filter(i => i.tipo === 'producto'), [items]);
@@ -204,7 +212,9 @@ export default function PasoOfertas({
                 <button
                   key={tipo.key}
                   type="button"
-                  onClick={() => setPanel({ producto: null, estrategia: tipo.key })}
+                  onClick={() => (tipo.key === 'combo'
+                    ? setCombo({ principal: productos.length === 1 ? productos[0] : null })
+                    : setPanel({ producto: null, estrategia: tipo.key }))}
                   className="group flex gap-3 rounded-xl border border-border bg-surface p-3.5 text-left transition hover:border-primary/60 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
                 >
                   <MiniPantalla banda={tipo.banda} fondo={tipo.fondo.replace('/12', '/70')} />
@@ -256,13 +266,23 @@ export default function PasoOfertas({
                         <p className="truncate text-sm font-semibold">{producto.nombre}</p>
                         <p className="mt-0.5 text-[13px] text-fg-muted">{gs(precioDeVenta(producto))}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setPanel({ producto, estrategia: null })}
-                        className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-fg transition hover:bg-primary-hover"
-                      >
-                        <Plus size={15} /> Sumar oferta
-                      </button>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCombo({ principal: producto })}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 text-sm font-semibold text-fg-muted transition hover:border-border-strong hover:text-fg"
+                          title={`Armar un combo con ${producto.nombre} como producto principal`}
+                        >
+                          <Layers size={15} /> Armar combo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPanel({ producto, estrategia: null })}
+                          className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-fg transition hover:bg-primary-hover"
+                        >
+                          <Plus size={15} /> Sumar oferta
+                        </button>
+                      </div>
                     </div>
 
                     {suyas.length > 0 && (
@@ -369,6 +389,21 @@ export default function PasoOfertas({
           </div>
         </div>
       </footer>
+
+      {combo && (
+        <ArmarComboPanel
+          productos={todosLosProductos}
+          principalInicial={combo.principal}
+          onCerrar={() => setCombo(null)}
+          onCreado={async nuevo => {
+            setCombo(null);
+            // El combo recién creado entra a la landing y queda destacado:
+            // si lo acabás de armar, es porque lo querés mostrar.
+            onComboCreado?.(nuevo);
+            await cargar();
+          }}
+        />
+      )}
 
       {panel && (
         <PanelOfertas

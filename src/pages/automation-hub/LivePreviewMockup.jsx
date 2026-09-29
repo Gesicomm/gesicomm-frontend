@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, X, ImageOff } from 'lucide-react';
 
-export default function LivePreviewMockup({ format, text, medias, onRemove }) {
+export default function LivePreviewMockup({ format, text, medias, onRemove, compact = false }) {
   const [slideIndex, setSlideIndex] = useState(0);
   const [urlsRotas, setUrlsRotas] = useState(() => new Set());
 
@@ -10,6 +10,9 @@ export default function LivePreviewMockup({ format, text, medias, onRemove }) {
 
   const currentMedia = medias[Math.min(slideIndex, medias.length - 1)];
   const rota = currentMedia && urlsRotas.has(currentMedia.url);
+  const errorPreview = currentMedia?.esLocal
+    ? 'No se pudo previsualizar este archivo. Puede ser un MP4 con códec no compatible en el navegador, pero igual podés programarlo.'
+    : 'No se pudo cargar esta URL. Puede estar bloqueada o no ser una URL directa de imagen/video.';
 
   const marcarRota = (url) => setUrlsRotas((prev) => new Set(prev).add(url));
 
@@ -21,11 +24,13 @@ export default function LivePreviewMockup({ format, text, medias, onRemove }) {
   };
 
   return (
-    <div className="flex w-full flex-col items-center justify-center bg-surface-2 p-4 rounded-xl border border-border">
-      <div className="relative w-[280px] h-[580px] overflow-hidden rounded-[2.5rem] border-[12px] border-black bg-black shadow-2xl">
+    <div className={`flex w-full flex-col items-center justify-center rounded-xl border border-border bg-surface-2 ${compact ? 'p-2' : 'p-4'}`}>
+      <div className={`relative overflow-hidden rounded-[2.25rem] border-[10px] border-black bg-black shadow-2xl ${
+        compact ? 'h-[420px] w-[205px]' : 'h-[580px] w-[280px]'
+      }`}>
 
         <div className="absolute top-0 z-20 flex w-full justify-center p-2">
-          <div className="h-5 w-24 rounded-full bg-black"></div>
+          <div className={`${compact ? 'h-4 w-20' : 'h-5 w-24'} rounded-full bg-black`}></div>
         </div>
 
         <div className="relative h-full w-full bg-[#1a1a1a]">
@@ -36,16 +41,16 @@ export default function LivePreviewMockup({ format, text, medias, onRemove }) {
           ) : (
             <div className="flex h-full flex-col">
 
-              <div className="flex items-center gap-2 p-3 pb-2">
-                <div className="h-7 w-7 rounded-full bg-white/20"></div>
-                <div className="text-xs font-semibold text-white">tusegundaempresa</div>
+              <div className={`flex items-center gap-2 ${compact ? 'p-2 pb-1.5' : 'p-3 pb-2'}`}>
+                <div className={`${compact ? 'h-6 w-6' : 'h-7 w-7'} rounded-full bg-white/20`}></div>
+                <div className={`${compact ? 'max-w-[130px] truncate text-[10px]' : 'text-xs'} font-semibold text-white`}>tusegundaempresa</div>
               </div>
 
               <div className="relative flex-1 bg-black overflow-hidden flex items-center justify-center">
                 {rota ? (
                   <div className="flex flex-col items-center gap-2 p-4 text-center text-[11px] text-white/60">
                     <ImageOff size={28} />
-                    No se pudo cargar este link — puede estar bloqueado (CORS) o no ser una URL directa de imagen/video.
+                    {errorPreview}
                   </div>
                 ) : currentMedia.type === 'embed/youtube' ? (
                   <iframe src={currentMedia.url} className="h-full w-full" title="Preview de YouTube"
@@ -81,14 +86,14 @@ export default function LivePreviewMockup({ format, text, medias, onRemove }) {
               </div>
 
               {format !== 'H' && (
-                <div className="flex flex-col p-3 pt-2">
+                <div className={`flex flex-col ${compact ? 'p-2 pt-1.5' : 'p-3 pt-2'}`}>
                   <div className="mb-2 flex gap-3 text-white">
-                    <div className="h-5 w-5 rounded-full border border-white"></div>
-                    <div className="h-5 w-5 rounded-full border border-white"></div>
-                    <div className="h-5 w-5 rounded-full border border-white"></div>
+                    <div className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} rounded-full border border-white`}></div>
+                    <div className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} rounded-full border border-white`}></div>
+                    <div className={`${compact ? 'h-4 w-4' : 'h-5 w-5'} rounded-full border border-white`}></div>
                   </div>
 
-                  <div className="max-h-24 overflow-y-auto overflow-x-hidden break-words pr-1 text-xs text-white [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/30">
+                  <div className={`${compact ? 'max-h-16 text-[10px]' : 'max-h-24 text-xs'} overflow-y-auto overflow-x-hidden break-words pr-1 text-white [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/30`}>
                     <span className="font-semibold mr-1">tusegundaempresa</span>
                     <span className="whitespace-pre-wrap break-words">{text || 'El copy aparecerá acá...'}</span>
                   </div>
