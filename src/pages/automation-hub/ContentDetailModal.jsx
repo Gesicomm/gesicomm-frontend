@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { X, Copy, CheckCircle2, Link as LinkIcon } from 'lucide-react';
+import { X, Copy, CheckCircle2, Rocket } from 'lucide-react';
 import { contentApi, manychatApi } from '../../services/automationHubApi';
 import LivePreviewMockup from './LivePreviewMockup';
 
 const FORMATO_LABEL = { R: 'Video / Reel', C: 'Carrusel', H: 'Historias' };
 
-export default function ContentDetailModal({ item, onClose, onCambio, setFloatingAssistantItem, onEdit }) {
+export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
     
@@ -17,32 +17,14 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
     } catch (e) { /* no bloquea el flujo */ }
   };
 
-  
-  
-  
-  const manejarPublicacion = async () => {
+  const publicarAhora = async () => {
     setProcesando(true);
     setError('');
     try {
-      await contentApi.marcarPublicado(item.id);
-      let nuevoLink = link;
-      try {
-        const res = await manychatApi.prepararTag(item.id);
-        if (res?.link) nuevoLink = res.link;
-      } catch (e) {
-        console.error("Error preparando tag", e);
-      }
-      
-      // Activar el asistente flotante
-      if (setFloatingAssistantItem) {
-        setFloatingAssistantItem({ item, manychatLink: nuevoLink });
-      }
-      
-      // Abrir manychat y notificar a la grilla que recargue
-      window.open('https://app.manychat.com/', '_blank');
+      await contentApi.publicarAhora(item.id);
       onCambio();
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo completar la acción.');
+      setError(err.response?.data?.message || 'No se pudo intentar la publicación ahora.');
       setProcesando(false);
     }
   };
@@ -159,7 +141,7 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
                 {link?.linked && <span className="flex items-center gap-1 text-xs font-semibold text-success"><CheckCircle2 size={14} /> Vinculado</span>}
               </div>
               {!link?.prepared && item.status !== 'published' && (
-                <p className="m-0 text-xs text-fg-muted">Se prepara el tag automáticamente al marcar esta pieza como publicada.</p>
+                <p className="m-0 text-xs text-fg-muted">Se prepara el tag automáticamente cuando la publicación real se procese.</p>
               )}
               {link?.prepared && !link?.manually_prepared && (
                 <p className="m-0 text-xs text-fg-muted">Tag <strong>{link.tag_name}</strong> creado en ManyChat. Armá la automatización a mano dentro de ManyChat y confirmá abajo.</p>
@@ -173,11 +155,11 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
           </div>
 
           <div className="shrink-0 grid grid-cols-1 gap-2 border-t border-border bg-surface p-4 z-10">
-            {item.status !== 'published' && (
+            {(item.status === 'scheduled' || item.status === 'failed') && (
               <button type="button" disabled={procesando}
-                onClick={manejarPublicacion}
-                className="h-10 rounded-md bg-primary text-sm font-semibold text-primary-fg disabled:opacity-60">
-                Marcar como publicado y armar automatización en ManyChat
+                onClick={publicarAhora}
+                className="flex h-10 items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-fg disabled:opacity-60">
+                <Rocket size={15} /> {item.status === 'failed' ? 'Reintentar publicación ahora' : 'Publicar ahora'}
               </button>
             )}
             

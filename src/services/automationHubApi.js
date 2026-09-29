@@ -39,6 +39,9 @@ AutomationAPI.interceptors.request.use(async (config) => {
 // --- Calendario de contenido ---
 export const socialApi = {
   uploadMedia: async (file) => {
+    if (file instanceof FormData) {
+      return AutomationAPI.post('/social/upload', file, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data);
+    }
     const { data: presignedData } = await AutomationAPI.post('/social/upload/presign', {
       filename: file.name, contentType: file.type
     });
@@ -70,7 +73,6 @@ export const contentApi = {
   crear: (payload) => AutomationAPI.post('/content', payload).then((r) => r.data),
   editar: (id, payload) => AutomationAPI.put(`/content/${id}`, payload).then((r) => r.data),
   reprogramar: (id, publish_date) => AutomationAPI.patch(`/content/${id}/fecha`, { publish_date }).then((r) => r.data),
-  marcarPublicado: (id) => AutomationAPI.patch(`/content/${id}/publicar`).then((r) => r.data),
   publicarAhora: (id) => AutomationAPI.post(`/content/${id}/publish-now`).then((r) => r.data),
   eliminar: (id) => AutomationAPI.delete(`/content/${id}`).then((r) => r.data),
   eliminarRemoto: (id) => AutomationAPI.delete(`/content/${id}/remote`).then((r) => r.data),

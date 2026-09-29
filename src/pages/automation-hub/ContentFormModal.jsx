@@ -1,19 +1,24 @@
 import React, { useMemo, useState, useRef } from 'react';
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CalendarClock,
   Check,
+  CheckCircle2,
   CircleDashed,
+  Copy,
   FileText,
   GalleryHorizontal,
+  Layers,
   Megaphone,
+  Plus,
+  Sparkles,
   Upload,
   Video,
   X,
 } from 'lucide-react';
 import { contentApi, socialApi } from '../../services/automationHubApi';
-import LivePreviewMockup from './LivePreviewMockup';
 
 function InstagramIcon({ size = 18, className = "" }) {
   return (
@@ -129,7 +134,7 @@ function fileSizeLabel(bytes) {
 }
 
 function toStoredAsset(asset, uploadedFile) {
-  const { id, name, mime_type, type, size, duration_seconds, segment_index, segment_start, segment_end, source_file_id, source_file_name, publishing_type } = asset;
+  const { id, name, mime_type, type, size, duration_seconds, segment_index, segment_start, segment_end, source_file_id, source_file_name, publishing_type, url, storage_path } = asset;
   return {
     id,
     name,
@@ -137,8 +142,8 @@ function toStoredAsset(asset, uploadedFile) {
     mime_type: uploadedFile?.mime_type || mime_type,
     type,
     size: uploadedFile?.size || size,
-    url: uploadedFile?.url || null,
-    storage_path: uploadedFile?.storage_path || null,
+    url: uploadedFile?.url || url || null,
+    storage_path: uploadedFile?.storage_path || storage_path || null,
     duration_seconds,
     segment_index,
     segment_start,
@@ -332,7 +337,7 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
   );
 }
 
-export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
+export default function ContentFormModal({ fechaInicial, itemToEdit = null, onClose, onCreado }) {
   const [paso, setPaso] = useState(1);
   const [datos, setDatos] = useState(itemToEdit ? {
     format: itemToEdit.format || 'R',
@@ -365,8 +370,14 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
   const [error, setError] = useState('');
   const [creado, setCreado] = useState(null);
   const [mediaAssets, setMediaAssets] = useState([]);
-  const [storySegmentSeconds, setStorySegmentSeconds] = useState(60);
-  const [platforms, setPlatforms] = useState({ instagram: true, facebook: true });
+  const [storySegmentSeconds, setStorySegmentSeconds] = useState(30);
+  const [platforms, setPlatforms] = useState(() => {
+    const selected = Array.isArray(itemToEdit?.platforms) ? itemToEdit.platforms : null;
+    return {
+      instagram: selected ? selected.includes('instagram') : true,
+      facebook: selected ? selected.includes('facebook') : true,
+    };
+  });
   const fileInputRef = useRef(null);
 
   const set = (campo) => (e) => setDatos((d) => ({ ...d, [campo]: e.target.value }));
@@ -429,13 +440,6 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
     setPaso(n);
   };
 
-  const copiarCodigoTracking = () => {
-    const code = previsualizarTrackingCode(datos);
-    navigator.clipboard.writeText(code);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  };
-
   const agregarSugerenciaCaption = (texto) => {
     setDatos((d) => ({
       ...d,
@@ -444,10 +448,18 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
   };
 
   const handleSubmit = async (forzar = false) => {
-    // El backend valida igual (es la autoridad), pero avisar acá evita el viaje
-    // de ida y vuelta y que se pierda lo cargado en el formulario.
-    if (errorDeProgramacion) {
-      setError(errorDeProgramacion);
+    const publishDateTime = new Date(`${datos.publish_date}T${datos.publish_time || '00:00'}`);
+    if (!datos.publish_date || !datos.publish_time || Number.isNaN(publishDateTime.getTime())) {
+      setError('Definí una fecha y hora válidas para programar la publicación.');
+      return;
+    }
+    if (!datos.topic.trim() || !datos.keyword.trim()) {
+      setError('El tema y la palabra clave / CTA son obligatorios.');
+      setPaso(2);
+      return;
+    }
+    if (!Object.values(platforms).some(Boolean)) {
+      setError('Elegí al menos un canal de publicación.');
       return;
     }
 
@@ -457,45 +469,53 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
       let finalData = { 
         ...datos, 
         platforms: Object.keys(platforms).filter(k => platforms[k]),
+        force_duplicate: forzar,
       };
 
       let uploadedByAssetId = {};
       if (mediaAssets.length > 0) {
         const formData = new FormData();
-        mediaAssets.forEach((asset) => formData.append('files', asset.file));
-        const uploaded = await socialApi.uploadMedia(formData);
-        uploadedByAssetId = Object.fromEntries(
-          mediaAssets.map((asset, index) => [asset.id, uploaded.files?.[index]])
-        );
+        const filesToUpload = mediaAssets.filter((asset) => asset.file);
+        filesToUpload.forEach((asset) => formData.append('files', asset.file));
+        if (filesToUpload.length > 0) {
+          const uploaded = await socialApi.uploadMedia(formData);
+          uploadedByAssetId = Object.fromEntries(
+            filesToUpload.map((asset, index) => [asset.id, uploaded.files?.[index]])
+          );
+        }
       }
 
-      finalData.media_assets = publishingAssets.map((asset) => {
-        const sourceId = asset.source_file_id || asset.id;
-        return toStoredAsset(asset, uploadedByAssetId[sourceId]);
-      });
+      finalData.media_assets = mediaAssets.length > 0
+        ? publishingAssets.map((asset) => {
+            const sourceId = asset.source_file_id || asset.id;
+            return toStoredAsset(asset, uploadedByAssetId[sourceId]);
+          })
+        : (itemToEdit?.media_assets || []);
       finalData.media_plan = {
         story_segment_seconds: datos.format === 'H' ? Number(storySegmentSeconds) : null,
         source_files_count: mediaAssets.length,
         publishing_assets_count: publishingAssets.length,
       };
 
-      const nuevo = await contentApi.crear(finalData);
-      setCreado(nuevo); // muestra la confirmación en vez de cerrar de golpe
+      const nuevo = itemToEdit
+        ? await contentApi.editar(itemToEdit.id, finalData)
+        : await contentApi.crear(finalData);
+
+      if (itemToEdit) {
+        onCreado(nuevo);
+      } else {
+        setCreado(nuevo);
+      }
     } catch (err) {
-      if (err.response?.status === 409 && err.response?.data?.existing_id) {
-        setConflicto(err.response.data.existing_id);
+      const existingId = err.response?.data?.existingItemId || err.response?.data?.existing_id;
+      if (err.response?.status === 409 && existingId) {
+        setConflicto(existingId);
       } else {
         setError(err.response?.data?.error || err.response?.data?.message || 'No se pudo guardar el contenido.');
       }
     } finally {
       setGuardando(false);
     }
-  };
-
-  const getMediaListForPreview = () => {
-    if (!file) return [];
-    const url = URL.createObjectURL(file);
-    return [{ url, type: file.type || 'video/mp4' }];
   };
 
   return (
@@ -520,7 +540,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                 Paso {paso} de 4
               </span>
               <span className="text-xs font-semibold text-fg">
-                {PASOS[paso - 1].title}
+                {PASOS[paso - 1].label}
               </span>
             </div>
             <div className="grid grid-cols-4 gap-1.5">
@@ -553,7 +573,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                           : 'text-fg-subtle'
                       }`}
                     >
-                      {p.key}
+                      {p.label}
                     </span>
                   </button>
                 );
@@ -574,11 +594,31 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                 Quedó agendado para el <strong className="text-fg">{creado.publish_date}</strong> a las <strong className="text-fg">{String(creado.publish_time).slice(0, 5)}</strong> hs.
               </p>
             </div>
-            
-            <div className="w-full max-w-sm rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm">
-              <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-fg-subtle">Código de tracking generado</div>
-              <div className="text-base font-mono font-bold text-primary">{creado.tracking_code}</div>
-              <p className="m-0 mt-1 text-[11px] text-fg-muted">Usá este código exacto en tu flujo de ManyChat.</p>
+            <div className="w-full max-w-lg rounded-xl border border-primary/30 bg-primary/5 p-4 text-left shadow-sm">
+              <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-fg-subtle">Preparación para ManyChat</div>
+              {[
+                ['Palabra clave / CTA', creado.keyword || datos.keyword],
+                ['Plantilla a duplicar', plantillaParaFormato(creado.format || datos.format)],
+                ['Código único de tracking', creado.tracking_code],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between gap-3 border-t border-primary/10 py-2 first:border-t-0 first:pt-0">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">{label}</div>
+                    <div className="mt-0.5 break-all font-mono text-sm font-bold text-primary-text">{value}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard?.writeText(value)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-surface text-primary-text hover:bg-primary/10"
+                    title={`Copiar ${label}`}
+                  >
+                    <Copy size={14} />
+                  </button>
+                </div>
+              ))}
+              <p className="m-0 mt-3 text-[11px] leading-relaxed text-fg-muted">
+                Duplicá la plantilla correspondiente y usá estos datos exactos para que la automatización quede vinculada al contenido programado.
+              </p>
             </div>
 
             <button 
@@ -601,6 +641,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                 <div className="flex flex-col gap-2">
                   {FORMATOS.map((f) => {
                     const activo = datos.format === f.value;
+                    const Icon = f.icon;
                     return (
                       <button
                         key={f.value}
@@ -610,9 +651,11 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                           activo ? 'border-primary bg-primary/5' : 'border-border bg-surface-2 hover:bg-surface'
                         }`}
                       >
-                        {f.value === 'R' && <ReelIllustration active={activo} />}
-                        {f.value === 'C' && <CarruselIllustration active={activo} />}
-                        {f.value === 'H' && <HistoriasIllustration active={activo} />}
+                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border ${
+                          activo ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-surface text-fg-muted'
+                        }`}>
+                          <Icon size={19} />
+                        </div>
 
                         <div className="min-w-0 flex-1">
                           <div className={`text-sm font-bold ${activo ? 'text-primary' : 'text-fg'}`}>{f.label}</div>
@@ -785,67 +828,6 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                     <label className="mb-1 block text-xs font-semibold text-fg-muted">Hora de publicación</label>
                     <input type="time" className={inputClass} value={datos.publish_time} onChange={set('publish_time')} />
                   </div>
-                </div>
-
-                {/* BLOQUE: Archivo y Live Preview */}
-                <div className="rounded-xl border border-border bg-surface-2 p-4 space-y-3">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-fg-subtle flex items-center gap-1.5">
-                    <Film size={13} className="text-primary" /> Archivo de media
-                  </div>
-
-                  {file ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <Film size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-bold text-fg truncate">{file.name}</div>
-                            <div className="text-[10px] text-fg-muted">
-                              {(file.size / (1024 * 1024)).toFixed(1)} MB · {file.type || 'Media'}
-                            </div>
-                          </div>
-                        </div>
-                        <button 
-                          type="button" 
-                          onClick={() => setFile(null)} 
-                          className="rounded-md p-1.5 text-danger hover:bg-danger/10 transition-colors"
-                          title="Quitar archivo"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-
-                      {/* Preview incorporada dentro del Wizard */}
-                      <div className="rounded-lg border border-border bg-surface p-3 flex flex-col items-center">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle mb-2">Vista previa rápida</div>
-                        <div className="scale-90 transform-gpu origin-top">
-                          <LivePreviewMockup 
-                            format={datos.format} 
-                            text={datos.description} 
-                            medias={getMediaListForPreview()} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-surface p-6 hover:bg-surface-3 hover:border-primary/50 cursor-pointer transition-colors text-center"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <input 
-                        type="file" 
-                        ref={fileInputRef}
-                        className="hidden" 
-                        accept="video/mp4,image/jpeg,image/png"
-                        onChange={(e) => setFile(e.target.files[0])}
-                      />
-                      <Upload size={24} className="mb-2 text-primary" />
-                      <span className="text-xs font-semibold text-fg">Arrastrá tu video acá o hacé clic para seleccionar</span>
-                      <span className="text-[10px] text-fg-muted mt-1">MP4 / Formato vertical recomendado (Máx. 100 MB)</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
