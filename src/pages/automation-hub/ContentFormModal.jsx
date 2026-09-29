@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { contentApi, socialApi } from '../../services/automationHubApi';
+import LivePreviewMockup from './LivePreviewMockup';
 
 function InstagramIcon({ size = 18, className = "" }) {
   return (
@@ -279,7 +280,25 @@ function Stepper({ paso }) {
   );
 }
 
-function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySegmentSeconds }) {
+function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySegmentSeconds, mediasGuardadas = [] }) {
+  // Los archivos todavia no estan subidos, asi que se previsualizan con object
+  // URLs. Hay que revocarlas al cambiar de archivo o se filtra memoria: un video
+  // de 2 MB queda retenido por cada preview que no se libera.
+  const medias = useMemo(() => {
+    const fuente = mediaAssets.length > 0 ? mediaAssets : mediasGuardadas;
+    return fuente
+      .map((asset) => ({
+        url: asset.file ? URL.createObjectURL(asset.file) : asset.url,
+        type: asset.mime_type || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg'),
+        esLocal: !!asset.file,
+      }))
+      .filter((m) => m.url);
+  }, [mediaAssets, mediasGuardadas]);
+
+  useEffect(() => () => {
+    medias.forEach((m) => { if (m.esLocal) URL.revokeObjectURL(m.url); });
+  }, [medias]);
+
   const destinos = Object.entries(platforms).filter(([, activo]) => activo).map(([nombre]) => nombre);
   const hayContenido = datos.topic || datos.script || datos.description;
   return (
@@ -289,6 +308,18 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
           <div className="text-[11px] font-bold uppercase tracking-wide text-fg-subtle">Vista previa</div>
           <h4 className="m-0 mt-1 text-base font-semibold text-fg">{datos.topic || 'Contenido sin tema'}</h4>
           <p className="m-0 mt-1 text-xs text-fg-muted">{labelFormato(datos.format)} · {datos.objective || 'Sin objetivo definido'}</p>
+        </div>
+
+        {/* El telefono va primero: al programar, lo que importa es ver como
+            queda el video con el copy, no la ficha de datos. */}
+        <div className="mb-4 flex justify-center">
+          <div className="origin-top scale-[0.82] xl:scale-90 2xl:scale-100">
+            <LivePreviewMockup
+              format={datos.format}
+              text={datos.description || datos.script}
+              medias={medias}
+            />
+          </div>
         </div>
 
         <div className="rounded-lg border border-border bg-surface p-4">
@@ -1048,6 +1079,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
             mediaAssets={mediaAssets}
             publishingAssets={publishingAssets}
             storySegmentSeconds={storySegmentSeconds}
+            mediasGuardadas={itemToEdit?.media_assets || []}
           />
           </div>
 
