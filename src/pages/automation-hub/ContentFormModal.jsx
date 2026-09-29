@@ -518,6 +518,10 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
         setCreado(nuevo);
       }
     } catch (err) {
+      // Sin esto el motivo real queda invisible: el catch atrapa tanto los
+      // errores del backend como cualquier TypeError del cliente, y abajo
+      // todo termina en el mismo texto generico.
+      console.error('[ContentFormModal] fallo al guardar:', err.response?.status, err.response?.data || err);
       const existingId = err.response?.data?.existingItemId || err.response?.data?.existing_id;
       if (err.response?.status === 409 && existingId) {
         setConflicto(existingId);
