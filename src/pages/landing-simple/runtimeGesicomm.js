@@ -271,6 +271,31 @@ export function runtimeGesicomm() {
     return p;
   }
 
+  // El precio grande de la ficha tiene que seguir al paquete elegido. Antes
+  // solo se actualizaba el total del botón, así que la página mostraba
+  // "Gs 169.000" arriba y "Comprar ahora · Gs 250.000" abajo: el cliente lo
+  // lee como un error y desconfía. Solo toca los binds SUELTOS (los de
+  // adentro de una lista son de esa lista y los pinta ella).
+  function pintarPrecioElegido() {
+    if (!productoActual || !hayPaquetes()) return;
+    var paquete = paqueteActual();
+    var valores = {
+      precio: formatoPrecio(paquete ? paquete.precio_efectivo : precioDe(productoActual, varianteElegida)),
+      precio_antes: paquete ? formatoPrecio(paquete.precio_antes) : '',
+      por_unidad: paquete && Number(paquete.por_unidad) > 0 ? formatoPrecio(paquete.por_unidad) + ' c/u' : '',
+    };
+    for (var campo in valores) {
+      if (!Object.prototype.hasOwnProperty.call(valores, campo)) continue;
+      var els = document.querySelectorAll('[data-gesicomm-bind="' + campo + '"]');
+      for (var i = 0; i < els.length; i++) {
+        if (els[i].closest('[data-gesicomm-lista]')) continue;
+        els[i].textContent = valores[campo];
+        // Sin valor (1 unidad no tiene "antes") el elemento estorba.
+        els[i].style.display = valores[campo] ? '' : 'none';
+      }
+    }
+  }
+
   function pintarTotal() {
     var destinos = document.querySelectorAll('[data-gesicomm-total]');
     if (!destinos.length || !productoActual) return;
@@ -280,19 +305,26 @@ export function runtimeGesicomm() {
     var total = paquete
       ? (Number(paquete.precio_efectivo) || 0)
       : (Number(precioDe(productoActual, varianteElegida)) || 0) * (n > 0 ? Math.min(n, 99) : 1);
+    var sumados = 0;
     (productoActual.ofertas || []).forEach(function (o) {
-      if (bumpsElegidos[o.id]) total += Number(o.precio_efectivo) || 0;
+      if (bumpsElegidos[o.id]) { total += Number(o.precio_efectivo) || 0; sumados++; }
     });
     for (var i = 0; i < destinos.length; i++) destinos[i].textContent = formatoPrecio(total);
-    // El texto del botón nombra lo que se compra: "Comprar Pack x2".
+    // El texto del botón nombra TODO lo que se compra: "Comprar Pack x2 + 1
+    // oferta". Antes decía solo el paquete y el total incluía además los
+    // order bumps marcados, así que el precio de arriba (Gs 250.000) y el
+    // del botón (Gs 370.000) no coincidían y no había forma de saber por qué.
     var ctas = document.querySelectorAll('[data-gesicomm-cta]');
     for (var j = 0; j < ctas.length; j++) {
       if (!ctas[j].hasAttribute('data-gesicomm-cta-original')) ctas[j].setAttribute('data-gesicomm-cta-original', ctas[j].textContent);
       var original = ctas[j].getAttribute('data-gesicomm-cta-original');
       var titulo = null;
       if (paquete) opcionesDePaquete().forEach(function (op) { if (String(op.id) === String(paquete.id)) titulo = op.titulo; });
-      ctas[j].textContent = titulo ? 'Comprar ' + titulo : original;
+      var texto = titulo ? 'Comprar ' + titulo : original;
+      if (sumados) texto += ' + ' + sumados + (sumados === 1 ? ' oferta' : ' ofertas');
+      ctas[j].textContent = texto;
     }
+    pintarPrecioElegido();
   }
 
   function aplicarBind(el, item, extra) {
@@ -353,6 +385,60 @@ export function runtimeGesicomm() {
       if (lista && lista !== raiz && raiz.contains(lista)) continue;
       aplicarBind(els[i], item, extra);
     }
+  }
+
+  function imagenesDeProducto(item) {
+    var imgs = [];
+    function agregar(url) {
+      var segura = urlSegura(url);
+      if (segura && imgs.indexOf(segura) === -1) imgs.push(segura);
+    }
+    agregar(item && (item.imagen || item.url_imagen));
+    var galeria = item && item.imagenes_url;
+    if (Array.isArray(galeria)) {
+      for (var i = 0; i < galeria.length; i++) agregar(galeria[i]);
+    }
+    return imgs;
+  }
+
+  function prepararTarjetaProducto(raiz, item) {
+    if (!raiz || !item) return;
+    if (raiz.hasAttribute('data-gesicomm-ver')) raiz.style.cursor = 'pointer';
+    var imgs = imagenesDeProducto(item);
+    if (imgs.length < 2) return;
+    var img = raiz.matches && raiz.matches('img[data-gesicomm-bind="imagen"]')
+      ? raiz
+      : raiz.querySelector('img[data-gesicomm-bind="imagen"]');
+    if (!img) return;
+    img.setAttribute('data-gesicomm-carrusel', '');
+    raiz.setAttribute('data-gesicomm-carrusel', '');
+    var idx = 0;
+    var timer = null;
+    function mostrar(n) {
+      idx = n % imgs.length;
+      img.src = imgs[idx];
+    }
+    function iniciar() {
+      if (timer) return;
+      raiz.classList.add('is-previewing');
+      mostrar(idx + 1);
+      timer = setInterval(function () { mostrar(idx + 1); }, 900);
+    }
+    function parar() {
+      if (timer) clearInterval(timer);
+      timer = null;
+      idx = 0;
+      img.src = imgs[0];
+      raiz.classList.remove('is-previewing');
+    }
+    raiz.addEventListener('mouseenter', iniciar);
+    raiz.addEventListener('mouseleave', parar);
+    raiz.addEventListener('focusin', iniciar);
+    raiz.addEventListener('focusout', parar);
+    raiz.addEventListener('touchstart', function () {
+      iniciar();
+      setTimeout(parar, 1800);
+    }, false);
   }
 
   // ─── Listas ───────────────────────────────────────────────────────────
@@ -476,8 +562,15 @@ export function runtimeGesicomm() {
           h.setAttribute('data-gesicomm-imagen-idx', String(idx));
         } else {
           h.setAttribute('data-gesicomm-item', elemento.id);
+          if (!h.hasAttribute('data-gesicomm-ver')
+            && !h.hasAttribute('data-gesicomm-comprar')
+            && !h.hasAttribute('data-gesicomm-agregar')
+            && !h.hasAttribute('data-gesicomm-checkout')) {
+            h.setAttribute('data-gesicomm-ver', '');
+          }
           if (elemento.agotado) h.setAttribute('data-agotado', '');
           bindDentro(h, elemento);
+          prepararTarjetaProducto(h, elemento);
         }
       });
       frag.appendChild(clon);
@@ -485,9 +578,37 @@ export function runtimeGesicomm() {
     tpl.parentNode.insertBefore(frag, tpl);
   }
 
+  // Una lista vacía se oculta sola, pero su título vive AFUERA del elemento
+  // con data-gesicomm-lista, así que quedaba "Elegí tu oferta" o "Agregá a
+  // tu compra" flotando sin nada debajo en los productos sin ofertas. Acá se
+  // oculta la sección entera, pero solo si su ÚNICO contenido son listas que
+  // quedaron vacías: si tiene texto propio, un botón de compra o un bind
+  // suelto, la sección se respeta porque está mostrando algo.
+  function ocultarSeccionesVacias() {
+    var secciones = document.querySelectorAll('section, article, aside');
+    for (var i = 0; i < secciones.length; i++) {
+      var sec = secciones[i];
+      var listas = sec.querySelectorAll('[data-gesicomm-lista]');
+      if (!listas.length) continue;
+      var algunaConDatos = false;
+      for (var j = 0; j < listas.length; j++) {
+        if (listas[j].style.display !== 'none') { algunaConDatos = true; break; }
+      }
+      if (algunaConDatos) { sec.style.display = ''; continue; }
+      // ¿Hay algo vivo fuera de esas listas? (un CTA, un dato del producto)
+      var vivos = sec.querySelectorAll('[data-gesicomm-comprar], [data-gesicomm-agregar], [data-gesicomm-bind], [data-gesicomm-form], [data-gesicomm-whatsapp]');
+      var hayVivoAfuera = false;
+      for (var k = 0; k < vivos.length; k++) {
+        if (!vivos[k].closest('[data-gesicomm-lista]')) { hayVivoAfuera = true; break; }
+      }
+      sec.style.display = hayVivoAfuera ? '' : 'none';
+    }
+  }
+
   function renderizar() {
     var listas = document.querySelectorAll('[data-gesicomm-lista]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
+    ocultarSeccionesVacias();
     // data-gesicomm-si="campo": el bloque se ve solo si el producto de la
     // ficha tiene ese dato (ej. "Por separado: …" solo en combos).
     if (productoActual) productoActual.tiene_paquetes = paquetesDelProducto().length > 0 && !!document.querySelector('[data-gesicomm-lista="paquetes"]');
@@ -546,6 +667,14 @@ export function runtimeGesicomm() {
     ['youtube', 'YouTube', function (v) { return 'https://youtube.com/@' + v.replace(/^@/, ''); }],
     ['twitter', 'X', function (v) { return 'https://x.com/' + v.replace(/^@/, ''); }],
   ];
+  var ICONOS_RED = {
+    whatsapp: '<path d="M3 21l1.3-4.2A8.5 8.5 0 1 1 8 19.7L3 21z"></path><path d="M8.7 9.3c0 3.4 2.9 6.2 6.2 6.2.6 0 .9-.3.9-.9v-1c0-.3-.2-.5-.5-.6l-1.8-.5c-.3-.1-.5 0-.7.2l-.4.5a5 5 0 0 1-2.4-2.4l.5-.4c.2-.2.3-.4.2-.7l-.5-1.8c-.1-.3-.3-.5-.6-.5h-1c-.6 0-.9.4-.9.9z"></path>',
+    instagram: '<rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>',
+    facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>',
+    tiktok: '<path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>',
+    youtube: '<rect x="2" y="5" width="20" height="14" rx="4"></rect><path d="M10 9.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" stroke="none"></path>',
+    twitter: '<path d="M4 4l7.5 9.5L4.5 20H7l5.8-6.4L17.5 20H20l-8-10L19 4h-2.5l-5.2 5.8L7 4H4z" fill="currentColor" stroke="none"></path>',
+  };
   function urlRed(red, valor) {
     var v = String(valor || '').trim();
     if (!v) return '';
@@ -566,12 +695,21 @@ export function runtimeGesicomm() {
       for (var r = 0; r < REDES.length; r++) {
         var href = urlRed(REDES[r], tienda[REDES[r][0]]);
         if (!href) continue;
+        // El WhatsApp del pie llevaba el chat vacío: el cliente abría la
+        // conversación sin nada escrito y le aparecía el borrador que
+        // hubiera quedado de antes. Ahora va con el mismo mensaje que el
+        // botón de consulta, que es el que configuró el comercio.
+        if (REDES[r][0] === 'whatsapp') {
+          href += (href.indexOf('?') === -1 ? '?' : '&') + 'text=' + encodeURIComponent(mensajeWhatsapp());
+        }
         var a = document.createElement('a');
         a.className = 'gc-red gc-red--' + REDES[r][0];
         a.href = href;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
-        a.textContent = REDES[r][1];
+        a.title = REDES[r][1];
+        a.setAttribute('aria-label', REDES[r][1]);
+        a.innerHTML = '<svg class="gc-red__icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONOS_RED[REDES[r][0]] || '') + '</svg><span class="gc-red__label">' + REDES[r][1] + '</span>';
         c.appendChild(a);
         hay++;
       }

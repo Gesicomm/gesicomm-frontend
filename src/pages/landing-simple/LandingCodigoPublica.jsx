@@ -109,7 +109,7 @@ function resolverItemCheckout(items, pedido) {
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
 }
 
-export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null }) {
+export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null, modoLegal = false }) {
   const navigate = useNavigate();
   // Ficha de producto: una sola plantilla (content.vistas.producto) que el
   // runtime llena con el producto de la URL. Si el comercio todavía no la
@@ -117,7 +117,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // "Directo en un producto" (venta.abrir_en): la dirección de la landing
   // muestra la ficha del producto principal (el primero de la selección),
   // sin redirigir, así el link del anuncio queda limpio.
-  const abreEnFicha = !productId && data?.content?.venta?.abrir_en === 'producto';
+  const abreEnFicha = !modoLegal && !productId && data?.content?.venta?.abrir_en === 'producto';
   const principalDeLanding = (() => {
     if (!abreEnFicha) return null;
     const lista = (data?.catalogo_items || data?.items || []).filter(i => i.tipo === 'producto');
@@ -176,8 +176,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     if (!data) return null;
     const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/') && slug ? `/l/${slug}` : '';
     return armarSeccionesSistema({
-      mostrarProductos: !esFicha && !tieneProductosEnCodigo,
-      mostrarContacto: !tieneContactoEnCodigo,
+      mostrarProductos: !modoLegal && !esFicha && !tieneProductosEnCodigo,
+      mostrarContacto: !modoLegal && !tieneContactoEnCodigo,
       mostrarFooter: !tieneFooterEnCodigo,
       productos: productos.map(p => ({ ...p, imagen: p.imagen ? getMediaUrl(p.imagen) : null })),
       contacto,
@@ -185,7 +185,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       basePath,
       acento: tema.acento,
     });
-  }, [data, slug, esFicha, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
+  }, [data, slug, modoLegal, esFicha, productos, contacto, tema.acento, tieneProductosEnCodigo, tieneContactoEnCodigo, tieneFooterEnCodigo]);
   // Ventas cruzadas apagadas en la configuración de venta → el carrito no sugiere nada.
   const crossSellActivo = data?.content?.venta?.cross_sell?.activo !== false;
 
@@ -325,25 +325,27 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         onTema={onTema}
       />
 
-      <CartDrawer
-        items={Array.from(cartState.carrito.values())}
-        sugerencias={crossSellActivo
-          ? cartState.sugerenciasCarrito.filter(s => ofertaCruzadaVisible(s.oferta, data?.content?.venta))
-          : []}
-        onAgregarSugerencia={cartState.agregarSugerencia}
-        crossSells={crossSellActivo ? cartState.crossSellsCarrito : []}
-        onAgregarCrossSell={cartState.agregarCrossSell}
-        abierto={cartState.carritoAbierto}
-        onAbrir={() => cartState.setCarritoAbierto(true)}
-        onCerrar={() => cartState.setCarritoAbierto(false)}
-        onCantidad={cartState.cambiarCantidadCarrito}
-        onQuitar={cartState.quitarDelCarrito}
-        onConfirmarPedido={cartState.confirmarPedido}
-        onValidarCupon={cartState.validarCupon}
-        pasarelas={data?.checkout?.pasarelas || []}
-        deliveryCiudades={data?.delivery_ciudades || []}
-        apariencia={cartApariencia}
-      />
+      {!modoLegal && (
+        <CartDrawer
+          items={Array.from(cartState.carrito.values())}
+          sugerencias={crossSellActivo
+            ? cartState.sugerenciasCarrito.filter(s => ofertaCruzadaVisible(s.oferta, data?.content?.venta))
+            : []}
+          onAgregarSugerencia={cartState.agregarSugerencia}
+          crossSells={crossSellActivo ? cartState.crossSellsCarrito : []}
+          onAgregarCrossSell={cartState.agregarCrossSell}
+          abierto={cartState.carritoAbierto}
+          onAbrir={() => cartState.setCarritoAbierto(true)}
+          onCerrar={() => cartState.setCarritoAbierto(false)}
+          onCantidad={cartState.cambiarCantidadCarrito}
+          onQuitar={cartState.quitarDelCarrito}
+          onConfirmarPedido={cartState.confirmarPedido}
+          onValidarCupon={cartState.validarCupon}
+          pasarelas={data?.checkout?.pasarelas || []}
+          deliveryCiudades={data?.delivery_ciudades || []}
+          apariencia={cartApariencia}
+        />
+      )}
     </div>
   );
 }

@@ -64,6 +64,28 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(document.querySelector('.brand [data-gesicomm-tienda="nombre"]').textContent).toBe('Mi Tienda');
   });
 
+  it('marca productos clickeables y rota la galería de la tarjeta al pasar el mouse', async () => {
+    const espera = ms => new Promise(r => setTimeout(r, ms));
+    const { window, document } = montar(PLANTILLA_INICIO, datos);
+    const tarjeta = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"]');
+    const img = tarjeta.querySelector('img[data-gesicomm-bind="imagen"]');
+
+    expect(tarjeta.style.cursor).toBe('pointer');
+    expect(tarjeta.hasAttribute('data-gesicomm-carrusel')).toBe(true);
+    expect(img.hasAttribute('data-gesicomm-carrusel')).toBe(true);
+
+    tarjeta.dispatchEvent(new window.MouseEvent('mouseenter', { bubbles: true, cancelable: true }));
+    expect(tarjeta.classList.contains('is-previewing')).toBe(true);
+    expect(img.getAttribute('src')).toBe('https://cdn.test/air2.jpg');
+
+    await espera(950);
+    expect(img.getAttribute('src')).toBe('https://cdn.test/air.jpg');
+
+    tarjeta.dispatchEvent(new window.MouseEvent('mouseleave', { bubbles: true, cancelable: true }));
+    expect(tarjeta.classList.contains('is-previewing')).toBe(false);
+    expect(img.getAttribute('src')).toBe('https://cdn.test/air.jpg');
+  });
+
   it('oculta la sección de combos entera si no hay combos, sin duplicar tarjetas', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     expect(document.querySelector('#combos').style.display).toBe('none');
@@ -159,6 +181,31 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     const { document, click } = montar(PLANTILLA_PRODUCTO, datos);
     click('[data-gesicomm-variante-id="1"]');
     expect(document.querySelector('[data-gesicomm-variante-id="1"]').classList.contains('is-selected')).toBe(false);
+  });
+
+  it('en recomendados la tarjeta abre la ficha aunque la IA solo haya puesto botón Agregar', () => {
+    const plantilla = {
+      html: `
+        <section data-gesicomm-lista="recomendados">
+          <template>
+            <article class="rec-card">
+              <h3 data-gesicomm-bind="nombre"></h3>
+              <span data-gesicomm-bind="precio"></span>
+              <button type="button" data-gesicomm-agregar>Agregar</button>
+            </article>
+          </template>
+        </section>`,
+      css: '',
+      js: '',
+    };
+    const { document, mensajes, click } = montar(plantilla, datos);
+    expect(document.querySelector('.rec-card').hasAttribute('data-gesicomm-ver')).toBe(true);
+
+    click('.rec-card h3');
+    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'air-fryer-26l' });
+
+    click('.rec-card [data-gesicomm-agregar]');
+    expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'air-fryer-26l', abrir: false }));
   });
 });
 
@@ -428,16 +475,26 @@ describe('preview del editor con ofertas del panel', () => {
   it('muestra el bump marcado con la foto del producto que suma y el upsell con su precio promocional', () => {
     const productos = [
       { id: 10, tipo: 'producto', slug: 'air', nombre: 'Air', precio_efectivo: 145000, imagen: 'https://cdn.test/air.jpg' },
-      { id: 20, tipo: 'producto', slug: 'canasto', nombre: 'Canasto', precio_efectivo: 90000, imagen: 'https://cdn.test/canasto.jpg' },
+      { id: 20, tipo: 'producto', slug: 'canasto', nombre: 'Canasto', precio_efectivo: 160000, imagen: 'https://cdn.test/canasto.jpg' },
     ];
     const ofertas = [
-      { id: 90, estrategia: 'order_bump', nombre: 'Canasto', producto_ancla_id: 10, precio_normal: 90000, precio_order_bump: 63000, componentes: [{ producto_id: 20 }] },
+      {
+        id: 90,
+        estrategia: 'order_bump',
+        nombre: 'Canasto',
+        producto_ancla_id: 10,
+        precio_normal: 170000,
+        precio_order_bump: 120000,
+        componentes: [{ producto_id: 20, producto: productos[1] }],
+      },
       { id: 91, estrategia: 'upsell', nombre: 'Otra', producto_ancla_id: 10, precio_normal: 70000, precio_order_bump: 55000, componentes: [{ producto_id: 10 }] },
     ];
     const venta = { configurado: true, cross_sell: { activo: true, ofertas: [90, 91] } };
     const datos = datosRuntimePreview({ productos, venta, vista: 'producto', productoId: 'air', ofertas });
     const [bump, upsell] = datos.producto.ofertas;
     expect(bump.imagen).toBe('https://cdn.test/canasto.jpg');
+    expect(bump.precio_efectivo).toBe(120000);
+    expect(bump.precio_normal).toBe(160000);
     expect(upsell.precio_efectivo).toBe(55000);
     expect(upsell.imagen).toBe('https://cdn.test/air.jpg');
   });
@@ -450,8 +507,9 @@ describe('redes de la tienda (data-gesicomm-redes)', () => {
       tienda: { nombre: 'Ecom', whatsapp: '0981 123 456', instagram: '@ecom.py', facebook: 'https://facebook.com/ecompy', tiktok: 'javascript:alert(1)' },
     });
     const redes = [...document.querySelectorAll('[data-gesicomm-redes] .gc-red')];
-    expect(redes.map(a => a.textContent)).toEqual(['WhatsApp', 'Instagram', 'Facebook']);
-    expect(redes[0].getAttribute('href')).toBe('https://wa.me/595981123456');
+    expect(redes.map(a => a.getAttribute('aria-label'))).toEqual(['WhatsApp', 'Instagram', 'Facebook']);
+    expect(redes.every(a => a.querySelector('svg.gc-red__icon'))).toBe(true);
+    expect(redes[0].getAttribute('href')).toContain('https://wa.me/595981123456?text=');
     expect(redes[1].getAttribute('href')).toBe('https://instagram.com/ecom.py');
     expect(redes[2].getAttribute('href')).toBe('https://facebook.com/ecompy');
     expect(redes[1].className).toBe('gc-red gc-red--instagram');

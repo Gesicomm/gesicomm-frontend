@@ -562,7 +562,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 }
 .bump:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: 0 18px 34px rgba(15, 23, 42, .12); }
 .bump:has(.bump-check:focus-visible) { outline: 3px solid var(--brand-soft); outline-offset: 2px; }
-.bump.is-checked, .bump:has(.bump-check:checked) { border-color: var(--brand); background: linear-gradient(135deg, var(--brand-soft), var(--white)); }
+.bump.is-checked, .bump:has(.bump-check:checked) { border-color: var(--brand); background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 12%, transparent), transparent 62%), var(--white); }
 .bump-check { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .bump-flag {
   display: flex; align-items: center; gap: 7px; padding: 8px 14px;
@@ -595,7 +595,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
   grid-column: 1 / -1; padding: 10px 14px; color: var(--gc-texto-sobre-primario); background: var(--brand);
   border-radius: 999px; font-size: .8rem; font-weight: 900; text-align: center; white-space: nowrap;
 }
-.bump.is-checked .bump-action, .bump:has(.bump-check:checked) .bump-action { color: var(--brand); background: transparent; border: 1px solid color-mix(in srgb, var(--brand) 38%, transparent); }
+.bump.is-checked .bump-action, .bump:has(.bump-check:checked) .bump-action { color: var(--gc-texto-sobre-primario); background: color-mix(in srgb, var(--brand) 78%, #0f172a); border: 1px solid color-mix(in srgb, var(--brand) 72%, transparent); }
 .bump-action-on { display: none; }
 .bump.is-checked .bump-action-off, .bump:has(.bump-check:checked) .bump-action-off { display: none; }
 .bump.is-checked .bump-action-on, .bump:has(.bump-check:checked) .bump-action-on { display: inline; }
@@ -830,7 +830,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
               </span>
               <span class="bump-action">
                 <span class="bump-action-off">Agregar a mi pedido</span>
-                <span class="bump-action-on">Quitar</span>
+                <span class="bump-action-on">Quitar de mi pedido</span>
               </span>
             </span>
           </label>

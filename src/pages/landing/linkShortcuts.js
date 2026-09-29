@@ -22,6 +22,16 @@ export const ANCLAS_SECCION = [
   { value: '#lp-faq', label: 'Preguntas frecuentes' },
 ];
 
+const RUTAS_FIJAS_POR_TIPO = {
+  catalogo: 'catalogo',
+  contacto: 'contacto',
+  politica_privacidad: 'politica-privacidad',
+  politica_reembolso: 'politica-reembolso',
+  terminos_servicio: 'terminos-servicio',
+  politica_envio: 'politica-envio',
+  aviso_legal: 'aviso-legal',
+};
+
 // `paginas` es lo que devuelve GET /mis-landings/paginas (id, tipo_pagina,
 // slug, titulo/nombre) — mismo array que ya usa LandingEditor.jsx para los
 // tabs Inicio/Catálogo/Contacto, y que InspectorSeccion.jsx ya reenvía a
@@ -29,5 +39,11 @@ export const ANCLAS_SECCION = [
 export function atajosDePaginas(paginas) {
   return (paginas || [])
     .filter(p => p.slug)
-    .map(p => ({ value: `/l/${p.slug}`, label: p.titulo || p.nombre || p.tipo_pagina }));
+    .map(p => {
+      const fija = RUTAS_FIJAS_POR_TIPO[p.tipo_pagina];
+      return {
+        value: fija ? `/${fija}` : `/l/${p.slug}`,
+        label: p.titulo || p.nombre || p.tipo_pagina,
+      };
+    });
 }

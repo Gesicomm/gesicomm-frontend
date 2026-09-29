@@ -1,5 +1,5 @@
 import { getMediaUrl } from '../../services/api';
-import { ofertaCheckoutPublicable, detalleOfertaCheckout } from '../landing/ofertasCheckout';
+import { ofertaCheckoutPublicable, detalleOfertaCheckout, precioVentaProducto } from '../landing/ofertasCheckout';
 
 /**
  * Traduce el catálogo (el público de /api/l o el del panel en el editor)
@@ -156,10 +156,13 @@ export function contentIdPanel(item) {
  * lo que el cliente reconoce.
  */
 function ofertaPanelARuntime(o, imagenDeProducto = () => null) {
-  const normal = Number(o.precio_normal) || 0;
+  const normalBase = Number(o.precio_normal ?? o.precio) || 0;
   const bump = o.precio_order_bump != null ? Number(o.precio_order_bump) : null;
-  const efectivo = ['order_bump', 'upsell'].includes(o.estrategia) && bump ? bump : normal;
   const componente = (o.componentes || [])[0] || null;
+  const esCheckout = ['order_bump', 'upsell'].includes(o.estrategia);
+  const precioComponente = precioVentaProducto(componente?.producto);
+  const normal = esCheckout && precioComponente > 0 ? precioComponente : normalBase;
+  const efectivo = esCheckout && bump ? bump : normal;
   const imgsComponente = componente?.producto?.imagenes || [];
   const imagenComponente = (imgsComponente.find(i => i.es_principal) || imgsComponente[0])?.url
     || imagenDeProducto(componente?.producto_id ?? componente?.producto?.id);

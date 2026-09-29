@@ -26,7 +26,7 @@ import { vitrinaService } from '../../services/vitrinaService';
 import { ofertaService } from '../../services/ofertaService';
 import CodigoPreview from './CodigoPreview';
 import ProductPicker from '../landing/ProductPicker';
-import { datosRuntimePreview } from './datosRuntime';
+import { datosRuntimePreview, contentIdPanel } from './datosRuntime';
 // Pesado (arrastra el editor real de ofertas): solo se carga al llegar al paso.
 const PasoOfertas = lazy(() => import('./PasoOfertas'));
 import '../landing/landing.css';
@@ -89,6 +89,9 @@ export default function AILandingWizard({ onCreada }) {
   const [cargandoOfertas, setCargandoOfertas] = useState(false);
   const [errorOfertas, setErrorOfertas] = useState('');
   const [shortcutActivo, setShortcutActivo] = useState(null);
+  // Precio tachado por producto, por landing (landing_items.precio_ancla):
+  // no toca el precio del producto ni el de otras páginas.
+  const [anclas, setAnclas] = useState({});
   const [previewModo, setPreviewModo] = useState('desktop');
   const mensajesFinRef = useRef(null);
   const composerRef = useRef(null);
@@ -199,14 +202,34 @@ export default function AILandingWizard({ onCreada }) {
     }
     setVentaConfigurada(ventaFinal);
     setPaso('generando');
-    agregarMensaje('bot', ventaFinal
-      ? `Listo: voy a generar con ${elegidos.length} producto(s), ${ventaFinal.cross_sell?.ofertas?.length || 0} oferta(s) y ${ventaFinal.recomendados?.items?.length || 0} destacado(s).`
-      : `Listo: voy a generar con ${elegidos.length} producto(s).`);
+    // Con nombres, no con números: "4 producto(s)" no te deja verificar que
+    // la IA va a trabajar con lo que vos elegiste.
+    const lineas = ['Listo, arranco. Esto es lo que va a usar la IA:', ''];
+    lineas.push(`Productos y combos (${elegidos.length})`);
+    elegidos.forEach(i => lineas.push(`  · ${i.nombre || `Item ${i.id}`}`));
+    const nombresOfertas = (ventaFinal?.cross_sell?.ofertas || [])
+      .map(id => nombrePorOfertaId.get(Number(id)))
+      .filter(Boolean);
+    if (nombresOfertas.length) {
+      lineas.push('', `Ofertas que se muestran (${nombresOfertas.length})`);
+      nombresOfertas.forEach(n => lineas.push(`  · ${n}`));
+    } else if (ventaFinal) {
+      lineas.push('', 'Sin ofertas marcadas.');
+    }
+    const destacados = ventaFinal?.recomendados?.items || [];
+    if (destacados.length) {
+      const nombres = destacados.map(cid => elegidos.find(i => contentIdPanel(i) === cid)?.nombre || cid);
+      lineas.push('', `Destacados (${nombres.length})`);
+      nombres.forEach(n => lineas.push(`  · ${n}`));
+    }
+    agregarMensaje('bot', lineas.join('\n'));
 
     try {
       const items = itemsParaBackend.map(item => ({
         tipo: item.tipo,
         id: Number(item.id),
+        // Precio tachado de ESTA landing, no del producto.
+        precio_ancla: Number(anclas[`${item.tipo}:${item.id}`]) || null,
       }));
 
       const landing = await landingSimpleService.crearDesdeIA(promptFinal, items, ventaFinal);
@@ -215,8 +238,25 @@ export default function AILandingWizard({ onCreada }) {
       setPaso('listo');
       setLandingGenerada(landing);
     } catch (error) {
+      // Generar tarda minutos y el navegador puede cortar la conexión aunque
+      // el backend haya terminado bien: pasó y el comercio vio "Network
+      // Error" con la landing ya creada. Si no hubo respuesta del servidor,
+      // se pregunta si quedó hecha antes de dar nada por perdido.
+      if (!error?.response) {
+        try {
+          const landings = await landingSimpleService.listar();
+          const reciente = (landings || []).sort((a, b) => b.id - a.id)[0];
+          if (reciente?.content?.codigo?.html) {
+            agregarMensaje('bot', 'Tardó más de lo normal y se cortó la conexión, pero la landing quedó generada. Acá está.', 'listo');
+            setPaso('listo');
+            setLandingGenerada(reciente);
+            return;
+          }
+        } catch { /* si tampoco se puede consultar, cae al error de abajo */ }
+      }
       setPaso('error');
-      agregarMensaje('bot', error?.response?.data?.message || error.message || 'Ocurrio un error al generar la landing.');
+      agregarMensaje('bot', error?.response?.data?.message
+        || (error?.response ? error.message : 'Se cortó la conexión y no pudimos confirmar si la landing quedó creada. Revisá Páginas de venta antes de volver a generar.'));
     }
   };
 
@@ -242,6 +282,8 @@ export default function AILandingWizard({ onCreada }) {
   };
   const puedeVolver = ['ofertas', 'prompt', 'error'].includes(paso);
 
+  const nombrePorOfertaId = new Map((ofertasTienda || []).map(o => [Number(o.id), o.nombre]));
+
   const puedeEnviar = input.trim() && paso === 'prompt' && paso !== 'generando';
   const productosElegidos = productosSeleccionados.size;
   const modoWorkspace = true;
@@ -265,6 +307,9 @@ export default function AILandingWizard({ onCreada }) {
             onVolver={volverAProductos}
             onContinuar={generarConOfertasElegidas}
             onSaltear={generarSinOfertas}
+            onOfertasCargadas={setOfertasTienda}
+            anclas={anclas}
+            setAnclas={setAnclas}
             onComboCreado={async (combo) => {
               // Entra a la landing sin volver al paso anterior: lo acabás de
               // armar acá, sería absurdo pedirte que lo busques de nuevo.

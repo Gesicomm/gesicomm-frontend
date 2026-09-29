@@ -398,3 +398,34 @@ export const getSeccionesContacto = () => {
   if (texto) texto.contenido = { ...texto.contenido, titulo: 'Contacto', texto: 'Contanos qué necesitás — completá el formulario o escribinos por WhatsApp.' };
   return base;
 };
+
+const CONTENIDO_LEGAL_POR_TIPO = {
+  politica_privacidad: {
+    titulo: 'Politica de privacidad',
+    texto: 'Explica que datos personales recopila la tienda, para que se usan, con quien se comparten y como puede contactarte una persona para ejercer sus derechos.',
+  },
+  politica_reembolso: {
+    titulo: 'Politica de reembolso',
+    texto: 'Detalla las condiciones para cambios, devoluciones y reembolsos: plazos, estado del producto, comprobantes requeridos y canales de atencion.',
+  },
+  terminos_servicio: {
+    titulo: 'Terminos del servicio',
+    texto: 'Define las reglas de compra y uso de la tienda: disponibilidad de productos, precios, pagos, responsabilidades, propiedad intelectual y cambios en las condiciones.',
+  },
+  politica_envio: {
+    titulo: 'Politica de envio',
+    texto: 'Indica zonas de cobertura, tiempos estimados, costos de envio, intentos de entrega y que ocurre si los datos del pedido son incorrectos.',
+  },
+  aviso_legal: {
+    titulo: 'Aviso legal',
+    texto: 'Incluye la identificacion del comercio, datos de contacto, propiedad del contenido, limitacion de responsabilidad y legislacion aplicable.',
+  },
+};
+
+export const getSeccionesLegal = (tipoPagina) => {
+  const base = ['header', 'rich_text', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+  const contenido = CONTENIDO_LEGAL_POR_TIPO[tipoPagina] || CONTENIDO_LEGAL_POR_TIPO.aviso_legal;
+  const texto = base.find(s => s.tipo === 'rich_text');
+  if (texto) texto.contenido = { ...texto.contenido, ...contenido, tamano: 'md' };
+  return base;
+};

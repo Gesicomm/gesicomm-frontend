@@ -175,6 +175,56 @@ img[data-gesicomm-bind="imagen"],
 [data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) img[data-gesicomm-bind="imagen"] {
   height: 100% !important;
 }
+/* Las redes las crea el runtime (pintarRedes) DESPUÉS de que el modelo
+   escribió su CSS, así que nunca tienen estilo propio y salían como el link
+   azul subrayado del navegador, en medio de un pie prolijo. Esto es solo un
+   piso digno: va con :where() para tener especificidad cero, así cualquier
+   regla que la IA escriba para .gc-red le gana sin pelear. */
+:where(.gc-red) {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, color .16s ease;
+}
+:where(.gc-red__icon) {
+  display: block;
+}
+:where(.gc-red__label) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+:where(.gc-red:hover) {
+  border-color: currentColor;
+  transform: translateY(-1px);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+:where([data-gesicomm-item][data-gesicomm-ver], [data-gesicomm-ver]) {
+  cursor: pointer;
+}
+:where(img[data-gesicomm-carrusel]) {
+  transition: transform .22s ease, filter .22s ease;
+}
+:where([data-gesicomm-carrusel].is-previewing) :where(img[data-gesicomm-carrusel]),
+:where([data-gesicomm-item][data-gesicomm-ver]:hover) :where(img[data-gesicomm-carrusel]),
+:where([data-gesicomm-item][data-gesicomm-ver]:focus-within) :where(img[data-gesicomm-carrusel]) {
+  transform: scale(1.035);
+  filter: saturate(1.05);
+}
+
 [data-gesicomm-tienda="logo"] {
   max-width: 160px !important;
   max-height: 52px !important;
@@ -192,6 +242,9 @@ img[data-gesicomm-bind="imagen"],
    amarillo/punteado ni el control de formulario antiguo. */
 .bump:has(input[data-gesicomm-bump]) {
   display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
   overflow: hidden !important;
   position: relative !important;
   cursor: pointer !important;
@@ -202,6 +255,18 @@ img[data-gesicomm-bind="imagen"],
   border-radius: 14px !important;
   box-shadow: 0 14px 28px rgba(15, 23, 42, .08) !important;
 }
+.bumps[data-gesicomm-lista="ofertas_bump"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  background: transparent !important;
+}
+:where(section, article, aside, div):has(> .bumps[data-gesicomm-lista="ofertas_bump"]) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
 .bump:has(input[data-gesicomm-bump]:hover),
 .bump:has(input[data-gesicomm-bump]):hover {
   border-color: var(--gc-primario, var(--brand, #18a66b)) !important;
@@ -210,7 +275,14 @@ img[data-gesicomm-bind="imagen"],
 .bump:has(input[data-gesicomm-bump]:checked) {
   border-color: var(--gc-primario, var(--brand, #18a66b)) !important;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 13%, #fff), var(--gc-superficie, var(--white, #fff))) !important;
+    linear-gradient(135deg, color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 12%, transparent), transparent 62%),
+    var(--gc-superficie, var(--white, #fff)) !important;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, .08) !important;
+}
+@media (min-width: 760px) {
+  .bump:has(input[data-gesicomm-bump]:checked) {
+    min-width: min(720px, calc(100vw - 32px)) !important;
+  }
 }
 .bump input[data-gesicomm-bump] {
   position: absolute !important;
@@ -310,9 +382,16 @@ img[data-gesicomm-bind="imagen"],
   white-space: nowrap !important;
 }
 .bump:has(input[data-gesicomm-bump]:checked) .bump-action {
-  color: var(--gc-primario, var(--brand, #18a66b)) !important;
-  background: transparent !important;
-  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 38%, transparent) !important;
+  color: var(--gc-texto-sobre-primario, #fff) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 78%, #0f172a) !important;
+  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 72%, transparent) !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-action-on {
+  font-size: 0 !important;
+}
+.bump:has(input[data-gesicomm-bump]) .bump-action-on::after {
+  content: "Quitar de mi pedido";
+  font-size: .76rem;
 }
 .bump:has(input[data-gesicomm-bump]) .bump-dot {
   display: none !important;
@@ -330,13 +409,13 @@ img[data-gesicomm-bind="imagen"],
   font-size: .78rem;
 }
 .bump:has(input[data-gesicomm-bump]) .bump-ctrl-on::after {
-  content: "Quitar";
+  content: "Quitar de mi pedido";
   font-size: .78rem;
 }
 .bump:has(input[data-gesicomm-bump]:checked) .bump-ctrl {
-  color: var(--gc-primario, var(--brand, #18a66b)) !important;
-  background: transparent !important;
-  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 38%, transparent) !important;
+  color: var(--gc-texto-sobre-primario, #fff) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 78%, #0f172a) !important;
+  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--brand, #18a66b)) 72%, transparent) !important;
 }
 `;
 

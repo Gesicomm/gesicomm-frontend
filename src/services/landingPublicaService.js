@@ -22,8 +22,12 @@
  * @returns {{disponible:false}} existe pero no está publicada / dueño inactivo
  * @returns {{disponible:true, ...}} landing lista para renderizar
  */
-export async function obtenerLandingPublica(slug) {
-  const path = slug ? `/api/l/${encodeURIComponent(slug)}` : '/api/l/';
+export async function obtenerLandingPublica(slug, opciones = {}) {
+  const params = new URLSearchParams();
+  if (opciones.tipoPagina) params.set('tipo_pagina', opciones.tipoPagina);
+  const query = params.toString();
+  const pathBase = slug ? `/api/l/${encodeURIComponent(slug)}` : '/api/l/';
+  const path = query ? `${pathBase}?${query}` : pathBase;
   const res = await fetch(path, { credentials: 'include' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error('No se pudo cargar la landing.');

@@ -64,13 +64,17 @@ function formatearGs(n) {
 
 const REDES = [
   // Número local paraguayo (0981…) → formato internacional que pide wa.me.
-  { key: 'whatsapp', label: 'WhatsApp', href: v => `https://wa.me/${v.replace(/\D/g, '').replace(/^0/, '595')}` },
-  { key: 'instagram', label: 'Instagram', href: v => (/^https?:/i.test(v) ? v : `https://instagram.com/${v.replace(/^@/, '')}`) },
-  { key: 'facebook', label: 'Facebook', href: v => (/^https?:/i.test(v) ? v : `https://facebook.com/${v.replace(/^@/, '')}`) },
-  { key: 'tiktok', label: 'TikTok', href: v => (/^https?:/i.test(v) ? v : `https://tiktok.com/@${v.replace(/^@/, '')}`) },
-  { key: 'youtube', label: 'YouTube', href: v => (/^https?:/i.test(v) ? v : `https://youtube.com/@${v.replace(/^@/, '')}`) },
-  { key: 'twitter', label: 'X', href: v => (/^https?:/i.test(v) ? v : `https://x.com/${v.replace(/^@/, '')}`) },
+  { key: 'whatsapp', label: 'WhatsApp', href: v => `https://wa.me/${v.replace(/\D/g, '').replace(/^0/, '595')}`, icon: '<path d="M3 21l1.3-4.2A8.5 8.5 0 1 1 8 19.7L3 21z"></path><path d="M8.7 9.3c0 3.4 2.9 6.2 6.2 6.2.6 0 .9-.3.9-.9v-1c0-.3-.2-.5-.5-.6l-1.8-.5c-.3-.1-.5 0-.7.2l-.4.5a5 5 0 0 1-2.4-2.4l.5-.4c.2-.2.3-.4.2-.7l-.5-1.8c-.1-.3-.3-.5-.6-.5h-1c-.6 0-.9.4-.9.9z"></path>' },
+  { key: 'instagram', label: 'Instagram', href: v => (/^https?:/i.test(v) ? v : `https://instagram.com/${v.replace(/^@/, '')}`), icon: '<rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>' },
+  { key: 'facebook', label: 'Facebook', href: v => (/^https?:/i.test(v) ? v : `https://facebook.com/${v.replace(/^@/, '')}`), icon: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>' },
+  { key: 'tiktok', label: 'TikTok', href: v => (/^https?:/i.test(v) ? v : `https://tiktok.com/@${v.replace(/^@/, '')}`), icon: '<path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>' },
+  { key: 'youtube', label: 'YouTube', href: v => (/^https?:/i.test(v) ? v : `https://youtube.com/@${v.replace(/^@/, '')}`), icon: '<rect x="2" y="5" width="20" height="14" rx="4"></rect><path d="M10 9.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" stroke="none"></path>' },
+  { key: 'twitter', label: 'X', href: v => (/^https?:/i.test(v) ? v : `https://x.com/${v.replace(/^@/, '')}`), icon: '<path d="M4 4l7.5 9.5L4.5 20H7l5.8-6.4L17.5 20H20l-8-10L19 4h-2.5l-5.2 5.8L7 4H4z" fill="currentColor" stroke="none"></path>' },
 ];
+
+function iconoRedSvg(red) {
+  return `<svg class="gcx-chip-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${red.icon}</svg>`;
+}
 
 /** true si hay al menos un dato de contacto para mostrar. */
 export function contactoTieneDatos(contacto) {
@@ -97,7 +101,7 @@ function contactoHtml(contacto) {
     .filter(r => String(contacto[r.key] || '').trim())
     .map(r => {
       const href = hrefSeguro(r.href(String(contacto[r.key]).trim()));
-      return href ? `<a class="gcx-chip" href="${href}" target="_blank" rel="noopener noreferrer">${r.label}</a>` : '';
+      return href ? `<a class="gcx-chip" href="${href}" target="_blank" rel="noopener noreferrer" aria-label="${esc(r.label)}" title="${esc(r.label)}">${iconoRedSvg(r)}<span>${esc(r.label)}</span></a>` : '';
     })
     .join('');
   const datos = [
@@ -151,9 +155,11 @@ function css(acentoFallback) {
 .gcx-datos li { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
 .gcx-datos span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
 .gcx-datos a { color: inherit; }
-.gcx-redes { display: flex; flex-wrap: wrap; gap: 8px; }
-.gcx-chip { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 999px; border: 1.5px solid ${acento}; color: inherit; font-size: 14px; font-weight: 600; text-decoration: none; }
-.gcx-chip:hover { background: color-mix(in srgb, ${acento} 12%, transparent); }
+.gcx-redes { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.gcx-chip { width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; border: 1.5px solid color-mix(in srgb, currentColor 24%, transparent); color: inherit; text-decoration: none; transition: transform .16s ease, background .16s ease, border-color .16s ease, color .16s ease; }
+.gcx-chip span { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.gcx-chip-icon { display: block; }
+.gcx-chip:hover { transform: translateY(-1px); color: ${acento}; border-color: color-mix(in srgb, ${acento} 72%, currentColor 28%); background: color-mix(in srgb, ${acento} 12%, transparent); }
 .gcx-footer { padding: 28px 20px 32px; text-align: center; font-size: 13px; }
 .gcx-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; margin-bottom: 12px; }
 .gcx-footer a { color: inherit; opacity: .78; text-decoration: none; }

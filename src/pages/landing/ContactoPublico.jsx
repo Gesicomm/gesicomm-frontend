@@ -11,7 +11,24 @@ import StoreHeader from '../landing-simple/templates/StoreHeader';
 import ContactoView from '../landing-simple/templates/ContactoView';
 import CartDrawer from './CartDrawer';
 import { useStoreCart } from './useStoreCart';
+import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
+import { esPlantillaLegalGenerica, normalizarEstiloPaginaFooter, plantillaLegalPara } from '../landing-simple/plantillasLegalesCodigo';
 
+function tiendaParaPlantillaContacto(data) {
+  return {
+    nombre: data?.tienda?.nombre || data?.titulo || '',
+    telefono: data?.contacto_landing?.telefono || data?.contacto?.telefono || data?.contacto_telefono || '',
+    whatsapp: data?.contacto_landing?.whatsapp || data?.contacto?.whatsapp || data?.contacto_whatsapp || '',
+    email: data?.contacto_landing?.email || data?.contacto?.email || data?.contacto_email || '',
+    direccion_publica: data?.contacto_landing?.direccion || data?.contacto?.direccion || data?.contacto_direccion || '',
+    ciudad_publica: data?.contacto_landing?.ciudad || data?.contacto_ciudad || '',
+    instagram: data?.contacto_landing?.instagram || data?.contacto_instagram || '',
+    facebook: data?.contacto_landing?.facebook || data?.contacto_facebook || '',
+    tiktok: data?.contacto_landing?.tiktok || data?.contacto_tiktok || '',
+    ruc: data?.tienda?.ruc || '',
+    documento: data?.tienda?.documento || '',
+  };
+}
 
 export default function ContactoPublico() {
   const { slug } = useParams();
@@ -48,6 +65,22 @@ export default function ContactoPublico() {
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;
   const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
+  const contactoGuardado = data?.content?.vistas?.legales?.contacto;
+  const codigoContacto = contactoGuardado?.html && !esPlantillaLegalGenerica(contactoGuardado)
+    ? normalizarEstiloPaginaFooter(contactoGuardado)
+    : plantillaLegalPara('contacto', tiendaParaPlantillaContacto(data));
+
+  if (data?.template?.kind === 'codigo' && codigoContacto?.html) {
+    return (
+      <LandingCodigoPublica
+        codigo={codigoContacto}
+        titulo={`Contacto - ${data?.tienda?.nombre || data?.titulo || ''}`}
+        data={data}
+        slug={slug}
+        modoLegal
+      />
+    );
+  }
 
   const isLocalFallback = typeof window !== 'undefined' && window.location.pathname.startsWith('/l/');
   const linkInicio = isLocalFallback && slug ? `/l/${slug}` : '/';

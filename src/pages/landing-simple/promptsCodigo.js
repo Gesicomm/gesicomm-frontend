@@ -82,6 +82,8 @@ Redes sociales: poné un contenedor vacío <div data-gesicomm-redes></div> (en e
 - data-gesicomm-comprar → agrega al carrito y lo abre. Sin valor usa el producto de la tarjeta o de la ficha. Con valor apunta a uno fijo: data-gesicomm-comprar="ID".
 - data-gesicomm-agregar → agrega sin abrir el carrito (muestra "Agregado").
 - data-gesicomm-ver → abre la ficha del producto (cada producto tiene su propia página).
+- En tarjetas de producto (catálogo, destacados, recomendados, combos) poné data-gesicomm-ver en la tarjeta entera o al menos en la imagen y el nombre. Si también querés compra rápida, agregá un botón secundario con data-gesicomm-agregar o data-gesicomm-comprar; no dejes una tarjeta con solo "Agregar", porque el visitante no podría ver la ficha.
+- Tarjetas clickeables: usá cursor:pointer, hover/focus visible (elevación, borde, sombra o texto "Ver detalle") y mantené el botón "Agregar" como acción secundaria. Si el producto tiene varias imágenes, Gesicomm marca la tarjeta con data-gesicomm-carrusel y rota la imagen en hover/focus/touch; podés estilizar [data-gesicomm-carrusel].is-previewing img para que se sienta como carrusel sin escribir JavaScript extra.
 - data-gesicomm-inicio → vuelve al inicio.
 - data-gesicomm-oferta → dentro de una lista de paquetes, agrega esa oferta al carrito. No lo uses para upsells en la ficha.
 - <input type="checkbox" data-gesicomm-bump> → dentro de "ofertas_bump": marcada, la oferta se suma sola cuando se toca "Comprar" del producto. El runtime le pone la clase "is-checked" al elemento raíz del template: estilá ese estado.
@@ -209,7 +211,7 @@ Secciones, en este orden:
 3. Hero con un titular fuerte orientado al beneficio y el producto destacado (lista "productos" con data-gesicomm-limite="1", clic → ficha).
 4. Franja de confianza: pago seguro con PagoPar, envío, atención por WhatsApp.
 5. Beneficios de comprar acá (3 tarjetas).
-6. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total.
+6. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la tarjeta o al menos la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total.
 7. Sección de combos (lista "combos", que se oculta si no hay).
 8. Prueba social con marcadores "[Reemplazar por testimonio real]".
 9. Preguntas frecuentes en acordeón (cómo compro, cómo pago, envíos, cambios).
@@ -224,7 +226,7 @@ Página larga tipo "sales page". TODOS los botones de compra usan data-gesicomm-
 5. Beneficios (4 a 6) con íconos en SVG inline.
 6. Cómo se usa (3 pasos).
 7. Prueba social con marcadores "[Reemplazar por testimonio real]".
-8. Complementos: lista "recomendados" (el resto de la selección), con data-gesicomm-agregar.
+8. Complementos: lista "recomendados" (el resto de la selección). Cada tarjeta abre la ficha con data-gesicomm-ver; el botón "Agregar" es secundario y usa data-gesicomm-agregar.
 9. Oferta final: repetir precio y CTA grande.
 10. Preguntas frecuentes (objeciones: envío, pago, garantía, cambios).
 11. Contacto por WhatsApp y footer con los links legales.
@@ -273,7 +275,7 @@ Estructura (en este orden; es la que más vende según la investigación de usab
    - Si es un combo: sección <section data-gesicomm-si="combo_incluye"> con la lista "combo_incluye" (foto, nombre, "cantidad", precio suelto con bind "precio") y el total "Por separado vs En combo". Cada producto se puede ver por separado: el combo es la opción que conviene, no la única.
    - Descripción: binds "sobre" y "descripcion_larga" (white-space: pre-line).
    - Preguntas frecuentes: lista "preguntas" con <details><summary data-gesicomm-bind="pregunta"></summary><p data-gesicomm-bind="respuesta"></p></details>. Responden las dudas que frenan la compra.
-   - Recomendados (lista "recomendados").
+   - Recomendados (lista "recomendados"): tarjeta/imagen/nombre con data-gesicomm-ver para ver la ficha, y si hay compra rápida un botón secundario con data-gesicomm-agregar.
    - Cierre: nombre, precio y otro botón "Comprar ahora".
 4. Footer con los links legales.
 5. En mobile, una barra fija abajo con precio y "Comprar ahora" (data-gesicomm-comprar), y padding-bottom en el body para que no tape contenido.

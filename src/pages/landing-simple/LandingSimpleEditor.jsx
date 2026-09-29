@@ -1601,13 +1601,23 @@ export function ofertaAFormaPublica(o, productoAnclaId) {
   const compPack = componentes.find(c => Number(c.producto_id) === Number(productoAnclaId)) || componentes[0];
   const unidades = o.tipo_contenido === 'pack' ? (Number(o.unidades ?? compPack?.cantidad) || null) : null;
   const comps = componentes.filter(c => Number(c.producto_id) !== Number(productoAnclaId));
-  const productos_incluidos = comps.map(c => {
+  const compsCheckout = esCheckout && !comps.length && componentes.length ? [componentes[0]] : comps;
+  const precioProducto = p => Number(p?.precio_efectivo ?? p?.precio_usuario ?? p?.precio_base ?? p?.precio ?? p?.precio_normal ?? 0) || 0;
+  const productos_incluidos = compsCheckout.map(c => {
     const imgs = c.producto?.imagenes || [];
     const principal = imgs.find(i => i.es_principal) || imgs[0];
-    return { nombre: c.producto?.nombre || null, imagen: principal?.url || null };
+    const precio = precioProducto(c.producto);
+    return {
+      nombre: c.producto?.nombre || null,
+      imagen: principal?.url || null,
+      precio,
+      precio_efectivo: precio,
+    };
   }).filter(x => x.nombre);
 
-  const precioNormal = Number(o.precio_normal ?? o.precio) || 0;
+  const precioNormalBase = Number(o.precio_normal ?? o.precio) || 0;
+  const precioComplementario = precioProducto(productos_incluidos[0]);
+  const precioNormal = esCheckout && precioComplementario > 0 ? precioComplementario : precioNormalBase;
   const bump = (o.precio_order_bump === null || o.precio_order_bump === undefined)
     ? null : Number(o.precio_order_bump);
 

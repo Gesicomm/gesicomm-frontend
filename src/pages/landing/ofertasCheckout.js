@@ -8,10 +8,30 @@ export function precioOfertaCheckout(oferta) {
   ) || 0;
 }
 
+export function precioVentaProducto(producto) {
+  return Number(
+    producto?.precio_efectivo
+    ?? producto?.precio_usuario
+    ?? producto?.precio_base
+    ?? producto?.precio
+    ?? producto?.precio_normal
+    ?? 0
+  ) || 0;
+}
+
+export function precioNormalOfertaCheckout(oferta) {
+  const complementario = oferta?.producto_complementario || oferta?.productos_incluidos?.[0] || null;
+  const precioComplementario = precioVentaProducto(complementario);
+  const precioOferta = Number(oferta?.precio_normal ?? oferta?.precio ?? 0) || 0;
+  return ['order_bump', 'upsell'].includes(oferta?.estrategia) && precioComplementario > 0
+    ? precioComplementario
+    : precioOferta;
+}
+
 export function detalleOfertaCheckout(oferta) {
   const complementario = oferta?.producto_complementario || oferta?.productos_incluidos?.[0] || null;
   const imagen = oferta?.imagen || oferta?.imagen_url || complementario?.imagen || null;
-  const precioNormal = Number(oferta?.precio_normal ?? oferta?.precio ?? 0) || 0;
+  const precioNormal = precioNormalOfertaCheckout(oferta);
   const precioFinal = precioOfertaCheckout(oferta);
   return { complementario, imagen, precioNormal, precioFinal };
 }

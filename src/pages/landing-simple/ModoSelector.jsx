@@ -10,15 +10,15 @@ import AILandingWizard from './AILandingWizard';
  * ninguna: elegir CÓMO se arma la landing, antes de elegir con qué.
  *
  *   - Template  → sigue el flujo de siempre (TemplateSelector: grilla de
- *     los 4 templates rígidos → editor de contenido).
+ *     los templates rígidos → editor de contenido).
  *   - Lienzo en blanco → crea una landing kind='codigo' y abre el editor
  *     de HTML/CSS/JS (LandingCodigoEditor).
+ *   - Generar con IA → wizard propio, pero termina en el mismo editor libre
+ *     que el lienzo porque el resultado técnico también es código.
  *
- * Las dos terminan en la MISMA fila de Landing (mismo slug, mismo
- * es_home, mismo publicar) — lo único que cambia es qué se edita. Por eso
- * la decisión se toma una sola vez, acá, y no hay forma de convertir una
- * en la otra: para cambiar de modo se borra la landing y se vuelve a esta
- * pantalla (igual que el spec punto 12 para los templates).
+ * Los tres caminos terminan en la misma entidad Landing (mismo slug,
+ * mismo es_home, mismo publicar). Lo que cambia es el editor real:
+ * rígida usa editor estructurado; lienzo e IA usan editor libre.
  */
 export default function ModoSelector({ onCreada }) {
   const navigate = useNavigate();
@@ -58,34 +58,34 @@ export default function ModoSelector({ onCreada }) {
 
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold text-fg mb-1">¿Cómo querés armar tu landing?</h1>
-      <p className="text-fg/50 mb-8">Se elige una sola vez. Después podés cambiar de idea borrando la landing y empezando de nuevo.</p>
+      <h1 className="text-2xl font-bold text-fg mb-1">¿Cómo querés crear tu landing?</h1>
+      <p className="text-fg/50 mb-8">Elegí el punto de partida. Después vas a poder editar, publicar y ajustar la venta desde su editor.</p>
 
       {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Opcion
           icono={Wand2}
-          titulo="Generar con Inteligencia Artificial"
-          descripcion="Le contás a la IA qué querés vender y ella arma la landing, escribe los textos persuasivos y elige el diseño ideal."
-          puntos={['Landing lista en segundos', 'Textos persuasivos orientados a ventas', 'Podés modificarla en el editor después']}
-          accion="Usar IA Mágica"
+          titulo="Generar con IA"
+          descripcion="Elegís productos, oferta e instrucciones. La IA arma la landing y después la editás en el editor libre."
+          puntos={['Wizard con producto y oferta', 'Diseño y textos generados', 'Luego podés pedir cambios o editar código']}
+          accion="Generar con IA"
           onClick={() => setModo('ia')}
         />
         <Opcion
           icono={LayoutTemplate}
-          titulo="Con un template"
-          descripcion="Elegís un diseño ya armado y solo cargás tus productos, contacto y preguntas frecuentes. No hace falta saber programar."
+          titulo="Landing rígida"
+          descripcion="Elegís un diseño ya armado y editás contenido desde paneles. Ideal si querés una estructura guiada."
           puntos={['Estructura y diseño resueltos', 'Catálogo, carrito y checkout incluidos', 'Se edita desde paneles']}
-          accion="Elegir template"
+          accion="Elegir landing rígida"
           onClick={() => setModo('template')}
         />
         <Opcion
           icono={Code2}
-          titulo="Lienzo en blanco (HTML)"
-          descripcion="Primero elegís qué vendés (catálogo, producto único o combos). Después escribís el HTML, el CSS y el JavaScript, o lo generás con IA usando los prompts que te armamos."
-          puntos={['Control total del diseño, con ficha para cada producto', 'Carrito, PagoPar, pedidos y tracking ya conectados', 'Prompts para IA por vista y código base incluido']}
-          accion="Empezar en blanco"
+          titulo="Lienzo en blanco"
+          descripcion="Arrancás desde cero en el editor libre. Podés construir manualmente, pegar HTML y ajustar cada vista."
+          puntos={['Control total del diseño', 'Ficha de producto y páginas del footer editables', 'Carrito, pedidos y tracking ya conectados']}
+          accion="Empezar con lienzo"
           onClick={usarLienzoBlanco}
           cargando={creando}
         />

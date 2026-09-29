@@ -192,7 +192,7 @@ const TextoAdapter = ({ section, content }) => {
   return (
     <section className={`lp-custom-section ${cont.tamano ? 'lp-texto-' + cont.tamano : ''}`}>
       {cont.titulo && <h2>{cont.titulo}</h2>}
-      {cont.texto && <p>{cont.texto}</p>}
+      {cont.texto && <p style={{ whiteSpace: 'pre-line' }}>{cont.texto}</p>}
     </section>
   );
 };

@@ -20,13 +20,14 @@ import InspectorSeccion from './InspectorSeccion';
 import SidebarSecciones from './SidebarSecciones';
 import SelectorSecciones from './SelectorSecciones';
 import LandingTemplatePicker from './LandingTemplatePicker';
-import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase, getSeccionesCatalogo, getSeccionesContacto } from './BloquesSchema';
+import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase, getSeccionesCatalogo, getSeccionesContacto, getSeccionesLegal } from './BloquesSchema';
 import { FooterProvider } from '../../page-builder/blocks/footer-builder/FooterContext';
 import FooterInspectorPanel from '../../page-builder/blocks/footer-builder/FooterInspectorPanel';
 
 function seccionesDefaultPorRol(tipoPagina) {
   if (tipoPagina === 'catalogo') return getSeccionesCatalogo();
   if (tipoPagina === 'contacto') return getSeccionesContacto();
+  if (TIPOS_SIN_CATALOGO.has(tipoPagina)) return getSeccionesLegal(tipoPagina);
   return getSeccionesBase();
 }
 import { BlockRegistry } from '../../page-builder/core/BlockRegistry';
@@ -36,6 +37,25 @@ import '../vitrina/vitrina.css';
 import './landing.css';
 
 const MAX_ITEMS = 40;
+const TIPOS_SIN_CATALOGO = new Set([
+  'contacto',
+  'politica_privacidad',
+  'politica_reembolso',
+  'terminos_servicio',
+  'politica_envio',
+  'aviso_legal',
+]);
+
+const ORDEN_PAGINAS_FIJAS = {
+  inicio: 0,
+  catalogo: 1,
+  contacto: 2,
+  politica_privacidad: 3,
+  politica_reembolso: 4,
+  terminos_servicio: 5,
+  politica_envio: 6,
+  aviso_legal: 7,
+};
 
 const SECCIONES_BASE = [
   { tipo: 'header', nombre_interno: 'Header', activo: true, fijo: true },
@@ -1217,9 +1237,8 @@ export default function LandingEditor() {
       setError('Poné un nombre interno para poder guardar.');
       return null;
     }
-    // La página de Contacto no tiene catálogo propio — es la única de las
-    // 3 páginas fijas que no necesita productos para tener sentido.
-    if (itemsOrdenados.length === 0 && landing?.tipo_pagina !== 'contacto') {
+    // Las páginas informativas fijas no tienen catálogo propio.
+    if (itemsOrdenados.length === 0 && !TIPOS_SIN_CATALOGO.has(landing?.tipo_pagina)) {
       setError('Elegí al menos un producto o combo para la landing.');
       return null;
     }
@@ -1446,7 +1465,7 @@ export default function LandingEditor() {
               type="button"
               className={publicada ? 'lb-btn-warn text-sm px-4 py-2' : 'lb-btn-primary text-sm px-4 py-2'}
               onClick={togglePublicar}
-              disabled={ocupado || (itemsOrdenados.length === 0 && landing?.tipo_pagina !== 'contacto')}
+              disabled={ocupado || (itemsOrdenados.length === 0 && !TIPOS_SIN_CATALOGO.has(landing?.tipo_pagina))}
             >
               {publicando ? <Loader size={14} className="spin-icon" /> : (publicada ? <PowerOff size={14} /> : <Power size={14} />)}
               {publicada ? 'Despublicar' : 'Publicar'}
@@ -1469,8 +1488,7 @@ export default function LandingEditor() {
       {paginas.length > 1 && (
         <div style={{ display: 'flex', gap: '0.25rem', padding: '0.5rem 1.5rem', borderBottom: '1px solid var(--vit-border)', background: 'var(--vit-card-bg)', flexShrink: 0 }}>
           {[...paginas].sort((a, b) => {
-            const orden = { inicio: 0, catalogo: 1, contacto: 2 };
-            return (orden[a.tipo_pagina] ?? 99) - (orden[b.tipo_pagina] ?? 99);
+            return (ORDEN_PAGINAS_FIJAS[a.tipo_pagina] ?? 99) - (ORDEN_PAGINAS_FIJAS[b.tipo_pagina] ?? 99);
           }).map(p => (
             <button
               key={p.id}

@@ -8,6 +8,7 @@ import { PanelOfertas } from './ConfigurarVentaCodigo';
 import ArmarComboPanel from './ArmarComboPanel';
 import { ofertaService } from '../../services/ofertaService';
 import { contentIdPanel } from './datosRuntime';
+import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 
 /**
  * Paso 2 del wizard de IA: armar las ofertas de los productos elegidos.
@@ -81,10 +82,6 @@ const POR_ESTRATEGIA = {
 
 const gs = n => `Gs ${Number(n || 0).toLocaleString('es-PY')}`;
 
-// Misma cadena que itemPanelARuntime en datosRuntime.js: el catálogo del
-// panel trae varios precios y el que ve el cliente no es `precio_base`.
-const precioDeVenta = p => p?.precio_efectivo ?? p?.precio_usuario ?? p?.precio_base ?? p?.precio ?? 0;
-
 function precioDeOferta(o) {
   const n = Number(o?.precio_order_bump ?? o?.precio_normal ?? o?.precio ?? 0);
   return Number.isFinite(n) && n > 0 ? n : null;
@@ -119,6 +116,10 @@ export default function PasoOfertas({
   onContinuar,
   onSaltear,
   onComboCreado,
+  onOfertasCargadas,
+  // Precio tachado por producto, solo para ESTA landing.
+  anclas = {},
+  setAnclas = () => {},
 }) {
   const [ofertas, setOfertas] = useState(null);
   const [error, setError] = useState('');
@@ -134,7 +135,9 @@ export default function PasoOfertas({
     setError('');
     try {
       const lista = await ofertaService.listarTodas({ estrategias: ['normal', 'order_bump', 'upsell'] });
-      setOfertas(Array.isArray(lista) ? lista : []);
+      const limpias = Array.isArray(lista) ? lista : [];
+      setOfertas(limpias);
+      onOfertasCargadas?.(limpias);
     } catch (err) {
       setError(err?.response?.data?.message || 'No pudimos traer tus ofertas. Probá de nuevo.');
       setOfertas([]);
@@ -265,6 +268,11 @@ export default function PasoOfertas({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold">{producto.nombre}</p>
                         <p className="mt-0.5 text-[13px] text-fg-muted">{gs(precioDeVenta(producto))}</p>
+                        <PrecioAncla
+                          venta={precioDeVenta(producto)}
+                          valor={anclas[claveItem(producto)] || ''}
+                          onCambiar={v => setAnclas(prev => ({ ...prev, [claveItem(producto)]: v }))}
+                        />
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         <button

@@ -70,11 +70,23 @@ export function acentoLegible(acento, fondo, respaldo, minimo = 4.5) {
 
 /** Arma {fondo, texto, acento} final = override del comercio (data.tema) + default propio del template. */
 export function resolverTema(temaOverride, defaults) {
-  return {
-    fondo: temaOverride?.fondo || defaults.fondo,
-    texto: temaOverride?.texto || defaults.texto,
-    acento: temaOverride?.acento || defaults.acento,
-  };
+  const fondo = temaOverride?.fondo || defaults.fondo;
+
+  // El acento sale del primario de la tienda cuando no viene uno explícito:
+  // el payload público manda `primario`/`secundario` (Mi Tienda), no
+  // `acento`, así que antes el color de marca nunca se leía y todo caía al
+  // default del template — negro, en las páginas legales y el catálogo.
+  const acento = temaOverride?.acento || temaOverride?.primario || defaults.acento;
+
+  // El texto se deriva del fondo REAL, no del default del template. Una
+  // tienda de fondo oscuro sin `texto` configurado terminaba con el negro
+  // del template 'basico' sobre su propio fondo casi negro: la página
+  // quedaba ilegible. Ojo: las landings de código no tienen template rígido,
+  // así que SIEMPRE caen a ese default.
+  const texto = temaOverride?.texto
+    || (luminanciaRelativa(fondo) < 0.5 ? '#FFFFFF' : defaults.texto);
+
+  return { fondo, texto, acento };
 }
 
 /**

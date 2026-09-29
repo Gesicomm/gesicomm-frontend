@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { comboAdminService } from '../../services/comboAdminService';
+import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import { contentIdPanel, datosRuntimePreview } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
@@ -166,6 +167,9 @@ export default function ConfigurarVentaCodigo({
   errorGuardado = null,
   // Vuelve a pedir el catálogo (p. ej. después de activar un combo acá).
   onRecargarCatalogo = null,
+  // Precios tachados que esta landing ya tiene guardados, por item:
+  // { "producto:12": 250000 }. Viven en landing_items, no en el producto.
+  anclasIniciales = {},
 }) {
   const ventaInicial = inicial?.venta || {};
   const [abrirEn, setAbrirEn] = useState(ventaInicial.abrir_en || (ventaInicial.tipo === 'producto_unico' ? 'producto' : 'tienda'));
@@ -201,6 +205,7 @@ export default function ConfigurarVentaCodigo({
   // Panel de ofertas: null cerrado · { producto: null } eligiendo producto ·
   // { producto } editando las ofertas de ese producto.
   const [panelOfertas, setPanelOfertas] = useState(null);
+  const [anclas, setAnclas] = useState(() => ({ ...anclasIniciales }));
 
   const [recoActivo, setRecoActivo] = useState(ventaInicial.recomendados?.activo !== false);
   const [recoModo, setRecoModo] = useState(ventaInicial.recomendados?.modo || 'auto');
@@ -531,7 +536,11 @@ export default function ConfigurarVentaCodigo({
       },
       seleccion,
       // Con una regla no hay lista: el backend resuelve los productos.
-      items: esRegla ? [] : seleccion,
+      // El precio ancla viaja pegado a cada item porque es de ESTA landing.
+      items: esRegla ? [] : seleccion.map(i => ({
+        ...i,
+        precio_ancla: Number(anclas[claveItem(i)]) || null,
+      })),
     });
   }
 
@@ -722,6 +731,39 @@ export default function ConfigurarVentaCodigo({
                         );
                       })}
                     </ul>
+
+                    {/* Precio tachado: va DESPUÉS de elegir, sobre los que
+                        ya entraron. Dentro del buscador sería una trampa —
+                        cada fila es un <label> y tocar el input marcaría el
+                        checkbox. */}
+                    {seleccion.length > 0 && (
+                      <div className="mt-4 rounded-xl border border-border bg-surface p-4">
+                        <p className="text-sm font-semibold text-fg">Precio tachado (opcional)</p>
+                        <p className="mt-1 text-[13px] text-fg-muted">
+                          El precio “antes” que se ve cruzado al lado del real, para que se note el descuento.
+                          Es solo de esta landing: no cambia el precio del producto ni el de otras páginas.
+                        </p>
+                        <ul className="mt-3 divide-y divide-border">
+                          {seleccion.map(item => (
+                            <li key={claveItem(item)} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                              <span className="flex min-w-0 items-center gap-2.5">
+                                <Miniatura item={item} />
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm text-fg">{item.nombre}</span>
+                                  <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item))}</span>
+                                </span>
+                              </span>
+                              <PrecioAncla
+                                id={`ancla-${claveItem(item)}`}
+                                venta={precioDeVenta(item)}
+                                valor={anclas[claveItem(item)] ?? ''}
+                                onCambiar={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
 

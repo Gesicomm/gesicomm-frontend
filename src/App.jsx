@@ -155,11 +155,7 @@ function InicializarPixelPlataforma() {
 // la misma lógica que middleware/resolverTienda.js del backend.
 import CatalogoPublico from './pages/landing/CatalogoPublico';
 import ContactoPublico from './pages/landing/ContactoPublico';
-import PoliticaPrivacidadPublica from './pages/landing/PoliticaPrivacidadPublica';
-import PoliticaReembolsoPublica from './pages/landing/PoliticaReembolsoPublica';
-import TerminosServicioPublica from './pages/landing/TerminosServicioPublica';
-import PoliticaEnvioPublica from './pages/landing/PoliticaEnvioPublica';
-import AvisoLegalPublico from './pages/landing/AvisoLegalPublico';
+import LegalPagePublica from './pages/landing/LegalPagePublica';
 import ResultadoPagoTienda from './pages/landing/ResultadoPagoTienda';
 import PaginaBuilderPublica from './pages/page-builder/publico/PaginaBuilderPublica';
 // Page Builder (privado, siempre detras de AdminRoute): mismo criterio de
@@ -188,23 +184,23 @@ function ContactoSegunHostname() {
 }
 
 function PoliticaPrivacidadSegunHostname() {
-  return esHostnameDeTienda() ? <PoliticaPrivacidadPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+  return esHostnameDeTienda() ? <LegalPagePublica tipoPagina="politica_privacidad" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function PoliticaReembolsoSegunHostname() {
-  return esHostnameDeTienda() ? <PoliticaReembolsoPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+  return esHostnameDeTienda() ? <LegalPagePublica tipoPagina="politica_reembolso" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function TerminosServicioSegunHostname() {
-  return esHostnameDeTienda() ? <TerminosServicioPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+  return esHostnameDeTienda() ? <LegalPagePublica tipoPagina="terminos_servicio" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function PoliticaEnvioSegunHostname() {
-  return esHostnameDeTienda() ? <PoliticaEnvioPublica /> : <PaginaPublica><NotFound /></PaginaPublica>;
+  return esHostnameDeTienda() ? <LegalPagePublica tipoPagina="politica_envio" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 function AvisoLegalSegunHostname() {
-  return esHostnameDeTienda() ? <AvisoLegalPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
+  return esHostnameDeTienda() ? <LegalPagePublica tipoPagina="aviso_legal" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
 import ThemeProvider from './components/public/ThemeProvider';
@@ -507,11 +503,11 @@ function App() {
         {/* Alias para pruebas locales o previsualización. En producción se usará el hostname. */}
         <Route path="/l/:slug/catalogo" element={<CatalogoPublico />} />
         <Route path="/l/:slug/contacto" element={<ContactoPublico />} />
-        <Route path="/l/:slug/politica-privacidad" element={<PoliticaPrivacidadPublica />} />
-        <Route path="/l/:slug/politica-reembolso" element={<PoliticaReembolsoPublica />} />
-        <Route path="/l/:slug/terminos-servicio" element={<TerminosServicioPublica />} />
-        <Route path="/l/:slug/politica-envio" element={<PoliticaEnvioPublica />} />
-        <Route path="/l/:slug/aviso-legal" element={<AvisoLegalPublico />} />
+        <Route path="/l/:slug/politica-privacidad" element={<LegalPagePublica tipoPagina="politica_privacidad" />} />
+        <Route path="/l/:slug/politica-reembolso" element={<LegalPagePublica tipoPagina="politica_reembolso" />} />
+        <Route path="/l/:slug/terminos-servicio" element={<LegalPagePublica tipoPagina="terminos_servicio" />} />
+        <Route path="/l/:slug/politica-envio" element={<LegalPagePublica tipoPagina="politica_envio" />} />
+        <Route path="/l/:slug/aviso-legal" element={<LegalPagePublica tipoPagina="aviso_legal" />} />
 
         {/* Page Builder público. Van ANTES de "/:productId", que es un
             comodín de un solo segmento: sin esto, "/p" y "/f" caerían ahí.
