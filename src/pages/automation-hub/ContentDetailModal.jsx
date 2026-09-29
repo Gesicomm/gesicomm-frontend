@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Copy, CheckCircle2, Rocket } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { X, Copy, CheckCircle2, ExternalLink, ImageIcon, Play, Rocket } from 'lucide-react';
 import { contentApi, manychatApi } from '../../services/automationHubApi';
 import LivePreviewMockup from './LivePreviewMockup';
 
@@ -8,13 +8,46 @@ const FORMATO_LABEL = { R: 'Video / Reel', C: 'Carrusel', H: 'Historias' };
 export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
+  const [mediaSeleccionada, setMediaSeleccionada] = useState(0);
     
   const link = item.ManychatLink || null;
+  const medias = useMemo(() => {
+    const assets = Array.isArray(item.media_assets) ? item.media_assets : [];
+    const normalizados = assets
+      .filter((asset) => asset?.url)
+      .map((asset, index) => {
+        const mime = asset.mime_type || (asset.type === 'video' ? 'video/mp4' : 'image/jpeg');
+        return {
+          url: asset.url,
+          type: mime,
+          label: asset.name || asset.original_name || asset.source_file_name || `Archivo ${index + 1}`,
+          index: asset.segment_index || index + 1,
+          source: asset.source_file_name,
+        };
+      });
+
+    if (!normalizados.length && item.video_url) {
+      normalizados.push({
+        url: item.video_url,
+        type: (item.video_url.includes('.mp4') || item.format === 'R') ? 'video/mp4' : 'image/jpeg',
+        label: 'Archivo principal',
+        index: 1,
+      });
+    }
+
+    return normalizados;
+  }, [item.media_assets, item.video_url, item.format]);
+
+  const mediaActual = medias[Math.min(mediaSeleccionada, Math.max(medias.length - 1, 0))];
 
   const copiarCodigo = async () => {
     try {
       await navigator.clipboard.writeText(item.tracking_code);
     } catch (e) { /* no bloquea el flujo */ }
+  };
+
+  const abrirManyChat = () => {
+    window.open('https://app.manychat.com/', '_blank', 'noopener,noreferrer');
   };
 
   const publicarAhora = async () => {
@@ -149,6 +182,13 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) 
               {link?.manually_prepared && !link?.linked && (
                 <p className="m-0 text-xs text-warning">Pendiente de vinculación — ver "Acciones pendientes".</p>
               )}
+              <button
+                type="button"
+                onClick={abrirManyChat}
+                className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-md border border-primary/25 bg-primary/5 text-xs font-semibold text-primary-text transition-colors hover:bg-primary/10"
+              >
+                <ExternalLink size={14} /> Ir a ManyChat
+              </button>
             </div>
 
             {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
@@ -162,6 +202,12 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) 
                 <Rocket size={15} /> {item.status === 'failed' ? 'Reintentar publicación ahora' : 'Publicar ahora'}
               </button>
             )}
+
+            <button type="button"
+              onClick={abrirManyChat}
+              className="flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-surface-2 text-sm font-semibold text-fg transition-colors hover:bg-surface-3">
+              <ExternalLink size={15} /> Ir a ManyChat
+            </button>
             
             {link?.prepared && !link?.manually_prepared && (
               <button type="button" disabled={procesando}
@@ -205,12 +251,47 @@ export default function ContentDetailModal({ item, onClose, onCambio, onEdit }) 
               <X size={18} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center gap-3">
             <LivePreviewMockup 
               format={item.format} 
               text={item.description} 
-              medias={item.video_url ? [{ url: item.video_url, type: (item.video_url.includes('.mp4') || item.format === 'R') ? 'video/mp4' : 'image/jpeg' }] : []} 
+              medias={mediaActual ? [{ url: mediaActual.url, type: mediaActual.type }] : []}
             />
+            {medias.length > 1 && (
+              <div className="w-full rounded-lg border border-border bg-surface p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">Archivos del contenido</span>
+                  <span className="text-[10px] font-semibold text-fg-muted">{mediaSeleccionada + 1}/{medias.length}</span>
+                </div>
+                <div className="max-h-40 space-y-1.5 overflow-y-auto pr-1">
+                  {medias.map((media, index) => {
+                    const activo = index === mediaSeleccionada;
+                    const esVideo = media.type.startsWith('video/');
+                    const Icon = esVideo ? Play : ImageIcon;
+                    return (
+                      <button
+                        key={`${media.url}-${index}`}
+                        type="button"
+                        onClick={() => setMediaSeleccionada(index)}
+                        className={`flex w-full items-center gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
+                          activo ? 'border-primary/40 bg-primary/10 text-primary-text' : 'border-border bg-surface-2 text-fg-muted hover:bg-surface-3 hover:text-fg'
+                        }`}
+                      >
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${activo ? 'bg-primary text-primary-fg' : 'bg-surface text-fg-muted'}`}>
+                          <Icon size={13} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold">
+                            {item.format === 'H' ? 'Historia' : item.format === 'C' ? 'Slide' : 'Archivo'} {media.index}
+                          </span>
+                          <span className="block truncate text-[10px]">{media.label}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

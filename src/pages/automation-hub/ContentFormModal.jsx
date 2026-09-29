@@ -369,6 +369,7 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
   const [conflicto, setConflicto] = useState(null);
   const [error, setError] = useState('');
   const [creado, setCreado] = useState(null);
+  const [copiado, setCopiado] = useState('');
   const [mediaAssets, setMediaAssets] = useState([]);
   const [storySegmentSeconds, setStorySegmentSeconds] = useState(30);
   const [platforms, setPlatforms] = useState(() => {
@@ -388,6 +389,16 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
     [datos.format, mediaAssets, storySegmentSeconds]
   );
   const channelLabel = datos.format === 'H' ? 'Historias' : datos.format === 'C' ? 'Carrusel' : 'Reels';
+  const trackingEstimado = previsualizarTrackingCode(datos);
+  const plantillaActual = plantillaParaFormato(datos.format);
+
+  const copiarTexto = async (clave, valor) => {
+    try {
+      await navigator.clipboard?.writeText(valor);
+      setCopiado(clave);
+      setTimeout(() => setCopiado(''), 1400);
+    } catch (e) { /* no bloquea el flujo */ }
+  };
 
   const cambiarCantidadSlides = (n) => {
     const cant = Math.max(1, Number(n) || 1);
@@ -597,10 +608,10 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
             <div className="w-full max-w-lg rounded-xl border border-primary/30 bg-primary/5 p-4 text-left shadow-sm">
               <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-fg-subtle">Preparación para ManyChat</div>
               {[
-                ['Palabra clave / CTA', creado.keyword || datos.keyword],
-                ['Plantilla a duplicar', plantillaParaFormato(creado.format || datos.format)],
-                ['Código único de tracking', creado.tracking_code],
-              ].map(([label, value]) => (
+                ['Palabra clave / CTA', creado.keyword || datos.keyword, 'cta'],
+                ['Plantilla a duplicar', plantillaParaFormato(creado.format || datos.format), 'plantilla'],
+                ['Código único de tracking', creado.tracking_code || trackingEstimado, 'tracking'],
+              ].map(([label, value, clave]) => (
                 <div key={label} className="flex items-center justify-between gap-3 border-t border-primary/10 py-2 first:border-t-0 first:pt-0">
                   <div className="min-w-0">
                     <div className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">{label}</div>
@@ -608,11 +619,11 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                   </div>
                   <button
                     type="button"
-                    onClick={() => navigator.clipboard?.writeText(value)}
+                    onClick={() => copiarTexto(clave, value)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary/20 bg-surface text-primary-text hover:bg-primary/10"
                     title={`Copiar ${label}`}
                   >
-                    <Copy size={14} />
+                    {copiado === clave ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </div>
               ))}
@@ -963,6 +974,39 @@ export default function ContentFormModal({ fechaInicial, itemToEdit = null, onCl
                     <div><span className="font-semibold text-fg">Canales:</span> {Object.keys(platforms).filter(k => platforms[k]).join(' + ') || 'Ninguno'}</div>
                     <div><span className="font-semibold text-fg">Fecha/Hora:</span> {datos.publish_date} · {datos.publish_time}</div>
                     <div><span className="font-semibold text-fg">CTA:</span> {datos.keyword || '—'}</div>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-xs font-bold text-fg flex items-center gap-1.5">
+                      <CheckCircle2 size={14} className="text-primary" /> ManyChat
+                    </div>
+                    <span className="rounded-md bg-surface px-2 py-1 text-[10px] font-bold uppercase text-primary-text">
+                      Preparación
+                    </span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {[
+                      ['CTA', datos.keyword || 'Pendiente', 'cta-preview'],
+                      ['Plantilla', plantillaActual, 'plantilla-preview'],
+                      ['Tracking', trackingEstimado, 'tracking-preview'],
+                    ].map(([label, value, clave]) => (
+                      <div key={label} className="min-w-0 rounded-md border border-primary/10 bg-surface/70 p-3">
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-fg-subtle">{label}</div>
+                        <div className="flex items-center justify-between gap-2">
+                          <strong className="min-w-0 break-all font-mono text-xs text-primary-text">{value}</strong>
+                          <button
+                            type="button"
+                            onClick={() => copiarTexto(clave, value)}
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-fg-muted hover:text-primary-text"
+                            title={`Copiar ${label}`}
+                          >
+                            {copiado === clave ? <Check size={13} /> : <Copy size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
