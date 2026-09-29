@@ -57,7 +57,8 @@ export default function AutomationHub() {
   const [items, setItems] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
-  const [modalNuevo, setModalNuevo] = useState(null); // fecha inicial o null
+  const [modalNuevo, setModalNuevo] = useState(null);
+  const [itemToEdit, setItemToEdit] = useState(null); // fecha inicial o null
   const [itemSeleccionado, setItemSeleccionado] = useState(null);
   const [floatingAssistantItem, setFloatingAssistantItem] = useState(null);
 
@@ -235,16 +236,15 @@ export default function AutomationHub() {
       {tab === 'finanzas' && <FinanzasAutomatizacion />}
       {tab === 'acciones' && <DailyActionsPanel />}
 
-      {modalNuevo && (
+      {(modalNuevo || itemToEdit) && (
         <ContentFormModal
           fechaInicial={modalNuevo}
-          onClose={() => setModalNuevo(null)}
+          itemToEdit={itemToEdit}
+          onClose={() => { setModalNuevo(null); setItemToEdit(null); }}
           onCreado={(creado) => {
             setModalNuevo(null);
+            setItemToEdit(null);
             cargarContenido();
-            // El asistente pasa a mostrar la pieza recién creada — si no,
-            // se quedaba con los datos de la anterior indefinidamente.
-            if (creado) setFloatingAssistantItem({ item: creado, manychatLink: null });
           }}
         />
       )}
@@ -255,6 +255,10 @@ export default function AutomationHub() {
           onClose={() => setItemSeleccionado(null)}
           onCambio={() => { setItemSeleccionado(null); cargarContenido(); }}
           setFloatingAssistantItem={setFloatingAssistantItem}
+          onEdit={(item) => {
+            setItemSeleccionado(null);
+            setItemToEdit(item);
+          }}
         />
       )}
 

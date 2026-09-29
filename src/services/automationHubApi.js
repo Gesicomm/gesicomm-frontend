@@ -38,16 +38,42 @@ AutomationAPI.interceptors.request.use(async (config) => {
 
 // --- Calendario de contenido ---
 export const socialApi = {
-  uploadMedia: (formData) => AutomationAPI.post('/social/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data),
+  uploadMedia: async (file) => {
+    const { data: presignedData } = await AutomationAPI.post('/social/upload/presign', {
+      filename: file.name, contentType: file.type
+    });
+    await fetch(presignedData.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file
+    });
+    return { videoUrl: presignedData.publicUrl };
+  },
+  getAccounts: () => AutomationAPI.get('/social/accounts').then((r) => r.data),
+  connectMeta: (payload) => AutomationAPI.post('/social/connect/meta', payload).then((r) => r.data),
+  getFacebookPages: (tempToken) => AutomationAPI.get('/social/auth/facebook/pages', { params: { temp_token: tempToken } }).then((r) => r.data),
+  saveFacebookPage: (payload) => AutomationAPI.post('/social/auth/facebook/save-page', payload).then((r) => r.data),
+  getFacebookOAuthUrl: async () => {
+    const token = await obtenerServiceToken();
+    return `${automationApiURL}/social/auth/facebook?token=${encodeURIComponent(token)}`;
+  },
+  getInstagramOAuthUrl: async () => {
+    const token = await obtenerServiceToken();
+    return `${automationApiURL}/social/auth/instagram?token=${encodeURIComponent(token)}`;
+  },
+  deleteSocialAccount: (id) => AutomationAPI.delete(`/social/accounts/${id}`).then((r) => r.data),
 };
 
 export const contentApi = {
   listar: (params) => AutomationAPI.get('/content', { params }).then((r) => r.data),
   obtener: (id) => AutomationAPI.get(`/content/${id}`).then((r) => r.data),
   crear: (payload) => AutomationAPI.post('/content', payload).then((r) => r.data),
+  editar: (id, payload) => AutomationAPI.put(`/content/${id}`, payload).then((r) => r.data),
   reprogramar: (id, publish_date) => AutomationAPI.patch(`/content/${id}/fecha`, { publish_date }).then((r) => r.data),
   marcarPublicado: (id) => AutomationAPI.patch(`/content/${id}/publicar`).then((r) => r.data),
+  publicarAhora: (id) => AutomationAPI.post(`/content/${id}/publish-now`).then((r) => r.data),
   eliminar: (id) => AutomationAPI.delete(`/content/${id}`).then((r) => r.data),
+  eliminarRemoto: (id) => AutomationAPI.delete(`/content/${id}/remote`).then((r) => r.data),
   eliminarPruebas: () => AutomationAPI.delete('/content/test-items/clear').then((r) => r.data),
 };
 

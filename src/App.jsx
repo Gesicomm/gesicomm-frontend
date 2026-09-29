@@ -62,6 +62,7 @@ const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
 const CostosGastos = lazy(() => import('./pages/finanzas/CostosGastos'));
 const ProveedoresView = lazy(() => import('./pages/finanzas/Proveedores'));
 const AutomationHub = lazy(() => import('./pages/automation-hub/AutomationHub'));
+const AutomationSettings = lazy(() => import('./pages/automation-hub/AutomationSettings'));
 const FinanzasAutomatizacion = lazy(() => import('./pages/finanzas/FinanzasAutomatizacion'));
 
 // Sitio institucional público (gesicomm.com). Son las URLs que se cargan en
@@ -382,6 +383,9 @@ function App() {
         {/* Automatización de contenido — Gesicomm Automation Hub (backend independiente) */}
         <Route path="/automatizacion" element={
           <RequireTienda><UserLayout><AutomationHub /></UserLayout></RequireTienda>
+        } />
+        <Route path="/automatizacion/configuracion" element={
+          <RequireTienda><UserLayout><AutomationSettings /></UserLayout></RequireTienda>
         } />
 
         {/* Pantalla de Selección de Módulo */}

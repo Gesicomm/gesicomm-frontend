@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { X, Copy, CheckCircle2, FileVideo, FileImage, Link as LinkIcon } from 'lucide-react';
+import { X, Copy, CheckCircle2, Link as LinkIcon } from 'lucide-react';
 import { contentApi, manychatApi } from '../../services/automationHubApi';
 import LivePreviewMockup from './LivePreviewMockup';
 
 const FORMATO_LABEL = { R: 'Video / Reel', C: 'Carrusel', H: 'Historias' };
 
-export default function ContentDetailModal({ item, onClose, onCambio, setFloatingAssistantItem }) {
+export default function ContentDetailModal({ item, onClose, onCambio, setFloatingAssistantItem, onEdit }) {
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState('');
-  const [localMedias, setLocalMedias] = useState([]);
-  const [linkInput, setLinkInput] = useState('');
-
+    
   const link = item.ManychatLink || null;
 
   const copiarCodigo = async () => {
@@ -19,47 +17,9 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
     } catch (e) { /* no bloquea el flujo */ }
   };
 
-  const manejarArchivos = (e) => {
-    const files = Array.from(e.target.files);
-    const nuevasMedias = files.map(file => ({
-      url: URL.createObjectURL(file),
-      type: file.type
-    }));
-    setLocalMedias((prev) => [...prev, ...nuevasMedias]);
-  };
-
-  const VIDEO_EXT = ['mp4', 'webm', 'mov', 'm4v', 'ogg'];
-
-  // YouTube (incluye Shorts) no expone el archivo de video directo — hace
-  // falta su reproductor embebido (iframe), no un <video> común.
-  const extraerIdYoutube = (url) => {
-    const patrones = [
-      /youtu\.be\/([a-zA-Z0-9_-]{6,})/,
-      /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{6,})/,
-      /youtube\.com\/shorts\/([a-zA-Z0-9_-]{6,})/,
-      /youtube\.com\/embed\/([a-zA-Z0-9_-]{6,})/,
-    ];
-    for (const re of patrones) {
-      const m = url.match(re);
-      if (m) return m[1];
-    }
-    return null;
-  };
-
-  const agregarLink = () => {
-    const url = linkInput.trim();
-    if (!url) return;
-    const idYoutube = extraerIdYoutube(url);
-    if (idYoutube) {
-      setLocalMedias((prev) => [...prev, { url: `https://www.youtube.com/embed/${idYoutube}`, type: 'embed/youtube' }]);
-    } else {
-      const ext = url.split('?')[0].split('.').pop()?.toLowerCase();
-      const type = VIDEO_EXT.includes(ext) ? 'video/mp4' : 'image/*';
-      setLocalMedias((prev) => [...prev, { url, type }]);
-    }
-    setLinkInput('');
-  };
-
+  
+  
+  
   const manejarPublicacion = async () => {
     setProcesando(true);
     setError('');
@@ -107,8 +67,26 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
         {/* Lado izquierdo: Detalles */}
         <div className="flex-1 min-w-0 flex flex-col md:border-r border-border">
           <div className="flex shrink-0 items-center justify-between border-b border-border p-4">
-            <h3 className="m-0 text-base font-semibold text-fg">Detalle de contenido</h3>
-            <button type="button" onClick={onClose} className="rounded-md p-1.5 text-fg-muted hover:bg-surface-2 hover:text-fg md:hidden">
+            <div>
+              <h3 className="m-0 text-base font-semibold text-fg">Detalle de contenido</h3>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold border border-blue-500/20">Instagram</span>
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 text-[10px] font-bold border border-purple-500/20">{FORMATO_LABEL[item.format] || 'Contenido'}</span>
+                
+                {item.status === 'published' ? (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">Publicado</span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold border border-amber-500/20">Programado · {item.publish_date} {String(item.publish_time).slice(0, 5)}</span>
+                )}
+
+                {link?.linked && (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1">
+                    <CheckCircle2 size={10} /> ManyChat activo
+                  </span>
+                )}
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-md p-1.5 text-fg-muted hover:bg-surface-2 hover:text-fg">
               <X size={18} />
             </button>
           </div>
@@ -191,34 +169,6 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
               )}
             </div>
 
-            {/* Carga local o por link, para previsualizar */}
-            <div className="rounded-lg border border-dashed border-border bg-surface p-4 text-center">
-              <label className="flex cursor-pointer flex-col items-center justify-center gap-2">
-                <div className="flex items-center gap-2 text-fg-muted">
-                  <FileVideo size={20} /> <FileImage size={20} />
-                </div>
-                <span className="text-xs font-semibold text-fg">Subir archivo para previsualizar</span>
-                <span className="text-[10px] text-fg-muted">Archivos locales. No se guardarán en el servidor.</span>
-                <input type="file" multiple accept="video/*,image/*" className="hidden" onChange={manejarArchivos} />
-              </label>
-              <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-                <LinkIcon size={14} className="shrink-0 text-fg-muted" />
-                <input
-                  type="url"
-                  value={linkInput}
-                  onChange={(e) => setLinkInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); agregarLink(); } }}
-                  onBlur={agregarLink}
-                  placeholder="O pegá un link de imagen/video"
-                  className="h-9 flex-1 rounded-md border border-border bg-surface-2 px-2 text-xs text-fg"
-                />
-                <button type="button" onClick={agregarLink}
-                  className="h-9 shrink-0 rounded-md border border-border bg-surface-2 px-3 text-xs font-semibold text-fg">
-                  Agregar
-                </button>
-              </div>
-            </div>
-
             {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
           </div>
 
@@ -230,6 +180,7 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
                 Marcar como publicado y armar automatización en ManyChat
               </button>
             )}
+            
             {link?.prepared && !link?.manually_prepared && (
               <button type="button" disabled={procesando}
                 onClick={() => ejecutar(() => manychatApi.confirmarPreparacionManual(item.id))}
@@ -237,11 +188,31 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
                 ✓ Ya armé la automatización en ManyChat
               </button>
             )}
-            <button type="button" disabled={procesando}
-              onClick={() => ejecutar(() => contentApi.eliminar(item.id))}
-              className="h-10 rounded-md border border-danger/30 text-sm font-semibold text-danger disabled:opacity-60">
-              Eliminar del calendario
-            </button>
+
+            {(item.status === 'scheduled' || item.status === 'failed') ? (
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <button type="button" disabled={procesando}
+                  onClick={() => { onClose(); onEdit(item); }}
+                  className="h-10 rounded-md bg-surface-2 border border-border text-sm font-semibold text-fg hover:bg-surface-3 transition-colors">
+                  Editar Publicación
+                </button>
+                <button type="button" disabled={procesando}
+                  onClick={() => ejecutar(() => contentApi.eliminar(item.id))}
+                  className="h-10 rounded-md bg-danger/10 text-danger text-sm font-semibold hover:bg-danger/20 transition-colors">
+                  Cancelar (Calendario)
+                </button>
+              </div>
+            ) : (
+              <button type="button" disabled={procesando}
+                onClick={() => {
+                  if (confirm('Esto eliminará físicamente el post de Facebook/Instagram. ¿Estás seguro?')) {
+                    ejecutar(() => contentApi.eliminarRemoto(item.id));
+                  }
+                }}
+                className="h-10 mt-1 rounded-md bg-danger text-white text-sm font-semibold hover:bg-danger-hover transition-colors">
+                Eliminar de la red social
+              </button>
+            )}
           </div>
         </div>
 
@@ -253,8 +224,11 @@ export default function ContentDetailModal({ item, onClose, onCambio, setFloatin
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
-            <LivePreviewMockup format={item.format} text={item.description} medias={localMedias}
-              onRemove={(idx) => setLocalMedias((prev) => prev.filter((_, i) => i !== idx))} />
+            <LivePreviewMockup 
+              format={item.format} 
+              text={item.description} 
+              medias={item.video_url ? [{ url: item.video_url, type: (item.video_url.includes('.mp4') || item.format === 'R') ? 'video/mp4' : 'image/jpeg' }] : []} 
+            />
           </div>
         </div>
 

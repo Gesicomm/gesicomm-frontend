@@ -13,11 +13,45 @@ import {
   X,
 } from 'lucide-react';
 import { contentApi, socialApi } from '../../services/automationHubApi';
+import LivePreviewMockup from './LivePreviewMockup';
+
+function InstagramIcon({ size = 18, className = "" }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+  );
+}
+
+function FacebookIcon({ size = 18, className = "" }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+    </svg>
+  );
+}
 
 const FORMATOS = [
-  { value: 'R', label: 'Video / Reel', desc: 'Una pieza de video vertical, un solo copy.', icon: Video },
-  { value: 'C', label: 'Carrusel', desc: 'Varias imágenes o slides con copy propio cada uno.', icon: GalleryHorizontal },
-  { value: 'H', label: 'Historias', desc: 'Formato efímero, también con varios slides.', icon: CircleDashed },
+  { 
+    value: 'R', 
+    label: 'Video / Reel', 
+    desc: 'Publicá un video vertical en Instagram y Facebook.', 
+    icon: Video 
+  },
+  { 
+    value: 'C', 
+    label: 'Carrusel', 
+    desc: 'Publicá varias imágenes o slides con copy propio.', 
+    icon: GalleryHorizontal 
+  },
+  { 
+    value: 'H', 
+    label: 'Historias', 
+    desc: 'Formato efímero en pantalla completa para historias.', 
+    icon: CircleDashed 
+  },
 ];
 
 const OBJETIVOS = [
@@ -60,14 +94,14 @@ const textareaClass = 'w-full rounded-md border border-border bg-surface-2 px-3 
 
 function limpiarSlug(v) {
   const sinTildes = (v || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
-  return sinTildes.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 18) || 'CONTENIDO';
+  return sinTildes.toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 12) || 'CONT';
 }
+
 function previsualizarTrackingCode({ format, keyword, publish_date }) {
-  const fecha = String(publish_date || '').replace(/-/g, '');
-  return `${format}-${limpiarSlug(keyword)}-${fecha}-XXXXXX`;
+  const fecha = String(publish_date || '').slice(2).replace(/-/g, '');
+  return `${format}-${limpiarSlug(keyword)}-${fecha}`;
 }
-// Mismo criterio que ManyChatFloatingAssistant.jsx: solo Historias usa una
-// plantilla distinta, Reel y Carrusel comparten la de "Reels / Posts".
+
 function plantillaParaFormato(format) {
   return format === 'H' ? 'PLANTILLA - TRACKING HISTORIAS' : 'PLANTILLA - TRACKING REELS / POSTS';
 }
@@ -300,7 +334,20 @@ function PreviewPanel({ datos, platforms, mediaAssets, publishingAssets, storySe
 
 export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
   const [paso, setPaso] = useState(1);
-  const [datos, setDatos] = useState({
+  const [datos, setDatos] = useState(itemToEdit ? {
+    format: itemToEdit.format || 'R',
+    topic: itemToEdit.topic || '',
+    keyword: itemToEdit.keyword || '',
+    angle: itemToEdit.angle || '',
+    objective: itemToEdit.objective || '',
+    script: itemToEdit.script || '',
+    description: itemToEdit.description || '',
+    slides: itemToEdit.slides || [],
+    publish_date: itemToEdit.publish_date || fechaInicial || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' }),
+    publish_time: itemToEdit.publish_time ? itemToEdit.publish_time.slice(0,5) : '10:00',
+    is_test: itemToEdit.is_test || false,
+    video_url: itemToEdit.video_url || null,
+  } : {
     format: 'R',
     topic: '',
     keyword: '',
@@ -314,6 +361,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
     is_test: false,
   });
   const [guardando, setGuardando] = useState(false);
+  const [conflicto, setConflicto] = useState(null);
   const [error, setError] = useState('');
   const [creado, setCreado] = useState(null);
   const [mediaAssets, setMediaAssets] = useState([]);
@@ -373,7 +421,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
   };
 
   const irA = (n) => {
-    if (n === 3 && (!datos.topic.trim() || !datos.keyword.trim())) {
+    if (n > 2 && (!datos.topic.trim() || !datos.keyword.trim())) {
       setError('El tema y la palabra clave / CTA son obligatorios.');
       return;
     }
@@ -381,7 +429,28 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
     setPaso(n);
   };
 
-  const handleSubmit = async () => {
+  const copiarCodigoTracking = () => {
+    const code = previsualizarTrackingCode(datos);
+    navigator.clipboard.writeText(code);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  const agregarSugerenciaCaption = (texto) => {
+    setDatos((d) => ({
+      ...d,
+      description: d.description ? `${d.description}\n\n${texto}` : texto,
+    }));
+  };
+
+  const handleSubmit = async (forzar = false) => {
+    // El backend valida igual (es la autoridad), pero avisar acá evita el viaje
+    // de ida y vuelta y que se pierda lo cargado en el formulario.
+    if (errorDeProgramacion) {
+      setError(errorDeProgramacion);
+      return;
+    }
+
     setGuardando(true);
     setError('');
     try {
@@ -413,10 +482,20 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
       const nuevo = await contentApi.crear(finalData);
       setCreado(nuevo); // muestra la confirmación en vez de cerrar de golpe
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.message || 'No se pudo guardar el contenido.');
+      if (err.response?.status === 409 && err.response?.data?.existing_id) {
+        setConflicto(err.response.data.existing_id);
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.message || 'No se pudo guardar el contenido.');
+      }
     } finally {
       setGuardando(false);
     }
+  };
+
+  const getMediaListForPreview = () => {
+    if (!file) return [];
+    const url = URL.createObjectURL(file);
+    return [{ url, type: file.type || 'video/mp4' }];
   };
 
   return (
@@ -433,20 +512,81 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
         </div>
         {!creado && <Stepper paso={paso} />}
 
+        {/* Stepper / Mini Progreso Bar */}
+        {!creado && (
+          <div className="border-b border-border bg-surface-2/60 px-6 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                Paso {paso} de 4
+              </span>
+              <span className="text-xs font-semibold text-fg">
+                {PASOS[paso - 1].title}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {PASOS.map((p) => {
+                const completado = p.id < paso;
+                const actual = p.id === paso;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => p.id < paso && irA(p.id)}
+                    disabled={p.id > paso}
+                    className="flex flex-col gap-1 text-left cursor-pointer disabled:cursor-default"
+                  >
+                    <div
+                      className={`h-1.5 w-full rounded-full transition-all duration-300 ${
+                        completado
+                          ? 'bg-primary'
+                          : actual
+                          ? 'bg-primary'
+                          : 'bg-border'
+                      }`}
+                    />
+                    <span
+                      className={`text-[11px] font-medium transition-colors ${
+                        actual
+                          ? 'font-bold text-fg'
+                          : completado
+                          ? 'text-primary'
+                          : 'text-fg-subtle'
+                      }`}
+                    >
+                      {p.key}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Modal Body */}
         {creado ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 text-success">
-              <Check size={26} />
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shadow-sm">
+              <CheckCircle2 size={32} />
             </div>
-            <h4 className="m-0 text-base font-semibold text-fg">Contenido programado</h4>
-            <p className="m-0 text-sm text-fg-muted">Quedó agendado para el {creado.publish_date} · {String(creado.publish_time).slice(0, 5)}.</p>
-            <div className="w-full max-w-xs rounded-md border border-dashed border-primary/40 bg-primary/5 p-3">
-              <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Código de tracking</div>
-              <div className="text-sm font-bold text-primary-text">{creado.tracking_code}</div>
+            <div>
+              <h4 className="m-0 text-lg font-bold text-fg">¡Contenido programado con éxito!</h4>
+              <p className="mt-1 text-xs text-fg-muted">
+                Quedó agendado para el <strong className="text-fg">{creado.publish_date}</strong> a las <strong className="text-fg">{String(creado.publish_time).slice(0, 5)}</strong> hs.
+              </p>
             </div>
-            <button type="button" onClick={() => onCreado(creado)}
-              className="mt-2 h-10 w-full max-w-xs rounded-md bg-primary text-sm font-semibold text-primary-fg">
-              Listo
+            
+            <div className="w-full max-w-sm rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm">
+              <div className="mb-1 text-[10px] font-bold uppercase tracking-wider text-fg-subtle">Código de tracking generado</div>
+              <div className="text-base font-mono font-bold text-primary">{creado.tracking_code}</div>
+              <p className="m-0 mt-1 text-[11px] text-fg-muted">Usá este código exacto en tu flujo de ManyChat.</p>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => onCreado(creado)}
+              className="mt-2 h-11 w-full max-w-sm rounded-lg bg-primary text-sm font-bold text-primary-fg shadow hover:opacity-95 transition-opacity"
+            >
+              Listo, volver al calendario
             </button>
           </div>
         ) : (
@@ -454,12 +594,12 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
           <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="flex flex-col gap-4 overflow-y-auto p-5">
 
+            {/* PASO 1: Formato */}
             {paso === 1 && (
               <div>
                 <PasoHeader numero={1} titulo="Elegí el formato" subtitulo="Qué tipo de pieza vas a programar." />
                 <div className="flex flex-col gap-2">
                   {FORMATOS.map((f) => {
-                    const Icono = f.icon;
                     const activo = datos.format === f.value;
                     return (
                       <button
@@ -470,16 +610,20 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                           activo ? 'border-primary bg-primary/5' : 'border-border bg-surface-2 hover:bg-surface'
                         }`}
                       >
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                          activo ? 'bg-primary text-primary-fg' : 'bg-surface text-fg-muted'
+                        {f.value === 'R' && <ReelIllustration active={activo} />}
+                        {f.value === 'C' && <CarruselIllustration active={activo} />}
+                        {f.value === 'H' && <HistoriasIllustration active={activo} />}
+
+                        <div className="min-w-0 flex-1">
+                          <div className={`text-sm font-bold ${activo ? 'text-primary' : 'text-fg'}`}>{f.label}</div>
+                          <div className="text-xs text-fg-muted mt-0.5">{f.desc}</div>
+                        </div>
+
+                        <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${
+                          activo ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface-3'
                         }`}>
-                          <Icono size={18} />
+                          {activo && <Check size={14} />}
                         </div>
-                        <div className="min-w-0">
-                          <div className={`text-sm font-semibold ${activo ? 'text-primary-text' : 'text-fg'}`}>{f.label}</div>
-                          <div className="text-xs text-fg-muted">{f.desc}</div>
-                        </div>
-                        {activo && <Check size={16} className="ml-auto shrink-0 text-primary-text" />}
                       </button>
                     );
                   })}
@@ -487,6 +631,7 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
               </div>
             )}
 
+            {/* PASO 2: Estrategia */}
             {paso === 2 && (
               <div className="flex flex-col gap-3">
                 <PasoHeader numero={2} titulo="Definí la estrategia" subtitulo="Qué vamos a comunicar y qué acción esperamos del usuario." />
@@ -514,49 +659,120 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
               </div>
             )}
 
+            {/* PASO 3: Contenido */}
             {paso === 3 && (
-              <div className="flex flex-col gap-3">
-                <PasoHeader numero={3} titulo="Desarrollá la pieza" subtitulo="Escribí el contenido que finalmente se producirá." />
+              <div className="space-y-4">
+                <div>
+                  <h4 className="m-0 text-sm font-bold text-fg">Desarrollá la pieza</h4>
+                  <p className="m-0 text-xs text-fg-muted">Redactá el copy, guión o caption que acompañará tu publicación.</p>
+                </div>
 
                 {esMultiSlide ? (
-                  <>
+                  <div className="space-y-4">
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-fg-muted">
+                      <label className="block text-xs font-bold text-fg mb-1">
                         Idea general {datos.format === 'C' ? 'del carrusel' : 'de la historia'}
                       </label>
-                      <textarea className={textareaClass} rows={3} value={datos.script} onChange={set('script')} placeholder="Escribí acá el contenido..." />
+                      <textarea 
+                        className={textareaClass} 
+                        rows={3} 
+                        value={datos.script} 
+                        onChange={set('script')} 
+                        placeholder="Resumen o guía general del contenido..." 
+                      />
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-xs font-semibold text-fg-muted">Cantidad de slides</label>
-                      <input type="number" min="1" className={`${inputClass} w-24`} value={datos.slides.length || 1}
-                        onChange={(e) => cambiarCantidadSlides(e.target.value)} />
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      {datos.slides.map((texto, i) => (
-                        <div key={i} className="flex gap-2">
-                          <div className="flex h-9 w-7 shrink-0 items-center justify-center rounded-md bg-warning/10 text-xs font-bold text-warning">{i + 1}</div>
-                          <textarea className={textareaClass} rows={2} value={texto} onChange={(e) => cambiarSlide(i, e.target.value)}
-                            placeholder={`Copy del slide ${i + 1}...`} />
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-xs font-bold text-fg">Slides / Diapositivas</label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-fg-muted">Cantidad:</span>
+                          <input 
+                            type="number" 
+                            min="1" 
+                            className="h-8 w-16 rounded-md border border-border bg-surface-2 px-2 text-center text-xs text-fg font-bold" 
+                            value={datos.slides.length || 1}
+                            onChange={(e) => cambiarCantidadSlides(e.target.value)} 
+                          />
                         </div>
-                      ))}
+                      </div>
+
+                      <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                        {datos.slides.map((texto, i) => (
+                          <div key={i} className="flex gap-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                              {i + 1}
+                            </div>
+                            <textarea 
+                              className={textareaClass} 
+                              rows={2} 
+                              value={texto} 
+                              onChange={(e) => cambiarSlide(i, e.target.value)}
+                              placeholder={`Copy del slide ${i + 1}...`} 
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </>
+                  </div>
                 ) : (
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-fg-muted">Guión / Copy</label>
-                    <textarea className={textareaClass} rows={4} value={datos.script} onChange={set('script')} placeholder="Escribí acá el contenido..." />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-bold text-fg">Guión / Copy</label>
+                      <span className="text-[10px] text-fg-subtle">{datos.script.length} / 2.200</span>
+                    </div>
+                    <p className="text-[11px] text-fg-muted mb-1.5">Texto que aparecerá o se dirá en el contenido.</p>
+                    <textarea 
+                      className={textareaClass} 
+                      rows={4} 
+                      value={datos.script} 
+                      onChange={set('script')} 
+                      placeholder="Escribí acá el guión o locución del video..." 
+                    />
                   </div>
                 )}
 
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-fg-muted">Descripción / Caption</label>
-                  <textarea className={textareaClass} rows={3} value={datos.description} onChange={set('description')} placeholder="Descripción para publicar..." />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-fg">Descripción / Caption</label>
+                    <span className="text-[10px] text-fg-subtle">{datos.description.length} / 2.200</span>
+                  </div>
+                  <p className="text-[11px] text-fg-muted mb-2">Texto que acompañará la publicación en redes.</p>
+                  <textarea 
+                    className={textareaClass} 
+                    rows={3} 
+                    value={datos.description} 
+                    onChange={set('description')} 
+                    placeholder="Escribí la descripción del post..." 
+                  />
+
+                  {/* Acciones rápidas / Sugerencias de copy */}
+                  <div className="mt-3.5 space-y-2">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle flex items-center gap-1">
+                      <Sparkles size={12} className="text-primary" /> Sugerencias rápidas
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => agregarSugerenciaCaption(`👇 Comentá "${datos.keyword.trim() || 'INFO'}" y te envío la información completa por privado. 📩`)}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-fg hover:bg-surface-3 hover:border-primary/50 transition-colors"
+                      >
+                        <Plus size={11} className="text-primary" /> Agregar CTA de ManyChat
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => agregarSugerenciaCaption('#estrategia #marketingdigital #creaciondecontenido #negocios')}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium text-fg hover:bg-surface-3 hover:border-primary/50 transition-colors"
+                      >
+                        <Plus size={11} className="text-primary" /> Agregar Hashtags
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
+            {/* PASO 4: Programación */}
             {paso === 4 && (
               <div className="flex flex-col gap-3">
                 <PasoHeader numero={4} titulo="Programá la publicación" subtitulo="Definí cuándo sale y dejá listo el tracking." />
@@ -571,14 +787,65 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                   </div>
                 </div>
 
-                <div className="rounded-md border border-dashed border-primary/40 bg-primary/5 p-3">
-                  <div className="mb-2 flex flex-col gap-1.5 text-xs">
-                    <div><span className="text-fg-muted">Plantilla a duplicar en ManyChat: </span><strong className="text-fg">{plantillaParaFormato(datos.format)}</strong></div>
-                    <div><span className="text-fg-muted">Palabra CTA (Trigger): </span><strong className="text-primary-text">{datos.keyword}</strong></div>
+                {/* BLOQUE: Archivo y Live Preview */}
+                <div className="rounded-xl border border-border bg-surface-2 p-4 space-y-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-fg-subtle flex items-center gap-1.5">
+                    <Film size={13} className="text-primary" /> Archivo de media
                   </div>
-                  <div className="mb-1 text-[10px] font-semibold uppercase text-fg-subtle">Código único de tracking</div>
-                  <div className="text-sm font-bold text-primary-text">{previsualizarTrackingCode(datos)}</div>
-                  <p className="m-0 mt-1 text-[10px] text-fg-subtle">Las X finales se generan solas al guardar — evitan choques si dos piezas comparten palabra clave y fecha.</p>
+
+                  {file ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-surface p-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <Film size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-fg truncate">{file.name}</div>
+                            <div className="text-[10px] text-fg-muted">
+                              {(file.size / (1024 * 1024)).toFixed(1)} MB · {file.type || 'Media'}
+                            </div>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setFile(null)} 
+                          className="rounded-md p-1.5 text-danger hover:bg-danger/10 transition-colors"
+                          title="Quitar archivo"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {/* Preview incorporada dentro del Wizard */}
+                      <div className="rounded-lg border border-border bg-surface p-3 flex flex-col items-center">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-fg-subtle mb-2">Vista previa rápida</div>
+                        <div className="scale-90 transform-gpu origin-top">
+                          <LivePreviewMockup 
+                            format={datos.format} 
+                            text={datos.description} 
+                            medias={getMediaListForPreview()} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div 
+                      className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-surface p-6 hover:bg-surface-3 hover:border-primary/50 cursor-pointer transition-colors text-center"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        className="hidden" 
+                        accept="video/mp4,image/jpeg,image/png"
+                        onChange={(e) => setFile(e.target.files[0])}
+                      />
+                      <Upload size={24} className="mb-2 text-primary" />
+                      <span className="text-xs font-semibold text-fg">Arrastrá tu video acá o hacé clic para seleccionar</span>
+                      <span className="text-[10px] text-fg-muted mt-1">MP4 / Formato vertical recomendado (Máx. 100 MB)</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 rounded-md border border-warning/30 bg-warning/10 p-3">
@@ -703,10 +970,47 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
                     /> Facebook {channelLabel}
                   </label>
                 </div>
+
+                {/* RESUMEN DE PUBLICACIÓN */}
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-2">
+                  <div className="text-xs font-bold text-fg flex items-center gap-1.5">
+                    <Layers size={14} className="text-primary" /> RESUMEN
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-fg-muted">
+                    <div><span className="font-semibold text-fg">Formato:</span> {FORMATOS.find(f => f.value === datos.format)?.label}</div>
+                    <div><span className="font-semibold text-fg">Canales:</span> {Object.keys(platforms).filter(k => platforms[k]).join(' + ') || 'Ninguno'}</div>
+                    <div><span className="font-semibold text-fg">Fecha/Hora:</span> {datos.publish_date} · {datos.publish_time}</div>
+                    <div><span className="font-semibold text-fg">CTA:</span> {datos.keyword || '—'}</div>
+                  </div>
+                </div>
+
               </div>
             )}
 
-            {error && <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+            {/* Manejo de Conflicto de Tracking Code Duplicado */}
+            {conflicto && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 shadow-sm relative">
+                <button type="button" onClick={() => setConflicto(null)} className="absolute top-2 right-2 text-amber-500 hover:text-amber-600">
+                  <X size={16} />
+                </button>
+                <h4 className="text-amber-500 text-xs font-bold flex items-center gap-2 mb-1">
+                  <AlertTriangle size={16} /> ¡Código de tracking duplicado!
+                </h4>
+                <p className="text-xs text-fg mb-3">
+                  Ya existe una pieza de contenido con la misma fecha y palabra clave.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setConflicto(null)} className="text-xs bg-surface border border-border px-3 py-1.5 rounded-lg text-fg hover:bg-surface-2 font-medium">
+                    Cambiar datos
+                  </button>
+                  <button type="button" onClick={() => handleSubmit(true)} className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 font-bold ml-auto">
+                    Crear de todas formas (-02, -03...)
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {error && <div className="rounded-lg border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-xs font-medium text-danger">{error}</div>}
           </div>
           <PreviewPanel
             datos={datos}
@@ -717,17 +1021,24 @@ export default function ContentFormModal({ fechaInicial, onClose, onCreado }) {
           />
           </div>
 
-          <div className="shrink-0 flex items-center justify-between gap-2 border-t border-border p-4">
+          {/* Footer del Modal */}
+          <div className="shrink-0 flex items-center justify-between gap-3 border-t border-border p-4 bg-surface">
             {paso > 1 ? (
-              <button type="button" onClick={() => setPaso((p) => p - 1)}
-                className="flex h-10 items-center gap-1.5 rounded-md border border-border px-4 text-sm font-semibold text-fg">
+              <button 
+                type="button" 
+                onClick={() => setPaso((p) => p - 1)}
+                className="flex h-10 items-center gap-1.5 rounded-lg border border-border px-4 text-xs font-bold text-fg hover:bg-surface-2 transition-colors"
+              >
                 <ArrowLeft size={15} /> Atrás
               </button>
             ) : <span />}
 
             {paso < 4 ? (
-              <button type="button" onClick={() => irA(paso + 1)}
-                className="flex h-10 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-fg">
+              <button 
+                type="button" 
+                onClick={() => irA(paso + 1)}
+                className="flex h-10 items-center gap-1.5 rounded-lg bg-primary px-5 text-xs font-bold text-primary-fg shadow hover:opacity-95 transition-all ml-auto"
+              >
                 Continuar <ArrowRight size={15} />
               </button>
             ) : (
