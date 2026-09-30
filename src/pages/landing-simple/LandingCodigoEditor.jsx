@@ -190,6 +190,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [ajustes, setAjustes] = useState({ titulo: '', seo_titulo: '', seo_descripcion: '' });
   const [tab, setTab] = useState('html');
   const [guardando, setGuardando] = useState(false);
+  const [actualizandoBloques, setActualizandoBloques] = useState(false);
   const [error, setError] = useState('');
   const [erroresDetalle, setErroresDetalle] = useState([]);
   const [advertencias, setAdvertencias] = useState([]);
@@ -490,6 +491,34 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       else navigate('/landing', { replace: true });
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudo eliminar la landing.');
+    }
+  }
+
+  /**
+   * Pone el bloque de venta canónico en las fichas de esta landing. Las
+   * generadas antes de que existiera quedaron con el markup del modelo: el
+   * order bump como un renglón de texto sin foto ni precio anterior. No
+   * regenera con IA —eso tarda minutos y cambiaría el diseño—, solo cambia
+   * el contenido de esos dos bloques.
+   */
+  async function actualizarBloquesVenta() {
+    setActualizandoBloques(true);
+    setError('');
+    try {
+      const r = await landingSimpleService.actualizarBloquesVenta(id);
+      if (!r.actualizadas) {
+        setAviso(r.message || 'No había bloques de order bump ni de paquetes para actualizar.');
+        return;
+      }
+      const guardados = codigosDesdeContent(r.landing.content, codigos.producto, tienda?.nombre || 'Tu tienda');
+      setLanding(r.landing);
+      setCodigos(guardados);
+      setCodigosPreview(guardados);
+      setAviso(`Listo: ${r.actualizadas} ficha${r.actualizadas === 1 ? '' : 's'} con el bloque de venta actualizado.`);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'No se pudieron actualizar los bloques de venta.');
+    } finally {
+      setActualizandoBloques(false);
     }
   }
 
@@ -838,14 +867,28 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 />
                 <div className="px-4 py-2 border-t border-fg/10 flex items-center justify-between gap-3">
                   <p className="text-[11px] text-fg/35">{AYUDAS[tabActiva.lenguaje]}</p>
-                  <button
-                    type="button"
-                    onClick={cargarBase}
-                    className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg/80"
-                    title="Reemplaza esta vista por el código base de Gesicomm"
-                  >
-                    <FileCode2 size={12} /> Código base
-                  </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {(vista === 'producto' || esPropia) && (
+                      <button
+                        type="button"
+                        onClick={actualizarBloquesVenta}
+                        disabled={actualizandoBloques}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-fg/10 px-2.5 py-1.5 text-[11px] font-semibold text-fg/80 hover:bg-fg/15 disabled:opacity-50"
+                        title="Reemplaza el order bump y los paquetes de las fichas por el bloque de Gesicomm: con foto, precio anterior y ahorro"
+                      >
+                        {actualizandoBloques ? <Loader size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                        Actualizar bloques de venta
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={cargarBase}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg/80"
+                      title="Reemplaza esta vista por el código base de Gesicomm"
+                    >
+                      <FileCode2 size={12} /> Código base
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : tab === 'prompts' && !esLegal ? (

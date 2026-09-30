@@ -21,6 +21,12 @@ export const landingSimpleService = {
   // (ficha propia — requiere contentId, el content_id público del producto).
   regenerarConIA: (id, prompt, target = 'inicio', contentId = null) =>
     API.post(`/mis-landings-simples/${id}/ai-regenerar`, { prompt, target, contentId }).then(r => r.data),
+  // Reemplaza el order bump y los paquetes de las fichas por el bloque
+  // canónico de Gesicomm (foto, precio anterior, ahorro, estados). Las
+  // landings nuevas ya salen así; esto repara las anteriores sin regenerar
+  // con IA, que tardaría minutos y cambiaría el diseño.
+  actualizarBloquesVenta: (id) =>
+    API.post(`/mis-landings-simples/${id}/bloques-venta`).then(r => r.data),
   crearDesdeOnboarding: (templateSlug, items) =>
     API.post('/mis-landings-simples/onboarding', { template_slug: templateSlug, items }).then(r => r.data),
   // Lienzo en blanco (kind='codigo'): no lleva template_id — el template

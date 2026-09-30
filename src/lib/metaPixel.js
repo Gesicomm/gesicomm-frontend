@@ -21,6 +21,20 @@ const pixelesInicializados = new Set();
  */
 export const PIXEL_ID_GESICOMM = '3636737413142726';
 
+/**
+ * Pixel de la TIENDA que se está viendo, si hay uno. Los eventos de una
+ * landing son de ese pixel y de ninguno más.
+ *
+ * Por qué hace falta: fbq('track', …) dispara el evento en TODOS los pixels
+ * inicializados. En el dominio propio de una tienda no pasa nada porque el
+ * de plataforma no se carga (ver App.jsx), pero entrando por /l/:slug en
+ * gesicomm.com —que es como se comparte una landing antes de tener dominio—
+ * conviven los dos: cada compra de un cliente se le contaba también al pixel
+ * de Gesicomm, y los PageView del panel al de la tienda. Con trackSingle el
+ * evento va sólo a donde corresponde, sin depender de qué más esté cargado.
+ */
+let pixelDeTienda = null;
+
 export function inicializarPixel(pixelId, opts = {}) {
   const { trackPageView = true } = opts;
   const id = String(pixelId || '').trim();
@@ -36,11 +50,15 @@ export function inicializarPixel(pixelId, opts = {}) {
     /* eslint-enable */
   }
 
+  if (id !== PIXEL_ID_GESICOMM) pixelDeTienda = id;
+
   if (pixelesInicializados.has(id)) return;
 
   window.fbq('init', id);
   pixelesInicializados.add(id);
-  if (trackPageView) window.fbq('track', 'PageView');
+  // trackSingle: el PageView es de ESTE pixel. Con track, al inicializar el
+  // segundo pixel se le mandaba una visita también al primero.
+  if (trackPageView) window.fbq('trackSingle', id, 'PageView');
 }
 
 /** UUID para deduplicar Pixel+CAPI — crypto.randomUUID con fallback para navegadores viejos/HTTP. */
@@ -68,9 +86,13 @@ export function leerCookiesFacebook() {
  * público de la landing). Los eventos de prueba los sigue etiquetando el
  * backend en su llamada a la Graph API — ver metaCapi.service.js.
  */
-export function trackearEvento(eventName, eventId, params) {
+export function trackearEvento(eventName, eventId, params, pixelId = pixelDeTienda) {
   if (typeof window === 'undefined' || !window.fbq) return;
-  window.fbq('track', eventName, params, { eventID: eventId });
+  // trackSingle = sólo ese pixel. track (sin id) le pega a todos los
+  // inicializados, que es lo que mezclaba los eventos entre tiendas y la
+  // plataforma. Sin pixel de tienda —el panel de Gesicomm— se usa track.
+  if (pixelId) window.fbq('trackSingle', pixelId, eventName, params, { eventID: eventId });
+  else window.fbq('track', eventName, params, { eventID: eventId });
 }
 
 /**
@@ -79,7 +101,8 @@ export function trackearEvento(eventName, eventId, params) {
  * estándar). Usa trackCustom en vez de track para que no aparezca como
  * "evento estándar desconocido" en el Events Manager.
  */
-export function trackearEventoPersonalizado(eventName, eventId, params) {
+export function trackearEventoPersonalizado(eventName, eventId, params, pixelId = pixelDeTienda) {
   if (typeof window === 'undefined' || !window.fbq) return;
-  window.fbq('trackCustom', eventName, params, { eventID: eventId });
+  if (pixelId) window.fbq('trackSingleCustom', pixelId, eventName, params, { eventID: eventId });
+  else window.fbq('trackCustom', eventName, params, { eventID: eventId });
 }
