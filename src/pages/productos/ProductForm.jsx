@@ -496,7 +496,7 @@ export default function ProductForm() {
             descuento_porcentaje: p.descuento_porcentaje || '',
             descuento_inicio: p.descuento_inicio ? p.descuento_inicio.slice(0, 10) : '',
             descuento_fin: p.descuento_fin ? p.descuento_fin.slice(0, 10) : '',
-            impuestos_incluidos: p.impuestos_incluidos,
+            impuestos_incluidos: p.impuestos_incluidos !== false,
             cantidad_disponible: p.cantidad_disponible || 0,
             stock_salon: p.stock_salon || 0,
             stock_deposito: p.stock_deposito || 0,
@@ -805,7 +805,7 @@ export default function ProductForm() {
         descuento_porcentaje: data.descuento_porcentaje ? parseFloat(data.descuento_porcentaje) : 0,
         descuento_inicio: data.descuento_inicio || null,
         descuento_fin: data.descuento_fin || null,
-        impuestos_incluidos: data.impuestos_incluidos,
+        impuestos_incluidos: data.impuestos_incluidos !== false,
         // El total lo recalcula el backend como salón + depósito; no se
         // manda cantidad_disponible para que no queden dos fuentes de verdad.
         stock_salon: parseInt(data.stock_salon) || 0,
@@ -1570,6 +1570,13 @@ export default function ProductForm() {
                   />
                 </div>
                 {errors.precio_base && <span className="field-error">{errors.precio_base.message}</span>}
+                <label className="tax-toggle">
+                  <input type="checkbox" {...register('impuestos_incluidos')} />
+                  <span>
+                    <strong>Precio incluye IVA</strong>
+                    <small>Si está marcado, el reporte extrae el IVA desde el precio; si no, calcula 10% sobre el precio sin impuesto.</small>
+                  </span>
+                </label>
               </div>
 
               {esAdmin && (
@@ -1665,11 +1672,6 @@ export default function ProductForm() {
               )}
             </div>
           </div>
-
-          <label className="check-label" style={{ marginTop: '0.5rem' }}>
-            <input type="checkbox" {...register('impuestos_incluidos')} />
-            Precio incluye IVA
-          </label>
 
           <div className="form-section-title"><Tag size={14} /> Descuento</div>
           <div className="form-grid-3">

@@ -527,14 +527,13 @@ export default function AILandingWizard({ onCreada }) {
         precio_ancla: Number(anclas[`${item.tipo}:${item.id}`]) || null,
       }));
 
-      // El template trae una oferta por tiempo limitado como parte de la
-      // estructura. Si el comercio la deja activa, la IA debe conservarla y
-      // completar demo_data.urgencia para la preview; Gesicomm igual exige
-      // confirmar datos reales antes de publicar (ver "Configurar venta").
+      // El template puede traer una oferta por tiempo limitado. La IA puede
+      // dejar la estructura del countdown; si no hay fecha real, el runtime
+      // muestra un countdown generado y publicar advierte.
       const promptConDemo = [
         promptFinal,
         permitirDemoIA
-          ? 'Incluí sí o sí una sección de oferta por tiempo limitado, conservando la estructura y estilos del template base. Usá data-gesicomm-countdown y devolvé demo_data.urgencia con una fecha futura de ejemplo solo para previsualización. No inventes estadísticas ni testimonios.'
+          ? 'Podés incluir una sección de oferta por tiempo limitado, conservando la estructura y estilos del template base. Usá data-gesicomm-countdown sin escribir fechas ni JS propio; Gesicomm se encarga de pintarlo. Si incluís estadísticas, devolvé demo_data.prueba_social como datos generados por IA para que el comercio los revise antes de publicar.'
           : 'No incluyas countdown de oferta ni estadísticas de ejemplo (demo_data/data-gesicomm-countdown/data-gesicomm-lista="estadisticas") en esta landing: el comercio no lo autorizó.',
       ].join('\n\n');
 
@@ -1451,15 +1450,14 @@ function BriefStep({ preguntas, respuestas, setRespuestas, onContinuar, onEditar
           <div>
             <p className="text-sm font-bold text-fg">Incluir oferta por tiempo limitado en la landing</p>
             <p className="mt-1 text-xs leading-relaxed text-fg-muted">
-              Vas a ver cómo se vería el countdown de oferta con una fecha de EJEMPLO, no real. Sirve para previsualizar antes de cargar tus datos reales.
+              La IA puede dejar el bloque de countdown preparado. Si después cargás una fecha real para el producto, se usa esa; si no, se muestra como contenido generado y se advierte al publicar.
             </p>
           </div>
         </label>
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-warning/10 p-3 text-xs leading-relaxed text-warning">
           <ShieldAlert size={15} className="mt-0.5 shrink-0" />
           <p>
-            Meta prohíbe publicar countdowns falsos o estadísticas inventadas en anuncios (puede suspender tu cuenta publicitaria), y la Ley 1334 de Defensa del Consumidor (Paraguay) prohíbe la publicidad engañosa.
-            Por eso Gesicomm <strong>no te va a dejar publicar</strong> esta landing hasta que confirmes estos datos con información real en "Configurar venta" — los de acá son solo para que veas cómo queda.
+            Si publicás countdowns o estadísticas generadas por IA, revisá que sean reales. Al publicar, Gesicomm te va a pedir una aceptación explícita si detecta datos no confirmados.
           </p>
         </div>
       </section>

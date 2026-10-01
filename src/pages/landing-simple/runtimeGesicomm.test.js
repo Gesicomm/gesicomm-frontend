@@ -53,15 +53,25 @@ function montar(plantilla, datos) {
 describe('runtime del lienzo en blanco — inicio', () => {
   const datos = { vista: 'inicio', tienda: { nombre: 'Mi Tienda', whatsapp: '0981 123' }, productos: [airFryer, remera, malicioso], producto: null, recomendados: [] };
 
-  it('pinta una tarjeta por producto, el destacado y el contador', () => {
+  it('pinta una tarjeta por producto, los destacados y el contador', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     const tarjetas = document.querySelectorAll('#productos [data-gesicomm-item]');
     expect(tarjetas).toHaveLength(3);
     expect(tarjetas[0].querySelector('[data-gesicomm-bind="nombre"]').textContent).toBe('Air Fryer 2.6L');
     expect(tarjetas[0].querySelector('[data-gesicomm-bind="precio"]').textContent).toMatch(/^Gs 145\.735$/);
-    expect(document.querySelectorAll('.hero-card')).toHaveLength(1);
+    expect(document.querySelectorAll('.featured-carousel .hero-card')).toHaveLength(3);
     expect(document.querySelector('[data-gesicomm-total]').textContent).toBe('3 productos disponibles');
     expect(document.querySelector('.brand [data-gesicomm-tienda="nombre"]').textContent).toBe('Mi Tienda');
+  });
+
+  it('usa solo los productos destacados configurados en el hero', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: { destacados: ['remera', 'air-fryer-26l'] },
+    });
+    const destacados = [...document.querySelectorAll('.featured-carousel .hero-card [data-gesicomm-bind="nombre"]')]
+      .map(el => el.textContent);
+    expect(destacados).toEqual(['Remera', 'Air Fryer 2.6L']);
   });
 
   it('marca productos clickeables y rota la galería de la tarjeta al pasar el mouse', async () => {
@@ -148,6 +158,45 @@ describe('runtime del lienzo en blanco — ficha de producto', () => {
     // El paquete de la remera aparece en "Elegí tu oferta", junto a 1 unidad.
     expect(document.querySelectorAll('.paquete')).toHaveLength(2);
     expect(document.querySelectorAll('#relacionados [data-gesicomm-item]')).toHaveLength(1);
+  });
+
+  it('muestra siempre el countdown y filtra las estadísticas por producto', () => {
+    const plantilla = {
+      html: `
+        <section class="timer" data-gesicomm-countdown>
+          <b data-gesicomm-countdown-parte="horas"></b>
+          <b data-gesicomm-countdown-parte="minutos"></b>
+          <b data-gesicomm-countdown-parte="segundos"></b>
+        </section>
+        <section class="stats" data-gesicomm-lista="estadisticas">
+          <template><article><b data-gesicomm-bind="valor"></b><span data-gesicomm-bind="etiqueta"></span></article></template>
+        </section>`,
+      css: '',
+      js: '',
+    };
+    const venta = {
+      urgencia: { activo: true, producto_id: 'remera', fin_at: new Date(Date.now() + 3600 * 1000).toISOString() },
+      prueba_social: { activo: true, producto_id: 'remera', items: [{ valor: '94%', etiqueta: 'compradores satisfechos' }] },
+    };
+
+    const coincide = montar(plantilla, { ...datos, venta });
+    expect(coincide.document.querySelector('.timer').style.display).toBe('');
+    expect(coincide.document.querySelector('[data-gesicomm-countdown-parte="horas"]').textContent).toMatch(/^\d{2}$/);
+    expect(coincide.document.querySelectorAll('.stats article')).toHaveLength(1);
+
+    const noCoincide = montar(plantilla, {
+      ...datos,
+      venta: {
+        urgencia: { ...venta.urgencia, producto_id: 'air-fryer-26l' },
+        prueba_social: { ...venta.prueba_social, producto_id: 'air-fryer-26l' },
+      },
+    });
+    expect(noCoincide.document.querySelector('.timer').style.display).toBe('');
+    expect(noCoincide.document.querySelector('.stats').style.display).toBe('none');
+
+    const sinDatos = montar(plantilla, { ...datos, venta: null });
+    expect(sinDatos.document.querySelector('.timer').style.display).toBe('');
+    expect(sinDatos.document.querySelector('[data-gesicomm-countdown-parte="horas"]').textContent).toMatch(/^\d{2}$/);
   });
 
   it('no deja comprar sin elegir variante, y con variante manda variante y cantidad', () => {
@@ -469,6 +518,30 @@ describe('order bump y upsell de punta a punta (datos del backend → ficha)', (
     const { document } = montar(PLANTILLA_PRODUCTO, datos);
     expect(document.querySelector('.bump input[data-gesicomm-bump]')).toBeNull();
   });
+
+  it('en publicación, los paquetes normales aparecen aunque no estén en cross_sell; si se desmarcan, vuelve cantidad', () => {
+    const pack = {
+      id: 92, nombre: 'Llevá 2', estrategia: 'normal', tipo_contenido: 'pack',
+      precio_normal: 250000, precio_efectivo: 250000, unidades: 2, imagen: null,
+    };
+    const itemConPack = { ...itemBackend, ofertas: [pack] };
+    const dataPack = (paquetes = {}) => ({
+      content: { venta: { configurado: true, tipo: 'catalogo', paquetes, cross_sell: { activo: true, ofertas: [] } } },
+      catalogo_items: [itemConPack],
+    });
+
+    const publicado = datosRuntimePublico(dataPack(), 'tienda', itemConPack);
+    expect(publicado.producto.ofertas.map(o => o.id)).toEqual([92]);
+    const conPack = montar(PLANTILLA_PRODUCTO, publicado);
+    expect(conPack.document.querySelectorAll('.paquete')).toHaveLength(2);
+    expect(conPack.document.querySelector('[data-gesicomm-cantidad-input]').style.display).toBe('none');
+
+    const oculto = datosRuntimePublico(dataPack({ 92: { activo: false } }), 'tienda', itemConPack);
+    expect(oculto.producto.ofertas).toEqual([]);
+    const sinPack = montar(PLANTILLA_PRODUCTO, oculto);
+    expect(sinPack.document.querySelector('.paquetes').style.display).toBe('none');
+    expect(sinPack.document.querySelector('[data-gesicomm-cantidad-input]').style.display).toBe('');
+  });
 });
 
 describe('preview del editor con ofertas del panel', () => {
@@ -601,6 +674,101 @@ describe('ficha que vende: contenido real del producto', () => {
     expect(document.querySelector('.pdp-separado').textContent).toBe('Por separado: Gs 509.000');
     expect(document.querySelectorAll('.incluye-card')).toHaveLength(2);
     expect(document.querySelector('.incluye-total').textContent).toMatch(/Por separado: Gs 509\.000 · En combo: Gs 288\.000/);
+  });
+
+  it('lienzo blanco: un HTML pegado para combo pinta incluidos, navega y compra el combo', () => {
+    const htmlPegado = {
+      html: `
+        <main class="combo-page">
+          <section class="combo-hero" data-gesicomm-si="combo_incluye">
+            <p class="eyebrow">Combo armado</p>
+            <h1 data-gesicomm-bind="nombre"></h1>
+            <p class="promise" data-gesicomm-bind="propuesta_valor"></p>
+            <div class="price-row">
+              <s data-gesicomm-bind="precio_separado"></s>
+              <strong data-gesicomm-bind="precio"></strong>
+              <em data-gesicomm-bind="ahorro_texto"></em>
+            </div>
+
+            <div class="kit-list" data-gesicomm-lista="combo_incluye">
+              <template>
+                <article class="kit-item">
+                  <img data-gesicomm-bind="imagen" alt="">
+                  <strong data-gesicomm-bind="nombre"></strong>
+                  <span data-gesicomm-bind="cantidad"></span>
+                  <small data-gesicomm-bind="precio"></small>
+                  <button type="button" data-gesicomm-ver>Ver producto</button>
+                </article>
+              </template>
+            </div>
+
+            <button class="buy-combo" data-gesicomm-comprar>
+              <span data-gesicomm-cta>Comprar combo</span>
+              <b data-gesicomm-total></b>
+            </button>
+          </section>
+        </main>
+      `,
+      css: '.kit-item.is-ready{outline:1px solid #10b981}.price-row{display:flex;gap:8px}',
+      js: `
+        document.querySelectorAll('.kit-item').forEach(function (item) {
+          item.classList.add('is-ready');
+        });
+      `,
+    };
+    const combo = {
+      content_id: 'combo-3',
+      referencia_id: 3,
+      tipo: 'combo',
+      nombre: 'Kit adelgazante',
+      precio: 288000,
+      imagen: img,
+      imagenes: [img],
+      variantes: [],
+      ofertas: [],
+      propuesta_valor: 'Dos productos en una sola compra.',
+      productos_combo: [
+        { id: 8, slug: 'adelfit', nombre: 'AdelFit', precio: 169000, cantidad: 1, imagen: img },
+        { id: 9, slug: 'articumina', nombre: 'Articumina', precio: 170000, cantidad: 2, imagen: img },
+      ],
+    };
+    const articumina = {
+      content_id: 'articumina',
+      referencia_id: 9,
+      tipo: 'producto',
+      nombre: 'Articumina',
+      precio: 170000,
+      imagen: img,
+      imagenes: [img],
+      variantes: [],
+      ofertas: [],
+    };
+    const datos = datosRuntimePublico(data([producto, articumina, combo]), 'x', combo);
+
+    const { document, mensajes, click } = montar(htmlPegado, datos);
+
+    expect(document.querySelector('[data-gesicomm-bind="nombre"]').textContent).toBe('Kit adelgazante');
+    expect(document.querySelector('[data-gesicomm-bind="precio_separado"]').textContent).toBe('Gs 509.000');
+    expect(document.querySelector('[data-gesicomm-bind="precio"]').textContent).toBe('Gs 288.000');
+    expect(document.querySelector('[data-gesicomm-bind="ahorro_texto"]').textContent).toBe('Ahorrás 43%');
+    expect([...document.querySelectorAll('.kit-item [data-gesicomm-bind="nombre"]')].map(el => el.textContent)).toEqual(['AdelFit', 'Articumina']);
+    expect(document.querySelectorAll('.kit-item.is-ready')).toHaveLength(2);
+    expect(document.querySelector('.kit-item').getAttribute('data-gesicomm-item')).toBe('adelfit');
+    expect(document.querySelector('.buy-combo [data-gesicomm-total]').textContent).toBe('Gs 288.000');
+
+    click('.kit-item [data-gesicomm-ver]');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:navegar').at(-1)).toMatchObject({
+      destino: 'producto',
+      producto: 'adelfit',
+    });
+
+    click('.buy-combo');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:checkout').at(-1)).toMatchObject({
+      producto: 'combo-3',
+      cantidad: 1,
+      oferta: null,
+      abrir: true,
+    });
   });
 });
 

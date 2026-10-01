@@ -19,7 +19,7 @@
  * reutilice para catálogos compartidos no puede ser un vector de XSS.
  *
  * Referencia rápida de atributos (el detalle vive en el prompt maestro):
- *   data-gesicomm-lista="catalogo|productos|combos|recomendados|ofertas|variantes|imagenes"
+ *   data-gesicomm-lista="catalogo|productos|productos_destacados|combos|recomendados|ofertas|variantes|imagenes"
  *     "catalogo" es la grilla navegable: la afectan data-gesicomm-buscar,
  *     data-gesicomm-filtro="categoria|orden", data-gesicomm-pagina="anterior|siguiente",
  *     data-gesicomm-cargar-mas, data-gesicomm-paginacion y data-gesicomm-sin-resultados.
@@ -176,6 +176,17 @@ export function runtimeGesicomm() {
     }
     if (productoActual && (productoActual.id === clave)) return productoActual;
     return null;
+  }
+
+  function productosDestacados() {
+    var ids = datos.venta && Array.isArray(datos.venta.destacados) ? datos.venta.destacados : [];
+    if (!ids.length) return productos.slice(0, 4);
+    var salida = [];
+    for (var i = 0; i < ids.length; i++) {
+      var item = buscar(ids[i]);
+      if (item && salida.indexOf(item) === -1) salida.push(item);
+    }
+    return salida.length ? salida : productos.slice(0, 4);
   }
 
   // ─── Toast mínimo — el aviso de "agregado" / "elegí una opción" ─────────
@@ -447,11 +458,11 @@ export function runtimeGesicomm() {
     }, false);
   }
 
-  // Countdown de oferta (data-gesicomm-countdown): el HTML nunca trae fecha
-  // ni JS propio, solo la estructura — la fecha real (o de ejemplo, en modo
-  // "demo") vive en venta.urgencia, cargada en "Configurar venta". Si no
-  // está activo o ya venció, el bloque se oculta solo, mismo criterio que
-  // cualquier lista vacía — vencer una promo no es un error, es negocio.
+  // Countdown de oferta (data-gesicomm-countdown): el HTML trae la estructura,
+  // no fechas ni JS propio. Si hay fecha real del producto, se usa esa; si no,
+  // se muestra un countdown generado para mantener la estructura comercial de
+  // la landing. Publicar con datos no confirmados se advierte en el editor.
+  var COUNTDOWN_DEMO_MS = 2 * 60 * 60 * 1000;
   function dosDigitos(n) { return (n < 10 ? '0' : '') + n; }
 
   function prepararCountdown(el, finMs) {
@@ -460,7 +471,7 @@ export function runtimeGesicomm() {
     var segundos = el.querySelector('[data-gesicomm-countdown-parte="segundos"]');
     function pintar() {
       var restante = finMs - Date.now();
-      if (restante <= 0) { el.style.display = 'none'; return false; }
+      if (restante <= 0) return false;
       var totalSeg = Math.floor(restante / 1000);
       if (horas) horas.textContent = dosDigitos(Math.floor(totalSeg / 3600));
       if (minutos) minutos.textContent = dosDigitos(Math.floor((totalSeg % 3600) / 60));
@@ -472,15 +483,30 @@ export function runtimeGesicomm() {
     var timer = setInterval(function () { if (!pintar()) clearInterval(timer); }, 1000);
   }
 
+  function finCountdown(urgencia) {
+    if (urgencia && urgencia.activo) {
+      var aplica = !urgencia.producto_id && !urgencia.content_id ? true : datoAplicaAlProducto(urgencia);
+      var real = aplica ? Date.parse(urgencia.fin_at) : NaN;
+      if (isFinite(real) && real > Date.now()) return real;
+    }
+    return Date.now() + COUNTDOWN_DEMO_MS;
+  }
+
   function prepararCountdowns() {
     var els = document.querySelectorAll('[data-gesicomm-countdown]');
     if (!els.length) return;
     var urgencia = datos.venta && datos.venta.urgencia;
-    var finMs = (urgencia && urgencia.activo) ? Date.parse(urgencia.fin_at) : NaN;
+    var finMs = finCountdown(urgencia);
     for (var i = 0; i < els.length; i++) {
-      if (!isFinite(finMs)) { els[i].style.display = 'none'; continue; }
       prepararCountdown(els[i], finMs);
     }
+  }
+
+  function datoAplicaAlProducto(config) {
+    if (!config || !config.activo || !productoActual) return false;
+    var id = config.producto_id || config.content_id;
+    if (!id) return false;
+    return String(productoActual.id) === String(id) || String(productoActual.content_id || '') === String(id);
   }
 
   // ─── Listas ───────────────────────────────────────────────────────────
@@ -492,6 +518,7 @@ export function runtimeGesicomm() {
     switch (nombre) {
       case 'catalogo': return catalogoVista.items;
       case 'productos': base = productos; break;
+      case 'productos_destacados': base = productosDestacados(); break;
       case 'combos': base = productos.filter(function (p) { return p.tipo === 'combo'; }); break;
       // (solo ficha) los combos que traen el producto que se está viendo.
       case 'combos_producto':
@@ -525,7 +552,9 @@ export function runtimeGesicomm() {
       // Prueba social cuantitativa cargada en "Configurar venta" (venta.prueba_social.items):
       // en modo "demo" son valores de ejemplo de la IA, en "confirmado" son los reales del
       // comercio — el runtime los pinta igual en los dos casos, la diferencia es de negocio.
-      case 'estadisticas': base = (datos.venta && datos.venta.prueba_social && datos.venta.prueba_social.activo) ? (datos.venta.prueba_social.items || []) : []; break;
+      case 'estadisticas':
+        base = datoAplicaAlProducto(datos.venta && datos.venta.prueba_social) ? (datos.venta.prueba_social.items || []) : [];
+        break;
       default: base = [];
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');

@@ -43,6 +43,7 @@ const OfertasProductoTab = lazy(() => Promise.all([
  */
 
 export const MAX_PRODUCTOS_MANUAL = 500; // = MAX_ITEMS_LIENZO del backend
+const MAX_DESTACADOS = 8;
 
 // ISO (UTC, lo que guarda el backend) <-> valor de <input type="datetime-local">
 // (hora LOCAL del navegador, sin timezone). new Date(iso) y new Date(valorLocal)
@@ -198,6 +199,7 @@ export default function ConfigurarVentaCodigo({
     ventaInicial.seleccion && ventaInicial.seleccion !== 'manual' ? [] : (inicial?.seleccion || []).map(clave)
   ));
   const [principal, setPrincipal] = useState(() => (inicial?.seleccion?.[0] ? clave(inicial.seleccion[0]) : null));
+  const [destacados, setDestacados] = useState(() => ventaInicial.destacados || []);
   const [busqueda, setBusqueda] = useState('');
   const [busquedaCategoria, setBusquedaCategoria] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('producto_gesicom');
@@ -212,7 +214,8 @@ export default function ConfigurarVentaCodigo({
       const siguiente = { ...prev };
       // Un solo destacado: marcar uno desmarca los demás.
       if (cambio.destacado) Object.keys(siguiente).forEach(k => { siguiente[k] = { ...siguiente[k], destacado: false }; });
-      siguiente[id] = { etiqueta: '', destacado: false, ...prev[id], ...cambio };
+      siguiente[id] = { etiqueta: '', destacado: false, activo: true, ...prev[id], ...cambio };
+      if (siguiente[id].activo === false) siguiente[id].destacado = false;
       return siguiente;
     });
   }
@@ -229,14 +232,12 @@ export default function ConfigurarVentaCodigo({
   const [recoMax, setRecoMax] = useState(ventaInicial.recomendados?.max || 4);
   const [recoTitulo, setRecoTitulo] = useState(ventaInicial.recomendados?.titulo || '');
 
-  // Countdown de oferta y estadísticas: la IA (o el HTML pegado a mano)
-  // puede haber propuesto valores de EJEMPLO ("demo") — Gesicomm no deja
-  // publicar mientras sigan sin confirmar. `estado` nunca lo decide este
-  // panel directamente: se arma en el momento de guardar a partir de si el
-  // checkbox de confirmación está tildado (ver `confirmar()` más abajo) y
-  // el backend es quien realmente lo persiste como "confirmado".
+  // Countdown de oferta y estadísticas: pueden ser datos reales confirmados
+  // o contenido de ejemplo/generado por IA. Si quedan sin confirmar, publicar
+  // pide una aceptación explícita; no bloquea ni inventa una fecha demo.
   const [urgenciaActiva, setUrgenciaActiva] = useState(ventaInicial.urgencia?.activo === true);
   const [urgenciaFinAt, setUrgenciaFinAt] = useState(() => isoParaInputLocal(ventaInicial.urgencia?.fin_at));
+  const [urgenciaProductoId, setUrgenciaProductoId] = useState(ventaInicial.urgencia?.producto_id || '');
   const [urgenciaConfirmar, setUrgenciaConfirmar] = useState(ventaInicial.urgencia?.estado === 'confirmado');
   function cambiarUrgenciaFinAt(valor) {
     setUrgenciaFinAt(valor);
@@ -245,6 +246,7 @@ export default function ConfigurarVentaCodigo({
 
   const [pruebaSocialActiva, setPruebaSocialActiva] = useState(ventaInicial.prueba_social?.activo === true);
   const [pruebaSocialItems, setPruebaSocialItems] = useState(ventaInicial.prueba_social?.items || []);
+  const [pruebaSocialProductoId, setPruebaSocialProductoId] = useState(ventaInicial.prueba_social?.producto_id || '');
   const [pruebaSocialConfirmar, setPruebaSocialConfirmar] = useState(ventaInicial.prueba_social?.estado === 'confirmado');
   function cambiarStatItem(idx, campo, valor) {
     setPruebaSocialItems(prev => prev.map((it, i) => (i === idx ? { ...it, [campo]: valor } : it)));
@@ -335,6 +337,40 @@ export default function ConfigurarVentaCodigo({
     () => new Set(seleccion.filter(i => i.tipo === 'producto').map(i => Number(i.id))),
     [seleccion],
   );
+  const candidatosDestacados = useMemo(
+    () => seleccion.slice(0, 300).map(i => ({ ...i, content_id: contentIdPanel(i) })),
+    [seleccion],
+  );
+  const idsCandidatosDestacados = useMemo(
+    () => new Set(candidatosDestacados.map(i => i.content_id)),
+    [candidatosDestacados],
+  );
+  const destacadosValidos = useMemo(
+    () => destacados.filter(id => idsCandidatosDestacados.has(id)).slice(0, MAX_DESTACADOS),
+    [destacados, idsCandidatosDestacados],
+  );
+  const candidatosDatosProducto = useMemo(() => {
+    const productos = seleccion.filter(i => i.tipo === 'producto');
+    const base = productos.length ? productos : seleccion;
+    return base.slice(0, 300).map(i => ({ ...i, content_id: contentIdPanel(i) }));
+  }, [seleccion]);
+  const idsDatosProducto = useMemo(
+    () => new Set(candidatosDatosProducto.map(i => i.content_id)),
+    [candidatosDatosProducto],
+  );
+  const urgenciaProductoValido = idsDatosProducto.has(urgenciaProductoId)
+    ? urgenciaProductoId
+    : (candidatosDatosProducto[0]?.content_id || '');
+  const pruebaSocialProductoValido = idsDatosProducto.has(pruebaSocialProductoId)
+    ? pruebaSocialProductoId
+    : (candidatosDatosProducto[0]?.content_id || '');
+  function alternarDestacado(contentId) {
+    setDestacados(prev => {
+      const ya = prev.includes(contentId);
+      if (ya) return prev.filter(id => id !== contentId);
+      return [...prev, contentId].slice(0, MAX_DESTACADOS);
+    });
+  }
 
   // Oferta sin foto propia → la del producto que ofrece (o la del mismo
   // producto, si es un pack). Es lo que hace la landing publicada con
@@ -377,6 +413,7 @@ export default function ConfigurarVentaCodigo({
     incluir_combos: incluirCombos,
     abrir_en: abrirEn,
     combos_primero: abrirEn === 'tienda' && combosPrimero,
+    destacados: destacadosValidos,
     paquetes: confPaquetes,
     // El producto que abre la landing en "Directo en un producto" (con una
     // regla no hay items guardados que lo pongan primero).
@@ -391,12 +428,12 @@ export default function ConfigurarVentaCodigo({
       max: recoMax,
       titulo: recoTitulo,
     },
-    urgencia: { activo: urgenciaActiva, fin_at: inputLocalAIso(urgenciaFinAt) },
-    prueba_social: { activo: pruebaSocialActiva, items: pruebaSocialItems },
+    urgencia: { activo: urgenciaActiva, fin_at: inputLocalAIso(urgenciaFinAt), producto_id: urgenciaProductoValido || null },
+    prueba_social: { activo: pruebaSocialActiva, producto_id: pruebaSocialProductoValido || null, items: pruebaSocialItems },
   }), [
-    tipo, abrirEn, combosPrimero, confPaquetes, principal, seleccion, modo, categorias, incluirCombos,
+    tipo, abrirEn, combosPrimero, destacadosValidos, confPaquetes, principal, seleccion, modo, categorias, incluirCombos,
     crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo,
-    urgenciaActiva, urgenciaFinAt, pruebaSocialActiva, pruebaSocialItems,
+    urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
   ]);
 
   function sumarProducto(productoId) {
@@ -623,7 +660,6 @@ export default function ConfigurarVentaCodigo({
     ? 'sin recomendados'
     : (recoModo === 'auto' ? 'recomendados automáticos' : `${recoItems.length} recomendado${recoItems.length === 1 ? '' : 's'} a mano`);
   const estadisticasConfirmables = pruebaSocialItems.some(it => String(it.valor || '').trim() && String(it.etiqueta || '').trim());
-  const alcanceLanding = seleccion.slice(0, 4);
 
   const propsVistaPrevia = {
     vista: vistaPreview,
@@ -891,6 +927,55 @@ export default function ConfigurarVentaCodigo({
                 )}
               </Bloque>
 
+              {/* Destacados */}
+              <Bloque
+                titulo="Productos destacados"
+                ayuda="Los productos que pasan por el hero del inicio. Si no marcás ninguno, Gesicomm usa los primeros de la selección."
+                verDonde={() => verDonde('inicio', 'productos_destacados')}
+              >
+                {candidatosDestacados.length === 0 ? (
+                  <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 rounded-lg border border-border bg-surface-2/60 px-3.5 py-2.5 text-[13px] text-fg-muted">
+                      <Check size={15} className="mt-0.5 shrink-0 text-accent-text" />
+                      <p>
+                        Marcá hasta {MAX_DESTACADOS}. El inicio los muestra uno tras otro; el catálogo sigue mostrando todos los productos elegidos.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                      {candidatosDestacados.map(i => {
+                        const elegido = destacadosValidos.includes(i.content_id);
+                        const imagen = getMediaUrl(i.imagen);
+                        return (
+                          <button
+                            key={i.content_id}
+                            type="button"
+                            aria-pressed={elegido}
+                            onClick={() => {
+                              alternarDestacado(i.content_id);
+                              verDonde('inicio', 'productos_destacados');
+                            }}
+                            className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
+                          >
+                            <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
+                              {imagen ? <img src={imagen} alt="" className="h-full w-full object-contain" /> : <ShoppingBag size={16} className="text-fg-muted" />}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
+                              <span className="block truncate text-xs text-fg-muted">{i.categoria || 'Sin categoría'}</span>
+                            </span>
+                            <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
+                              {elegido && <Check size={13} />}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </Bloque>
+
               {/* Ofertas */}
               <Bloque
                 titulo="Ofertas en la compra"
@@ -1127,30 +1212,23 @@ export default function ConfigurarVentaCodigo({
               {/* Urgencia (countdown) */}
               <Bloque
                 titulo="Countdown de oferta"
-                ayuda="Cuenta regresiva real de esta landing completa. No pertenece a un producto específico: aplica al catálogo o campaña que configuraste acá."
+                ayuda="Cuenta regresiva asociada a un producto concreto. Si la fecha no es real, se avisa al publicar."
                 interruptor={{ activo: urgenciaActiva, onChange: setUrgenciaActiva, etiqueta: 'Mostrar countdown de oferta' }}
               >
                 {urgenciaActiva && (
                   <div className="space-y-3">
-                    <div className="rounded-xl border border-border bg-surface-2/70 px-3 py-2.5">
-                      <p className="text-[13px] font-semibold text-fg">
-                        Alcance: {seleccion.length === 1 ? 'este producto' : `toda esta landing (${seleccion.length} productos/combos)`}
-                      </p>
-                      {alcanceLanding.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {alcanceLanding.map(item => (
-                            <span key={claveItem(item)} className="max-w-full truncate rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
-                              {item.nombre}
-                            </span>
-                          ))}
-                          {seleccion.length > alcanceLanding.length && (
-                            <span className="rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
-                              +{seleccion.length - alcanceLanding.length} más
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <label className="block max-w-lg">
+                      <span className="block text-sm font-medium text-fg mb-1.5">Producto al que corresponde</span>
+                      <select
+                        value={urgenciaProductoValido}
+                        onChange={e => setUrgenciaProductoId(e.target.value)}
+                        className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                      >
+                        {candidatosDatosProducto.map(item => (
+                          <option key={item.content_id} value={item.content_id}>{item.nombre}</option>
+                        ))}
+                      </select>
+                    </label>
                     <label className="block max-w-xs">
                       <span className="block text-sm font-medium text-fg mb-1.5">Fin de la promoción</span>
                       <input
@@ -1172,7 +1250,7 @@ export default function ConfigurarVentaCodigo({
                         Confirmo que esta es la fecha real de fin de la oferta.
                         {!urgenciaConfirmar && (
                           <span className="block text-xs text-amber-600 mt-0.5">
-                            Sin confirmar, Gesicomm no deja publicar esta landing si el diseño usa un countdown. Usá una fecha real de tu promoción.
+                            Si no la confirmás, al publicar se va a pedir una aceptación explícita de que revisaste este dato generado o cargado como ejemplo.
                           </span>
                         )}
                       </span>
@@ -1184,33 +1262,23 @@ export default function ConfigurarVentaCodigo({
               {/* Prueba social (estadísticas) */}
               <Bloque
                 titulo="Estadísticas / prueba social"
-                ayuda='Cifras reales para esta landing completa. No pertenecen a un producto específico salvo que lo escribas en la etiqueta, por ejemplo "94% de compradores de AdelFit...".'
+                ayuda="Cifras asociadas a un producto concreto. Si son generadas por IA o ejemplo, se advierte al publicar."
                 interruptor={{ activo: pruebaSocialActiva, onChange: setPruebaSocialActiva, etiqueta: 'Mostrar estadísticas' }}
               >
                 {pruebaSocialActiva && (
                   <div className="space-y-3">
-                    <div className="rounded-xl border border-border bg-surface-2/70 px-3 py-2.5">
-                      <p className="text-[13px] font-semibold text-fg">
-                        Alcance: {seleccion.length === 1 ? 'este producto' : `toda esta landing (${seleccion.length} productos/combos)`}
-                      </p>
-                      <p className="mt-1 text-xs text-fg-muted">
-                        Si la cifra es de un producto puntual, nombralo en la frase. Si es del negocio o de la campaña, dejala como estadística general.
-                      </p>
-                      {alcanceLanding.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {alcanceLanding.map(item => (
-                            <span key={claveItem(item)} className="max-w-full truncate rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
-                              {item.nombre}
-                            </span>
-                          ))}
-                          {seleccion.length > alcanceLanding.length && (
-                            <span className="rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
-                              +{seleccion.length - alcanceLanding.length} más
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <label className="block max-w-lg">
+                      <span className="block text-sm font-medium text-fg mb-1.5">Producto al que corresponden</span>
+                      <select
+                        value={pruebaSocialProductoValido}
+                        onChange={e => setPruebaSocialProductoId(e.target.value)}
+                        className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                      >
+                        {candidatosDatosProducto.map(item => (
+                          <option key={item.content_id} value={item.content_id}>{item.nombre}</option>
+                        ))}
+                      </select>
+                    </label>
                     <div className="space-y-2">
                       {pruebaSocialItems.map((it, idx) => (
                         <div key={idx} className="flex items-center gap-2">
@@ -1260,7 +1328,7 @@ export default function ConfigurarVentaCodigo({
                         )}
                         {!pruebaSocialConfirmar && (
                           <span className="block text-xs text-amber-600 mt-0.5">
-                            Sin confirmar, Gesicomm no deja publicar esta landing si el diseño usa estadísticas. Reemplazá cualquier ejemplo de IA por datos reales.
+                            Si no las confirmás, al publicar se va a pedir una aceptación explícita de que revisaste estas cifras generadas o cargadas como ejemplo.
                           </span>
                         )}
                       </span>
@@ -1596,7 +1664,8 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
   const [abierto, setAbierto] = useState(true);
   const precioProducto = Number(precioPanel(producto)) || 0;
   const bumpsMarcados = ofertas.filter(o => o.estrategia === 'order_bump' && elegidas.has(o.id)).length;
-  const activas = ofertas.filter(o => o.estrategia === 'normal' || elegidas.has(o.id)).length;
+  const paqueteActivo = (oferta) => confPaquetes[oferta.id]?.activo !== false;
+  const activas = ofertas.filter(o => (o.estrategia === 'normal' ? paqueteActivo(o) : elegidas.has(o.id))).length;
   const idLista = `grupo-ofertas-${producto?.id || nombre}`.replace(/[^a-zA-Z0-9_-]/g, '-');
   return (
     <div className={`rounded-xl border border-border overflow-hidden ${fuera ? 'opacity-80' : ''}`}>
@@ -1643,11 +1712,20 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
         {ofertas.map(o => {
           const precio = o.precio_order_bump ?? o.precio_normal;
           const antes = o.precio_order_bump != null && Number(o.precio_normal) > Number(o.precio_order_bump) ? o.precio_normal : null;
+          const esPaquete = o.estrategia === 'normal';
+          const paqueteEstaActivo = !esPaquete || paqueteActivo(o);
           return (
             <li key={o.id}>
-              <label className={`flex items-start gap-3 px-4 py-3 ${fuera ? 'cursor-default' : 'cursor-pointer hover:bg-surface-2'} transition-colors`}>
-                {o.estrategia === 'normal' ? (
-                  <Check size={16} className="mt-0.5 shrink-0 text-success" aria-label="Siempre visible en la ficha" />
+              <label className={`flex items-start gap-3 px-4 py-3 ${fuera ? 'cursor-default' : 'cursor-pointer hover:bg-surface-2'} ${paqueteEstaActivo ? '' : 'opacity-60'} transition-colors`}>
+                {esPaquete ? (
+                  <input
+                    type="checkbox"
+                    checked={paqueteEstaActivo}
+                    disabled={fuera}
+                    onChange={e => onCambiarPaquete?.(o.id, { activo: e.target.checked })}
+                    aria-label={`Mostrar paquete ${o.nombre} en esta landing`}
+                    className="w-4 h-4 mt-0.5 accent-primary shrink-0"
+                  />
                 ) : (
                   <input
                     type="checkbox"
@@ -1665,7 +1743,9 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
                   <span className="block text-sm text-fg">{o.nombre}</span>
                   <span className="block text-xs text-fg-muted mt-0.5">
                     <span className="font-medium text-fg/80">{{ order_bump: 'Order bump', upsell: 'Upsell', normal: 'Paquete' }[o.estrategia] || 'Oferta'}</span>
-                    {{ order_bump: ' · en la ficha y el checkout', upsell: ' · en el carrito', normal: ' · siempre en la ficha, en "Elegí tu oferta"' }[o.estrategia] || ''}
+                    {esPaquete
+                      ? (paqueteEstaActivo ? ' · en la ficha, en "Elegí tu oferta"' : ' · oculto en esta landing')
+                      : ({ order_bump: ' · en la ficha y el checkout', upsell: ' · en el carrito' }[o.estrategia] || '')}
                   </span>
                   <span className="block text-xs text-fg-muted">Ofrece: {queOfrece(o)}</span>
                   {(() => {
@@ -1686,8 +1766,8 @@ function GrupoOfertas({ producto, nombre, ofertas, elegidas, onAlternar, onGesti
                   {antes && <span className="block font-mono text-[11px] text-fg-muted line-through tabular-nums">{formatearGs(antes)}</span>}
                 </span>
               </label>
-              {o.estrategia === 'normal' && !fuera && onCambiarPaquete && (
-                <ConfigPaquete conf={confPaquetes[o.id] || {}} onCambiar={cambio => onCambiarPaquete(o.id, cambio)} />
+              {esPaquete && !fuera && onCambiarPaquete && (
+                <ConfigPaquete conf={confPaquetes[o.id] || {}} activo={paqueteEstaActivo} onCambiar={cambio => onCambiarPaquete(o.id, cambio)} />
               )}
             </li>
           );
@@ -1785,25 +1865,27 @@ const ETIQUETAS_SUGERIDAS = ['Más elegido', 'Mayor ahorro', 'Recomendado', 'Ide
  * etiqueta llena). "Más elegido" es una afirmación del comercio: ponela
  * cuando sea verdad.
  */
-function ConfigPaquete({ conf, onCambiar }) {
+function ConfigPaquete({ conf, activo = true, onCambiar }) {
   const etiqueta = conf.etiqueta || '';
   return (
     <div className="px-4 pb-3 pl-11 space-y-2">
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className={`flex flex-wrap items-center gap-1.5 ${activo ? '' : 'opacity-50'}`}>
         <span className="text-[11px] font-medium text-fg-muted mr-1">Etiqueta</span>
         {ETIQUETAS_SUGERIDAS.map(t => (
           <button
             key={t}
             type="button"
+            disabled={!activo}
             onClick={() => onCambiar({ etiqueta: etiqueta === t ? '' : t })}
             aria-pressed={etiqueta === t}
-            className={`h-6 px-2 rounded-full text-[11px] font-medium border ${etiqueta === t ? 'bg-fg text-canvas border-fg' : 'border-border text-fg-muted hover:text-fg'}`}
+            className={`h-6 px-2 rounded-full text-[11px] font-medium border ${etiqueta === t ? 'bg-fg text-canvas border-fg' : 'border-border text-fg-muted hover:text-fg'} disabled:cursor-not-allowed disabled:hover:text-fg-muted`}
           >
             {t}
           </button>
         ))}
         <input
           value={etiqueta}
+          disabled={!activo}
           onChange={e => onCambiar({ etiqueta: e.target.value.slice(0, 24) })}
           placeholder="O escribí la tuya"
           maxLength={24}
@@ -1811,8 +1893,8 @@ function ConfigPaquete({ conf, onCambiar }) {
           className="h-6 w-36 rounded-md border border-border bg-surface px-2 text-[11px] text-fg"
         />
       </div>
-      <label className="flex items-center gap-2 text-[12px] text-fg cursor-pointer">
-        <input type="checkbox" checked={!!conf.destacado} onChange={e => onCambiar({ destacado: e.target.checked })} className="w-3.5 h-3.5 accent-primary" />
+      <label className={`flex items-center gap-2 text-[12px] text-fg ${activo ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+        <input type="checkbox" checked={!!conf.destacado} disabled={!activo} onChange={e => onCambiar({ destacado: e.target.checked })} className="w-3.5 h-3.5 accent-primary" />
         Destacar este paquete <span className="text-fg-muted">(arranca elegido y resalta su etiqueta)</span>
       </label>
     </div>

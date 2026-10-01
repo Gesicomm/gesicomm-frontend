@@ -35,7 +35,10 @@ export const landingSimpleService = {
   obtener: (id) => API.get(`/mis-landings-simples/${id}`).then(r => r.data),
   actualizar: (id, payload) => API.put(`/mis-landings-simples/${id}`, payload).then(r => r.data),
   eliminar: (id) => API.delete(`/mis-landings-simples/${id}`).then(r => r.data),
-  cambiarEstado: (id, activo) => API.patch(`/mis-landings-simples/${id}/estado`, { activo }).then(r => r.data),
+  cambiarEstado: (id, activo, opciones = {}) => API.patch(`/mis-landings-simples/${id}/estado`, {
+    activo,
+    ...(opciones.aceptarContenidoIA ? { aceptar_contenido_ia: true } : {}),
+  }).then(r => r.data),
 
   subirLogo: (id, formData) =>
     API.post(`/mis-landings-simples/${id}/logo`, formData, {

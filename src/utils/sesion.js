@@ -14,6 +14,7 @@
  * Va en sessionStorage y no en la URL a propósito: en Gesicomm el estado de
  * UI nunca viaja por query params.
  */
+import { apiOrigin } from './apiBase';
 
 const CLAVE_AVISO = 'gesicomm:aviso-sesion';
 const CLAVE_SESION_ACTIVA = 'gesicomm:sesion-activa';
@@ -23,7 +24,7 @@ export const AVISO_SESION_EXPIRADA = 'expirada';
 
 /** Base de la API (sin barra final). Mismo criterio que utils/api.js. */
 export function baseApi() {
-  return (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+  return apiOrigin();
 }
 
 // sessionStorage puede tirar excepción (modo privado en algunos navegadores,

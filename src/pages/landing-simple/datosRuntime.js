@@ -69,6 +69,12 @@ export function ofertaCruzadaVisible(oferta, venta) {
   return (cross?.ofertas || []).map(Number).includes(Number(oferta.id));
 }
 
+function paqueteVisible(oferta, venta) {
+  if (oferta?.estrategia !== 'normal') return false;
+  const conf = venta?.paquetes?.[String(oferta.id)] || venta?.paquetes?.[Number(oferta.id)];
+  return conf?.activo !== false;
+}
+
 /** Ahorro y % de descuento de una oferta — lo que muestran "Ahorrás Gs X" y el "-30%". */
 function conAhorro(oferta) {
   const antes = Number(oferta.precio_normal) || 0;
@@ -80,7 +86,7 @@ function conAhorro(oferta) {
 /** Ofertas que el HTML puede mostrar en la ficha: packs (normal) y ventas cruzadas publicables. */
 function ofertasRuntime(item, venta) {
   return (item.ofertas || [])
-    .filter(o => ofertaCruzadaVisible(o, venta) && (o.estrategia === 'normal' || ofertaCheckoutPublicable(o)))
+    .filter(o => (o.estrategia === 'normal' ? paqueteVisible(o, venta) : (ofertaCruzadaVisible(o, venta) && ofertaCheckoutPublicable(o))))
     .map(o => {
       const detalle = detalleOfertaCheckout(o);
       const precioOferta = detalle.precioFinal || o.precio_efectivo || o.precio;
@@ -316,6 +322,35 @@ function tiendaRuntime(data) {
   };
 }
 
+function primerProductoId(catalogo = []) {
+  return (catalogo.find(i => i.tipo === 'producto') || catalogo[0] || null)?.id || null;
+}
+
+function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
+  if (!venta) return null;
+  const productoId = productoPreferido?.id || primerProductoId(catalogo);
+  const urgencia = venta.urgencia
+    ? {
+      ...venta.urgencia,
+      producto_id: venta.urgencia.producto_id || venta.urgencia.content_id || productoId || null,
+    }
+    : null;
+  const pruebaSocial = venta.prueba_social
+    ? {
+      ...venta.prueba_social,
+      producto_id: venta.prueba_social.producto_id || venta.prueba_social.content_id || productoId || null,
+    }
+    : null;
+  return {
+    tipo: venta.tipo,
+    destacados: venta.destacados || [],
+    recomendados_titulo: venta.recomendados?.titulo || '',
+    paquetes: venta.paquetes || {},
+    urgencia,
+    prueba_social: pruebaSocial,
+  };
+}
+
 /** Datos del runtime para la landing publicada (inicio o ficha). */
 export function datosRuntimePublico(data, slug, productoPublico) {
   const venta = data?.content?.venta || null;
@@ -327,7 +362,7 @@ export function datosRuntimePublico(data, slug, productoPublico) {
   return {
     vista: producto ? 'producto' : 'inicio',
     tienda: tiendaRuntime(data),
-    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {}, urgencia: venta.urgencia || null, prueba_social: venta.prueba_social || null } : null,
+    venta: ventaRuntime(venta, catalogo, producto),
     // paginado: la respuesta trae solo la primera página; el resto lo pide
     // el runtime (ver onCatalogo en LandingCodigoPublica).
     catalogo: {
@@ -348,7 +383,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
   ofertas
-    .filter(o => o.estrategia === 'normal' || (['order_bump', 'upsell'].includes(o.estrategia) && ofertaCruzadaVisible(o, venta)))
+    .filter(o => (o.estrategia === 'normal' && paqueteVisible(o, venta)) || (['order_bump', 'upsell'].includes(o.estrategia) && ofertaCruzadaVisible(o, venta)))
     .forEach(o => {
       const k = Number(o.producto_ancla_id);
       porProducto.set(k, [...(porProducto.get(k) || []), o]);
@@ -380,7 +415,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
       youtube: tienda?.youtube || '',
       twitter: tienda?.twitter || '',
     },
-    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {}, urgencia: venta.urgencia || null, prueba_social: venta.prueba_social || null } : null,
+    venta: ventaRuntime(venta, catalogo, producto),
     // En el editor está toda la selección en memoria: filtra y ordena el
     // propio runtime, sin servidor.
     catalogo: { total: catalogo.length, por_pagina: 24, paginado: false },

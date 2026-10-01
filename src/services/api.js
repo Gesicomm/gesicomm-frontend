@@ -1,13 +1,8 @@
 import axios from 'axios';
 import { irALoginPorSesionPerdida, renovarSesion } from '../utils/sesion';
+import { apiBaseURL } from '../utils/apiBase';
 
-let apiURL = import.meta.env.VITE_API_URL || '';
-if (!apiURL) {
-  console.error("🚨 ERROR CRÍTICO: La variable VITE_API_URL no está definida en el entorno.");
-}
-if (!apiURL.endsWith('/api') && apiURL !== '') {
-  apiURL = apiURL.replace(/\/$/, '') + '/api';
-}
+const apiURL = apiBaseURL();
 
 const API = axios.create({
   baseURL: apiURL,

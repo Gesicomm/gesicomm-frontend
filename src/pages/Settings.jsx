@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../utils/api';
+import { apiOrigin } from '../utils/apiBase';
 import { Plus, Trash2, Store, CheckCircle, XCircle, Loader } from 'lucide-react';
 import PrivacidadDatosCard from '../components/PrivacidadDatosCard';
 
@@ -42,7 +43,7 @@ const Settings = () => {
     };
 
     const handleConnectMeta = (mode = 'connect') => {
-        const baseUrl = import.meta.env.VITE_API_URL || '';
+        const baseUrl = apiOrigin();
         const currentPath = window.location.pathname;
         window.location.href = `${baseUrl}/api/meta/connect?mode=${mode}&redirect_to=${encodeURIComponent(currentPath)}`;
     };

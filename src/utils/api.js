@@ -10,10 +10,9 @@
  *   de devolver un error críptico a la pantalla.
  */
 import { irALoginPorSesionPerdida, renovarSesion } from './sesion';
+import { apiOrigin } from './apiBase';
 
-// ⚠️ NUNCA hacer fallback a la URL de producción.
-// Si no existe la variable, usamos la ruta relativa (útil si hay un proxy local) o localhost para desarrollo.
-const API_URL = import.meta.env.VITE_API_URL || '';
+const API_URL = apiOrigin();
 
 // Rutas donde un 401 NO significa "sesión vencida" y por lo tanto no hay que
 // mandar a nadie al login:

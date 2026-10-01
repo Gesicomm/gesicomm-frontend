@@ -154,6 +154,38 @@ export function extraerBloques(texto) {
   return salida;
 }
 
+const RE_AVISOS_IA_LANDING = [
+  /experiencias?\s+mostradas?/i,
+  /no\s+corresponden\s+necesariamente/i,
+  /resultados?\s+individuales?\s+pueden\s+variar/i,
+  /resultados?\s+pueden\s+variar\s+seg[uú]n\s+cada\s+persona/i,
+];
+
+function esAvisoIaLanding(texto) {
+  const limpio = String(texto || '').replace(/\s+/g, ' ').trim();
+  return limpio.length > 0
+    && limpio.length <= 1200
+    && RE_AVISOS_IA_LANDING.some(re => re.test(limpio));
+}
+
+export function limpiarAvisosIaHtml(html) {
+  const texto = String(html || '');
+  if (!RE_AVISOS_IA_LANDING.some(re => re.test(texto))) return texto;
+  if (typeof DOMParser === 'undefined') return texto;
+  const doc = new DOMParser().parseFromString(`<body>${texto}</body>`, 'text/html');
+  [...doc.body.querySelectorAll('*')].forEach(el => {
+    if (!el.isConnected || !esAvisoIaLanding(el.textContent)) return;
+    let candidato = el;
+    let actual = el;
+    while (actual.parentElement && actual.parentElement !== doc.body && esAvisoIaLanding(actual.parentElement.textContent)) {
+      candidato = actual.parentElement;
+      actual = actual.parentElement;
+    }
+    candidato.remove();
+  });
+  return doc.body.innerHTML.trim();
+}
+
 function creationSourceDe(landing) {
   const content = landing?.content || {};
   const explicita = content.creation_source || content.creationSource || content.origen;
@@ -195,6 +227,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [erroresDetalle, setErroresDetalle] = useState([]);
   const [advertencias, setAdvertencias] = useState([]);
   const [aviso, setAviso] = useState('');
+  const [confirmacionPublicacionIA, setConfirmacionPublicacionIA] = useState(null);
   const [errorRuntime, setErrorRuntime] = useState('');
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [viewportMode, setViewportMode] = useState('desktop');
@@ -295,7 +328,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   function escribir(clave, valor) {
-    setCodigos(prev => ({ ...prev, [claveVista]: { ...prev[claveVista], [clave]: valor } }));
+    const valorSeguro = clave === 'html' && !esLegal ? limpiarAvisosIaHtml(valor) : valor;
+    setCodigos(prev => ({ ...prev, [claveVista]: { ...prev[claveVista], [clave]: valorSeguro } }));
     setAviso('');
     setSinGuardar(true);
   }
@@ -454,10 +488,9 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   // Mismo criterio que AICodeValidator.detectarBloquesSinConfirmar en el
-  // backend (landingSimple.service.js): esto es solo para evitar el
-  // roundtrip y llevar al comercio directo a "Configurar venta" — la
-  // validación real y determinante sigue siendo la del servidor.
-  function bloqueosDePublicacion() {
+  // backend (landingSimple.service.js): esto evita publicar por accidente.
+  // Ya no bloquea; abre una confirmación explícita antes de publicar.
+  function advertenciasDePublicacionIA() {
     const htmls = Object.entries(codigos || {})
       .map(([k, c]) => (k === 'inicio' || k === 'producto' || k.startsWith(PREFIJO_PROPIA)) ? c?.html : null)
       .filter(Boolean)
@@ -474,28 +507,29 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     return pendientes;
   }
 
-  async function cambiarEstado(activo) {
+  async function cambiarEstado(activo, opciones = {}) {
     setError('');
-    if (activo) {
-      const pendientes = bloqueosDePublicacion();
+    if (activo && !opciones.aceptarContenidoIA) {
+      const pendientes = advertenciasDePublicacionIA();
       if (pendientes.length) {
-        const NOMBRES = { urgencia: 'el countdown de oferta', prueba_social: 'las estadísticas/prueba social' };
-        const detalle = pendientes.map(p => NOMBRES[p] || p).join(' y ');
-        setError(
-          `${detalle} todavía están en modo "ejemplo" (los generó la IA para previsualizar, no son datos reales). `
-          + 'Meta prohíbe countdowns falsos y estadísticas inventadas en anuncios (puede suspender tu cuenta publicitaria), y la Ley 1334 de Defensa del Consumidor prohíbe la publicidad engañosa. '
-          + 'Confirmalos con datos reales en "Configurar venta" antes de publicar.',
-        );
-        setPaso('venta');
+        setConfirmacionPublicacionIA({ pendientes });
         return;
       }
     }
     try {
-      const actualizada = await landingSimpleService.cambiarEstado(id, activo);
+      const actualizada = await landingSimpleService.cambiarEstado(id, activo, {
+        aceptarContenidoIA: opciones.aceptarContenidoIA,
+      });
       setLanding(prev => ({ ...prev, activo: actualizada.activo }));
+      setConfirmacionPublicacionIA(null);
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudo cambiar el estado.');
     }
+  }
+
+  function irAConfigurarDatosReales() {
+    setConfirmacionPublicacionIA(null);
+    setPaso('venta');
   }
 
   // Volver a la pantalla de "¿Cómo querés armar tu landing?": la landing de
@@ -571,7 +605,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   function aplicarRespuestaIa(bloques) {
-    setCodigos(prev => ({ ...prev, [claveVista]: { ...prev[claveVista], ...bloques } }));
+    const limpios = bloques.html ? { ...bloques, html: limpiarAvisosIaHtml(bloques.html) } : bloques;
+    setCodigos(prev => ({ ...prev, [claveVista]: { ...prev[claveVista], ...limpios } }));
     setSinGuardar(true);
     setTab('html');
     setAviso(`Código aplicado a ${esPropia ? `la ficha de "${nombreProductoFicha}"` : esLegal ? nombrePaginaLegal : vista === 'producto' ? 'la ficha general' : 'el inicio'}. Revisá el preview y guardá.`);
@@ -1074,6 +1109,50 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         </div>
       </div>
 
+      {confirmacionPublicacionIA && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-fg/15 bg-surface shadow-2xl">
+            <div className="flex items-start gap-3 border-b border-fg/10 p-4">
+              <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500/15 text-amber-300">
+                <AlertTriangle size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-base font-bold text-fg">Contenido generado con IA</p>
+                <p className="mt-1 text-sm leading-relaxed text-fg/65">
+                  Esta landing usa {confirmacionPublicacionIA.pendientes.includes('urgencia') && confirmacionPublicacionIA.pendientes.includes('prueba_social')
+                    ? 'countdown y estadísticas'
+                    : confirmacionPublicacionIA.pendientes.includes('urgencia') ? 'countdown' : 'estadísticas'} sin confirmar como datos reales.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3 p-4 text-sm leading-relaxed text-fg/70">
+              <p>
+                Revisá que esa información sea verdadera antes de usarla en anuncios o en la página pública. Publicar datos falsos o no comprobados puede traerte problemas con políticas de anuncios y normas de defensa del consumidor.
+              </p>
+              <p className="font-semibold text-fg">
+                Podés publicar igual si aceptás que estás al tanto de lo que implica.
+              </p>
+            </div>
+            <div className="flex flex-col-reverse gap-2 border-t border-fg/10 p-4 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={irAConfigurarDatosReales}
+                className="inline-flex justify-center rounded-xl border border-fg/15 px-4 py-2 text-sm font-semibold text-fg/75 hover:bg-fg/10"
+              >
+                Cancelar y cargar datos reales
+              </button>
+              <button
+                type="button"
+                onClick={() => cambiarEstado(true, { aceptarContenidoIA: true })}
+                className="inline-flex justify-center rounded-xl bg-fg px-4 py-2 text-sm font-semibold text-canvas hover:bg-fg-muted"
+              >
+                Aceptar, estoy al tanto
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {asistenteAbierto && (
         <div className="absolute bottom-4 right-4 z-20 w-[380px] max-w-[calc(100vw-2rem)] bg-surface border border-fg/15 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           <div className="p-3 border-b border-fg/10 bg-fg/5 flex items-center justify-between gap-2">
@@ -1231,7 +1310,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
 
       <label className="flex items-center gap-2 text-sm text-fg/70">
         <input type="checkbox" checked={incluirBase} onChange={e => setIncluirBase(e.target.checked)} />
-        Incluir el código base (la IA parte de algo que ya funciona)
+        Incluir referencia del código base (estructura que ya funciona)
       </label>
 
       <div>
@@ -1241,7 +1320,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
         <div className="rounded-xl border border-fg/25 bg-fg/5 p-3 flex flex-col mb-3">
           <p className="text-sm font-semibold text-fg">Prompt {vista === 'producto' ? 'de la ficha' : 'del inicio'}</p>
           <p className="text-xs text-fg/60 mt-1">
-            Todo en uno: las reglas de Gesicomm + tu tienda (nombre, colores, logo) + tus {seleccion.length} producto{seleccion.length === 1 ? '' : 's'} + lo que tiene que tener {nombreVista}{incluirBase ? ' + el código base' : ''}. Pegalo en un chat nuevo y la IA ya sabe todo.
+            Todo en uno: reglas de Gesicomm + tu tienda (nombre, colores, logo) + tus {seleccion.length} producto{seleccion.length === 1 ? '' : 's'} + lo que tiene que tener {nombreVista}{incluirBase ? ' + una referencia compacta del código base' : ''}. Pegalo en un chat nuevo y la IA ya sabe qué armar sin perderse entre bloques enormes.
           </p>
           <button
             type="button"

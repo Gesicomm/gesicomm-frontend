@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Plus, Download, Settings, X, Receipt, TrendingDown, TrendingUp,
+  Plus, Download, Settings, X, Receipt, TrendingUp,
   Wallet, PiggyBank, Percent, MoreVertical, Calendar, CreditCard, Truck,
-  FileText, CheckCircle, Repeat, Package, ChevronLeft, ChevronRight, HelpCircle, Scale,
+  FileText, CheckCircle, Repeat, Package, ChevronLeft, ChevronRight, HelpCircle,
 } from 'lucide-react';
 import { costosGastosService, categoriasCostosGastosService, proveedoresService } from '../../services/costosGastosService';
 import { formatMoneda } from '../../utils/currency';
@@ -206,76 +206,6 @@ function CardResumen({ icon, label, valor, tono = 'default', sufijo, ayuda }) {
   );
 }
 
-/**
- * Balance general del período: cuánto entró, cuánto salió y cuánto queda
- * disponible. Reutiliza el mismo `resumen` del backend (mismos números que
- * las tarjetas de abajo) pero en formato "gané / gasté / me sobra" que es
- * como el usuario piensa su presupuesto, sin tener que interpretar
- * "Resultado" o "Margen".
- */
-function PresupuestoGeneral({ resumen }) {
-  if (!resumen) return null;
-  const ingresos = Number(resumen.ingresos) || 0;
-  const egresos = Number(resumen.total_egresos) || 0;
-  const saldo = Number(resumen.resultado) || 0;
-  const positivo = saldo >= 0;
-  const porcentajeGastado = ingresos > 0 ? Math.min(100, Math.round((egresos / ingresos) * 100)) : (egresos > 0 ? 100 : 0);
-
-  return (
-    <div className="mb-6 rounded-xl border border-border bg-surface p-4">
-      <div className="mb-3 flex items-center gap-1.5">
-        <Scale size={15} className="text-primary-text" />
-        <h2 className="m-0 text-sm font-bold text-fg">Presupuesto general del período</h2>
-        <Ayuda texto="Comparación simple entre lo que ingresó (ventas netas de pedidos entregados + otros ingresos registrados) y lo que salió (costos + gastos), para saber de un vistazo cuánto te queda disponible. Usa los mismos datos que las tarjetas de abajo." />
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success/10 text-success">
-            <TrendingUp size={16} />
-          </div>
-          <div>
-            <div className="text-xs text-fg-subtle">Ingresos</div>
-            <div className="text-base font-bold text-success">{formatMoneda(ingresos)}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger">
-            <TrendingDown size={16} />
-          </div>
-          <div>
-            <div className="text-xs text-fg-subtle">Egresos</div>
-            <div className="text-base font-bold text-danger">{formatMoneda(egresos)}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${positivo ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
-            <PiggyBank size={16} />
-          </div>
-          <div>
-            <div className="text-xs text-fg-subtle">{positivo ? 'Resultado positivo' : 'Resultado negativo'}</div>
-            <div className={`text-base font-bold ${positivo ? 'text-success' : 'text-danger'}`}>{formatMoneda(Math.abs(saldo))}</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3">
-        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-          <div
-            className={`h-full rounded-full ${porcentajeGastado >= 100 ? 'bg-danger' : porcentajeGastado >= 80 ? 'bg-warning' : 'bg-success'}`}
-            style={{ width: `${porcentajeGastado}%` }}
-          />
-        </div>
-        <p className="mt-1.5 text-xs text-fg-subtle">
-          {ingresos > 0
-            ? `Los egresos equivalen al ${porcentajeGastado}% de los ingresos netos de este período.`
-            : 'Todavía no registraste ingresos en este período.'}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function formatPct(valor) {
   if (valor === null || valor === undefined || isNaN(valor)) return '—';
   return `${Number(valor).toLocaleString('es-PY', { maximumFractionDigits: 1 })}%`;
@@ -298,13 +228,14 @@ function KpiReporte({ label, value, type = 'money', tone = 'default', icon }) {
 
 function ReporteBloque({ titulo, filas, totalLabel, total, tone = 'default' }) {
   const totalClass = tone === 'danger' ? 'text-danger' : tone === 'success' ? 'text-success' : 'text-fg';
+  const filasVisibles = (filas || []).filter(fila => !fila.pendiente);
   return (
     <section className="rounded-xl border border-border bg-surface p-4">
       <h3 className="mb-3 text-center text-xs font-bold uppercase text-fg">{titulo}</h3>
       <div className="space-y-2">
-        {filas.map(fila => (
+        {filasVisibles.map(fila => (
           <div key={fila.id || fila.label} className="flex items-center justify-between gap-3 text-sm">
-            <span className="min-w-0 text-fg-muted">{fila.label}{fila.pendiente ? <span className="ml-1 text-xs text-fg-subtle">(sin módulo)</span> : ''}</span>
+            <span className="min-w-0 text-fg-muted">{fila.label}</span>
             <span className="shrink-0 font-semibold text-fg">{formatMoneda(fila.valor)}</span>
           </div>
         ))}
@@ -487,7 +418,6 @@ export default function CostosGastos() {
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
 
-  const [resumen, setResumen] = useState(null);
   const [reporteFlujoCaja, setReporteFlujoCaja] = useState(null);
   const [loadingReporte, setLoadingReporte] = useState(true);
   const [compararAnterior, setCompararAnterior] = useState(false);
@@ -528,11 +458,6 @@ export default function CostosGastos() {
     proveedoresService.buscar({ limit: 200 }).then(d => setProveedores(d.proveedores || [])).catch(console.error);
   }, []);
 
-  const cargarResumen = useCallback(() => {
-    if (!rango.fecha_desde) return;
-    costosGastosService.resumen(rango).then(setResumen).catch(console.error);
-  }, [rango]);
-
   const cargarReporteFlujoCaja = useCallback(() => {
     if (!rango.fecha_desde) return;
     setLoadingReporte(true);
@@ -561,11 +486,10 @@ export default function CostosGastos() {
       });
   }, [rango, filtrosConsulta, busquedaDebounced]);
 
-  useEffect(() => { cargarResumen(); }, [cargarResumen]);
   useEffect(() => { cargarReporteFlujoCaja(); }, [cargarReporteFlujoCaja]);
   useEffect(() => { cargarRegistros(1); }, [cargarRegistros]);
 
-  const recargarTodo = () => { cargarResumen(); cargarReporteFlujoCaja(); cargarRegistros(paginacion.pagina); };
+  const recargarTodo = () => { cargarReporteFlujoCaja(); cargarRegistros(paginacion.pagina); };
 
   const chipsActivos = useMemo(() => {
     const chips = [];

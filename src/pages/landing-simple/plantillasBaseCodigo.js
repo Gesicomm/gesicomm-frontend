@@ -241,6 +241,34 @@ const JS_COMUN = `(() => {
     link.addEventListener('click', () => navLinks.classList.remove('is-open'));
   });
 
+  document.querySelectorAll('.featured-carousel').forEach((carousel) => {
+    const slides = Array.from(carousel.querySelectorAll('.hero-card'));
+    if (!slides.length) return;
+    let actual = 0;
+    const dots = document.createElement('div');
+    dots.className = 'featured-dots';
+    function pintar(n) {
+      actual = n;
+      slides.forEach((slide, i) => slide.classList.toggle('is-active', i === actual));
+      Array.from(dots.children).forEach((dot, i) => dot.classList.toggle('is-active', i === actual));
+    }
+    if (slides.length > 1) {
+      slides.forEach((_slide, i) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'featured-dot';
+        dot.setAttribute('aria-label', 'Ver destacado ' + (i + 1));
+        dot.addEventListener('click', () => pintar(i));
+        dots.appendChild(dot);
+      });
+      carousel.appendChild(dots);
+      const timer = setInterval(() => pintar((actual + 1) % slides.length), 4200);
+      if (timer && timer.unref) timer.unref();
+    }
+    carousel.classList.add('is-ready');
+    pintar(0);
+  });
+
   document.querySelectorAll('.faq-question').forEach((pregunta) => {
     pregunta.addEventListener('click', () => {
       const item = pregunta.closest('.faq-item');
@@ -278,6 +306,13 @@ h1 em { color: var(--brand); font-style: normal; }
 .mini-trust { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 28px; color: var(--ink-soft); font-size: .82rem; font-weight: 650; }
 .mini-trust b { color: var(--brand); }
 .hero-card { overflow: hidden; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); transform: rotate(2deg); cursor: pointer; }
+.featured-carousel { position: relative; min-height: 510px; }
+.featured-carousel .hero-card { display: none; opacity: 0; transform: rotate(2deg) translateY(8px); transition: opacity .35s ease, transform .35s ease; }
+.featured-carousel:not(.is-ready) .hero-card:first-of-type,
+.featured-carousel .hero-card.is-active { display: block; opacity: 1; transform: rotate(2deg) translateY(0); }
+.featured-dots { position: absolute; right: 18px; bottom: 18px; z-index: 3; display: flex; gap: 7px; }
+.featured-dot { width: 8px; height: 8px; padding: 0; background: rgba(16, 32, 47, .22); border: 0; border-radius: 999px; }
+.featured-dot.is-active { width: 22px; background: var(--brand); }
 .hero-image-wrap { display: grid; min-height: 335px; padding: 20px; place-items: center; background: #f2f2ed; }
 .hero-image-wrap img { width: 100%; height: 330px; object-fit: contain; mix-blend-mode: multiply; }
 .hero-card-copy { padding: 20px 24px 24px; }
@@ -347,6 +382,7 @@ h1 em { color: var(--brand); font-style: normal; }
 }
 @media (max-width: 720px) {
   .hero { padding: 52px 0 65px; }
+  .featured-carousel { min-height: 440px; }
   .hero-image-wrap { min-height: 260px; }
   .hero-image-wrap img { height: 250px; }
   .trust-grid { grid-template-columns: 1fr; gap: 14px; }
@@ -382,13 +418,14 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
         </div>
       </div>
 
-      <!-- Producto destacado: el primero de la selección. -->
-      <div class="reveal" data-gesicomm-lista="productos" data-gesicomm-limite="1">
+      <!-- Productos destacados: los elegidos en Configurar venta; si no hay,
+           Gesicomm usa los primeros de la selección. -->
+      <div class="reveal featured-carousel" data-gesicomm-lista="productos_destacados">
         <template>
           <article class="hero-card" data-gesicomm-ver>
             <div class="hero-image-wrap"><img data-gesicomm-bind="imagen" alt=""></div>
             <div class="hero-card-copy">
-              <div class="product-kicker">Producto destacado · <span data-gesicomm-bind="categoria"></span></div>
+              <div class="product-kicker">Destacado · <span data-gesicomm-bind="categoria"></span></div>
               <h2 data-gesicomm-bind="nombre"></h2>
               <div class="price-row">
                 <span class="price" data-gesicomm-bind="precio"></span>

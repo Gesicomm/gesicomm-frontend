@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, ChevronDown, ImageOff, Star } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, ImageOff, Layers, Star } from 'lucide-react';
 import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio } from '../iconosBeneficios';
@@ -82,6 +82,9 @@ export default function ComboProductPage({
   // combo. Se arma sola con lo que ya trae el combo — no se inventa nada.
   const totalIndividual = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (p.cantidad || 1), 0);
   const ahorroValor = totalIndividual > (item.precio || 0) ? totalIndividual - (item.precio || 0) : null;
+  const productosHero = productos.slice(0, 4);
+  const totalUnidades = productos.reduce((sum, p) => sum + (Number(p.cantidad) || 1), 0);
+  const resumenUnidades = totalUnidades === 1 ? '1 producto incluido' : `${totalUnidades} productos incluidos`;
 
   return (
     <div className={`cmb-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
@@ -195,6 +198,34 @@ export default function ComboProductPage({
                   <span />
                   {[ficha.hero.nota_stock, ficha.hero.nota_envio].filter(Boolean).join(' · ')}
                 </p>
+              )}
+
+              {productos.length > 0 && (
+                <div className="cmb-hero-kit" aria-label="Resumen del combo">
+                  <div className="cmb-hero-kit-head">
+                    <span><Layers size={15} /> Combo armado</span>
+                    <strong>{resumenUnidades}</strong>
+                  </div>
+                  <div className="cmb-hero-kit-list">
+                    {productosHero.map(p => (
+                      <div className="cmb-hero-kit-item" key={p.id}>
+                        <div className="cmb-hero-kit-thumb">
+                          {p.imagen ? <img src={getMediaUrl(p.imagen)} alt="" loading="lazy" /> : <ImageOff size={18} />}
+                        </div>
+                        <span>{p.nombre}</span>
+                        <b>×{p.cantidad || 1}</b>
+                      </div>
+                    ))}
+                  </div>
+                  {productos.length > productosHero.length && (
+                    <small className="cmb-hero-kit-more">+{productos.length - productosHero.length} producto{productos.length - productosHero.length === 1 ? '' : 's'} más en el combo</small>
+                  )}
+                  <div className="cmb-hero-kit-price">
+                    <span>Por separado <b>{formatPrecio(totalIndividual)}</b></span>
+                    <span>En combo <b>{formatPrecio(item.precio)}</b></span>
+                    {ahorroValor != null && <strong>Ahorrás {formatPrecio(ahorroValor)}</strong>}
+                  </div>
+                </div>
               )}
 
               <div className="cmb-hero-accion">

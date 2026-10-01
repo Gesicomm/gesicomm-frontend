@@ -2,9 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../services/api', () => ({ default: {}, getMediaUrl: u => u }));
 
-const { extraerBloques } = await import('./LandingCodigoEditor');
+const { extraerBloques, limpiarAvisosIaHtml } = await import('./LandingCodigoEditor');
 const { calcularRecomendados } = await import('./datosRuntime');
 const { armarPromptVista } = await import('./promptsCodigo');
+const { PLANTILLA_PRODUCTO } = await import('./plantillasBaseCodigo');
 
 describe('extraerBloques — pegar la respuesta de la IA', () => {
   it('separa los tres bloques aunque vengan con texto alrededor', () => {
@@ -22,6 +23,21 @@ describe('extraerBloques — pegar la respuesta de la IA', () => {
 
   it('texto sin código no devuelve nada', () => {
     expect(extraerBloques('no puedo ayudarte con eso')).toEqual({});
+  });
+
+  it('quita avisos visibles que la IA mete como disclaimer dentro de la landing', () => {
+    const html = limpiarAvisosIaHtml(`
+      <section><h1>AdelFit</h1></section>
+      <div class="notice">
+        <span>i</span>
+        <p>Las experiencias mostradas fueron publicadas por comercios que comercializan AdelFit y no corresponden necesariamente a compradores de esta tienda. Los resultados individuales pueden variar.</p>
+      </div>
+      <button data-gesicomm-comprar>Comprar</button>
+    `);
+    expect(html).toContain('AdelFit');
+    expect(html).toContain('data-gesicomm-comprar');
+    expect(html).not.toMatch(/experiencias mostradas/i);
+    expect(html).not.toMatch(/resultados individuales/i);
   });
 });
 
@@ -59,6 +75,14 @@ describe('prompts por vista', () => {
   it('la ficha no pide la lista de ofertas si las ventas cruzadas están apagadas', () => {
     const p = armarPromptVista('producto', { venta: { cross_sell: { activo: false } }, productos });
     expect(p).toContain('Ofertas desactivadas');
+  });
+
+  it('documenta productos destacados y compacta la base larga de ficha', () => {
+    const p = armarPromptVista('producto', { venta: {}, productos, base: PLANTILLA_PRODUCTO });
+    expect(p).toContain('"productos_destacados"');
+    expect(p).toContain('Código base (resumen)');
+    expect(p).not.toContain('.product-grid');
+    expect(p.length).toBeLessThan(35000);
   });
 });
 

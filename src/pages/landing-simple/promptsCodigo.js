@@ -44,7 +44,8 @@ export const PROMPT_MAESTRO = `Sos un desarrollador front-end senior y especiali
 
 Valores de data-gesicomm-lista:
 - "catalogo": LA GRILLA PRINCIPAL de la tienda. Puede tener miles de productos: Gesicomm la pagina y la filtra en el servidor. Usala siempre para "todos los productos" (ver "Catálogo navegable" abajo). Poné data-gesicomm-si-vacio="mostrar" para que no desaparezca cuando una búsqueda no encuentra nada.
-- "productos": los primeros productos de la landing (destacados), productos y combos. Sirve para un hero o una franja de destacados, NO para listar todo el catálogo
+- "productos_destacados": productos marcados como destacados en "Configurar venta"; si no hay destacados, Gesicomm usa los primeros productos de la landing. Sirve para un hero o una franja destacada.
+- "productos": los primeros productos de la landing, productos y combos. Sirve para una franja breve, NO para listar todo el catálogo
 - "solo_productos": solo productos
 - "combos": solo combos
 - "combos_producto": (solo ficha) los combos que traen el producto que se está viendo ("Llevalo en combo y ahorrá"). Ponelo en la ficha, debajo de la compra
@@ -90,11 +91,11 @@ Redes sociales: poné un contenedor vacío <div data-gesicomm-redes></div> (en e
 - <input type="checkbox" data-gesicomm-bump> → dentro de "ofertas_bump": marcada, la oferta se suma sola cuando se toca "Comprar" del producto. El runtime le pone la clase "is-checked" al elemento raíz del template: estilá ese estado.
 
 ## Urgencia (countdown) y prueba social (estadísticas)
-Se pueden mostrar, pero SIEMPRE atados a configuración real de Gesicomm — nunca a un texto fijo
-que vos escribas, porque el comercio tiene que confirmarlos con datos reales antes de publicar:
+Se pueden mostrar, pero SIEMPRE con primitivas de Gesicomm — nunca como texto fijo
+que vos escribas dentro del HTML:
 
-- Countdown de oferta: <div data-gesicomm-countdown><span data-gesicomm-countdown-parte="horas"></span>:<span data-gesicomm-countdown-parte="minutos"></span>:<span data-gesicomm-countdown-parte="segundos"></span></div>. El runtime calcula la cuenta regresiva real a partir de la fecha de fin que cargue el comercio en "Configurar venta" — vos NUNCA escribas una fecha, un texto de tiempo restante ni JS de cuenta regresiva.
-- Estadísticas: usá la lista "estadisticas" de arriba, con binds "valor" ("94%") y "etiqueta" ("se sintió más liviano"). El comercio carga las cifras reales en "Configurar venta"; hasta que las confirme, Gesicomm no deja publicar la landing si estos bloques están en el HTML.
+- Countdown de oferta: <div data-gesicomm-countdown><span data-gesicomm-countdown-parte="horas"></span>:<span data-gesicomm-countdown-parte="minutos"></span>:<span data-gesicomm-countdown-parte="segundos"></span></div>. Podés incluirlo cuando la landing lo necesite; el runtime lo pinta aunque el comercio todavía no haya cargado una fecha real. NUNCA escribas una fecha, un texto de tiempo restante ni JS de cuenta regresiva.
+- Estadísticas: usá la lista "estadisticas" de arriba, con binds "valor" ("94%") y "etiqueta" ("se sintió más liviano"). Si son datos generados por IA o de ejemplo, Gesicomm muestra una advertencia al publicar para que el comercio acepte conscientemente o cargue datos reales.
 
 Diseñá estos bloques con la forma que quieras (el comercio va a ver un ejemplo mientras no
 confirme sus datos reales), pero nunca reemplaces la primitiva por texto fijo.
@@ -152,7 +153,8 @@ El logo va con <img data-gesicomm-tienda="logo" alt=""> y el nombre con <span da
 - Español de Paraguay (voseo: "elegí", "comprá"), moneda guaraníes ("Gs 145.735", sin decimales). El runtime ya formatea los precios.
 - Accesible: contraste AA, textos alternativos, botones reales (<button>) para acciones, foco visible.
 - Nada de testimonios con nombre de una persona inventada, garantías ni certificaciones inventadas: si hace falta, dejá un marcador visible "[Reemplazar por testimonio real]". "Quedan 2 unidades" inventado también sigue prohibido.
-- El único contenido de ejemplo permitido es el countdown y las estadísticas de "Urgencia y prueba social" de arriba — y solo usando esas primitivas, nunca una fecha o cifra fija en el HTML.
+- No agregues banners, alertas ni disclaimers legales visibles dentro de la landing sobre "experiencias mostradas", "resultados pueden variar" o contenido generado por IA. Gesicomm ya maneja esas advertencias en el editor y en las páginas legales; la landing comercial no debe mostrar ese aviso.
+- El único contenido de ejemplo permitido es el de "Urgencia y prueba social" de arriba — y solo usando esas primitivas, nunca una fecha o cifra fija en el HTML.
 - Fuentes: podés usar Google Fonts con <link> en el HTML (no con @import en el CSS). No uses otros scripts externos.
 - El footer tiene que tener estos links (son obligatorios para cobrar con PagoPar y para aprobar anuncios en Meta), escritos así, con su data-gesicomm-link: <a href="/contacto" data-gesicomm-link="contacto">, <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">, <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">, <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">, <a href="/politica-envio" data-gesicomm-link="politica-envio">, <a href="/aviso-legal" data-gesicomm-link="aviso-legal">. Gesicomm corrige la URL según dónde se publique la landing; no pongas dominios. En el footer poné también el contenedor de redes <div data-gesicomm-redes></div>.
 
@@ -182,12 +184,14 @@ function describirProducto(item, idx, principal) {
 
 // Con cientos de productos el prompt no puede llevarlos a todos: alcanza
 // una muestra para que la IA entienda qué se vende y escriba los textos.
-const MAX_PRODUCTOS_EN_PROMPT = 30;
+const MAX_PRODUCTOS_INICIO_PROMPT = 30;
+const MAX_PRODUCTOS_FICHA_PROMPT = 10;
+const MAX_BASE_COMPLETA_PROMPT = 14000;
 
-function contexto({ tienda, venta, productos }) {
+function contexto({ tienda, venta, productos, maxProductos = MAX_PRODUCTOS_INICIO_PROMPT }) {
   const tipo = venta?.tipo || 'catalogo';
   const nombre = tienda?.nombre || 'la tienda';
-  const muestra = productos.slice(0, MAX_PRODUCTOS_EN_PROMPT);
+  const muestra = productos.slice(0, maxProductos);
   const resto = productos.length - muestra.length;
   const categorias = [...new Set(productos.map(p => p.categoria).filter(Boolean))];
   const lista = muestra.length
@@ -279,7 +283,7 @@ Estructura (en este orden; es la que más vende según la investigación de usab
    - Galería grande: <img data-gesicomm-bind="imagen" data-gesicomm-imagen-principal> + miniaturas (lista "imagenes"). Es lo primero que mira el 56% de la gente.
    - Categoría, nombre (h1) y la PROMESA en una frase: bind "propuesta_valor".
    - Precio grande, precio tachado ("precio_antes") y el ahorro con bind "ahorro_texto" (Gesicomm ya elige % o Gs según el precio).
-   - Si es un combo: <p data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p> y la lista "combo_incluye" (foto + nombre de cada producto que trae).
+   - Si es un combo: <p data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p> y la lista "combo_incluye" (foto + nombre de cada producto que trae). En una ficha de combo, el botón principal data-gesicomm-comprar compra EL COMBO ACTUAL; no escribas IDs a mano ni hagas JavaScript de checkout propio.
    - 3 o 4 "highlights" con check: <ul data-gesicomm-lista="beneficios" data-gesicomm-limite="4"><template><li data-gesicomm-bind="titulo"></li></template></ul>.
    - Variantes (lista "variantes", estilá .is-selected y [data-agotado]).
    - Order bump ("ofertas_bump") justo ARRIBA del selector de oferta.
@@ -290,7 +294,7 @@ Estructura (en este orden; es la que más vende según la investigación de usab
 3. DEBAJO DEL PLIEGUE:
    - "Llevalo en combo y ahorrá": lista "combos_producto".
    - Beneficios completos: lista "beneficios" con binds "titulo" y "texto".
-   - Si es un combo: sección <section data-gesicomm-si="combo_incluye"> con la lista "combo_incluye" (foto, nombre, "cantidad", precio suelto con bind "precio") y el total "Por separado vs En combo". Cada producto se puede ver por separado: el combo es la opción que conviene, no la única.
+   - Si es un combo: sección <section data-gesicomm-si="combo_incluye"> con la lista "combo_incluye" (foto, nombre, "cantidad", precio suelto con bind "precio") y el total "Por separado vs En combo". Cada producto incluido puede tener un botón data-gesicomm-ver para ver su ficha; no pongas data-gesicomm-comprar dentro de "combo_incluye" salvo que explícitamente quieras vender ese producto suelto.
    - Descripción: binds "sobre" y "descripcion_larga" (white-space: pre-line).
    - Preguntas frecuentes: lista "preguntas" con <details><summary data-gesicomm-bind="pregunta"></summary><p data-gesicomm-bind="respuesta"></p></details>. Responden las dudas que frenan la compra.
    - Recomendados (lista "recomendados"): tarjeta/imagen/nombre con data-gesicomm-ver para ver la ficha, y si hay compra rápida un botón secundario con data-gesicomm-agregar.
@@ -309,8 +313,64 @@ function fichaPropia(producto) {
 No es la plantilla general: la ven únicamente quienes entran a este producto. Podés escribir textos y secciones pensados para él (a quién le sirve, cómo se usa, qué problema resuelve), usando lo que dicen sus datos de abajo. Precio, precio tachado, stock, variantes y ofertas tienen que seguir saliendo de data-gesicomm-bind y de las listas: nunca los escribas a mano. No inventes resultados, reseñas ni certificaciones: si no están en los datos, dejá un marcador visible "[Completar con dato real]".`;
 }
 
-function bloqueCodigoBase(base) {
+function valoresAtributoEnBase(texto, atributo) {
+  const valores = new Set();
+  const re = new RegExp(`${atributo}\\s*=\\s*["']([^"']+)["']`, 'g');
+  let match;
+  while ((match = re.exec(texto))) {
+    String(match[1])
+      .split('|')
+      .map(v => v.trim())
+      .filter(Boolean)
+      .forEach(v => valores.add(v));
+  }
+  return [...valores];
+}
+
+function atributosGesicommBase(base) {
+  const codigo = [base?.html, base?.css, base?.js].filter(Boolean).join('\n');
+  const atributos = [...new Set(codigo.match(/data-gesicomm-[a-z0-9-]+/gi) || [])]
+    .map(a => a.toLowerCase())
+    .sort();
+  return {
+    listas: valoresAtributoEnBase(codigo, 'data-gesicomm-lista'),
+    binds: valoresAtributoEnBase(codigo, 'data-gesicomm-bind'),
+    tienda: valoresAtributoEnBase(codigo, 'data-gesicomm-tienda'),
+    atributos,
+  };
+}
+
+function lineaValores(titulo, valores, limite = 28) {
+  if (!valores.length) return `- ${titulo}: ninguno.`;
+  const visibles = valores.slice(0, limite);
+  const resto = valores.length - visibles.length;
+  return `- ${titulo}: ${visibles.map(v => `"${v}"`).join(', ')}${resto > 0 ? `, y ${resto} más` : ''}.`;
+}
+
+function resumenCodigoBase(base) {
+  const { listas, binds, tienda, atributos } = atributosGesicommBase(base);
+  return `
+
+## Código base (resumen)
+Hay una plantilla base funcional, pero no pego su HTML/CSS/JS completo para no tapar la información importante del producto. Usala como contrato de estructura:
+- Header con logo/nombre de tienda y navegación.
+- Ficha arriba del pliegue: galería, nombre, promesa, precio, variantes, order bump, paquetes, CTA principal y confianza.
+- Debajo: combos del producto, beneficios, descripción, preguntas, recomendados y footer legal.
+- Mobile: una columna, barra de compra fija y suficiente padding inferior.
+
+Mantené estos puntos del contrato que ya usa la base:
+${lineaValores('Listas usadas', listas)}
+${lineaValores('Binds usados', binds)}
+${lineaValores('Datos de tienda usados', tienda)}
+${lineaValores('Atributos Gesicomm presentes', atributos, 34)}
+
+No copies productos, precios ni links a mano: usá esos atributos data-gesicomm-* y devolvé igual los tres bloques html/css/js.`;
+}
+
+function bloqueCodigoBase(base, { compacto = false } = {}) {
   if (!base) return '';
+  const total = (base.html || '').length + (base.css || '').length + (base.js || '').length;
+  if (compacto || total > MAX_BASE_COMPLETA_PROMPT) return resumenCodigoBase(base);
   return `
 
 ## Código base
@@ -348,7 +408,12 @@ ${fichaPropia(fichaDe)}` : VISTA_PRODUCTO)
     : '\n\n## Estilo visual\nModerno, limpio y confiable, con los colores de la marca de la tienda. Tipografía legible, bordes redondeados y buen espacio.';
   return `${PROMPT_MAESTRO}
 
-${contexto({ tienda, venta, productos })}
+${contexto({
+    tienda,
+    venta,
+    productos,
+    maxProductos: vista === 'producto' ? MAX_PRODUCTOS_FICHA_PROMPT : MAX_PRODUCTOS_INICIO_PROMPT,
+  })}
 
-${especifico}${estiloTexto}${bloqueCodigoBase(base)}`;
+${especifico}${estiloTexto}${bloqueCodigoBase(base, { compacto: vista === 'producto' })}`;
 }

@@ -111,7 +111,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
     return grupos;
   }, [categorias]);
 
-  const elegirTipo = (tipo) => { setDatos(d => ({ ...d, tipo })); setPaso('formulario'); };
+  const elegirTipo = (tipo) => { setDatos(d => ({ ...d, tipo, clasificacion: tipo === 'ingreso' ? '' : d.clasificacion })); setPaso('formulario'); };
 
   const validar = () => {
     if (!datos.concepto.trim()) return 'El concepto es requerido.';
@@ -234,7 +234,7 @@ export default function CostoGastoForm({ registro, categorias, proveedores, onCr
               {!esEdicion && (
                 <div className="mb-4 flex gap-2">
                   {TIPOS.map(t => (
-                    <button key={t.id} type="button" onClick={() => setDatos(d => ({ ...d, tipo: t.id }))}
+                    <button key={t.id} type="button" onClick={() => setDatos(d => ({ ...d, tipo: t.id, clasificacion: t.id === 'ingreso' ? '' : d.clasificacion }))}
                       className={`flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors ${datos.tipo === t.id ? t.activo : 'border-border text-fg-muted hover:bg-surface-2'}`}>
                       {t.label}
                     </button>
