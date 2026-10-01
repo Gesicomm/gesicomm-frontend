@@ -44,6 +44,22 @@ const OfertasProductoTab = lazy(() => Promise.all([
 
 export const MAX_PRODUCTOS_MANUAL = 500; // = MAX_ITEMS_LIENZO del backend
 
+// ISO (UTC, lo que guarda el backend) <-> valor de <input type="datetime-local">
+// (hora LOCAL del navegador, sin timezone). new Date(iso) y new Date(valorLocal)
+// hacen la conversión correcta en los dos sentidos.
+function isoParaInputLocal(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function inputLocalAIso(valor) {
+  if (!valor) return null;
+  const d = new Date(valor);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 // Antes había tres formatos (Catálogo, Producto estrella, Combos), cada uno
 // con su propia página de inicio. Pero todo lo que vende (ofertas, combos,
 // recomendados) vive en la ficha, así que se simplificó a una sola decisión:
@@ -212,6 +228,37 @@ export default function ConfigurarVentaCodigo({
   const [recoItems, setRecoItems] = useState(ventaInicial.recomendados?.items || []);
   const [recoMax, setRecoMax] = useState(ventaInicial.recomendados?.max || 4);
   const [recoTitulo, setRecoTitulo] = useState(ventaInicial.recomendados?.titulo || '');
+
+  // Countdown de oferta y estadísticas: la IA (o el HTML pegado a mano)
+  // puede haber propuesto valores de EJEMPLO ("demo") — Gesicomm no deja
+  // publicar mientras sigan sin confirmar. `estado` nunca lo decide este
+  // panel directamente: se arma en el momento de guardar a partir de si el
+  // checkbox de confirmación está tildado (ver `confirmar()` más abajo) y
+  // el backend es quien realmente lo persiste como "confirmado".
+  const [urgenciaActiva, setUrgenciaActiva] = useState(ventaInicial.urgencia?.activo === true);
+  const [urgenciaFinAt, setUrgenciaFinAt] = useState(() => isoParaInputLocal(ventaInicial.urgencia?.fin_at));
+  const [urgenciaConfirmar, setUrgenciaConfirmar] = useState(ventaInicial.urgencia?.estado === 'confirmado');
+  function cambiarUrgenciaFinAt(valor) {
+    setUrgenciaFinAt(valor);
+    setUrgenciaConfirmar(false); // editar la fecha vuelve a pedir confirmación
+  }
+
+  const [pruebaSocialActiva, setPruebaSocialActiva] = useState(ventaInicial.prueba_social?.activo === true);
+  const [pruebaSocialItems, setPruebaSocialItems] = useState(ventaInicial.prueba_social?.items || []);
+  const [pruebaSocialConfirmar, setPruebaSocialConfirmar] = useState(ventaInicial.prueba_social?.estado === 'confirmado');
+  function cambiarStatItem(idx, campo, valor) {
+    setPruebaSocialItems(prev => prev.map((it, i) => (i === idx ? { ...it, [campo]: valor } : it)));
+    setPruebaSocialConfirmar(false); // editar las cifras vuelve a pedir confirmación
+  }
+  function agregarStatItem() {
+    if (pruebaSocialItems.length >= 8) return;
+    setPruebaSocialItems(prev => [...prev, { valor: '', etiqueta: '' }]);
+    setPruebaSocialConfirmar(false);
+  }
+  function quitarStatItem(idx) {
+    setPruebaSocialItems(prev => prev.filter((_, i) => i !== idx));
+    setPruebaSocialConfirmar(false);
+  }
   const [error, setError] = useState('');
 
   // Vista previa
@@ -344,7 +391,13 @@ export default function ConfigurarVentaCodigo({
       max: recoMax,
       titulo: recoTitulo,
     },
-  }), [tipo, abrirEn, combosPrimero, confPaquetes, principal, seleccion, modo, categorias, incluirCombos, crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo]);
+    urgencia: { activo: urgenciaActiva, fin_at: inputLocalAIso(urgenciaFinAt) },
+    prueba_social: { activo: pruebaSocialActiva, items: pruebaSocialItems },
+  }), [
+    tipo, abrirEn, combosPrimero, confPaquetes, principal, seleccion, modo, categorias, incluirCombos,
+    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo,
+    urgenciaActiva, urgenciaFinAt, pruebaSocialActiva, pruebaSocialItems,
+  ]);
 
   function sumarProducto(productoId) {
     const k = `producto:${Number(productoId)}`;
@@ -541,6 +594,14 @@ export default function ConfigurarVentaCodigo({
         ...i,
         precio_ancla: Number(anclas[claveItem(i)]) || null,
       })),
+      // Estado "confirmado" para urgencia/prueba_social: solo si el checkbox
+      // de confirmación está tildado EN ESTE guardado — cualquier edición de
+      // la fecha o de las cifras lo destilda solo (ver cambiarUrgenciaFinAt/
+      // cambiarStatItem). El backend es quien realmente lo persiste así.
+      confirmaciones: {
+        ...(urgenciaConfirmar ? { urgencia: true } : {}),
+        ...(pruebaSocialConfirmar ? { prueba_social: true } : {}),
+      },
     });
   }
 
@@ -561,6 +622,8 @@ export default function ConfigurarVentaCodigo({
   const resumenReco = !recoActivo
     ? 'sin recomendados'
     : (recoModo === 'auto' ? 'recomendados automáticos' : `${recoItems.length} recomendado${recoItems.length === 1 ? '' : 's'} a mano`);
+  const estadisticasConfirmables = pruebaSocialItems.some(it => String(it.valor || '').trim() && String(it.etiqueta || '').trim());
+  const alcanceLanding = seleccion.slice(0, 4);
 
   const propsVistaPrevia = {
     vista: vistaPreview,
@@ -1057,6 +1120,151 @@ export default function ConfigurarVentaCodigo({
                         />
                       </label>
                     </div>
+                  </div>
+                )}
+              </Bloque>
+
+              {/* Urgencia (countdown) */}
+              <Bloque
+                titulo="Countdown de oferta"
+                ayuda="Cuenta regresiva real de esta landing completa. No pertenece a un producto específico: aplica al catálogo o campaña que configuraste acá."
+                interruptor={{ activo: urgenciaActiva, onChange: setUrgenciaActiva, etiqueta: 'Mostrar countdown de oferta' }}
+              >
+                {urgenciaActiva && (
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-border bg-surface-2/70 px-3 py-2.5">
+                      <p className="text-[13px] font-semibold text-fg">
+                        Alcance: {seleccion.length === 1 ? 'este producto' : `toda esta landing (${seleccion.length} productos/combos)`}
+                      </p>
+                      {alcanceLanding.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {alcanceLanding.map(item => (
+                            <span key={claveItem(item)} className="max-w-full truncate rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
+                              {item.nombre}
+                            </span>
+                          ))}
+                          {seleccion.length > alcanceLanding.length && (
+                            <span className="rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
+                              +{seleccion.length - alcanceLanding.length} más
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <label className="block max-w-xs">
+                      <span className="block text-sm font-medium text-fg mb-1.5">Fin de la promoción</span>
+                      <input
+                        type="datetime-local"
+                        value={urgenciaFinAt}
+                        onChange={e => cambiarUrgenciaFinAt(e.target.value)}
+                        className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                      />
+                    </label>
+                    <label className="flex items-start gap-2 text-sm text-fg">
+                      <input
+                        type="checkbox"
+                        checked={urgenciaConfirmar}
+                        disabled={!urgenciaFinAt}
+                        onChange={e => setUrgenciaConfirmar(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        Confirmo que esta es la fecha real de fin de la oferta.
+                        {!urgenciaConfirmar && (
+                          <span className="block text-xs text-amber-600 mt-0.5">
+                            Sin confirmar, Gesicomm no deja publicar esta landing si el diseño usa un countdown. Usá una fecha real de tu promoción.
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </Bloque>
+
+              {/* Prueba social (estadísticas) */}
+              <Bloque
+                titulo="Estadísticas / prueba social"
+                ayuda='Cifras reales para esta landing completa. No pertenecen a un producto específico salvo que lo escribas en la etiqueta, por ejemplo "94% de compradores de AdelFit...".'
+                interruptor={{ activo: pruebaSocialActiva, onChange: setPruebaSocialActiva, etiqueta: 'Mostrar estadísticas' }}
+              >
+                {pruebaSocialActiva && (
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-border bg-surface-2/70 px-3 py-2.5">
+                      <p className="text-[13px] font-semibold text-fg">
+                        Alcance: {seleccion.length === 1 ? 'este producto' : `toda esta landing (${seleccion.length} productos/combos)`}
+                      </p>
+                      <p className="mt-1 text-xs text-fg-muted">
+                        Si la cifra es de un producto puntual, nombralo en la frase. Si es del negocio o de la campaña, dejala como estadística general.
+                      </p>
+                      {alcanceLanding.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {alcanceLanding.map(item => (
+                            <span key={claveItem(item)} className="max-w-full truncate rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
+                              {item.nombre}
+                            </span>
+                          ))}
+                          {seleccion.length > alcanceLanding.length && (
+                            <span className="rounded-full bg-surface px-2 py-1 text-[11px] font-medium text-fg-muted ring-1 ring-border">
+                              +{seleccion.length - alcanceLanding.length} más
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {pruebaSocialItems.map((it, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <input
+                            value={it.valor}
+                            onChange={e => cambiarStatItem(idx, 'valor', e.target.value)}
+                            maxLength={20}
+                            placeholder="94%"
+                            className="w-24 h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                          />
+                          <input
+                            value={it.etiqueta}
+                            onChange={e => cambiarStatItem(idx, 'etiqueta', e.target.value)}
+                            maxLength={120}
+                            placeholder="se sintió más liviano"
+                            className="flex-1 h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                          />
+                          <button type="button" onClick={() => quitarStatItem(idx)} className="p-2 text-fg-muted hover:text-fg" aria-label="Quitar">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {pruebaSocialItems.length < 8 && (
+                      <button
+                        type="button"
+                        onClick={agregarStatItem}
+                        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary-text hover:underline"
+                      >
+                        <Plus size={14} /> Agregar estadística
+                      </button>
+                    )}
+                    <label className="flex items-start gap-2 text-sm text-fg">
+                      <input
+                        type="checkbox"
+                        checked={pruebaSocialConfirmar}
+                        disabled={!estadisticasConfirmables}
+                        onChange={e => setPruebaSocialConfirmar(e.target.checked)}
+                        className="mt-0.5"
+                      />
+                      <span>
+                        Confirmo que estas cifras son reales.
+                        {!estadisticasConfirmables && (
+                          <span className="block text-xs text-fg-muted mt-0.5">
+                            Para confirmar, cargá al menos una cifra completa: valor y descripción.
+                          </span>
+                        )}
+                        {!pruebaSocialConfirmar && (
+                          <span className="block text-xs text-amber-600 mt-0.5">
+                            Sin confirmar, Gesicomm no deja publicar esta landing si el diseño usa estadísticas. Reemplazá cualquier ejemplo de IA por datos reales.
+                          </span>
+                        )}
+                      </span>
+                    </label>
                   </div>
                 )}
               </Bloque>

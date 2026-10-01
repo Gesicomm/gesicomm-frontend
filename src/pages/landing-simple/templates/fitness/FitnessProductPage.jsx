@@ -82,6 +82,12 @@ export default function FitnessProductPage({
   const comprar = () => onComprar && onComprar({ variante: null, pack: packElegido, precio: precioMostrado });
 
   const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
+  const unidadesElegidas = packElegido ? Math.max(1, Number(packElegido.unidades) || 1) : 1;
+  const precioComparacion = packElegido && item.precio != null
+    ? Number(item.precio) * unidadesElegidas
+    : item.precioAntes;
+  const ahorroElegido = packElegido ? ahorroDePack(packElegido, item.precio) : item.descuentoPct;
+  const garantiasResumen = (ficha.garantias?.items || []).slice(0, 3);
 
   // El diseño supone un título corto y golpeado, pero los nombres reales del
   // catálogo son descriptivos ("AdelFit - Suplemento natural para bajar de
@@ -176,20 +182,68 @@ export default function FitnessProductPage({
             </ul>
           )}
 
-          {precioMostrado != null && (
-            <p className="fpp-precio-hero">
-              <b>{formatPrecio(precioMostrado)}</b>
-              {!packElegido && item.precioAntes != null && <del>{formatPrecio(item.precioAntes)}</del>}
-            </p>
-          )}
+          <div className="fpp-compra-panel" aria-label="Comprar producto">
+            <div className="fpp-compra-head">
+              <span>Oferta exclusiva</span>
+              {ahorroElegido > 0 && <b>Ahorrás {ahorroElegido}%</b>}
+            </div>
 
-          <button type="button" className="fpp-cta" onClick={packs.length ? irAOfertas : comprar}>
-            {ficha.hero.cta_texto || 'Comprar ahora'} <span aria-hidden="true">→</span>
-          </button>
+            {precioMostrado != null && (
+              <p className="fpp-precio-hero">
+                <small>Total de la oferta</small>
+                <b>{formatPrecio(precioMostrado)}</b>
+                {precioComparacion != null && Number(precioComparacion) > Number(precioMostrado) && (
+                  <del>{formatPrecio(precioComparacion)}</del>
+                )}
+              </p>
+            )}
 
-          {ficha.hero.microcopy && (
-            <p className="fpp-microcopy"><Lock size={13} /> {ficha.hero.microcopy}</p>
-          )}
+            {packs.length > 0 && (
+              <div className="fpp-hero-packs" aria-label="Elegí tu oferta">
+                <button
+                  type="button"
+                  className={!packElegido ? 'activo' : ''}
+                  onClick={() => setPackElegidoId(null)}
+                >
+                  1 unidad
+                </button>
+                {packs.slice(0, 3).map(pack => {
+                  const unidades = Number(pack.unidades) || 1;
+                  return (
+                    <button
+                      type="button"
+                      key={pack.id}
+                      className={String(packElegidoId) === String(pack.id) ? 'activo' : ''}
+                      onClick={() => setPackElegidoId(pack.id)}
+                    >
+                      {unidades} unidades
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <button type="button" className="fpp-cta fpp-cta--ancho" onClick={comprar}>
+              {ficha.hero.cta_texto || 'Comprar ahora'} <span aria-hidden="true">→</span>
+            </button>
+
+            {ficha.hero.microcopy && (
+              <p className="fpp-microcopy"><Lock size={13} /> {ficha.hero.microcopy}</p>
+            )}
+
+            {garantiasResumen.length > 0 && (
+              <div className="fpp-compra-confianza">
+                {garantiasResumen.map((g, i) => {
+                  const Icono = getIconoBeneficio(g.icono);
+                  return (
+                    <span key={i}>
+                      <Icono size={14} /> {g.titulo}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </section>
 

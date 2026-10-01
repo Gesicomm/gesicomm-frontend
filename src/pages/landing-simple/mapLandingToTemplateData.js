@@ -127,15 +127,9 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
       texto: draft?.contenido_texto || '',
     },
     tema: {
-      fondo: draft?.color_fondo || null,
-      // Sin override propio va null a propósito: resolverTema() deriva el
-      // texto del fondo REAL (blanco sobre fondo oscuro, el del template
-      // sobre fondo claro). Antes acá se heredaba color_secundario para no
-      // caer al negro/blanco fijo del template, y el resultado era peor: el
-      // acento de marca terminaba pintando TODO el texto de la página
-      // —títulos, párrafos y listas del reembolso, todo dorado—.
-      texto: draft?.color_texto || null,
-      acento: draft?.color_primario || null,
+      fondo: draft?.color_fondo || tienda?.color_fondo || null,
+      texto: draft?.color_texto || tienda?.color_secundario || null,
+      acento: draft?.color_primario || tienda?.color_primario || null,
     },
   };
 }
@@ -210,12 +204,9 @@ export function mapPublicDtoToTemplateData(dto) {
       texto: dto?.contenido_texto || '',
     },
     tema: {
-      fondo: dto?.tema?.fondo || null,
-      // Igual que en el draft: sin color de texto propio va null y lo deriva
-      // resolverTema() del fondo. Heredar el secundario pintaba de dorado
-      // todo el texto de las páginas legales y del catálogo.
-      texto: dto?.tema?.texto || null,
-      acento: dto?.tema?.primario || null,
+      fondo: dto?.tema?.fondo || dto?.tienda?.colores?.fondo || null,
+      texto: dto?.tema?.texto || dto?.tienda?.colores?.secundario || null,
+      acento: dto?.tema?.primario || dto?.tienda?.colores?.primario || null,
     },
   };
 }

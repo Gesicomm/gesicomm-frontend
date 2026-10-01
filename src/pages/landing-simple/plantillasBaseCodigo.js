@@ -57,8 +57,14 @@ h1, h2, h3, p { margin-top: 0; }
 
 .container { width: min(calc(100% - 40px), var(--max)); margin-inline: auto; }
 
-.announcement { padding: 9px 16px; color: var(--white); background: var(--ink); font-size: .82rem; text-align: center; }
+.announcement { overflow: hidden; color: var(--white); background: var(--ink); font-size: .82rem; white-space: nowrap; }
+.announcement-track { display: inline-flex; min-width: max-content; animation: announcement-scroll 24s linear infinite; }
+.announcement span { display: inline-flex; align-items: center; gap: 8px; padding: 9px 28px; }
 .announcement strong { color: #8ff2bd; }
+@keyframes announcement-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
 
 .site-header { position: sticky; top: 0; z-index: 50; background: rgba(247, 249, 252, .9); border-bottom: 1px solid rgba(228, 234, 240, .8); backdrop-filter: blur(18px); }
 .nav { display: flex; align-items: center; justify-content: space-between; min-height: 76px; gap: 24px; }
@@ -88,6 +94,23 @@ h1, h2, h3, p { margin-top: 0; }
 .section-heading.center { margin-inline: auto; text-align: center; }
 .section-heading h2 { margin-bottom: 12px; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.03; letter-spacing: -.065em; }
 .section-heading p { margin-bottom: 0; color: var(--ink-soft); font-size: 1.05rem; }
+
+.limited-offer { position: relative; z-index: 3; margin: -36px 0 0; }
+.limited-offer-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 18px;
+  padding: 18px; color: var(--ink); background: var(--white); border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line));
+  border-radius: 24px; box-shadow: var(--shadow-lg);
+}
+.limited-offer-kicker { margin: 0 0 4px; color: var(--brand-dark); font-size: .74rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.limited-offer h2 { margin: 0; font-size: clamp(1.25rem, 3vw, 2rem); line-height: 1.05; letter-spacing: -.055em; }
+.limited-offer p { margin: 4px 0 0; color: var(--ink-soft); font-size: .9rem; }
+.countdown { display: flex; align-items: stretch; gap: 8px; }
+.countdown-box { min-width: 58px; padding: 9px 10px; text-align: center; background: var(--ink); color: var(--white); border-radius: 16px; }
+.countdown-box b { display: block; font-size: 1.28rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.countdown-box small { display: block; margin-top: 4px; color: rgba(255,255,255,.72); font-size: .62rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.limited-offer .button-primary { white-space: nowrap; }
+.pdp-limited-offer { margin: 18px 0 20px; }
+.pdp-limited-offer .limited-offer-card { grid-template-columns: minmax(0, 1fr) auto; box-shadow: var(--shadow-sm); }
 
 .price { color: var(--ink); font-size: 1.3rem; font-weight: 900; letter-spacing: -.035em; }
 .price-old { color: var(--ink-soft); font-size: .9rem; text-decoration: line-through; }
@@ -130,11 +153,19 @@ h1, h2, h3, p { margin-top: 0; }
   .nav-links a { padding: 12px; }
   .menu-toggle { display: block; }
   .section { padding: 70px 0; }
+  .announcement-track { animation-duration: 18s; }
+  .limited-offer { margin-top: -20px; }
+  .limited-offer-card { grid-template-columns: 1fr; gap: 14px; padding: 16px; border-radius: 18px; }
+  .pdp-limited-offer .limited-offer-card { grid-template-columns: 1fr; }
+  .countdown { width: 100%; }
+  .countdown-box { flex: 1; min-width: 0; }
+  .limited-offer .button-primary { width: 100%; }
   .product-grid { grid-template-columns: 1fr; }
   .footer-row { align-items: start; flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  .announcement-track { animation: none; transform: none; }
   .reveal { opacity: 1; transform: none; }
 }`;
 
@@ -150,6 +181,35 @@ const HEADER_HTML = `<header class="site-header">
     </nav>
   </div>
 </header>`;
+
+const ANNOUNCEMENT_HTML = `<div class="announcement" aria-label="Beneficios de compra">
+  <div class="announcement-track">
+    <span><strong>Oferta por tiempo limitado</strong> aprovechá antes de que termine</span>
+    <span><strong>Pago seguro</strong> online o al recibir</span>
+    <span><strong>Envío rápido</strong> a tu ciudad</span>
+    <span><strong>Atención por WhatsApp</strong> te ayudamos a elegir</span>
+    <span><strong>Oferta por tiempo limitado</strong> aprovechá antes de que termine</span>
+    <span><strong>Pago seguro</strong> online o al recibir</span>
+    <span><strong>Envío rápido</strong> a tu ciudad</span>
+    <span><strong>Atención por WhatsApp</strong> te ayudamos a elegir</span>
+  </div>
+</div>`;
+
+const LIMITED_OFFER_HTML = `<section class="limited-offer" data-gesicomm-countdown>
+  <div class="container limited-offer-card">
+    <div>
+      <p class="limited-offer-kicker">Oferta por tiempo limitado</p>
+      <h2>Comprá hoy con la mejor condición disponible.</h2>
+      <p>La fecha real se configura en Gesicomm; el contador se actualiza solo.</p>
+    </div>
+    <div class="countdown" aria-label="Cuenta regresiva de la oferta">
+      <span class="countdown-box"><b data-gesicomm-countdown-parte="horas">--</b><small>horas</small></span>
+      <span class="countdown-box"><b data-gesicomm-countdown-parte="minutos">--</b><small>min</small></span>
+      <span class="countdown-box"><b data-gesicomm-countdown-parte="segundos">--</b><small>seg</small></span>
+    </div>
+    <a class="button-primary" href="#productos">Ver ofertas <span aria-hidden="true">→</span></a>
+  </div>
+</section>`;
 
 // Las políticas son obligatorias para PagoPar y para aprobar anuncios en
 // Meta: van en las dos vistas aunque el diseño cambie.
@@ -296,9 +356,7 @@ h1 em { color: var(--brand); font-style: normal; }
   .form-grid { grid-template-columns: 1fr; }
 }`;
 
-const INICIO_HTML = `<div class="announcement">
-  <strong>Compra simple, productos útiles.</strong> Elegí tu favorito y completá tu pedido con pago seguro.
-</div>
+const INICIO_HTML = `${ANNOUNCEMENT_HTML}
 
 ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
       <a href="#productos">Productos</a>
@@ -342,6 +400,8 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
       </div>
     </div>
   </section>
+
+  ${LIMITED_OFFER_HTML}
 
   <section class="trust-strip" aria-label="Beneficios de compra">
     <div class="container trust-grid">
@@ -725,9 +785,70 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 
 .sticky-compra { display: none; }
 
+/* ─── Estructura suplemento / bienestar (referencia de alta conversión) ─── */
+.dark-section { background: var(--brand-dark); color: var(--gc-texto-sobre-primario); }
+.result-grid { display: grid; grid-template-columns: minmax(0, 1fr) 260px; align-items: center; gap: 70px; padding: 74px 0; }
+.result-grid h2, .proof h2 { margin: 0 0 22px; color: inherit; font-size: clamp(2rem, 3.4vw, 3rem); line-height: 1.05; letter-spacing: -.04em; }
+.result-grid h2 em, .proof h2 em, .comparison-section h2 em, .why-section h2 em, .ingredients h2 em { color: var(--brand); font-style: normal; }
+.dark-section .result-grid h2 em { color: var(--accent); }
+.result-grid img { width: 220px; height: 250px; object-fit: contain; justify-self: center; background: color-mix(in srgb, var(--brand) 14%, transparent); border-radius: var(--radius-sm); }
+.timeline { display: grid; gap: 0; max-width: 540px; }
+.timeline-item { display: flex; gap: 12px; align-items: center; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.18); color: rgba(255,255,255,.78); font-size: .92rem; }
+.timeline-item b { color: inherit; }
+.dark-section .timeline-item, .dark-section .timeline-item b { color: rgba(255,255,255,.78) !important; }
+.timeline-item span { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; color: var(--brand-dark); background: var(--gc-texto-sobre-primario); font-size: .75rem; font-weight: 900; }
+.timeline-item.current { color: var(--gc-texto-sobre-primario); }
+.dark-section .timeline-item.current, .dark-section .timeline-item.current b { color: var(--gc-texto-sobre-primario) !important; }
+.timeline-item.current span { background: var(--brand); color: var(--gc-texto-sobre-primario); }
+
+.ingredients { padding: 72px 0 86px; }
+.ingredient-tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 24px 0; }
+.ingredient-tabs button { min-height: 38px; padding: 0 18px; color: var(--gc-texto-sobre-primario); background: color-mix(in srgb, var(--brand) 68%, var(--brand-dark)); border: 0; border-radius: 999px; font-size: .78rem; font-weight: 850; }
+.ingredient-tabs button.active { background: var(--brand-dark); }
+.ingredient-content { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); align-items: center; gap: 54px; max-width: 780px; margin: 0 auto; }
+.ingredient-content img { width: 100%; aspect-ratio: 1.25; object-fit: contain; background: #f3f2ee; border-radius: var(--radius-sm); }
+.ingredient-content h3 { margin: 0 0 10px; font-size: 1.45rem; }
+.ingredient-content p { margin: 0; color: var(--ink-soft); line-height: 1.6; }
+.quote { margin-top: 20px; padding: 14px 16px; color: var(--brand-dark); background: var(--brand-soft); border-radius: var(--radius-sm); font-size: .9rem; font-weight: 800; }
+
+.soft-section { background: color-mix(in srgb, var(--brand) 18%, var(--white)); }
+.proof { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: center; gap: 70px; padding: 74px 0; }
+.proof > img { width: 100%; aspect-ratio: 1; object-fit: contain; background: var(--white); border-radius: var(--radius-sm); }
+.proof > div > p:not(.eyebrow) { color: var(--brand-dark); line-height: 1.6; }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-top: 28px; }
+.stats > div { padding: 18px; background: rgba(255,255,255,.68); border: 1px solid color-mix(in srgb, var(--brand) 22%, transparent); border-radius: var(--radius-sm); }
+.stats b { display: block; color: var(--brand-dark); font-size: 2rem; font-style: italic; line-height: 1; }
+.stats span { display: block; margin-top: 6px; color: var(--ink-soft); font-size: .82rem; font-weight: 800; }
+
+.comparison-section { padding: 76px 0 86px; background: color-mix(in srgb, var(--brand) 9%, var(--white)); }
+.comparison-grid { display: grid; grid-template-columns: minmax(0, .92fr) minmax(280px, .74fr); align-items: center; gap: 64px; max-width: 930px; margin: 36px auto 0; }
+.comparison-copy h3 { margin: 0 0 12px; color: var(--brand-dark); font-size: 1.65rem; }
+.comparison-copy p { margin: 0; color: var(--ink-soft); line-height: 1.65; }
+.comparison-points { display: grid; gap: 11px; margin-top: 22px; color: var(--ink); font-size: .9rem; font-weight: 800; }
+.comparison-points span { display: flex; align-items: center; gap: 8px; }
+.comparison-points span::before { content: "✓"; display: grid; place-items: center; width: 20px; height: 20px; color: var(--gc-texto-sobre-primario); background: var(--brand); border-radius: 50%; font-size: .72rem; font-weight: 900; }
+.before-after { position: relative; overflow: hidden; width: min(360px, 100%); margin: 0 auto; aspect-ratio: 1 / 1.18; background: color-mix(in srgb, var(--brand) 16%, var(--white)); border-radius: var(--radius-sm); box-shadow: var(--shadow-md); }
+.before-after img { width: 100%; height: 100%; object-fit: cover; }
+.before-label, .after-label { position: absolute; top: 15px; padding: 6px 9px; color: var(--gc-texto-sobre-primario); background: var(--brand-dark); border-radius: 4px; font-size: .68rem; font-weight: 900; letter-spacing: .06em; }
+.before-label { left: 15px; }
+.after-label { right: 15px; }
+.comparison-divider { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--white); box-shadow: 0 0 0 1px rgba(15,23,42,.12); }
+
+.why-section { padding: 74px 0 90px; }
+.comparison-table { max-width: 800px; margin: 34px auto 0; border-top: 1px solid var(--line); }
+.table-head, .table-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(110px, 1fr) minmax(110px, 1fr); align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); font-size: .86rem; }
+.table-head { color: var(--brand-dark); font-size: .76rem; text-align: center; text-transform: uppercase; letter-spacing: .06em; }
+.table-head b:first-child { text-align: left; }
+.table-row > * { padding: 13px 16px; }
+.table-row strong { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 56px; color: var(--gc-texto-sobre-primario); background: var(--brand-dark); }
+.table-row strong::before { content: "✓"; }
+.table-row .other { color: var(--ink-soft); text-align: center; }
+
 @media (max-width: 960px) {
   .pdp { grid-template-columns: 1fr; gap: 30px; }
   .gallery { position: static; }
+  .result-grid, .ingredient-content, .proof, .comparison-grid { grid-template-columns: 1fr; gap: 32px; }
+  .result-grid img, .proof > img { max-width: 260px; justify-self: center; }
 }
 @media (max-width: 720px) {
   .sticky-compra {
@@ -741,11 +862,12 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
   body { padding-bottom: 76px; }
   .mini-trust { grid-template-columns: 1fr; }
   .offer .button-primary, .offer .button-secondary, .upsell .button-primary { flex: 1 1 100%; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .table-head, .table-row { grid-template-columns: 1.35fr .95fr .95fr; font-size: .72rem; }
+  .table-row > * { padding: 10px 6px; }
 }`;
 
-const PRODUCTO_HTML = `<div class="announcement">
-  <strong>Pago seguro.</strong> Pagás online con PagoPar o al recibir, según tu ciudad.
-</div>
+const PRODUCTO_HTML = `${ANNOUNCEMENT_HTML}
 
 ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
       <a href="#descripcion">Detalles</a>
@@ -780,6 +902,21 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
       </div>
       <!-- Combo: el ancla del ahorro, cuánto costaría por separado. -->
       <p class="pdp-separado" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p>
+
+      <div class="limited-offer pdp-limited-offer" data-gesicomm-countdown>
+        <div class="limited-offer-card">
+          <div>
+            <p class="limited-offer-kicker">Oferta por tiempo limitado</p>
+            <h2>Reservá esta condición antes de que termine.</h2>
+            <p>La fecha real se configura en Gesicomm; el contador se actualiza solo.</p>
+          </div>
+          <div class="countdown" aria-label="Cuenta regresiva de la oferta">
+            <span class="countdown-box"><b data-gesicomm-countdown-parte="horas">--</b><small>horas</small></span>
+            <span class="countdown-box"><b data-gesicomm-countdown-parte="minutos">--</b><small>min</small></span>
+            <span class="countdown-box"><b data-gesicomm-countdown-parte="segundos">--</b><small>seg</small></span>
+          </div>
+        </div>
+      </div>
 
       <!-- Highlights arriba del pliegue: 3–4 motivos, se escanean de un vistazo. -->
       <ul class="highlights" data-gesicomm-lista="beneficios" data-gesicomm-limite="4">
@@ -934,6 +1071,107 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
   </div>
 </section>
 
+<section id="resultados" class="dark-section" data-template-section="timeline-resultados">
+  <div class="container result-grid">
+    <div>
+      <p class="eyebrow">RESULTADOS REALES</p>
+      <h2>Pequeños hábitos.<br><em>Grandes cambios.</em></h2>
+      <div class="timeline" aria-label="Progreso esperado">
+        <div class="timeline-item current"><span>1</span><b>Primeros días · Menos hinchazón</b></div>
+        <div class="timeline-item"><span>2</span><b>2 semanas · Más ligereza</b></div>
+        <div class="timeline-item"><span>3</span><b>4 semanas · Rutina más estable</b></div>
+        <div class="timeline-item"><span>4</span><b>8 semanas · Un cambio que se nota</b></div>
+      </div>
+    </div>
+    <img data-gesicomm-bind="imagen" alt="">
+  </div>
+</section>
+
+<section id="ingredientes" class="section ingredients" data-template-section="ingredientes">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">LO QUE HACE POR VOS</p>
+      <h2>Ingredientes con <em>propósito</em></h2>
+      <p>Cada ingrediente tiene una función. La IA debe completar esta sección con datos reales del producto o dejarla marcada para editar.</p>
+    </div>
+    <div class="ingredient-tabs" aria-label="Ingredientes destacados">
+      <button type="button" class="active">Ingrediente principal</button>
+      <button type="button">Rutina diaria</button>
+      <button type="button">Calidad cuidada</button>
+    </div>
+    <div class="ingredient-content">
+      <img data-gesicomm-bind="imagen" alt="">
+      <div>
+        <h3>Fórmula natural</h3>
+        <p data-gesicomm-bind="propuesta_valor"></p>
+        <p data-gesicomm-bind="sobre"></p>
+        <div class="quote">Hacé de tu bienestar una prioridad.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="prueba-social" class="soft-section" data-template-section="prueba-social">
+  <div class="container proof">
+    <div>
+      <p class="eyebrow">POR QUÉ ELEGIRNOS</p>
+      <h2>Una fórmula que se siente <em>honesta.</em></h2>
+      <p>Calidad, transparencia y una experiencia pensada para personas reales.</p>
+      <div class="stats" data-gesicomm-lista="estadisticas">
+        <template>
+          <div><b data-gesicomm-bind="valor"></b><span data-gesicomm-bind="etiqueta"></span></div>
+        </template>
+      </div>
+    </div>
+    <img data-gesicomm-bind="imagen" alt="">
+  </div>
+</section>
+
+<section id="comparacion" class="comparison-section" data-template-section="comparacion">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">EL CAMBIO QUE TODAS ESTÁN VIENDO</p>
+      <h2>Antes y después, <em>sin promesas vacías.</em></h2>
+      <p>Historias reales de personas que incorporaron una rutina constante. Si no hay pruebas reales, esta sección debe quedar como guía editable, no como testimonio inventado.</p>
+    </div>
+    <div class="comparison-grid">
+      <div class="comparison-copy">
+        <h3>Un proceso que se nota</h3>
+        <p>Los resultados pueden variar según cada persona. Lo importante es acompañar tu bienestar con hábitos sostenibles, alimentación equilibrada y constancia.</p>
+        <div class="comparison-points">
+          <span>Menos hinchazón</span>
+          <span>Más ligereza</span>
+          <span>Rutina más estable</span>
+        </div>
+      </div>
+      <div class="before-after">
+        <img data-gesicomm-bind="imagen" alt="">
+        <span class="before-label">ANTES</span>
+        <span class="after-label">DESPUÉS</span>
+        <div class="comparison-divider"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="por-que-elegirnos" class="why-section" data-template-section="tabla-comparativa">
+  <div class="container">
+    <div class="section-heading">
+      <p class="eyebrow">CALIDAD QUE PODÉS COMPARAR</p>
+      <h2>¿Por qué <em>elegirnos?</em></h2>
+      <p>No todos los productos son iguales. Mirá la diferencia.</p>
+    </div>
+    <div class="comparison-table">
+      <div class="table-head"><b>Beneficios</b><b>Esta opción</b><b>Otras marcas</b></div>
+      <div class="table-row"><span>Fórmula natural</span><strong>Incluido</strong><span class="other">No siempre</span></div>
+      <div class="table-row"><span>Ingredientes seleccionados</span><strong>Certificados</strong><span class="other">Variable</span></div>
+      <div class="table-row"><span>Bienestar diario</span><strong>Sí</strong><span class="other">Depende</span></div>
+      <div class="table-row"><span>Pago al recibir</span><strong>Sí</strong><span class="other">No siempre</span></div>
+      <div class="table-row"><span>Atención y seguimiento</span><strong>Sí</strong><span class="other">Variable</span></div>
+    </div>
+  </div>
+</section>
+
 <!-- Combo: el detalle de cada producto, con su precio suelto (se puede
      comprar por separado: el combo es la opción que conviene). -->
 <section id="incluye" class="section incluye-section" data-gesicomm-si="combo_incluye">
@@ -1054,9 +1292,7 @@ const ESTRELLA_CSS = `${INICIO_CSS}
   body { padding-bottom: 76px; }
 }`;
 
-const ESTRELLA_HTML = `<div class="announcement">
-  <strong>Pago seguro.</strong> Pagás online con PagoPar o al recibir, según tu ciudad.
-</div>
+const ESTRELLA_HTML = `${ANNOUNCEMENT_HTML}
 
 ${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">Detalles</a>
       <a href="#como-funciona">Cómo funciona</a>
@@ -1091,6 +1327,8 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">Detalles</a>
       </div>
     </template>
   </section>
+
+  ${LIMITED_OFFER_HTML}
 
   <section id="como-funciona" class="section">
     <div class="container">
@@ -1183,9 +1421,7 @@ ${FOOTER_HTML}`;
 // Los combos primero, con lo que incluye cada uno y cuánto se ahorra; los
 // productos sueltos después, para quien prefiera armarlo.
 
-const COMBOS_HTML = `<div class="announcement">
-  <strong>Llevá más, pagá menos.</strong> Combos armados con precio especial.
-</div>
+const COMBOS_HTML = `${ANNOUNCEMENT_HTML}
 
 ${HEADER_HTML.replace('__LINKS__', `<a href="#combos">Combos</a>
       <a href="#productos">Productos sueltos</a>
@@ -1223,6 +1459,8 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#combos">Combos</a>
       </div>
     </div>
   </section>
+
+  ${LIMITED_OFFER_HTML}
 
   <section id="combos" class="section combos-section">
     <div class="container">
@@ -1307,4 +1545,21 @@ export function formatoDeBase(html) {
   const m = String(html || '').match(/data-gesicomm-base="([a-z_]+)"/);
   return m ? m[1] : null;
 }
-export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML, css: PRODUCTO_CSS, js: JS_COMUN };
+
+// La estructura larga de bienestar es una referencia para suplementos, no una
+// ficha universal. La base generica conserva solo la ficha PDP/combos/FAQ.
+const PRODUCTO_HTML_GENERICO = PRODUCTO_HTML.replace(
+  /\n<section id="resultados"[\s\S]*?(?=\n<!-- Combo: el detalle de cada producto)/,
+  '\n'
+);
+
+const PRODUCTO_CSS_GENERICO = PRODUCTO_CSS
+  .replace(/\/\* ─── Estructura suplemento[\s\S]*?(?=@media \(max-width: 960px\))/u, '')
+  .replace(/  \.result-grid, \.ingredient-content, \.proof, \.comparison-grid \{ grid-template-columns: 1fr; gap: 32px; \}\n/g, '')
+  .replace(/  \.result-grid img, \.proof > img \{ max-width: 260px; justify-self: center; \}\n/g, '')
+  .replace(/  \.stats \{ grid-template-columns: 1fr 1fr; \}\n/g, '')
+  .replace(/  \.table-head, \.table-row \{ grid-template-columns: 1\.35fr \.95fr \.95fr; font-size: \.72rem; \}\n/g, '')
+  .replace(/  \.table-row > \* \{ padding: 10px 6px; \}\n/g, '');
+
+export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML_GENERICO, css: PRODUCTO_CSS_GENERICO, js: JS_COMUN };
+export const PLANTILLA_PRODUCTO_SUPLEMENTOS = { html: PRODUCTO_HTML, css: PRODUCTO_CSS, js: JS_COMUN };

@@ -47,6 +47,12 @@
  *                       terminos-servicio|politica-envio|aviso-legal"  páginas de la tienda
  *     (un href="/contacto" a secas también se reconoce y se corrige)
  *   data-gesicomm-checkout="producto:ID" — formato viejo, sigue andando
+ *   data-gesicomm-lista="estadisticas"  prueba social cuantitativa (binds "valor"/"etiqueta"),
+ *                                       fuente: venta.prueba_social.items (Configurar venta)
+ *   data-gesicomm-countdown            envuelve la cuenta regresiva de una oferta; adentro,
+ *     data-gesicomm-countdown-parte="horas|minutos|segundos" recibe el número ya calculado.
+ *     Fuente: venta.urgencia (activo + fin_at, cargados en Configurar venta). Si no está
+ *     activo o fin_at ya pasó, el bloque se oculta solo — mismo criterio que una lista vacía.
  */
 export function runtimeGesicomm() {
   var datos = window.__GESICOMM__ || {};
@@ -441,8 +447,44 @@ export function runtimeGesicomm() {
     }, false);
   }
 
+  // Countdown de oferta (data-gesicomm-countdown): el HTML nunca trae fecha
+  // ni JS propio, solo la estructura — la fecha real (o de ejemplo, en modo
+  // "demo") vive en venta.urgencia, cargada en "Configurar venta". Si no
+  // está activo o ya venció, el bloque se oculta solo, mismo criterio que
+  // cualquier lista vacía — vencer una promo no es un error, es negocio.
+  function dosDigitos(n) { return (n < 10 ? '0' : '') + n; }
+
+  function prepararCountdown(el, finMs) {
+    var horas = el.querySelector('[data-gesicomm-countdown-parte="horas"]');
+    var minutos = el.querySelector('[data-gesicomm-countdown-parte="minutos"]');
+    var segundos = el.querySelector('[data-gesicomm-countdown-parte="segundos"]');
+    function pintar() {
+      var restante = finMs - Date.now();
+      if (restante <= 0) { el.style.display = 'none'; return false; }
+      var totalSeg = Math.floor(restante / 1000);
+      if (horas) horas.textContent = dosDigitos(Math.floor(totalSeg / 3600));
+      if (minutos) minutos.textContent = dosDigitos(Math.floor((totalSeg % 3600) / 60));
+      if (segundos) segundos.textContent = dosDigitos(totalSeg % 60);
+      return true;
+    }
+    if (!pintar()) return;
+    el.style.display = '';
+    var timer = setInterval(function () { if (!pintar()) clearInterval(timer); }, 1000);
+  }
+
+  function prepararCountdowns() {
+    var els = document.querySelectorAll('[data-gesicomm-countdown]');
+    if (!els.length) return;
+    var urgencia = datos.venta && datos.venta.urgencia;
+    var finMs = (urgencia && urgencia.activo) ? Date.parse(urgencia.fin_at) : NaN;
+    for (var i = 0; i < els.length; i++) {
+      if (!isFinite(finMs)) { els[i].style.display = 'none'; continue; }
+      prepararCountdown(els[i], finMs);
+    }
+  }
+
   // ─── Listas ───────────────────────────────────────────────────────────
-  var LISTAS_DE_DATOS = { beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1 };
+  var LISTAS_DE_DATOS = { beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1 };
   var LISTA_PAQUETES = 'paquetes';
 
   function fuenteDeLista(nombre, el) {
@@ -480,6 +522,10 @@ export function runtimeGesicomm() {
       // (solo ficha) 1 unidad + los paquetes: el selector de cantidad/precio.
       case 'paquetes': base = paquetesDelProducto().length ? opcionesDePaquete() : []; break;
       case 'imagenes': base = productoActual ? (productoActual.imagenes_url || []) : []; break;
+      // Prueba social cuantitativa cargada en "Configurar venta" (venta.prueba_social.items):
+      // en modo "demo" son valores de ejemplo de la IA, en "confirmado" son los reales del
+      // comercio — el runtime los pinta igual en los dos casos, la diferencia es de negocio.
+      case 'estadisticas': base = (datos.venta && datos.venta.prueba_social && datos.venta.prueba_social.activo) ? (datos.venta.prueba_social.items || []) : []; break;
       default: base = [];
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');
@@ -1160,6 +1206,7 @@ export function runtimeGesicomm() {
 
   if (!paginado) aplicarLocal();
   renderizar();
+  prepararCountdowns();
   prepararEnlacesTienda();
   // Catálogo grande: se pide la página 1 con el formato del servidor para
   // tener el total, las páginas y las categorías de TODO el catálogo (la

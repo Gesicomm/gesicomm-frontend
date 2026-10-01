@@ -698,8 +698,14 @@ export default function ProductPicker({
             </>
           )}
             </div>
-            <div className="p-4 border-t border-fg/10 bg-fg/5 flex justify-end">
-              <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors">Listo</button>
+            <div className="p-4 border-t border-fg/10 bg-fg/5 flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs font-semibold text-fg/60">{cantidad} de {max} seleccionados</span>
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 text-fg/65 hover:text-fg text-sm font-semibold rounded-lg transition-colors">Cancelar</button>
+                <button type="button" onClick={() => setModalAbierto(false)} className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors">
+                  {cantidad === 0 ? 'Agregar productos' : cantidad === 1 ? 'Agregar 1 producto' : `Agregar ${cantidad} productos`}
+                </button>
+              </div>
             </div>
           </div>
         </div>, document.body)}

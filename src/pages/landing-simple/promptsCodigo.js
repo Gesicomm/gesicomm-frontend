@@ -56,6 +56,7 @@ Valores de data-gesicomm-lista:
 - "ofertas": (solo ficha) todas las anteriores juntas
 - "variantes": (solo ficha) talles / colores del producto actual
 - "imagenes": (solo ficha) galería del producto actual
+- "estadisticas": prueba social cuantitativa ("94% se sintió más liviano", "+2.300 clientes") — ver "Urgencia y prueba social" más abajo. NUNCA escribas la cifra fija en el HTML, siempre por esta lista.
 Opcionales: data-gesicomm-limite="3", data-gesicomm-categoria="Nombre exacto de categoría".
 Si una lista queda vacía, el elemento se oculta solo. Una sección entera puede llevar el mismo data-gesicomm-lista SIN <template> propio para ocultarse cuando no hay datos (por ejemplo, la sección de combos).
 El <template> debe ser hijo directo (o nieto) del elemento con data-gesicomm-lista y tener UN elemento raíz.
@@ -71,7 +72,7 @@ El <template> debe ser hijo directo (o nieto) del elemento con data-gesicomm-lis
 - IMPORTANTE: la grilla del catálogo se vuelve a pintar al buscar, filtrar o cambiar de página. No pongas en sus tarjetas clases de animación de aparición que arranquen invisibles (opacity: 0) y dependan de un observer que corre una sola vez: las tarjetas nuevas quedarían invisibles.
 
 ## Campos (data-gesicomm-bind)
-nombre, descripcion, descripcion_larga, precio, precio_antes (tachado), descuento (ej. "-20%"), ahorro (en ofertas: "Ahorrás Gs 27.000"), imagen (en <img> pone el src; en otro elemento, background-image), categoria, etiqueta, stock, incluye (qué trae un combo), url.
+nombre, descripcion, descripcion_larga, precio, precio_antes (tachado), descuento (ej. "-20%"), ahorro (en ofertas: "Ahorrás Gs 27.000"), imagen (en <img> pone el src; en otro elemento, background-image), categoria, etiqueta, stock, incluye (qué trae un combo), url, valor (solo dentro de la lista "estadisticas").
 - Dentro de un <template>, el campo es del elemento de esa lista.
 - Fuera de una lista, en la FICHA, el campo es del producto que se está viendo.
 - Si un campo no tiene dato (sin precio_antes, sin etiqueta), el elemento se oculta solo: no pongas texto de relleno.
@@ -87,6 +88,23 @@ Redes sociales: poné un contenedor vacío <div data-gesicomm-redes></div> (en e
 - data-gesicomm-inicio → vuelve al inicio.
 - data-gesicomm-oferta → dentro de una lista de paquetes, agrega esa oferta al carrito. No lo uses para upsells en la ficha.
 - <input type="checkbox" data-gesicomm-bump> → dentro de "ofertas_bump": marcada, la oferta se suma sola cuando se toca "Comprar" del producto. El runtime le pone la clase "is-checked" al elemento raíz del template: estilá ese estado.
+
+## Urgencia (countdown) y prueba social (estadísticas)
+Se pueden mostrar, pero SIEMPRE atados a configuración real de Gesicomm — nunca a un texto fijo
+que vos escribas, porque el comercio tiene que confirmarlos con datos reales antes de publicar:
+
+- Countdown de oferta: <div data-gesicomm-countdown><span data-gesicomm-countdown-parte="horas"></span>:<span data-gesicomm-countdown-parte="minutos"></span>:<span data-gesicomm-countdown-parte="segundos"></span></div>. El runtime calcula la cuenta regresiva real a partir de la fecha de fin que cargue el comercio en "Configurar venta" — vos NUNCA escribas una fecha, un texto de tiempo restante ni JS de cuenta regresiva.
+- Estadísticas: usá la lista "estadisticas" de arriba, con binds "valor" ("94%") y "etiqueta" ("se sintió más liviano"). El comercio carga las cifras reales en "Configurar venta"; hasta que las confirme, Gesicomm no deja publicar la landing si estos bloques están en el HTML.
+
+Diseñá estos bloques con la forma que quieras (el comercio va a ver un ejemplo mientras no
+confirme sus datos reales), pero nunca reemplaces la primitiva por texto fijo.
+
+NUNCA pongas el contenedor completo de "estadisticas" dos veces en el documento (ej. una vez como
+"rating" arriba del hero y otra vez en una sección de prueba social): el runtime clona los 2 a 4
+items en CADA contenedor con ese atributo, así que un "rating" en el hero termina mostrando las
+mismas 2 a 4 cifras con sus estrellas repetidas, no un rating único. Dejalo una sola vez. Si el
+hero quiere una insignia de confianza, usá texto fijo sin número ("★★★★★ Calificado por nuestros
+clientes") — eso no es una cifra, así que no necesita confirmación.
 
 ## Order bump (lo que dicen los datos)
 - Es una CASILLA, no un botón aparte, y va justo ARRIBA del botón de comprar de la ficha.
@@ -133,8 +151,8 @@ El logo va con <img data-gesicomm-tienda="logo" alt=""> y el nombre con <span da
 - Mobile first: la mayoría de las visitas llegan desde anuncios de Instagram/Facebook en el celular. Probá mentalmente en 375px.
 - Español de Paraguay (voseo: "elegí", "comprá"), moneda guaraníes ("Gs 145.735", sin decimales). El runtime ya formatea los precios.
 - Accesible: contraste AA, textos alternativos, botones reales (<button>) para acciones, foco visible.
-- Nada de testimonios, cifras de ventas, garantías ni certificaciones inventadas: si hace falta, dejá un marcador visible "[Reemplazar por testimonio real]".
-- Nada de urgencia falsa (contadores que se reinician, "quedan 2" inventado).
+- Nada de testimonios con nombre de una persona inventada, garantías ni certificaciones inventadas: si hace falta, dejá un marcador visible "[Reemplazar por testimonio real]". "Quedan 2 unidades" inventado también sigue prohibido.
+- El único contenido de ejemplo permitido es el countdown y las estadísticas de "Urgencia y prueba social" de arriba — y solo usando esas primitivas, nunca una fecha o cifra fija en el HTML.
 - Fuentes: podés usar Google Fonts con <link> en el HTML (no con @import en el CSS). No uses otros scripts externos.
 - El footer tiene que tener estos links (son obligatorios para cobrar con PagoPar y para aprobar anuncios en Meta), escritos así, con su data-gesicomm-link: <a href="/contacto" data-gesicomm-link="contacto">, <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">, <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">, <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">, <a href="/politica-envio" data-gesicomm-link="politica-envio">, <a href="/aviso-legal" data-gesicomm-link="aviso-legal">. Gesicomm corrige la URL según dónde se publique la landing; no pongas dominios. En el footer poné también el contenedor de redes <div data-gesicomm-redes></div>.
 
@@ -265,7 +283,7 @@ Estructura (en este orden; es la que más vende según la investigación de usab
    - 3 o 4 "highlights" con check: <ul data-gesicomm-lista="beneficios" data-gesicomm-limite="4"><template><li data-gesicomm-bind="titulo"></li></template></ul>.
    - Variantes (lista "variantes", estilá .is-selected y [data-agotado]).
    - Order bump ("ofertas_bump") justo ARRIBA del selector de oferta.
-   - "Elegí tu oferta": lista "paquetes". Gesicomm arma las opciones (1 unidad, Pack x2, Pack x3…) con binds "titulo", "etiqueta" ("Mejor precio", calculado), "precio", "precio_antes" (las unidades sueltas), "por_unidad" ("Gs 125.000 c/u") y "ahorro" ("Ahorrás Gs 88.000"). El elemento raíz del template es la TARJETA ENTERA clickeable (un <button>): el runtime le pone role="radio", aria-checked y la clase "is-selected"; estilá ese estado con un radio visible. Elegir el paquete ES elegir la cantidad y el botón de compra lo compra.
+   - "Elegí tu oferta": lista "paquetes". Gesicomm arma las opciones (1 unidad, Pack x2, Pack x3…) con binds "imagen" (foto del producto/paquete), "titulo", "unidades_texto" ("x2"), "etiqueta" ("Mejor precio", calculado), "precio", "precio_antes" (las unidades sueltas), "por_unidad" ("Gs 125.000 c/u") y "ahorro" ("Ahorrás Gs 88.000"). El elemento raíz del template es la TARJETA ENTERA clickeable (un <button>): el runtime le pone role="radio", aria-checked y la clase "is-selected"; estilá ese estado con un radio visible. Elegir el paquete ES elegir la cantidad y el botón de compra lo compra.
    - Cantidad (data-gesicomm-cantidad-input) SOLO si el producto no tiene paquetes: ponele data-gesicomm-sin="tiene_paquetes". Después el botón grande "Comprar ahora · <span data-gesicomm-total></span>" (data-gesicomm-comprar). "Agregar al carrito" y WhatsApp como links secundarios.
    - Pegado al botón: envío ("el costo lo ves antes de pagar"), pago (PagoPar o al recibir) y cambios (link data-gesicomm-link="reembolsos"); debajo la lista "confianza" (bind "texto": garantías que cargó la tienda).
    - NO uses "ofertas_pack" (los paquetes van en "paquetes") ni "ofertas_upsell" en la ficha. No escribas textos de oferta vagos ("descuento imperdible"): los números concretos ya los dan los binds.

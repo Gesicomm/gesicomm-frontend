@@ -337,6 +337,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           },
         },
         ...(ventaAGuardar ? { venta: ventaAGuardar } : {}),
+        // Única puerta hacia venta.urgencia/prueba_social "confirmado" (ver
+        // landingSimple.service.js): separado de `venta` a propósito, así un
+        // guardado normal (editar la fecha) nunca confirma por accidente.
+        ...(extra.confirmaciones ? { confirmaciones: extra.confirmaciones } : {}),
         items: seleccionAItems(itemsAGuardar, landing?.items),
       });
       const guardados = codigosDesdeContent(actualizada.content, codigosAGuardar.producto, tienda);
@@ -424,7 +428,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     }
   }
 
-  async function confirmarVenta({ venta: nuevaVenta, seleccion: nuevaSeleccion, items: nuevosItems }) {
+  async function confirmarVenta({ venta: nuevaVenta, seleccion: nuevaSeleccion, items: nuevosItems, confirmaciones }) {
     // Con el código de arranque intacto, el inicio pasa a ser la página base
     // del formato elegido (la misma que mostró la vista previa). Si ya era la
     // base de OTRO formato, se cambia también, pero preguntando: puede tener
@@ -441,7 +445,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     setSeleccion(nuevaSeleccion);
     setVenta(nuevaVenta);
     setCodigos(nuevosCodigos);
-    const ok = await guardar({ venta: nuevaVenta, items: nuevosItems, codigos: nuevosCodigos });
+    const ok = await guardar({ venta: nuevaVenta, items: nuevosItems, codigos: nuevosCodigos, confirmaciones });
     if (ok) {
       setPaso('codigo');
       setTab(usarBase ? 'prompts' : 'html');
@@ -449,8 +453,43 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     }
   }
 
+  // Mismo criterio que AICodeValidator.detectarBloquesSinConfirmar en el
+  // backend (landingSimple.service.js): esto es solo para evitar el
+  // roundtrip y llevar al comercio directo a "Configurar venta" — la
+  // validación real y determinante sigue siendo la del servidor.
+  function bloqueosDePublicacion() {
+    const htmls = Object.entries(codigos || {})
+      .map(([k, c]) => (k === 'inicio' || k === 'producto' || k.startsWith(PREFIJO_PROPIA)) ? c?.html : null)
+      .filter(Boolean)
+      .join('\n');
+    const pendientes = [];
+    if (/data-gesicomm-countdown(?!-parte)/.test(htmls)) {
+      const u = venta?.urgencia;
+      if (!u?.activo || !u?.fin_at || u?.estado !== 'confirmado') pendientes.push('urgencia');
+    }
+    if (/data-gesicomm-lista=["']estadisticas["']/.test(htmls)) {
+      const p = venta?.prueba_social;
+      if (!p?.activo || !Array.isArray(p?.items) || !p.items.length || p?.estado !== 'confirmado') pendientes.push('prueba_social');
+    }
+    return pendientes;
+  }
+
   async function cambiarEstado(activo) {
     setError('');
+    if (activo) {
+      const pendientes = bloqueosDePublicacion();
+      if (pendientes.length) {
+        const NOMBRES = { urgencia: 'el countdown de oferta', prueba_social: 'las estadísticas/prueba social' };
+        const detalle = pendientes.map(p => NOMBRES[p] || p).join(' y ');
+        setError(
+          `${detalle} todavía están en modo "ejemplo" (los generó la IA para previsualizar, no son datos reales). `
+          + 'Meta prohíbe countdowns falsos y estadísticas inventadas en anuncios (puede suspender tu cuenta publicitaria), y la Ley 1334 de Defensa del Consumidor prohíbe la publicidad engañosa. '
+          + 'Confirmalos con datos reales en "Configurar venta" antes de publicar.',
+        );
+        setPaso('venta');
+        return;
+      }
+    }
     try {
       const actualizada = await landingSimpleService.cambiarEstado(id, activo);
       setLanding(prev => ({ ...prev, activo: actualizada.activo }));

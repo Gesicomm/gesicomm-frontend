@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Search } from 'lucide-react';
 import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
 
 /**
@@ -16,10 +17,19 @@ import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/icon
  */
 export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
   const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
   const contenedor = useRef(null);
   const boton = useRef(null);
   const Actual = getIconoBeneficio(valor);
   const nombreActual = CATALOGO_ICONOS_BENEFICIOS.find(i => i.key === valor)?.label;
+
+  const iconosFiltrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) return CATALOGO_ICONOS_BENEFICIOS;
+    return CATALOGO_ICONOS_BENEFICIOS.filter(({ key, label, keywords = '' }) => (
+      `${key} ${label} ${keywords}`.toLowerCase().includes(q)
+    ));
+  }, [busqueda]);
 
   useEffect(() => {
     if (!abierto) return undefined;
@@ -68,32 +78,51 @@ export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
 
       {abierto && (
         <div
-          role="listbox"
+          role="dialog"
           aria-label={`Elegir ${titulo.toLowerCase()}`}
-          className="absolute z-30 top-full left-0 mt-1.5 p-2 rounded-xl border border-fg/15 bg-canvas shadow-xl w-[212px]"
+          className="absolute z-30 top-full left-0 mt-1.5 p-2 rounded-xl border border-fg/15 bg-canvas shadow-xl w-[300px]"
         >
-          <div className="grid grid-cols-6 gap-1">
-            {CATALOGO_ICONOS_BENEFICIOS.map(({ key, label, Icon }) => {
-              const elegido = key === valor;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  role="option"
-                  aria-selected={elegido}
-                  title={label}
-                  onClick={() => elegir(key)}
-                  className={`grid place-items-center h-8 rounded-lg transition-colors ${
-                    elegido
-                      ? 'bg-primary/15 text-primary-text ring-1 ring-primary'
-                      : 'text-fg/60 hover:bg-fg/10 hover:text-fg'
-                  }`}
-                >
-                  <Icon size={15} />
-                  <span className="sr-only">{label}</span>
-                </button>
-              );
-            })}
+          <label className="flex items-center gap-2 h-8 px-2 mb-2 rounded-lg border border-fg/10 bg-fg/5 text-fg/55 focus-within:border-primary/60 focus-within:text-fg">
+            <Search size={14} />
+            <input
+              type="search"
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+              placeholder="Buscar icono..."
+              className="min-w-0 flex-1 bg-transparent outline-none text-[12px] text-fg placeholder:text-fg/35"
+            />
+          </label>
+
+          <div className="max-h-[292px] overflow-y-auto pr-1">
+            {iconosFiltrados.length > 0 ? (
+              <div className="grid grid-cols-8 gap-1" role="listbox" aria-label={`Opciones de ${titulo.toLowerCase()}`}>
+                {iconosFiltrados.map(({ key, label, Icon }) => {
+                  const elegido = key === valor;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="option"
+                      aria-selected={elegido}
+                      title={label}
+                      onClick={() => elegir(key)}
+                      className={`grid place-items-center h-8 rounded-lg transition-colors ${
+                        elegido
+                          ? 'bg-primary/15 text-primary-text ring-1 ring-primary'
+                          : 'text-fg/60 hover:bg-fg/10 hover:text-fg'
+                      }`}
+                    >
+                      <Icon size={15} />
+                      <span className="sr-only">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="py-8 text-center text-[11px] text-fg/45">
+                No hay iconos para “{busqueda.trim()}”.
+              </p>
+            )}
           </div>
 
           <div className="mt-1.5 pt-1.5 border-t border-fg/10 flex items-center justify-between gap-2">

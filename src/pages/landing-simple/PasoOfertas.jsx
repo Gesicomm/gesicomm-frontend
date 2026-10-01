@@ -186,10 +186,12 @@ export default function PasoOfertas({
         <div className="mx-auto flex w-full max-w-5xl items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Paso 2 de 3</p>
-            <h2 className="mt-1 text-xl font-bold leading-tight">Armá tus ofertas</h2>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-bold leading-tight">Potenciá tu oferta</h2>
+              <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-fg-muted ring-1 ring-border">Opcional</span>
+            </div>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-fg-muted">
-              Una oferta hace que la misma visita valga más. Creá las que quieras y marcá cuáles muestra
-              esta landing. Si preferís, saltealo y lo hacés después.
+              Podés sumar paquetes, combos, order bumps o upsells. También podés continuar sin ofertas.
             </p>
           </div>
           <button
@@ -197,7 +199,7 @@ export default function PasoOfertas({
             onClick={onVolver}
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-surface-2 px-3 text-sm font-semibold text-fg-muted transition hover:bg-surface-3 hover:text-fg"
           >
-            Volver a productos
+            Volver al resumen
           </button>
         </div>
       </header>
@@ -385,14 +387,14 @@ export default function PasoOfertas({
               onClick={onSaltear}
               className="inline-flex h-10 items-center rounded-lg px-3 text-sm font-semibold text-fg-muted transition hover:text-fg"
             >
-              Saltear por ahora
+              Continuar sin ofertas
             </button>
             <button
               type="button"
               onClick={onContinuar}
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-primary-fg transition hover:bg-primary-hover"
             >
-              Seguir al prompt <ArrowRight size={15} />
+              Continuar a instrucciones <ArrowRight size={15} />
             </button>
           </div>
         </div>

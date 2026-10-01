@@ -12,8 +12,8 @@ export const landingSimpleService = {
   // `venta` es lo que se armó en el panel de ofertas del wizard (qué
   // ofertas se muestran, combos, recomendados, tipo de venta): viaja junto
   // con el prompt para que la primera generación ya traiga esos bloques.
-  crearDesdeIA: (prompt, items = [], venta = null) =>
-    API.post('/mis-landings-simples/ai-draft', { prompt, items, venta }).then(r => r.data),
+  crearDesdeIA: (prompt, items = [], venta = null, base = null) =>
+    API.post('/mis-landings-simples/ai-draft', { prompt, items, venta, base }).then(r => r.data),
   // Vuelve a generar el HTML/CSS de una landing YA CREADA con un prompt
   // nuevo — misma fila, mismo id, mismos productos (los de "Configurar
   // venta"). A diferencia de crearDesdeIA, no crea otra landing.

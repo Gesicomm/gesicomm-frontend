@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
-import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
+import IconoPicker from './IconoPicker';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 const MAX_BENEFICIOS = 6;
@@ -12,21 +12,14 @@ const MAX_BENEFICIOS = 6;
  * templates/iconosBeneficios.js — nunca texto/HTML libre, solo una clave).
  */
 export default function BeneficiosPanel({ beneficios, onChange }) {
-  const [pickerAbierto, setPickerAbierto] = useState(null);
-
   function agregar() {
     onChange([...(beneficios || []), { titulo: '', texto: '', icono: 'shield' }]);
   }
   function actualizar(idx, campo, valor) {
     onChange(beneficios.map((b, i) => (i === idx ? { ...b, [campo]: valor } : b)));
   }
-  function elegirIcono(idx, key) {
-    actualizar(idx, 'icono', key);
-    setPickerAbierto(null);
-  }
   function quitar(idx) {
     onChange(beneficios.filter((_, i) => i !== idx));
-    if (pickerAbierto === idx) setPickerAbierto(null);
   }
   function mover(idx, delta) {
     const destino = idx + delta;
@@ -44,18 +37,10 @@ export default function BeneficiosPanel({ beneficios, onChange }) {
         <p className="text-xs text-fg/40">Todavía no agregaste beneficios.</p>
       )}
       {(beneficios || []).map((b, idx) => {
-        const IconoActual = getIconoBeneficio(b.icono);
         return (
           <div key={idx} className="rounded-lg border border-fg/10 bg-fg/5 p-3 flex flex-col gap-2">
             <div className="flex items-start gap-2">
-              <button
-                type="button"
-                onClick={() => setPickerAbierto(pickerAbierto === idx ? null : idx)}
-                title="Cambiar ícono"
-                className="h-9 w-9 rounded-lg bg-fg/10 hover:bg-fg/15 flex items-center justify-center text-fg shrink-0"
-              >
-                <IconoActual size={16} />
-              </button>
+              <IconoPicker valor={b.icono} onChange={v => actualizar(idx, 'icono', v)} />
               <div className="flex-1 flex flex-col gap-2">
                 <input
                   type="text"
@@ -86,21 +71,6 @@ export default function BeneficiosPanel({ beneficios, onChange }) {
                 </button>
               </div>
             </div>
-            {pickerAbierto === idx && (
-              <div className="grid grid-cols-7 gap-1.5 p-2 rounded-lg bg-black/30 border border-fg/10">
-                {CATALOGO_ICONOS_BENEFICIOS.map(({ key, label, Icon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => elegirIcono(idx, key)}
-                    title={label}
-                    className={`h-8 w-8 rounded-md flex items-center justify-center transition-colors ${b.icono === key ? 'bg-fg text-canvas' : 'text-fg/60 hover:bg-fg/10'}`}
-                  >
-                    <Icon size={15} />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         );
       })}

@@ -31,9 +31,9 @@ export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
   // texto con el color de Branding.
   const temaActual = resolverTemaPorSlug(
     {
-      fondo: draft.color_fondo,
+      fondo: draft.color_fondo || tienda?.color_fondo,
       texto: draft.color_texto || tienda?.color_secundario,
-      acento: draft.color_primario,
+      acento: draft.color_primario || tienda?.color_primario,
     },
     templateSlug,
   );
@@ -41,7 +41,7 @@ export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
   return (
     <div className="flex flex-col gap-5">
       <p className="text-xs text-fg/40">
-        Se aplican a toda la landing. Dejá un color vacío para usar el de este template.
+        Se aplican a toda la landing. Dejá un color vacío para usar el branding de Mi Tienda; si no hay uno cargado, se usa el default del template.
       </p>
       {CAMPOS.map(({ key, temaKey, label }) => {
         const heredado = temaActual[temaKey];

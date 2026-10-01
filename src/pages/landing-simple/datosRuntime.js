@@ -327,7 +327,7 @@ export function datosRuntimePublico(data, slug, productoPublico) {
   return {
     vista: producto ? 'producto' : 'inicio',
     tienda: tiendaRuntime(data),
-    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {} } : null,
+    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {}, urgencia: venta.urgencia || null, prueba_social: venta.prueba_social || null } : null,
     // paginado: la respuesta trae solo la primera página; el resto lo pide
     // el runtime (ver onCatalogo en LandingCodigoPublica).
     catalogo: {
@@ -380,7 +380,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
       youtube: tienda?.youtube || '',
       twitter: tienda?.twitter || '',
     },
-    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {} } : null,
+    venta: venta ? { tipo: venta.tipo, recomendados_titulo: venta.recomendados?.titulo || '', paquetes: venta.paquetes || {}, urgencia: venta.urgencia || null, prueba_social: venta.prueba_social || null } : null,
     // En el editor está toda la selección en memoria: filtra y ordena el
     // propio runtime, sin servidor.
     catalogo: { total: catalogo.length, por_pagina: 24, paginado: false },

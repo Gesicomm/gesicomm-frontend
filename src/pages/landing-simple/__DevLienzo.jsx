@@ -64,6 +64,7 @@ const OTROS = [
 ];
 
 function datos(productId, fondoMarca) {
+  const finOferta = new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString();
   return {
     disponible: true,
     titulo: 'Ecom',
@@ -71,7 +72,13 @@ function datos(productId, fondoMarca) {
     // Tema guardado de la tienda (fondo de marca de Mi Tienda).
     tema: { fondo: fondoMarca, primario: '#16a36a' },
     contacto_landing: { whatsapp: '0981123456', instagram: '@ecom.py', facebook: 'ecompy', tiktok: '@ecom.py', email: 'hola@ecom.com.py' },
-    content: { codigo: PLANTILLA_INICIO, venta: { tipo: 'catalogo' } },
+    content: {
+      codigo: PLANTILLA_INICIO,
+      venta: {
+        tipo: 'catalogo',
+        urgencia: { activo: true, fin_at: finOferta, estado: 'confirmado' },
+      },
+    },
     template: { kind: 'codigo' },
     catalogo_items: [ADELFIT, ...OTROS],
     items: [ADELFIT, ...OTROS],

@@ -102,7 +102,7 @@ export const DEFAULTS_FICHA = {
   ofertas: {
     activo: true,
     titulo: 'Elegí tu oferta especial',
-    etiqueta_individual: 'Individual',
+    etiqueta_individual: 'Pack Inicio',
     badge_individual: '',
     nota_pack: 'Compra única',
     // { "<id de oferta>": { badge, destacado, subtitulo } }
@@ -137,8 +137,8 @@ export const DEFAULTS_FICHA = {
   garantias: {
     activo: true,
     items: [
-      { icono: 'badge',  titulo: 'Garantía de 60 días', texto: 'Devolución sin preguntas' },
-      { icono: 'leaf',   titulo: 'Ingredientes naturales', texto: 'Sin aditivos innecesarios' },
+      { icono: 'badge',  titulo: 'Garantía de compra', texto: 'Según la política de la tienda' },
+      { icono: 'shield', titulo: 'Información clara', texto: 'Beneficios y modo de uso visibles' },
       { icono: 'lock',   titulo: 'Pago 100% seguro',    texto: 'Tus datos siempre protegidos' },
       { icono: 'truck',  titulo: 'Envío a todo el país', texto: 'Seguimiento de tu pedido' },
     ],
