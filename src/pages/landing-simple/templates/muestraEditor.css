@@ -1,0 +1,14 @@
+/**
+ * Texto de ejemplo del preview del armador (ver claseMuestra en sections.jsx).
+ *
+ * Cuando un campo está vacío, el preview muestra un texto genérico en su
+ * lugar para que el comercio vea dónde va y con qué tamaño; la landing
+ * publicada no lo muestra. Se ve atenuado y con borde punteado para que no
+ * se confunda con un texto cargado.
+ */
+.gc-muestra {
+  opacity: .42;
+  outline: 1px dashed currentColor;
+  outline-offset: 4px;
+  border-radius: 2px;
+}

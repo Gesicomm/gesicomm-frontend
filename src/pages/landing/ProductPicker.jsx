@@ -23,6 +23,15 @@ const TIPOS = [
   { valor: 'combo', label: 'Combos' },
 ];
 
+const ORIGENES = [
+  { valor: 'todos', label: 'Origen: todos', tipo: 'todos' },
+  { valor: 'mios', label: 'Solo míos', tipo: 'todos' },
+  { valor: 'producto-propio', label: 'Mis productos', tipo: 'producto' },
+  { valor: 'producto-gcom', label: 'Productos Gesicom', tipo: 'producto' },
+  { valor: 'combo-propio', label: 'Mis combos', tipo: 'combo' },
+  { valor: 'combo-gcom', label: 'Combos Gesicom', tipo: 'combo' },
+];
+
 const ORDENES = [
   { valor: 'nombre', label: 'Nombre A–Z' },
   { valor: 'precio-desc', label: 'Precio: mayor primero' },
@@ -70,6 +79,20 @@ function aplicarPrecioVenta(item, precio) {
   return precio != null
     ? { ...item, precio_usuario: precio, precio_efectivo: precio }
     : item;
+}
+
+function esPropio(item) {
+  return item?.origen_catalogo === 'PROPIO';
+}
+
+function coincideOrigen(item, origen) {
+  if (origen === 'todos') return true;
+  if (origen === 'mios') return esPropio(item);
+  if (origen === 'producto-propio') return item.tipo === 'producto' && esPropio(item);
+  if (origen === 'producto-gcom') return item.tipo === 'producto' && !esPropio(item);
+  if (origen === 'combo-propio') return item.tipo === 'combo' && esPropio(item);
+  if (origen === 'combo-gcom') return item.tipo === 'combo' && !esPropio(item);
+  return true;
 }
 
 function fusionarSeleccionConCatalogo(item, seleccionData, preciosLocales) {
@@ -357,6 +380,7 @@ export default function ProductPicker({
   const [errorCatalogoFresco, setErrorCatalogoFresco] = useState('');
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('todos');
+  const [origen, setOrigen] = useState('todos');
   const [categoria, setCategoria] = useState('');
   const [marca, setMarca] = useState('');
   const [stock, setStock] = useState('todos');
@@ -424,6 +448,7 @@ export default function ProductPicker({
     const precioOrdenable = (item) => precioVentaItem(fusionarSeleccionConCatalogo(item, seleccion.get(claveItem(item)), preciosLocales));
 
     if (tipo !== 'todos') lista = lista.filter(i => i.tipo === tipo);
+    if (origen !== 'todos') lista = lista.filter(i => coincideOrigen(i, origen));
     if (categoria) lista = lista.filter(i => i.categoria === categoria);
     if (marca) lista = lista.filter(i => i.marca === marca);
     if (stock === 'con') lista = lista.filter(i => (i.stock ?? 0) > 0);
@@ -450,11 +475,11 @@ export default function ProductPicker({
       default:
         return [...lista].sort((a, b) => a.nombre.localeCompare(b.nombre));
     }
-  }, [todos, tipo, categoria, marca, stock, soloSeleccionados, busqueda, orden, seleccion]);
+  }, [todos, tipo, origen, categoria, marca, stock, soloSeleccionados, busqueda, orden, seleccion, preciosLocales]);
 
   React.useEffect(() => {
     setPagina(1);
-  }, [busqueda, tipo, categoria, marca, stock, orden, soloSeleccionados]);
+  }, [busqueda, tipo, origen, categoria, marca, stock, orden, soloSeleccionados]);
 
   const TAMANO_PAGINA = 10;
   const totalPaginas = Math.ceil(visibles.length / TAMANO_PAGINA) || 1;
@@ -465,12 +490,24 @@ export default function ProductPicker({
 
   const cantidad = seleccion.size;
   const lleno = cantidad >= max;
-  const hayFiltroActivo = !!(busqueda || categoria || marca || tipo !== 'todos' || stock !== 'todos' || soloSeleccionados);
+  const hayFiltroActivo = !!(busqueda || categoria || marca || tipo !== 'todos' || origen !== 'todos' || stock !== 'todos' || soloSeleccionados);
   const esperandoCatalogoFresco = refrescarCatalogoAlAbrir && modalAbierto && cargandoCatalogoFresco && !catalogoFresco;
   const falloCatalogoFrescoSinDatos = refrescarCatalogoAlAbrir && modalAbierto && !!errorCatalogoFresco && !catalogoFresco;
 
   function limpiarFiltros() {
-    setBusqueda(''); setTipo('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false); setPagina(1);
+    setBusqueda(''); setTipo('todos'); setOrigen('todos'); setCategoria(''); setMarca(''); setStock('todos'); setSoloSeleccionados(false); setPagina(1);
+  }
+
+  function cambiarTipo(nuevoTipo) {
+    setTipo(nuevoTipo);
+    if (nuevoTipo === 'producto' && origen.startsWith('combo-')) setOrigen('todos');
+    if (nuevoTipo === 'combo' && origen.startsWith('producto-')) setOrigen('todos');
+  }
+
+  function cambiarOrigen(nuevoOrigen) {
+    setOrigen(nuevoOrigen);
+    const filtro = ORIGENES.find(o => o.valor === nuevoOrigen);
+    if (filtro?.tipo && filtro.tipo !== 'todos') setTipo(filtro.tipo);
   }
 
   async function guardarPrecioVenta(item, precio) {
@@ -544,12 +581,16 @@ export default function ProductPicker({
                   key={t.valor}
                   type="button"
                   className={tipo === t.valor ? 'active' : ''}
-                  onClick={() => setTipo(t.valor)}
+                  onClick={() => cambiarTipo(t.valor)}
                 >
                   {t.label}
                 </button>
               ))}
             </div>
+
+            <select className="lb-select lb-select-origen" value={origen} onChange={e => cambiarOrigen(e.target.value)}>
+              {ORIGENES.map(o => <option key={o.valor} value={o.valor}>{o.label}</option>)}
+            </select>
 
             {categorias.length > 0 && (
               <select className="lb-select" value={categoria} onChange={e => setCategoria(e.target.value)}>

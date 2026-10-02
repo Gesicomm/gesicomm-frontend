@@ -14,6 +14,7 @@ export function KanbanColumn({
   onDragEndCard,
   onDropCard,
   onChangeEstado,
+  onAbrirDetalle,
   onAbrirSeguimiento,
   onAbrirTimelineAbastecimiento,
   onAccionSiguiente,
@@ -75,6 +76,7 @@ export function KanbanColumn({
               onDragStart={onDragStartCard}
               onDragEnd={onDragEndCard}
               onChangeEstado={onChangeEstado}
+              onAbrirDetalle={onAbrirDetalle}
               onAbrirSeguimiento={onAbrirSeguimiento}
               onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
               onAccionSiguiente={onAccionSiguiente}

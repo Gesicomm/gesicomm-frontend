@@ -3,6 +3,20 @@ import { ChevronDown, ShoppingCart, Phone, Mail, MapPin, Clock, Check, MessageCi
 import { InstagramIcon, FacebookIcon, WhatsappIcon, TikTokIcon, YoutubeIcon, TwitterIcon } from '../../../page-builder/blocks/footer-builder/SocialIcons';
 import { getIconoBeneficio } from './iconosBeneficios';
 import { FormattedText } from '../../../components/FormattedText';
+import './muestraEditor.css';
+
+/**
+ * Texto que se muestra para un campo de la landing: el que cargó el comercio;
+ * si está vacío, en el PREVIEW del armador un ejemplo genérico (para que vea
+ * dónde va) y en la landing publicada nada.
+ *
+ * @returns {{ texto: string, clase: string }} clase = 'gc-muestra' cuando es el ejemplo
+ */
+export function textoOMuestra(valor, ejemplo, previewMode) {
+  if (valor) return { texto: valor, clase: '' };
+  if (previewMode) return { texto: ejemplo, clase: 'gc-muestra' };
+  return { texto: '', clase: '' };
+}
 
 /** Tope de fotos que rota una tarjeta: más que esto marea y son bytes de más. */
 const MAX_FOTOS_TARJETA = 5;
@@ -301,13 +315,18 @@ export function ContactoSection({ contacto, acento, tituloClase, bordeSuave, isM
   );
 }
 
-export function FaqSection({ faq, acento, bordeSuave, textoSuave, tituloClase }) {
+/**
+ * `titulo`: el que escribió el comercio. Sin definir = "Preguntas frecuentes"
+ * (landings que nunca lo tocaron); cadena vacía = sin título.
+ */
+export function FaqSection({ faq, titulo, acento, bordeSuave, textoSuave, tituloClase }) {
   const [abierta, setAbierta] = useState(null);
   if (!faq?.length) return null;
+  const textoTitulo = titulo ?? 'Preguntas frecuentes';
   return (
     <section id="faq" className="px-6 py-14" style={{ borderTop: `1px solid ${bordeSuave}` }}>
-      <h2 className={`text-2xl mb-6 ${tituloClase}`}>Preguntas frecuentes</h2>
-      <div className="max-w-2xl">
+      {textoTitulo && <h2 className={`text-2xl mb-6 ${tituloClase}`}>{textoTitulo}</h2>}
+      <div className="max-w-4xl">
         {faq.map((f, idx) => (
           <div key={idx} className="py-4" style={{ borderTop: idx > 0 ? `1px solid ${bordeSuave}` : 'none' }}>
             <button

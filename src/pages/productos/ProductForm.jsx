@@ -392,7 +392,7 @@ export default function ProductForm() {
       sobre_este_producto: '',
       propuesta_valor: '',
       beneficios: [],
-      confianza: [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
+      confianza: [],
       faq_titulo: '',
       ficha_rubro: 'basico',
       ficha_datos: {},
@@ -523,7 +523,7 @@ export default function ProductForm() {
               : [],
             propuesta_valor: p.propuesta_valor || '',
             beneficios: p.beneficios || [],
-            confianza: p.confianza?.length ? p.confianza : [{ texto: 'Envío a todo el país', icono: 'truck' }, { texto: 'Pago seguro', icono: 'shield-check' }, { texto: 'Cambios y devoluciones', icono: 'rotate-ccw' }, { texto: 'Soporte 24/7', icono: 'headphones' }],
+            confianza: p.confianza || [],
             preguntas_frecuentes: p.preguntas_frecuentes || [],
             sobre_este_producto: p.sobre_este_producto || '',
             ficha_rubro: p.ficha_rubro || 'basico',
@@ -778,6 +778,15 @@ export default function ProductForm() {
   const alFallarValidacion = (errs) => {
     if (errs.nombre || errs.sku) setTabActiva('basica');
   };
+
+  // Fotos de la ficha del rubro (Vista del producto): van a R2 y vuelven como
+  // URL, sin tocar la galería. Solo con el producto ya guardado (hay id).
+  async function subirImagenFicha(file) {
+    const formData = new FormData();
+    formData.append('imagen', file);
+    const { url } = await productService.subirImagenFicha(id, formData);
+    return url;
+  }
 
   const onSubmit = async (data) => {
     setGuardando(true);
@@ -1205,16 +1214,15 @@ export default function ProductForm() {
     publicacion: estadoVentaVal && activoVal !== undefined ? 'ok' : 'todo',
   };
 
-  useEffect(() => {
-    if (cargando || tabActiva !== 'marketing' || !fichaRubroVal || muestrasAplicadas[fichaRubroVal]) return;
-
-    const muestra = MUESTRAS_VISTA_PRODUCTO[fichaRubroVal] || MUESTRAS_VISTA_PRODUCTO.basico;
+  function aplicarEjemploVista() {
+    const muestra = MUESTRAS_VISTA_PRODUCTO[fichaRubroVal];
+    if (!muestra) return;
 
     if (!hayContenido(valoresProducto.propuesta_valor)) {
-      setValue('propuesta_valor', muestra.propuesta_valor, { shouldDirty: false });
+      setValue('propuesta_valor', muestra.propuesta_valor, { shouldDirty: true });
     }
     if (fichaRubroVal === 'basico' && !hayContenido(valoresProducto.sobre_este_producto)) {
-      setValue('sobre_este_producto', muestra.sobre_este_producto, { shouldDirty: false });
+      setValue('sobre_este_producto', muestra.sobre_este_producto, { shouldDirty: true });
     }
     if (!hayContenido(valoresProducto.beneficios)) {
       replaceBeneficios(muestra.beneficios || []);
@@ -1233,21 +1241,11 @@ export default function ProductForm() {
 
     const datosMuestra = mezclarDatosMuestra(valoresProducto.ficha_datos, muestra.ficha_datos);
     if (JSON.stringify(datosMuestra) !== JSON.stringify(valoresProducto.ficha_datos || {})) {
-      setValue('ficha_datos', datosMuestra, { shouldDirty: false });
+      setValue('ficha_datos', datosMuestra, { shouldDirty: true });
     }
 
     setMuestrasAplicadas(prev => ({ ...prev, [fichaRubroVal]: true }));
-  }, [
-    cargando,
-    tabActiva,
-    fichaRubroVal,
-    muestrasAplicadas,
-    valoresProducto,
-    faq,
-    replaceBeneficios,
-    replaceConfianza,
-    setValue,
-  ]);
+  }
 
   if (cargando) return (
     <div className="prod-page"><div className="prod-loading"><div className="spinner" /></div></div>
@@ -2572,6 +2570,11 @@ export default function ProductForm() {
 
               <div className="form-section-title">
                 <Eye size={14} /> Contenido público
+                {MUESTRAS_VISTA_PRODUCTO[fichaRubroVal] && (
+                  <button type="button" className="btn-secondary btn-small" onClick={aplicarEjemploVista} disabled={!!muestrasAplicadas[fichaRubroVal]}>
+                    Cargar contenido de ejemplo
+                  </button>
+                )}
               </div>
 
               <div className="form-group full">
@@ -2657,6 +2660,8 @@ export default function ProductForm() {
                         onRubro={(v) => campoRubro.onChange(v || '')}
                         onDatos={campoDatos.onChange}
                         modo="campos"
+                        onSubirImagen={esEdicion ? subirImagenFicha : null}
+                        variantes={valoresProducto.variantes || []}
                       />
                     )}
                   />

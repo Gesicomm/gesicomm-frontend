@@ -2,6 +2,8 @@ import FitnessTemplate from './FitnessTemplate';
 import BeautyTemplate from './BeautyTemplate';
 import TechTemplate from './TechTemplate';
 import BasicTemplate from './BasicTemplate';
+import BazarTemplate from './BazarTemplate';
+import ModaTemplate from './ModaTemplate';
 
 // slug ↔ componente fijo — templates rígidos que existen (ver
 // scripts/migrate-landing-simple-rigida.js en el backend, que siembra
@@ -13,6 +15,8 @@ export const TEMPLATES_RIGIDOS = {
   'beauty-skincare': BeautyTemplate,
   'tech-electronica': TechTemplate,
   'basico': BasicTemplate,
+  'bazar-hogar': BazarTemplate,
+  'moda-indumentaria': ModaTemplate,
 };
 
 export function getComponenteTemplate(slug) {

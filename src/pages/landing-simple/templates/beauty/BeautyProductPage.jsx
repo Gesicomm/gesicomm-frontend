@@ -1,14 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronDown, ImageOff, Star } from 'lucide-react';
+import {
+  ArrowLeft, Check, ChevronDown, ImageOff, Minus, Plus, ShoppingBag, Sparkles, Star,
+} from 'lucide-react';
 import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
-import { getIconoBeneficio } from '../iconosBeneficios';
-import { hexToRgba, componer, contraste, resolverTemaPorSlug } from '../themeUtils';
-import { ahorroDePack, inicialesDe } from '../fichaComun';
+import { getIconoBeneficio, CATALOGO_ICONOS_BENEFICIOS } from '../iconosBeneficios';
+import { hexToRgba, componer, contraste, resolverTemaPorSlug, textoLegible, ajustarLegible } from '../themeUtils';
+import { ahorroDePack } from '../fichaComun';
+import { numeroDeSeccion as n } from './fichaBeauty';
 import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
+import {
+  MediaProducto, MiniaturaMediaProducto, galeriaConVariantePromovida, claveMedioProducto,
+} from '../mediaGaleria';
+import ComparadorAntesDespues, { FotoAntesDespuesCombinada } from '../comparadorAntesDespues';
 import StoreFooterLegal from '../../../landing/StoreFooterLegal';
 import RichText from '../../../../components/RichText';
 import BarraMarquee from '../BarraMarquee';
+import ContadorUrgencia from '../contadorUrgencia';
 import './beautyProductPage.css';
 
 /**
@@ -16,16 +24,15 @@ import './beautyProductPage.css';
  *
  * ── Un solo renderer ───────────────────────────────────────────────────
  * Lo montan los dos lados: el preview del armador y la landing publicada
- * (ver BeautyProductPagePublica.jsx). Es la regla que se fijó cuando
- * preview y publicada se desincronizaron por tener dos componentes
- * dibujando lo mismo. Si aparece un tercer lugar, llama a este componente.
+ * (ver BeautyProductPagePublica.jsx). Si aparece un tercer lugar, llama a
+ * este componente — no se escribe otro.
  *
- * `previewMode` NO cambia el diseño: solo evita navegar fuera del editor y
- * muestra un cartel en las secciones que el comercio activó pero todavía no
- * cargó. Cualquier otra diferencia entre preview y publicada es un bug.
+ * `previewMode` NO cambia el diseño: solo muestra un cartel en las
+ * secciones que el comercio prendió pero todavía no cargó.
  *
- * Estructura fija de 12 secciones, contenido 100% editable — ver
- * fichaBeauty.js para de dónde sale cada una.
+ * Estructura fija (ver SECCIONES_BEAUTY, en el mismo orden que acá) y
+ * contenido 100% editable. Los únicos textos escritos acá son rótulos de
+ * interfaz ("Volver al catálogo") y respaldos para campos vacíos.
  */
 export default function BeautyProductPage({
   item,
@@ -42,345 +49,372 @@ export default function BeautyProductPage({
   onClickRelacionado = null,
 }) {
   const [indiceImagen, setIndiceImagen] = useState(0);
+  const [varianteId, setVarianteId] = useState(null);
   const [packId, setPackId] = useState(null);
-  const [suscripcion, setSuscripcion] = useState(false);
-  const [preguntaAbierta, setPreguntaAbierta] = useState(null);
+  const [cantidad, setCantidad] = useState(1);
+  const [agregado, setAgregado] = useState(false);
+  const [preguntaAbierta, setPreguntaAbierta] = useState(0);
 
   const t = resolverTemaPorSlug(tema, templateSlug);
-  const vars = useMemo(() => calcularVariables(t), [t.fondo, t.texto, t.acento]);
+  const colorCta = ficha?.compra?.cta_color || '';
+  const vars = useMemo(() => calcularVariables(t, colorCta), [t.fondo, t.texto, t.acento, colorCta]);
 
+  const variantes = item?.variantes || [];
   const packs = item?.packs || [];
+  const variante = variantes.find(v => String(v.id) === String(varianteId)) || null;
   const pack = packs.find(p => String(p.id) === String(packId)) || null;
-  const precio = pack ? (pack.precio_efectivo ?? pack.precio) : item?.precio;
 
-  useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
+  // Un paquete trae su precio total y manda sobre la variante (mismo
+  // criterio que Tech y que el carrito).
+  const precio = pack
+    ? Number(pack.precio_efectivo ?? pack.precio)
+    : (variante?.precio_efectivo ?? item?.precio);
+  const precioAntes = pack
+    ? (item?.precio != null && Number(item.precio) * (Number(pack.unidades) || 1) > precio ? Number(item.precio) * (Number(pack.unidades) || 1) : null)
+    : (!variante ? item?.precioAntes : null);
+  const descuento = precioAntes && precio ? Math.round((1 - precio / precioAntes) * 100) : 0;
+  const stockMax = variante?.stock != null ? Number(variante.stock) : null;
+
+  const galeria = useMemo(
+    () => galeriaConVariantePromovida(item?.imagenes || [], variante),
+    [item?.imagenes, variante]
+  );
+
+  useEffect(() => { setIndiceImagen(0); }, [item?.nombre, varianteId]);
   useEffect(() => {
     if (packId && !packs.some(p => String(p.id) === String(packId))) setPackId(null);
-  }, [packs, packId]);
+    if (varianteId && !variantes.some(v => String(v.id) === String(varianteId))) setVarianteId(null);
+  }, [packs, variantes, packId, varianteId]);
+  useEffect(() => {
+    if (stockMax != null && cantidad > Math.max(1, stockMax)) setCantidad(Math.max(1, stockMax));
+  }, [stockMax, cantidad]);
+  useEffect(() => {
+    if (!agregado) return undefined;
+    const id = setTimeout(() => setAgregado(false), 2500);
+    return () => clearTimeout(id);
+  }, [agregado]);
 
   if (!item) return null;
 
-  // Lo que está a medio cargar no se publica, pero se conserva en el editor:
-  // por eso el filtro vive acá y no en el normalizador.
-  const beneficios = (ficha.beneficios.items || []).filter(b => b?.titulo?.trim());
-  const ingredientes = (ficha.ingredientes.items || []).filter(i => i?.nombre?.trim());
-  const resultados = (ficha.resultados.items || []).filter(r => r?.testimonio?.trim() || r?.nombre?.trim());
-  const pasos = (ficha.como_funciona.pasos || []).filter(p => p?.titulo?.trim());
-  const garantias = (ficha.garantias.items || []).filter(g => g?.titulo?.trim());
-  const sellos = (ficha.precio.confianza || []).filter(c => c?.texto?.trim());
+  // Lo que está a medio cargar no se publica, pero se conserva en el
+  // editor: por eso el filtro vive acá y no en el normalizador.
+  const beneficios = ficha.beneficios.items.filter(b => b?.titulo?.trim());
+  const puntosHistoria = ficha.historia.puntos.filter(p => p?.trim());
+  const ingredientes = ficha.ingredientes.items.filter(i => i?.nombre?.trim());
+  const pasos = ficha.como_funciona.pasos.filter(p => p?.titulo?.trim());
+  const resenas = ficha.resenas.items.filter(r => r?.comentario?.trim());
+  const garantias = ficha.garantias.items.filter(g => g?.titulo?.trim());
+  const notasCompra = ficha.compra.notas.filter(x => x?.texto?.trim());
+  const fotos = galeria.filter(m => m.tipo === 'imagen').map(m => m.url);
 
-  const irAOfertas = () => {
-    const destino = document.getElementById('bpp-ofertas');
-    if (destino) destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    else comprar();
+  // Con paquetes en Ofertas la cantidad la definen los paquetes: el
+  // cliente elige "1 unidad" o un pack, nunca un número suelto. Si no, el
+  // selector permitiría armar 3 unidades a precio unitario y saltearse el
+  // pack que el comercio quiere vender.
+  const conCantidad = ficha.compra.mostrar_cantidad && packs.length === 0;
+  const eleccion = () => ({ variante, pack, precio, cantidad: conCantidad ? cantidad : 1 });
+  const agregar = () => {
+    if (onAgregar) onAgregar(eleccion());
+    else if (onComprar) onComprar(eleccion());
+    setAgregado(true);
   };
 
-  const comprar = () => onComprar && onComprar({ variante: null, pack, precio });
-  // Agregar al carrito NO puede caer a comprar(): son acciones distintas y
-  // abrir el formulario cuando la clienta solo quiso guardar el producto es
-  // lo peor que puede hacer un botón. Sin handler, el botón no se muestra.
-  const agregar = (elegido) => onAgregar && onAgregar({
-    variante: null,
-    pack: elegido ?? pack,
-    precio: elegido ? (elegido.precio_efectivo ?? elegido.precio) : precio,
-  });
-
-  const imagenActual = item.imagenes[indiceImagen] || item.imagenes[0] || null;
-
-  // Igual que en las otras fichas: el CSS no puede medir el texto y los
-  // nombres del catálogo son descriptivos, no titulares cortos.
+  const medioActual = galeria[indiceImagen] || galeria[0] || null;
+  const categoria = ficha.hero.eyebrow || item.categoria;
   const tituloTexto = (ficha.hero.titulo || item.nombre || '').trim();
-  const claseTitulo = tituloTexto.length > 78 ? 'es-muy-largo' : tituloTexto.length > 38 ? 'es-largo' : '';
+  const claseTitulo = tituloTexto.length > 70 ? 'es-muy-largo' : tituloTexto.length > 32 ? 'es-largo' : '';
+
+  const irAResenas = (e) => {
+    e.preventDefault();
+    document.getElementById('bpp-resenas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const hayOpciones = ficha.opciones.activo && (variantes.length > 0 || packs.length > 0);
 
   return (
     <div className={`bpp-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
-      {/* 1 · Barra superior ───────────────────────────────────────── */}
-      {ficha.barra_superior.activo && ficha.barra_superior.items.length > 0 && (
-        <BarraMarquee
-          className="bpp-barra"
-          items={ficha.barra_superior.items}
-          animado={ficha.barra_superior.animado !== false}
-          velocidad={ficha.barra_superior.velocidad}
-          separador={ficha.barra_superior.separador}
-          renderItem={(a, i) => {
-            const Icono = getIconoBeneficio(a.icono);
-            return <span className="bpp-barra-item" key={i}><Icono size={14} /> {a.texto}</span>;
-          }}
-          cta={ficha.barra_superior.cta_texto ? (
-            <button type="button" className="bpp-barra-cta" onClick={irAOfertas}>
-              {ficha.barra_superior.cta_texto}
-            </button>
-          ) : null}
-        />
+      {/* Contador de urgencia ──────────────────────────────────────── */}
+      {ficha.urgencia.activo && (
+        <div className="bpp-urgencia bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="urgencia" />
+          {ficha.urgencia.texto && <span>{ficha.urgencia.texto}</span>}
+          <ContadorUrgencia desde={ficha.urgencia} className="bpp-contador" />
+        </div>
       )}
 
-      <div className="bpp-wrap">
-        {onVolver && (
+      {/* Cinta de beneficios ───────────────────────────────────────── */}
+      {ficha.barra_superior.activo && ficha.barra_superior.items.some(a => a?.texto?.trim()) && (
+        <div className="bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="barra_superior" />
+          <BarraMarquee
+            className="bpp-barra"
+            items={ficha.barra_superior.items.filter(a => a?.texto?.trim())}
+            animado={ficha.barra_superior.animado !== false}
+            velocidad={ficha.barra_superior.velocidad}
+            separador={ficha.barra_superior.separador}
+            renderItem={(a, i) => {
+              const Icono = a.icono ? getIconoBeneficio(a.icono) : null;
+              return <span className="bpp-barra-item" key={i}>{Icono && <Icono size={14} />} {a.texto}</span>;
+            }}
+            cta={ficha.barra_superior.cta_texto ? (
+              <button type="button" className="bpp-barra-cta" onClick={agregar}>
+                {ficha.barra_superior.cta_texto}
+              </button>
+            ) : null}
+          />
+        </div>
+      )}
+
+      {/* Ruta de navegación ────────────────────────────────────────── */}
+      {ficha.migas.activo ? (
+        <nav className="bpp-migas bpp-wrap" aria-label="Ruta">
+          {onVolver
+            ? <button type="button" onClick={onVolver}>{ficha.migas.inicio || 'Inicio'}</button>
+            : <span>{ficha.migas.inicio || 'Inicio'}</span>}
+          {item.categoria && <><i aria-hidden="true">/</i><span>{item.categoria}</span></>}
+          <i aria-hidden="true">/</i><b>{item.nombre}</b>
+        </nav>
+      ) : onVolver ? (
+        <div className="bpp-wrap">
           <button type="button" className="bpp-volver" onClick={onVolver}>
             <ArrowLeft size={15} /> Volver al catálogo
           </button>
-        )}
-      </div>
+        </div>
+      ) : null}
 
-      {/* 2 · Encabezado ───────────────────────────────────────────── */}
-      <section className="bpp-hero bpp-wrap" id="bpp-hero">
+      {/* Producto: galería + compra ────────────────────────────────── */}
+      <section className="bpp-detalle bpp-wrap bpp-preview-section" id="bpp-producto">
+        <MarcadorPreview previewMode={previewMode} seccion="hero" />
         <div className="bpp-galeria">
-          <div className={`bpp-foto ${imagenActual ? '' : 'vacia'}`}>
-            {imagenActual
-              ? <img src={getMediaUrl(imagenActual)} alt={item.nombre} />
+          <div className={`bpp-galeria-principal ${medioActual ? '' : 'vacia'}`}>
+            {medioActual
+              ? <div className="lsp-media-frame"><MediaProducto medio={medioActual} alt={item.nombre} /></div>
               : <ImageOff size={44} />}
+            {ficha.hero.etiqueta && <span className="bpp-galeria-badge">{ficha.hero.etiqueta}</span>}
           </div>
-          {item.imagenes.length > 1 && (
+          {galeria.length > 1 && (
             <div className="bpp-miniaturas">
-              {item.imagenes.map((url, i) => (
+              {galeria.map((medio, i) => (
                 <button
                   type="button"
-                  key={url + i}
-                  aria-label={`Foto ${i + 1} de ${item.imagenes.length}`}
+                  key={claveMedioProducto(medio, i)}
+                  aria-label={`Ver imagen ${i + 1}`}
                   className={`bpp-miniatura ${i === indiceImagen ? 'activa' : ''}`}
                   onClick={() => setIndiceImagen(i)}
                 >
-                  <img src={getMediaUrl(url)} alt="" loading="lazy" />
+                  <MiniaturaMediaProducto medio={medio} alt="" />
                 </button>
               ))}
             </div>
           )}
         </div>
 
-        <div className={`bpp-hero-copy ${claseTitulo}`}>
-          {(ficha.hero.etiqueta || ficha.hero.eyebrow || item.categoria) && (
-            <p className="bpp-eyebrow">
-              {ficha.hero.etiqueta && <b className="bpp-badge">{ficha.hero.etiqueta}</b>}
-              {ficha.hero.eyebrow || item.categoria}
-            </p>
-          )}
-
-          <h1>{ficha.hero.titulo || item.nombre}</h1>
-          {ficha.hero.subtitulo && <p className="bpp-subtitulo">{ficha.hero.subtitulo}</p>}
-
+        <div className={`bpp-compra ${claseTitulo}`}>
+          {categoria && <p className="bpp-kicker">{categoria}</p>}
+          <h1>{tituloTexto}</h1>
           {(ficha.hero.lead || item.descripcion) && (
             <RichText text={ficha.hero.lead || item.descripcion} className="bpp-lead" />
           )}
 
-          {ficha.hero.caracteristicas.length > 0 && (
-            <ul className="bpp-checklist">
-              {ficha.hero.caracteristicas.map((linea, i) => (
-                <li key={i}><span className="bpp-check"><Check size={12} strokeWidth={3} /></span> {linea}</li>
-              ))}
-            </ul>
+          {ficha.prueba_social.activo && (
+            <div className="bpp-rating">
+              <Estrellas valor={ficha.prueba_social.calificacion} tamano={14} />
+              <b>{Number(ficha.prueba_social.calificacion).toFixed(1)}</b>
+              {ficha.prueba_social.resenas_texto && (
+                resenas.length && ficha.resenas.activo
+                  ? <a href="#bpp-resenas" onClick={irAResenas}>{ficha.prueba_social.resenas_texto}</a>
+                  : <span>{ficha.prueba_social.resenas_texto}</span>
+              )}
+            </div>
           )}
 
-          <button type="button" className="bpp-cta" onClick={irAOfertas}>
-            {ficha.hero.cta_texto || 'Comprar ahora'}
-          </button>
-          {ficha.hero.garantia_texto && <p className="bpp-garantia-nota">{ficha.hero.garantia_texto}</p>}
-        </div>
-      </section>
-
-      {/* 3 · Prueba social ────────────────────────────────────────── */}
-      {ficha.prueba_social.activo && (
-        <div className="bpp-social">
-          <div className="bpp-wrap bpp-social-inner">
-            <div className="bpp-social-izq">
-              {ficha.prueba_social.etiqueta && <b>{ficha.prueba_social.etiqueta}</b>}
-              <Estrellas valor={ficha.prueba_social.calificacion} tamano={15} />
-              <strong>{Number(ficha.prueba_social.calificacion).toFixed(1)}/5</strong>
-              {ficha.prueba_social.resenas_texto && <small>{ficha.prueba_social.resenas_texto}</small>}
-            </div>
-            {(ficha.prueba_social.avatares.length > 0 || ficha.prueba_social.clientes_texto) && (
-              <div className="bpp-avatares">
-                {ficha.prueba_social.avatares.map((a, i) => (
-                  <span className="bpp-avatar" key={i}>
-                    {a.foto
-                      ? <img src={getMediaUrl(a.foto)} alt="" />
-                      : inicialesDe(a.nombre)}
-                  </span>
-                ))}
-                {ficha.prueba_social.clientes_texto && <b>{ficha.prueba_social.clientes_texto}</b>}
+          {ficha.precio.activo && precio != null && (
+            <>
+              <div className="bpp-precio">
+                <strong>{formatPrecio(precio)}</strong>
+                {precioAntes && <del>{formatPrecio(precioAntes)}</del>}
+                {ficha.precio.mostrar_descuento && descuento > 0 && <em>-{descuento}%</em>}
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 4 · Ofertas y opciones de compra ─────────────────────────── */}
-      {ficha.precio.activo && (
-        <section className="bpp-seccion bpp-wrap" id="bpp-ofertas">
-          <div className="bpp-ofertas-encabezado">
-            <TituloSeccion numero={4} texto={ficha.precio.titulo} vars={vars} />
-            {ficha.precio.suscripcion.activo && (
-              <label className="bpp-suscripcion">
-                <span>{ficha.precio.suscripcion.titulo || 'Suscribite y ahorrá'}</span>
-                <input
-                  type="checkbox"
-                  checked={suscripcion}
-                  onChange={e => setSuscripcion(e.target.checked)}
-                />
-                <i aria-hidden="true" />
-              </label>
-            )}
-          </div>
-
-          {packs.length === 0 ? (
-            previewMode ? (
-              <p className="bpp-vacio">
-                Todavía no cargaste paquetes. Se crean en la pestaña <b>Ofertas</b> de este producto
-                (“Paquete — más unidades del mismo producto”) y aparecen acá como tarjetas.
-              </p>
-            ) : (
-              <div className="bpp-packs">
-                <TarjetaPack
-                  elegido
-                  nombre={ficha.precio.etiqueta_individual || '1 unidad'}
-                  imagen={item.imagenes[0]}
-                  precio={item.precio}
-                  precioAntes={item.precioAntes}
-                  nota={ficha.precio.nota_pack}
-                  cta={ficha.precio.cta_pack}
-                  onElegir={() => setPackId(null)}
-                  onAgregar={onAgregar ? () => agregar(null) : null}
-                />
-              </div>
-            )
-          ) : (
-            <div className="bpp-packs">
-              <TarjetaPack
-                elegido={!pack}
-                nombre={ficha.precio.etiqueta_individual || '1 unidad'}
-                imagen={item.imagenes[0]}
-                precio={item.precio}
-                precioAntes={item.precioAntes}
-                notaPrecio="Precio normal"
-                nota={ficha.precio.nota_pack}
-                cta={ficha.precio.cta_pack}
-                onElegir={() => setPackId(null)}
-                onAgregar={onAgregar ? () => agregar(null) : null}
-              />
-              {packs.map(p => {
-                const conf = ficha.precio.packs?.[String(p.id)] || {};
-                const unidades = Number(p.unidades) || 1;
-                return (
-                  <TarjetaPack
-                    key={p.id}
-                    elegido={String(packId) === String(p.id)}
-                    badge={conf.badge}
-                    nombre={p.nombre}
-                    subtitulo={conf.subtitulo || `${unidades} unidades`}
-                    imagen={p.imagen || item.imagenes[0]}
-                    precio={p.precio_efectivo ?? p.precio}
-                    ahorro={ahorroDePack(p, item.precio)}
-                    nota={ficha.precio.nota_pack}
-                    cta={ficha.precio.cta_pack}
-                    onElegir={() => setPackId(p.id)}
-                    onAgregar={onAgregar ? () => agregar(p) : null}
-                  />
-                );
-              })}
-            </div>
+              {ficha.precio.nota && <p className="bpp-precio-nota">{ficha.precio.nota}</p>}
+            </>
           )}
 
-          {sellos.length > 0 && (
-            <div className="bpp-sellos">
-              {sellos.map((c, i) => {
-                const Icono = getIconoBeneficio(c.icono);
-                return <span key={i}><Icono size={15} /> {c.texto}</span>;
-              })}
-            </div>
-          )}
+          <div className="bpp-divisor" />
 
-          {!onAgregar && (
-            <div className="bpp-ofertas-cta">
-              <button type="button" className="bpp-cta" onClick={comprar}>
-                {ficha.precio.cta_pack || 'Comprar ahora'}
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* 5 · Beneficios clave ─────────────────────────────────────── */}
-      {ficha.beneficios.activo && (beneficios.length > 0 || previewMode) && (
-        <section className="bpp-seccion bpp-seccion--fondo">
-          <div className="bpp-wrap">
-            <TituloSeccion numero={5} texto={ficha.beneficios.titulo} vars={vars} centrado />
-            {beneficios.length === 0 ? (
-              <p className="bpp-vacio">
-                Se cargan en <b>Vista del producto</b>.
-              </p>
-            ) : (
-              <div className="bpp-beneficios">
-                {beneficios.map((b, i) => {
-                  const Icono = getIconoBeneficio(b.icono);
+          {hayOpciones && variantes.length > 0 && (
+            <div className="bpp-opcion-bloque">
+              {ficha.opciones.titulo && <b>{ficha.opciones.titulo}</b>}
+              <div className="bpp-opciones">
+                {variantes.map(v => {
+                  const conf = ficha.opciones.variantes?.[String(v.id)] || {};
+                  const agotada = v.stock != null && Number(v.stock) <= 0;
                   return (
-                    <div className="bpp-beneficio" key={i}>
-                      <span className="bpp-beneficio-icono"><Icono size={22} /></span>
-                      <b>{b.titulo}</b>
-                      {b.texto && <p>{b.texto}</p>}
-                    </div>
+                    <button
+                      type="button"
+                      key={v.id}
+                      disabled={agotada}
+                      className={`bpp-opcion ${String(v.id) === String(varianteId) ? 'elegida' : ''}`}
+                      onClick={() => { setVarianteId(String(v.id) === String(varianteId) ? null : v.id); setPackId(null); }}
+                      aria-pressed={String(v.id) === String(varianteId)}
+                    >
+                      <strong>{v.nombre}</strong>
+                      {(v.precio_efectivo ?? item.precio) != null && <small>{formatPrecio(v.precio_efectivo ?? item.precio)}</small>}
+                      {conf.nota && <small className="bpp-opcion-nota">{conf.nota}</small>}
+                    </button>
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {hayOpciones && packs.length > 0 && (
+            <div className="bpp-opcion-bloque">
+              {ficha.opciones.titulo_packs && <b>{ficha.opciones.titulo_packs}</b>}
+              <div className={`bpp-packs cantidad-${Math.min(packs.length + 1, 4)}`}>
+                <TarjetaPack
+                  elegido={!pack}
+                  nombre={ficha.opciones.etiqueta_individual || '1 unidad'}
+                  imagen={fotos[0]}
+                  precio={variante?.precio_efectivo ?? item.precio}
+                  nota={ficha.opciones.nota_individual}
+                  onElegir={() => setPackId(null)}
+                />
+                {packs.map(p => {
+                  const conf = ficha.opciones.packs?.[String(p.id)] || {};
+                  const unidades = Math.max(1, Number(p.unidades) || 1);
+                  const total = Number(p.precio_efectivo ?? p.precio) || 0;
+                  const sinPack = item.precio != null ? Number(item.precio) * unidades : null;
+                  const ahorro = ahorroDePack(p, item.precio);
+                  return (
+                    <TarjetaPack
+                      key={p.id}
+                      elegido={String(p.id) === String(packId)}
+                      nombre={p.nombre}
+                      // La foto que se cargó en la oferta (Ofertas → Paquete) manda;
+                      // si no hay, la principal del producto.
+                      imagen={p.imagen || conf.imagen || fotos[0]}
+                      precio={total}
+                      precioAntes={sinPack != null && sinPack > total ? sinPack : null}
+                      ahorro={ahorro ? `${ficha.opciones.texto_ahorro ? `${ficha.opciones.texto_ahorro} ` : '-'}${ahorro}%` : ''}
+                      nota={conf.nota}
+                      onElegir={() => setPackId(p.id)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {previewMode && ficha.opciones.activo && !variantes.length && !packs.length && (
+            <p className="bpp-vacio">
+              Sin tamaños ni paquetes. Las variantes se cargan en Mis Productos y los paquetes en la pestaña
+              Ofertas; aparecen acá como botones.
+            </p>
+          )}
+
+          {ficha.compra.activo && (
+            <div className="bpp-opcion-bloque">
+              {conCantidad && ficha.compra.etiqueta_cantidad && <b>{ficha.compra.etiqueta_cantidad}</b>}
+              <div className="bpp-comprar-fila">
+                {conCantidad && (
+                  <div className="bpp-cantidad">
+                    <button type="button" aria-label="Restar uno" onClick={() => setCantidad(c => Math.max(1, c - 1))} disabled={cantidad <= 1}>
+                      <Minus size={14} />
+                    </button>
+                    <span aria-live="polite">{cantidad}</span>
+                    <button
+                      type="button"
+                      aria-label="Sumar uno"
+                      onClick={() => setCantidad(c => (stockMax != null ? Math.min(stockMax, c + 1) : c + 1))}
+                      disabled={stockMax != null && cantidad >= stockMax}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                )}
+                <button type="button" className="bpp-cta" onClick={agregar}>
+                  {agregado ? (ficha.compra.cta_agregado || ficha.compra.cta_texto) : (ficha.compra.cta_texto || 'Agregar al carrito')}
+                  <ShoppingBag size={17} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {ficha.compra.activo && notasCompra.length > 0 && (
+            <div className="bpp-notas">
+              {notasCompra.map((x, i) => {
+                const Icono = getIconoBeneficio(x.icono);
+                return <span key={i}><Icono size={15} /> {x.texto}</span>;
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Franja de beneficios ──────────────────────────────────────── */}
+      {ficha.beneficios.activo && (beneficios.length > 0 || previewMode) && (
+        <section className="bpp-beneficios bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="beneficios" />
+          <div className="bpp-wrap">
+            {beneficios.length === 0 ? (
+              <p className="bpp-vacio">Cargá hasta cuatro beneficios en <b>Vista del producto</b> o en la sección {n('beneficios')}.</p>
+            ) : (
+              <div className={`bpp-beneficios-grid cantidad-${beneficios.length}`}>
+                {beneficios.map((b, i) => (
+                  <div key={i}>
+                    <b>{String(i + 1).padStart(2, '0')}</b>
+                    <span>{b.titulo}</span>
+                    {b.texto && <small>{b.texto}</small>}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </section>
       )}
 
-      {/* 6 · Ingredientes premium ─────────────────────────────────── */}
-      {ficha.ingredientes.activo && (ingredientes.length > 0 || previewMode) && (
-        <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={6} texto={ficha.ingredientes.titulo} vars={vars} centrado />
-          {ingredientes.length === 0 ? (
-            <p className="bpp-vacio">
-              Se cargan en <b>Mis Productos → Vista del producto</b> (Beauty), y sirven en todas tus landings.
-            </p>
-          ) : (
-            <div className="bpp-ingredientes">
-              {ingredientes.map((ing, i) => (
-                <div className="bpp-ingrediente" key={i}>
-                  <span className="bpp-ingrediente-icono">
-                    {ing.icono ? <span className="bpp-emoji">{ing.icono}</span> : <ImageOff size={18} />}
-                  </span>
-                  <b>{ing.nombre}</b>
-                  {ing.descripcion && <p>{ing.descripcion}</p>}
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Por qué te va a encantar ──────────────────────────────────── */}
+      {ficha.historia.activo && (ficha.historia.titulo || ficha.historia.texto || puntosHistoria.length || previewMode) && (
+        <section className="bpp-historia bpp-wrap bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="historia" />
+          <div>
+            {ficha.historia.eyebrow && <p className="bpp-kicker">{ficha.historia.eyebrow}</p>}
+            {ficha.historia.titulo && <h2>{ficha.historia.titulo}</h2>}
+            {ficha.historia.texto
+              ? <RichText text={ficha.historia.texto} className="bpp-texto" />
+              : previewMode && !ficha.historia.titulo && <p className="bpp-vacio">Contá por qué este producto vale la pena (sección {n('historia')}).</p>}
+            {puntosHistoria.length > 0 && (
+              <div className="bpp-puntos">
+                {puntosHistoria.map((p, i) => <span key={i}><Check size={15} /> {p}</span>)}
+              </div>
+            )}
+          </div>
+          <Foto src={ficha.historia.imagen || fotos[1] || fotos[0]} alt="" className="bpp-historia-foto" />
         </section>
       )}
 
-      {/* 7 · Resultados de clientas ───────────────────────────────── */}
-      {ficha.resultados.activo && (resultados.length > 0 || previewMode) && (
-        <section className="bpp-seccion bpp-seccion--fondo">
+      {/* Ingredientes ──────────────────────────────────────────────── */}
+      {ficha.ingredientes.activo && (ingredientes.length > 0 || previewMode) && (
+        <section className="bpp-ingredientes bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="ingredientes" />
           <div className="bpp-wrap">
-            <TituloSeccion numero={7} texto={ficha.resultados.titulo} vars={vars} centrado />
-            {resultados.length === 0 ? (
-              <p className="bpp-vacio">
-                Cargá los testimonios en <b>Mis Productos → Vista del producto</b>.
-              </p>
+            <Intro
+              eyebrow={ficha.ingredientes.eyebrow}
+              titulo={ficha.ingredientes.titulo}
+              destacado={ficha.ingredientes.titulo_destacado}
+              texto={ficha.ingredientes.subtitulo}
+            />
+            {ingredientes.length === 0 ? (
+              <p className="bpp-vacio">Cargá los activos en <b>Vista del producto</b> o en la sección {n('ingredientes')}.</p>
             ) : (
-              <div className="bpp-resultados">
-                {resultados.map((r, i) => (
-                  <article className="bpp-resultado" key={i}>
-                    {(r.antes || r.despues) && (
-                      <div className="bpp-antes-despues">
-                        <figure>
-                          {r.antes
-                            ? <img src={getMediaUrl(r.antes)} alt="Antes" loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                            : null}
-                          <figcaption>Antes</figcaption>
-                        </figure>
-                        <figure>
-                          {r.despues
-                            ? <img src={getMediaUrl(r.despues)} alt="Después" loading="lazy" onError={e => { e.currentTarget.style.display = 'none'; }} />
-                            : null}
-                          <figcaption>Después</figcaption>
-                        </figure>
-                      </div>
-                    )}
-                    <Estrellas valor={r.calificacion} tamano={13} />
-                    {r.testimonio && <p>“{r.testimonio}”</p>}
-                    {r.nombre && <b>— {r.nombre}</b>}
+              <div className="bpp-ingredientes-grid">
+                {ingredientes.map((ing, i) => (
+                  <article key={i}>
+                    {ing.imagen
+                      ? <img className="bpp-ingrediente-foto" src={getMediaUrl(ing.imagen)} alt={ing.nombre} loading="lazy" />
+                      : <IconoLibre valor={ing.icono} />}
+                    <b>{ing.nombre}</b>
+                    {ing.descripcion && <p>{ing.descripcion}</p>}
                   </article>
                 ))}
               </div>
@@ -389,21 +423,86 @@ export default function BeautyProductPage({
         </section>
       )}
 
-      {/* 8 · Cómo funciona ────────────────────────────────────────── */}
+      {/* Ritual de uso ─────────────────────────────────────────────── */}
       {ficha.como_funciona.activo && (pasos.length > 0 || previewMode) && (
-        <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={8} texto={ficha.como_funciona.titulo} vars={vars} centrado />
+        <section className="bpp-ritual bpp-wrap bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="como_funciona" />
+          <Intro
+            eyebrow={ficha.como_funciona.eyebrow}
+            titulo={ficha.como_funciona.titulo}
+            destacado={ficha.como_funciona.titulo_destacado}
+            salto
+          />
           {pasos.length === 0 ? (
-            <p className="bpp-vacio">
-              La rutina paso a paso se carga en <b>Mis Productos → Vista del producto</b> (Beauty).
-            </p>
+            <p className="bpp-vacio">Cargá los pasos en <b>Vista del producto</b> o en la sección {n('como_funciona')}.</p>
           ) : (
-            <div className="bpp-pasos">
+            <div className={`bpp-pasos cantidad-${pasos.length}`}>
               {pasos.map((p, i) => (
-                <div className="bpp-paso" key={i}>
-                  <span className="bpp-paso-numero">{p.paso || i + 1}</span>
+                <article key={i}>
+                  <span>{String(i + 1).padStart(2, '0')}</span>
+                  {p.imagen
+                    ? <img className="bpp-paso-foto" src={getMediaUrl(p.imagen)} alt={p.titulo} loading="lazy" />
+                    : <IconoLibre valor={p.icono} />}
                   <b>{p.titulo}</b>
                   {p.descripcion && <p>{p.descripcion}</p>}
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Antes y después ───────────────────────────────────────────── */}
+      {ficha.antes_despues.activo && (ficha.antes_despues.imagen_combinada || ficha.antes_despues.imagen_antes || ficha.antes_despues.imagen_despues || previewMode) && (
+        <section className="bpp-antes-despues bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="antes_despues" />
+          <div className="bpp-wrap">
+            <Intro
+              eyebrow={ficha.antes_despues.eyebrow}
+              titulo={ficha.antes_despues.titulo}
+              destacado={ficha.antes_despues.titulo_destacado}
+              texto={ficha.antes_despues.texto}
+            />
+            {ficha.antes_despues.imagen_combinada ? (
+              <FotoAntesDespuesCombinada
+                className="bpp-ad"
+                src={ficha.antes_despues.imagen_combinada}
+                etiquetaAntes={ficha.antes_despues.etiqueta_antes}
+                etiquetaDespues={ficha.antes_despues.etiqueta_despues}
+              />
+            ) : (
+              <ComparadorAntesDespues
+                className="bpp-ad"
+                antes={ficha.antes_despues.imagen_antes}
+                despues={ficha.antes_despues.imagen_despues}
+                etiquetaAntes={ficha.antes_despues.etiqueta_antes}
+                etiquetaDespues={ficha.antes_despues.etiqueta_despues}
+                previewMode={previewMode}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Detalles del producto (FAQ) ───────────────────────────────── */}
+      {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
+        <section className="bpp-detalles bpp-wrap bpp-preview-section" id="bpp-faq">
+          <MarcadorPreview previewMode={previewMode} seccion="faq" />
+          <div>
+            {ficha.faq.eyebrow && <p className="bpp-kicker">{ficha.faq.eyebrow}</p>}
+            {(item.faqTitulo || ficha.faq.titulo) && <h2>{item.faqTitulo || ficha.faq.titulo}</h2>}
+          </div>
+          {item.faq.length === 0 ? (
+            <p className="bpp-vacio">Las preguntas se cargan en <b>Vista del producto</b> o en la sección {n('faq')}.</p>
+          ) : (
+            <div>
+              {item.faq.map((f, i) => (
+                <div className={`bpp-acordeon ${preguntaAbierta === i ? 'abierto' : ''}`} key={i}>
+                  <button type="button" aria-expanded={preguntaAbierta === i} onClick={() => setPreguntaAbierta(preguntaAbierta === i ? null : i)}>
+                    <span>{f.pregunta}</span>
+                    <ChevronDown size={17} />
+                  </button>
+                  {preguntaAbierta === i && <RichText text={f.respuesta} className="bpp-acordeon-texto" />}
                 </div>
               ))}
             </div>
@@ -411,17 +510,61 @@ export default function BeautyProductPage({
         </section>
       )}
 
-      {/* 9 · Garantías y confianza ────────────────────────────────── */}
-      {ficha.garantias.activo && garantias.length > 0 && (
-        <section className="bpp-garantias">
-          <div className="bpp-wrap bpp-garantias-grid">
-            {garantias.map((g, i) => {
-              const Icono = getIconoBeneficio(g.icono);
+      {/* Reseñas ───────────────────────────────────────────────────── */}
+      {ficha.resenas.activo && (resenas.length > 0 || previewMode) && (
+        <section className="bpp-resenas bpp-preview-section" id="bpp-resenas">
+          <MarcadorPreview previewMode={previewMode} seccion="resenas" />
+          <div className="bpp-wrap">
+            {ficha.resenas.eyebrow && <p className="bpp-kicker">{ficha.resenas.eyebrow}</p>}
+            {ficha.resenas.titulo && <h2>{ficha.resenas.titulo}</h2>}
+            {resenas.length === 0 ? (
+              <p className="bpp-vacio">Cargá reseñas reales en <b>Vista del producto</b> o en la sección {n('resenas')}.</p>
+            ) : (
+              <div className="bpp-resenas-grid">
+                {resenas.map((r, i) => (
+                  <article key={i} className={r.foto ? 'con-foto' : ''}>
+                    {r.foto && <img className="bpp-resena-foto" src={getMediaUrl(r.foto)} alt={r.nombre ? `Foto de ${r.nombre}` : ''} loading="lazy" />}
+                    {Number(r.calificacion) > 0 && <Estrellas valor={r.calificacion} tamano={13} />}
+                    <p>“{r.comentario}”</p>
+                    {(r.nombre || r.detalle) && <b>— {[r.nombre, r.detalle].filter(Boolean).join(' · ')}</b>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Complementá tu rutina ─────────────────────────────────────── */}
+      {ficha.upsells.activo && item.relacionados.length > 0 && (
+        <section className="bpp-upsells bpp-wrap bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="upsells" />
+          {(item.relacionadosTitulo || ficha.upsells.titulo) && <h2>{item.relacionadosTitulo || ficha.upsells.titulo}</h2>}
+          <div className="bpp-upsells-grid">
+            {item.relacionados.map(r => {
+              const precioR = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
+              const antes = r.precio_ancla ?? r.precio_tachado ?? null;
               return (
-                <div className="bpp-garantia" key={i}>
-                  <Icono size={20} />
-                  <b>{g.titulo}</b>
-                  {g.texto && <small>{g.texto}</small>}
+                <div className="bpp-upsell" key={r.id}>
+                  <div className="bpp-upsell-img">
+                    <ImagenProductoHover
+                      imagenes={(r.imagenes || []).map(getMediaUrl)}
+                      imagen={r.imagen ? getMediaUrl(r.imagen) : null}
+                      alt={r.nombre}
+                      fallback={<ImageOff size={22} />}
+                    />
+                  </div>
+                  <div className="bpp-upsell-datos">
+                    <b>{r.nombre}</b>
+                    {r.descripcion && <p>{r.descripcion}</p>}
+                    <span>
+                      {precioR != null && <strong>{formatPrecio(precioR)}</strong>}
+                      {antes != null && precioR != null && Number(antes) > Number(precioR) && <del>{formatPrecio(antes)}</del>}
+                    </span>
+                  </div>
+                  <button type="button" onClick={() => onClickRelacionado && onClickRelacionado(r)}>
+                    {ficha.upsells.cta_texto || 'Ver'}
+                  </button>
                 </div>
               );
             })}
@@ -429,251 +572,229 @@ export default function BeautyProductPage({
         </section>
       )}
 
-      {/* 10 · Preguntas frecuentes ────────────────────────────────── */}
-      {ficha.faq.activo && (item.faq.length > 0 || previewMode) && (
-        <section className="bpp-seccion bpp-wrap">
-          <TituloSeccion numero={10} texto={item.faqTitulo || ficha.faq.titulo} vars={vars} centrado />
-          {item.faq.length === 0 ? (
-            <p className="bpp-vacio">Las preguntas se cargan en <b>Vista del producto</b>.</p>
-          ) : (
-            <div className="bpp-faq-grid">
-              {item.faq.map((f, i) => (
-                <div className={`bpp-faq-item ${preguntaAbierta === i ? 'abierta' : ''}`} key={i}>
-                  <button type="button" onClick={() => setPreguntaAbierta(preguntaAbierta === i ? null : i)}>
-                    <span>{f.pregunta}</span>
-                    <ChevronDown size={16} />
-                  </button>
-                  {preguntaAbierta === i && <RichText text={f.respuesta} />}
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Sellos de confianza ───────────────────────────────────────── */}
+      {ficha.garantias.activo && garantias.length > 0 && (
+        <section className={`bpp-sellos bpp-wrap bpp-preview-section cantidad-${garantias.length}`}>
+          <MarcadorPreview previewMode={previewMode} seccion="garantias" />
+          {garantias.map((g, i) => {
+            const Icono = getIconoBeneficio(g.icono);
+            return (
+              <div key={i}>
+                <Icono size={22} />
+                <b>{g.titulo}</b>
+                {g.texto && <span>{g.texto}</span>}
+              </div>
+            );
+          })}
         </section>
       )}
 
-      {/* 11 · Complementa tu rutina ───────────────────────────────── */}
-      {ficha.upsells.activo && item.relacionados.length > 0 && (
-        <section className="bpp-seccion bpp-seccion--fondo">
+      {/* Pie de la ficha ───────────────────────────────────────────── */}
+      {ficha.cta_final.activo && (ficha.cta_final.marca || nombreComercio || ficha.cta_final.texto) && (
+        <div className="bpp-pie bpp-preview-section">
+          <MarcadorPreview previewMode={previewMode} seccion="cta_final" />
           <div className="bpp-wrap">
-            <TituloSeccion numero={11} texto={item.relacionadosTitulo || ficha.upsells.titulo} vars={vars} centrado />
-            <div className="bpp-upsells">
-              {item.relacionados.map(r => {
-                const precioRel = r.precio ?? r.precio_efectivo ?? r.precio_base ?? null;
-                const antes = r.precio_ancla ?? r.precio_tachado ?? null;
-                const enOferta = antes != null && precioRel != null && Number(antes) > Number(precioRel);
-                return (
-                  <div className="bpp-upsell" key={r.id}>
-                    <span className="bpp-upsell-img">
-                      <ImagenProductoHover
-                        imagenes={(r.imagenes || []).map(getMediaUrl)}
-                        imagen={r.imagen ? getMediaUrl(r.imagen) : null}
-                        alt={r.nombre}
-                        imgClassName="transition-opacity duration-500 ease-out"
-                        fallback={<ImageOff size={22} />}
-                      />
-                    </span>
-                    <b>{r.nombre}</b>
-                    {r.descripcion && <p>{r.descripcion}</p>}
-                    <span className="bpp-upsell-precio">
-                      {precioRel != null && formatPrecio(precioRel)}
-                      {enOferta && <del>{formatPrecio(antes)}</del>}
-                    </span>
-                    <button
-                      type="button"
-                      className="bpp-upsell-cta"
-                      onClick={() => onClickRelacionado && onClickRelacionado(r)}
-                    >
-                      {ficha.upsells.cta_texto || 'Agregar'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+            {(ficha.cta_final.marca || nombreComercio) && <b>{ficha.cta_final.marca || nombreComercio}</b>}
+            {ficha.cta_final.texto && <span>{ficha.cta_final.texto}</span>}
           </div>
-        </section>
-      )}
-
-      {/* 12 · Cierre y urgencia ───────────────────────────────────── */}
-      {ficha.cta_final.activo && (
-        <section className="bpp-cierre">
-          <div className="bpp-wrap bpp-cierre-inner">
-            <div>
-              {ficha.cta_final.etiqueta && <p className="bpp-cierre-etiqueta">{ficha.cta_final.etiqueta}</p>}
-              {ficha.cta_final.contador.activo && <Contador desde={ficha.cta_final.contador} />}
-            </div>
-            <div className="bpp-cierre-copy">
-              {ficha.cta_final.titulo && <h2>{ficha.cta_final.titulo}</h2>}
-              {ficha.cta_final.texto && <p>{ficha.cta_final.texto}</p>}
-            </div>
-            <button type="button" className="bpp-cierre-cta" onClick={irAOfertas}>
-              {ficha.cta_final.cta_texto || 'Comprar ahora'}
-              {ficha.cta_final.cta_nota && <small>{ficha.cta_final.cta_nota}</small>}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {contacto && <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={vars['--bpp-border']} isMobile={isMobile} />}
-      <StoreFooterLegal tema={t} bordeSuave={vars['--bpp-border']} nombreComercio={nombreComercio} isPreview={previewMode} />
-
-      {/* Barra fija en móvil: el CTA queda arriba del pliegue y se pierde al
-          recorrer las 12 secciones. */}
-      <div className="bpp-barra-movil">
-        <div className="bpp-barra-movil-precio">
-          <b>{precio != null ? formatPrecio(precio) : ''}</b>
-          {pack && <small>{pack.nombre}</small>}
         </div>
-        <button type="button" className="bpp-cta" onClick={irAOfertas}>
-          {ficha.hero.cta_texto || 'Comprar ahora'}
-        </button>
-      </div>
+      )}
+
+      {contacto && <RedesSocialesFooter contacto={contacto} acento={t.acento} bordeSuave={vars['--bpp-line']} isMobile={isMobile} />}
+      <StoreFooterLegal tema={{ ...t, texto: vars['--bpp-fg'] }} bordeSuave={vars['--bpp-line']} nombreComercio={nombreComercio} isPreview={previewMode} />
+
+      {/* Barra fija de compra — solo en celular (la muestra el CSS). */}
+      {ficha.compra.activo && (
+        <div className="bpp-barra-movil">
+          <div>
+            <b>{precio != null ? formatPrecio(precio) : ''}</b>
+            {(pack || variante) && <small>{pack ? pack.nombre : variante.nombre}</small>}
+          </div>
+          <button type="button" className="bpp-cta" onClick={agregar}>
+            {agregado ? (ficha.compra.cta_agregado || ficha.compra.cta_texto) : (ficha.compra.cta_texto || 'Agregar al carrito')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 /* ── Piezas internas ──────────────────────────────────────────────── */
 
-function TituloSeccion({ numero, texto, vars, centrado = false }) {
-  if (!texto) return null;
+function MarcadorPreview({ previewMode, seccion }) {
+  if (!previewMode) return null;
+  const numero = n(seccion);
+  if (!numero) return null;
+  return <span className="bpp-preview-marker">Sección {numero}</span>;
+}
+
+/**
+ * Tarjeta de "Elegí tu pack": foto, nombre, precio, precio sin el pack
+ * tachado y el ahorro. La MISMA para la unidad suelta y para cada paquete,
+ * así las opciones quedan del mismo tamaño y solo cambia el contenido.
+ */
+function TarjetaPack({ elegido, nombre, imagen, precio, precioAntes = null, ahorro = '', nota = '', onElegir }) {
   return (
-    <div className={`bpp-seccion-titulo ${centrado ? 'es-centrado' : ''}`}>
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'grid', placeItems: 'center', width: 26, height: 26,
-          borderRadius: '50%', background: vars['--bpp-accent'], color: vars['--bpp-on-accent'],
-          fontSize: 12, fontWeight: 900, flexShrink: 0,
-        }}
-      >
-        {numero}
+    <button type="button" className={`bpp-pack ${elegido ? 'elegido' : ''}`} onClick={onElegir} aria-pressed={elegido}>
+      <span className="bpp-pack-foto">
+        {imagen ? <img src={getMediaUrl(imagen)} alt="" loading="lazy" /> : <ImageOff size={22} />}
+        {elegido && <span className="bpp-pack-tilde" aria-hidden="true"><Check size={13} strokeWidth={3} /></span>}
       </span>
-      <h2>{texto}</h2>
+      <span className="bpp-pack-datos">
+        <strong>{nombre}</strong>
+        {precio != null && (
+          <span className="bpp-pack-precios">
+            <b>{formatPrecio(precio)}</b>
+            {precioAntes != null && <del>{formatPrecio(precioAntes)}</del>}
+          </span>
+        )}
+        {ahorro && <span className="bpp-pack-ahorro">{ahorro}</span>}
+        {nota && <small>{nota}</small>}
+      </span>
+    </button>
+  );
+}
+
+/** Rótulo, título (con parte destacada en cursiva) y bajada de una sección. */
+function Intro({ eyebrow, titulo, destacado, texto, salto = false }) {
+  if (!eyebrow && !titulo && !destacado && !texto) return null;
+  return (
+    <div className="bpp-intro">
+      {eyebrow && <p className="bpp-kicker">{eyebrow}</p>}
+      {(titulo || destacado) && (
+        <h2>
+          {titulo}
+          {destacado && <>{salto ? <br /> : ' '}<em>{destacado}</em></>}
+        </h2>
+      )}
+      {texto && <p className="bpp-texto">{texto}</p>}
     </div>
   );
+}
+
+/**
+ * Ícono de un ingrediente o paso. En Mis Productos el ícono de Beauty se
+ * carga como emoji ("💧"); en el panel, como clave del catálogo ("droplet").
+ * Las dos formas valen: si no es una clave conocida se dibuja el texto.
+ */
+const CLAVES_ICONO = new Set(CATALOGO_ICONOS_BENEFICIOS.map(i => i.key));
+function IconoLibre({ valor }) {
+  if (valor && CLAVES_ICONO.has(valor)) {
+    const Icono = getIconoBeneficio(valor);
+    return <span className="bpp-icono"><Icono size={22} /></span>;
+  }
+  if (valor) return <span className="bpp-icono bpp-icono--texto" aria-hidden="true">{valor}</span>;
+  return <span className="bpp-icono"><Sparkles size={22} /></span>;
+}
+
+function Foto({ src, alt, className }) {
+  if (!src) return <div className={`${className} bpp-foto-vacia`}><ImageOff size={30} /></div>;
+  return <img src={getMediaUrl(src)} alt={alt} className={className} loading="lazy" />;
 }
 
 function Estrellas({ valor = 5, tamano = 14 }) {
   const llenas = Math.round(Number(valor) || 0);
   return (
     <span className="bpp-estrellas" aria-label={`${valor} de 5`}>
-      {[1, 2, 3, 4, 5].map(n => (
-        <Star key={n} size={tamano} fill={n <= llenas ? 'currentColor' : 'none'} strokeWidth={1.6} />
+      {[1, 2, 3, 4, 5].map(k => (
+        <Star key={k} size={tamano} fill={k <= llenas ? 'currentColor' : 'none'} strokeWidth={1.6} />
       ))}
     </span>
   );
 }
 
 /**
- * Tarjeta de oferta. La misma para el paquete y para la unidad suelta: en
- * la referencia las tres opciones tienen exactamente el mismo tamaño y solo
- * se diferencian por el cintillo y el texto bajo el precio.
+ * Paleta de la ficha a partir de los tres colores que edita el comercio.
+ * El diseño es una escala de rosa sobre crema con franjas oscuras: el rosa
+ * sale del acento (el "color de botones" de la tienda), los fondos suaves
+ * del acento aclarado y las franjas oscuras del texto (o del acento
+ * oscurecido si el texto de la tienda es claro). No hay un color literal en
+ * el CSS.
+ *
+ * ── Legibilidad ────────────────────────────────────────────────────────
+ * Los colores de la tienda se usan tal cual SOLO si se leen. Cada texto se
+ * valida contra todas las superficies donde aparece (fondo, tarjetas,
+ * franjas suaves) y, si no llega al contraste mínimo, cae al oscuro o claro
+ * que sí se lea (textoLegible). Sin esto, una tienda con fondo rosa y texto
+ * blanco dejaba los packs con texto blanco sobre tarjetas blancas.
  */
-function TarjetaPack({
-  elegido, badge, nombre, subtitulo, imagen, precio, precioAntes,
-  ahorro, notaPrecio, nota, cta, onElegir, onAgregar,
-}) {
-  return (
-    <div className={`bpp-pack ${elegido ? 'elegido' : ''}`}>
-      {badge && <span className="bpp-pack-badge">{badge}</span>}
-      {/* La tarjeta entera selecciona; el CTA de abajo es el que agrega. Son
-          dos botones hermanos, nunca uno adentro del otro. */}
-      <button type="button" className="bpp-pack-elegir" onClick={onElegir}>
-        <span className="bpp-pack-nombre">{nombre}</span>
-        {subtitulo && <span className="bpp-pack-sub">{subtitulo}</span>}
-        <span className="bpp-pack-imagen">
-          {imagen ? <img src={getMediaUrl(imagen)} alt="" loading="lazy" /> : <ImageOff size={24} />}
-        </span>
-        <span className="bpp-pack-precio">{formatPrecio(precio)}</span>
-        {precioAntes != null && precioAntes > precio && <del>{formatPrecio(precioAntes)}</del>}
-        {ahorro != null
-          ? <span className="bpp-pack-ahorro">Ahorrás {ahorro}%</span>
-          : notaPrecio
-            ? <span className="bpp-pack-normal">{notaPrecio}</span>
-            : null}
-      </button>
-      {onAgregar && (
-        <button type="button" className="bpp-pack-cta" onClick={onAgregar}>
-          {cta || 'Agregar al carrito'}
-          {nota && <small>{nota}</small>}
-        </button>
-      )}
-    </div>
-  );
-}
-
-const dosDigitos = (n) => String(Math.max(0, n)).padStart(2, '0');
-
-/**
- * Contador decorativo: arranca en el tiempo configurado cada vez que
- * alguien abre la página y baja hasta cero. No hay fecha límite real
- * detrás — misma decisión que en las otras fichas: la alternativa exige
- * que alguien mantenga la fecha o el contador queda apagado para siempre.
- */
-function Contador({ desde }) {
-  const total = useMemo(() => Math.max(0,
-    (Number(desde.horas) || 0) * 3600 + (Number(desde.minutos) || 0) * 60 + (Number(desde.segundos) || 0)
-  ), [desde.horas, desde.minutos, desde.segundos]);
-
-  const [restante, setRestante] = useState(total);
-  useEffect(() => { setRestante(total); }, [total]);
-  useEffect(() => {
-    if (restante <= 0) return undefined;
-    const id = setInterval(() => setRestante(s => (s <= 1 ? 0 : s - 1)), 1000);
-    return () => clearInterval(id);
-  }, [restante > 0]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const cajas = [
-    ['Horas', Math.floor(restante / 3600)],
-    ['Minutos', Math.floor((restante % 3600) / 60)],
-    ['Segundos', restante % 60],
-  ];
-
-  return (
-    <div className="bpp-contador">
-      {cajas.map(([label, valor], i) => (
-        <React.Fragment key={label}>
-          {i > 0 && <span className="bpp-contador-sep">:</span>}
-          <span className="bpp-contador-caja">
-            <b>{dosDigitos(valor)}</b>
-            <small>{label}</small>
-          </span>
-        </React.Fragment>
-      ))}
-    </div>
-  );
-}
-
-/**
- * Paleta completa a partir de los tres colores que el comercio edita
- * (fondo/texto/acento). Todo lo demás se DERIVA — no hay un solo color
- * literal en el CSS, que es lo que permite que la estructura sea fija y el
- * diseño siga siendo del comercio. Mismos umbrales que Fitness y Tech.
- */
-function calcularVariables(t) {
+function calcularVariables(t, colorCta) {
   const { fondo, texto, acento } = t;
   const fondoEsOscuro = contraste(fondo, '#FFFFFF') >= 3;
-  const sobre = (color) => (contraste(color, '#FFFFFF') >= 3 ? '#FFFFFF' : '#111111');
+  const cta = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(colorCta || '') ? colorCta : acento;
 
-  const band = fondoEsOscuro ? componer(texto, 0.10, fondo) : componer(texto, 0.93, fondo);
+  // Superficies: salen del fondo y del acento, nunca del texto.
+  const card = fondoEsOscuro ? componer('#FFFFFF', 0.07, fondo) : '#FFFFFF';
+  const crema = fondoEsOscuro ? componer('#FFFFFF', 0.04, fondo) : componer(acento, 0.07, fondo);
+  const rosa = componer(acento, fondoEsOscuro ? 0.12 : 0.13, fondo);
+  const blush = fondoEsOscuro ? componer(acento, 0.2, fondo) : componer(acento, 0.2, '#FFFFFF');
+  const superficies = [fondo, card, crema, rosa];
+
+  // Un color que se lea sobre TODAS las superficies; si no, el oscuro o el
+  // claro que mejor se lea en la peor de ellas.
+  // Conserva el tono elegido: si no se lee, lo oscurece/aclara lo justo
+  // (ver ajustarLegible), nunca lo cambia por negro de entrada.
+  const legibleEn = (color, fondos, minimo = 4.5) => ajustarLegible(color, fondos, minimo);
+  const suaveEn = (base, fondos, minimo = 4.5) => {
+    for (let a = 0.68; a < 1; a += 0.04) {
+      const c = componer(base, a, fondo);
+      if (fondos.every(b => contraste(c, b) >= minimo)) return c;
+    }
+    return base;
+  };
+  // Para botones y cintillos (texto grande y en negrita): blanco mientras se
+  // lea, que es lo que se espera de un botón; si no, oscuro.
+  const sobre = (color) => (contraste('#FFFFFF', color) >= 3 ? '#FFFFFF' : '#1A1A1A');
+
+  const fg = legibleEn(texto, superficies);
+  const muted = suaveEn(fg, superficies);
+  // Rótulos, notas y precios en el color de la tienda si se lee; si no, el texto.
+  // Va también en rótulos chicos (10-11 px): pide el mínimo de texto normal.
+  const destacado = legibleEn(acento, superficies);
+
+  // Franja oscura: el texto de la tienda si es oscuro; si es claro (o la
+  // landing es oscura), el acento oscurecido.
+  const profundo = fondoEsOscuro
+    ? componer('#FFFFFF', 0.1, fondo)
+    : (contraste(texto, '#FFFFFF') >= 7 ? texto : componer('#000000', 0.72, acento));
+  const onProfundo = sobre(profundo);
+  const acentoSobreProfundo = contraste(componer(acento, 0.45, '#FFFFFF'), profundo) >= 4.5
+    ? componer(acento, 0.45, '#FFFFFF')
+    : onProfundo;
+  const urgencia = fondoEsOscuro ? componer(acento, 0.7, fondo) : componer(acento, 0.75, '#FFFFFF');
 
   return {
     '--bpp-bg': fondo,
-    '--bpp-fg': texto,
+    '--bpp-fg': fg,
     '--bpp-accent': acento,
     '--bpp-on-accent': sobre(acento),
-    '--bpp-accent-suave': hexToRgba(acento, 0.12),
-    '--bpp-accent-borde': hexToRgba(acento, 0.35),
-    '--bpp-muted': componer(texto, 0.62, fondo),
-    '--bpp-border': hexToRgba(texto, 0.12),
-    '--bpp-border-fuerte': hexToRgba(texto, 0.2),
-    '--bpp-surface': hexToRgba(texto, 0.05),
-    '--bpp-surface-suave': hexToRgba(texto, 0.028),
-    '--bpp-card': fondoEsOscuro ? componer(texto, 0.05, fondo) : componer('#FFFFFF', 0.75, fondo),
-    '--bpp-sombra': hexToRgba(texto, 0.1),
-    '--bpp-band': band,
-    '--bpp-on-band': sobre(band),
-    // Dorado para las estrellas en cualquier paleta: es una convención que
-    // se lee de un vistazo; teñirlas con el acento las vuelve irreconocibles.
-    '--bpp-estrella': '#F0A82A',
+    '--bpp-destacado': destacado,
+    '--bpp-muted': muted,
+    '--bpp-line': hexToRgba(fg, 0.14),
+    '--bpp-line-fuerte': hexToRgba(fg, 0.26),
+    '--bpp-card': card,
+    '--bpp-crema': crema,
+    '--bpp-rosa': rosa,
+    '--bpp-blush': blush,
+    '--bpp-on-suave': textoLegible(fg, blush),
+    '--bpp-profundo': profundo,
+    '--bpp-on-profundo': onProfundo,
+    // El tono suave solo si todavía se lee; si no, el pleno.
+    '--bpp-on-profundo-suave': contraste(componer(onProfundo, 0.78, profundo), profundo) >= 4.5 ? hexToRgba(onProfundo, 0.78) : onProfundo,
+    '--bpp-acento-profundo': acentoSobreProfundo,
+    '--bpp-urgencia': urgencia,
+    // Las cajitas del contador son siempre blancas.
+    '--bpp-on-blanco': textoLegible(fg, '#FFFFFF'),
+    '--bpp-on-urgencia': sobre(urgencia),
+    '--bpp-cta': cta,
+    '--bpp-on-cta': sobre(cta),
+    '--bpp-cta-sombra': hexToRgba(cta, 0.3),
+    // Si el botón o el acento casi no se distinguen del fondo (colores muy
+    // claros), el botón lleva borde y lo elegido se marca con el texto.
+    '--bpp-cta-borde': contraste(cta, fondo) < 1.6 ? hexToRgba(fg, 0.35) : 'transparent',
+    '--bpp-marca': contraste(acento, card) >= 3 ? acento : fg,
+    '--bpp-on-marca': sobre(contraste(acento, card) >= 3 ? acento : fg),
+    '--bpp-sombra': hexToRgba(fg, 0.1),
+    '--bpp-estrella': '#D4953E',
   };
 }

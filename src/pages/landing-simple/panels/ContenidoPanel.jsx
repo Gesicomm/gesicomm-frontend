@@ -28,6 +28,22 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Rótulo chico: vive en content.portada (no tiene columna propia). */}
+      <div>
+        <label className={LABEL}>Rótulo chico (arriba del título)</label>
+        <input
+          type="text"
+          value={draft.content?.portada?.eyebrow || ''}
+          onChange={e => onCampo('content', {
+            ...(draft.content || {}),
+            portada: { ...(draft.content?.portada || {}), eyebrow: e.target.value },
+          })}
+          placeholder="Ej: Cuidado que se nota"
+          className={CAMPO}
+        />
+        <span className="text-[11px] text-fg/40 block mt-1">Si lo dejás vacío, no se muestra.</span>
+      </div>
+
       {/* Título */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
@@ -51,7 +67,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
         />
         {!draft.banner_titulo && (
           <span className="text-[11px] text-fg/40 block mt-1">
-            En la vista previa se muestra: <em>"{DEFAULT_TITULO}"</em>
+            Si lo dejás vacío, no se muestra título. "Usar sugerido" carga un texto de ejemplo.
           </span>
         )}
       </div>
@@ -79,7 +95,7 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
         />
         {!draft.banner_subtitulo && (
           <span className="text-[11px] text-fg/40 block mt-1">
-            En la vista previa se muestra la bajada por defecto.
+            Si lo dejás vacío, no se muestra.
           </span>
         )}
       </div>

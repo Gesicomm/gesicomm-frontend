@@ -1,0 +1,34 @@
+.fashion-store { font-family: Arial, Helvetica, sans-serif; min-width: 0; }
+.fashion-store * { box-sizing: border-box; }
+.fashion-store-wrap { width: min(1080px, calc(100% - 40px)); margin-inline: auto; }
+.fashion-store h1, .fashion-store h2 { font-family: Georgia, serif; font-weight: 400; white-space: pre-line; }
+.fashion-store-hero { display: grid; grid-template-columns: .78fr 1.22fr; gap: 70px; align-items: center; padding-block: 64px 82px; }
+.fashion-store-kicker { color: var(--fashion-accent); text-transform: uppercase; font-size: 11px; letter-spacing: 1.6px; margin-bottom: 18px; }
+.fashion-store h1 { font-size: clamp(42px, 5vw, 72px); line-height: .96; letter-spacing: -3px; margin: 0 0 24px; }
+.fashion-store-lead { font-size: 17px; line-height: 1.55; max-width: 370px; margin-bottom: 30px; }
+.fashion-store-button { display: inline-flex; align-items: center; gap: 10px; padding: 14px 19px; background: var(--fashion-accent); color: var(--fashion-on-accent); text-decoration: none; font-size: 12px; font-weight: 800; }
+.fashion-store-editorial { aspect-ratio: 1.08; overflow: hidden; background: var(--fashion-paper); display: grid; place-items: center; }
+.fashion-store-editorial img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fashion-store-collection { padding-block: 90px; }
+.fashion-store h2 { font-size: clamp(32px, 4vw, 52px); line-height: 1.04; letter-spacing: -1px; margin: 0 0 38px; }
+.fashion-store-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px 16px; }
+.fashion-store-grid article { min-width: 0; }
+.fashion-store-photo { position: relative; display: block; width: 100%; aspect-ratio: .82; padding: 0; border: 0; background: var(--fashion-paper); overflow: hidden; cursor: pointer; }
+.fashion-store-photo > span { position: absolute; left: 12px; top: 12px; padding: 7px; font-size: 10px; background: var(--fashion-accent); color: var(--fashion-on-accent); }
+.fashion-store-name { display: block; margin: 16px 0 8px; padding: 0; text-align: left; border: 0; background: transparent; color: inherit; font-family: Georgia, serif; font-size: 22px; cursor: pointer; }
+.fashion-store-price { display: flex; gap: 12px; align-items: center; font-size: 13px; }
+.fashion-store-price del { opacity: .65; }
+.fashion-store-story { background: var(--fashion-ink); color: var(--fashion-bg); padding-block: 80px; }
+.fashion-store-story p { max-width: 650px; line-height: 1.6; }
+.fashion-store.es-movil .fashion-store-wrap { width: calc(100% - 28px); }
+.fashion-store.es-movil .fashion-store-hero { grid-template-columns: 1fr; gap: 35px; padding-block: 35px 55px; }
+.fashion-store.es-movil .fashion-store-editorial { order: -1; }
+.fashion-store.es-movil .fashion-store-grid { grid-template-columns: 1fr; }
+.fashion-store.es-movil .fashion-store-collection { padding-block: 55px; }
+@media (max-width:760px) {
+  .fashion-store-wrap { width: calc(100% - 28px); }
+  .fashion-store-hero { grid-template-columns: 1fr; gap: 35px; padding-block: 35px 55px; }
+  .fashion-store-editorial { order: -1; }
+  .fashion-store-grid { grid-template-columns: 1fr; }
+  .fashion-store-collection { padding-block: 55px; }
+}

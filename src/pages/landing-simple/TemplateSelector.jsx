@@ -1,15 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader, Dumbbell, Sparkles, Cpu, Store, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Loader, Dumbbell, Sparkles, Cpu, Store, ArrowRight, ArrowLeft, Eye } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { getComponenteTemplate } from './templates';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
+import TemplatePreviewModal from './TemplatePreviewModal';
+import { demoDeTemplate } from './templates/demoTemplates';
 
 const ICONOS = {
   'fitness-suplementos': Dumbbell,
   'beauty-skincare': Sparkles,
   'tech-electronica': Cpu,
   'basico': Store,
+  'bazar-hogar': Store,
+  'moda-indumentaria': Sparkles,
 };
 
 const DATA_PREVIEW = mapEditorDraftToTemplateData({
@@ -30,6 +34,7 @@ export default function TemplateSelector({ onCreada, onVolver }) {
   const [cargando, setCargando] = useState(true);
   const [creandoId, setCreandoId] = useState(null);
   const [error, setError] = useState('');
+  const [enPreview, setEnPreview] = useState(null);
 
   useEffect(() => {
     let activo = true;
@@ -87,14 +92,16 @@ export default function TemplateSelector({ onCreada, onVolver }) {
           const Icono = ICONOS[template.slug];
           return (
             <div key={template.id} className="rounded-2xl overflow-hidden border border-fg/10 bg-fg/5 flex flex-col">
-              <div className="h-56 overflow-hidden relative bg-black/40">
+              <div className="h-56 overflow-hidden relative bg-black/40 block w-full text-left">
                 {Componente ? (
-                  <div className="absolute inset-0 scale-[0.32] origin-top-left w-[312%] pointer-events-none">
-                    <Componente data={DATA_PREVIEW} />
+                  <div aria-hidden="true" inert="" className="absolute inset-0 scale-[0.32] origin-top-left w-[312%] pointer-events-none">
+                    <Componente data={demoDeTemplate(template.slug)?.tienda || DATA_PREVIEW} previewMode />
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-fg/30">Sin preview</div>
                 )}
+                <button type="button" onClick={() => setEnPreview(template)} title="Ver preview"
+                  aria-label={`Ver preview de ${template.name}`} className="absolute inset-0 w-full h-full" />
               </div>
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <div className="flex items-center gap-2">
@@ -104,9 +111,17 @@ export default function TemplateSelector({ onCreada, onVolver }) {
                 <p className="text-sm text-fg/50 flex-1">{template.description}</p>
                 <button
                   type="button"
+                  onClick={() => setEnPreview(template)}
+                  className="mt-2 inline-flex items-center justify-center gap-2 border border-fg/15 text-fg font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-fg/10 transition-colors"
+                >
+                  <Eye size={14} />
+                  Ver preview
+                </button>
+                <button
+                  type="button"
                   onClick={() => usarTemplate(template)}
                   disabled={creandoId === template.id}
-                  className="mt-2 inline-flex items-center justify-center gap-2 bg-fg text-canvas font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-fg-muted transition-colors disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 bg-fg text-canvas font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-fg-muted transition-colors disabled:opacity-50"
                 >
                   {creandoId === template.id ? <Loader size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                   Usar template
@@ -116,6 +131,15 @@ export default function TemplateSelector({ onCreada, onVolver }) {
           );
         })}
       </div>
+
+      {enPreview && (
+        <TemplatePreviewModal
+          template={enPreview}
+          creando={creandoId === enPreview.id}
+          onUsar={() => usarTemplate(enPreview)}
+          onCerrar={() => setEnPreview(null)}
+        />
+      )}
     </div>
   );
 }

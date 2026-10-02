@@ -182,9 +182,10 @@ export default function CatalogoPanel({ items, catalogo, onChange, draft, onCamp
           type="text"
           value={draft?.catalogo_titulo || ''}
           onChange={e => onCampo?.('catalogo_titulo', e.target.value)}
-          placeholder="Catálogo de Productos"
+          placeholder="Ej: Catálogo de productos"
           className={CAMPO}
         />
+        <p className="text-xs text-fg/40">Si lo dejás vacío, la página va sin título.</p>
       </div>
 
       <div className="flex flex-col gap-1.5">

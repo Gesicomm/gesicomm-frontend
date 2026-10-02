@@ -30,6 +30,9 @@ import {
   createCourier,
   updateCourier,
   deleteCourier,
+  createCourierAccess,
+  changeCourierAccessPassword,
+  updateCourierAccessStatus,
   getDeliveryZonas,
   replaceDeliveryZonas,
   createEnvio,
@@ -434,6 +437,21 @@ export function ControlCourier() {
             onDeleteCourier={async (id) => {
               await deleteCourier(id);
               setCouriers(prev => prev.filter(x => x.id !== id));
+            }}
+            onCreateAccess={async (id, payload) => {
+              const acceso = await createCourierAccess(id, payload);
+              setCouriers(prev => prev.map(x => x.id === id ? { ...x, acceso } : x));
+              return acceso;
+            }}
+            onChangeAccessPassword={async (id, payload) => {
+              const acceso = await changeCourierAccessPassword(id, payload);
+              setCouriers(prev => prev.map(x => x.id === id ? { ...x, acceso } : x));
+              return acceso;
+            }}
+            onUpdateAccessStatus={async (id, activo) => {
+              const acceso = await updateCourierAccessStatus(id, activo);
+              setCouriers(prev => prev.map(x => x.id === id ? { ...x, acceso } : x));
+              return acceso;
             }}
           />
         ) : tab === "rendicion" ? (

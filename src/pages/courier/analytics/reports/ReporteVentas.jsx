@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 import VistaPedidos from '../../../reportes/VistaPedidos';
 import VistaItems from '../../../reportes/VistaItems';
 import {
@@ -133,7 +134,7 @@ export function ReporteVentas({ filters }) {
         <div>
           <h2 className="text-xl font-bold text-fg flex items-center gap-2">
             <ShoppingCart className="text-[var(--color-primary-text)]" size={20} />
-            Overview de Ventas
+            Overview de {METRIC_TERMS.ventasNetas}
           </h2>
           <p className="text-sm text-fg-muted">
             {rango.fecha_desde && rango.fecha_hasta
@@ -163,7 +164,7 @@ export function ReporteVentas({ filters }) {
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 shrink-0">
         <KpiCard 
           icon={<DollarSign size={20} />} 
-          title="Ventas Netas" 
+          title={METRIC_TERMS.ventasNetas}
           value={loadingKpis ? '…' : formatPrecio(actual.ventas_netas)} 
           color="text-green-400" 
           variacion={varis.ventas_netas} 
@@ -178,7 +179,7 @@ export function ReporteVentas({ filters }) {
         />
         <KpiCard 
           icon={<TrendingUp size={20} />} 
-          title="Ticket Promedio" 
+          title={METRIC_TERMS.ticketPromedio}
           value={loadingKpis ? '…' : formatPrecio(actual.ticket_promedio)} 
           color="text-[var(--color-accent-text)]" 
           variacion={varis.ticket_promedio} 
@@ -210,7 +211,7 @@ export function ReporteVentas({ filters }) {
 
       {/* CHART SECTION */}
       <div className="bg-[color-mix(in_srgb,_var(--color-fg)_2%,_transparent)] p-6 rounded-xl border border-[color-mix(in_srgb,_var(--color-fg)_8%,_transparent)] shadow-sm">
-        <h3 className="text-sm font-bold text-fg uppercase tracking-wider mb-6">Evolución de Ventas y Pedidos</h3>
+        <h3 className="text-sm font-bold text-fg uppercase tracking-wider mb-6">Evolución de {METRIC_TERMS.ventasNetas} y pedidos</h3>
         <div style={{ width: '100%', height: 300 }}>
           <ResponsiveContainer>
             <ComposedChart data={evolucionData} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
@@ -241,7 +242,7 @@ export function ReporteVentas({ filters }) {
                 contentStyle={{ backgroundColor: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: '8px', color: 'var(--color-fg)' }}
                 itemStyle={{ color: 'var(--color-fg)' }}
                 formatter={(value, name) => {
-                  if (name === 'Ventas Netas') return [formatPrecio(value), name];
+                  if (name === METRIC_TERMS.ventasNetas) return [formatPrecio(value), name];
                   return [value, name];
                 }}
                 labelFormatter={label => `Fecha: ${label}`}
@@ -249,7 +250,7 @@ export function ReporteVentas({ filters }) {
               <Legend wrapperStyle={{ paddingTop: '20px' }} />
               <Bar yAxisId="right" dataKey="pedidos_totales" name="Total Pedidos" fill="color-mix(in srgb, var(--color-fg) 15%, transparent)" radius={[4, 4, 0, 0]} maxBarSize={40} />
               <Bar yAxisId="right" dataKey="pedidos_concretados" name="Pedidos Concretados" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              <Line yAxisId="left" type="monotone" dataKey="ventas" name="Ventas Netas" stroke="var(--color-accent-text)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-accent-text)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
+              <Line yAxisId="left" type="monotone" dataKey="ventas" name={METRIC_TERMS.ventasNetas} stroke="var(--color-accent-text)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-accent-text)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

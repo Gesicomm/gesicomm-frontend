@@ -5,6 +5,7 @@ import {
   LineChart, Line
 } from 'recharts';
 import { Trash2 } from 'lucide-react';
+import { METRIC_TERMS } from '../../utils/metricGlossary';
 
 const inputClass = 'h-9 w-full rounded-md border border-border bg-surface-2 px-2 text-xs text-fg';
 const fmt = (v) => Number(v || 0).toLocaleString('es-PY');
@@ -82,7 +83,7 @@ export default function FinanzasAutomatizacion() {
   
   // Gastos y pagos de equipo no se pueden atribuir a un programa (no tienen
   // program_id), así que cuando se filtra por programa siguen siendo globales
-  // — se avisa en los KPIs para que "Beneficio Neto" no se lea mal.
+  // — se avisa en los KPIs para que "Utilidad Neta" no se lea mal.
   const hayFiltroPrograma = !!filtrosAplicados.programId;
 
   const hoy = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Asuncion' });
@@ -128,12 +129,12 @@ export default function FinanzasAutomatizacion() {
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <Kpi label="Ventas Totales" value={`Gs ${fmt(metrics.totalSold)}`} sublabel="Valor vendido" />
+        <Kpi label={METRIC_TERMS.ventasNetas} value={`Gs ${fmt(metrics.totalSold)}`} sublabel="Ventas netas del período" />
         <Kpi label="Cobrado" value={`Gs ${fmt(metrics.totalPaid)}`} sublabel="Cobrado en el periodo" />
         <Kpi label="Pendiente" value={`Gs ${fmt(metrics.totalPending)}`} sublabel="Saldo de esas ventas" />
         <Kpi label="Gastos" value={`Gs ${fmt(metrics.totalExpenses)}`} sublabel={hayFiltroPrograma ? 'Gastos globales (no por programa)' : 'Gastos registrados'} />
         <Kpi label="Pagos Equipo" value={`Gs ${fmt(metrics.totalTeamPayments)}`} sublabel={hayFiltroPrograma ? 'Globales (no por programa)' : 'Comisiones/pagos realizados'} />
-        <Kpi label="Beneficio Neto" value={`Gs ${fmt(metrics.profit)}`} sublabel={hayFiltroPrograma ? 'Cobrado del programa - gastos globales' : 'Cobrado - gastos - equipo'} tono={metrics.profit >= 0 ? "text-primary" : "text-danger"} />
+        <Kpi label={METRIC_TERMS.utilidadNeta} value={`Gs ${fmt(metrics.profit)}`} sublabel={hayFiltroPrograma ? 'Cobrado del programa - gastos globales' : 'Cobrado - gastos - equipo'} tono={metrics.profit >= 0 ? "text-primary" : "text-danger"} />
         <Kpi label="Alumnos" value={metrics.students} sublabel="Registros del periodo" />
         <Kpi label="Activos" value={metrics.activeStudents} sublabel="Alumnos activos" />
       </div>
@@ -151,14 +152,14 @@ export default function FinanzasAutomatizacion() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-80">
         <div className="md:col-span-2 rounded-lg border border-border bg-surface p-4 flex flex-col">
-          <div className="text-xs font-bold mb-4">Ingresos, gastos y resultado</div>
+          <div className="text-xs font-bold mb-4">Ventas netas, gastos y utilidad</div>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[
                 { name: 'Vendido', valor: metrics.totalSold, fill: '#8884d8' },
                 { name: 'Cobrado', valor: metrics.totalPaid, fill: '#82ca9d' },
                 { name: 'Gastos Tot.', valor: metrics.totalExpenses + metrics.totalTeamPayments, fill: '#ffc658' },
-                { name: 'Beneficio', valor: metrics.profit, fill: metrics.profit >= 0 ? '#82ca9d' : '#ff8042' }
+                { name: METRIC_TERMS.utilidadNeta, valor: metrics.profit, fill: metrics.profit >= 0 ? '#82ca9d' : '#ff8042' }
               ]}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--color-fg-muted)' }} axisLine={false} tickLine={false} />

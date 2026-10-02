@@ -74,6 +74,20 @@ const TEMPLATE_STYLES = {
     btnClass: 'text-sm font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-90',
     btnStyle: (tema) => ({ backgroundColor: tema.acento, color: sobreAcento(tema.acento) })
   },
+  'moda-indumentaria': {
+    Icono: Store,
+    titleClass: 'font-serif tracking-widest',
+    navClass: 'hover:opacity-80 transition-opacity',
+    btnClass: 'text-sm font-semibold px-4 py-2 transition-opacity hover:opacity-90',
+    btnStyle: (tema) => ({ backgroundColor: tema.acento, color: sobreAcento(tema.acento) })
+  },
+  'bazar-hogar': {
+    Icono: Store,
+    titleClass: 'font-serif tracking-widest',
+    navClass: 'hover:opacity-80 transition-opacity',
+    btnClass: 'text-sm font-semibold px-4 py-2 transition-opacity hover:opacity-90',
+    btnStyle: (tema) => ({ backgroundColor: tema.acento, color: sobreAcento(tema.acento) })
+  },
   'basico': {
     Icono: Store,
     titleClass: 'font-bold tracking-tight',

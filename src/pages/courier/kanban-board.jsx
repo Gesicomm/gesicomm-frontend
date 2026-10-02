@@ -45,6 +45,7 @@ export function KanbanBoard({
   onDragEndCard,
   onDropCard,
   onChangeEstado,
+  onAbrirDetalle,
   onAbrirSeguimiento,
   onAbrirTimelineAbastecimiento,
   onAccionSiguiente,
@@ -137,6 +138,7 @@ export function KanbanBoard({
           onDragEndCard={onDragEndCard}
           onDropCard={onDropCard}
           onChangeEstado={onChangeEstado}
+          onAbrirDetalle={onAbrirDetalle}
           onAbrirSeguimiento={onAbrirSeguimiento}
           onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
           onAccionSiguiente={onAccionSiguiente}

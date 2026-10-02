@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { reportesService } from '../../services/reportesApi';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { ChevronRight, ChevronLeft, Package, Sparkles, TrendingUp, Search } from 'lucide-react';
+import { METRIC_TERMS } from '../../utils/metricGlossary';
 
 function formatFecha(f) {
   if (!f) return '—';
@@ -98,7 +99,7 @@ export default function VistaItems({ filtros }) {
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Cant.</th>
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Precio Unit.</th>
               <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Desc.</th>
-              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">Venta Neta</th>
+              <th className="p-4 text-[var(--vit-muted)] font-medium border-b border-[var(--vit-border)] text-right">{METRIC_TERMS.ventasNetas}</th>
             </tr>
           </thead>
           <tbody>

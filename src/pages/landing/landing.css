@@ -931,6 +931,7 @@
 }
 .lb-select:hover { color: var(--vit-text); border-color: color-mix(in srgb, var(--color-fg) 15%, transparent); }
 .lb-select option { background: var(--color-canvas); color: var(--vit-text); }
+.lb-select-origen { max-width: 190px; min-width: 150px; }
 
 .lb-chip {
   display: inline-flex; align-items: center; gap: 0.3rem;

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft, GripVertical, Link, Loader, Lock, Save, Star, Trash2, Truck, Upload } from 'lucide-react';
+import { ArrowLeft, GripVertical, Link, Loader, Lock, Save, Star, Trash2, Upload } from 'lucide-react';
 import FaqPanel from './FaqPanel';
 import ProductPicker from '../../landing/ProductPicker';
 import ProductCheckoutOfertas from '../../landing/ProductCheckoutOfertas';
@@ -8,6 +8,8 @@ import FichaTechPanel from './FichaTechPanel';
 import CurrencyInput from '../../../components/CurrencyInput';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
 import FichaBeautyPanel from './FichaBeautyPanel';
+import FichaBazarPanel from './FichaBazarPanel';
+import FichaModaPanel from './FichaModaPanel';
 import FichaBasicoPanel from './FichaBasicoPanel';
 import FichaComboPanel from './FichaComboPanel';
 import { claveMedioProducto, GALERIA_FONDOS, MiniaturaMediaProducto, normalizarMedioProducto } from '../templates/mediaGaleria';
@@ -27,12 +29,14 @@ export default function ProductoPanel({
   // siguen con la ficha genérica de siempre, así que sin estas props el
   // panel se comporta exactamente como antes.
   fichaActiva = false, ficha = null, fichaResuelta = null,
-  fichaLanding = null, fichaMarketing = null, onFicha = null,
+  fichaLanding = null, fichaMarketing = null, onFicha = null, onSubirImagenFicha = null,
   // Ídem para Electrónica & Tecnología. Solo una de las dos puede estar
   // activa: la landing usa un template y ese decide qué ficha se edita.
   fichaTechActiva = false, fichaTech = null, fichaTechResuelta = null,
   fichaTechLanding = null, fichaTechDelProducto = null, onFichaTech = null,
-  fichaBeautyActiva = false, fichaBeauty = null, fichaBeautyResuelta = null, fichaBeautyLanding = null, fichaBeautyDelProducto = null, onFichaBeauty = null,
+  fichaBeautyActiva = false, variantesBeauty = [], fichaBeauty = null, fichaBeautyResuelta = null, fichaBeautyLanding = null, fichaBeautyDelProducto = null, onFichaBeauty = null,
+  fichaBazarActiva = false, variantesBazar = [], fichaBazar = null, fichaBazarResuelta = null, fichaBazarLanding = null, fichaBazarDelProducto = null, onFichaBazar = null,
+  fichaModaActiva = false, variantesModa = [], fichaModa = null, fichaModaResuelta = null, fichaModaLanding = null, fichaModaDelProducto = null, onFichaModa = null,
   fichaBasicoActiva = false, fichaBasico = null, fichaBasicoResuelta = null, fichaBasicoLanding = null, fichaBasicoDelProducto = null, onFichaBasico = null,
   // Ídem para el template Combo — no depende de cuál de las cuatro de
   // arriba esté activa: se activa siempre que `producto.tipo === 'combo'`.
@@ -41,7 +45,6 @@ export default function ProductoPanel({
   // Precio tachado de ESTE producto en ESTA landing (LandingItem.precio_ancla).
   // `precioActual` es solo para calcular el descuento que se muestra al lado.
   precioAncla = null, onPrecioAncla = null, precioActual = null,
-  envioIncluido = false, onEnvioIncluido = null,
   packs = [],
   imagenes, medios = null, imagenesEditables = true, subiendoImg,
   onSubirImagen, onEliminarImagen, onMarcarPrincipal, onAgregarVideo, onEliminarMedio, onReordenarMedios,
@@ -61,7 +64,7 @@ export default function ProductoPanel({
   const [videoUrl, setVideoUrl] = React.useState('');
   const dragOrigen = React.useRef(null);
   const esCombo = producto?.tipo === 'combo';
-  const hayFichaAvanzada = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBasicoActiva || fichaComboActiva;
+  const hayFichaAvanzada = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBazarActiva || fichaModaActiva || fichaBasicoActiva || fichaComboActiva;
   const tabs = [
     { key: 'contenido', label: 'Contenido' },
     { key: 'venta', label: 'Venta' },
@@ -399,24 +402,6 @@ export default function ProductoPanel({
                   </div>
                 )}
 
-                {onEnvioIncluido && (
-                  <label className="flex items-start gap-3 rounded-lg border border-fg/10 bg-fg/[0.03] px-3 py-3 cursor-pointer hover:bg-fg/[0.06] transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={envioIncluido}
-                      onChange={e => onEnvioIncluido(e.target.checked)}
-                      className="mt-1 shrink-0 cursor-pointer"
-                    />
-                    <Truck size={16} className="mt-0.5 shrink-0 text-fg/50" />
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-fg">Envío incluido</span>
-                      <span className="block text-[11px] text-fg/35 leading-relaxed mt-0.5">
-                        El delivery queda incluido en el precio del producto para los pedidos de esta landing.
-                      </span>
-                    </span>
-                  </label>
-                )}
-
                 {/* Packs/order bump/upsell son ofertas atadas a un
                     producto_ancla_id — un combo no tiene ese concepto, sus
                     "productos incluidos" se configuran en Mis Productos →
@@ -494,6 +479,8 @@ export default function ProductoPanel({
             {tab === 'ficha' && !fichaComboActiva && fichaBeautyActiva && fichaBeautyResuelta && (
               <FichaBeautyPanel
                 packs={packs}
+                variantes={variantesBeauty}
+                onSubirImagen={onSubirImagenFicha}
                 ficha={fichaBeauty}
                 fichaResuelta={fichaBeautyResuelta}
                 fichaLanding={fichaBeautyLanding}
@@ -507,6 +494,56 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFichaBeauty}
+                faq={faq}
+                onFaqChange={onFaqChange}
+                faqTitulo={faqTitulo}
+                onFaqTitulo={onFaqTitulo}
+              />
+            )}
+
+            {tab === 'ficha' && !fichaComboActiva && fichaBazarActiva && fichaBazarResuelta && (
+              <FichaBazarPanel
+                packs={packs}
+                variantes={variantesBazar}
+                onSubirImagen={onSubirImagenFicha}
+                ficha={fichaBazar}
+                fichaResuelta={fichaBazarResuelta}
+                fichaLanding={fichaBazarLanding}
+                fichaDelProducto={fichaBazarDelProducto}
+                respaldos={{
+                  titulo: producto?.nombre || '',
+                  eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
+                  lead: descripcion || '',
+                  faqTitulo: faqTitulo || 'Preguntas frecuentes',
+                  upsellsTitulo: relacionadosTitulo || '',
+                }}
+                modo="producto"
+                onChange={onFichaBazar}
+                faq={faq}
+                onFaqChange={onFaqChange}
+                faqTitulo={faqTitulo}
+                onFaqTitulo={onFaqTitulo}
+              />
+            )}
+
+            {tab === 'ficha' && !fichaComboActiva && fichaModaActiva && fichaModaResuelta && (
+              <FichaModaPanel
+                packs={packs}
+                variantes={variantesModa}
+                onSubirImagen={onSubirImagenFicha}
+                ficha={fichaModa}
+                fichaResuelta={fichaModaResuelta}
+                fichaLanding={fichaModaLanding}
+                fichaDelProducto={fichaModaDelProducto}
+                respaldos={{
+                  titulo: producto?.nombre || '',
+                  eyebrow: producto?.categoria?.nombre || producto?.categoria || '',
+                  lead: descripcion || '',
+                  faqTitulo: faqTitulo || 'Preguntas frecuentes',
+                  upsellsTitulo: relacionadosTitulo || '',
+                }}
+                modo="producto"
+                onChange={onFichaModa}
                 faq={faq}
                 onFaqChange={onFaqChange}
                 faqTitulo={faqTitulo}
@@ -553,6 +590,7 @@ export default function ProductoPanel({
                 }}
                 modo="producto"
                 onChange={onFicha}
+                onSubirImagen={onSubirImagenFicha}
                 faq={faq}
                 onFaqChange={onFaqChange}
                 faqTitulo={faqTitulo}

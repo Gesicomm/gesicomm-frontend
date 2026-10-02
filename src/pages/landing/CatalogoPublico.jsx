@@ -107,7 +107,9 @@ export default function CatalogoPublico() {
   // Título propio de esta página (catalogo_titulo); si no lo personalizaron,
   // se cae al genérico — NUNCA a productos_titulo, que es el de la sección
   // "Productos destacados" del home (son dos páginas distintas).
-  const tituloCatalogo = data?.catalogo_titulo || 'Catálogo de Productos';
+  // Vacío = sin título (regla de las portadas rígidas: nunca un texto que
+  // el comercio no escribió).
+  const tituloCatalogo = data?.catalogo_titulo || '';
   const tema = resolverTemaPorSlug(temaData, data?.template?.slug);
   const bordeSuave = hexToRgba(tema.texto, 0.1);
 

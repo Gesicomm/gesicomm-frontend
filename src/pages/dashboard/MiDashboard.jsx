@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { landingService } from '../../services/landingService';
 import { getMetricasDashboardPedidos } from '../../services/courierApi';
+import { METRIC_HELP, METRIC_TERMS } from '../../utils/metricGlossary';
 import './MiDashboard.css';
 
 const MESES = [
@@ -520,7 +521,7 @@ function TablaEmbudoProductos({ filas }) {
             <th>Leads <Ayuda texto="Cuánta gente mostró interés en este producto en tu landing: cuanta gente llego a whatsapp con ese producto." /></th>
             <th>Confirmados <Ayuda texto="De esos interesados, a cuántos les tomaste el pedido y lo confirmaron. Todavía no es una venta cobrada." /></th>
             <th>Compras <Ayuda texto="De esos pedidos confirmados, cuántos llegaron a manos del cliente. Esta sí es la venta concretada." /></th>
-            <th>Conversión <Ayuda texto="De cada 100 pedidos confirmados de este producto, cuántos terminaron entregados. Es Compras dividido Confirmados." /></th>
+            <th>{METRIC_TERMS.conversion} <Ayuda texto="De cada 100 pedidos confirmados de este producto, cuántos terminaron entregados. Es Compras dividido Confirmados." /></th>
           </tr>
         </thead>
         <tbody>
@@ -864,11 +865,11 @@ function TablaRendimientoCanal({ filas }) {
         <thead>
           <tr>
             <th>Canal</th>
-            <th>Ventas <Ayuda texto="Venta neta de productos entregados por este canal, sin contar delivery/flete." /></th>
+            <th>{METRIC_TERMS.ventasNetas} <Ayuda texto="Venta neta de productos entregados por este canal, sin contar delivery/flete." /></th>
             <th>Costos totales <Ayuda texto="Mercadería, publicidad, comisiones, logística, IVA y gastos operativos atribuibles a este canal." /></th>
-            <th>Utilidad neta <Ayuda texto="Ventas menos todos los costos atribuibles del canal." /></th>
-            <th>Margen neto <Ayuda texto="De cada Gs 100 vendidos por este canal, cuántos quedan como utilidad." /></th>
-            <th>ROI canal <Ayuda texto="Utilidad neta dividida por costo total del canal. Mide cuánta utilidad genera cada guaraní invertido." /></th>
+            <th>{METRIC_TERMS.utilidadNeta} <Ayuda texto="Ventas menos todos los costos atribuibles del canal." /></th>
+            <th>{METRIC_TERMS.margen} <Ayuda texto="De cada Gs 100 vendidos por este canal, cuántos quedan como utilidad." /></th>
+            <th>{METRIC_TERMS.roiCanal} <Ayuda texto="Fórmula: utilidad neta / costos totales x 100. Puede superar 100%; si querés porcentaje sobre ventas, mirá Margen." /></th>
           </tr>
         </thead>
         <tbody>
@@ -919,7 +920,7 @@ function TablaRankingLandings({ ranking }) {
             <th>Entregados <Ayuda texto="De esos pedidos, cuántos llegaron a manos del cliente. Es lo único que factura." /></th>
             <th>Facturación <Ayuda texto="La plata que entró por esa página: la suma de sus pedidos entregados, sin contar el delivery." /></th>
             <th>Ganancia <Ayuda texto="Lo que dejó esa página: su facturación menos la mercadería, la comisión y el IVA. No le descuenta los costos fijos del negocio (alquiler, sueldos, publicidad) porque esos no son de una landing en particular, ni el delivery porque lo paga el cliente." /></th>
-            <th>Conversión <Ayuda texto="De cada 100 personas que entraron a esa página, cuántas terminaron comprando y recibiendo el pedido." /></th>
+            <th>{METRIC_TERMS.conversion} <Ayuda texto="De cada 100 personas que entraron a esa página, cuántas terminaron comprando y recibiendo el pedido." /></th>
           </tr>
         </thead>
         <tbody>
@@ -998,11 +999,11 @@ function TablaMasVendidos({ filas }) {
             <th>Producto</th>
             <th>Unidades Vendidas<Ayuda texto="Cuántas unidades de este producto entregaste al cliente." /></th>
             <th>Venta <Ayuda texto="El precio del producto en los pedidos entregados. El delivery no está acá: lo paga el cliente aparte." /></th>
-            <th>Margen Bruto <Ayuda texto="La Venta menos lo que te costó la mercadería, sin contar nada más. Te dice si el producto está bien pescado: si acá ya estás en cero, ningún gasto que recortes lo va a salvar." /></th>
+            <th>{METRIC_TERMS.margenBruto} <Ayuda texto="La Venta menos lo que te costó la mercadería, sin contar nada más. Te dice si el producto está bien pescado: si acá ya estás en cero, ningún gasto que recortes lo va a salvar." /></th>
             <th>Costo <Ayuda texto="Todo lo que te costó este producto. Tocá el número para abrir el desglose renglón por renglón." /></th>
-            <th>Ganancia <Ayuda texto="La Venta menos el Costo. Es la plata que te dejó este producto." /></th>
+            <th>{METRIC_TERMS.ganancia} <Ayuda texto="La Venta menos el Costo. Es la plata que te dejó este producto." /></th>
             <th>Pérdida <Ayuda texto="Mercadería que se perdió o volvió rota, contada a lo que te costó. Lo que se devolvió en buen estado no cuenta porque vuelve al stock. No se resta de la Ganancia para no descontarla dos veces." /></th>
-            <th>Rentabilidad <Ayuda texto="De cada Gs 100 que vendiste, cuántos te quedaron de ganancia." /></th>
+            <th>{METRIC_TERMS.rentabilidad} <Ayuda texto={METRIC_HELP.rentabilidad} /></th>
           </tr>
         </thead>
         <tbody>
@@ -1579,7 +1580,7 @@ export default function MiDashboard() {
             antes vivían dispersos (pedidos/ticket ya no se repiten abajo) ── */}
         <section className="md-hero md-span-8">
           <div className="md-hero-top">
-            <span className="md-eyebrow">Ventas netas · {rangoLabel}</span>
+            <span className="md-eyebrow">{METRIC_TERMS.ventasNetas} · {rangoLabel}</span>
             <span className="md-confirmado-tag"><i className="md-pulse" /> confirmado a mano</span>
           </div>
           <div className="md-hero-numero">{gs(kpis.facturacion_entregada)}</div>
@@ -1598,14 +1599,14 @@ export default function MiDashboard() {
             </div>
             <div className="md-rent-item">
               <span className="md-rent-label">
-                Ticket Promedio
+                {METRIC_TERMS.ticketPromedio}
                 <Ayuda
-                  ariaLabel="Promedio vendido por cada pedido entregado. Fórmula: ventas netas divididas por pedidos entregados."
+                  ariaLabel={METRIC_HELP.ticketPromedio}
                   texto={(
                     <>
                       <strong>Promedio por pedido entregado.</strong>
                       <span>Es cuánto vendiste, en promedio, por cada pedido que llegó al cliente.</span>
-                      <small>Ventas netas ÷ pedidos entregados</small>
+                      <small>{METRIC_TERMS.ventasNetas} ÷ pedidos entregados</small>
                     </>
                   )}
                 />
@@ -1613,18 +1614,18 @@ export default function MiDashboard() {
               <span className="md-rent-valor">{gs(kpis.ticket_promedio)}</span>
             </div>
             <div className="md-rent-item md-rent-destacado">
-              <span className="md-rent-label">Utilidad Neta <Ayuda texto="Lo que te quedó limpio: las ventas netas menos todos los costos y gastos del período." /></span>
+              <span className="md-rent-label">{METRIC_TERMS.utilidadNeta} <Ayuda texto={METRIC_HELP.utilidadNeta} /></span>
               <span className={`md-rent-valor ${claseValor(kpis.ganancia_neta_estimada)}`}>
                 {gs(kpis.ganancia_neta_estimada)}
                 <Variacion actual={kpis.ganancia_neta_estimada} previo={comparativo?.ganancia_neta_estimada} />
               </span>
             </div>
             <div className="md-rent-item">
-              <span className="md-rent-label">Margen <Ayuda texto="De cada 100 guaraníes de ventas netas, cuántos te quedaron limpios." /></span>
+              <span className="md-rent-label">{METRIC_TERMS.margen} <Ayuda texto={METRIC_HELP.margen} /></span>
               <span className="md-rent-valor">{kpis.pct_margen_neto}%</span>
             </div>
             <div className="md-rent-item">
-              <span className="md-rent-label">Conversión <Ayuda texto="De cada 100 pedidos que entraron, cuántos lograste confirmar." /></span>
+              <span className="md-rent-label">{METRIC_TERMS.conversion} <Ayuda texto={METRIC_HELP.conversion} /></span>
               <span className="md-rent-valor">{funnel.tasa_confirmacion}%</span>
             </div>
           </div>
@@ -1636,7 +1637,7 @@ export default function MiDashboard() {
       {/* ── Rentabilidad: agregado del período + detalle por producto ──── */}
       <section className="md-card md-rentabilidad-card md-span-4">
         <h3 className="md-card-title">
-          Rentabilidad
+          {METRIC_TERMS.rentabilidad}
           <Ayuda texto="Se arranca con toda la plata que cobraste y se le va restando cada gasto, uno por uno. Lo que sobra abajo de todo es tu ganancia." />
         </h3>
         {/* La cuenta del período, de arriba hacia abajo y en el orden en que
@@ -1660,7 +1661,7 @@ export default function MiDashboard() {
             pagado al courier para que no se confunda venta de producto con caja. */}
         <div className="md-rentabilidad-grid">
           <div className="md-rent-item md-rent-destacado">
-            <span className="md-rent-label">Ventas netas <Ayuda texto="Venta de productos entregados, sin delivery/flete. Los pedidos pendientes o cancelados no entran." /></span>
+            <span className="md-rent-label">{METRIC_TERMS.ventasNetas} <Ayuda texto={METRIC_HELP.ventasNetas} /></span>
             <span className="md-rent-valor">{gs(kpis.facturacion_entregada)}</span>
           </div>
           <div className="md-rent-item">
@@ -1679,17 +1680,17 @@ export default function MiDashboard() {
             <span className="md-rent-valor">{gs(kpis.costo_logistico_entregados)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Costos Fijos <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
+            <span className="md-rent-label">{METRIC_TERMS.costosFijos} <Ayuda texto="Los gastos que pagás vendas o no: alquiler, sueldos, servicios. Se cargan en Finanzas → Control financiero con clasificación 'Fijo' (o sin clasificar: por defecto cuentan como fijos)." /></span>
             <span className="md-rent-valor">{gs(costosFijos)}</span>
           </div>
           <div className="md-rent-item">
-            <span className="md-rent-label">Costos Variables <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'." /></span>
+            <span className="md-rent-label">{METRIC_TERMS.costosVariables} <Ayuda texto="Gastos que se mueven con la venta: comisiones bancarias, marketing sin producto puntual, etc. Se cargan en Finanzas → Control financiero con clasificación 'Variable'." /></span>
             <span className="md-rent-valor">{gs(costosVariables)}</span>
           </div>
           <div className="md-rent-item md-rent-destacado">
             <span className="md-rent-label">
-              Utilidad Bruta <small>({kpis.pct_margen_bruto}%)</small>
-              <Ayuda texto="Ventas netas menos producto, envíos, comisiones e IVA. Todavía no descuenta Meta ni costos fijos." />
+              {METRIC_TERMS.utilidadBruta} <small>({kpis.pct_margen_bruto}%)</small>
+              <Ayuda texto={METRIC_HELP.utilidadBruta} />
             </span>
             <span className={`md-rent-valor ${claseValor(utilidadBruta)}`}>{gs(utilidadBruta)}</span>
           </div>
@@ -1783,7 +1784,7 @@ export default function MiDashboard() {
       {/* ── Embudo de Conversión: los 4 embudos, uno a la vez por tab ──── */}
       <section className="md-card md-funnel-card md-span-12">
         <h3 className="md-card-title">
-          Embudo de Conversión
+          Embudo de {METRIC_TERMS.conversion}
           <Ayuda texto="El camino que recorre una persona hasta comprarte. En cada paso se pierde gente: el porcentaje entre paso y paso te muestra dónde se te caen más." />
         </h3>
         <div className="md-tabs md-tabs-embudo">

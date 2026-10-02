@@ -9,6 +9,7 @@ import { costosGastosService, categoriasCostosGastosService, proveedoresService 
 import { formatMoneda } from '../../utils/currency';
 import { getMediaUrl } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
+import { METRIC_TERMS } from '../../utils/metricGlossary';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CostoGastoForm from './CostoGastoForm';
 import CategoriasConfig from './CategoriasConfig';
@@ -256,7 +257,7 @@ function ResultadoOperativo({ resultado }) {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-lg bg-surface-2 p-3">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-fg-muted">Ingresos netos</span>
+            <span className="text-fg-muted">{METRIC_TERMS.ventasNetas}</span>
             <strong className="text-fg">{formatMoneda(resultado.ingresos_netos)}</strong>
           </div>
           <div className="my-1 flex items-center justify-between text-sm">
@@ -278,13 +279,13 @@ function ResultadoOperativo({ resultado }) {
             <strong className="text-danger">{formatMoneda(resultado.gastos_fijos)}</strong>
           </div>
           <div className="flex items-center justify-between border-t border-border pt-2 text-sm font-bold">
-            <span>Utilidad operativa</span>
+            <span>{METRIC_TERMS.utilidadNeta}</span>
             <span className={positivo ? 'text-success' : 'text-danger'}>{formatMoneda(resultado.utilidad_operativa)}</span>
           </div>
         </div>
       </div>
       <div className="mt-3 flex items-center justify-end gap-2 text-sm">
-        <span className="text-fg-muted">Margen neto</span>
+        <span className="text-fg-muted">{METRIC_TERMS.margen}</span>
         <strong className={positivo ? 'text-success' : 'text-danger'}>{formatPct(resultado.margen_neto)}</strong>
       </div>
     </div>
@@ -307,7 +308,7 @@ function FlujoCaja({ flujo }) {
         <InfoFlujo label="Salidas reales" value={flujo.salidas_reales} tone="danger" />
         <InfoFlujo label="Saldo final de caja" value={flujo.saldo_final_caja} tone={positivo ? 'success' : 'danger'} strong />
       </div>
-      <p className="mt-3 text-xs text-fg-subtle">UTILIDAD ≠ CAJA. {flujo.nota}</p>
+      <p className="mt-3 text-xs text-fg-subtle">{METRIC_TERMS.utilidadNeta.toUpperCase()} ≠ CAJA. {flujo.nota}</p>
     </div>
   );
 }
@@ -379,16 +380,16 @@ function ReporteFlujoCajaVisual({ reporte, loading }) {
   return (
     <div className="mb-6 space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
-        <KpiReporte label="Ingresos netos" value={reporte.indicadores.ventas} icon={<TrendingUp size={14} />} tone="primary" />
-        <KpiReporte label="Utilidad neta" value={reporte.indicadores.utilidad_neta} icon={<PiggyBank size={14} />} tone={Number(reporte.indicadores.utilidad_neta) >= 0 ? 'success' : 'danger'} />
-        <KpiReporte label="Margen neto" value={reporte.indicadores.margen_neto} type="percent" icon={<Percent size={14} />} tone={Number(reporte.indicadores.margen_neto) >= 0 ? 'success' : 'danger'} />
-        <KpiReporte label="Flujo de caja neto" value={reporte.indicadores.flujo_caja_neto} icon={<Wallet size={14} />} tone={Number(reporte.indicadores.flujo_caja_neto) >= 0 ? 'success' : 'danger'} />
+        <KpiReporte label={METRIC_TERMS.ventasNetas} value={reporte.indicadores.ventas} icon={<TrendingUp size={14} />} tone="primary" />
+        <KpiReporte label={METRIC_TERMS.utilidadNeta} value={reporte.indicadores.utilidad_neta} icon={<PiggyBank size={14} />} tone={Number(reporte.indicadores.utilidad_neta) >= 0 ? 'success' : 'danger'} />
+        <KpiReporte label={METRIC_TERMS.margen} value={reporte.indicadores.margen_neto} type="percent" icon={<Percent size={14} />} tone={Number(reporte.indicadores.margen_neto) >= 0 ? 'success' : 'danger'} />
+        <KpiReporte label={METRIC_TERMS.flujoCajaNeto} value={reporte.indicadores.flujo_caja_neto} icon={<Wallet size={14} />} tone={Number(reporte.indicadores.flujo_caja_neto) >= 0 ? 'success' : 'danger'} />
         <KpiReporte label="ROI" value={reporte.indicadores.roi} type="percent" icon={<TrendingUp size={14} />} tone={Number(reporte.indicadores.roi) >= 0 ? 'success' : 'danger'} />
-        <KpiReporte label="Caja disponible" value={reporte.indicadores.caja_disponible} icon={<PiggyBank size={14} />} tone={Number(reporte.indicadores.caja_disponible) >= 0 ? 'success' : 'danger'} />
+        <KpiReporte label={METRIC_TERMS.cajaDisponible} value={reporte.indicadores.caja_disponible} icon={<PiggyBank size={14} />} tone={Number(reporte.indicadores.caja_disponible) >= 0 ? 'success' : 'danger'} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ReporteBloque titulo="Ingresos" filas={ingresos} totalLabel="Ingresos netos" total={reporte.ingresos.ingresos_netos} tone="success" />
+        <ReporteBloque titulo="Ingresos" filas={ingresos} totalLabel={METRIC_TERMS.ventasNetas} total={reporte.ingresos.ingresos_netos} tone="success" />
         <ReporteBloque titulo="Gastos" filas={[...reporte.gastos.costos_variables, ...reporte.gastos.gastos_fijos]} totalLabel="Gastos totales" total={reporte.gastos.gastos_totales} tone="danger" />
       </div>
 

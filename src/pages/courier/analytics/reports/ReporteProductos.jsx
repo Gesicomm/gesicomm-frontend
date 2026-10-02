@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, TrendingUp, Award } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 export default function ReporteProductos({ filters }) {
   const [data, setData] = useState([]);
@@ -75,11 +76,11 @@ export default function ReporteProductos({ filters }) {
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            TOTAL INGRESOS NETOS
+            {METRIC_TERMS.ventasNetas}
             <TrendingUp size={16} color="var(--color-success)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.ventas_netas)}</div>
-          <div className="cic-kpi-sub">Venta entregada menos costo de producto</div>
+          <div className="cic-kpi-sub">Venta de productos entregados, sin delivery/flete</div>
         </div>
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-warning) 30%, transparent)' }}>
@@ -157,9 +158,9 @@ export default function ReporteProductos({ filters }) {
                 <th>Producto / Variante</th>
                 <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
                 <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
-                <th style={{ textAlign: 'right' }}>% de Ventas</th>
-                <th style={{ textAlign: 'right' }}>Precio Promedio</th>
-                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ventas Netas</th>
+                <th style={{ textAlign: 'right' }}>% de {METRIC_TERMS.ventasNetas.toLowerCase()}</th>
+                <th style={{ textAlign: 'right' }}>Precio promedio</th>
+                <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>{METRIC_TERMS.ventasNetas}</th>
               </tr>
             </thead>
             <tbody>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DollarSign, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { reportesService } from '../../../../services/reportesApi';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 export function ReporteMetodosPago({ filters }) {
   const [data, setData] = useState([]);
@@ -58,13 +59,13 @@ export function ReporteMetodosPago({ filters }) {
       <div className="cic-report-header">
         <div>
           <h2 className="cic-report-title">Rendimiento por Métodos de Pago</h2>
-          <p className="cic-report-desc">Análisis de participación en ingresos y tasas de éxito de cada método.</p>
+          <p className="cic-report-desc">Análisis de participación en ventas netas y tasas de éxito de cada método.</p>
         </div>
       </div>
 
       <div className="cic-kpi-grid">
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Ingresos Globales <DollarSign size={14}/></div>
+          <div className="cic-kpi-header">{METRIC_TERMS.ventasNetas} <DollarSign size={14}/></div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ventas_netas)}</div>
           <div className="cic-kpi-sub">Total en todos los métodos</div>
         </div>
@@ -87,7 +88,7 @@ export function ReporteMetodosPago({ filters }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '1.5rem', marginTop: '1.5rem' }}>
         <div className="cic-table-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <h3 style={{ fontSize: '0.85rem', alignSelf: 'flex-start', color: 'var(--color-fg)' }}>Distribución de Ingresos</h3>
+          <h3 style={{ fontSize: '0.85rem', alignSelf: 'flex-start', color: 'var(--color-fg)' }}>Distribución de {METRIC_TERMS.ventasNetas.toLowerCase()}</h3>
           {chartData.length > 0 ? (
             <div style={{ width: '100%', height: 250, marginTop: '1rem' }}>
               <ResponsiveContainer>
@@ -102,7 +103,7 @@ export function ReporteMetodosPago({ filters }) {
               </ResponsiveContainer>
             </div>
           ) : (
-             <div style={{ flex: 1, display: 'flex', alignItems: 'center', color: 'var(--color-fg-muted)' }}>Sin ingresos</div>
+             <div style={{ flex: 1, display: 'flex', alignItems: 'center', color: 'var(--color-fg-muted)' }}>Sin {METRIC_TERMS.ventasNetas.toLowerCase()}</div>
           )}
         </div>
         
@@ -120,7 +121,7 @@ export function ReporteMetodosPago({ filters }) {
                     <th style={{ textAlign: 'center' }}>Exitosos</th>
                     <th style={{ textAlign: 'center' }}>Fallidos</th>
                     <th style={{ textAlign: 'center' }}>Abiertos</th>
-                    <th style={{ textAlign: 'right' }}>Ventas Netas</th>
+                    <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ventasNetas}</th>
                     <th style={{ textAlign: 'right' }}>%</th>
                   </tr>
                 </thead>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, MapPin, Pencil, Plus, Save, Search, Trash2, Users } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, KeyRound, Lock, MapPin, Pencil, Plus, Save, Search, ShieldCheck, Trash2, Users } from "lucide-react";
 import CurrencyInput from "../../components/CurrencyInput";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import { CourierWizard, VehiculoIcon, iniciales, rangoLabel } from "./CourierWizard";
@@ -97,6 +97,9 @@ export function DeliveryPanel({
   onCreateCourier,
   onUpdateCourier,
   onDeleteCourier,
+  onCreateAccess,
+  onChangeAccessPassword,
+  onUpdateAccessStatus,
 }) {
   const [filas, setFilas] = useState([]);
   const [baseline, setBaseline] = useState("[]");
@@ -105,6 +108,9 @@ export function DeliveryPanel({
   const [agrupacion, setAgrupacion] = useState("courier");
   const [wizard, setWizard] = useState(null);
   const [courierABorrar, setCourierABorrar] = useState(null);
+  const [accessModal, setAccessModal] = useState(null);
+  const [couriersColapsados, setCouriersColapsados] = useState({});
+  const [departamentoPorCourier, setDepartamentoPorCourier] = useState({});
 
   useEffect(() => {
     const base = reglasDesdeZonas(zonas);
@@ -239,6 +245,35 @@ export function DeliveryPanel({
     }
   }
 
+  async function guardarAccesoCourier({ courier, modo, username, password, confirm_password, activo }) {
+    if (modo === "crear") {
+      await onCreateAccess(courier.id, { username, password, confirm_password, activo });
+    } else {
+      await onChangeAccessPassword(courier.id, { password, confirm_password });
+    }
+    setAccessModal(null);
+  }
+
+  async function cambiarEstadoAcceso(courier, activo) {
+    await onUpdateAccessStatus(courier.id, activo);
+  }
+
+  function toggleCourierDetalle(key) {
+    setCouriersColapsados(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function toggleTodasLasCiudades() {
+    if (todasCiudadesOcultas) {
+      setCouriersColapsados({});
+    } else {
+      const siguiente = {};
+      gruposCourier.forEach(grupo => {
+        if (grupo.courier) siguiente[grupo.key] = true;
+      });
+      setCouriersColapsados(siguiente);
+    }
+  }
+
   function actualizarFila(index, campo, valor) {
     setFilas(prev => prev.map((fila, i) => i === index ? { ...fila, [campo]: valor } : fila));
   }
@@ -264,6 +299,9 @@ export function DeliveryPanel({
 
   const totalRangos = filas.filter(f => f.ciudad.trim()).length;
   const sinCourier = gruposCourier.find(g => !g.courier);
+  const couriersConDetalleVisible = gruposCourierFiltrados.filter(grupo => grupo.courier && grupo.reglas.length > 0);
+  const todasCiudadesOcultas = couriersConDetalleVisible.length > 0
+    && couriersConDetalleVisible.every(grupo => !!couriersColapsados[grupo.key]);
 
   return (
     <>
@@ -288,10 +326,19 @@ export function DeliveryPanel({
             <input
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              placeholder={porCourier ? "Buscar courier o ciudad" : "Buscar ciudad o departamento"}
+              placeholder={porCourier ? "Buscar ciudad, departamento o courier" : "Buscar ciudad o departamento"}
               style={styles.searchInput}
             />
           </label>
+
+          {porCourier && (
+            <div style={styles.compactActions}>
+              <button type="button" className="btn-secondary" onClick={toggleTodasLasCiudades}>
+                {todasCiudadesOcultas ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                {todasCiudadesOcultas ? "Mostrar ciudades" : "Ocultar ciudades"}
+              </button>
+            </div>
+          )}
 
           <div style={styles.segmented} role="group" aria-label="Agrupar reglas">
             <span style={styles.segmentedLabel}>Ver por</span>
@@ -319,10 +366,28 @@ export function DeliveryPanel({
             <div style={styles.filteredEmpty}>No encontramos couriers con esa búsqueda.</div>
           ) : (
             <div style={styles.lista}>
-              {gruposCourierFiltrados.map(grupo => (
+              {gruposCourierFiltrados.map(grupo => {
+                const detalleColapsado = !!couriersColapsados[grupo.key];
+                const coincideCourier = q && (grupo.courier?.nombre || "sin courier").toLowerCase().includes(q);
+                const reglasVisibles = q
+                  ? (coincideCourier ? grupo.reglas : grupo.reglas.filter(r => `${r.ciudad} ${r.departamento}`.toLowerCase().includes(q)))
+                  : grupo.reglas;
+
+                return (
                 <section key={grupo.key || "sin-courier"} style={styles.card}>
                   <header style={styles.cardHeader}>
                     <div style={styles.identity}>
+                      {grupo.courier && (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => toggleCourierDetalle(grupo.key)}
+                          title={detalleColapsado ? "Mostrar ciudades" : "Ocultar ciudades"}
+                          aria-label={`${detalleColapsado ? "Mostrar" : "Ocultar"} ciudades de ${grupo.courier.nombre}`}
+                        >
+                          {detalleColapsado ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                        </button>
+                      )}
                       <span style={grupo.courier ? styles.avatar : styles.avatarMuted}>
                         {grupo.courier ? iniciales(grupo.courier.nombre) : "—"}
                       </span>
@@ -334,6 +399,11 @@ export function DeliveryPanel({
                               {grupo.courier.activo !== false ? "Activo" : "Inactivo"}
                             </span>
                           )}
+                          {grupo.courier?.acceso && (
+                            <span style={grupo.courier.acceso.activo !== false ? styles.badgeAccessOk : styles.badgeMuted}>
+                              {grupo.courier.acceso.activo !== false ? "Acceso activo" : "Acceso inactivo"}
+                            </span>
+                          )}
                         </div>
                         <p style={styles.cardMeta}>
                           {grupo.courier ? (
@@ -343,6 +413,7 @@ export function DeliveryPanel({
                               {grupo.courier.telefono ? ` · ${grupo.courier.telefono}` : ""}
                               {` · ${ciudadesDe(grupo.courier.id)} ciudad${ciudadesDe(grupo.courier.id) === 1 ? "" : "es"}`}
                               {` · ${enviosCountByCourier[grupo.courier.id] ?? 0} envío${(enviosCountByCourier[grupo.courier.id] ?? 0) === 1 ? "" : "s"} en el rango`}
+                              {grupo.courier.acceso ? ` · Usuario: ${grupo.courier.acceso.username}` : " · Sin acceso al portal"}
                             </>
                           ) : (
                             "Reglas viejas que quedaron sin courier. Editá el courier que corresponda y agregá estas ciudades ahí."
@@ -353,6 +424,24 @@ export function DeliveryPanel({
 
                     {grupo.courier && (
                       <div style={styles.cardActions}>
+                        {grupo.courier.acceso ? (
+                          <>
+                            <button type="button" className="btn-secondary" onClick={() => setAccessModal({ modo: "password", courier: grupo.courier })}>
+                              <Lock size={15} /> Cambiar contraseña
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              onClick={() => cambiarEstadoAcceso(grupo.courier, grupo.courier.acceso.activo === false)}
+                            >
+                              <ShieldCheck size={15} /> {grupo.courier.acceso.activo === false ? "Activar acceso" : "Desactivar acceso"}
+                            </button>
+                          </>
+                        ) : (
+                          <button type="button" className="btn-secondary" onClick={() => setAccessModal({ modo: "crear", courier: grupo.courier })}>
+                            <KeyRound size={15} /> Crear acceso
+                          </button>
+                        )}
                         <button type="button" className="btn-secondary" onClick={() => abrirEditarCourier(grupo.courier, "ciudades")}>
                           <Plus size={15} /> Agregar ciudad
                         </button>
@@ -366,27 +455,40 @@ export function DeliveryPanel({
                     )}
                   </header>
 
-                  {grupo.reglas.length === 0 ? (
+                  {detalleColapsado ? (
+                    <div style={styles.collapsedSummary}>
+                      <span>{ciudadesDe(grupo.courier.id)} ciudad{ciudadesDe(grupo.courier.id) === 1 ? "" : "es"} ocultas.</span>
+                      <button type="button" className="btn-secondary" onClick={() => toggleCourierDetalle(grupo.key)}>
+                        <ChevronDown size={15} /> Ver ciudades
+                      </button>
+                    </div>
+                  ) : grupo.reglas.length === 0 ? (
                     <div style={styles.cardEmpty}>
                       Todavía no cubre ninguna ciudad.
                       <button type="button" className="btn-secondary" onClick={() => abrirEditarCourier(grupo.courier, "ciudades")}>
                         <Plus size={15} /> Agregar su primera ciudad
                       </button>
                     </div>
+                  ) : reglasVisibles.length === 0 ? (
+                    <div style={styles.cardEmpty}>
+                      No hay ciudades de este courier que coincidan con la búsqueda.
+                    </div>
                   ) : (
                     <>
-                      <ReglasTable
-                        reglas={grupo.reglas}
-                        encabezadoPrimeraColumna="Ciudad y rango"
-                        mostrarCiudad
+                      <CourierReglasPorDepartamento
+                        courierKey={grupo.key}
+                        reglas={reglasVisibles}
+                        departamentoActivo={departamentoPorCourier[grupo.key]}
+                        onDepartamentoChange={(departamento) => setDepartamentoPorCourier(prev => ({ ...prev, [grupo.key]: departamento }))}
                         onActualizar={actualizarFila}
                         onEliminar={eliminarRegla}
                       />
-                      <AvisoCobertura reglas={grupo.reglas} />
+                      <AvisoCobertura reglas={reglasVisibles} />
                     </>
                   )}
                 </section>
-              ))}
+                );
+              })}
             </div>
           )
         ) : gruposCiudadFiltrados.length === 0 ? (
@@ -460,6 +562,14 @@ export function DeliveryPanel({
         onGuardar={guardarDesdeWizard}
       />
 
+      <CourierAccessModal
+        open={!!accessModal}
+        modo={accessModal?.modo}
+        courier={accessModal?.courier}
+        onClose={() => setAccessModal(null)}
+        onGuardar={guardarAccesoCourier}
+      />
+
       <ConfirmDialog
         open={!!courierABorrar}
         title={`¿Eliminar "${courierABorrar?.nombre}"?`}
@@ -474,6 +584,251 @@ export function DeliveryPanel({
         onCancel={() => setCourierABorrar(null)}
       />
     </>
+  );
+}
+
+function CourierAccessModal({ open, modo, courier, onClose, onGuardar }) {
+  const creando = modo === "crear";
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [activo, setActivo] = useState(true);
+  const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setUsername(courier?.acceso?.username || "");
+    setPassword("");
+    setConfirmPassword("");
+    setActivo(courier?.acceso?.activo !== false);
+    setError("");
+  }, [open, courier]);
+
+  if (!open || !courier) return null;
+
+  async function submit(e) {
+    e.preventDefault();
+    const cleanUsername = username.trim().toLowerCase();
+    if (creando && !cleanUsername) return setError("El usuario es obligatorio.");
+    if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
+    if (password !== confirmPassword) return setError("Las contraseñas no coinciden.");
+
+    setGuardando(true);
+    setError("");
+    try {
+      await onGuardar({
+        courier,
+        modo,
+        username: cleanUsername,
+        password,
+        confirm_password: confirmPassword,
+        activo,
+      });
+    } catch (err) {
+      setError(err?.response?.data?.error || "No pudimos guardar el acceso.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div style={styles.modalOverlay} onClick={onClose}>
+      <form style={styles.accessModal} onSubmit={submit} onClick={e => e.stopPropagation()}>
+        <div style={styles.accessHeader}>
+          <div>
+            <p style={styles.accessEyebrow}>Portal courier</p>
+            <h3 style={styles.accessTitle}>{creando ? "Crear acceso" : "Cambiar contraseña"}</h3>
+            <p style={styles.accessHelp}>{courier.nombre}</p>
+          </div>
+          <button type="button" className="btn-icon" onClick={onClose} aria-label="Cerrar">×</button>
+        </div>
+
+        <div style={styles.stack}>
+          <label style={styles.field}>
+            <span>Usuario</span>
+            <input
+              className="form-input"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="courier_aex_01"
+              disabled={!creando}
+              autoFocus={creando}
+              required={creando}
+            />
+          </label>
+
+          <label style={styles.field}>
+            <span>Nueva contraseña</span>
+            <input
+              className="form-input"
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+              autoFocus={!creando}
+              required
+            />
+          </label>
+
+          <label style={styles.field}>
+            <span>Confirmar contraseña</span>
+            <input
+              className="form-input"
+              type="password"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              required
+            />
+          </label>
+
+          {creando && (
+            <label style={styles.toggle}>
+              <input
+                type="checkbox"
+                checked={activo}
+                onChange={e => setActivo(e.target.checked)}
+                style={styles.checkbox}
+              />
+              Acceso activo
+            </label>
+          )}
+
+          {error && <div style={styles.errorBox}>{error}</div>}
+        </div>
+
+        <div style={styles.modalActions}>
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={guardando}>Cancelar</button>
+          <button type="submit" className="btn-nuevo-pedido" disabled={guardando}>
+            <KeyRound size={15} /> {guardando ? "Guardando..." : "Guardar acceso"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function CourierReglasPorDepartamento({
+  courierKey,
+  reglas,
+  departamentoActivo,
+  onDepartamentoChange,
+  onActualizar,
+  onEliminar,
+}) {
+  const [departamentoFiltro, setDepartamentoFiltro] = useState("");
+  const [ciudadFiltro, setCiudadFiltro] = useState("");
+
+  const departamentos = useMemo(() => {
+    const map = new Map();
+    reglas.forEach(regla => {
+      const label = regla.departamento?.trim() || "Sin departamento";
+      const key = label.toLowerCase();
+      if (!map.has(key)) map.set(key, { key, label, reglas: [] });
+      map.get(key).reglas.push(regla);
+    });
+
+    return Array.from(map.values())
+      .map(dep => ({
+        ...dep,
+        reglas: dep.reglas.sort((a, b) => {
+          const ciudad = a.ciudad.localeCompare(b.ciudad, "es");
+          return ciudad || (Number(a.rango_min) || 0) - (Number(b.rango_min) || 0);
+        }),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "es"));
+  }, [reglas]);
+
+  const departamentosFiltrados = useMemo(() => {
+    const qDep = departamentoFiltro.trim().toLowerCase();
+    if (!qDep) return departamentos;
+    return departamentos.filter(dep => dep.label.toLowerCase().includes(qDep));
+  }, [departamentos, departamentoFiltro]);
+
+  useEffect(() => {
+    if (departamentosFiltrados.length === 0) return;
+    if (!departamentosFiltrados.some(dep => dep.key === departamentoActivo)) {
+      onDepartamentoChange(departamentosFiltrados[0].key);
+    }
+  }, [departamentosFiltrados, departamentoActivo, onDepartamentoChange]);
+
+  if (departamentos.length === 0) return null;
+
+  const indiceActivo = Math.max(0, departamentosFiltrados.findIndex(dep => dep.key === departamentoActivo));
+  const departamento = departamentosFiltrados[indiceActivo] || departamentosFiltrados[0] || null;
+  const qCiudad = ciudadFiltro.trim().toLowerCase();
+  const reglasVisibles = departamento
+    ? departamento.reglas.filter(regla => !qCiudad || regla.ciudad.toLowerCase().includes(qCiudad))
+    : [];
+  const ciudades = new Set(reglasVisibles.map(r => zonaKey(r.departamento, r.ciudad))).size;
+
+  function mover(delta) {
+    const siguiente = Math.min(Math.max(indiceActivo + delta, 0), departamentosFiltrados.length - 1);
+    onDepartamentoChange(departamentosFiltrados[siguiente].key);
+  }
+
+  return (
+    <div>
+      <div style={styles.departmentPager}>
+        <div style={styles.departmentSummary}>
+          <MapPin size={15} />
+          <strong>{departamento?.label || "Sin resultados"}</strong>
+          {departamento ? (
+            <span>
+              {ciudades} ciudad{ciudades === 1 ? "" : "es"} · {reglasVisibles.length} rango{reglasVisibles.length === 1 ? "" : "s"}
+            </span>
+          ) : (
+            <span>No hay departamentos con ese filtro</span>
+          )}
+        </div>
+
+        <div style={styles.departmentControls}>
+          <label style={styles.departmentFilter}>
+            <Search size={14} />
+            <input
+              value={departamentoFiltro}
+              onChange={e => setDepartamentoFiltro(e.target.value)}
+              placeholder="Filtrar departamento..."
+              style={styles.departmentFilterInput}
+              aria-label={`Filtrar departamento del courier ${courierKey}`}
+            />
+          </label>
+          <label style={styles.departmentFilter}>
+            <Search size={14} />
+            <input
+              value={ciudadFiltro}
+              onChange={e => setCiudadFiltro(e.target.value)}
+              placeholder="Filtrar ciudad..."
+              style={styles.departmentFilterInput}
+              aria-label={`Filtrar ciudad del courier ${courierKey}`}
+            />
+          </label>
+          <button type="button" className="btn-icon" onClick={() => mover(-1)} disabled={!departamento || indiceActivo === 0} title="Departamento anterior">
+            <ChevronLeft size={15} />
+          </button>
+          <span style={styles.departmentIndex}>
+            {departamento ? `${indiceActivo + 1}/${departamentosFiltrados.length}` : "0/0"}
+          </span>
+          <button type="button" className="btn-icon" onClick={() => mover(1)} disabled={!departamento || indiceActivo >= departamentosFiltrados.length - 1} title="Departamento siguiente">
+            <ChevronRight size={15} />
+          </button>
+        </div>
+      </div>
+
+      {reglasVisibles.length === 0 ? (
+        <div style={styles.cardEmpty}>
+          No hay ciudades que coincidan con los filtros.
+        </div>
+      ) : (
+        <ReglasTable
+          reglas={reglasVisibles}
+          encabezadoPrimeraColumna="Ciudad y rango"
+          mostrarCiudad
+          onActualizar={onActualizar}
+          onEliminar={onEliminar}
+        />
+      )}
+    </div>
   );
 }
 
@@ -683,6 +1038,12 @@ const styles = {
     whiteSpace: "nowrap",
     marginLeft: "auto",
   },
+  compactActions: {
+    display: "flex",
+    gap: "0.45rem",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
   empty: {
     padding: "3rem 1.5rem",
     textAlign: "center",
@@ -780,6 +1141,17 @@ const styles = {
     fontSize: "0.84rem",
     color: "var(--color-fg-muted)",
   },
+  collapsedSummary: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "0.75rem",
+    flexWrap: "wrap",
+    padding: "0.9rem 1rem",
+    color: "var(--color-fg-muted)",
+    fontSize: "0.84rem",
+    background: "color-mix(in srgb, var(--color-fg) 2%, transparent)",
+  },
   badgeOk: {
     fontSize: "0.7rem",
     fontWeight: 800,
@@ -796,9 +1168,69 @@ const styles = {
     color: "var(--color-fg-muted)",
     background: "color-mix(in srgb, var(--color-fg) 6%, transparent)",
   },
+  badgeAccessOk: {
+    fontSize: "0.7rem",
+    fontWeight: 800,
+    padding: "0.2rem 0.5rem",
+    borderRadius: 999,
+    color: "var(--color-primary)",
+    background: "color-mix(in srgb, var(--color-primary) 12%, transparent)",
+  },
   table: {
     display: "grid",
     overflowX: "auto",
+  },
+  departmentPager: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "0.75rem",
+    flexWrap: "wrap",
+    padding: "0.75rem 1rem",
+    borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 7%, transparent)",
+    background: "color-mix(in srgb, var(--color-fg) 3%, transparent)",
+  },
+  departmentSummary: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.45rem",
+    flexWrap: "wrap",
+    color: "var(--color-fg-muted)",
+    fontSize: "0.82rem",
+  },
+  departmentControls: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.45rem",
+    flexWrap: "wrap",
+  },
+  departmentFilter: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.4rem",
+    minHeight: 34,
+    width: "min(220px, 46vw)",
+    padding: "0 0.6rem",
+    borderRadius: 9,
+    border: "1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)",
+    background: "var(--color-canvas)",
+    color: "var(--color-fg-muted)",
+  },
+  departmentFilterInput: {
+    width: "100%",
+    minWidth: 0,
+    border: 0,
+    outline: 0,
+    background: "transparent",
+    color: "var(--color-fg)",
+    fontSize: "0.8rem",
+  },
+  departmentIndex: {
+    minWidth: 42,
+    textAlign: "center",
+    color: "var(--color-fg-muted)",
+    fontSize: "0.78rem",
+    fontWeight: 800,
   },
   tableHead: {
     display: "grid",
@@ -865,6 +1297,82 @@ const styles = {
     width: 16,
     height: 16,
     accentColor: "var(--color-primary)",
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 1000,
+    display: "grid",
+    placeItems: "center",
+    padding: "1rem",
+    background: "rgba(15, 23, 42, 0.38)",
+  },
+  accessModal: {
+    width: "min(440px, 100%)",
+    borderRadius: "0.85rem",
+    border: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)",
+    background: "var(--color-canvas)",
+    color: "var(--color-fg)",
+    boxShadow: "0 24px 70px rgba(15, 23, 42, 0.24)",
+  },
+  accessHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "0.75rem",
+    padding: "1.1rem 1.2rem",
+    borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)",
+  },
+  accessEyebrow: {
+    margin: 0,
+    fontSize: "0.72rem",
+    fontWeight: 900,
+    color: "var(--color-fg-muted)",
+    textTransform: "uppercase",
+  },
+  accessTitle: {
+    margin: "0.2rem 0 0",
+    fontSize: "1rem",
+    fontWeight: 900,
+  },
+  accessHelp: {
+    margin: "0.15rem 0 0",
+    fontSize: "0.8rem",
+    color: "var(--color-fg-muted)",
+  },
+  stack: {
+    display: "grid",
+    gap: "0.85rem",
+    padding: "1rem 1.2rem",
+  },
+  field: {
+    display: "grid",
+    gap: "0.35rem",
+    fontSize: "0.8rem",
+    fontWeight: 800,
+    color: "var(--color-fg-muted)",
+  },
+  toggle: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.55rem",
+    fontSize: "0.84rem",
+    fontWeight: 800,
+    color: "var(--color-fg)",
+  },
+  errorBox: {
+    borderRadius: 10,
+    padding: "0.65rem 0.75rem",
+    color: "var(--color-danger, #b91c1c)",
+    background: "color-mix(in srgb, var(--color-danger, #ef4444) 10%, transparent)",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+  },
+  modalActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "0.65rem",
+    padding: "0 1.2rem 1.2rem",
   },
   rowActions: {
     display: "flex",

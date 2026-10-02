@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Search } from 'lucide-react';
 import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/iconosBeneficios';
 
@@ -14,12 +15,50 @@ import { CATALOGO_ICONOS_BENEFICIOS, getIconoBeneficio } from '../templates/icon
  *
  * Accesible: el botón se enfoca con Tab, Enter/Espacio abre, Escape cierra y
  * devuelve el foco, y cada opción anuncia su nombre.
+ *
+ * La grilla se dibuja FLOTANDO sobre la página (portal a <body>, posición
+ * fija) y no dentro del panel: el panel del armador es angosto y tiene
+ * scroll propio, y una grilla de 300 px adentro lo desbordaba, aparecía una
+ * barra horizontal y al tocarla la grilla se cerraba. Ahora se ubica junto
+ * al botón, siempre dentro de la pantalla, se abre hacia arriba si abajo no
+ * entra y acompaña el scroll.
  */
+const ANCHO = 300;
+const MARGEN = 8;
 export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const contenedor = useRef(null);
   const boton = useRef(null);
+  const popover = useRef(null);
+  const [pos, setPos] = useState(null);
+
+  // Ubica la grilla junto al botón, recortada a la pantalla.
+  const ubicar = () => {
+    const r = boton.current?.getBoundingClientRect();
+    if (!r) return;
+    const ancho = Math.min(ANCHO, window.innerWidth - MARGEN * 2);
+    const alto = popover.current?.offsetHeight || 380;
+    const left = Math.max(MARGEN, Math.min(r.left, window.innerWidth - ancho - MARGEN));
+    const entraAbajo = r.bottom + 6 + alto <= window.innerHeight - MARGEN;
+    const top = entraAbajo ? r.bottom + 6 : Math.max(MARGEN, r.top - 6 - alto);
+    setPos({ left, top, ancho });
+  };
+
+  useLayoutEffect(() => {
+    if (!abierto) { setPos(null); return undefined; }
+    ubicar();
+    // Una vez dibujada se conoce su alto real: se reubica por si no entraba abajo.
+    const id = requestAnimationFrame(ubicar);
+    window.addEventListener('resize', ubicar);
+    // Captura: también el scroll del panel del armador, no solo el de la página.
+    window.addEventListener('scroll', ubicar, true);
+    return () => {
+      cancelAnimationFrame(id);
+      window.removeEventListener('resize', ubicar);
+      window.removeEventListener('scroll', ubicar, true);
+    };
+  }, [abierto]); // eslint-disable-line react-hooks/exhaustive-deps
   const Actual = getIconoBeneficio(valor);
   const nombreActual = CATALOGO_ICONOS_BENEFICIOS.find(i => i.key === valor)?.label;
 
@@ -34,7 +73,8 @@ export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
   useEffect(() => {
     if (!abierto) return undefined;
     const alClickear = (e) => {
-      if (!contenedor.current?.contains(e.target)) setAbierto(false);
+      // La grilla vive en un portal: no es hija del contenedor del botón.
+      if (!contenedor.current?.contains(e.target) && !popover.current?.contains(e.target)) setAbierto(false);
     };
     const alTeclear = (e) => {
       if (e.key !== 'Escape') return;
@@ -76,11 +116,18 @@ export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
         <span className="sr-only">{nombreActual ? `Ícono: ${nombreActual}` : 'Elegir ícono'}</span>
       </button>
 
-      {abierto && (
+      {abierto && createPortal(
         <div
+          ref={popover}
           role="dialog"
           aria-label={`Elegir ${titulo.toLowerCase()}`}
-          className="absolute z-30 top-full left-0 mt-1.5 p-2 rounded-xl border border-fg/15 bg-canvas shadow-xl w-[300px]"
+          className="fixed z-[1000] p-2 rounded-xl border border-fg/15 bg-canvas shadow-xl"
+          style={{
+            left: pos?.left ?? -9999,
+            top: pos?.top ?? -9999,
+            width: pos?.ancho ?? ANCHO,
+            visibility: pos ? 'visible' : 'hidden',
+          }}
         >
           <label className="flex items-center gap-2 h-8 px-2 mb-2 rounded-lg border border-fg/10 bg-fg/5 text-fg/55 focus-within:border-primary/60 focus-within:text-fg">
             <Search size={14} />
@@ -137,7 +184,8 @@ export default function IconoPicker({ valor, onChange, titulo = 'Ícono' }) {
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </span>
   );

@@ -2725,3 +2725,24 @@
 .oferta-mas > summary { color: var(--color-fg-muted, #94a3b8); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
 .oferta-mas > summary:hover { color: var(--color-fg); }
 @media (max-width: 640px) { .oferta-tipos { grid-template-columns: 1fr; } }
+
+/* Campo de foto de la ficha del rubro (FichaRubroTab → CampoImagen):
+   miniatura + link + "Subir". */
+/* Miniatura y "Subir" arriba; el link en su propia línea, para que no se
+   achique a nada en las grillas de varias fotos. */
+.rubro-imagen-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; }
+.rubro-imagen-fila input[type="text"] { order: 3; flex: 1 1 100%; min-width: 0; }
+.rubro-imagen-vista {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 12%, transparent);
+  border-radius: 8px;
+  color: var(--color-fg-subtle);
+  background: var(--color-surface);
+}
+.rubro-imagen-vista img { width: 100%; height: 100%; object-fit: cover; }
+.rubro-imagen-error { color: var(--color-danger, #dc2626); font-size: 0.72rem; }

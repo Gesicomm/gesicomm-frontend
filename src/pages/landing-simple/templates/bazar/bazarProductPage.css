@@ -1,0 +1,831 @@
+/**
+ * Ficha de producto del template "Bazar, Hogar y Decoración".
+ *
+ * Ni un color literal: todo sale de las variables --hpg-* que
+ * BazarProductPage.jsx calcula del tema de la landing (fondo, texto y el
+ * "color de botones" de la tienda). Títulos en serif, como el diseño.
+ *
+ * Todo cuelga de .hpg-root para no tocar el resto de la landing.
+ *
+ * El modo celular está dos veces: con .es-movil (el preview del editor,
+ * que achica un marco pero no la ventana) y con @media (un celular de
+ * verdad). Las dos salen de la misma lista, generada, así que son iguales.
+ */
+
+.hpg-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  background: var(--hpg-bg);
+  color: var(--hpg-fg);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.hpg-root *,
+.hpg-root *::before,
+.hpg-root *::after { box-sizing: border-box; }
+
+.hpg-root img { display: block; max-width: 100%; }
+.hpg-root button { font: inherit; cursor: pointer; }
+
+.hpg-wrap { width: min(1080px, calc(100% - 40px)); margin-inline: auto; }
+
+.hpg-root h1,
+.hpg-root h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  color: var(--hpg-fg);
+}
+
+.hpg-root em { color: var(--hpg-destacado); }
+
+.hpg-kicker {
+  margin: 0;
+  color: var(--hpg-destacado);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.hpg-texto { color: var(--hpg-muted); line-height: 1.6; }
+.hpg-texto > div { margin-bottom: 6px; }
+
+.hpg-vacio {
+  margin: 14px 0;
+  padding: 16px;
+  border: 1px dashed var(--hpg-line-fuerte);
+  color: var(--hpg-muted);
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+.hpg-foto-vacia {
+  display: grid;
+  place-items: center;
+  background: var(--hpg-blush);
+  color: var(--hpg-muted);
+}
+
+/* ── Contador de urgencia ─────────────────────────────────────────── */
+
+.hpg-urgencia {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--hpg-urgencia);
+  color: var(--hpg-on-urgencia);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.hpg-contador { display: inline-flex; gap: 6px; }
+
+.hpg-contador b {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 5px;
+  border-radius: 2px;
+  background: #FFFFFF;
+  color: var(--hpg-on-blanco);
+  font-size: 16px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hpg-contador small { margin-top: 3px; font-size: 8px; }
+
+/* ── Cinta de beneficios ──────────────────────────────────────────── */
+
+.hpg-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 26px;
+  padding: 10px 4%;
+  background: var(--hpg-profundo);
+  color: var(--hpg-on-profundo);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .65px;
+  text-transform: uppercase;
+}
+
+.hpg-barra-item { display: inline-flex; align-items: center; gap: 8px; }
+.hpg-barra-item svg { color: var(--hpg-acento-profundo); }
+
+.hpg-barra-cta {
+  border: 0;
+  padding: 7px 16px;
+  background: var(--hpg-cta);
+  color: var(--hpg-on-cta);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* ── Ruta / volver ────────────────────────────────────────────────── */
+
+.hpg-migas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 19px;
+  color: var(--hpg-muted);
+  font-size: 11px;
+}
+
+.hpg-migas button { padding: 0; border: 0; background: none; color: inherit; text-decoration: underline; }
+.hpg-migas i { font-style: normal; opacity: .6; }
+.hpg-migas b { color: var(--hpg-fg); font-weight: 600; }
+
+.hpg-volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 16px 0 -10px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--hpg-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ── Producto: galería + compra ───────────────────────────────────── */
+
+.hpg-detalle {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  align-items: start;
+  gap: 72px;
+  padding-top: 25px;
+  padding-bottom: 85px;
+}
+
+.hpg-galeria { min-width: 0; position: sticky; top: 16px; }
+
+.hpg-galeria-principal {
+  position: relative;
+  overflow: hidden;
+  background: var(--hpg-blush);
+}
+
+.hpg-galeria-principal .lsp-media-frame { aspect-ratio: 1 / 1.05; background: var(--hpg-blush); }
+
+.hpg-galeria-principal.vacia {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1.05;
+  color: var(--hpg-muted);
+}
+
+.hpg-galeria-badge {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 2;
+  padding: 7px 10px;
+  background: var(--hpg-profundo);
+  color: var(--hpg-on-profundo);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.hpg-miniaturas { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+
+.hpg-miniatura {
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background: var(--hpg-blush);
+}
+
+.hpg-miniatura.activa { border-color: var(--hpg-accent); }
+.hpg-miniatura .lsp-media-thumb { display: block; width: 100%; height: 100%; }
+.hpg-miniatura img { width: 100%; height: 100%; object-fit: cover; }
+
+.hpg-compra { min-width: 0; padding-top: 15px; }
+
+.hpg-compra h1 {
+  margin: 12px 0 8px;
+  font-size: 48px;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.hpg-compra.es-largo h1 { font-size: 38px; }
+.hpg-compra.es-muy-largo h1 { font-size: 30px; }
+
+.hpg-lead { max-width: 430px; color: var(--hpg-muted); font-size: 16px; line-height: 1.5; }
+
+.hpg-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 21px 0;
+  font-size: 12px;
+}
+
+.hpg-rating a,
+.hpg-rating > span:not(.hpg-estrellas) { color: var(--hpg-muted); }
+.hpg-rating a { text-decoration: underline; }
+
+.hpg-estrellas { display: inline-flex; gap: 2px; color: var(--hpg-estrella); }
+
+.hpg-precio { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 25px; }
+.hpg-precio strong { font-family: Georgia, serif; font-size: 31px; font-weight: 400; }
+.hpg-precio del { color: var(--hpg-muted); font-size: 13px; }
+
+.hpg-precio em {
+  padding: 5px 7px;
+  background: var(--hpg-rosa);
+  color: var(--hpg-destacado);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.hpg-precio-nota { margin: 6px 0 0; color: var(--hpg-muted); font-size: 11px; }
+
+.hpg-divisor { height: 1px; margin: 25px 0 5px; background: var(--hpg-line); }
+
+.hpg-opcion-bloque { margin-top: 20px; }
+.hpg-opcion-bloque > b { display: block; margin-bottom: 10px; font-size: 12px; }
+
+.hpg-opciones { display: flex; flex-wrap: wrap; gap: 9px; }
+
+.hpg-opcion {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 115px;
+  padding: 12px 15px;
+  border: 1px solid var(--hpg-line-fuerte);
+  background: var(--hpg-card);
+  color: var(--hpg-fg);
+  text-align: left;
+}
+
+.hpg-opcion small { color: var(--hpg-muted); }
+.hpg-opcion .hpg-opcion-nota { color: var(--hpg-destacado); font-size: 10px; }
+.hpg-opcion.elegida { border-color: var(--hpg-marca); box-shadow: inset 0 -2px var(--hpg-marca); }
+.hpg-opcion:disabled { opacity: .45; cursor: not-allowed; }
+
+.hpg-comprar-fila { display: flex; gap: 10px; }
+
+.hpg-cantidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 105px;
+  border: 1px solid var(--hpg-line-fuerte);
+}
+
+.hpg-cantidad button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 100%;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--hpg-fg);
+}
+
+.hpg-cantidad button:disabled { opacity: .35; cursor: not-allowed; }
+
+.hpg-cta {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  background: var(--hpg-cta);
+  color: var(--hpg-on-cta);
+  /* Borde solo si el color del botón casi no se distingue del fondo. */
+  box-shadow: inset 0 0 0 1px var(--hpg-cta-borde);
+  font-weight: 900;
+  transition: filter .15s ease;
+}
+
+.hpg-cta:hover { filter: brightness(1.07); }
+
+.hpg-notas { display: grid; gap: 10px; margin-top: 23px; color: var(--hpg-muted); font-size: 11px; }
+.hpg-notas span { display: flex; align-items: center; gap: 8px; }
+.hpg-notas svg { flex-shrink: 0; color: var(--hpg-destacado); }
+
+/* ── Franja de beneficios ─────────────────────────────────────────── */
+
+.hpg-beneficios {
+  border-top: 1px solid var(--hpg-line);
+  border-bottom: 1px solid var(--hpg-line);
+  background: var(--hpg-rosa);
+}
+
+.hpg-beneficios-grid { display: grid; grid-template-columns: repeat(4, 1fr); padding: 24px 0; }
+.hpg-beneficios-grid.cantidad-3 { grid-template-columns: repeat(3, 1fr); }
+.hpg-beneficios-grid.cantidad-2 { grid-template-columns: repeat(2, 1fr); }
+.hpg-beneficios-grid.cantidad-1 { grid-template-columns: 1fr; }
+
+.hpg-beneficios-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 24px;
+  border-left: 1px solid var(--hpg-line-fuerte);
+}
+
+.hpg-beneficios-grid b { color: var(--hpg-destacado); font-size: 11px; }
+.hpg-beneficios-grid span { font-family: Georgia, serif; font-size: 18px; color: var(--hpg-on-suave); }
+.hpg-beneficios-grid small { color: var(--hpg-muted); font-size: 10px; }
+
+/* ── Historia ─────────────────────────────────────────────────────── */
+
+.hpg-historia {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 80px;
+  padding-top: 100px;
+  padding-bottom: 100px;
+}
+
+.hpg-historia h2,
+.hpg-intro h2,
+.hpg-detalles h2,
+.hpg-resenas h2,
+.hpg-upsells h2 {
+  max-width: 520px;
+  margin: 13px 0 18px;
+  font-size: 46px;
+  line-height: 1.05;
+}
+
+.hpg-historia .hpg-texto { max-width: 430px; }
+
+.hpg-puntos { display: grid; gap: 10px; margin-top: 25px; color: var(--hpg-muted); font-size: 12px; }
+.hpg-puntos span { display: flex; align-items: center; gap: 8px; }
+.hpg-puntos svg { flex-shrink: 0; color: var(--hpg-destacado); }
+
+.hpg-historia-foto { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--hpg-blush); }
+
+/* ── Ingredientes ─────────────────────────────────────────────────── */
+
+.hpg-materiales { padding: 90px 0; background: var(--hpg-card); }
+.hpg-intro { max-width: 560px; }
+
+.hpg-materiales-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 40px; }
+
+.hpg-materiales-grid article {
+  padding: 28px;
+  border: 1px solid var(--hpg-line);
+  background: var(--hpg-crema);
+}
+
+.hpg-icono { display: inline-flex; color: var(--hpg-destacado); }
+.hpg-icono--texto { font-size: 22px; line-height: 1; }
+
+/* Foto opcional del activo: reemplaza al ícono, arriba de la tarjeta. */
+.hpg-materiales-grid .hpg-material-foto {
+  display: block;
+  width: calc(100% + 56px);
+  max-width: none;
+  margin: -28px -28px 0;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--hpg-blush);
+}
+
+.hpg-materiales-grid b { display: block; margin-top: 28px; font-family: Georgia, serif; font-size: 22px; font-weight: 400; }
+.hpg-materiales-grid p { color: var(--hpg-muted); font-size: 13px; line-height: 1.55; }
+
+/* ── Ritual ───────────────────────────────────────────────────────── */
+
+.hpg-ritual {
+  display: grid;
+  grid-template-columns: .75fr 1.25fr;
+  gap: 90px;
+  padding-top: 90px;
+  padding-bottom: 90px;
+}
+
+.hpg-pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.hpg-pasos.cantidad-4 { grid-template-columns: repeat(2, 1fr); }
+.hpg-pasos.cantidad-2 { grid-template-columns: repeat(2, 1fr); }
+.hpg-pasos.cantidad-1 { grid-template-columns: 1fr; }
+
+.hpg-pasos article {
+  padding: 22px 18px;
+  border-top: 2px solid var(--hpg-accent);
+  background: var(--hpg-crema);
+}
+
+.hpg-pasos article > span:first-child { color: var(--hpg-destacado); font-size: 11px; font-weight: 900; }
+.hpg-pasos .hpg-icono { display: flex; margin: 30px 0 17px; }
+/* Foto opcional del paso: reemplaza al ícono, en el mismo lugar. */
+.hpg-pasos .hpg-paso-foto {
+  display: block;
+  width: 100%;
+  margin: 22px 0 15px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--hpg-blush);
+}
+
+.hpg-pasos b { display: block; font-family: Georgia, serif; font-size: 21px; font-weight: 400; }
+.hpg-pasos p { color: var(--hpg-muted); font-size: 12px; line-height: 1.5; }
+
+/* ── Antes y después ──────────────────────────────────────────────── */
+
+.hpg-antes-despues { padding: 90px 0; background: var(--hpg-profundo); color: var(--hpg-on-profundo); }
+.hpg-antes-despues h2 { color: var(--hpg-on-profundo); }
+.hpg-antes-despues em,
+.hpg-antes-despues .hpg-kicker { color: var(--hpg-acento-profundo); }
+.hpg-antes-despues .hpg-texto { color: var(--hpg-on-profundo-suave); }
+.hpg-antes-despues .hpg-vacio { border-color: var(--hpg-on-profundo-suave); color: var(--hpg-on-profundo-suave); }
+
+/* El recuadro del comparador compartido: tamaño y paleta. */
+.hpg-ad {
+  width: min(740px, 100%);
+  aspect-ratio: 1.7;
+  margin: 38px auto 0;
+  --cad-acento: var(--hpg-cta);
+  --cad-on-acento: var(--hpg-on-cta);
+  --cad-vacio: var(--hpg-blush);
+  --cad-texto-vacio: var(--hpg-on-suave);
+}
+
+/* ── Detalles (FAQ) ───────────────────────────────────────────────── */
+
+.hpg-detalles {
+  display: grid;
+  grid-template-columns: .75fr 1.25fr;
+  gap: 90px;
+  padding-top: 85px;
+  padding-bottom: 90px;
+}
+
+.hpg-acordeon { border-top: 1px solid var(--hpg-line-fuerte); }
+.hpg-acordeon:last-child { border-bottom: 1px solid var(--hpg-line-fuerte); }
+
+.hpg-acordeon button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 20px 0;
+  border: 0;
+  background: transparent;
+  color: var(--hpg-fg);
+  font-size: 14px;
+  text-align: left;
+}
+
+.hpg-acordeon button svg { flex-shrink: 0; color: var(--hpg-destacado); transition: transform .2s ease; }
+.hpg-acordeon.abierto button svg { transform: rotate(180deg); }
+.hpg-acordeon-texto { max-width: 600px; margin: 0 0 20px; color: var(--hpg-muted); font-size: 13px; line-height: 1.6; }
+
+/* ── Reseñas ──────────────────────────────────────────────────────── */
+
+.hpg-resenas { padding: 90px 0; background: var(--hpg-crema); }
+.hpg-resenas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 35px; }
+.hpg-resenas-grid article { padding: 25px; background: var(--hpg-card); }
+.hpg-resenas-grid p { min-height: 65px; font-family: Georgia, serif; color: var(--hpg-fg); line-height: 1.5; }
+.hpg-resenas-grid b { color: var(--hpg-destacado); font-size: 11px; }
+
+/* Foto opcional de la reseña: ocupa el ancho de la tarjeta, arriba. */
+.hpg-resenas-grid article.con-foto { padding-top: 0; overflow: hidden; }
+/* Con .hpg-resenas-grid delante: si no, la regla general ".hpg-root img" (max-width: 100%) le gana y la foto no llega a los bordes. */
+.hpg-resenas-grid .hpg-resena-foto {
+  width: calc(100% + 50px);
+  max-width: none;
+  margin: 0 -25px 18px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--hpg-blush);
+}
+
+/* ── Complementá tu rutina ────────────────────────────────────────── */
+
+.hpg-upsells { padding-top: 80px; padding-bottom: 40px; }
+.hpg-upsells-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+
+.hpg-upsell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--hpg-line);
+  background: var(--hpg-card);
+}
+
+.hpg-upsell-img {
+  display: grid;
+  place-items: center;
+  flex: 0 0 72px;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  background: var(--hpg-blush);
+  color: var(--hpg-muted);
+}
+
+.hpg-upsell-img img { width: 100%; height: 100%; object-fit: cover; }
+.hpg-upsell-datos { flex: 1; min-width: 0; }
+.hpg-upsell-datos b { display: block; font-size: 14px; }
+.hpg-upsell-datos p { margin: 3px 0 0; color: var(--hpg-muted); font-size: 12px; }
+.hpg-upsell-datos span { display: flex; gap: 8px; align-items: baseline; margin-top: 6px; }
+.hpg-upsell-datos strong { color: var(--hpg-destacado); }
+.hpg-upsell-datos del { color: var(--hpg-muted); font-size: 12px; }
+
+.hpg-upsell > button {
+  flex-shrink: 0;
+  padding: 9px 14px;
+  border: 0;
+  background: var(--hpg-cta);
+  color: var(--hpg-on-cta);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ── Sellos de confianza ──────────────────────────────────────────── */
+
+.hpg-sellos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-top: 35px; padding-bottom: 50px; }
+.hpg-sellos.cantidad-2 { grid-template-columns: repeat(2, 1fr); }
+.hpg-sellos.cantidad-1 { grid-template-columns: 1fr; }
+
+.hpg-sellos > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--hpg-line);
+}
+
+.hpg-sellos svg { grid-row: span 2; color: var(--hpg-destacado); }
+.hpg-sellos span { color: var(--hpg-muted); font-size: 11px; }
+
+/* ── Pie ──────────────────────────────────────────────────────────── */
+
+.hpg-pie { background: var(--hpg-profundo); color: var(--hpg-on-profundo); }
+.hpg-pie .hpg-wrap { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding-top: 30px; padding-bottom: 30px; }
+.hpg-pie b { font-family: Georgia, serif; letter-spacing: 4px; text-transform: uppercase; }
+.hpg-pie span { color: var(--hpg-on-profundo-suave); font-size: 12px; }
+
+/* ── Marcas de sección del preview ("Sección N") ───────────────────── */
+/* Solo en el preview del editor: ubican cada bloque de la página con su
+   número del panel. Vienen de la otra sesión de trabajo sobre la ficha. */
+
+.hpg-preview-section { position: relative; }
+
+.hpg-preview-marker {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 15;
+  padding: 5px 8px;
+  border: 1px solid var(--hpg-line);
+  border-radius: 999px;
+  background: var(--hpg-card);
+  color: var(--hpg-fg);
+  box-shadow: 0 8px 22px var(--hpg-sombra);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.hpg-urgencia .hpg-preview-marker,
+.hpg-barra .hpg-preview-marker,
+.hpg-antes-despues .hpg-preview-marker,
+.hpg-pie .hpg-preview-marker {
+  background: var(--hpg-bg);
+  color: var(--hpg-fg);
+}
+
+/* ── Barra fija de compra (celular) ───────────────────────────────── */
+
+.hpg-barra-movil {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--hpg-line);
+  background: var(--hpg-bg);
+}
+
+.hpg-barra-movil > div { flex: 1; min-width: 0; }
+.hpg-barra-movil b { display: block; font-size: 16px; }
+.hpg-barra-movil small { color: var(--hpg-muted); font-size: 10px; }
+.hpg-barra-movil .hpg-cta { flex: 0 0 auto; min-height: 42px; font-size: 12px; }
+
+/* ── Celular ──────────────────────────────────────────────────────── */
+
+.hpg-root.es-movil .hpg-wrap { width: calc(100% - 28px); }
+.hpg-root.es-movil .hpg-barra { font-size: 9px; }
+.hpg-root.es-movil .hpg-urgencia { font-size: 14px; }
+.hpg-root.es-movil .hpg-detalle,
+.hpg-root.es-movil .hpg-historia,
+.hpg-root.es-movil .hpg-ritual,
+.hpg-root.es-movil .hpg-detalles { grid-template-columns: 1fr; gap: 35px; }
+.hpg-root.es-movil .hpg-detalle { padding-top: 20px; padding-bottom: 55px; }
+.hpg-root.es-movil .hpg-galeria { position: static; }
+.hpg-root.es-movil .hpg-compra h1 { font-size: 38px; }
+.hpg-root.es-movil .hpg-compra.es-largo h1 { font-size: 32px; }
+.hpg-root.es-movil .hpg-compra.es-muy-largo h1 { font-size: 26px; }
+.hpg-root.es-movil .hpg-comprar-fila { flex-direction: column; }
+.hpg-root.es-movil .hpg-cantidad { min-height: 45px; }
+.hpg-root.es-movil .hpg-cta { min-height: 48px; }
+.hpg-root.es-movil .hpg-beneficios-grid,
+.hpg-root.es-movil .hpg-beneficios-grid.cantidad-3 { grid-template-columns: 1fr 1fr; gap: 20px; }
+.hpg-root.es-movil .hpg-beneficios-grid > div { padding-left: 10px; }
+.hpg-root.es-movil .hpg-historia,
+.hpg-root.es-movil .hpg-ritual,
+.hpg-root.es-movil .hpg-detalles { padding-top: 55px; padding-bottom: 55px; }
+.hpg-root.es-movil .hpg-materiales,
+.hpg-root.es-movil .hpg-antes-despues,
+.hpg-root.es-movil .hpg-resenas { padding: 60px 0; }
+.hpg-root.es-movil .hpg-historia h2,
+.hpg-root.es-movil .hpg-intro h2,
+.hpg-root.es-movil .hpg-detalles h2,
+.hpg-root.es-movil .hpg-resenas h2,
+.hpg-root.es-movil .hpg-upsells h2 { font-size: 36px; }
+.hpg-root.es-movil .hpg-materiales-grid,
+.hpg-root.es-movil .hpg-pasos,
+.hpg-root.es-movil .hpg-pasos.cantidad-4,
+.hpg-root.es-movil .hpg-pasos.cantidad-2,
+.hpg-root.es-movil .hpg-resenas-grid,
+.hpg-root.es-movil .hpg-sellos,
+.hpg-root.es-movil .hpg-sellos.cantidad-2 { grid-template-columns: 1fr; }
+.hpg-root.es-movil .hpg-pasos { margin-top: 0; }
+.hpg-root.es-movil .hpg-ad { aspect-ratio: 1 / 1.15; }
+.hpg-root.es-movil .hpg-pie .hpg-wrap { flex-direction: column; text-align: center; gap: 12px; }
+.hpg-root.es-movil .hpg-barra-movil { display: flex; }
+
+@media (max-width: 760px) {
+  .hpg-root .hpg-wrap { width: calc(100% - 28px); }
+  .hpg-root .hpg-barra { font-size: 9px; }
+  .hpg-root .hpg-urgencia { font-size: 14px; }
+  .hpg-root .hpg-detalle,
+  .hpg-root .hpg-historia,
+  .hpg-root .hpg-ritual,
+  .hpg-root .hpg-detalles { grid-template-columns: 1fr; gap: 35px; }
+  .hpg-root .hpg-detalle { padding-top: 20px; padding-bottom: 55px; }
+  .hpg-root .hpg-galeria { position: static; }
+  .hpg-root .hpg-compra h1 { font-size: 38px; }
+  .hpg-root .hpg-compra.es-largo h1 { font-size: 32px; }
+  .hpg-root .hpg-compra.es-muy-largo h1 { font-size: 26px; }
+  .hpg-root .hpg-comprar-fila { flex-direction: column; }
+  .hpg-root .hpg-cantidad { min-height: 45px; }
+  .hpg-root .hpg-cta { min-height: 48px; }
+  .hpg-root .hpg-beneficios-grid,
+  .hpg-root .hpg-beneficios-grid.cantidad-3 { grid-template-columns: 1fr 1fr; gap: 20px; }
+  .hpg-root .hpg-beneficios-grid > div { padding-left: 10px; }
+  .hpg-root .hpg-historia,
+  .hpg-root .hpg-ritual,
+  .hpg-root .hpg-detalles { padding-top: 55px; padding-bottom: 55px; }
+  .hpg-root .hpg-materiales,
+  .hpg-root .hpg-antes-despues,
+  .hpg-root .hpg-resenas { padding: 60px 0; }
+  .hpg-root .hpg-historia h2,
+  .hpg-root .hpg-intro h2,
+  .hpg-root .hpg-detalles h2,
+  .hpg-root .hpg-resenas h2,
+  .hpg-root .hpg-upsells h2 { font-size: 36px; }
+  .hpg-root .hpg-materiales-grid,
+  .hpg-root .hpg-pasos,
+  .hpg-root .hpg-pasos.cantidad-4,
+  .hpg-root .hpg-pasos.cantidad-2,
+  .hpg-root .hpg-resenas-grid,
+  .hpg-root .hpg-sellos,
+  .hpg-root .hpg-sellos.cantidad-2 { grid-template-columns: 1fr; }
+  .hpg-root .hpg-pasos { margin-top: 0; }
+  .hpg-root .hpg-ad { aspect-ratio: 1 / 1.15; }
+  .hpg-root .hpg-pie .hpg-wrap { flex-direction: column; text-align: center; gap: 12px; }
+  .hpg-root .hpg-barra-movil { display: flex; }
+}
+
+/* ── Tarjetas de "Elegí tu pack" ─────────────────────────────────── */
+/* Todas del mismo ancho, con foto arriba; la elegida, con borde y tilde. */
+
+.hpg-packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hpg-packs.cantidad-2 { grid-template-columns: repeat(2, 1fr); }
+.hpg-packs.cantidad-4 { grid-template-columns: repeat(2, 1fr); }
+
+.hpg-pack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--hpg-line-fuerte);
+  background: var(--hpg-card);
+  color: var(--hpg-fg);
+  text-align: left;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.hpg-pack:hover { border-color: var(--hpg-marca); }
+.hpg-pack.elegido { border-color: var(--hpg-marca); box-shadow: 0 0 0 1px var(--hpg-marca); }
+
+.hpg-pack-foto {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--hpg-blush);
+  color: var(--hpg-muted);
+}
+
+.hpg-root .hpg-pack-foto img { width: 100%; height: 100%; object-fit: cover; }
+
+.hpg-pack-tilde {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--hpg-marca);
+  color: var(--hpg-on-marca);
+}
+
+.hpg-pack-datos { display: flex; flex-direction: column; gap: 4px; padding: 10px 11px 12px; }
+
+.hpg-pack-datos strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.hpg-pack-precios { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
+.hpg-pack-precios b { font-size: 14px; }
+.hpg-pack-precios del { color: var(--hpg-muted); font-size: 11px; }
+
+.hpg-pack-ahorro {
+  align-self: flex-start;
+  padding: 3px 6px;
+  background: var(--hpg-rosa);
+  color: var(--hpg-destacado);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.hpg-pack-datos small { color: var(--hpg-muted); font-size: 10px; }
+
+.hpg-root.es-movil .hpg-packs,
+.hpg-root.es-movil .hpg-packs.cantidad-4 { grid-template-columns: repeat(2, 1fr); }
+
+@media (max-width: 760px) {
+  .hpg-root .hpg-packs,
+  .hpg-root .hpg-packs.cantidad-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Home PDP supplied by the merchant: editorial serif, warm surfaces and materials. */
+.hpg-root .hpg-compra h1 { font-family: Georgia, serif; font-size: clamp(36px, 4vw, 56px); font-weight: 400; }
+.hpg-root .hpg-materiales { background: var(--hpg-material-bg); color: var(--hpg-material-fg); }
+.hpg-root .hpg-materiales h2, .hpg-root .hpg-materiales em, .hpg-root .hpg-materiales .hpg-kicker,
+.hpg-root .hpg-materiales p, .hpg-root .hpg-materiales b { color: var(--hpg-material-fg); }
+.hpg-root .hpg-materiales .hpg-icono { color: var(--hpg-material-fg); }
+.hpg-root .hpg-materiales-grid article { background: transparent; border: 1px solid currentColor; border-radius: 0; }
+.hpg-root .hpg-ritual { display: block; padding-block: 90px; }
+.hpg-root .hpg-pasos { margin-top: 40px; }
+.hpg-root .hpg-pasos article { border: 0; padding: 0 0 20px; background: var(--hpg-crema); }
+.hpg-root .hpg-pasos article > span { display: none; }
+.hpg-root .hpg-pasos article > b, .hpg-root .hpg-pasos article > p { margin-inline: 18px; }
+.hpg-root .hpg-paso-foto { width: 100%; height: 245px; max-height: none; object-fit: cover; border-radius: 0; margin: 0 0 18px; }
+.hpg-root .hpg-resenas-grid article { background: var(--hpg-crema); border-radius: 0; }
+.hpg-medidas { padding-block: 60px; }
+.hpg-medidas-items { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.hpg-medidas-items span { display: flex; align-items: center; gap: 8px; }
+.hpg-root.es-movil .hpg-ritual { padding-block: 60px; }
+@media (max-width: 760px) { .hpg-root .hpg-ritual { padding-block: 60px; } }

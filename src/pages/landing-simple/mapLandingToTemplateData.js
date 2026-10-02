@@ -78,7 +78,7 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
         // mostraba "Agregar al carrito" en productos que en la publicada
         // llevan al detalle, o los daba por disponibles estando sin stock.
         stock: c?.cantidad_disponible ?? c?.stock ?? null,
-        tieneOpciones: !!(c?.variantes?.length || (c?.ofertas || []).some(o => o.estrategia === 'normal')),
+        tieneOpciones: !!(c?.tiene_opciones || c?.variantes?.length || (c?.ofertas || []).some(o => o.estrategia === 'normal')),
       };
     });
 
@@ -93,6 +93,8 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
       ctaTexto: draft?.banner_boton_texto || '',
       ctaLink: draft?.banner_boton_link || '',
       opacidad: draft?.banner_opacidad,
+      // Rótulo chico sobre el título. Vive en content.portada (no tiene columna).
+      eyebrow: draft?.content?.portada?.eyebrow || '',
     },
     productosTitulo: draft?.productos_titulo || 'Productos destacados',
     // Propios de la página /catalogo, independientes de productosTitulo.
@@ -121,6 +123,8 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
       incluir_url: !!draft?.whatsapp_incluir_url,
     },
     faq: (draft?.faq || []).map(f => ({ pregunta: f.pregunta, respuesta: f.respuesta })),
+    // undefined = "Preguntas frecuentes" (ver FaqSection); '' = sin título.
+    faqTitulo: draft?.content?.portada?.faq_titulo,
     beneficios: (draft?.beneficios || []).map(b => ({ titulo: b.titulo, texto: b.texto, icono: b.icono })),
     contenidoAdicional: {
       titulo: draft?.contenido_titulo || '',
@@ -153,6 +157,7 @@ export function mapPublicDtoToTemplateData(dto) {
       imagen: dto?.banner?.imagen ? getMediaUrl(dto.banner.imagen) : null,
       ctaTexto: dto?.banner?.boton_texto || '',
       ctaLink: dto?.banner?.boton_link || '',
+      eyebrow: dto?.content?.portada?.eyebrow || '',
       // Viene dentro de `banner`, no en la raíz del DTO: leerlo de la raíz
       // daba undefined siempre y la publicada ignoraba la opacidad elegida.
       opacidad: dto?.banner?.opacidad,
@@ -198,6 +203,7 @@ export function mapPublicDtoToTemplateData(dto) {
       incluir_url: !!dto?.contacto?.incluir_url,
     },
     faq: dto?.faq || [],
+    faqTitulo: dto?.content?.portada?.faq_titulo,
     beneficios: dto?.beneficios || [],
     contenidoAdicional: {
       titulo: dto?.contenido_titulo || '',

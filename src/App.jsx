@@ -57,6 +57,8 @@ const ProveedoresLogisticos = lazy(() => import('./pages/fulfillment/Proveedores
 const IngresosFulfillmentAdmin = lazy(() => import('./pages/fulfillment/IngresosFulfillmentAdmin'));
 const PedidosPrepararGesicomm = lazy(() => import('./pages/fulfillment/PedidosPrepararGesicomm'));
 const SeguimientoConfig = lazy(() => import('./pages/courier/SeguimientoConfig').then(m => ({ default: m.SeguimientoConfig })));
+const CourierLogin = lazy(() => import('./pages/courier/CourierLogin'));
+const CourierPedidos = lazy(() => import('./pages/courier/CourierPedidos'));
 const EducacionView = lazy(() => import('./pages/educacion/EducacionView'));
 const AdminEducacion = lazy(() => import('./pages/educacion/AdminEducacion'));
 const CostosGastos = lazy(() => import('./pages/finanzas/CostosGastos'));
@@ -85,6 +87,8 @@ const Contact = lazy(() => import('./pages/public/Contact'));
 const DevFicha = lazy(() => import('./pages/landing-simple/templates/fitness/__DevFicha'));
 const DevFichaTech = lazy(() => import('./pages/landing-simple/templates/tech/__DevFichaTech'));
 const DevFichaBeauty = lazy(() => import('./pages/landing-simple/templates/beauty/__DevFichaBeauty'));
+const DevFichaBazar = lazy(() => import('./pages/landing-simple/templates/bazar/__DevFichaBazar'));
+const DevFichaModa = lazy(() => import('./pages/landing-simple/templates/moda/__DevFichaModa'));
 const DevFichaBasico = lazy(() => import('./pages/landing-simple/templates/basico/__DevFichaBasico'));
 const DevProductoPanel = lazy(() => import('./pages/landing-simple/templates/beauty/__DevProductoPanel'));
 // Lienzo en blanco publicado con catálogo falso (bump, upsell, cross-sell): /dev/lienzo[/:productId].
@@ -244,6 +248,8 @@ function App() {
         <Route path="/dev/ficha-fitness" element={<DevFicha />} />
         <Route path="/dev/ficha-tech" element={<DevFichaTech />} />
         <Route path="/dev/ficha-beauty" element={<DevFichaBeauty />} />
+        <Route path="/dev/ficha-bazar" element={<DevFichaBazar />} />
+        <Route path="/dev/ficha-moda" element={<DevFichaModa />} />
         <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
         <Route path="/dev/lienzo" element={<DevLienzo />} />
@@ -251,6 +257,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/courier" element={<Navigate to="/courier/login" replace />} />
+        <Route path="/courier/login" element={<CourierLogin />} />
+        <Route path="/courier/pedidos" element={<CourierPedidos />} />
 
         {/* Rutas protegidas — panel admin */}
         <Route path="/dashboard" element={

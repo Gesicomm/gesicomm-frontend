@@ -1,5 +1,10 @@
-import React from 'react';
-import { Plus, Trash2, Cpu, Leaf, Package, Sparkles } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Plus, Trash2, Cpu, Leaf, Package, Sparkles, Image as ImageIcon, Loader } from 'lucide-react';
+import { getMediaUrl } from '../../services/api';
+import FichaBazarPanel from '../landing-simple/panels/FichaBazarPanel';
+import { resolverFichaBazar } from '../landing-simple/templates/bazar/fichaBazar';
+import FichaModaPanel from '../landing-simple/panels/FichaModaPanel';
+import { resolverFichaModa } from '../landing-simple/templates/moda/fichaModa';
 
 /**
  * Tipo de ficha + campos propios del rubro.
@@ -9,6 +14,8 @@ import { Plus, Trash2, Cpu, Leaf, Package, Sparkles } from 'lucide-react';
  */
 
 const RUBROS = [
+  { value: 'moda', label: 'Moda e Indumentaria', Icon: Sparkles, ayuda: 'Talles, telas, looks y guía de medidas.' },
+  { value: 'bazar', label: 'Bazar, Hogar y Decoración', Icon: Package, ayuda: 'Materiales, medidas e ideas de ambientación.' },
   {
     value: 'basico',
     label: 'Genérico / ficha básica',
@@ -50,9 +57,21 @@ const LIMITES = {
   beauty_ingredientes: 5,
   beauty_pasos: 4,
   beauty_resultados: 3,
+  fitness_galeria: 12,
+  fitness_estadisticas: 4,
+  fitness_antes_despues_puntos: 5,
+  fitness_comparativa: 8,
+  beauty_notas_compra: 4,
 };
 
-export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = 'completo' }) {
+/**
+ * @param onSubirImagen (file) => Promise<url>. Sube fotos de la ficha a R2.
+ *   null mientras el producto no está guardado (no hay id): ahí solo se
+ *   puede pegar el link de la foto.
+ * @param variantes las variantes del producto, para las notas de "Elegí tu
+ *   tamaño" de la ficha Beauty (solo las ya guardadas, que tienen id).
+ */
+export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = 'completo', onSubirImagen = null, variantes = [] }) {
   const rubroActual = rubro || 'basico';
   const actual = RUBROS.find(r => r.value === rubroActual) || null;
   const mostrarSelector = modo === 'selector' || modo === 'completo';
@@ -60,6 +79,9 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
 
   const set = (clave, valor) => onDatos({ ...(datos || {}), [clave]: valor });
   const listaDe = (clave) => (Array.isArray(datos?.[clave]) ? datos[clave] : []);
+  // Secciones que son un objeto (no una lista): se edita campo por campo.
+  const objDe = (clave) => (datos?.[clave] && typeof datos[clave] === 'object' && !Array.isArray(datos[clave]) ? datos[clave] : {});
+  const setObj = (clave, cambios) => set(clave, { ...objDe(clave), ...cambios });
 
   return (
     <>
@@ -90,7 +112,33 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
         </div>
       )}
 
-      {mostrarCampos && actual?.value === 'basico' && (
+      {mostrarCampos && actual?.value === 'bazar' && (
+        <div className="form-group full">
+          <FichaBazarPanel
+            desdeProducto
+            ficha={datos?.bazar_ficha || null}
+            fichaResuelta={resolverFichaBazar(datos?.bazar_ficha, null, null)}
+            variantes={variantes}
+            onSubirImagen={onSubirImagen}
+            onChange={ficha => set('bazar_ficha', ficha)}
+          />
+        </div>
+      )}
+
+      {mostrarCampos && actual?.value === 'moda' && (
+        <div className="form-group full">
+          <FichaModaPanel
+            desdeProducto
+            ficha={datos?.moda_ficha || null}
+            fichaResuelta={resolverFichaModa(datos?.moda_ficha, null, null)}
+            variantes={variantes}
+            onSubirImagen={onSubirImagen}
+            onChange={ficha => set('moda_ficha', ficha)}
+          />
+        </div>
+      )}
+
+      {mostrarCampos && actual?.value === 'basico'  && (
         <>
           <div className="rubro-field-card">
             <div className="rubro-card-header">
@@ -218,6 +266,8 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
               { clave: 'nombre', label: 'Ingrediente', placeholder: 'L-Teanina' },
               { clave: 'dosis', label: 'Dosis', placeholder: '200mg' },
             ]}
+            extraCampos={[{ clave: 'imagen', label: 'Foto (opcional)', tipo: 'imagen' }]}
+            onSubirImagen={onSubirImagen}
             areaClave="texto"
             areaLabel="Beneficio"
             areaPlaceholder="Relaja la mente sin causar somnolencia."
@@ -234,8 +284,9 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             campos={[
               { clave: 'nombre', label: 'Nombre', placeholder: 'Carlos M.' },
               { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 1, max: 5 },
-              { clave: 'foto', label: 'Foto', placeholder: 'URL de foto opcional' },
             ]}
+            extraCampos={[{ clave: 'foto', label: 'Foto (opcional)', tipo: 'imagen' }]}
+            onSubirImagen={onSubirImagen}
             areaClave="comentario"
             areaLabel="Comentario"
             areaPlaceholder="Noté más energía y constancia desde la segunda semana."
@@ -256,6 +307,104 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             areaClave="texto"
             areaLabel="Detalle"
             areaPlaceholder="Ej: Tomá 2 cápsulas con el desayuno."
+          />
+
+          <ListaObjetos
+            label="Fotos de clientes"
+            ayuda="La tira “Ellos ya lo probaron…” debajo del botón de compra. Si no cargás ninguna, se usan las opiniones con foto."
+            items={listaDe('fitness_galeria')}
+            max={LIMITES.fitness_galeria}
+            nuevo={() => ({ foto: '', nombre: '', calificacion: 5, comentario: '' })}
+            onChange={l => set('fitness_galeria', l)}
+            textoAgregar="Agregar foto"
+            campos={[
+              { clave: 'nombre', label: 'Nombre (opcional)', placeholder: 'Martín R.' },
+              { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 0, max: 5 },
+            ]}
+            extraCampos={[{ clave: 'foto', label: 'Foto', tipo: 'imagen' }]}
+            onSubirImagen={onSubirImagen}
+            areaClave="comentario"
+            areaLabel="Lo que contó"
+            areaPlaceholder="Me ayudó a sentirme más liviano."
+          />
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Por qué elegirnos (cifras)</label>
+                <p>Cifras destacadas con una foto. Solo datos reales y con su fuente.</p>
+              </div>
+            </div>
+            <div className="rubro-row-main">
+              <CampoArea label="Texto" value={objDe('fitness_estadisticas').texto || ''} placeholder="Calidad, transparencia y una experiencia pensada para personas reales." onChange={v => setObj('fitness_estadisticas', { texto: v })} />
+              <CampoImagen label="Foto" value={objDe('fitness_estadisticas').imagen || ''} onChange={v => setObj('fitness_estadisticas', { imagen: v })} onSubir={onSubirImagen} />
+              <CampoDato label="De dónde salen las cifras" value={objDe('fitness_estadisticas').nota || ''} placeholder="Encuesta a 320 clientes, julio 2026" onChange={v => setObj('fitness_estadisticas', { nota: v })} />
+            </div>
+          </div>
+          <ListaObjetos
+            label="Cifras"
+            items={Array.isArray(objDe('fitness_estadisticas').items) ? objDe('fitness_estadisticas').items : []}
+            max={LIMITES.fitness_estadisticas}
+            nuevo={() => ({ valor: '', texto: '' })}
+            onChange={l => setObj('fitness_estadisticas', { items: l })}
+            textoAgregar="Agregar cifra"
+            campos={[
+              { clave: 'valor', label: 'Cifra', placeholder: '94%' },
+              { clave: 'texto', label: 'Qué significa', placeholder: 'lo recomendaría' },
+            ]}
+          />
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Antes y después</label>
+                <p>El comparador deslizante. Dos fotos, o una sola que ya traiga las dos juntas (esa se muestra fija). Solo fotos reales y con permiso.</p>
+              </div>
+            </div>
+            <div className="rubro-row-main">
+              <div className="rubro-image-grid">
+                <CampoImagen label="Foto de antes" value={objDe('fitness_antes_despues').imagen_antes || ''} onChange={v => setObj('fitness_antes_despues', { imagen_antes: v })} onSubir={onSubirImagen} />
+                <CampoImagen label="Foto de después" value={objDe('fitness_antes_despues').imagen_despues || ''} onChange={v => setObj('fitness_antes_despues', { imagen_despues: v })} onSubir={onSubirImagen} />
+                <CampoImagen label="O una sola, con las dos" value={objDe('fitness_antes_despues').imagen_combinada || ''} onChange={v => setObj('fitness_antes_despues', { imagen_combinada: v })} onSubir={onSubirImagen} />
+              </div>
+              <CampoDato label="Título del bloque" value={objDe('fitness_antes_despues').bloque_titulo || ''} placeholder="Un proceso que se nota" onChange={v => setObj('fitness_antes_despues', { bloque_titulo: v })} />
+              <CampoArea label="Texto" value={objDe('fitness_antes_despues').texto || ''} placeholder="Los resultados pueden variar según cada persona." onChange={v => setObj('fitness_antes_despues', { texto: v })} />
+            </div>
+          </div>
+          <ListaTextos
+            label="Puntos del antes y después"
+            ayuda="Aparecen con tilde al lado de las fotos."
+            items={Array.isArray(objDe('fitness_antes_despues').puntos) ? objDe('fitness_antes_despues').puntos : []}
+            max={LIMITES.fitness_antes_despues_puntos}
+            placeholder="Más ligereza"
+            onChange={l => setObj('fitness_antes_despues', { puntos: l })}
+            textoAgregar="Agregar punto"
+          />
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Tabla comparativa</label>
+                <p>Tu producto contra otras marcas, fila por fila.</p>
+              </div>
+            </div>
+            <div className="rubro-row-fields">
+              <CampoDato label="Tu columna" value={objDe('fitness_comparativa').nosotros || ''} placeholder="Vacío = el nombre de la tienda" onChange={v => setObj('fitness_comparativa', { nosotros: v })} />
+              <CampoDato label="La otra columna" value={objDe('fitness_comparativa').otros || ''} placeholder="Otras marcas" onChange={v => setObj('fitness_comparativa', { otros: v })} />
+            </div>
+          </div>
+          <ListaObjetos
+            label="Filas de la comparación"
+            items={Array.isArray(objDe('fitness_comparativa').items) ? objDe('fitness_comparativa').items : []}
+            max={LIMITES.fitness_comparativa}
+            nuevo={() => ({ caracteristica: '', nosotros: '', otros: '' })}
+            onChange={l => setObj('fitness_comparativa', { items: l })}
+            textoAgregar="Agregar fila"
+            campos={[
+              { clave: 'caracteristica', label: 'Característica', placeholder: 'Pago al recibir' },
+              { clave: 'nosotros', label: 'Nosotros', placeholder: 'Sí' },
+              { clave: 'otros', label: 'Otros', placeholder: 'No siempre' },
+            ]}
           />
         </>
       )}
@@ -404,6 +553,8 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
               { clave: 'nombre', label: 'Ingrediente', placeholder: 'Ácido hialurónico' },
               { clave: 'descripcion', label: 'Beneficio', placeholder: 'Hidratación profunda y rellena arrugas' },
             ]}
+            extraCampos={[{ clave: 'imagen', label: 'Foto (opcional, reemplaza al ícono)', tipo: 'imagen' }]}
+            onSubirImagen={onSubirImagen}
           />
 
           <ListaObjetos
@@ -419,9 +570,11 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
               { clave: 'calificacion', label: 'Estrellas', placeholder: '5', tipo: 'number', min: 1, max: 5 },
             ]}
             extraCampos={[
-              { clave: 'antes', label: 'Imagen antes', placeholder: 'URL de imagen antes' },
-              { clave: 'despues', label: 'Imagen después', placeholder: 'URL de imagen después' },
+              { clave: 'foto', label: 'Foto de la reseña (opcional)', tipo: 'imagen' },
+              { clave: 'antes', label: 'Antes (opcional)', tipo: 'imagen' },
+              { clave: 'despues', label: 'Después (opcional)', tipo: 'imagen' },
             ]}
+            onSubirImagen={onSubirImagen}
             areaClave="testimonio"
             areaLabel="Testimonio"
             areaPlaceholder="Mi piel se ve más luminosa, hidratada y suave."
@@ -440,6 +593,70 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
               { clave: 'titulo', label: 'Título', placeholder: 'Limpia' },
               { clave: 'descripcion', label: 'Detalle', placeholder: 'Limpia tu rostro completamente' },
             ]}
+            extraCampos={[{ clave: 'imagen', label: 'Foto (opcional, reemplaza al ícono)', tipo: 'imagen' }]}
+            onSubirImagen={onSubirImagen}
+          />
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Por qué te va a encantar</label>
+                <p>Título y texto de la sección con foto. Los puntos con tilde salen de los “beneficios rápidos”.</p>
+              </div>
+            </div>
+            <div className="rubro-row-main">
+              <CampoDato label="Título" value={objDe('beauty_historia').titulo || ''} placeholder="Una fórmula simple para una piel que se siente bien." onChange={v => setObj('beauty_historia', { titulo: v })} />
+              <CampoArea label="Texto" value={objDe('beauty_historia').texto || ''} placeholder="Contá qué tiene de especial." onChange={v => setObj('beauty_historia', { texto: v })} />
+              <CampoImagen label="Foto (opcional)" value={objDe('beauty_historia').imagen || ''} onChange={v => setObj('beauty_historia', { imagen: v })} onSubir={onSubirImagen} />
+            </div>
+          </div>
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Antes y después</label>
+                <p>El comparador deslizante. Si lo dejás vacío se usa el primer testimonio que tenga las dos fotos.</p>
+              </div>
+            </div>
+            <div className="rubro-image-grid">
+              <CampoImagen label="Foto de antes" value={objDe('beauty_antes_despues').imagen_antes || ''} onChange={v => setObj('beauty_antes_despues', { imagen_antes: v })} onSubir={onSubirImagen} />
+              <CampoImagen label="Foto de después" value={objDe('beauty_antes_despues').imagen_despues || ''} onChange={v => setObj('beauty_antes_despues', { imagen_despues: v })} onSubir={onSubirImagen} />
+              <CampoImagen label="O una sola, con las dos" value={objDe('beauty_antes_despues').imagen_combinada || ''} onChange={v => setObj('beauty_antes_despues', { imagen_combinada: v })} onSubir={onSubirImagen} />
+            </div>
+          </div>
+
+          <div className="rubro-field-card">
+            <div className="rubro-card-header">
+              <div>
+                <label>Notas de “Elegí tu tamaño”</label>
+                <p>Una nota corta debajo de cada variante (ej: “Ideal para probar”).</p>
+              </div>
+            </div>
+            {variantes.filter(v => v?.id).length === 0 ? (
+              <p className="field-hint">Aparecen cuando el producto tiene variantes guardadas.</p>
+            ) : (
+              <div className="rubro-row-fields">
+                {variantes.filter(v => v?.id).map(v => (
+                  <CampoDato
+                    key={v.id}
+                    label={v.nombre || (v.valores || []).map(x => x.valor).join(' / ') || 'Variante'}
+                    value={objDe('beauty_notas_variantes')[String(v.id)] || ''}
+                    placeholder="Ideal para probar"
+                    onChange={valor => setObj('beauty_notas_variantes', { [String(v.id)]: valor })}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <ListaTextos
+            label="Notas debajo del botón de compra"
+            ayuda="Ej: Despachamos en 24 horas. Si no cargás ninguna, se usan las de la landing."
+            items={listaDe('beauty_notas_compra')}
+            max={LIMITES.beauty_notas_compra}
+            placeholder="Despachamos en 24 horas"
+            onChange={l => set('beauty_notas_compra', l)}
+            textoAgregar="Agregar nota"
           />
         </>
       )}
@@ -463,6 +680,67 @@ function CampoDato({ label, value, placeholder, onChange, type = 'text', min, ma
   );
 }
 
+function CampoArea({ label, value, placeholder, onChange }) {
+  return (
+    <label className="rubro-field">
+      <span>{label}</span>
+      <textarea rows={3} value={value} placeholder={placeholder} onChange={e => onChange(e.target.value)} />
+    </label>
+  );
+}
+
+/**
+ * Foto de la ficha: se sube a R2 ("Subir", solo con el producto ya
+ * guardado) o se pega el link de una imagen publicada. Se guarda solo la URL.
+ */
+function CampoImagen({ label, value, onChange, onSubir }) {
+  const inputRef = useRef(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState('');
+
+  async function alElegir(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !onSubir) return;
+    setError('');
+    setSubiendo(true);
+    try {
+      onChange(await onSubir(file));
+    } catch (err) {
+      setError(err?.response?.data?.message || err?.message || 'No se pudo subir la imagen.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  return (
+    <div className="rubro-field rubro-imagen">
+      <span>{label}</span>
+      <div className="rubro-imagen-fila">
+        <div className="rubro-imagen-vista">
+          {subiendo ? <Loader size={14} className="animate-spin" />
+            : value ? <img src={getMediaUrl(value)} alt="" onError={() => setError('No se pudo cargar esa imagen. Revisá el link.')} />
+              : <ImageIcon size={14} />}
+        </div>
+        <input
+          type="text"
+          value={value}
+          placeholder="https://… (link de la foto)"
+          onChange={e => { setError(''); onChange(e.target.value); }}
+        />
+        {onSubir && (
+          <button type="button" className="btn-secondary btn-small" disabled={subiendo} onClick={() => inputRef.current?.click()}>
+            Subir
+          </button>
+        )}
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={alElegir} />
+      </div>
+      {!onSubir && <small className="field-hint">Guardá el producto para poder subir la foto; mientras tanto podés pegar un link.</small>}
+      {error && <small className="rubro-imagen-error">{error}</small>}
+    </div>
+  );
+}
+
 function ListaObjetos({
   label,
   ayuda,
@@ -476,6 +754,7 @@ function ListaObjetos({
   areaClave,
   areaLabel,
   areaPlaceholder,
+  onSubirImagen = null,
 }) {
   const actualizar = (i, cambios) => onChange(items.map((x, j) => (j === i ? { ...x, ...cambios } : x)));
   return (
@@ -512,7 +791,15 @@ function ListaObjetos({
                 </div>
                 {extraCampos?.length > 0 && (
                   <div className="rubro-image-grid">
-                    {extraCampos.map(c => (
+                    {extraCampos.map(c => (c.tipo === 'imagen' ? (
+                      <CampoImagen
+                        key={c.clave}
+                        label={c.label}
+                        value={it[c.clave] || ''}
+                        onSubir={onSubirImagen}
+                        onChange={valor => actualizar(i, { [c.clave]: valor })}
+                      />
+                    ) : (
                       <CampoDato
                         key={c.clave}
                         label={c.label}
@@ -520,7 +807,7 @@ function ListaObjetos({
                         placeholder={c.placeholder}
                         onChange={valor => actualizar(i, { [c.clave]: valor })}
                       />
-                    ))}
+                    )))}
                   </div>
                 )}
                 {areaClave && (

@@ -140,6 +140,11 @@ export default function ResultadoPago() {
         {estado.token_registro ? (
           <>
             <p>Último paso: creá tu cuenta con <strong>{estado.email}</strong> para entrar al sistema.</p>
+            <p className="pl-field-nota">
+              Si cerrás esta pantalla o se corta la conexión, no perdés el pago:
+              entrá de nuevo a Crear cuenta y usá ese mismo correo. Al verificarlo,
+              recuperamos tu plan automáticamente.
+            </p>
             <button
               type="button"
               className="pl-cta primario"

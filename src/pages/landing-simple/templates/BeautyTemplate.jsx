@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { hexToRgba, resolverTema } from './themeUtils';
-import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto, ImagenProductoHover } from './sections';
+import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto, ImagenProductoHover, textoOMuestra } from './sections';
 import StoreHeader from "./StoreHeader";
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 
-const DEFAULT_TEMA = { fondo: '#FBEFEF', texto: '#3A2A2E', acento: '#E8A2B0' };
+const DEFAULT_TEMA = { fondo: '#FFFDFB', texto: '#30252A', acento: '#A9606D' };
 const NOOP = () => {};
 
 /**
@@ -34,6 +34,13 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickIn
   const linkCatalogo = useAlias && slug ? `/l/${slug}/catalogo` : '/catalogo';
   const linkContacto = useAlias && slug ? `/l/${slug}/contacto` : '/contacto';
 
+  // Encabezado: lo que cargó el comercio; vacío = un ejemplo atenuado en el
+  // preview del armador (para ver dónde va) y nada en la landing publicada.
+  const heroRotulo = textoOMuestra(hero.eyebrow, 'Rótulo de ejemplo', previewMode);
+  const heroTitulo = textoOMuestra(hero.titulo, 'Título de tu portada', previewMode);
+  const heroBajada = textoOMuestra(hero.subtitulo, 'Un párrafo corto que cuente qué vendés y por qué elegirte.', previewMode);
+  const heroBoton = textoOMuestra(hero.ctaTexto, 'Texto del botón', previewMode);
+
   return (
     <div className="w-full font-sans" style={{ backgroundColor: tema.fondo, color: tema.texto }}>
       <StoreHeader
@@ -59,18 +66,22 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickIn
           <img src={hero.imagen} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: hero.opacidad !== undefined && hero.opacidad !== null ? hero.opacidad / 100 : 0.60 }} />
         )}
         <div className="relative px-6 py-20 md:py-28 max-w-3xl">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: tema.acento }}>
-            <Sparkles size={14} /> Cuidado que se nota
-          </span>
-          <h1 className="text-4xl md:text-6xl font-light leading-tight mb-4">{hero.titulo || 'Tu piel merece lo mejor'}</h1>
-          {hero.subtitulo && <p className="text-lg mb-8" style={textoSuave(0.7)}>{hero.subtitulo}</p>}
-          <a
-            href={hero.ctaLink || '#productos'}
-            className="inline-block text-white font-semibold px-7 py-3 rounded-full transition-opacity hover:opacity-90"
-            style={{ backgroundColor: tema.acento }}
-          >
-            {hero.ctaTexto || 'Descubrir productos'}
-          </a>
+          {heroRotulo.texto && (
+            <span className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest mb-3 ${heroRotulo.clase}`} style={{ color: tema.acento }}>
+              <Sparkles size={14} /> {heroRotulo.texto}
+            </span>
+          )}
+          {heroTitulo.texto && <h1 className={`text-4xl md:text-6xl font-light leading-tight mb-4 ${heroTitulo.clase}`}>{heroTitulo.texto}</h1>}
+          {heroBajada.texto && <p className={`text-lg mb-8 ${heroBajada.clase}`} style={textoSuave(0.7)}>{heroBajada.texto}</p>}
+          {heroBoton.texto && (
+            <a
+              href={hero.ctaLink || '#productos'}
+              className={`inline-block text-white font-semibold px-7 py-3 rounded-full transition-opacity hover:opacity-90 ${heroBoton.clase}`}
+              style={{ backgroundColor: tema.acento }}
+            >
+              {heroBoton.texto}
+            </a>
+          )}
         </div>
       </section>
 
@@ -141,7 +152,7 @@ export default function BeautyTemplate({ data, onClickProducto = NOOP, onClickIn
       <ContactoSection contacto={contacto} acento={tema.acento} tituloClase="font-light" bordeSuave={bordeSuave} isMobile={isMobile} />
       */}
       
-      <FaqSection faq={faq} acento={tema.acento} bordeSuave={bordeSuave} textoSuave={textoSuave} tituloClase="font-light" />
+      <FaqSection faq={faq} titulo={data.faqTitulo} acento={tema.acento} bordeSuave={bordeSuave} textoSuave={textoSuave} tituloClase="font-light" />
 
       {/* CTA */}
       {/* 

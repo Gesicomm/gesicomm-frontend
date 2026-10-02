@@ -51,4 +51,14 @@ export const landingSimpleService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
   eliminarHeroImagen: (id) => API.delete(`/mis-landings-simples/${id}/hero-imagen`).then(r => r.data),
+
+  // Fotos propias de la ficha (antes/después, ingredientes...). Las landings
+  // rígidas son filas de la misma tabla Landing, así que se reusa el
+  // endpoint de imágenes de sección de /mis-landings: chequea que la landing
+  // sea de la tienda, sube a R2 y devuelve { url } sin atarla a ninguna
+  // columna — la URL queda guardada dentro de Landing.content.
+  subirImagenFicha: (id, formData) =>
+    API.post(`/mis-landings/${id}/seccion-imagen`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
 };

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="Ilustración de ejemplo de una manta terracota sobre un sofá">
+  <defs>
+    <linearGradient id="wall" x2="0" y2="1"><stop stop-color="#f0e8dc"/><stop offset="1" stop-color="#ded2c0"/></linearGradient>
+    <linearGradient id="linen"><stop stop-color="#b56b51"/><stop offset=".5" stop-color="#c17b5b"/><stop offset="1" stop-color="#a65a40"/></linearGradient>
+    <pattern id="weave" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 2h8M2 0v8" stroke="#f3d7b9" stroke-width=".5" opacity=".35"/></pattern>
+  </defs>
+  <path fill="url(#wall)" d="M0 0h800v800H0z"/>
+  <path fill="#c9bca5" d="M0 610h800v190H0z"/>
+  <ellipse cx="420" cy="670" rx="335" ry="72" fill="#74644e" opacity=".12"/>
+  <path fill="#c3b694" d="M80 594h640l45 96H40z"/>
+  <rect x="510" y="85" width="175" height="230" fill="#ae926c"/>
+  <rect x="521" y="96" width="153" height="208" fill="#f7f0e5"/>
+  <circle cx="598" cy="175" r="46" fill="#b66d50"/><path d="M543 262q55-110 110 0" fill="#717962"/>
+  <path d="M53 567l21-110h96l22 110z" fill="#a79b7a"/>
+  <g fill="#687155"><ellipse cx="100" cy="363" rx="23" ry="86" transform="rotate(-35 100 363)"/><ellipse cx="137" cy="337" rx="22" ry="98" transform="rotate(16 137 337)"/><ellipse cx="158" cy="389" rx="21" ry="67" transform="rotate(40 158 389)"/></g>
+  <g stroke="#6e765b" stroke-width="5"><path d="M123 465l-23-92m23 92 15-126m-15 126 40-64"/></g>
+  <path d="M190 600v60m480-60v60" stroke="#6f573d" stroke-width="14"/>
+  <rect x="175" y="360" width="510" height="238" rx="43" fill="#a59e8e"/>
+  <rect x="198" y="377" width="230" height="139" rx="26" fill="#c1bcae"/>
+  <rect x="435" y="377" width="225" height="139" rx="26" fill="#bab5a7"/>
+  <rect x="191" y="510" width="477" height="81" rx="22" fill="#ccc5b3"/>
+  <rect x="162" y="478" width="70" height="127" rx="23" fill="#b7ae99"/>
+  <rect x="629" y="478" width="70" height="127" rx="23" fill="#b7ae99"/>
+  <path d="M288 428l125-24 33 107-132 15z" fill="#ede2cd"/>
+  <path d="M461 382q60-17 117 1l-7 125q-10 54 0 147l-131-12q21-109 14-151z" fill="url(#linen)"/>
+  <path d="M461 382q60-17 117 1l-7 125q-10 54 0 147l-131-12q21-109 14-151z" fill="url(#weave)"/>
+  <path d="M485 405q-10 120-18 218m34-220q-9 111-7 225m30-225q5 125 7 226m29-217q-12 117-6 222" fill="none" stroke="#935139" stroke-width="3" opacity=".35"/>
+  <path d="M444 643l-3 21m12-20-2 22m12-21-1 23m11-22v24m11-23v24m11-23 1 23m9-22 2 23m9-22 2 23m10-22 2 23m9-22 3 24m9-23 3 23m9-22 3 22" stroke="#aa6146" stroke-width="3"/>
+  <text x="400" y="754" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" letter-spacing="3" fill="#827460">AMBIENTACIÓN DE EJEMPLO</text>
+</svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 980" aria-label="Ilustración editorial de ejemplo de un blazer">
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#eee7db"/><stop offset="1" stop-color="#d0c0aa"/></linearGradient><linearGradient id="coat"><stop stop-color="#302c29"/><stop offset="1" stop-color="#141312"/></linearGradient></defs>
+  <path fill="url(#bg)" d="M0 0h800v980H0z"/>
+  <path d="M550 0h250v980H550z" fill="#b99f84" opacity=".22"/>
+  <ellipse cx="406" cy="867" rx="190" ry="30" fill="#776350" opacity=".18"/>
+  <path d="M395 140v-45q0-25 25-25t25 25q0 23-25 23" fill="none" stroke="#806953" stroke-width="7"/>
+  <path d="M245 210l160-71 163 71" fill="none" stroke="#9b8060" stroke-width="14" stroke-linecap="round"/>
+  <path d="M338 186l-89 39-110 354 82 24 97-243-36 427 295 0-32-428 90 244 81-30-110-348-88-39z" fill="url(#coat)"/>
+  <path d="M349 181l63 37 68-37-23 264-91 0z" fill="#ece7dd"/>
+  <path d="M338 186l69 34-72 162 74 124-109-118zM480 186l-73 34 80 162-79 124 112-118z" fill="#403a34"/>
+  <path d="M286 606h75v38h-75zM458 606h78v38h-78z" fill="#171514"/>
+  <path d="M410 511v264" stroke="#65564a" stroke-width="2"/>
+  <circle cx="424" cy="553" r="8" fill="#736150"/><circle cx="424" cy="641" r="8" fill="#736150"/>
+  <text x="70" y="84" font-family="Georgia,serif" font-size="25" letter-spacing="4" fill="#4d4035">MODO NORTE</text>
+  <text x="400" y="940" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" letter-spacing="3" fill="#655748">ILUSTRACIÓN DE EJEMPLO</text>
+</svg>

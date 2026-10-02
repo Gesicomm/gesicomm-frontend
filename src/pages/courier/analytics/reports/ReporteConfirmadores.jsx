@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserCheck, DollarSign, Target, ChevronUp, ChevronDown } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 export default function ReporteConfirmadores({ filters }) {
   const [data, setData] = useState([]);
@@ -103,7 +104,7 @@ export default function ReporteConfirmadores({ filters }) {
 
         <div className="cic-kpi-card" style={{ borderColor: 'color-mix(in srgb, var(--color-success) 30%, transparent)' }}>
           <div className="cic-kpi-header">
-            TOTAL INGRESOS (CONFIRMADOS)
+            {METRIC_TERMS.ventasNetas}
             <DollarSign size={16} color="var(--color-success)" />
           </div>
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>{formatMoney(kpis.total_ingresos)}</div>
@@ -144,10 +145,10 @@ export default function ReporteConfirmadores({ filters }) {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Efectividad % <SortIcon columnKey="efectividad" /></div>
                 </th>
                 <th onClick={() => handleSort('ingresos')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right', color: 'var(--color-success)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>Ingresos Generados <SortIcon columnKey="ingresos" /></div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>{METRIC_TERMS.ventasNetas} <SortIcon columnKey="ingresos" /></div>
                 </th>
                 <th onClick={() => handleSort('ticketPromedio')} style={{ cursor: 'pointer', userSelect: 'none', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>Ticket Promedio <SortIcon columnKey="ticketPromedio" /></div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>{METRIC_TERMS.ticketPromedio} <SortIcon columnKey="ticketPromedio" /></div>
                 </th>
               </tr>
             </thead>

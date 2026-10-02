@@ -20,6 +20,12 @@ export const productService = {
     API.post(`/productos/${productoId}/imagenes`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
+  // Foto suelta de la ficha (Vista del producto): sube a R2 y devuelve { url },
+  // no la agrega a la galería del producto.
+  subirImagenFicha: (productoId, formData) =>
+    API.post(`/productos/${productoId}/ficha-imagen`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
   actualizarImagen: (productoId, imgId, data) =>
     API.put(`/productos/${productoId}/imagenes/${imgId}`, data).then(r => r.data),
   reprocesarImagen: (productoId, imgId, data) =>

@@ -43,6 +43,66 @@ export function contraste(hexA, hexB) {
 }
 
 /**
+ * El color que se va a usar para un texto sobre `fondo`: el que eligió el
+ * comercio si se lee (contraste ≥ `minimo`), y si no, el oscuro o el claro
+ * que mejor se lea ahí.
+ *
+ * Existe porque los colores de la tienda se combinan solos con fondos que
+ * el comercio no eligió (tarjetas blancas, franjas): una tienda con fondo
+ * rosa y texto blanco dejaba los packs con texto blanco sobre blanco.
+ */
+export function textoLegible(color, fondo, minimo = 4.5) {
+  if (color && contraste(color, fondo) >= minimo) return color;
+  const oscuro = '#1A1A1A';
+  const claro = '#FFFFFF';
+  return contraste(oscuro, fondo) >= contraste(claro, fondo) ? oscuro : claro;
+}
+
+/**
+ * Como textoLegible, pero CONSERVANDO EL TONO que eligió el comercio: si su
+ * color no se lee sobre alguna de las superficies (`fondos`), se oscurece
+ * (o se aclara, si las superficies son oscuras) ese mismo tono lo justo para
+ * llegar al mínimo — un rosa fuerte pasa a un rosa profundo, no a negro.
+ *
+ * Si el color no tiene tono propio (blanco, gris, negro), se usa el tono de
+ * la primera superficie (el fondo de la página) oscurecido o aclarado: con
+ * fondo rosa y letra blanca sale un bordó, que combina, y no un negro.
+ *
+ * Pedido explícito del comercio: "tengo otro color de letra y me toma todo
+ * negro". Negro/blanco puros quedan solo como último recurso.
+ */
+export function ajustarLegible(color, fondos, minimo = 4.5) {
+  const lista = (Array.isArray(fondos) ? fondos : [fondos]).filter(Boolean);
+  const pasa = (c) => lista.every(b => contraste(c, b) >= minimo);
+  if (color && pasa(color)) return color;
+
+  const rgb = hexToRgb(color || '');
+  const saturado = rgb ? (Math.max(...rgb) - Math.min(...rgb)) / 255 >= 0.15 : false;
+  const fondosClaros = lista.every(b => luminanciaRelativa(b) >= 0.18);
+  const destino = fondosClaros ? '#000000' : '#FFFFFF';
+  const base = saturado ? color : lista[0];
+
+  for (let t = 0.1; t <= 1.0001; t += 0.05) {
+    const c = componer(destino, t, base);
+    if (pasa(c)) return c;
+  }
+  return fondosClaros ? '#1A1A1A' : '#FFFFFF';
+}
+
+/**
+ * Un tono más suave de `texto` sobre `fondo` (para textos secundarios) que
+ * todavía se lea: arranca en `alpha` y se acerca al texto pleno hasta llegar
+ * al contraste mínimo. `texto` ya tiene que ser legible sobre `fondo`.
+ */
+export function textoSuave(texto, fondo, alpha = 0.68, minimo = 4.5) {
+  for (let a = alpha; a < 1; a += 0.04) {
+    const c = componer(texto, a, fondo);
+    if (contraste(c, fondo) >= minimo) return c;
+  }
+  return texto;
+}
+
+/**
  * El color de texto que resulta de pintar `hex` con opacidad `alpha` encima
  * de `fondo` — o sea, el color que el ojo ve realmente.
  *
@@ -102,8 +162,10 @@ export function resolverTema(temaOverride, defaults) {
  */
 export const DEFAULT_TEMA_POR_TEMPLATE = {
   'basico': { fondo: '#FFFFFF', texto: '#000000', acento: '#000000' },
-  'fitness-suplementos': { fondo: '#0B0B0E', texto: '#FFFFFF', acento: '#FF5A1F' },
-  'beauty-skincare': { fondo: '#FBEFEF', texto: '#3A2A2E', acento: '#E8A2B0' },
+  'fitness-suplementos': { fondo: '#FFFFFF', texto: '#173C2D', acento: '#0F4933' },
+  'moda-indumentaria': { fondo: '#FBFAF7', texto: '#171615', acento: '#E4513D' },
+  'bazar-hogar': { fondo: '#FBFAF7', texto: '#292722', acento: '#A95843' },
+  'beauty-skincare': { fondo: '#FFFDFB', texto: '#30252A', acento: '#A9606D' },
   'tech-electronica': { fondo: '#0B1220', texto: '#E5EEF7', acento: '#3AB0FF' },
 };
 

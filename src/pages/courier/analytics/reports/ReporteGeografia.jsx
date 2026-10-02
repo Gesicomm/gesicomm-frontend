@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Map, TrendingDown, DollarSign, Target } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 const SEMAFORO = {
   sin_datos: { label: '⚪ Sin datos', color: 'var(--color-fg-subtle)' },
@@ -42,7 +43,7 @@ export function ReporteGeografia({ filters }) {
 
       <div className="cic-kpi-grid">
         <div className="cic-kpi-card">
-          <div className="cic-kpi-header">Ventas Netas Globales <DollarSign size={14}/></div>
+          <div className="cic-kpi-header">{METRIC_TERMS.ventasNetas} globales <DollarSign size={14}/></div>
           <div className="cic-kpi-val">{formatMoney(kpis.ventas_netas_globales)}</div>
           <div className="cic-kpi-sub">Total entregados en el período</div>
         </div>
@@ -80,9 +81,9 @@ export function ReporteGeografia({ filters }) {
                   <th style={{ textAlign: 'center' }}>Exitosos</th>
                   <th style={{ textAlign: 'center' }}>Fallidos</th>
                   <th style={{ textAlign: 'center' }}>Tasa de Fallo</th>
-                  <th style={{ textAlign: 'right' }}>Ventas Netas</th>
-                  <th style={{ textAlign: 'right' }}>% de Ventas</th>
-                  <th style={{ textAlign: 'right' }}>Ticket Prom.</th>
+                  <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ventasNetas}</th>
+                  <th style={{ textAlign: 'right' }}>% de {METRIC_TERMS.ventasNetas.toLowerCase()}</th>
+                  <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ticketPromedio}</th>
                   <th>Riesgo</th>
                 </tr>
               </thead>

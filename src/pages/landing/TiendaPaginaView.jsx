@@ -13,6 +13,8 @@ import ProductPagePublica from './ProductPagePublica';
 import FitnessProductPagePublica from '../landing-simple/templates/fitness/FitnessProductPagePublica';
 import TechProductPagePublica from '../landing-simple/templates/tech/TechProductPagePublica';
 import BeautyProductPagePublica from '../landing-simple/templates/beauty/BeautyProductPagePublica';
+import BazarProductPagePublica from '../landing-simple/templates/bazar/BazarProductPagePublica';
+import ModaProductPagePublica from '../landing-simple/templates/moda/ModaProductPagePublica';
 import BasicoProductPagePublica from '../landing-simple/templates/basico/BasicoProductPagePublica';
 import ComboProductPagePublica from '../landing-simple/templates/combo/ComboProductPagePublica';
 import StoreHeader from '../landing-simple/templates/StoreHeader';
@@ -916,6 +918,62 @@ export default function TiendaPaginaView({ data, slug, productId }) {
           <div style={cssVarsRigido}>
             <StoreHeader {...headerProps} />
             <BeautyProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={dataProductoPublico.content || {}}
+              tema={temaResuelto}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              relacionados={dataProductoPublico?.relacionados}
+              deliveryCiudades={data?.delivery_ciudades || []}
+              onAgregar={(datos) => {
+                // Agregar al carrito es SOLO agregar: nunca abre el
+                // checkout. Se abre el carrito para que la clienta vea que
+                // pasó algo.
+                agregarAlCarrito(datos);
+                setCarritoAbierto(true);
+              }}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+              onClickRelacionado={agregarRelacionadoAlCarrito}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
+      if (data.template.slug === 'bazar-hogar') {
+        return (
+          <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
+            <BazarProductPagePublica
+              item={itemSeleccionado}
+              landingConfig={dataProductoPublico.content || {}}
+              tema={temaResuelto}
+              contacto={datosProductoPublico.contacto}
+              nombreComercio={datosProductoPublico.nombreComercio}
+              relacionados={dataProductoPublico?.relacionados}
+              deliveryCiudades={data?.delivery_ciudades || []}
+              onAgregar={(datos) => {
+                // Agregar al carrito es SOLO agregar: nunca abre el
+                // checkout. Se abre el carrito para que la clienta vea que
+                // pasó algo.
+                agregarAlCarrito(datos);
+                setCarritoAbierto(true);
+              }}
+              onComprarAhora={comprarAhora}
+              onVolver={() => navigate(slug ? `/l/${slug}` : '/')}
+              onClickRelacionado={agregarRelacionadoAlCarrito}
+            />
+            <CartDrawer {...cartDrawerProps} />
+          </div>
+        );
+      }
+
+      if (data.template.slug === 'moda-indumentaria') {
+        return (
+          <div style={cssVarsRigido}>
+            <StoreHeader {...headerProps} />
+            <ModaProductPagePublica
               item={itemSeleccionado}
               landingConfig={dataProductoPublico.content || {}}
               tema={temaResuelto}

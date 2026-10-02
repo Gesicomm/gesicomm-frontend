@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User, Users, Star, ArrowRight } from 'lucide-react';
 import { reportesService } from '../../../../services/reportesApi';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 export function ReporteClientes({ filters }) {
   const [data, setData] = useState([]);
@@ -80,7 +81,7 @@ export function ReporteClientes({ filters }) {
                   <th>Teléfono</th>
                   <th style={{ textAlign: 'center' }}>Pedidos Exitosos</th>
                   <th style={{ textAlign: 'right' }}>Total Comprado</th>
-                  <th style={{ textAlign: 'right' }}>Ticket Prom. Histórico</th>
+                  <th style={{ textAlign: 'right' }}>{METRIC_TERMS.ticketPromedio} histórico</th>
                   <th style={{ textAlign: 'center' }}>Última Compra</th>
                 </tr>
               </thead>

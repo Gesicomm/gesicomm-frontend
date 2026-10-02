@@ -1,0 +1,93 @@
+/**
+ * Comparador de antes y después (ver comparadorAntesDespues.jsx).
+ *
+ * Colores por variables, para que cada ficha lo pinte con su paleta:
+ *   --cad-acento     manija y fondo de las etiquetas
+ *   --cad-on-acento  ícono de la manija y texto de las etiquetas
+ *   --cad-vacio      fondo mientras falta una foto
+ *   --cad-texto-vacio
+ */
+
+.cad {
+  position: relative;
+  overflow: hidden;
+  cursor: ew-resize;
+  user-select: none;
+  -webkit-user-select: none;
+  /* El gesto horizontal es del comparador; el vertical sigue scrolleando. */
+  touch-action: pan-y;
+  background: var(--cad-vacio, #EEEEEE);
+}
+
+.cad-fija { cursor: default; touch-action: auto; }
+
+.cad-capa { position: absolute; inset: 0; }
+.cad-capa img,
+.cad-unica { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.cad-antes { background: var(--cad-vacio, #EEEEEE); }
+
+.cad-falta {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 12px;
+  color: var(--cad-texto-vacio, #777777);
+  font-size: 11px;
+  text-align: center;
+}
+
+.cad-etiqueta {
+  position: absolute;
+  top: 15px;
+  z-index: 2;
+  padding: 6px 9px;
+  border-radius: 3px;
+  background: var(--cad-acento, #222222);
+  color: var(--cad-on-acento, #FFFFFF);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+
+.cad-etiqueta.izq { left: 15px; }
+.cad-etiqueta.der { right: 15px; }
+
+.cad-linea {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: 2px;
+  margin-left: -1px;
+  background: #FFFFFF;
+  box-shadow: 0 0 6px rgba(0, 0, 0, .35);
+  outline: none;
+}
+
+.cad-linea--fija { left: 50%; }
+
+.cad-manija {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #FFFFFF;
+  border-radius: 50%;
+  background: var(--cad-acento, #222222);
+  color: var(--cad-on-acento, #FFFFFF);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+  transition: transform .15s ease;
+}
+
+.cad.arrastrando .cad-manija,
+.cad-linea:focus-visible .cad-manija { transform: translate(-50%, -50%) scale(1.1); }
+
+.cad-linea:focus-visible .cad-manija { outline: 2px solid var(--cad-acento, #222222); outline-offset: 3px; }

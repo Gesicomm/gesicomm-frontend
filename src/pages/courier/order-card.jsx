@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { formatGs, STATUS_ORDER } from "../../lib/courier";
 import { AlertCircle, Bike, Car, Clock, CreditCard, Package, Phone, ShoppingBag, MapPin, MessageCircle, Truck } from "lucide-react";
 
@@ -51,12 +52,14 @@ export function OrderCard({
   onDragStart,
   onDragEnd,
   onChangeEstado,
+  onAbrirDetalle,
   onAbrirSeguimiento,
   onAbrirTimelineAbastecimiento,
   onAccionSiguiente,
   isAdmin = false,
   readOnly = false,
 }) {
+  const didDragRef = useRef(false);
   const nombreCliente = envio.nombre_cliente
     ? `${envio.nombre_cliente} ${envio.apellido_cliente || ''}`.trim()
     : envio.cliente || "Cliente";
@@ -106,19 +109,42 @@ export function OrderCard({
   };
 
   const handleCardClick = () => {
-    if (readOnly && onAbrirTimelineAbastecimiento && timelineAbastecimiento) {
-      onAbrirTimelineAbastecimiento(envio);
+    if (didDragRef.current) return;
+    onAbrirDetalle?.(envio);
+  };
+
+  const handleCardKeyDown = (event) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleCardClick();
     }
+  };
+
+  const handleDragStart = () => {
+    if (readOnly) return;
+    didDragRef.current = true;
+    onDragStart(envio.id);
+  };
+
+  const handleDragEnd = (event) => {
+    onDragEnd?.(event);
+    window.setTimeout(() => {
+      didDragRef.current = false;
+    }, 0);
   };
 
   return (
     <article
       draggable={!readOnly}
-      onDragStart={() => {
-        if (!readOnly) onDragStart(envio.id);
-      }}
-      onDragEnd={onDragEnd}
+      role="button"
+      tabIndex={0}
+      aria-label={`Ver detalle del pedido de ${nombreCliente}`}
+      title="Ver detalle del pedido"
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
       className={`order-card ${dragging ? 'dragging' : ''} ${readOnly ? 'is-readonly' : ''}`}
     >
       <div className="order-card-top">
@@ -139,6 +165,8 @@ export function OrderCard({
           ) : (
             <select
               value={envio.estado}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
               onChange={(e) => onChangeEstado(envio.id, e.target.value)}
               style={{
                 background: 'var(--color-canvas)',

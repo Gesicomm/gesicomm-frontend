@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOff, Minus, Package, ChevronLeft, ChevronRight, CheckCircle2, ClipboardCheck, Receipt, Save, Pencil, Check, Loader2, MessageCircle } from "lucide-react";
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
-import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio } from "../../services/courierApi";
+import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeografia } from "../../services/courierApi";
 import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
@@ -62,6 +62,18 @@ const selectStyles = {
 const precioProducto = (producto) => (
   Number(producto?.precio_efectivo ?? producto?.precio_base ?? producto?.precio_venta ?? producto?.precio ?? 0) || 0
 );
+
+const normalizarBusqueda = (valor = "") => String(valor)
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .trim()
+  .toLowerCase();
+
+const filterSelectOption = (option, inputValue) => {
+  const q = normalizarBusqueda(inputValue);
+  if (!q) return true;
+  return normalizarBusqueda(`${option.label} ${option.data?.departamento || ""}`).includes(q);
+};
 
 const imagenProducto = (producto) => (
   producto?.imagen || producto?.imagenes?.[0]?.url || producto?.imagenes?.[0] || null
@@ -188,6 +200,8 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   const [couriers, setCouriers] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
+  const [geografia, setGeografia] = useState([]);
+  const [geografiaError, setGeografiaError] = useState(false);
   const [ofertasPorProducto, setOfertasPorProducto] = useState({});
   const [errors, setErrors] = useState({});
   const [guardando, setGuardando] = useState(false);
@@ -254,8 +268,9 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   }, [open, pasoActivo]);
 
   const cargarDatosIniciales = async () => {
+    setGeografiaError(false);
     try {
-      const [resProds, dataCouriers, dataMetodos, dataCanales] = await Promise.all([
+      const [resProds, dataCouriers, dataMetodos, dataCanales, dataGeografia] = await Promise.all([
         // Sin `sin_limite` solo llegan 10 productos (paginación por defecto
         // de ProductoService.buscar) y el pedido no se puede cargar con el
         // resto del catálogo.
@@ -263,11 +278,16 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
         getCouriers(),
         getMetodosPago(),
         canalVentaService.listar().catch(() => []),
+        getCourierGeografia({ conCiudades: true }).catch(() => {
+          setGeografiaError(true);
+          return [];
+        }),
       ]);
       const prods = Array.isArray(resProds) ? resProds : (resProds.productos || resProds.rows || []);
       setProductosDisponibles(prods);
       setCouriers(dataCouriers || []);
       setCanalesVenta(dataCanales || []);
+      setGeografia(Array.isArray(dataGeografia) ? dataGeografia : []);
 
       const metodosActivos = (dataMetodos || []).filter(m => m.activo);
       setMetodosPago(metodosActivos);
@@ -337,40 +357,92 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, modoCompletar, couriers, deliveryZonas, metodosPago, form.ciudad, form.departamento]);
 
-  // Opciones de ciudades: matriz nueva de delivery + tarifas legacy dentro
-  // de couriers, para no perder zonas ya cargadas.
+  const optionsDepartamentos = useMemo(() => (
+    geografia.map(d => ({
+      value: d.nombre,
+      label: d.nombre,
+      id: d.id,
+      pais_id: d.pais_id,
+      ciudades: d.ciudades || [],
+    }))
+  ), [geografia]);
+
+  const ciudadExisteEnDepartamento = (ciudad, departamento) => {
+    if (!ciudad || !departamento) return true;
+    if (geografia.length === 0) return true;
+    const deptoNorm = normalizarBusqueda(departamento);
+    const ciudadNorm = normalizarBusqueda(ciudad);
+    return geografia.some(d => (
+      normalizarBusqueda(d.nombre) === deptoNorm &&
+      (d.ciudades || []).some(c => normalizarBusqueda(c.nombre) === ciudadNorm)
+    ));
+  };
+
+  // Opciones de ciudades: catálogo Paraguay completo + matriz nueva de
+  // delivery + tarifas legacy dentro de couriers, para no perder zonas ya
+  // cargadas. Aunque el comercio no haya creado couriers, el selector ya
+  // conoce ciudades y departamentos.
   const optionsCiudades = useMemo(() => {
     const ciudades = new Map();
-    const agregar = ({ ciudad, departamento }) => {
+    const deptoFiltro = normalizarBusqueda(form.departamento);
+    const agregar = ({ ciudad, departamento, ciudad_id, departamento_id, pais_id, tieneTarifa = false }) => {
       const city = ciudad?.trim();
       if (!city) return;
       const depto = departamento?.trim() || "";
+      if (deptoFiltro && depto && normalizarBusqueda(depto) !== deptoFiltro) return;
       const key = `${depto.toLowerCase()}::${city.toLowerCase()}`;
-      if (!ciudades.has(key)) {
-        ciudades.set(key, {
-          value: city,
-          label: depto ? `${city} - ${depto}` : city,
-          departamento: depto,
-        });
-      }
+      const existente = ciudades.get(key);
+      ciudades.set(key, {
+        value: city,
+        label: depto ? `${city} - ${depto}` : city,
+        departamento: depto,
+        ciudad_id: ciudad_id ?? existente?.ciudad_id ?? null,
+        departamento_id: departamento_id ?? existente?.departamento_id ?? null,
+        pais_id: pais_id ?? existente?.pais_id ?? null,
+        tieneTarifa: Boolean(tieneTarifa || existente?.tieneTarifa),
+      });
     };
+
+    geografia.forEach(depto => {
+      (depto.ciudades || []).forEach(ciudad => agregar({
+        ciudad: ciudad.nombre,
+        departamento: depto.nombre,
+        ciudad_id: ciudad.id,
+        departamento_id: depto.id,
+        pais_id: depto.pais_id,
+      }));
+    });
 
     deliveryZonas
       .filter(z => z.tipo_cobertura !== 'RESTO_PAIS')
-      .forEach(z => agregar({ ciudad: z.ciudad, departamento: z.departamento }));
+      .forEach(z => agregar({
+        ciudad: z.ciudad,
+        departamento: z.departamento,
+        ciudad_id: z.ciudad_id,
+        departamento_id: z.departamento_id,
+        pais_id: z.pais_id,
+        tieneTarifa: true,
+      }));
 
     couriers.forEach(c => {
       if (c.tarifas && Array.isArray(c.tarifas)) {
         c.tarifas
           .filter(t => t.tipo_cobertura !== 'RESTO_PAIS')
           .forEach(t => {
-            agregar({ ciudad: t.ciudad_zona, departamento: t.departamento });
+            agregar({
+              ciudad: t.ciudad_zona,
+              departamento: t.departamento,
+              ciudad_id: t.ciudad_id,
+              departamento_id: t.departamento_id,
+              pais_id: t.pais_id,
+              tieneTarifa: true,
+            });
           });
       }
     });
 
     return Array.from(ciudades.values()).sort((a, b) => a.label.localeCompare(b.label, 'es'));
-  }, [couriers, deliveryZonas]);
+  }, [couriers, deliveryZonas, form.departamento, geografia]);
 
   const productoPorId = useMemo(() => {
     const map = new Map();
@@ -494,6 +566,13 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       const nextForm = { ...prev, departamento };
       if (!prev.ciudad) return nextForm;
 
+      if (departamento && !ciudadExisteEnDepartamento(prev.ciudad, departamento)) {
+        nextForm.ciudad = "";
+        nextForm.courier_id = "";
+        nextForm.costo_envio = 0;
+        return nextForm;
+      }
+
       const esAnticipado = prev.pago_anticipado;
       if (prev.courier_id) {
         const costo = obtenerTarifaPara(couriers, prev.ciudad, prev.courier_id, esAnticipado, itemsParaTarifa, departamento);
@@ -514,6 +593,18 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       return nextForm;
     });
   };
+
+  const coberturaDeliveryActual = useMemo(() => {
+    if (!form.ciudad) return null;
+    return buscarZonaDelivery(deliveryZonas, form.ciudad, form.pago_anticipado, itemsParaTarifa, form.departamento)
+      || buscarCourierYTarifa(couriers, form.ciudad, form.pago_anticipado, itemsParaTarifa, form.departamento);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [couriers, deliveryZonas, form.ciudad, form.departamento, form.pago_anticipado, itemsParaTarifa]);
+
+  const courierAsignado = useMemo(
+    () => couriers.find(c => String(c.id) === String(form.courier_id)) || null,
+    [couriers, form.courier_id],
+  );
 
   const cargarOfertasProducto = async (productoId) => {
     const id = Number(productoId);
@@ -1056,24 +1147,51 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
 
               <div className="np-row">
                 <label>Departamento</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Ej. Central"
-                  value={form.departamento}
-                  onChange={e => handleDepartamentoChange(e.target.value)}
+                <CreatableSelect
+                  isClearable
+                  placeholder="Buscar departamento..."
+                  styles={selectStyles}
+                  options={optionsDepartamentos}
+                  filterOption={filterSelectOption}
+                  noOptionsMessage={() => geografiaError ? "No pudimos cargar el catálogo. Podés escribirlo manualmente." : "Sin coincidencias."}
+                  formatCreateLabel={(inputValue) => `Usar "${inputValue}"`}
+                  value={form.departamento ? (
+                    optionsDepartamentos.find(o => normalizarBusqueda(o.value) === normalizarBusqueda(form.departamento))
+                    || { value: form.departamento, label: form.departamento }
+                  ) : null}
+                  onChange={(newValue) => {
+                    handleDepartamentoChange(newValue ? newValue.value : "");
+                  }}
+                  onCreateOption={(inputValue) => handleDepartamentoChange(inputValue)}
                 />
+                <span className="np-hint">
+                  Filtrá por Central, Alto Paraná u otro departamento para ver sus ciudades.
+                </span>
               </div>
 
               <div className="np-row">
                 <label>Ciudad <span className="req">*</span></label>
                 <CreatableSelect
                   isClearable
-                  placeholder="Escribe o selecciona ciudad..."
+                  placeholder={form.departamento ? "Buscar ciudad del departamento..." : "Primero elegí departamento o buscá ciudad..."}
                   styles={selectStyles}
                   aria-invalid={Boolean(errors.ciudad)}
                   aria-describedby={errors.ciudad ? "np-ciudad-error" : undefined}
                   options={optionsCiudades}
+                  filterOption={filterSelectOption}
+                  noOptionsMessage={() => geografiaError ? "No pudimos cargar el catálogo. Podés escribir la ciudad manualmente." : "No encontramos ciudades para ese filtro."}
+                  formatCreateLabel={(inputValue) => `Usar "${inputValue}"`}
+                  formatOptionLabel={(option, { context }) => (
+                    context === "menu" ? (
+                      <div className="np-geo-option">
+                        <span>{option.value}</span>
+                        <small>
+                          {option.departamento || "Sin departamento"}
+                          {option.tieneTarifa ? " · con tarifa" : ""}
+                        </small>
+                      </div>
+                    ) : option.label
+                  )}
                   value={form.ciudad ? (
                     optionsCiudades.find(o => o.value === form.ciudad && (o.departamento || "") === (form.departamento || ""))
                     || { value: form.ciudad, label: [form.ciudad, form.departamento].filter(Boolean).join(" - ") }
@@ -1087,6 +1205,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   }}
                 />
                 {errors.ciudad && <span id="np-ciudad-error" className="field-error">{errors.ciudad}</span>}
+                {form.ciudad && !coberturaDeliveryActual && !form.courier_id && (
+                  <div className="np-inline-notice">
+                    <AlertCircle size={15} />
+                    <span>
+                      Podés guardar este pedido sin courier. Si ya conocés el flete, cargá el costo abajo; después asignás el courier desde Delivery o desde el pedido.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="np-row">
@@ -1170,6 +1296,11 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                       <option key={c.id} value={c.id}>{c.nombre} ({c.vehiculo})</option>
                     ))}
                   </select>
+                  <span className="np-hint">
+                    {courierAsignado
+                      ? `Asignado a ${courierAsignado.nombre}.`
+                      : "No bloquea el pedido: podés asignarlo cuando tengas el courier cargado."}
+                  </span>
                 </div>
 
                 <div className="np-row">
@@ -1511,24 +1642,14 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                     {errors.ruc && <span id="np-ruc-error" className="field-error">{errors.ruc}</span>}
                   </div>
 
-                  <div className="np-row">
-                    <label>Nro de comprobante (Opcional)</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Ej. 001-001-0000123"
-                      value={form.nro_comprobante}
-                      onChange={e => setForm({ ...form, nro_comprobante: e.target.value })}
-                    />
-                  </div>
                 </div>
               )}
 
-              <div>
+              <div className="np-observaciones-field">
                 <label className="np-label-obs">Observaciones</label>
                 <textarea
-                  className="form-input"
-                  rows={3}
+                  className="form-input np-observaciones-textarea"
+                  rows={5}
                   placeholder="Detalles adicionales para el courier o vendedor..."
                   value={form.observaciones}
                   onChange={e => setForm({ ...form, observaciones: e.target.value })}

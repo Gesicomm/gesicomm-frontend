@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { getMetricasDashboardPedidos } from '../../../../services/courierApi';
 import { formatGs } from '../../../../lib/courier';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 import '../../CentroInteligenciaComercial.css';
 
 // ─── Gráfico SVG de evolución temporal ───────────────────────────────────────
@@ -264,7 +265,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-accent-text, #f59e0b)' }}>
           <div className="cic-kpi-header">
             <span className="cic-tooltip-trigger">
-              Ventas netas entregadas <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
+              {METRIC_TERMS.ventasNetas} entregadas <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
               <div className="cic-tooltip">Venta de producto exclusivamente por pedidos en estado 'Entregado'. No incluye envíos pendientes ni cobros de delivery.</div>
             </span>
             <DollarSign size={16} style={{ color: 'var(--color-accent-text)' }} />
@@ -275,8 +276,8 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
           </div>
           <div className="cic-kpi-sub">
             <span className="cic-tooltip-trigger">
-              Ingreso real de producto
-              <div className="cic-tooltip">Ingreso real generado por la venta de tus productos, sin incluir costos extras que paga el cliente.</div>
+              {METRIC_TERMS.ventasNetas}
+              <div className="cic-tooltip">Venta de producto generada por tus pedidos entregados, sin incluir costos extras que paga el cliente.</div>
             </span>
           </div>
         </div>
@@ -284,7 +285,7 @@ export function ReporteResumen({ filters, setConfirmadoresDisponibles }) {
         <div className="cic-kpi-card" style={{ borderTop: '3px solid var(--color-warning)' }}>
           <div className="cic-kpi-header">
             <span className="cic-tooltip-trigger">
-              Margen Bruto Est. <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
+              {METRIC_TERMS.utilidadBruta} est. <Info size={12} style={{ color: 'var(--color-fg-muted)' }} />
               <div className="cic-tooltip">Es 'Estimado' porque asume que cargaste correctamente el precio de costo de cada producto. Es 'Bruto' porque solo descuenta ese costo, sin restar publicidad, empaque o sueldos.</div>
             </span>
             <TrendingUp size={16} style={{ color: 'var(--color-warning)' }} />

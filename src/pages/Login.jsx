@@ -374,14 +374,14 @@ export default function Login() {
       });
       if (origenVerificacion === 'registro') {
         trackearEvento('CompleteRegistration', generarEventId(), {
-          content_name: tokenSuscripcion ? 'registro_con_plan' : 'registro_gratis',
+          content_name: tokenSuscripcion || res.suscripcion_vinculada ? 'registro_con_plan' : 'registro_gratis',
         });
       } else {
         trackearEventoPersonalizado('Login', generarEventId());
       }
       setSuccess(res.message);
       setTimeout(() => {
-        const rutaDestino = tokenSuscripcion
+        const rutaDestino = tokenSuscripcion || res.suscripcion_vinculada
           ? '/onboarding'
           : res.usuario?.rol === 'solo_pedidos'
             ? '/mis-pedidos'
@@ -614,6 +614,11 @@ export default function Login() {
                 {tokenSuscripcion && suscripcionRegistro?.documento && (
                   <div className="rounded-lg border border-success/20 bg-success/10 px-3.5 py-3 text-sm leading-6 text-success">
                     Cédula y teléfono ya cargados desde el pago. Los vamos a usar para completar el onboarding sin pedirlos dos veces.
+                  </div>
+                )}
+                {!tokenSuscripcion && (
+                  <div className="rounded-lg border border-primary/20 bg-primary/10 px-3.5 py-3 text-sm leading-6 text-fg-muted">
+                    Si ya pagaste y perdiste la pantalla de confirmación, creá la cuenta con el mismo correo que usaste al pagar. Al verificarlo, vamos a vincular tu plan automáticamente.
                   </div>
                 )}
                 <AuthField

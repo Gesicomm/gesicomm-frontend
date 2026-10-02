@@ -1,9 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Monitor, Smartphone, Tablet } from 'lucide-react';
 import { ofertaAFormaPublica, ofertaService } from '../../services/ofertaService';
+import { tiendaService } from '../../services/tiendaService';
 import BasicoProductPage from '../landing-simple/templates/basico/BasicoProductPage';
 import { fichaBasicoDesdeProducto, resolverFichaBasico } from '../landing-simple/templates/basico/fichaBasico';
 import BeautyProductPage from '../landing-simple/templates/beauty/BeautyProductPage';
+import BazarProductPage from '../landing-simple/templates/bazar/BazarProductPage';
+import ModaProductPage from '../landing-simple/templates/moda/ModaProductPage';
+import { fichaModaDesdeProducto, resolverFichaModa } from '../landing-simple/templates/moda/fichaModa';
+import { fichaBazarDesdeProducto, resolverFichaBazar } from '../landing-simple/templates/bazar/fichaBazar';
 import { fichaBeautyDesdeProducto, resolverFichaBeauty } from '../landing-simple/templates/beauty/fichaBeauty';
 import FitnessProductPage from '../landing-simple/templates/fitness/FitnessProductPage';
 import {
@@ -25,13 +30,24 @@ const TEMPLATE_BY_RUBRO = {
   suplementos: 'fitness-suplementos',
   tecnologia: 'tech-electronica',
   beauty: 'beauty-skincare',
+  bazar: 'bazar-hogar',
+  moda: 'moda-indumentaria',
 };
 
-const DEFAULT_TEMA = {
-  fondo: '#ffffff',
-  texto: '#111827',
-  acento: '#2f5597',
-};
+/**
+ * Los colores con los que arranca una landing nueva: los de Mi Tienda, y lo
+ * que falte lo completa el default del template (resolverTemaPorSlug). Es la
+ * misma regla que usa el armador (mapEditorDraftToTemplateData) para una
+ * landing sin colores propios; antes acá había un azul fijo y la vista del
+ * producto no se parecía a ninguna landing real.
+ */
+function temaDeTienda(tienda) {
+  return {
+    fondo: tienda?.color_fondo || null,
+    texto: tienda?.color_secundario || null,
+    acento: tienda?.color_primario || null,
+  };
+}
 
 function imagenesOrdenadas(imagenes = [], imagenesNuevas = []) {
   return [
@@ -55,7 +71,9 @@ function variantesPreview(variantes = [], precioBase = 0, imagenes = []) {
         id,
         nombre: v.nombre,
         sku_variante: v.sku_variante || '',
-        stock: Number(v.stock) || 0,
+        stock: v.stock_salon != null || v.stock_deposito != null
+          ? (Number(v.stock_salon) || 0) + (Number(v.stock_deposito) || 0)
+          : Number(v.stock) || 0,
         precio_diferencial: diferencial,
         precio_efectivo: Math.max(0, Number(precioBase) + diferencial),
         valoresOpcion: v.valores || [],
@@ -82,6 +100,15 @@ export default function ProductLandingPreview({
   onDeviceChange,
 }) {
   const [ofertas, setOfertas] = useState([]);
+  const [tienda, setTienda] = useState(null);
+
+  useEffect(() => {
+    let vivo = true;
+    tiendaService.obtener()
+      .then(t => { if (vivo) setTienda(t || null); })
+      .catch(() => { if (vivo) setTienda(null); });
+    return () => { vivo = false; };
+  }, []);
 
   useEffect(() => {
     if (!productoId) {
@@ -107,7 +134,7 @@ export default function ProductLandingPreview({
       id: productoId || 'preview',
       content_id: productoId || 'preview',
       nombre: producto?.nombre || 'Producto sin nombre',
-      categoria: categoriaNombre || 'Sin categoria',
+      categoria: categoriaNombre || null,
       descripcion: producto?.descripcion_corta || producto?.descripcion_larga || '',
       descripcion_larga: producto?.descripcion_larga || producto?.descripcion_corta || '',
       precio,
@@ -147,9 +174,9 @@ export default function ProductLandingPreview({
     const rubro = producto?.ficha_rubro || '';
     const templateSlug = TEMPLATE_BY_RUBRO[rubro] || 'basico';
     const comun = {
-      tema: DEFAULT_TEMA,
+      tema: temaDeTienda(tienda),
       templateSlug,
-      nombreComercio: 'Tu tienda',
+      nombreComercio: tienda?.nombre || 'Tu tienda',
       contacto: null,
       isMobile: device === 'mobile',
       previewMode: true,
@@ -213,6 +240,42 @@ export default function ProductLandingPreview({
       return <BeautyProductPage item={item} ficha={ficha} {...comun} />;
     }
 
+    if (rubro === 'bazar') {
+      const ficha = resolverFichaBazar(null, null, fichaBazarDesdeProducto(dto));
+      const item = armarItemFicha({
+        nombre: dto.nombre,
+        categoria: dto.categoria,
+        descripcion: dto.descripcion_larga || dto.descripcion,
+        precio: dto.precio,
+        precioAntes: dto.precio_antes,
+        imagenes: dto.imagenes,
+        ofertas: dto.ofertas,
+        variantes: dto.variantes,
+        opciones: dto.opciones,
+        faq: dto.faq,
+        faqTitulo: dto.faq_titulo,
+      });
+      return <BazarProductPage item={item} ficha={ficha} {...comun} />;
+    }
+
+    if (rubro === 'moda') {
+      const ficha = resolverFichaModa(null, null, fichaModaDesdeProducto(dto));
+      const item = armarItemFicha({
+        nombre: dto.nombre,
+        categoria: dto.categoria,
+        descripcion: dto.descripcion_larga || dto.descripcion,
+        precio: dto.precio,
+        precioAntes: dto.precio_antes,
+        imagenes: dto.imagenes,
+        ofertas: dto.ofertas,
+        variantes: dto.variantes,
+        opciones: dto.opciones,
+        faq: dto.faq,
+        faqTitulo: dto.faq_titulo,
+      });
+      return <ModaProductPage item={item} ficha={ficha} {...comun} />;
+    }
+
     const ficha = resolverFichaBasico(null, null, fichaBasicoDesdeProducto(dto));
     const item = armarItemFicha({
       nombre: dto.nombre,
@@ -228,7 +291,7 @@ export default function ProductLandingPreview({
       faqTitulo: dto.faq_titulo,
     });
     return <BasicoProductPage item={item} ficha={ficha} {...comun} />;
-  }, [device, dto, producto?.ficha_rubro]);
+  }, [device, dto, producto?.ficha_rubro, tienda]);
 
   return (
     <section className="product-preview-panel" aria-label="Vista pública del producto">

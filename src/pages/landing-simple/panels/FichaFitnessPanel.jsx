@@ -1,20 +1,23 @@
 import React from 'react';
-import { Link2Off, Plus, Trash2 } from 'lucide-react';
+import { Link2Off } from 'lucide-react';
 import {
-  SECCIONES_FICHA, LIMITES, ETIQUETA_FUENTE,
+  SECCIONES_FICHA, GRUPOS_PANEL_FICHA, LIMITES, ETIQUETA_FUENTE,
   clonarSeccionResuelta, fuenteDeSeccion, seccionEsPropia,
 } from '../templates/fitness/fichaFitness';
 import IconoPicker from './IconoPicker';
 import FaqPanel from './FaqPanel';
 import FichaSeccionesShell from './ficha/FichaSeccionesShell';
+import {
+  CAMPO, MINI, ETIQUETA, AVISO_REAL,
+  Texto, Fila, BotonAgregar, ListaEditable, ListaTextos, CampoImagen, Encabezado, CamposUrgencia,
+} from './ficha/controles';
 
-const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-2.5 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
-const MINI = 'bg-fg/5 border border-fg/10 rounded-lg px-2 py-1.5 text-[13px] text-fg placeholder:text-fg/25 focus:outline-none focus:border-fg/30';
-const ETIQUETA = 'block text-[10px] font-semibold uppercase tracking-wide text-fg/40 mb-1';
+const SECCION_POR_KEY = Object.fromEntries(SECCIONES_FICHA.map(sec => [sec.key, sec]));
 
 /**
- * Editor de la ficha de producto del template Fitness — las 12 secciones
- * del diseño, cada una con su interruptor y sus campos.
+ * Editor de la ficha de producto del template Fitness. Agrupa las piezas
+ * chicas del encabezado en una sección del panel, pero conserva las claves
+ * internas para no migrar datos guardados.
  *
  * Dos modos, el mismo componente:
  *   modo="producto" → edita content.productos["<id>"].ficha. Cada sección
@@ -49,6 +52,10 @@ export default function FichaFitnessPanel({
   onFaqChange,
   faqTitulo = '',
   onFaqTitulo,
+  // (file) => Promise<url>. Sube las fotos propias de la ficha (antes y
+  // después, ingredientes...). Sin esto los campos de imagen aceptan una
+  // ruta escrita a mano.
+  onSubirImagen = null,
 }) {
   const esProducto = modo === 'producto';
 
@@ -57,11 +64,27 @@ export default function FichaFitnessPanel({
    * clona la versión resuelta (lo que el comercio está viendo en el
    * preview) y recién ahí se aplica el cambio.
    */
-  function editar(key, cambios) {
-    const base = seccionEsPropia(ficha, key)
-      ? ficha[key]
+  function construirSeccionEditada(fichaBase, key, cambios) {
+    const base = seccionEsPropia(fichaBase, key)
+      ? fichaBase[key]
       : clonarSeccionResuelta(fichaResuelta, key);
-    onChange({ ...(ficha || {}), [key]: { ...base, ...cambios } });
+    // Escribir en una sección apagada la prende: si el comercio sube una
+    // foto o carga un texto, quiere verlo. Sin esto la sección seguía
+    // oculta y parecía que el cambio no se había tomado.
+    const prender = !('activo' in cambios) && base.activo === false ? { activo: true } : {};
+    return { ...base, ...cambios, ...prender };
+  }
+
+  function editar(key, cambios) {
+    onChange({ ...(ficha || {}), [key]: construirSeccionEditada(ficha || {}, key, cambios) });
+  }
+
+  function editarGrupo(keys, cambios) {
+    const nueva = { ...(ficha || {}) };
+    keys.forEach(key => {
+      nueva[key] = construirSeccionEditada(nueva, key, cambios);
+    });
+    onChange(nueva);
   }
 
   function volverAHeredar(key) {
@@ -90,6 +113,55 @@ export default function FichaFitnessPanel({
     editar(key, { [campoLista]: lista });
   };
 
+  function fuenteDeGrupo(grupo) {
+    if (!esProducto) return null;
+    const fuentes = grupo.keys.map(key => fuenteDeSeccion(key, { fichaProducto: ficha, fichaLanding, fichaMarketing }));
+    if (grupo.keys.some(key => seccionEsPropia(ficha, key))) return 'Tiene ajustes propios';
+    if (fuentes.includes('marketing')) return ETIQUETA_FUENTE.marketing;
+    if (fuentes.includes('landing')) return ETIQUETA_FUENTE.landing;
+    return ETIQUETA_FUENTE.fabrica;
+  }
+
+  function renderSeccion(key, { mostrarAyuda = true, compacta = false } = {}) {
+    const sec = SECCION_POR_KEY[key];
+    const datos = fichaResuelta[key];
+    const propia = esProducto && seccionEsPropia(ficha, key);
+    return (
+      <>
+        {mostrarAyuda && <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>}
+
+        {CAMPOS[key]({
+          d: datos,
+          set: (cambios) => editar(key, cambios),
+          lista: {
+            editar: (campo, i, c) => editarItem(key, campo, i, c),
+            agregar: (campo, nuevo) => agregarItem(key, campo, nuevo),
+            quitar: (campo, i) => quitarItem(key, campo, i),
+            mover: (campo, i, delta) => moverItem(key, campo, i, delta),
+          },
+          packs,
+          respaldos,
+          faq,
+          onFaqChange,
+          faqTitulo,
+          onFaqTitulo,
+          onSubirImagen,
+          modo,
+        })}
+
+        {propia && (
+          <button
+            type="button"
+            onClick={() => volverAHeredar(key)}
+            className={`inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5 ${compacta ? 'w-fit' : ''}`}
+          >
+            <Link2Off size={12} /> Descartar y volver a heredar
+          </button>
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-[11px] text-fg/40 leading-relaxed">
@@ -99,54 +171,63 @@ export default function FichaFitnessPanel({
       </p>
 
       <FichaSeccionesShell
-        secciones={SECCIONES_FICHA.map(sec => {
-          const fuente = esProducto
-            ? fuenteDeSeccion(sec.key, { fichaProducto: ficha, fichaLanding, fichaMarketing })
-            : null;
+        secciones={GRUPOS_PANEL_FICHA.map(sec => {
           return {
             key: sec.key,
             numero: sec.numero,
             label: sec.label,
-            activo: fichaResuelta[sec.key].activo,
-            badge: esProducto ? ETIQUETA_FUENTE[fuente] : null,
-            badgeDestacado: esProducto && seccionEsPropia(ficha, sec.key),
+            activo: sec.keys.some(key => fichaResuelta[key].activo),
+            // En un grupo: tildado si están todas visibles, con guión si hay
+            // visibles y ocultas. La casilla muestra u oculta el grupo entero.
+            mixto: sec.keys.some(key => fichaResuelta[key].activo) && !sec.keys.every(key => fichaResuelta[key].activo),
+            badge: fuenteDeGrupo(sec),
+            badgeDestacado: esProducto && sec.keys.some(key => seccionEsPropia(ficha, key)),
           };
         })}
-        onToggleActivo={(key, activo) => editar(key, { activo })}
+        onToggleActivo={(key, activo) => {
+          const grupo = GRUPOS_PANEL_FICHA.find(sec => sec.key === key);
+          if (grupo?.keys?.length > 1) editarGrupo(grupo.keys, { activo });
+          else editar(key, { activo });
+        }}
         renderInspector={(key) => {
-          const sec = SECCIONES_FICHA.find(s => s.key === key);
-          const datos = fichaResuelta[key];
-          const propia = esProducto && seccionEsPropia(ficha, key);
+          const grupo = GRUPOS_PANEL_FICHA.find(s => s.key === key);
+          if (!grupo) return null;
+          if (grupo.keys.length === 1) return renderSeccion(grupo.keys[0]);
           return (
             <>
-              <p className="text-[11px] text-fg/35 leading-relaxed">{sec.ayuda}</p>
-
-              {CAMPOS[key]({
-                d: datos,
-                set: (cambios) => editar(key, cambios),
-                lista: {
-                  editar: (campo, i, c) => editarItem(key, campo, i, c),
-                  agregar: (campo, nuevo) => agregarItem(key, campo, nuevo),
-                  quitar: (campo, i) => quitarItem(key, campo, i),
-                  mover: (campo, i, delta) => moverItem(key, campo, i, delta),
-                },
-                packs,
-                respaldos,
-                faq,
-                onFaqChange,
-                faqTitulo,
-                onFaqTitulo,
-              })}
-
-              {propia && (
-                <button
-                  type="button"
-                  onClick={() => volverAHeredar(key)}
-                  className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold text-fg/45 hover:text-fg py-1.5"
-                >
-                  <Link2Off size={12} /> Descartar y volver a heredar
-                </button>
-              )}
+              <p className="text-[11px] text-fg/35 leading-relaxed">{grupo.ayuda}</p>
+              <div className="flex flex-col gap-3">
+                {grupo.keys.map(subKey => {
+                  const sec = SECCION_POR_KEY[subKey];
+                  const fuente = esProducto
+                    ? fuenteDeSeccion(subKey, { fichaProducto: ficha, fichaLanding, fichaMarketing })
+                    : null;
+                  return (
+                    <section key={subKey} className="rounded-xl border border-fg/10 bg-fg/[0.025] p-3 flex flex-col gap-2.5">
+                      <div className="flex items-start gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[12px] font-semibold text-fg">{sec.label}</span>
+                          <span className="block text-[10px] text-fg/35 leading-relaxed">{sec.ayuda}</span>
+                          {esProducto && (
+                            <span className={`block text-[10px] mt-0.5 ${seccionEsPropia(ficha, subKey) ? 'text-[var(--color-accent-text)]/80' : 'text-fg/35'}`}>
+                              {ETIQUETA_FUENTE[fuente]}
+                            </span>
+                          )}
+                        </span>
+                        <label className="shrink-0 inline-flex items-center cursor-pointer" title={fichaResuelta[subKey].activo ? 'Ocultar bloque' : 'Mostrar bloque'}>
+                          <input
+                            type="checkbox"
+                            checked={fichaResuelta[subKey].activo}
+                            onChange={e => editar(subKey, { activo: e.target.checked })}
+                            className="w-4 h-4 accent-[var(--color-accent)]"
+                          />
+                        </label>
+                      </div>
+                      {renderSeccion(subKey, { mostrarAyuda: false, compacta: true })}
+                    </section>
+                  );
+                })}
+              </div>
             </>
           );
         }}
@@ -155,85 +236,11 @@ export default function FichaFitnessPanel({
   );
 }
 
-/* ── Controles reutilizables ──────────────────────────────────────── */
-
-/**
- * `respaldo` = el texto que la ficha muestra cuando este campo queda vacío
- * (el nombre del producto, su categoría, su descripción). Va de placeholder
- * y se aclara abajo, así el comercio ve de qué texto se trata sin tener que
- * deducirlo. Nunca se precarga en `valor`: si se escribiera, el campo
- * quedaría congelado con una copia y dejaría de seguir al producto.
- */
-function Texto({ label, valor, onChange, placeholder, respaldo, area = false }) {
-  const usaRespaldo = !valor && !!respaldo;
-  return (
-    <div>
-      {label && <label className={ETIQUETA}>{label}</label>}
-      {area ? (
-        <textarea rows={3} className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
-      ) : (
-        <input type="text" className={CAMPO} value={valor || ''} placeholder={respaldo || placeholder} onChange={e => onChange(e.target.value)} />
-      )}
-      {usaRespaldo && (
-        <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">
-          Es lo que se está mostrando. Escribí acá solo si querés algo distinto en esta landing.
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** Fila de una lista repetible: mover, contenido y borrar. */
-function Fila({ children, onSubir, onBajar, onQuitar }) {
-  return (
-    <div className="flex items-start gap-1.5 bg-fg/[0.03] border border-fg/10 rounded-lg p-2">
-      <div className="flex flex-col text-fg/25 pt-0.5">
-        <button type="button" onClick={onSubir} className="hover:text-fg leading-none text-[10px]">▲</button>
-        <button type="button" onClick={onBajar} className="hover:text-fg leading-none text-[10px]">▼</button>
-      </div>
-      <div className="flex-1 min-w-0 flex flex-col gap-1.5">{children}</div>
-      <button type="button" onClick={onQuitar} className="text-fg/25 hover:text-red-400 pt-0.5"><Trash2 size={13} /></button>
-    </div>
-  );
-}
-
-function BotonAgregar({ onClick, disabled, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg disabled:opacity-35 disabled:cursor-not-allowed w-fit"
-    >
-      <Plus size={12} /> {children}
-    </button>
-  );
-}
-
-/** Lista repetible genérica — todas las secciones con items usan esta forma. */
-function ListaEditable({ items, campo, lista, max, textoAgregar, nuevo, children }) {
-  return (
-    <div className="flex flex-col gap-2">
-      {items.map((it, i) => (
-        <Fila
-          key={i}
-          onSubir={() => lista.mover(campo, i, -1)}
-          onBajar={() => lista.mover(campo, i, 1)}
-          onQuitar={() => lista.quitar(campo, i)}
-        >
-          {children(it, i)}
-        </Fila>
-      ))}
-      <BotonAgregar onClick={() => lista.agregar(campo, nuevo())} disabled={items.length >= max}>
-        {items.length >= max ? `Máximo ${max}` : textoAgregar}
-      </BotonAgregar>
-    </div>
-  );
-}
-
 /* ── Campos por sección ───────────────────────────────────────────── */
 
 const CAMPOS = {
+  urgencia: ({ d, set }) => <CamposUrgencia d={d} set={set} />,
+
   anuncio: ({ d, set, lista }) => (
     <>
       <ListaEditable
@@ -284,85 +291,140 @@ const CAMPOS = {
     <>
       <Texto label="Línea superior" valor={d.eyebrow} respaldo={respaldos.eyebrow} placeholder="Ej: Cápsulas" onChange={v => set({ eyebrow: v })} />
       <Texto label="Título" valor={d.titulo} respaldo={respaldos.titulo} placeholder="Nombre del producto" onChange={v => set({ titulo: v })} />
-      <Texto label="Segunda línea (en color de acento)" valor={d.titulo_destacado} placeholder="Ej: Resultados reales." onChange={v => set({ titulo_destacado: v })} />
+      <Texto label="Parte destacada del título (negrita, en color)" valor={d.titulo_destacado} placeholder="Ej: más simple." onChange={v => set({ titulo_destacado: v })} />
+      <Texto label="Arranque resaltado de la promesa" valor={d.lead_resaltado} placeholder="Ej: Cuidá tu bienestar" onChange={v => set({ lead_resaltado: v })} />
       <Texto label="Promesa" area valor={d.lead} respaldo={respaldos.lead} placeholder="Contale al cliente para qué sirve" onChange={v => set({ lead: v })} />
-      {/* La checklist es una lista de strings sueltos, no de objetos, así que
-          no pasa por ListaEditable (que trabaja sobre {campo: valor}). */}
-      <div>
-        <label className={ETIQUETA}>Beneficios rápidos (con tilde)</label>
-        <div className="flex flex-col gap-2">
-          {d.checklist.map((linea, i) => {
-            const conLista = (l) => set({ checklist: l });
-            return (
-              <Fila
-                key={i}
-                onSubir={() => { const l = [...d.checklist]; if (i > 0) { [l[i], l[i - 1]] = [l[i - 1], l[i]]; conLista(l); } }}
-                onBajar={() => { const l = [...d.checklist]; if (i < l.length - 1) { [l[i], l[i + 1]] = [l[i + 1], l[i]]; conLista(l); } }}
-                onQuitar={() => conLista(d.checklist.filter((_, x) => x !== i))}
-              >
-                <input
-                  className={MINI}
-                  value={linea}
-                  placeholder="Mejora la concentración"
-                  onChange={e => { const l = [...d.checklist]; l[i] = e.target.value; conLista(l); }}
-                />
-              </Fila>
-            );
-          })}
-          <BotonAgregar onClick={() => set({ checklist: [...d.checklist, ''] })} disabled={d.checklist.length >= LIMITES.hero_checklist}>
-            {d.checklist.length >= LIMITES.hero_checklist ? `Máximo ${LIMITES.hero_checklist}` : 'Agregar beneficio'}
-          </BotonAgregar>
-        </div>
-      </div>
-      <Texto label="Texto del botón principal" valor={d.cta_texto} placeholder="Comprar ahora con descuento" onChange={v => set({ cta_texto: v })} />
-      <Texto label="Letra chica bajo el botón" valor={d.microcopy} placeholder="Pago seguro · Envío gratis" onChange={v => set({ microcopy: v })} />
     </>
   ),
 
-  prueba_social: ({ d, set, lista }) => (
+  compra: ({ d, set }) => (
+    <>
+      <Texto label="Texto del botón" valor={d.cta_texto} placeholder="Comprar ahora" onChange={v => set({ cta_texto: v })} />
+      <Texto label="Letra chica dentro del botón" valor={d.microcopy} placeholder="Envío a todo el país" onChange={v => set({ microcopy: v })} />
+      <div>
+        <label className={ETIQUETA}>Color del botón</label>
+        {d.cta_color ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              className="h-8 w-10 rounded border border-fg/10 bg-transparent cursor-pointer"
+              value={/^#[0-9a-fA-F]{6}$/.test(d.cta_color) ? d.cta_color : '#000000'}
+              onChange={e => set({ cta_color: e.target.value })}
+            />
+            <button type="button" onClick={() => set({ cta_color: '' })} className="text-[11px] text-fg/45 hover:text-fg">
+              Volver al color de botones de la tienda
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1.5 items-start">
+            <p className="text-[11px] text-fg/50 leading-relaxed">
+              Usa el <b className="text-fg/70">color de botones</b> de la tienda (pestaña Colores), igual que el resto de los botones.
+            </p>
+            <button type="button" onClick={() => set({ cta_color: '#E5231D' })} className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg">
+              Usar otro color solo en este botón
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  ),
+
+  galeria_clientes: ({ d, set, lista, onSubirImagen, modo }) => (
     <>
       <div className="grid grid-cols-2 gap-2">
-        <Texto label="Etiqueta" valor={d.etiqueta} placeholder="Excelente" onChange={v => set({ etiqueta: v })} />
+        <Texto label="Título" valor={d.titulo} placeholder="Ellos ya lo" onChange={v => set({ titulo: v })} />
+        <Texto label="Parte destacada" valor={d.titulo_destacado} placeholder="probaron…" onChange={v => set({ titulo_destacado: v })} />
+      </div>
+      <label className={ETIQUETA}>Fotos</label>
+      <ListaEditable
+        items={d.items} campo="items" lista={lista} max={LIMITES.galeria_clientes_items}
+        textoAgregar="Agregar foto" nuevo={() => ({ foto: '', nombre: '', calificacion: 5, comentario: '' })}
+      >
+        {(it, i) => (
+          <>
+            <CampoImagen compacto valor={it.foto} onChange={v => lista.editar('items', i, { foto: v })} onSubir={onSubirImagen} />
+            <div className="flex items-center gap-1.5">
+              <input className={`${MINI} flex-1 min-w-0`} value={it.nombre || ''} placeholder="Nombre (opcional)" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
+              <select
+                className={`${MINI} w-[72px] shrink-0`}
+                value={it.calificacion ?? 5}
+                onChange={e => lista.editar('items', i, { calificacion: Number(e.target.value) })}
+              >
+                {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-neutral-900">{n} ★</option>)}
+                <option value={0} className="bg-neutral-900">Sin ★</option>
+              </select>
+            </div>
+            <textarea
+              rows={3}
+              className={`${MINI} w-full`}
+              value={it.comentario || ''}
+              placeholder="Lo que contó el cliente (ej: me ayudó a sentirme más liviana y a ordenar mis comidas)"
+              onChange={e => lista.editar('items', i, { comentario: e.target.value })}
+            />
+          </>
+        )}
+      </ListaEditable>
+      <p className="text-[11px] text-fg/40 leading-relaxed">
+        {modo === 'producto'
+          ? 'Estas fotos valen solo para este producto en esta landing: no cambian el producto ni otras landings.'
+          : 'Estas fotos las heredan todos los productos de esta landing que no tengan fotos propias.'}
+        {' '}Si no cargás ninguna, se usan las opiniones con foto del producto.
+      </p>
+      <p className={AVISO_REAL}>Solo fotos reales de clientes y con su permiso.</p>
+    </>
+  ),
+
+  prueba_social: ({ d, set }) => (
+    <>
+      <div className="grid grid-cols-[90px_1fr] gap-2">
         <div>
-          <label className={ETIQUETA}>Calificación (0 a 5)</label>
+          <label className={ETIQUETA}>Calificación</label>
           <input
             type="number" min="0" max="5" step="0.1" className={CAMPO}
             value={d.calificacion}
             onChange={e => set({ calificacion: e.target.value })}
           />
         </div>
+        <Texto label="Texto al lado" valor={d.resenas_texto} placeholder="basado en +3.000 clientes" onChange={v => set({ resenas_texto: v })} />
       </div>
-      <Texto label="Cantidad de reseñas" valor={d.resenas_texto} placeholder="+2.847 reseñas verificadas" onChange={v => set({ resenas_texto: v })} />
-      <Texto label="Clientes satisfechos" valor={d.clientes_texto} placeholder="+10.000 clientes satisfechos" onChange={v => set({ clientes_texto: v })} />
-      <div>
-        <label className={ETIQUETA}>Caritas (se muestran las iniciales)</label>
-        <ListaEditable
-          items={d.avatares} campo="avatares" lista={lista} max={LIMITES.prueba_social_avatares}
-          textoAgregar="Agregar persona" nuevo={() => ({ nombre: '' })}
-        >
-          {(it, i) => (
-            <input className={MINI} value={it.nombre || ''} placeholder="María González" onChange={e => lista.editar('avatares', i, { nombre: e.target.value })} />
-          )}
-        </ListaEditable>
-      </div>
+      <p className={AVISO_REAL}>Usá tu calificación y tu cantidad de clientes reales.</p>
     </>
+  ),
+
+  beneficios: ({ lista, d }) => (
+    <ListaEditable
+      items={d.items} campo="items" lista={lista} max={LIMITES.beneficios_items}
+      textoAgregar="Agregar beneficio" nuevo={() => ({ icono: 'leaf', titulo: '', texto: '' })}
+    >
+      {(it, i) => (
+        <>
+          <div className="flex items-center gap-1.5">
+            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+            <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Fórmula natural" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
+          </div>
+          <input className={`${MINI} w-full`} value={it.texto || ''} placeholder="Ingredientes seleccionados" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+        </>
+      )}
+    </ListaEditable>
   ),
 
   ofertas: ({ d, set, packs }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
-      <div className="grid grid-cols-2 gap-2">
-        <Texto label="Nombre de la opción suelta" valor={d.etiqueta_individual} placeholder="1 unidad" onChange={v => set({ etiqueta_individual: v })} />
-        <Texto label="Cintillo de esa opción" valor={d.badge_individual} placeholder="Ej: Prueba" onChange={v => set({ badge_individual: v })} />
+      <Texto label="Título" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <div className="bg-fg/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
+        <p className="text-[11px] font-semibold text-fg/70">Opción de 1 unidad</p>
+        <input className={MINI} value={d.etiqueta_individual || ''} placeholder="Pack Inicio" onChange={e => set({ etiqueta_individual: e.target.value })} />
+        <input className={MINI} value={d.subtitulo_individual || ''} placeholder="Subtítulo (ej: 1 mes de tratamiento)" onChange={e => set({ subtitulo_individual: e.target.value })} />
+        <input className={MINI} value={d.badge_individual || ''} placeholder="Cintillo (ej: Para probar)" onChange={e => set({ badge_individual: e.target.value })} />
       </div>
-      <Texto label="Nota al pie de cada tarjeta" valor={d.nota_pack} placeholder="Compra única" onChange={v => set({ nota_pack: v })} />
+      <Texto label="Texto antes del % de ahorro" valor={d.texto_ahorro} placeholder="Ahorrás — vacío = solo -26%" onChange={v => set({ texto_ahorro: v })} />
 
       <div>
-        <label className={ETIQUETA}>Cintillo de cada paquete</label>
+        <label className={ETIQUETA}>Cada paquete</label>
         {packs.length === 0 ? (
           <p className="text-[11px] text-fg/35 leading-relaxed">
             Todavía no hay paquetes. Se crean en la pestaña <b className="text-fg/60">Venta</b> como
-            “Paquete — más unidades del mismo producto”, y acá les ponés el cintillo (“Más vendido”, “Mejor valor”).
+            “Paquete — más unidades del mismo producto”, y acá les ponés el cintillo (“Más elegido”, “Mejor valor”).
           </p>
         ) : (
           <div className="flex flex-col gap-2">
@@ -372,8 +434,8 @@ const CAMPOS = {
               return (
                 <div key={p.id} className="bg-fg/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
                   <p className="text-[11px] font-semibold text-fg/70 truncate">{p.nombre}</p>
-                  <input className={MINI} value={conf.badge || ''} placeholder="Más vendido" onChange={e => guardar({ badge: e.target.value })} />
-                  <input className={MINI} value={conf.subtitulo || ''} placeholder="Subtítulo (ej: 90 días)" onChange={e => guardar({ subtitulo: e.target.value })} />
+                  <input className={MINI} value={conf.badge || ''} placeholder="Cintillo (ej: Más elegido)" onChange={e => guardar({ badge: e.target.value })} />
+                  <input className={MINI} value={conf.subtitulo || ''} placeholder="Subtítulo (ej: 2 meses de tratamiento)" onChange={e => guardar({ subtitulo: e.target.value })} />
                 </div>
               );
             })}
@@ -394,7 +456,7 @@ const CAMPOS = {
           <div className="flex flex-col gap-2">
             <input className={CAMPO} value={d.suscripcion.titulo || ''} placeholder="Suscribite y ahorrá 15% adicional" onChange={e => set({ suscripcion: { ...d.suscripcion, titulo: e.target.value } })} />
             <input className={CAMPO} value={d.suscripcion.detalle || ''} placeholder="Envío automático cada 30 días. Cancelás cuando quieras." onChange={e => set({ suscripcion: { ...d.suscripcion, detalle: e.target.value } })} />
-            <p className="text-[10px] text-amber-400/70 leading-relaxed">
+            <p className={AVISO_REAL}>
               Por ahora es informativo: marca la intención del cliente, no genera un cobro recurrente.
             </p>
           </div>
@@ -403,53 +465,164 @@ const CAMPOS = {
     </>
   ),
 
-  beneficios: ({ d, set, lista }) => (
+  garantias: ({ d, lista }) => (
+    <ListaEditable
+      items={d.items} campo="items" lista={lista} max={LIMITES.garantias_items}
+      textoAgregar="Agregar sello" nuevo={() => ({ icono: 'shield', titulo: '' })}
+    >
+      {(it, i) => (
+        <div className="flex items-center gap-1.5 w-full">
+          <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
+          <input className={`${MINI} flex-1 min-w-0`} value={it.titulo || ''} placeholder="Compra segura" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
+        </div>
+      )}
+    </ListaEditable>
+  ),
+
+  como_funciona: ({ d, set, lista, onSubirImagen }) => (
     <>
-      <Texto label="Título (vacío = sin encabezado)" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <Encabezado d={d} set={set} />
+      <CampoImagen
+        label="Foto"
+        valor={d.imagen}
+        onChange={v => set({ imagen: v })}
+        onSubir={onSubirImagen}
+        respaldo="Sin foto se usa la principal del producto."
+      />
+      <label className={ETIQUETA}>Etapas</label>
       <ListaEditable
-        items={d.items} campo="items" lista={lista} max={LIMITES.beneficios_items}
-        textoAgregar="Agregar beneficio" nuevo={() => ({ icono: 'zap', titulo: '', texto: '' })}
+        items={d.pasos} campo="pasos" lista={lista} max={LIMITES.como_funciona_pasos}
+        textoAgregar="Agregar etapa" nuevo={() => ({ titulo: '', texto: '' })}
       >
         {(it, i) => (
           <>
-            <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título del beneficio (ej: Enfoque total)" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
-            <div className="flex items-center gap-1.5">
-              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-            </div>
-            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Elimina distracciones y mejora la atención." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+            <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Cuándo (ej: 2 semanas)" onChange={e => lista.editar('pasos', i, { titulo: e.target.value })} />
+            <input className={`${MINI} w-full`} value={it.texto || ''} placeholder="Qué pasa (ej: Rutina más estable)" onChange={e => lista.editar('pasos', i, { texto: e.target.value })} />
           </>
         )}
       </ListaEditable>
+      <p className={AVISO_REAL}>Describí el proceso sin prometer resultados de salud que no puedas respaldar.</p>
     </>
   ),
 
-  ingredientes: ({ d, set, lista }) => (
+  ingredientes: ({ d, set, lista, onSubirImagen }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <Encabezado d={d} set={set} conSubtitulo />
+      <Texto label="Frase destacada (debajo de cada ingrediente)" valor={d.frase} placeholder="Hacé de tu bienestar una prioridad." onChange={v => set({ frase: v })} />
+      <label className={ETIQUETA}>Ingredientes</label>
       <ListaEditable
         items={d.items} campo="items" lista={lista} max={LIMITES.ingredientes_items}
-        textoAgregar="Agregar ingrediente" nuevo={() => ({ icono: 'leaf', nombre: '', dosis: '', texto: '' })}
+        textoAgregar="Agregar ingrediente" nuevo={() => ({ icono: 'leaf', nombre: '', dosis: '', texto: '', imagen: '' })}
       >
         {(it, i) => (
           <>
-            <input className={`${MINI} w-full`} value={it.nombre || ''} placeholder="Nombre del ingrediente (ej: L-Teanina)" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
             <div className="flex items-center gap-1.5 w-full">
-              <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-              <input className={`${MINI} flex-1 min-w-0`} value={it.dosis || ''} placeholder="Dosis (ej: 200mg)" onChange={e => lista.editar('items', i, { dosis: e.target.value })} />
+              <input className={`${MINI} flex-1 min-w-0`} value={it.nombre || ''} placeholder="Nombre (ej: Psyllium)" onChange={e => lista.editar('items', i, { nombre: e.target.value })} />
+              <input className={`${MINI} w-[78px] shrink-0`} value={it.dosis || ''} placeholder="Dosis" onChange={e => lista.editar('items', i, { dosis: e.target.value })} />
             </div>
-            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Relaja la mente sin causar somnolencia." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Para qué está en la fórmula." onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+            <div className="flex items-center gap-2">
+              <CampoImagen compacto valor={it.imagen} onChange={v => lista.editar('items', i, { imagen: v })} onSubir={onSubirImagen} />
+              {!it.imagen && <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} titulo="Ícono si no hay foto" />}
+            </div>
           </>
         )}
       </ListaEditable>
     </>
   ),
 
-  opiniones: ({ d, set, lista }) => (
+  estadisticas: ({ d, set, lista, onSubirImagen }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
+      <Encabezado d={d} set={set} conSubtitulo campoSubtitulo="texto" labelSubtitulo="Texto" />
+      <CampoImagen
+        label="Foto"
+        valor={d.imagen}
+        onChange={v => set({ imagen: v })}
+        onSubir={onSubirImagen}
+        respaldo="Sin foto se usa una de las fotos del producto."
+      />
+      <label className={ETIQUETA}>Cifras</label>
+      <ListaEditable
+        items={d.items} campo="items" lista={lista} max={LIMITES.estadisticas_items}
+        textoAgregar="Agregar cifra" nuevo={() => ({ valor: '', texto: '' })}
+      >
+        {(it, i) => (
+          <div className="flex items-center gap-1.5 w-full">
+            <input className={`${MINI} w-[70px] shrink-0`} value={it.valor || ''} placeholder="94%" onChange={e => lista.editar('items', i, { valor: e.target.value })} />
+            <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="lo recomendaría" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
+          </div>
+        )}
+      </ListaEditable>
+      <Texto label="De dónde salen las cifras" valor={d.nota} placeholder="Encuesta a 320 clientes, julio 2026" onChange={v => set({ nota: v })} />
+      <p className={AVISO_REAL}>Publicá solo cifras que puedas respaldar, con su fuente. Inventarlas es publicidad engañosa.</p>
+    </>
+  ),
+
+  antes_despues: ({ d, set, onSubirImagen }) => (
+    <>
+      <Encabezado d={d} set={set} conSubtitulo />
+      <div className="grid grid-cols-2 gap-2">
+        <CampoImagen label="Foto de antes" valor={d.imagen_antes} onChange={v => set({ imagen_antes: v })} onSubir={onSubirImagen} />
+        <CampoImagen label="Foto de después" valor={d.imagen_despues} onChange={v => set({ imagen_despues: v })} onSubir={onSubirImagen} />
+      </div>
+      <CampoImagen
+        label="O una sola foto con las dos juntas"
+        valor={d.imagen_combinada}
+        onChange={v => set({ imagen_combinada: v })}
+        onSubir={onSubirImagen}
+        respaldo="Si tu foto ya trae el antes y el después lado a lado, subila acá: reemplaza a las dos de arriba y se muestra fija, sin deslizador."
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <Texto label="Etiqueta izquierda" valor={d.etiqueta_antes} placeholder="Antes" onChange={v => set({ etiqueta_antes: v })} />
+        <Texto label="Etiqueta derecha" valor={d.etiqueta_despues} placeholder="Después" onChange={v => set({ etiqueta_despues: v })} />
+      </div>
+      <Texto label="Título del bloque" valor={d.bloque_titulo} placeholder="Un proceso que se nota" onChange={v => set({ bloque_titulo: v })} />
+      <Texto label="Texto" area valor={d.texto} onChange={v => set({ texto: v })} />
+      <div>
+        <label className={ETIQUETA}>Puntos con tilde</label>
+        <ListaTextos
+          items={d.puntos} max={LIMITES.antes_despues_puntos}
+          placeholder="Más ligereza" textoAgregar="Agregar punto"
+          onChange={l => set({ puntos: l })}
+        />
+      </div>
+      <p className={AVISO_REAL}>Solo fotos reales de clientes y con su permiso.</p>
+    </>
+  ),
+
+  comparativa: ({ d, set, lista }) => (
+    <>
+      <Encabezado d={d} set={set} conSubtitulo />
+      <div className="grid grid-cols-3 gap-2">
+        <Texto label="Columna 1" valor={d.columna_beneficio} placeholder="Beneficios" onChange={v => set({ columna_beneficio: v })} />
+        <Texto label="Tu columna" valor={d.nosotros} placeholder="Tu tienda" onChange={v => set({ nosotros: v })} />
+        <Texto label="La otra" valor={d.otros} placeholder="Otras marcas" onChange={v => set({ otros: v })} />
+      </div>
+      <label className={ETIQUETA}>Filas</label>
+      <ListaEditable
+        items={d.items} campo="items" lista={lista} max={LIMITES.comparativa_items}
+        textoAgregar="Agregar fila" nuevo={() => ({ caracteristica: '', nosotros: '', otros: '' })}
+      >
+        {(it, i) => (
+          <>
+            <input className={`${MINI} w-full`} value={it.caracteristica || ''} placeholder="Pago al recibir" onChange={e => lista.editar('items', i, { caracteristica: e.target.value })} />
+            <div className="grid grid-cols-2 gap-1.5">
+              <input className={MINI} value={it.nosotros || ''} placeholder="Nosotros: Sí" onChange={e => lista.editar('items', i, { nosotros: e.target.value })} />
+              <input className={MINI} value={it.otros || ''} placeholder="Otros: No siempre" onChange={e => lista.editar('items', i, { otros: e.target.value })} />
+            </div>
+          </>
+        )}
+      </ListaEditable>
+    </>
+  ),
+
+  opiniones: ({ d, set, lista, onSubirImagen }) => (
+    <>
+      <Texto label="Rótulo chico" valor={d.eyebrow} onChange={v => set({ eyebrow: v })} />
+      <Texto label="Título" valor={d.titulo} onChange={v => set({ titulo: v })} />
       <ListaEditable
         items={d.items} campo="items" lista={lista} max={LIMITES.opiniones_items}
-        textoAgregar="Agregar opinión" nuevo={() => ({ nombre: '', calificacion: 5, comentario: '' })}
+        textoAgregar="Agregar opinión" nuevo={() => ({ nombre: '', calificacion: 5, comentario: '', foto: '' })}
       >
         {(it, i) => (
           <>
@@ -463,60 +636,30 @@ const CAMPOS = {
                 {[5, 4, 3, 2, 1].map(n => <option key={n} value={n} className="bg-neutral-900">{n} ★</option>)}
               </select>
             </div>
-            <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="Desde que lo uso, mi productividad se disparó." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />
+            <textarea rows={2} className={MINI} value={it.comentario || ''} placeholder="Lo que contó el cliente." onChange={e => lista.editar('items', i, { comentario: e.target.value })} />
+            <CampoImagen compacto valor={it.foto} onChange={v => lista.editar('items', i, { foto: v })} onSubir={onSubirImagen} />
           </>
         )}
       </ListaEditable>
-      <p className="text-[10px] text-fg/35 leading-relaxed">
-        Publicá solo opiniones reales de clientes: inventarlas es publicidad engañosa.
+      <p className={AVISO_REAL}>
+        Publicá solo opiniones y fotos reales de clientes, con su permiso: inventarlas es publicidad engañosa.
       </p>
     </>
   ),
 
-  como_funciona: ({ d, set, lista }) => (
+  faq: ({ d, set, faqTitulo, onFaqTitulo, faq, onFaqChange }) => (
     <>
-      <Texto label="Título de la sección" valor={d.titulo} onChange={v => set({ titulo: v })} />
-      <ListaEditable
-        items={d.pasos} campo="pasos" lista={lista} max={LIMITES.como_funciona_pasos}
-        textoAgregar="Agregar paso" nuevo={() => ({ icono: 'zap', titulo: '', texto: '' })}
-      >
-        {(it, i) => (
-          <>
-            <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título del paso (ej: Tomás)" onChange={e => lista.editar('pasos', i, { titulo: e.target.value })} />
-            <div className="flex items-center gap-1.5">
-              <IconoPicker valor={it.icono} onChange={v => lista.editar('pasos', i, { icono: v })} />
-            </div>
-            <textarea rows={2} className={`${MINI} w-full`} value={it.texto || ''} placeholder="Dos cápsulas con agua por la mañana." onChange={e => lista.editar('pasos', i, { texto: e.target.value })} />
-          </>
-        )}
-      </ListaEditable>
-    </>
-  ),
-
-  garantias: ({ d, lista }) => (
-    <ListaEditable
-      items={d.items} campo="items" lista={lista} max={LIMITES.garantias_items}
-      textoAgregar="Agregar garantía" nuevo={() => ({ icono: 'shield', titulo: '', texto: '' })}
-    >
-      {(it, i) => (
-        <>
-          <input className={`${MINI} w-full`} value={it.titulo || ''} placeholder="Título (ej: Garantía de 60 días)" onChange={e => lista.editar('items', i, { titulo: e.target.value })} />
-          <div className="flex items-center gap-1.5 w-full">
-            <IconoPicker valor={it.icono} onChange={v => lista.editar('items', i, { icono: v })} />
-            <input className={`${MINI} flex-1 min-w-0`} value={it.texto || ''} placeholder="Subtítulo (ej: Devolución sin preguntas)" onChange={e => lista.editar('items', i, { texto: e.target.value })} />
-          </div>
-        </>
+      <Encabezado d={d} set={set} />
+      {onFaqTitulo && faqTitulo && (
+        <div>
+          <label className={ETIQUETA}>Título propio de este producto</label>
+          <input type="text" className={CAMPO} value={faqTitulo} onChange={e => onFaqTitulo(e.target.value)} />
+          <p className="text-[10px] text-fg/30 mt-1 leading-relaxed">
+            Este producto tiene un título propio que reemplaza al de arriba. Borralo para usar el de arriba.
+          </p>
+        </div>
       )}
-    </ListaEditable>
-  ),
-
-  faq: ({ faqTitulo, onFaqTitulo, faq, onFaqChange }) => (
-    <>
-      <div>
-        <label className={ETIQUETA}>Título de la sección</label>
-        <input type="text" className={CAMPO} value={faqTitulo || ''} placeholder="Preguntas frecuentes" onChange={e => onFaqTitulo(e.target.value)} />
-      </div>
-      <FaqPanel faq={faq} onChange={onFaqChange} />
+      {onFaqChange && <FaqPanel faq={faq} onChange={onFaqChange} />}
     </>
   ),
 
@@ -532,43 +675,8 @@ const CAMPOS = {
 
   cta_final: ({ d, set }) => (
     <>
-      <Texto label="Etiqueta" valor={d.etiqueta} placeholder="Oferta por tiempo limitado" onChange={v => set({ etiqueta: v })} />
-      <Texto label="Título" valor={d.titulo} placeholder="No pierdas esta oferta especial" onChange={v => set({ titulo: v })} />
-      <Texto label="Texto de apoyo" valor={d.texto} onChange={v => set({ texto: v })} />
-      <div className="grid grid-cols-2 gap-2">
-        <Texto label="Botón" valor={d.cta_texto} placeholder="Comprar ahora" onChange={v => set({ cta_texto: v })} />
-        <Texto label="Nota del botón" valor={d.cta_nota} placeholder="Envío gratis" onChange={v => set({ cta_nota: v })} />
-      </div>
-      <div className="border-t border-fg/10 pt-2.5">
-        <label className="flex items-center gap-2 text-[12px] font-semibold cursor-pointer mb-1.5">
-          <input
-            type="checkbox" className="w-3.5 h-3.5 accent-[var(--color-accent)]"
-            checked={!!d.contador.activo}
-            onChange={e => set({ contador: { ...d.contador, activo: e.target.checked } })}
-          />
-          Mostrar contador
-        </label>
-        {d.contador.activo && (
-          <>
-            <div className="grid grid-cols-3 gap-2">
-              {[['horas', 'Horas', 23], ['minutos', 'Minutos', 59], ['segundos', 'Segundos', 59]].map(([campo, label, max]) => (
-                <div key={campo}>
-                  <label className={ETIQUETA}>{label}</label>
-                  <input
-                    type="number" min="0" max={max} className={CAMPO}
-                    value={d.contador[campo]}
-                    onChange={e => set({ contador: { ...d.contador, [campo]: e.target.value } })}
-                  />
-                </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-fg/35 leading-relaxed mt-1.5">
-              Arranca en este tiempo cada vez que alguien abre la página y baja hasta cero. No hay una fecha
-              límite real detrás.
-            </p>
-          </>
-        )}
-      </div>
+      <Texto label="Frase" valor={d.titulo} placeholder="Bienestar real, todos los días." onChange={v => set({ titulo: v })} />
+      <Texto label="Texto de la derecha" valor={d.texto} placeholder="Compra segura · Envío a todo el país" onChange={v => set({ texto: v })} />
     </>
   ),
 };

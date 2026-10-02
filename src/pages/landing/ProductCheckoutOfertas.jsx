@@ -415,6 +415,14 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
     setErrorOferta('');
   }
 
+  function iniciarCrearOferta(estrategia = 'normal') {
+    setEditandoId(null);
+    setCreando(true);
+    setExpandidaId(null);
+    setForm({ ...formVacio(), estrategia });
+    setErrorOferta('');
+  }
+
   function actualizarBeneficio(indice, valor) {
     setForm(prev => ({
       ...prev,
@@ -509,7 +517,7 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
                   rows={2}
                   value={form.descripcion}
                   onChange={e => setForm({ ...form, descripcion: e.target.value })}
-                  placeholder={form.estrategia === 'order_bump' ? 'Ej: Sí, quiero sumar mi cargador con 20% OFF' : 'Ej: Envío incluido — solo por hoy'}
+                  placeholder={form.estrategia === 'order_bump' ? 'Ej: Sí, quiero sumar mi cargador con 20% OFF' : 'Ej: Mejora tu pedido con precio especial'}
                   className={`${CAMPO} min-h-[72px] resize-y`}
                 />
                 <p className="text-[10px] text-[var(--vit-muted-2)] mt-1 leading-snug">
@@ -728,11 +736,43 @@ export default function ProductCheckoutOfertas({ producto, config, onChange, cat
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-[var(--vit-text)]">Ofertas</h3>
-          <p className="text-xs text-[var(--vit-muted-2)]">Paquetes en la ficha y Order Bumps en el checkout de {producto.nombre || producto.etiqueta}.</p>
+          <p className="text-xs text-[var(--vit-muted-2)]">Paquetes en la ficha, order bumps en checkout y upsells antes de confirmar.</p>
         </div>
-        <button type="button" onClick={() => setCreando(true)} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--vit-text)] bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md hover:border-[var(--vit-accent)] transition-colors">
+        <button type="button" onClick={() => iniciarCrearOferta('normal')} className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[var(--vit-text)] bg-[var(--vit-bg)] border border-[var(--vit-border)] rounded-md hover:border-[var(--vit-accent)] transition-colors">
           <Plus size={14} /> Nueva
         </button>
+      </div>
+
+      <div className="grid gap-2">
+        {ESTRATEGIAS.map(estrategia => {
+          const Icono = estrategia.value === 'normal' ? Package : estrategia.value === 'upsell' ? Sparkles : ShoppingCart;
+          const titulo = estrategia.value === 'normal'
+            ? 'Crear paquete'
+            : estrategia.value === 'upsell'
+              ? 'Crear upsell'
+              : 'Agregar order bump';
+          const texto = estrategia.value === 'normal'
+            ? 'Mismo producto, más unidades y precio especial.'
+            : estrategia.value === 'upsell'
+              ? 'Mejora visible antes de confirmar el pedido.'
+              : 'Complemento pequeño dentro del checkout.';
+          return (
+            <button
+              type="button"
+              key={estrategia.value}
+              onClick={() => iniciarCrearOferta(estrategia.value)}
+              className="flex items-center gap-3 rounded-lg border border-[var(--vit-border)] bg-[var(--vit-bg)] px-3 py-2 text-left hover:border-[var(--vit-accent)] hover:bg-[var(--vit-surface)] transition-colors"
+            >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md border border-[var(--vit-border)] text-[var(--vit-accent)]">
+                <Icono size={15} />
+              </span>
+              <span className="min-w-0">
+                <strong className="block text-xs text-[var(--vit-text)]">{titulo}</strong>
+                <small className="block text-[10px] leading-snug text-[var(--vit-muted-2)]">{texto}</small>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {ofertas.length === 0 ? (

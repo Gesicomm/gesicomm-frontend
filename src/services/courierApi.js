@@ -20,6 +20,26 @@ export const deleteCourier = async (id) => {
   return data;
 };
 
+export const getCourierAccess = async (id) => {
+  const { data } = await api.get(`/couriers/${id}/acceso`);
+  return data;
+};
+
+export const createCourierAccess = async (id, payload) => {
+  const { data } = await api.post(`/couriers/${id}/acceso`, payload);
+  return data;
+};
+
+export const changeCourierAccessPassword = async (id, payload) => {
+  const { data } = await api.put(`/couriers/${id}/acceso/password`, payload);
+  return data;
+};
+
+export const updateCourierAccessStatus = async (id, activo) => {
+  const { data } = await api.put(`/couriers/${id}/acceso/estado`, { activo });
+  return data;
+};
+
 export const getDeliveryZonas = async () => {
   const { data } = await api.get('/couriers/zonas-delivery');
   return data;

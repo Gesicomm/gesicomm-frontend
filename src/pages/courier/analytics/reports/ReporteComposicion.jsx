@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reportesService } from '../../../../services/reportesApi';
+import { METRIC_TERMS } from '../../../../utils/metricGlossary';
 
 export function ReporteComposicion({ filters }) {
   const [data, setData] = useState([]);
@@ -37,7 +38,7 @@ export function ReporteComposicion({ filters }) {
         <div>
           <h2 className="cic-card-title">Composición de Pedidos (Ventas Estratégicas)</h2>
           <p className="cic-card-subtitle" style={{ marginTop: '0.25rem' }}>
-            Desglose de facturación por rol comercial (Base, Order Bump, Upsell).
+            Desglose de ventas netas por rol comercial (Base, Order Bump, Upsell).
           </p>
         </div>
       </div>
@@ -54,7 +55,7 @@ export function ReporteComposicion({ filters }) {
           <div className="cic-kpi-val" style={{ color: 'var(--color-success)' }}>
             {formatMoney(kpis.ventas_estrategicas)}
           </div>
-          <div className="cic-kpi-sub">Ventas Estratégicas (Ingreso por Bumps/Upsells)</div>
+          <div className="cic-kpi-sub">Ventas estratégicas (ventas netas por Bumps/Upsells)</div>
         </div>
       </div>
 
@@ -65,9 +66,9 @@ export function ReporteComposicion({ filters }) {
               <th>Rol Comercial</th>
               <th style={{ textAlign: 'center' }}>Unidades Vendidas</th>
               <th style={{ textAlign: 'center' }}>Pedidos Únicos</th>
-              <th style={{ textAlign: 'right' }}>% de Ventas</th>
-              <th style={{ textAlign: 'right' }}>Precio Promedio</th>
-              <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>Ventas Netas</th>
+              <th style={{ textAlign: 'right' }}>% de {METRIC_TERMS.ventasNetas.toLowerCase()}</th>
+              <th style={{ textAlign: 'right' }}>Precio promedio</th>
+              <th style={{ textAlign: 'right', color: 'var(--color-success)' }}>{METRIC_TERMS.ventasNetas}</th>
             </tr>
           </thead>
           <tbody>

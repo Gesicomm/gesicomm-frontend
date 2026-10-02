@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ImageOff, Pencil } from 'lucide-react';
 import { hexToRgba } from './themeUtils';
-import { ImagenProductoHover } from './sections';
+import { ImagenProductoHover, textoOMuestra } from './sections';
 
 const OPCIONES_ORDEN = [
   { id: 'destacados', label: 'Destacados' },
@@ -106,15 +106,21 @@ export default function CatalogoView({
 
   const inputClase = 'bg-transparent px-3 py-2 rounded-lg text-sm font-medium outline-none transition-colors';
   const catalogoVacio = productos.length === 0;
+  const tituloVista = textoOMuestra(titulo, 'Título del catálogo', previewMode);
+  const descripcionVista = textoOMuestra(descripcion, 'Una línea que cuente qué vas a encontrar acá.', previewMode);
 
   return (
     <div className="max-w-7xl mx-auto w-full px-6 pt-8 pb-20">
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{titulo || 'Catálogo de Productos'}</h1>
-        {descripcion && (
-          <p className="mt-2 max-w-2xl text-sm" style={{ color: hexToRgba(tema.texto, 0.6) }}>{descripcion}</p>
-        )}
-      </div>
+      {/* Título y descripción: vacíos = un ejemplo atenuado en el preview del
+          armador (para ver dónde van) y nada en la landing publicada. */}
+      {(tituloVista.texto || descripcionVista.texto) && (
+        <div className="mb-6">
+          {tituloVista.texto && <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${tituloVista.clase}`}>{tituloVista.texto}</h1>}
+          {descripcionVista.texto && (
+            <p className={`${tituloVista.texto ? 'mt-2 ' : ''}max-w-2xl text-sm ${descripcionVista.clase}`} style={{ color: hexToRgba(tema.texto, 0.6) }}>{descripcionVista.texto}</p>
+          )}
+        </div>
+      )}
 
       {/* Barra de filtros horizontal — compacta, sin sidebar ni drawer móvil. */}
       <div className="flex flex-wrap items-center gap-3 pb-5 mb-6" style={{ borderBottom: `1px solid ${bordeSuave}` }}>

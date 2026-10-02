@@ -70,7 +70,8 @@ export default function BeautyProductPagePublica({
     // propio.
     variante: eleccion?.variante || null,
     oferta: eleccion?.pack || null,
-    cantidad: 1,
+    // La ficha tiene selector de cantidad; el carrito la recorta al stock.
+    cantidad: Math.max(1, Number(eleccion?.cantidad) || 1),
     precio: precioDe(eleccion),
   });
 

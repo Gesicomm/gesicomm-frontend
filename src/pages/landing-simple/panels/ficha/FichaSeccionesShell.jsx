@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
 /**
@@ -14,6 +14,39 @@ import { ChevronRight, ArrowLeft } from 'lucide-react';
  * de volver. El estado de cuál está seleccionada vive acá adentro — el
  * panel que lo usa no necesita saberlo.
  */
+/**
+ * Casilla de mostrar/ocultar de una sección o de un GRUPO de secciones.
+ *
+ * Un grupo (ej. "Encabezado y compra") junta varias secciones: la casilla
+ * muestra el estado de todas — tildada si están todas visibles, vacía si
+ * están todas ocultas y con guión (`mixto`) si hay de las dos. Tocarla
+ * muestra u oculta el grupo entero; adentro del grupo cada sección tiene la
+ * suya para elegir una por una.
+ */
+function Casilla({ sec, onToggleActivo }) {
+  const ref = useRef(null);
+  const mixto = !!sec.mixto;
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = mixto;
+  }, [mixto]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      // Mixto cuenta como "no todo visible": tocarla muestra el grupo entero.
+      checked={!!sec.activo && !mixto}
+      aria-checked={mixto ? 'mixed' : !!sec.activo}
+      onChange={e => onToggleActivo(sec.key, e.target.checked)}
+      className="w-4 h-4 accent-[var(--color-accent)]"
+    />
+  );
+}
+
+function titulo(sec) {
+  if (sec.mixto) return 'Algunas partes ocultas — tocá para mostrar todo';
+  return sec.activo ? 'Ocultar sección' : 'Mostrar sección';
+}
+
 export default function FichaSeccionesShell({ secciones, onToggleActivo, renderInspector }) {
   const [seccionKey, setSeccionKey] = useState(null);
 
@@ -37,14 +70,11 @@ export default function FichaSeccionesShell({ secciones, onToggleActivo, renderI
             {sec.numero}
           </span>
           <span className="text-sm font-semibold text-fg">{sec.label}</span>
-          <label className="ml-auto shrink-0 inline-flex items-center cursor-pointer" title={sec.activo ? 'Ocultar sección' : 'Mostrar sección'}>
-            <input
-              type="checkbox"
-              checked={sec.activo}
-              onChange={e => onToggleActivo(sec.key, e.target.checked)}
-              className="w-4 h-4 accent-[var(--color-accent)]"
-            />
-          </label>
+          {sec.toggleable !== false && (
+            <label className="ml-auto shrink-0 inline-flex items-center cursor-pointer" title={titulo(sec)}>
+              <Casilla sec={sec} onToggleActivo={onToggleActivo} />
+            </label>
+          )}
         </div>
         <div className="flex flex-col gap-3">
           {renderInspector(sec.key)}
@@ -73,18 +103,15 @@ export default function FichaSeccionesShell({ secciones, onToggleActivo, renderI
               </span>
             )}
           </span>
-          <label
-            className="shrink-0 inline-flex items-center cursor-pointer"
-            title={sec.activo ? 'Ocultar sección' : 'Mostrar sección'}
-            onClick={e => e.stopPropagation()}
-          >
-            <input
-              type="checkbox"
-              checked={sec.activo}
-              onChange={e => onToggleActivo(sec.key, e.target.checked)}
-              className="w-4 h-4 accent-[var(--color-accent)]"
-            />
-          </label>
+          {sec.toggleable !== false && (
+            <label
+              className="shrink-0 inline-flex items-center cursor-pointer"
+              title={titulo(sec)}
+              onClick={e => e.stopPropagation()}
+            >
+              <Casilla sec={sec} onToggleActivo={onToggleActivo} />
+            </label>
+          )}
           <ChevronRight size={15} className="text-fg/25 shrink-0" />
         </button>
       ))}
