@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Check, Link2, Loader, RefreshCw, Save, Send, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Check, ExternalLink, Link2, Loader, RefreshCw, Save, Send, ShieldCheck, UserPlus } from 'lucide-react';
 import { speedboxService } from '../../services/speedboxService';
 import { getCouriers } from '../../services/courierApi';
 import './speedbox.css';
@@ -62,6 +62,13 @@ export default function SpeedboxConfig() {
     {error && <div className="spb-alert spb-error" role="alert"><AlertCircle size={18} /><span>{error}</span></div>}
     {message && <div className="spb-alert spb-success" role="status"><Check size={18} /><span>{message}</span></div>}
     {!data ? <button type="button" className="spb-button" disabled={disabled} onClick={() => run('cargar', () => load(true), 'Configuracion actualizada.')}><RefreshCw size={16} /> Reintentar carga</button> : <>
+      <section className="spb-section">
+        <h3>Cuenta en Speedy</h3>
+        <div className="spb-actions">{data.registration_url
+          ? <a className="spb-button" href={data.registration_url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><UserPlus size={16} /> Crear cuenta en Speedy <ExternalLink size={14} aria-hidden="true" /></a>
+          : <button type="button" className="spb-button" disabled title="Enlace oficial pendiente de configuracion"><UserPlus size={16} /> Registro en Speedy no disponible</button>}
+        </div>
+      </section>
       <section className="spb-section">
         <div className="spb-heading"><h3>Conexión</h3><span className={`spb-badge ${data.environment === 'sandbox' ? 'spb-sandbox' : ''}`}>{data.environment === 'sandbox' ? 'Sandbox' : 'Producción'}</span></div>
         <dl className="spb-summary">

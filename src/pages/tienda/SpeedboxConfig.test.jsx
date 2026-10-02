@@ -45,4 +45,20 @@ describe('Speedbox settings', () => {
     const label = await screen.findByText('Recepción de pedido');
     expect(label.parentElement).toHaveTextContent('Pendiente');
   });
+
+  it('opens the configured Speedy registration without leaking session or personal data', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, registration_url: 'https://registration.example.test/register' });
+    render(<SpeedboxConfig />);
+    const link = await screen.findByRole('link', { name: 'Crear cuenta en Speedy' });
+    expect(link).toHaveAttribute('href', 'https://registration.example.test/register');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+  });
+
+  it('keeps registration disabled until an official URL is configured', async () => {
+    render(<SpeedboxConfig />);
+    expect(await screen.findByRole('button', { name: 'Registro en Speedy no disponible' })).toBeDisabled();
+    expect(screen.queryByRole('link', { name: 'Crear cuenta en Speedy' })).not.toBeInTheDocument();
+  });
 });
