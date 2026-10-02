@@ -16,6 +16,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { getMediaUrl } from '../../services/api';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
 import PagoParConfig from './PagoParConfig';
+import SpeedboxConfig from './SpeedboxConfig';
 import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
@@ -94,6 +95,7 @@ const TABS = [
     titulo: 'Medios de cobro',
     desc: 'Conectá una pasarela para que tus clientes puedan pagar online.',
   },
+  { id: 'speedbox', label: 'Speedbox', icono: Link2, titulo: 'Speedbox', desc: '' },
   {
     id: 'economica',
     label: 'Costos',
@@ -114,7 +116,7 @@ const TABS_VALIDAS = new Set(TABS.map(t => t.id));
 
 // Tabs cuyo contenido tiene su propio botón de guardado (componentes con su
 // propio servicio) — el footer de esta pantalla no los alcanza.
-const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas'];
+const TABS_CON_GUARDADO_PROPIO = ['economica', 'pasarelas', 'speedbox'];
 
 const VARIABLES_MENSAJE = [
   { variable: '{producto}', desc: 'Nombre del producto', ejemplo: 'Chomba Lacoste Clásica' },
@@ -1002,6 +1004,8 @@ export default function ConfigurarTienda() {
                 </div>
               )}
 
+              {tab === 'speedbox' && <div className="tn-tab-content" key="speedbox"><SpeedboxConfig /></div>}
+
               {/* ═════════════════ TAB: CONFIGURACIÓN ECONÓMICA ═══════════ */}
               {tab === 'economica' && (
                 <div className="tn-tab-content" key="economica">
@@ -1196,7 +1200,7 @@ export default function ConfigurarTienda() {
             </div>
 
             {/* ── Footer de acciones ─────────────────────────────────── */}
-            <div className="tn-footer">
+            {tab !== 'speedbox' && <div className="tn-footer">
               <p className="tn-footer-note">
                 {tabGuardaAparte ? (
                   <>
@@ -1217,7 +1221,7 @@ export default function ConfigurarTienda() {
                   Guardar cambios
                 </button>
               </div>
-            </div>
+            </div>}
           </form>
         </div>
       </div>

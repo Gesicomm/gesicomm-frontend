@@ -1,0 +1,48 @@
+.spb-config { color: var(--vit-text); font-size: 0.875rem; letter-spacing: 0; }
+.spb-section { padding: 1.25rem 0; border-bottom: 1px solid var(--vit-border); }
+.spb-section:first-of-type { padding-top: 0; }
+.spb-section:last-of-type { border-bottom: 0; }
+.spb-config h3 { font-size: 1rem; margin: 0 0 1rem; font-weight: 650; letter-spacing: 0; }
+.spb-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.75rem; }
+.spb-badge { color: #218259; background: #d5f4e3; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+.spb-sandbox { color: #87590c; background: #f9ebc8; }
+.spb-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; margin: 0 0 1.25rem; }
+.spb-summary dt, .spb-muted { color: var(--vit-muted); }
+.spb-summary dd { margin: 0.25rem 0 0; overflow-wrap: anywhere; }
+.spb-fields { display: flex; gap: 1.25rem; align-items: end; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.spb-field { display: grid; gap: 0.5rem; flex: 1 1 250px; max-width: 430px; }
+.spb-field select { min-height: 40px; padding: 0.5rem; color: var(--vit-text); background: var(--vit-bg); border: 1px solid var(--vit-border); border-radius: 6px; width: 100%; font: inherit; }
+.spb-checkbox { display: flex; gap: 0.5rem; align-items: center; min-height: 40px; }
+.spb-checkbox input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--vit-accent-fg); }
+.spb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.spb-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-height: 36px; padding: 0.45rem 0.75rem; border: 1px solid var(--vit-border); border-radius: 6px; background: var(--vit-bg); color: var(--vit-text); font: inherit; cursor: pointer; }
+.spb-button svg { flex-shrink: 0; }
+.spb-button:hover:not(:disabled) { background: var(--vit-surface); }
+.spb-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.spb-primary { color: var(--vit-accent-fg); border-color: var(--vit-accent-fg); }
+.spb-button:focus-visible, .spb-config input:focus-visible, .spb-config select:focus-visible { outline: 2px solid var(--vit-accent-fg); outline-offset: 3px; }
+.spb-checks { padding: 0; margin: 0; list-style: none; display: grid; gap: 0.8rem; }
+.spb-checks li { display: grid; grid-template-columns: 20px minmax(0,1fr) auto; align-items: center; gap: 0.5rem; }
+.spb-check-ok { color: #29966c; display: flex; }
+.spb-check-pending { color: var(--vit-muted); }
+.spb-table-scroll { overflow-x: auto; max-width: 100%; }
+.spb-table { border-collapse: collapse; width: 100%; min-width: 620px; text-align: left; font-size: 0.8rem; }
+.spb-table th, .spb-table td { padding: 0.7rem 0.6rem; border-bottom: 1px solid var(--vit-border); vertical-align: top; }
+.spb-table th { color: var(--vit-muted); font-weight: 600; }
+.spb-error-cell { min-width: 180px; max-width: 320px; overflow-wrap: anywhere; }
+.spb-alert { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.8rem; margin: 0 0 1rem; border-radius: 6px; }
+.spb-alert svg { flex-shrink: 0; }
+.spb-error { color: #ef717c; background: rgba(215,55,69,0.09); }
+.spb-success { color: #29966c; background: rgba(41,150,108,0.09); }
+.spb-loading { display: flex; gap: 0.6rem; align-items: center; padding: 1rem 0; }
+.spb-spin { animation: spb-spin 1s linear infinite; }
+.spb-reviews { padding: 0; list-style: none; display: grid; gap: 1rem; }
+.spb-reviews li { display: grid; gap: 0.4rem; }
+.spb-reviews span { color: var(--vit-muted); }
+.spb-modal::backdrop { background: rgba(0,0,0,0.55); }
+.spb-modal { margin: auto; background: var(--vit-surface); color: var(--vit-text); border: 1px solid var(--vit-border); border-radius: 8px; padding: 1.5rem; max-width: 480px; width: calc(100% - 2rem); max-height: 90vh; overflow-y: auto; }
+.spb-modal code { display: block; overflow-wrap: anywhere; margin: 1rem 0; }
+.spb-modal .spb-actions { justify-content: flex-end; margin-top: 1rem; }
+@keyframes spb-spin { to { transform: rotate(360deg); } }
+@media (max-width: 540px) { .spb-summary { grid-template-columns: 1fr; } .spb-checks li { font-size: 0.8rem; } .spb-button { max-width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .spb-spin { animation: none; } }
