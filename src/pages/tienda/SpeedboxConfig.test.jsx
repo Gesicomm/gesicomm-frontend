@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-li
 import SpeedboxConfig from './SpeedboxConfig';
 import { speedboxService } from '../../services/speedboxService';
 import { getCouriers } from '../../services/courierApi';
-vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn() } }));
+vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn(), conciliar: vi.fn() } }));
 vi.mock('../../services/courierApi', () => ({ getCouriers: vi.fn() }));
 const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
   connection: { tienda_id: '54', courier_id: 2, activo: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
@@ -16,6 +16,27 @@ beforeEach(() => {
   getCouriers.mockResolvedValue([{ id: 2, nombre: 'Speedbox', activo: true }, { id: 3, nombre: 'Otro', activo: true }]);
 });
 describe('Speedbox settings', () => {
+  it('conciles only with an explicit concept, reference and note', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config,
+      solicitudes_abastecimiento: [{ id: 4, estado: 'pago_validado', costo_producto: 50000, costo_logistico: 12000 }],
+      events: [{ id: 3, event_key: 'id:evt-3', tipo: 'wallet.transaction', payload: { data: { amount: 50000, direction: 'debit' } } }] });
+    render(<SpeedboxConfig />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Conciliar movimiento 3' }));
+    const modal = screen.getByRole('dialog');
+    expect(within(modal).getByRole('button', { name: 'Conciliar' })).toBeDisabled();
+    fireEvent.change(within(modal).getByLabelText('Concepto'), { target: { value: 'pago_proveedor' } });
+    expect(within(modal).queryByRole('option', { name: 'Cobro al cliente' })).not.toBeInTheDocument();
+    fireEvent.change(within(modal).getByLabelText('Referencia'), { target: { value: 'solicitud:4' } });
+    fireEvent.change(within(modal).getByLabelText('Nota de conciliacion'), { target: { value: 'Comprobante cotejado' } });
+    fireEvent.submit(within(modal).getByRole('button', { name: 'Conciliar' }).closest('form'));
+    await waitFor(() => expect(speedboxService.conciliar).toHaveBeenCalledWith(3, { concepto: 'pago_proveedor', envio_id: null, solicitud_id: 4, nota: 'Comprobante cotejado' }));
+  });
+  it('keeps an observation without remote ID unavailable for reconciliation', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, events: [{ id: 3, event_key: 'hash:observation', tipo: 'wallet.transaction', estado: 'revision', payload: { data: { amount: 5000, direction: 'credit' } } }] });
+    render(<SpeedboxConfig />);
+    await screen.findByText('Sin conciliar');
+    expect(screen.queryByRole('button', { name: 'Conciliar movimiento 3' })).not.toBeInTheDocument();
+  });
   it('saves the chosen courier and activation without any credentials', async () => {
     render(<SpeedboxConfig />);
     fireEvent.change(await screen.findByLabelText('Courier Speedbox'), { target: { value: '3' } });

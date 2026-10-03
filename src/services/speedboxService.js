@@ -8,6 +8,7 @@ export const speedboxService = {
   probar: async () => (await api.post(`${base}/spec`)).data,
   sincronizar: async () => (await api.post(`${base}/updates`)).data,
   enviar: async id => (await api.post(`${base}/pedidos/${id}/enviar`)).data,
+  conciliar: async (id, payload) => (await api.post(`${base}/eventos/${id}/conciliar`, payload)).data,
   reintentar: async (id, acknowledge_uncertain = false) =>
     (await api.post(`${base}/pedidos/${id}/reintentar`, { acknowledge_uncertain })).data,
 };
