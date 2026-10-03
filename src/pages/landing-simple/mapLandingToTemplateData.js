@@ -65,7 +65,7 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
       return {
         id: finalId,
         nombre: c?.nombre || '(producto no disponible)',
-        precio: c?.precio_efectivo ?? c?.precio_base ?? null,
+        precio: c?.precio_publico ?? c?.precio_efectivo ?? c?.precio_base ?? null,
         precioAntes: item.precio_ancla ? Number(item.precio_ancla) : (c?.precio_tachado ? Number(c.precio_tachado) : null),
         imagen: c?.imagen ? getMediaUrl(c.imagen) : null,
         // Galería completa: la tarjeta la rota al pasar el mouse por encima
@@ -165,7 +165,11 @@ export function mapPublicDtoToTemplateData(dto) {
     productosTitulo: dto?.productos_titulo || 'Productos destacados',
     catalogoTitulo: dto?.catalogo_titulo || '',
     catalogoDescripcion: dto?.catalogo_descripcion || '',
-    productos: (dto?.items || []).map(i => ({
+    // `items` solo viaja cuando difiere de catalogo_items (plantillas rígidas:
+    // son los destacados del home). Cuando son el mismo array el backend lo
+    // omite para no serializar el catálogo dos veces — ver
+    // landing.service.js#obtenerPublica.
+    productos: (dto?.items ?? dto?.catalogo_items ?? []).map(i => ({
       id: i.content_id,
       nombre: i.nombre,
       precio: i.precio,

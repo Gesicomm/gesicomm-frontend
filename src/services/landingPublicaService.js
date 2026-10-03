@@ -168,6 +168,23 @@ export async function consultarResultadoPagoLanding(hash) {
   return data;
 }
 
+/**
+ * Cuenta una visita a la landing.
+ *
+ * Antes la contaba el backend dentro del GET de la landing, lo que obligaba a
+ * que cada visita llegara a Node y hacía incacheable esa respuesta. Ahora la
+ * dispara el navegador para que el GET pueda vivir en el CDN. No se espera ni
+ * se propaga el error: una visita perdida no puede romperle la página a nadie.
+ */
+export async function registrarVisitaLanding(slug) {
+  const path = slug ? `/api/l/${encodeURIComponent(slug)}/visita` : '/api/l/visita';
+  try {
+    await fetch(path, { method: 'POST', keepalive: true });
+  } catch (err) {
+    console.warn('[landing] no se pudo registrar la visita:', err?.message || err);
+  }
+}
+
 export async function registrarEventoLanding(slug, payload) {
   const path = slug ? `/api/l/${encodeURIComponent(slug)}/eventos` : '/api/l/eventos';
   try {

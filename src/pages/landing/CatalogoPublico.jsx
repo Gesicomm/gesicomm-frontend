@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { obtenerCatalogoLandingPublica } from '../../services/landingPublicaService';
+import { obtenerCatalogoLandingPublica, registrarVisitaLanding } from '../../services/landingPublicaService';
 import { useDocumentSeo } from '../../hooks/useDocumentSeo';
 import { galeriaTarjetaDeItem, mapPublicDtoToTemplateData } from '../landing-simple/mapLandingToTemplateData';
 import { getMediaUrl } from '../../services/api';
@@ -34,6 +34,7 @@ export default function CatalogoPublico() {
   // la grilla mientras se pide una página/filtro nuevo, para no perder el
   // scroll ni el layout en cada cambio (ver CatalogoView -> prop `cargando`).
   const [cargandoPagina, setCargandoPagina] = useState(false);
+  const visitaEnviadaRef = useRef(null);
 
   // Todo filtro/orden/página se resuelve del lado del servidor: el
   // catálogo puede tener más productos de los que trae esta página, así
@@ -51,6 +52,14 @@ export default function CatalogoPublico() {
         if (!res.disponible) return setEstadoCarga('no-disponible');
         setData(res);
         setEstadoCarga('ok');
+        // Una visita por catálogo visitado, no una por filtro tocado. El
+        // backend la contaba dentro de este GET, que corre de nuevo con cada
+        // filtro y cada página: paginar tres veces contaba tres visitas. Acá se
+        // cuenta una sola, y de paso el GET queda cacheable en el CDN.
+        if (visitaEnviadaRef.current !== slug) {
+          visitaEnviadaRef.current = slug;
+          registrarVisitaLanding(slug);
+        }
       })
       .catch(() => {
         if (activo) setEstadoCarga('no-encontrada');

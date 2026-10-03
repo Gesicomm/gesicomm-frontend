@@ -24,7 +24,10 @@ import { getMediaUrl } from '../../services/api';
  * de Landing.producto_id), así que acá solo se reacomoda la forma.
  */
 export function mapPublicDtoToFunnelData(dto) {
-  const item = dto?.items?.[0] || null;
+  // `items` solo viaja cuando difiere de catalogo_items (plantillas rígidas).
+  // En un embudo son el mismo array de un solo elemento —su producto—, así que
+  // resolver acá no cambia qué se vende. Ver landing.service.js#obtenerPublica.
+  const item = (dto?.items ?? dto?.catalogo_items)?.[0] || null;
 
   return {
     slug: dto?.slug,

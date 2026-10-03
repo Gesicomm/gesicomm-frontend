@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding } from '../../services/landingPublicaService';
+import { obtenerLandingPublica, obtenerProductoLanding, registrarEventoLanding, registrarVisitaLanding } from '../../services/landingPublicaService';
 import { generarEventId, inicializarPixel, leerCookiesFacebook, trackearEvento } from '../../lib/metaPixel';
 import { inicializarGA } from '../../lib/googleAnalytics';
 import { inicializarTikTokPixel } from '../../lib/tiktokPixel';
@@ -52,6 +52,12 @@ export default function LandingPublica() {
         const pageviewKey = `${slug || 'home'}:${productId || ''}:${window.location.pathname}`;
         if (pageviewEnviadoRef.current !== pageviewKey) {
           pageviewEnviadoRef.current = pageviewKey;
+          // La visita la contaba el backend dentro de este GET, lo que lo hacía
+          // incacheable. Solo cuando NO hay productId: la ficha de producto
+          // tampoco contaba visita antes (obtenerProductoPublico no llamaba a
+          // registrarVisita), y la idea es no cambiar qué se mide, solo quién
+          // lo dispara.
+          if (!productId) registrarVisitaLanding(slug);
           const eventId = generarEventId();
           const { fbc, fbp } = leerCookiesFacebook();
           trackearEvento('PageView', eventId, {});

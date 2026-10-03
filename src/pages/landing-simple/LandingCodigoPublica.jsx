@@ -251,7 +251,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       busqueda: pedido?.busqueda || undefined,
     });
     if (!res || !res.disponible) throw new Error('Catálogo no disponible');
-    const items = res.items || [];
+    const items = res.catalogo_items || res.items || [];
     setExtras(prev => {
       const ids = new Set(prev.map(i => i.content_id));
       return [...prev, ...items.filter(i => !ids.has(i.content_id))];

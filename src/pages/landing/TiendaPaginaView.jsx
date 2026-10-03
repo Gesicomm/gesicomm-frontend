@@ -180,6 +180,15 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     [data]
   );
 
+  /**
+   * Los items del home. `items` solo viaja cuando DIFIERE de catalogo_items
+   * (plantillas rígidas: son los destacados). Cuando son el mismo array el
+   * backend omite `items` para no mandar el catálogo dos veces en la misma
+   * respuesta — eran 138 KB de los 498 KB que pesaba. Ver
+   * landing.service.js#obtenerPublica.
+   */
+  const itemsHome = useMemo(() => data?.items ?? data?.catalogo_items ?? [], [data]);
+
   // Ofertas para mostrar como sugerencia en el carrito: solo las del producto
   // ancla que ya está en el pedido. Un bump de otro producto no tiene por qué
   // aparecer acá aunque exista en la misma landing.
@@ -598,26 +607,24 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     });
   }
 
-  const categorias = useMemo(() => data ? [...new Set((data?.items || []).map(i => i.categoria).filter(Boolean))] : [], [data]);
-  const marcas = useMemo(() => data ? [...new Set((data?.items || []).map(i => i.marca).filter(Boolean))] : [], [data]);
+  const categorias = useMemo(() => [...new Set(itemsHome.map(i => i.categoria).filter(Boolean))], [itemsHome]);
+  const marcas = useMemo(() => [...new Set(itemsHome.map(i => i.marca).filter(Boolean))], [itemsHome]);
 
   // Imagen de cada categoría para LandingCategoryStrip: la primera foto
   // disponible entre los items curados de ESTA landing en esa categoría —
   // no un campo propio (Categoria no tiene imagen, es un modelo global).
   const categoriaImagen = useMemo(() => {
     const mapa = new Map();
-    if (!data) return mapa;
-    data.items.forEach(i => {
+    itemsHome.forEach(i => {
       if (i.categoria && i.imagen && !mapa.has(i.categoria)) mapa.set(i.categoria, i.imagen);
     });
     return mapa;
-  }, [data]);
+  }, [itemsHome]);
 
   // Etiquetas agrupadas case-insensitive: "Ofertas" y "ofertas " son el mismo filtro.
   const etiquetas = useMemo(() => {
-    if (!data) return [];
     const mapa = new Map();
-    data.items.forEach(i => {
+    itemsHome.forEach(i => {
       if (i.etiqueta) {
         i.etiqueta.split(',').map(s => s.trim()).filter(Boolean).forEach(tag => {
           const clave = tag.toLowerCase();
@@ -626,15 +633,14 @@ export default function TiendaPaginaView({ data, slug, productId }) {
       }
     });
     return Array.from(mapa.values());
-  }, [data]);
+  }, [itemsHome]);
 
   // Producto.destacado ya existe en el catálogo (lo marca la dueña en el
   // picker de la landing) — ver LandingFeatured.jsx.
-  const itemsDestacados = useMemo(() => data ? data.items.filter(i => i.destacado) : [], [data]);
+  const itemsDestacados = useMemo(() => itemsHome.filter(i => i.destacado), [itemsHome]);
 
   const itemsFiltrados = useMemo(() => {
-    if (!data) return [];
-    let arr = data.items;
+    let arr = itemsHome;
     if (filtroCategoria) arr = arr.filter(i => i.categoria === filtroCategoria);
     if (filtroMarca) arr = arr.filter(i => i.marca === filtroMarca);
     if (filtroEtiqueta) {
@@ -648,7 +654,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
     if (orden === 'asc') arr = [...arr].sort((a, b) => a.precio - b.precio);
     if (orden === 'desc') arr = [...arr].sort((a, b) => b.precio - a.precio);
     return arr;
-  }, [data, filtroCategoria, filtroMarca, filtroEtiqueta, busqueda, orden]);
+  }, [itemsHome, filtroCategoria, filtroMarca, filtroEtiqueta, busqueda, orden]);
 
   
   
@@ -716,7 +722,7 @@ export default function TiendaPaginaView({ data, slug, productId }) {
   // Sin link, el botón lleva a la grilla de productos de esta misma página.
   const bannerLinkEsExterno = banner?.boton_link && /^https?:\/\//i.test(banner.boton_link);
 
-  const totalItems = data.items.length;
+  const totalItems = itemsHome.length;
   const conteo = hayFiltroActivo && itemsFiltrados.length !== totalItems
     ? `${itemsFiltrados.length} de ${totalItems} productos`
     : `${totalItems} producto${totalItems === 1 ? '' : 's'}`;
