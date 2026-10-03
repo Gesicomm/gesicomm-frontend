@@ -279,6 +279,7 @@ export default function AdminDashboard() {
       </section>
 
       <section className="ad-shortcuts">
+        <Link to="/admin/raha"><ShieldCheck size={16} /> Solicitudes Raha</Link>
         <Link to="/admin/planes">
           <CreditCard size={16} />
           Configurar planes

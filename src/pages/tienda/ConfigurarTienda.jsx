@@ -17,6 +17,7 @@ import { getMediaUrl } from '../../services/api';
 import { generarPreviewMensaje } from '../../lib/mensajeWhatsapp';
 import PagoParConfig from './PagoParConfig';
 import SpeedboxConfig from './SpeedboxConfig';
+import RahaConexion from './RahaConexion';
 import DominioPropio from './DominioPropio';
 import ComboConfiguracion from '../combos/ComboConfiguracion';
 import { MetodosPagoCrud } from '../courier/MetodosPagoCrud';
@@ -96,6 +97,7 @@ const TABS = [
     desc: 'Conectá una pasarela para que tus clientes puedan pagar online.',
   },
   { id: 'speedbox', label: 'Speedbox', icono: Link2, titulo: 'Speedbox', desc: '' },
+  { id: 'raha', label: 'Conexión Raha', icono: ShieldCheck, titulo: 'Conexión Raha', desc: '' },
   {
     id: 'economica',
     label: 'Costos',
@@ -447,7 +449,7 @@ export default function ConfigurarTienda() {
             <p>{tabActual.desc}</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="tn-form">
+          {tab === 'raha' ? <RahaConexion tienda={tienda} /> : <form onSubmit={handleSubmit} className="tn-form">
             <div className="tn-body">
 
               {ok && mensajeExito && (
@@ -1222,7 +1224,7 @@ export default function ConfigurarTienda() {
                 </button>
               </div>
             </div>}
-          </form>
+          </form>}
         </div>
       </div>
     </div>
