@@ -550,6 +550,28 @@
   min-width: 0;
 }
 
+.prod-requirements {
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 24%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+.prod-requirements > strong { font-size: 0.86rem; color: var(--color-fg); }
+.prod-requirements-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; margin-top: 0.65rem; }
+.prod-requirements-row > span { font-size: 0.75rem; color: var(--color-fg-muted); margin-right: 0.3rem; }
+.prod-requirements-row > button {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.5rem; font: inherit; font-size: 0.73rem;
+  color: var(--color-fg-muted); border: 1px solid color-mix(in srgb, var(--color-fg) 15%, transparent);
+  border-radius: 5px; background: transparent; cursor: pointer;
+}
+.prod-requirements-row > button.ready { color: var(--color-success); }
+.prod-requirements-row > button:hover { border-color: var(--color-primary); color: var(--color-fg); }
+.prod-requirements p, .prod-offer-draft-hint { font-size: 0.75rem; line-height: 1.5; color: var(--color-fg-muted); }
+.prod-requirements p { margin: 0.65rem 0 0; }
+.prod-offer-draft-hint { padding: 0.7rem; border-radius: 6px; background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+
 .prod-step-nav {
   position: sticky;
   top: 1rem;

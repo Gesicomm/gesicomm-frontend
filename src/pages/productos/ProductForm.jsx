@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import toast from 'react-hot-toast';
 import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
 import { categoriaService } from '../../services/catalogoService';
@@ -17,6 +18,8 @@ import FaqPanel from '../landing-simple/panels/FaqPanel';
 import { estiloVisualMedio } from '../landing-simple/templates/mediaGaleria';
 import { calcularRecorteInteligente } from './imagenRecorte';
 import { ImagenCardCompacta, EditorEncuadreModal } from './ImagenEncuadreCards';
+import { erroresDelProducto, PRODUCTO_NUEVO, ofertaBorradorPayload } from './productoFormValidation';
+import { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import {
   Package, ChevronLeft, Save, Plus, Trash2, Upload,
   Star, X, Info, DollarSign, BarChart2, Image as ImageIcon, Tag, Activity,
@@ -342,6 +345,8 @@ export default function ProductForm() {
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(esEdicion);
   const [error, setError] = useState(null);
+  const [ofertasBorrador, setOfertasBorrador] = useState([]);
+  const [campoPendiente, setCampoPendiente] = useState(null);
   // Guardar en edición se queda EN la misma ficha (no vuelve al catálogo):
   // así se pueden tocar varias pestañas (Venta, Ficha avanzada, etc.) sin
   // tener que reabrir el producto entre cada guardado.
@@ -382,6 +387,7 @@ export default function ProductForm() {
   const esAdmin = usuarioActual?.rol === 'administrador';
 
   const { register, handleSubmit, control, watch, setValue, getValues, reset, formState: { errors, isDirty } } = useForm({
+    shouldFocusError: false,
     defaultValues: {
       nombre: '',
       categoria_id: '',
@@ -773,10 +779,26 @@ export default function ProductForm() {
     }
   };
 
-  // Nombre y SKU viven en la pestaña básica: si faltan y el usuario está
-  // en otra pestaña, el error quedaría escondido y "Guardar" no haría nada.
+  const abrirCampo = (campo) => {
+    setTabActiva(campo.tab);
+    setCampoPendiente(campo);
+  };
+  useEffect(() => {
+    if (!campoPendiente) return;
+    const frame = requestAnimationFrame(() => {
+      const input = campoPendiente.id
+        ? document.getElementById(campoPendiente.id)
+        : document.getElementsByName(campoPendiente.campo)[0];
+      input?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+      input?.focus({ preventScroll: true });
+      setCampoPendiente(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [tabActiva, campoPendiente]);
+
   const alFallarValidacion = (errs) => {
-    if (errs.nombre || errs.sku) setTabActiva('basica');
+    const [primero] = erroresDelProducto(errs);
+    if (primero) abrirCampo(primero);
   };
 
   // Fotos de la ficha del rubro (Vista del producto): van a R2 y vuelven como
@@ -792,6 +814,7 @@ export default function ProductForm() {
     setGuardando(true);
     setError(null);
     setAviso(null);
+    let productoCreadoId = null;
     try {
       const payload = {
         nombre: data.nombre.trim(),
@@ -855,6 +878,11 @@ export default function ProductForm() {
             .map(o => ({ ...o, nombre: (o.nombre || '').trim(), valores: (o.valores || []).filter(v => (v.valor || '').trim()) }))
             .filter(o => o.nombre && o.valores.length > 0)
           : undefined,
+        ...(!esEdicion && ofertasBorrador.length > 0
+          ? { ofertas: ofertasBorrador.map(o => ofertaBorradorPayload({ ...o, componentes: o.componentes.map(c => Number(c.producto_id) === PRODUCTO_NUEVO
+              ? { ...c, permite_elegir_variante: data.variantes.some(v => modoLegacyVariantes || v.incluida !== false) }
+              : c) })) }
+          : {}),
       };
 
       if (esEdicion) {
@@ -870,6 +898,12 @@ export default function ProductForm() {
         navigate('/mi-catalogo?filtro=mios');
       } else {
         const nuevo = await productService.crear(payload);
+        productoCreadoId = nuevo.id;
+        const avisosImagen = [];
+        for (let i = 0; i < ofertasBorrador.length; i++) {
+          const avisoImagen = await subirImagenPendiente(nuevo.ofertas?.[i]?.id, ofertasBorrador[i].imagen_archivo);
+          if (avisoImagen) avisosImagen.push(avisoImagen);
+        }
         for (const imgObj of imagenesNuevas) {
           try {
             await productService.subirImagen(nuevo.id, prepararImagenFormData(imgObj));
@@ -878,14 +912,29 @@ export default function ProductForm() {
           }
         }
         await subirImagenesDeVariantes(nuevo.id, data.variantes);
+        setOfertasBorrador([]);
+        if (avisosImagen.length) {
+          // El producto y las ofertas ya existen; abrir edición evita que
+          // reintentar una foto cree otro producto.
+          toast.error(avisosImagen.join('\n'));
+          navigate(`/products/${nuevo.id}/editar`);
+          return;
+        }
         navigate('/mi-catalogo?filtro=mios');
       }
     } catch (err) {
+      if (productoCreadoId) {
+        setOfertasBorrador([]);
+        toast.error('El producto y sus ofertas se guardaron, pero falló una imagen. Podés volver a cargarla desde la edición.');
+        navigate(`/products/${productoCreadoId}/editar`);
+        return;
+      }
       const errores = err.response?.data?.errores;
       const msg = errores
         ? errores.join('\n')
         : (err.response?.data?.message || 'Error al guardar el producto.');
       setError(msg);
+      if (err.response?.data?.seccion === 'venta') setTabActiva('venta');
     } finally {
       setGuardando(false);
     }
@@ -1192,10 +1241,6 @@ export default function ProductForm() {
     || imagenesNuevas.find(img => img.es_principal)
     || imagenesNuevas[0];
   const imagenPrincipalUrl = imagenPrincipal?.url ? getMediaUrl(imagenPrincipal.url) : null;
-  const tieneTextoProducto = Boolean(
-    (valoresProducto.descripcion_corta || '').trim()
-    || (valoresProducto.descripcion_larga || '').trim()
-  );
   const tieneMarketing = Boolean(
     (valoresProducto.propuesta_valor || '').trim()
     || (fichaRubroVal === 'basico' && (valoresProducto.sobre_este_producto || '').trim())
@@ -1204,12 +1249,24 @@ export default function ProductForm() {
     || beneficiosFields.length
     || faq.length
   );
-  const totalImagenes = imagenes.length + imagenesNuevas.length;
+  const requisitosGuardar = [
+    { label: 'Nombre', listo: Boolean(nombre?.trim()), tab: 'basica', id: 'prod-nombre' },
+    ...(skuObligatorio ? [{ label: 'SKU', listo: Boolean(valoresProducto.sku?.trim()), tab: 'basica', id: 'prod-sku' }] : []),
+    { label: 'Precio de venta', listo: valoresProducto.precio_base !== '' && valoresProducto.precio_base != null && Number(valoresProducto.precio_base) >= 0, tab: 'comercial', id: 'prod-precio-base' },
+  ];
+  const stockParaVender = tieneVariantes
+    ? (valoresProducto.variantes || []).some(v => v.incluida !== false && ((Number(v.stock_salon) || 0) + (Number(v.stock_deposito) || 0)) > 0)
+    : stockActualVal > 0;
+  const requisitosVender = [
+    { label: 'Precio mayor a 0', listo: precioFinalVal > 0, tab: 'comercial', id: 'prod-precio-base' },
+    { label: 'Stock disponible', listo: stockParaVender, tab: 'stock' },
+    { label: 'Activo y en venta', listo: activoVal && estadoVentaVal === 'en_venta', tab: 'publicacion', id: 'prod-estado-venta' },
+  ];
   const estadoSecciones = {
-    basica: nombre?.trim() && fichaRubroVal && (tieneTextoProducto || totalImagenes > 0) ? 'ok' : (nombre?.trim() || fichaRubroVal ? 'warn' : 'todo'),
+    basica: requisitosGuardar.filter(r => r.tab === 'basica').every(r => r.listo) ? 'ok' : 'todo',
     comercial: precioBaseVal > 0 ? 'ok' : 'todo',
     stock: tieneVariantes ? (variantesFields.length ? 'ok' : 'warn') : (stockActualVal > 0 ? 'ok' : 'warn'),
-    venta: esEdicion ? 'warn' : 'todo',
+    venta: esEdicion ? 'warn' : (ofertasBorrador.length > 0 ? 'ok' : 'todo'),
     marketing: fichaRubroVal ? (tieneMarketing ? 'ok' : 'warn') : 'todo',
     publicacion: estadoVentaVal && activoVal !== undefined ? 'ok' : 'todo',
   };
@@ -1285,7 +1342,6 @@ export default function ProductForm() {
           </button>
         </div>
       )}
-
       {aviso && (
         <div className="form-success-banner" role="status">
           <CheckCircle2 size={15} />
@@ -1330,13 +1386,35 @@ export default function ProductForm() {
 
         <div className="prod-workspace-main">
 
+        <div className="prod-requirements" aria-label="Datos mínimos del producto">
+          <strong>Lo mínimo para empezar</strong>
+          <div className="prod-requirements-row">
+            <span>Para guardar</span>
+            {requisitosGuardar.map(r => (
+              <button key={r.label} type="button" className={r.listo ? 'ready' : ''} onClick={() => abrirCampo(r)}>
+                {r.listo ? <CheckCircle2 size={13} /> : <Circle size={13} />} {r.label}
+              </button>
+            ))}
+          </div>
+          <div className="prod-requirements-row">
+            <span>Para vender, además</span>
+            {requisitosVender.map(r => (
+              <button key={r.label} type="button" className={r.listo ? 'ready' : ''} onClick={() => abrirCampo(r)}>
+                {r.listo ? <CheckCircle2 size={13} /> : <Circle size={13} />} {r.label}
+              </button>
+            ))}
+          </div>
+          <p>Fotos, categoría, descripción y ofertas son opcionales para guardar. Podés completarlas después.</p>
+        </div>
+
         <div className={`tab-content ${tabActiva === 'basica' ? 'active' : ''}`}>
           <div className="form-grid-2">
             <div className="form-group full">
               <label htmlFor="prod-nombre">Nombre <span className="req">*</span></label>
               <input
                 id="prod-nombre"
-                {...register('nombre', { required: 'El nombre es requerido.' })}
+                {...register('nombre', { validate: v => Boolean(v?.trim()) || 'El nombre es requerido.' })}
+                aria-invalid={Boolean(errors.nombre)}
                 placeholder="Ej: Remera básica azul"
               />
               {errors.nombre && <span className="field-error">{errors.nombre.message}</span>}
@@ -1351,6 +1429,7 @@ export default function ProductForm() {
               <label htmlFor="prod-sku">SKU {skuObligatorio && <span className="req">*</span>}</label>
               <input
                 id="prod-sku"
+                aria-invalid={Boolean(errors.sku)}
                 {...register('sku', {
                   validate: (v) => !skuObligatorio || Boolean(v?.trim()) || 'El SKU es obligatorio.',
                 })}
@@ -1559,6 +1638,7 @@ export default function ProductForm() {
                     render={({ field }) => (
                       <CurrencyInput
                         id="prod-precio-base"
+                        aria-invalid={Boolean(errors.precio_base)}
                         className="w-full"
                         value={field.value}
                         onChange={field.onChange}
@@ -2736,19 +2816,14 @@ export default function ProductForm() {
         </div>
 
         <div className={`tab-content ${tabActiva === 'venta' ? 'active' : ''}`}>
-          {esEdicion ? (
-            <OfertasProductoTab
-              productoId={id}
-              productoNombre={nombre}
-              productoAnclaPrecioBase={precioBaseVal}
-              productoAnclaPrecioCosto={precioCostoVal}
-            />
-          ) : (
-            <div className="variantes-empty">
-              <Tag size={32} opacity={0.2} />
-              <p>Guardá el producto primero para poder agregarle ofertas comerciales.</p>
-            </div>
-          )}
+          <OfertasProductoTab
+            productoId={esEdicion ? id : PRODUCTO_NUEVO}
+            productoNombre={nombre}
+            productoAnclaPrecioBase={precioBaseVal}
+            productoAnclaPrecioCosto={precioCostoVal}
+            borradores={esEdicion ? null : ofertasBorrador}
+            onBorradoresChange={setOfertasBorrador}
+          />
         </div>
 
         <div className={`tab-content ${tabActiva === 'publicacion' ? 'active' : ''}`}>
@@ -2833,11 +2908,11 @@ export default function ProductForm() {
 
       </form>
 
-      {isDirty && !guardando && (
+      {(isDirty || ofertasBorrador.length > 0) && !guardando && (
         <div className="prod-save-bar">
           <span>Cambios sin guardar</span>
           <div style={{ display: 'flex', gap: '0.6rem' }}>
-            <button type="button" className="btn-secondary" onClick={() => reset()}>Descartar</button>
+            <button type="button" className="btn-secondary" onClick={() => { reset(); setOfertasBorrador([]); }}>Descartar</button>
             <button type="button" className="btn-primary" onClick={handleSubmit(onSubmit, alFallarValidacion)}>
               <Save size={14} /> Guardar
             </button>

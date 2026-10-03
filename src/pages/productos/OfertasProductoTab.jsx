@@ -160,8 +160,12 @@ export default function OfertasProductoTab({
   // Si llega un tipo contextual, abre directo el formulario correspondiente
   // sin volver a pedirle al usuario la misma decisión.
   crearAlAbrir = null,
+  borradores = null, onBorradoresChange,
 }) {
-  const [ofertas, setOfertas] = useState([]);
+  const modoBorrador = Array.isArray(borradores);
+  const [ofertasGuardadas, setOfertas] = useState([]);
+  const ofertas = modoBorrador ? borradores : ofertasGuardadas;
+  const siguienteIdBorrador = useRef(-2);
   const [productosDisponibles, setProductosDisponibles] = useState([]);
   const [comboConfig, setComboConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -204,7 +208,7 @@ export default function OfertasProductoTab({
   }, [productoId]);
 
   useEffect(() => {
-    const ids = [...new Set(form.componentes.map(c => Number(c.producto_id)).filter(Boolean))];
+    const ids = [...new Set(form.componentes.map(c => Number(c.producto_id)).filter(id => id > 0))];
     ids.forEach(id => {
       if (variantesPorProducto[id] !== undefined) return;
       // Marca "ya pedido" de entrada (lista vacía) para no disparar el mismo
@@ -218,6 +222,7 @@ export default function OfertasProductoTab({
   }, [form.componentes]);
 
   async function cargar() {
+    if (modoBorrador) { setLoading(false); return; }
     try {
       setLoading(true);
       const data = await ofertaService.listarPorProducto(productoId);
@@ -276,7 +281,7 @@ export default function OfertasProductoTab({
       precio: oferta.precio_normal ?? oferta.precio,
       precio_order_bump: oferta.precio_order_bump ?? '',
       imagen_url: oferta.imagen_url || '',
-      imagen_archivo: null,
+      imagen_archivo: oferta.imagen_archivo || null,
       fecha_inicio: oferta.fecha_inicio ? String(oferta.fecha_inicio).slice(0, 10) : '',
       fecha_fin: oferta.fecha_fin ? String(oferta.fecha_fin).slice(0, 10) : '',
       descripcion: oferta.descripcion || '',
@@ -352,6 +357,7 @@ export default function OfertasProductoTab({
 
   async function submit(e) {
     e.preventDefault();
+    e.stopPropagation();
     setError(null);
     setGuardando(true);
     try {
@@ -382,6 +388,21 @@ export default function OfertasProductoTab({
             permite_elegir_variante: !!c.permite_elegir_variante,
           })),
       };
+      if (!payload.nombre) throw new Error('El nombre de la oferta es obligatorio.');
+      if (!(payload.precio_normal > 0)) throw new Error('El precio de la oferta tiene que ser mayor a 0.');
+      if (payload.precio_order_bump !== null && (!(payload.precio_order_bump > 0) || payload.precio_order_bump >= payload.precio_normal)) {
+        throw new Error('El precio promocional debe ser mayor a 0 y menor al precio normal.');
+      }
+      if (!payload.componentes.length) throw new Error('Elegí al menos un producto para la oferta.');
+      if (form.componentes.some(c => c.producto_id && !(Number(c.cantidad) >= 1))) throw new Error('La cantidad debe ser al menos 1.');
+      if (payload.fecha_inicio && payload.fecha_fin && payload.fecha_fin < payload.fecha_inicio) throw new Error('La fecha de fin no puede ser anterior a la de inicio.');
+      if (modoBorrador) {
+        if (ofertas.some(o => o.id !== editando?.id && o.codigo === payload.codigo)) throw new Error('Ya cargaste una oferta con ese código.');
+        const borrador = { ...payload, id: editando?.id ?? siguienteIdBorrador.current--, imagen_archivo: form.imagen_archivo };
+        onBorradoresChange(editando ? ofertas.map(o => o.id === editando.id ? borrador : o) : [...ofertas, borrador]);
+        setOpen(false);
+        return;
+      }
       let avisoImagen = null;
       if (editando) {
         // Editando, la imagen ya se subió sola al elegirla (había id).
@@ -403,6 +424,11 @@ export default function OfertasProductoTab({
   }
 
   async function confirmarBorrado() {
+    if (modoBorrador) {
+      onBorradoresChange(ofertas.filter(o => o.id !== ofertaABorrar.id));
+      setOfertaABorrar(null);
+      return;
+    }
     try {
       await ofertaService.eliminar(ofertaABorrar.id);
       setOfertaABorrar(null);
@@ -637,6 +663,7 @@ export default function OfertasProductoTab({
       <p className="field-hint">
         Estas ofertas aparecen cuando el cliente compra este producto. Acá se crean paquetes, combos, order bumps y upsells sin volver a elegir el producto disparador.
       </p>
+      {modoBorrador && <p className="prod-offer-draft-hint" role="status">Podés preparar tus ofertas ahora. Se guardarán junto con el producto al pulsar Guardar.</p>}
 
       <div className="offer-strategy-grid">
         {RESUMEN_OFERTAS.map(item => {
@@ -757,7 +784,7 @@ export default function OfertasProductoTab({
                   <Edit size={13} /> Editar
                 </button>
                 <button type="button" className="btn-deactivate" style={{ fontSize: '0.8rem', padding: '0.4rem 0.75rem' }} onClick={() => setOfertaABorrar(oferta)}>
-                  <Trash2 size={13} /> {oferta.activo ? 'Desactivar' : 'Eliminada'}
+                  <Trash2 size={13} /> {modoBorrador ? 'Quitar' : oferta.activo ? 'Desactivar' : 'Eliminada'}
                 </button>
               </div>
             </div>
@@ -1088,7 +1115,7 @@ export default function OfertasProductoTab({
               <div className="form-group full">
                 <label>Imagen de la oferta <span className="hint">(opcional)</span></label>
                 <OfertaImagenPicker
-                  ofertaId={editando?.id || null}
+                  ofertaId={modoBorrador ? null : editando?.id || null}
                   imagenUrl={form.imagen_url || null}
                   archivo={form.imagen_archivo}
                   respaldoUrl={productoBase.imagen}
@@ -1480,7 +1507,7 @@ export default function OfertasProductoTab({
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid color-mix(in srgb, var(--color-fg) 5%, transparent)' }}>
               <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>Cancelar</button>
               <button type="submit" className="btn-primary" disabled={guardando}>
-                {guardando ? 'Guardando...' : (editando ? 'Guardar cambios' : 'Crear oferta')}
+                {guardando ? 'Guardando...' : modoBorrador ? (editando ? 'Actualizar oferta preparada' : 'Agregar oferta al producto') : (editando ? 'Guardar cambios' : 'Crear oferta')}
               </button>
             </div>
             </div>
@@ -1492,9 +1519,9 @@ export default function OfertasProductoTab({
 
       <ConfirmDialog
         open={!!ofertaABorrar}
-        title={`¿Desactivar "${ofertaABorrar?.nombre}"?`}
-        description="La oferta deja de ofrecerse, pero los pedidos ya vendidos con ella no se modifican."
-        confirmLabel="Desactivar"
+        title={`¿${modoBorrador ? 'Quitar' : 'Desactivar'} "${ofertaABorrar?.nombre}"?`}
+        description={modoBorrador ? 'Se quitará esta oferta de los cambios pendientes del producto.' : 'La oferta deja de ofrecerse, pero los pedidos ya vendidos con ella no se modifican.'}
+        confirmLabel={modoBorrador ? 'Quitar' : 'Desactivar'}
         danger
         onConfirm={confirmarBorrado}
         onCancel={() => setOfertaABorrar(null)}
