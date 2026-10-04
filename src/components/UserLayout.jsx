@@ -59,7 +59,7 @@ const UserLayout = ({ children }) => {
   const [progresoSidebar, setProgresoSidebar] = useState({
     menusDesbloqueados: [],
     bloqueos: {},
-    modulos: [],
+    modulos: null,
   });
   const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -145,9 +145,14 @@ const UserLayout = ({ children }) => {
       setProgresoSidebar({
         ...data,
         bloqueos: data.bloqueos || data.menusBloqueados || data.menus_bloqueados || {},
+        modulos: Array.isArray(data.modulos) ? data.modulos : null,
       });
     } catch (err) {
       console.error('Error al cargar progreso del sidebar:', err);
+      setProgresoSidebar(prev => ({
+        ...prev,
+        modulos: [],
+      }));
     }
   };
 
@@ -271,7 +276,7 @@ const UserLayout = ({ children }) => {
 
   const renderSidebarDinamico = () => {
     const contexto = enMarcaPersonal ? 'marca_personal' : 'ecommerce';
-    const modulosBase = progresoSidebar?.modulos?.length ? progresoSidebar.modulos : SIDEBAR_FALLBACK;
+    const modulosBase = progresoSidebar?.modulos === null ? SIDEBAR_FALLBACK : progresoSidebar.modulos;
     const grupos = modulosBase
       .filter((item) => item.contexto === contexto)
       .filter(moduloEsVisible)
