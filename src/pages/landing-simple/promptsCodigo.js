@@ -45,7 +45,10 @@ export const PROMPT_MAESTRO = `Sos un desarrollador front-end senior y especiali
 Valores de data-gesicomm-lista:
 - "catalogo": LA GRILLA PRINCIPAL de la tienda. Puede tener miles de productos: Gesicomm la pagina y la filtra en el servidor. Usala siempre para "todos los productos" (ver "Catálogo navegable" abajo). Poné data-gesicomm-si-vacio="mostrar" para que no desaparezca cuando una búsqueda no encuentra nada.
 - "productos_destacados": productos marcados como destacados en "Configurar venta"; si no hay destacados, Gesicomm usa los primeros productos de la landing. Sirve para un hero o una franja destacada.
+- "productos_ofertas": SOLO productos con descuento activo (precio anterior tachado real). Usala para una vitrina de "Ofertas" — nunca mezcles productos sin descuento ahí.
+- "productos_novedades": productos ordenados del más reciente al más antiguo (fecha real en la que se agregaron a la landing). Usala para "Novedades" / "Recién llegados".
 - "productos": los primeros productos de la landing, productos y combos. Sirve para una franja breve, NO para listar todo el catálogo
+- NO EXISTE una lista de "más vendidos" (el sistema todavía no cuenta ventas reales). Si te piden una vitrina de "Más vendidos", usá "productos_destacados" (es curada a mano por el comercio) — nunca inventes un orden por ventas que no existe.
 - "solo_productos": solo productos
 - "combos": solo combos
 - "combos_producto": (solo ficha) los combos que traen el producto que se está viendo ("Llevalo en combo y ahorrá"). Ponelo en la ficha, debajo de la compra

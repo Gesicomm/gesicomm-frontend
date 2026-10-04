@@ -1,12 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, Eye, EyeOff, Loader } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, EyeOff, Loader, Pencil } from 'lucide-react';
 import { categoriaService } from '../../../services/catalogoService';
 import Campo from '../CampoTexto';
 import {
   leerHero, escribirHero, leerPromo, escribirPromo,
   leerCategoriasCuradas, escribirCategoriasCuradas,
   leerSecciones, moverSeccion, alternarVisibilidad,
+  leerVitrina, escribirVitrina, FUENTES_VITRINA,
 } from '../plantillaInicioEditor';
+
+/** Catálogo de categorías de la tienda — lo usan tanto "Categorías" como el
+ * selector de categoría de cada vitrina, así que se pide una sola vez acá. */
+function useCategoriasCatalogo() {
+  const [categorias, setCategorias] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    let activo = true;
+    categoriaService.buscar({ por_pagina: 200 })
+      .then(res => { if (activo) setCategorias(res?.categorias || []); })
+      .catch(() => { if (activo) setError('No se pudieron cargar tus categorías.'); })
+      .finally(() => { if (activo) setCargando(false); });
+    return () => { activo = false; };
+  }, []);
+  return { categorias, cargando, error };
+}
 
 /**
  * Pestaña "Secciones" del Lienzo en blanco (vista Inicio): edita por
@@ -26,13 +44,29 @@ export default function SeccionesPanel({ html, onCambiarHtml }) {
   const promo = useMemo(() => leerPromo(html), [html]);
   const secciones = useMemo(() => leerSecciones(html), [html]);
   const categoriasCuradas = useMemo(() => leerCategoriasCuradas(html), [html]);
+  const [vitrinaAbierta, setVitrinaAbierta] = useState(null); // índice de sección, o null
+  const categoriasCatalogo = useCategoriasCatalogo();
 
   return (
     <div className="p-4 space-y-6 overflow-y-auto">
-      <BloqueEstructura secciones={secciones} onCambiar={onCambiarHtml} html={html} />
+      <BloqueEstructura
+        secciones={secciones}
+        onCambiar={onCambiarHtml}
+        html={html}
+        vitrinaAbierta={vitrinaAbierta}
+        onEditarVitrina={i => setVitrinaAbierta(prev => (prev === i ? null : i))}
+      />
+      {vitrinaAbierta !== null && (
+        <BloqueVitrina
+          indice={vitrinaAbierta}
+          html={html}
+          onCambiarHtml={onCambiarHtml}
+          categoriasCatalogo={categoriasCatalogo}
+        />
+      )}
       {hero && <BloqueHero hero={hero} html={html} onCambiarHtml={onCambiarHtml} />}
       {promo && <BloquePromo promo={promo} html={html} onCambiarHtml={onCambiarHtml} />}
-      <BloqueCategorias curadas={categoriasCuradas} html={html} onCambiarHtml={onCambiarHtml} />
+      <BloqueCategorias curadas={categoriasCuradas} html={html} onCambiarHtml={onCambiarHtml} categoriasCatalogo={categoriasCatalogo} />
     </div>
   );
 }
@@ -46,7 +80,7 @@ function Seccion({ titulo, children }) {
   );
 }
 
-function BloqueEstructura({ secciones, html, onCambiar }) {
+function BloqueEstructura({ secciones, html, onCambiar, vitrinaAbierta, onEditarVitrina }) {
   if (!secciones.length) return null;
   return (
     <Seccion titulo="Estructura de la página">
@@ -54,9 +88,17 @@ function BloqueEstructura({ secciones, html, onCambiar }) {
         {secciones.map((s) => (
           <li
             key={s.indice}
-            className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm ${s.oculta ? 'opacity-40' : ''} bg-fg/[0.03]`}
+            className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-sm ${s.oculta ? 'opacity-40' : ''} ${vitrinaAbierta === s.indice ? 'bg-primary/15' : 'bg-fg/[0.03]'}`}
           >
             <span className="flex-1 truncate">{s.etiqueta}{s.esHero ? ' (fija)' : ''}</span>
+            {s.esVitrina && (
+              <button
+                type="button"
+                title="Editar vitrina"
+                onClick={() => onEditarVitrina(s.indice)}
+                className="p-1 rounded hover:bg-fg/10"
+              ><Pencil size={14} /></button>
+            )}
             <button
               type="button"
               title="Subir"
@@ -84,6 +126,61 @@ function BloqueEstructura({ secciones, html, onCambiar }) {
           </li>
         ))}
       </ul>
+    </Seccion>
+  );
+}
+
+function BloqueVitrina({ indice, html, onCambiarHtml, categoriasCatalogo }) {
+  const vitrina = useMemo(() => leerVitrina(html, indice), [html, indice]);
+  if (!vitrina) return null;
+
+  function set(campo, valor) {
+    onCambiarHtml(escribirVitrina(html, indice, { [campo]: valor }));
+  }
+
+  const fuenteInfo = FUENTES_VITRINA.find(f => f.id === vitrina.fuente);
+
+  return (
+    <Seccion titulo="Vitrina de productos">
+      <Campo etiqueta="Título" valor={vitrina.titulo} onChange={v => set('titulo', v)} />
+      <Campo etiqueta="Subtítulo (opcional)" valor={vitrina.subtitulo} onChange={v => set('subtitulo', v)} />
+
+      <label className="block">
+        <span className="block text-xs font-semibold text-fg/70 mb-1">Origen de los productos</span>
+        <select
+          value={vitrina.fuente}
+          onChange={e => set('fuente', e.target.value)}
+          className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+        >
+          {FUENTES_VITRINA.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+        </select>
+        {fuenteInfo?.ayuda && <span className="block mt-1 text-[11px] text-fg/35">{fuenteInfo.ayuda}</span>}
+      </label>
+
+      <label className="block">
+        <span className="block text-xs font-semibold text-fg/70 mb-1">Solo de esta categoría (opcional)</span>
+        <select
+          value={vitrina.categoria}
+          onChange={e => set('categoria', e.target.value)}
+          className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+          disabled={categoriasCatalogo.cargando}
+        >
+          <option value="">Todas</option>
+          {(categoriasCatalogo.categorias || []).map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="block text-xs font-semibold text-fg/70 mb-1">Cantidad a mostrar</span>
+        <input
+          type="number"
+          min={1}
+          max={12}
+          value={vitrina.cantidad}
+          onChange={e => set('cantidad', parseInt(e.target.value, 10) || 4)}
+          className="w-24 bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+        />
+      </label>
     </Seccion>
   );
 }
@@ -123,20 +220,8 @@ function BloquePromo({ promo, html, onCambiarHtml }) {
   );
 }
 
-function BloqueCategorias({ curadas, html, onCambiarHtml }) {
-  const [catalogo, setCatalogo] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [errorCarga, setErrorCarga] = useState('');
-
-  useEffect(() => {
-    let activo = true;
-    categoriaService.buscar({ por_pagina: 200 })
-      .then(res => { if (activo) setCatalogo(res?.categorias || []); })
-      .catch(() => { if (activo) setErrorCarga('No se pudieron cargar tus categorías.'); })
-      .finally(() => { if (activo) setCargando(false); });
-    return () => { activo = false; };
-  }, []);
-
+function BloqueCategorias({ curadas, html, onCambiarHtml, categoriasCatalogo }) {
+  const { categorias: catalogo, cargando, error: errorCarga } = categoriasCatalogo;
   const elegidas = curadas || [];
   const nombresElegidos = new Set(elegidas.map(c => c.nombre));
 

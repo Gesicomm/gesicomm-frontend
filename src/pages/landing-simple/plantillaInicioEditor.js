@@ -179,6 +179,26 @@ function seccionesDe(doc) {
   return Array.from(main.children).filter(el => el.tagName === 'SECTION');
 }
 
+// Fuentes de vitrina respaldadas por datos reales (ver runtimeGesicomm.js).
+// OJO: no existe "más vendidos" — el sistema no cuenta ventas todavía.
+export const FUENTES_VITRINA = [
+  { id: 'productos_destacados', nombre: 'Destacados', ayuda: 'Los que el comercio marcó en Configurar venta.' },
+  { id: 'productos_ofertas', nombre: 'Ofertas', ayuda: 'Solo productos con descuento activo.' },
+  { id: 'productos_novedades', nombre: 'Novedades', ayuda: 'Los agregados más recientemente.' },
+  { id: 'productos', nombre: 'Todos los productos', ayuda: 'En el orden del catálogo.' },
+  { id: 'combos', nombre: 'Combos', ayuda: 'Solo combos.' },
+];
+
+/** La grilla de productos de una sección-vitrina: [data-gesicomm-lista] con <template> propio. */
+function gridDeSeccion(section) {
+  const candidatos = section.querySelectorAll('[data-gesicomm-lista]');
+  for (const el of candidatos) {
+    const nombre = el.getAttribute('data-gesicomm-lista');
+    if (FUENTES_VITRINA.some(f => f.id === nombre) && el.querySelector('template')) return el;
+  }
+  return null;
+}
+
 export function leerSecciones(html) {
   const doc = parsear(html);
   return seccionesDe(doc).map((section, indice) => ({
@@ -186,7 +206,47 @@ export function leerSecciones(html) {
     etiqueta: etiquetaSeccion(section),
     oculta: section.hasAttribute('hidden'),
     esHero: section.id === 'inicio',
+    esVitrina: !!gridDeSeccion(section),
   }));
+}
+
+// ─── Vitrina de productos (Destacados / Ofertas / Novedades / Más vendidos / Combos) ──
+
+export function leerVitrina(html, indiceSeccion) {
+  const doc = parsear(html);
+  const section = seccionesDe(doc)[indiceSeccion];
+  const grid = section && gridDeSeccion(section);
+  if (!grid) return null;
+  return {
+    titulo: texto(section, 'h2'),
+    subtitulo: texto(section, '.section-heading p:not(.eyebrow)'),
+    fuente: grid.getAttribute('data-gesicomm-lista') || 'productos',
+    categoria: grid.getAttribute('data-gesicomm-categoria') || '',
+    cantidad: parseInt(grid.getAttribute('data-gesicomm-limite'), 10) || 4,
+  };
+}
+
+export function escribirVitrina(html, indiceSeccion, cambios) {
+  const doc = parsear(html);
+  const section = seccionesDe(doc)[indiceSeccion];
+  const grid = section && gridDeSeccion(section);
+  if (!grid) return html;
+
+  if (cambios.titulo !== undefined) {
+    const h2 = section.querySelector('h2');
+    if (h2) h2.textContent = cambios.titulo;
+  }
+  if (cambios.subtitulo !== undefined) {
+    const p = section.querySelector('.section-heading p:not(.eyebrow)');
+    if (p) p.textContent = cambios.subtitulo;
+  }
+  if (cambios.fuente !== undefined) grid.setAttribute('data-gesicomm-lista', cambios.fuente);
+  if (cambios.categoria !== undefined) {
+    if (cambios.categoria) grid.setAttribute('data-gesicomm-categoria', cambios.categoria);
+    else grid.removeAttribute('data-gesicomm-categoria');
+  }
+  if (cambios.cantidad !== undefined) grid.setAttribute('data-gesicomm-limite', String(cambios.cantidad || 4));
+  return serializar(doc);
 }
 
 export function moverSeccion(html, indice, delta) {

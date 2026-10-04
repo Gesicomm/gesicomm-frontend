@@ -19,7 +19,13 @@
  * reutilice para catálogos compartidos no puede ser un vector de XSS.
  *
  * Referencia rápida de atributos (el detalle vive en el prompt maestro):
- *   data-gesicomm-lista="catalogo|categorias|productos|productos_destacados|combos|recomendados|ofertas|variantes|imagenes"
+ *   data-gesicomm-lista="catalogo|categorias|productos|productos_destacados|productos_ofertas|
+ *                        productos_novedades|combos|recomendados|ofertas|variantes|imagenes"
+ *     "productos_ofertas": productos con descuento activo (precio_antes > precio) — vitrina de
+ *     "Ofertas" real, respaldada por datos. "productos_novedades": productos ordenados del más
+ *     reciente al más antiguo (LandingItem.created_at). NO existe (todavía) ningún "más vendidos"
+ *     real: el sistema no tiene módulo de Pedidos/Checkout que cuente ventas, así que esa lista
+ *     NO está acá — una vitrina de "Más vendidos" solo puede ser curada a mano (productos_destacados).
  *     "catalogo" es la grilla navegable: la afectan data-gesicomm-buscar,
  *     data-gesicomm-filtro="categoria|orden", data-gesicomm-pagina="anterior|siguiente",
  *     data-gesicomm-cargar-mas, data-gesicomm-paginacion y data-gesicomm-sin-resultados.
@@ -602,6 +608,14 @@ export function runtimeGesicomm() {
       case 'categorias': base = categoriasCuradasDe(el) || categoriasDeProductos(); break;
       case 'productos': base = productos; break;
       case 'productos_destacados': base = productosDestacados(); break;
+      case 'productos_ofertas': base = productos.filter(function (p) { return Number(p.descuento_pct) > 0; }); break;
+      case 'productos_novedades':
+        base = productos.slice().sort(function (a, b) {
+          var ta = a.creado ? new Date(a.creado).getTime() : 0;
+          var tb = b.creado ? new Date(b.creado).getTime() : 0;
+          return tb - ta;
+        });
+        break;
       case 'combos': base = productos.filter(function (p) { return p.tipo === 'combo'; }); break;
       // (solo ficha) los combos que traen el producto que se está viendo.
       case 'combos_producto':
@@ -640,7 +654,7 @@ export function runtimeGesicomm() {
         break;
       default: base = [];
     }
-    if (datos.vista !== 'producto' && ['productos', 'combos', 'solo_productos'].indexOf(nombre) !== -1) {
+    if (datos.vista !== 'producto' && ['productos', 'combos', 'solo_productos', 'productos_ofertas', 'productos_novedades'].indexOf(nombre) !== -1) {
       base = base.filter(function (p) { return p.mostrar_en_inicio !== false; });
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');

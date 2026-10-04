@@ -144,6 +144,8 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     mostrar_en_inicio: item.mostrar_en_inicio !== false,
     envio_incluido: item.envio_incluido === true,
     stock: item.stock ?? null,
+    // Para la lista "productos_novedades" del runtime (ver runtimeGesicomm.js).
+    creado: item.creado || null,
     agotado: agotado(item.stock, item.variantes),
     // Los productos de una página pedida al servidor vienen livianos: sin
     // la lista de variantes, solo el aviso de que existen.
@@ -272,6 +274,7 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     mostrar_en_inicio: item.mostrar_en_inicio !== false,
     envio_incluido: item.envio_incluido === true,
     stock: item.stock ?? null,
+    creado: item.created_at || item.createdAt || null,
     agotado: agotado(item.stock, []),
     // El catálogo del panel no trae variantes ni ofertas: el preview de la
     // ficha las muestra vacías y la landing publicada las trae reales.

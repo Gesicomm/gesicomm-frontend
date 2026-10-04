@@ -612,7 +612,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#categorias">Categorías</a>
         <p class="eyebrow">Nuevos ingresos</p>
         <h2>Más motivos para seguir navegando.</h2>
       </div>
-      <div class="spotlight-grid" data-gesicomm-lista="productos" data-gesicomm-limite="4">
+      <div class="spotlight-grid" data-gesicomm-lista="productos_novedades" data-gesicomm-limite="4">
         <template>
           <article class="product-card">
             <div class="product-badge">Nuevo</div>
