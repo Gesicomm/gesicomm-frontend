@@ -57,6 +57,14 @@ export default function NotificationBell({
   const handleNotificationClick = async (notification) => {
     setIsOpen(false);
     await onMarkAsRead(notification.id);
+    if (notification.entidad_tipo === 'raha_solicitud_admin') {
+      navigate(`/admin/raha?solicitud=${notification.entidad_id}`);
+      return;
+    }
+    if (notification.entidad_tipo === 'raha_solicitud') {
+      navigate('/mi-tienda?tab=raha');
+      return;
+    }
     // Este tipo apunta a un ingreso puntual, no a una seccion fija: la ruta
     // depende del entidad_id de cada notificacion.
     if (notification.tipo === 'INGRESO_INVENTARIO_CONFIRMADO' && notification.entidad_id) {

@@ -1,0 +1,85 @@
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent, waitFor, within, cleanup } from '@testing-library/react';
+import SpeedboxConfig from './SpeedboxConfig';
+import { speedboxService } from '../../services/speedboxService';
+import { getCouriers } from '../../services/courierApi';
+vi.mock('../../services/speedboxService', () => ({ speedboxService: { obtener: vi.fn(), guardar: vi.fn(), vincular: vi.fn(), probar: vi.fn(), sincronizar: vi.fn(), reintentar: vi.fn(), enviar: vi.fn(), conciliar: vi.fn() } }));
+vi.mock('../../services/courierApi', () => ({ getCouriers: vi.fn() }));
+const config = { environment: 'sandbox', credentials_configured: true, webhook_configured: true, automatic_enabled: true,
+  connection: { tienda_id: '54', courier_id: 2, activo: true }, checks: { spec: true, order: false, updates: false, webhook: false }, orders: [], events: [], available_orders: [] };
+beforeEach(() => {
+  cleanup(); vi.clearAllMocks();
+  HTMLDialogElement.prototype.showModal = function showModal() { this.setAttribute('open', ''); };
+  HTMLDialogElement.prototype.close = function close() { this.removeAttribute('open'); };
+  speedboxService.obtener.mockResolvedValue(structuredClone(config));
+  getCouriers.mockResolvedValue([{ id: 2, nombre: 'Speedbox', activo: true }, { id: 3, nombre: 'Otro', activo: true }]);
+});
+describe('Speedbox settings', () => {
+  it('conciles only with an explicit concept, reference and note', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config,
+      solicitudes_abastecimiento: [{ id: 4, estado: 'pago_validado', costo_producto: 50000, costo_logistico: 12000 }],
+      events: [{ id: 3, event_key: 'id:evt-3', tipo: 'wallet.transaction', payload: { data: { amount: 50000, direction: 'debit' } } }] });
+    render(<SpeedboxConfig />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Conciliar movimiento 3' }));
+    const modal = screen.getByRole('dialog');
+    expect(within(modal).getByRole('button', { name: 'Conciliar' })).toBeDisabled();
+    fireEvent.change(within(modal).getByLabelText('Concepto'), { target: { value: 'pago_proveedor' } });
+    expect(within(modal).queryByRole('option', { name: 'Cobro al cliente' })).not.toBeInTheDocument();
+    fireEvent.change(within(modal).getByLabelText('Referencia'), { target: { value: 'solicitud:4' } });
+    fireEvent.change(within(modal).getByLabelText('Nota de conciliacion'), { target: { value: 'Comprobante cotejado' } });
+    fireEvent.submit(within(modal).getByRole('button', { name: 'Conciliar' }).closest('form'));
+    await waitFor(() => expect(speedboxService.conciliar).toHaveBeenCalledWith(3, { concepto: 'pago_proveedor', envio_id: null, solicitud_id: 4, nota: 'Comprobante cotejado' }));
+  });
+  it('keeps an observation without remote ID unavailable for reconciliation', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, events: [{ id: 3, event_key: 'hash:observation', tipo: 'wallet.transaction', estado: 'revision', payload: { data: { amount: 5000, direction: 'credit' } } }] });
+    render(<SpeedboxConfig />);
+    await screen.findByText('Sin conciliar');
+    expect(screen.queryByRole('button', { name: 'Conciliar movimiento 3' })).not.toBeInTheDocument();
+  });
+  it('saves the chosen courier and activation without any credentials', async () => {
+    render(<SpeedboxConfig />);
+    fireEvent.change(await screen.findByLabelText('Courier Speedbox'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    await waitFor(() => expect(speedboxService.guardar).toHaveBeenCalledWith({ courier_id: 3, activo: true }));
+  });
+  it('keeps inputs after a validation failure', async () => {
+    speedboxService.guardar.mockRejectedValue({ response: { data: { message: 'Courier no disponible.' } } });
+    render(<SpeedboxConfig />);
+    fireEvent.change(await screen.findByLabelText('Courier Speedbox'), { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Courier no disponible.');
+    expect(screen.getByLabelText('Courier Speedbox')).toHaveValue('3');
+  });
+  it('requires reconciliation before resending an uncertain submission', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, orders: [{ id: 1, envio_id: 31, external_order_id: 'GESICOMM-sandbox-7-31', estado: 'incierto' }] });
+    render(<SpeedboxConfig />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Reintentar pedido 31' }));
+    const modal = screen.getByRole('dialog');
+    expect(within(modal).getByRole('button', { name: 'Reintentar' })).toBeDisabled();
+    fireEvent.click(within(modal).getByRole('checkbox'));
+    fireEvent.click(within(modal).getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(speedboxService.reintentar).toHaveBeenCalledWith(31, true));
+  });
+  it('shows a pending order check until a real reception is recorded', async () => {
+    render(<SpeedboxConfig />);
+    const label = await screen.findByText('Recepción de pedido');
+    expect(label.parentElement).toHaveTextContent('Pendiente');
+  });
+
+  it('opens the configured Speedy registration without leaking session or personal data', async () => {
+    speedboxService.obtener.mockResolvedValue({ ...config, registration_url: 'https://registration.example.test/register' });
+    render(<SpeedboxConfig />);
+    const link = await screen.findByRole('link', { name: 'Crear cuenta en Speedy' });
+    expect(link).toHaveAttribute('href', 'https://registration.example.test/register');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+  });
+
+  it('keeps registration disabled until an official URL is configured', async () => {
+    render(<SpeedboxConfig />);
+    expect(await screen.findByRole('button', { name: 'Registro en Speedy no disponible' })).toBeDisabled();
+    expect(screen.queryByRole('link', { name: 'Crear cuenta en Speedy' })).not.toBeInTheDocument();
+  });
+});
