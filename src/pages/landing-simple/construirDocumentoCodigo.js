@@ -151,6 +151,16 @@ body > :where(header, main, footer, section, article, aside, nav, div):not(.cont
   min-width: 100% !important;
 }
 
+/* El panel "Secciones" (ver plantillaInicioEditor.js) oculta una sección
+   poniéndole el atributo hidden en vez de borrarla, para poder restaurarla
+   después. El HTML5 [hidden] ya trae display:none por defecto, pero una
+   regla de layout del propio comercio (display:grid/flex en esa misma
+   sección) le gana por venir de un <style> de autor posterior — este
+   !important se aplica último (SYSTEM_CSS va al final) y gana siempre. */
+main > section[hidden] {
+  display: none !important;
+}
+
 /* Valores por defecto sin especificidad: las miniaturas de una ficha deben
    conservar las dimensiones de su diseño, también en landings ya guardadas. */
 :where(img[data-gesicomm-bind="imagen"]) {

@@ -573,11 +573,33 @@ export function runtimeGesicomm() {
     });
   }
 
+  // Curaduría manual de categorías (panel "Secciones" del editor, ver
+  // plantillaInicioEditor.js): data-gesicomm-categorias-curadas en el
+  // propio elemento de la lista, JSON [{nombre, imagen?}]. Sin ese
+  // atributo (o vacío/inválido) se sigue armando automático desde el
+  // catálogo, como siempre. El conteo de productos SIEMPRE sale del
+  // catálogo real, nunca de lo guardado: una curaduría vieja no debe
+  // mostrar un número de productos desactualizado.
+  function categoriasCuradasDe(el) {
+    var raw = el && el.getAttribute && el.getAttribute('data-gesicomm-categorias-curadas');
+    if (!raw) return null;
+    var curadas;
+    try { curadas = JSON.parse(raw); } catch (e) { return null; }
+    if (!Array.isArray(curadas) || !curadas.length) return null;
+    var auto = categoriasDeProductos();
+    var porNombre = {};
+    auto.forEach(function (c) { porNombre[c.nombre] = c; });
+    return curadas.map(function (c) {
+      var base = porNombre[c.nombre] || { nombre: c.nombre, categoria: c.nombre, cantidad: 0, cantidad_texto: '0 productos', imagen: '', etiqueta: 'Categoria' };
+      return c.imagen ? Object.assign({}, base, { imagen: c.imagen }) : base;
+    });
+  }
+
   function fuenteDeLista(nombre, el) {
     var base;
     switch (nombre) {
       case 'catalogo': return catalogoVista.items;
-      case 'categorias': base = categoriasDeProductos(); break;
+      case 'categorias': base = categoriasCuradasDe(el) || categoriasDeProductos(); break;
       case 'productos': base = productos; break;
       case 'productos_destacados': base = productosDestacados(); break;
       case 'combos': base = productos.filter(function (p) { return p.tipo === 'combo'; }); break;

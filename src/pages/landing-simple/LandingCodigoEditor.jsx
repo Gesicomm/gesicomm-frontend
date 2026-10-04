@@ -10,6 +10,8 @@ import { tiendaService } from '../../services/tiendaService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { ofertaService } from '../../services/ofertaService';
 import CodigoPreview from './CodigoPreview';
+import SeccionesPanel from './panels/SeccionesPanel';
+import Campo from './CampoTexto';
 import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
@@ -47,6 +49,7 @@ import {
  */
 
 const TABS = [
+  { key: 'secciones', label: 'Secciones', lenguaje: null },
   { key: 'html', label: 'HTML', lenguaje: 'html' },
   { key: 'css', label: 'CSS', lenguaje: 'css' },
   { key: 'js', label: 'JavaScript', lenguaje: 'js' },
@@ -745,7 +748,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }
 
   const tabActiva = TABS.find(t => t.key === tab);
-  const tabsVisibles = esLegal ? TABS.filter(t => t.key !== 'prompts') : TABS;
+  // "Secciones" edita por bloques la estructura fija de INICIO_HTML
+  // (hero, banner, categorías) — no tiene sentido en la ficha de producto
+  // ni en las páginas legales, que son HTML libre sin esa estructura.
+  const tabsVisibles = (esLegal ? TABS.filter(t => t.key !== 'prompts') : TABS)
+    .filter(t => t.key !== 'secciones' || (vista === 'inicio' && !esLegal));
   const codigoVista = codigos[claveVista] || CODIGO_VACIO;
   // Ficha guardada antes de que existieran los bloques de ofertas: las
   // ofertas marcadas nunca iban a tener dónde aparecer, sin ningún aviso.
@@ -994,6 +1001,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   </div>
                 </div>
               </div>
+            ) : tab === 'secciones' ? (
+              <SeccionesPanel html={codigoVista.html || ''} onCambiarHtml={nuevoHtml => escribir('html', nuevoHtml)} />
             ) : tab === 'prompts' && !esLegal ? (
               <PanelPrompts
                 vista={vista}
@@ -1390,22 +1399,6 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
         </button>
       </div>
     </div>
-  );
-}
-
-function Campo({ etiqueta, ayuda, valor, onChange, multilinea }) {
-  const Elemento = multilinea ? 'textarea' : 'input';
-  return (
-    <label className="block">
-      <span className="block text-xs font-semibold text-fg/70 mb-1">{etiqueta}</span>
-      <Elemento
-        value={valor}
-        onChange={e => onChange(e.target.value)}
-        rows={multilinea ? 3 : undefined}
-        className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
-      />
-      {ayuda && <span className="block mt-1 text-[11px] text-fg/35">{ayuda}</span>}
-    </label>
   );
 }
 
