@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Save, AlertTriangle, Info } from 'lucide-react';
+import { Settings, Save, AlertTriangle, Info, PackageCheck, Truck } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import CurrencyInput from '../../components/CurrencyInput';
 import { verificarSesion } from '../../utils/auth';
@@ -19,12 +19,17 @@ export default function ComboConfiguracion({ asTab = false }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [costosTab, setCostosTab] = useState('propios');
 
   // Campos editables
   const [cpa, setCpa] = useState('');
   const [envio, setEnvio] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
   const [empaque, setEmpaque] = useState('');
+  const [rahaCpa, setRahaCpa] = useState('');
+  const [rahaEnvio, setRahaEnvio] = useState('');
+  const [rahaConfirmacion, setRahaConfirmacion] = useState('');
+  const [rahaEmpaque, setRahaEmpaque] = useState('');
   const [margenMinimo, setMargenMinimo] = useState('');
   const [umbralExcelente, setUmbralExcelente] = useState('');
   const [margenes, setMargenes] = useState('');             // CSV string
@@ -48,6 +53,10 @@ export default function ComboConfiguracion({ asTab = false }) {
       setEnvio(fmtNumber(cfg.costo_envio));
       setConfirmacion(fmtNumber(cfg.costo_confirmacion));
       setEmpaque(fmtNumber(cfg.costo_empaque));
+      setRahaCpa(fmtNumber(cfg.raha_cpa_porcentaje ?? cfg.cpa_porcentaje));
+      setRahaEnvio(fmtNumber(cfg.raha_costo_envio ?? cfg.costo_envio));
+      setRahaConfirmacion(fmtNumber(cfg.raha_costo_confirmacion ?? cfg.costo_confirmacion));
+      setRahaEmpaque(fmtNumber(cfg.raha_costo_empaque ?? cfg.costo_empaque));
       setMargenMinimo(fmtNumber(cfg.margen_minimo));
       setUmbralExcelente(fmtNumber(cfg.umbral_excelente));
       setMargenes((cfg.margenes_objetivo || [15, 30, 45]).join(', '));
@@ -79,6 +88,10 @@ export default function ComboConfiguracion({ asTab = false }) {
       costo_envio: parseFloat(envio) || 0,
       costo_confirmacion: parseFloat(confirmacion) || 0,
       costo_empaque: parseFloat(empaque) || 0,
+      raha_cpa_porcentaje: parseFloat(rahaCpa) || 0,
+      raha_costo_envio: parseFloat(rahaEnvio) || 0,
+      raha_costo_confirmacion: parseFloat(rahaConfirmacion) || 0,
+      raha_costo_empaque: parseFloat(rahaEmpaque) || 0,
       margen_minimo: parseFloat(margenMinimo) || 10,
       umbral_excelente: parseFloat(umbralExcelente) || 50,
       margenes_objetivo: margenesArr,
@@ -108,6 +121,38 @@ export default function ComboConfiguracion({ asTab = false }) {
     fontFamily: 'inherit',
     boxSizing: 'border-box',
   };
+
+  const costoSets = {
+    propios: {
+      titulo: 'Costos propios',
+      descripcion: 'Usalos para productos y pedidos que operás con tu propia estructura.',
+      icono: PackageCheck,
+      cpa,
+      envio,
+      confirmacion,
+      empaque,
+      setCpa,
+      setEnvio,
+      setConfirmacion,
+      setEmpaque,
+    },
+    raha: {
+      titulo: 'Costos Raha',
+      descripcion: 'Usalos para medir rentabilidad cuando la operación logística/fulfillment pasa por Raha.',
+      icono: Truck,
+      cpa: rahaCpa,
+      envio: rahaEnvio,
+      confirmacion: rahaConfirmacion,
+      empaque: rahaEmpaque,
+      setCpa: setRahaCpa,
+      setEnvio: setRahaEnvio,
+      setConfirmacion: setRahaConfirmacion,
+      setEmpaque: setRahaEmpaque,
+    },
+  };
+
+  const costoActual = costoSets[costosTab];
+  const CostoIcono = costoActual.icono;
 
   if (loading) {
     return (
@@ -159,6 +204,34 @@ export default function ComboConfiguracion({ asTab = false }) {
           <h3 className="combo-section-title">Costos operativos</h3>
         </div>
 
+        <div className="combo-cost-tabs" role="tablist" aria-label="Tipo de costos operativos">
+          {Object.entries(costoSets).map(([id, item]) => {
+            const Icono = item.icono;
+            const activo = costosTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={activo}
+                className={`combo-cost-tab ${activo ? 'active' : ''}`}
+                onClick={() => setCostosTab(id)}
+              >
+                <Icono size={15} />
+                <span>
+                  <b>{item.titulo}</b>
+                  <small>{item.descripcion}</small>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="combo-cost-context">
+          <CostoIcono size={16} />
+          <span>{costoActual.descripcion}</span>
+        </div>
+
         <div className="combo-editor-grid">
           <div>
             <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -169,22 +242,22 @@ export default function ComboConfiguracion({ asTab = false }) {
                 title="El CPA proyectado se calcula sobre el ticket de venta."
               />
             </div>
-            <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={cpa} onChange={e => setCpa(e.target.value)} />
+            <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={costoActual.cpa} onChange={e => costoActual.setCpa(e.target.value)} />
             <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
               Costo por Adquisición como porcentaje proyectado sobre el ticket de venta. Ej: 20 = 20%.
             </div>
           </div>
           <div>
             <div className="combo-section-label">Costo de envío promedio</div>
-            <CurrencyInput style={inputStyle} value={envio} onChange={setEnvio} />
+            <CurrencyInput style={inputStyle} value={costoActual.envio} onChange={costoActual.setEnvio} />
           </div>
           <div>
             <div className="combo-section-label">Costo de confirmación promedio</div>
-            <CurrencyInput style={inputStyle} value={confirmacion} onChange={setConfirmacion} />
+            <CurrencyInput style={inputStyle} value={costoActual.confirmacion} onChange={costoActual.setConfirmacion} />
           </div>
           <div>
             <div className="combo-section-label">Costo de empaque promedio</div>
-            <CurrencyInput style={inputStyle} value={empaque} onChange={setEmpaque} />
+            <CurrencyInput style={inputStyle} value={costoActual.empaque} onChange={costoActual.setEmpaque} />
           </div>
         </div>
       </div>
