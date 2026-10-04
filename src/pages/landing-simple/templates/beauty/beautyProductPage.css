@@ -502,7 +502,17 @@
 
 .bpp-acordeon button svg { flex-shrink: 0; color: var(--bpp-destacado); transition: transform .2s ease; }
 .bpp-acordeon.abierto button svg { transform: rotate(180deg); }
-.bpp-acordeon-texto { max-width: 600px; margin: 0 0 20px; color: var(--bpp-muted); font-size: 13px; line-height: 1.6; }
+.bpp-acordeon-texto {
+  max-width: 640px;
+  margin: 0 0 20px;
+  padding: 14px 18px 16px;
+  border-left: 2px solid var(--bpp-destacado);
+  background: var(--bpp-blush);
+  color: var(--bpp-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
 
 /* ── Reseñas ──────────────────────────────────────────────────────── */
 

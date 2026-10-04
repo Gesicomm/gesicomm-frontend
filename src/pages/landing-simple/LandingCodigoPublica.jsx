@@ -248,6 +248,12 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         ? pedido.orden
         : 'destacados',
       categoria: pedido?.categoria || undefined,
+      marca: pedido?.marca || undefined,
+      etiqueta: pedido?.etiqueta || undefined,
+      disponibilidad: pedido?.disponibilidad || undefined,
+      precioMin: pedido?.precioMin,
+      precioMax: pedido?.precioMax,
+      soloInicio: pedido?.soloInicio === true,
       busqueda: pedido?.busqueda || undefined,
     });
     if (!res || !res.disponible) throw new Error('Catálogo no disponible');
@@ -262,6 +268,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       totalPaginas: res.paginacion?.totalPaginas || 1,
       total: res.paginacion?.total ?? items.length,
       categorias: res.categorias_disponibles || [],
+      marcas: res.marcas_disponibles || [],
+      etiquetas: res.etiquetas_disponibles || [],
     };
   }, [slug]);
 

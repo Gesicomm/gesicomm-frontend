@@ -3,12 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
-  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, Download, Upload, Grid
+  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid
 } from 'lucide-react';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import CuponesModal from './CuponesModal';
-import ImportarPreciosModal from './ImportarPreciosModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
 import { verificarSesion } from '../../utils/auth';
@@ -140,8 +139,8 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
   const esAdmin = usuarioActual?.rol === 'administrador';
-  const esMio = filtro === 'mios' || item.creado_por == null || (usuarioActual?.id != null && Number(item.creado_por) === Number(usuarioActual.id));
-  const esEditable = item.tipo === 'producto' && (esAdmin || esMio);
+  const esCreadorDirecto = usuarioActual?.id != null && item.creado_por != null && Number(item.creado_por) === Number(usuarioActual.id);
+  const esEditable = item.tipo === 'producto' && (esAdmin || esCreadorDirecto);
 
   return (
     <div
@@ -374,6 +373,9 @@ export default function VitrinaGrid() {
     sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos.map(item => ({
       id: item.id,
       nombre: item.nombre,
+      imagen: item.imagen || null,
+      imagenes: item.imagenes || [],
+      beneficios: item.beneficios || [],
       // Para armar combos desde la tienda, `precio_base` es el costo de
       // compra de la tienda frente al admin/mayorista. `precio_costo` puede
       // existir en el DTO por compatibilidad, pero representa el costo interno
@@ -405,36 +407,6 @@ export default function VitrinaGrid() {
     }
   }
 
-  const [exportando, setExportando] = useState(false);
-  const [errorExportar, setErrorExportar] = useState(null);
-  const [importarAbierto, setImportarAbierto] = useState(false);
-
-  async function exportarExcel() {
-    setExportando(true);
-    setErrorExportar(null);
-    try {
-      const blob = await vitrinaService.exportarPreciosExcel();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `mi-catalogo-precios_${new Date().toISOString().slice(0, 10)}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      // Con responseType 'blob' el JSON de error también llega como Blob.
-      let mensaje = 'No se pudo exportar el catálogo.';
-      try {
-        const data = err.response?.data;
-        if (data instanceof Blob) mensaje = JSON.parse(await data.text()).message || mensaje;
-      } catch { /* respuesta no-JSON: queda el mensaje genérico */ }
-      setErrorExportar(mensaje);
-    } finally {
-      setExportando(false);
-    }
-  }
-
   const cargar = useCallback(async () => {
     setCargando(true);
     setError(null);
@@ -445,7 +417,8 @@ export default function VitrinaGrid() {
       if (filtro === 'mis-combos') tipoQuery = 'combo';
 
       const data = await vitrinaService.catalogoPaginado({
-        page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: tipoQuery, solamenteMios
+        page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: tipoQuery, solamenteMios,
+        origenCatalogo: filtro === 'producto' || filtro === 'combo' ? 'GESICOMM' : null,
       });
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
@@ -488,11 +461,11 @@ export default function VitrinaGrid() {
       {/* ── Encabezado ── */}
       <div className="vit-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div className="vit-header-text">
-          <h1 className="vit-title">Mi catálogo</h1>
+          <h1 className="vit-title">Catálogo de Productos</h1>
           <p className="vit-subtitle">
             {enOnboarding
               ? 'Seleccioná los productos que querés vender. Con esa selección armamos tu landing inicial.'
-              : 'Gestioná los precios personalizados de venta. El precio nunca puede ser menor al mínimo configurado.'}
+              : 'Gestioná los precios personalizados de venta.'}
           </p>
           <div className="vit-header-stats">
             <span className="vit-header-stat">
@@ -503,28 +476,10 @@ export default function VitrinaGrid() {
 
         <div className="vit-header-actions" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
           {!enOnboarding && (
-            <>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={exportarExcel}
-                disabled={exportando}
-                title="Descargar todo el catálogo con sus precios en Excel"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
-              >
-                {exportando ? <Loader size={16} className="spin-icon" /> : <Download size={16} />}
-                {exportando ? 'Exportando…' : 'Exportar Excel'}
-              </button>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setImportarAbierto(true)}
-                title="Actualizar precios de venta en masa desde el Excel exportado"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}
-              >
-                <Upload size={16} /> Importar precios
-              </button>
-            </>
+            <button type="button" className="btn-secondary" onClick={() => navigate('/mi-catalogo/precios')}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', fontSize: '0.875rem' }}>
+              <SlidersHorizontal size={16} /> Cambiar precios
+            </button>
           )}
           <button
             type="button"
@@ -579,12 +534,6 @@ export default function VitrinaGrid() {
               {enOnboarding ? 'Generar landing' : 'Generar mi landing'} <ChevronRight size={15} />
             </button>
           </div>
-        </div>
-      )}
-
-      {errorExportar && (
-        <div className="vit-inline-error" role="alert">
-          <AlertCircle size={16} /> {errorExportar}
         </div>
       )}
 
@@ -744,12 +693,6 @@ export default function VitrinaGrid() {
         producto={productoAbastecer}
         open={!!productoAbastecer}
         onClose={() => setProductoAbastecer(null)}
-      />
-
-      <ImportarPreciosModal
-        abierto={importarAbierto}
-        onCerrar={() => setImportarAbierto(false)}
-        onAplicado={() => cargar()}
       />
 
       <CuponesModal

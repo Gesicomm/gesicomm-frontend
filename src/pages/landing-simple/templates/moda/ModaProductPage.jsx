@@ -6,7 +6,7 @@ import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio, CATALOGO_ICONOS_BENEFICIOS } from '../iconosBeneficios';
 import { hexToRgba, componer, contraste, resolverTemaPorSlug, textoLegible, ajustarLegible } from '../themeUtils';
-import { ahorroDePack } from '../fichaComun';
+import { ahorroDePack, configuracionVariante } from '../fichaComun';
 import { numeroDeSeccion as n } from './fichaModa';
 import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import {
@@ -255,7 +255,7 @@ export default function ModaProductPage({
               {ficha.guia_talles.activo && ficha.guia_talles.columnas.length > 0 && ficha.guia_talles.filas.length > 0 && <a className="mpg-guia-link" href="#mpg-guia-talles">{ficha.guia_talles.enlace_texto}</a>}
               <div className="mpg-opciones">
                 {variantes.map(v => {
-                  const conf = ficha.opciones.variantes?.[String(v.id)] || {};
+                  const conf = configuracionVariante(ficha.opciones.variantes, v);
                   const agotada = v.stock != null && Number(v.stock) <= 0;
                   return (
                     <button
@@ -465,7 +465,7 @@ export default function ModaProductPage({
         <section className="mpg-guia-section mpg-preview-section" id="mpg-guia-talles">
           <div className="mpg-wrap mpg-guia-grid">
             <MarcadorPreview previewMode={previewMode} seccion="guia_talles" />
-            <Intro eyebrow={ficha.guia_talles.eyebrow} titulo={ficha.guia_talles.titulo} texto={ficha.guia_talles.texto} />
+            <Intro eyebrow={ficha.guia_talles.eyebrow} titulo={ficha.guia_talles.titulo} destacado={ficha.guia_talles.titulo_destacado} texto={ficha.guia_talles.texto} />
             {ficha.guia_talles.columnas.length > 0 && ficha.guia_talles.filas.length > 0 ? (
               <div className="mpg-guia-scroll" tabIndex={0} aria-label="Tabla de talles">
                 <table className="mpg-guia-table">

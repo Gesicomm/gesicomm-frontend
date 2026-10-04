@@ -195,8 +195,8 @@ export default function Onboarding() {
     const idConsulta = ++ultimaConsulta.current;
     setDisponibilidad('cargando');
     tiendaService.disponibilidadSubdominio(subdominioDebounced)
-      .then(res => { if (idConsulta === ultimaConsulta.current) setDisponibilidad(res); })
-      .catch(() => { if (idConsulta === ultimaConsulta.current) setDisponibilidad({ valido: false, disponible: false, motivo: 'Error al verificar.' }); });
+      .then(res => { if (idConsulta === ultimaConsulta.current) setDisponibilidad({ ...res, subdominio: subdominioDebounced }); })
+      .catch(() => { if (idConsulta === ultimaConsulta.current) setDisponibilidad({ valido: false, disponible: false, motivo: 'Error al verificar.', subdominio: subdominioDebounced }); });
   }, [subdominioDebounced]);
 
   const optionsDepartamentos = useMemo(() => (
@@ -244,13 +244,16 @@ export default function Onboarding() {
   const nombreValido = nombre.trim().length >= 2;
   const documentoValido = documentoPrecargado || /^[0-9.\-]{5,20}$/.test(documento.trim());
   const whatsappValido = !!normalizarWhatsapp(whatsapp);
-  const subdominioOk = disponibilidad && disponibilidad !== 'cargando' && disponibilidad.valido && disponibilidad.disponible;
+  const validandoSubdominio = subdominio.length >= 3 && (
+    subdominio !== subdominioDebounced || !disponibilidad || disponibilidad === 'cargando' || disponibilidad.subdominio !== subdominio
+  );
+  const subdominioOk = !validandoSubdominio && disponibilidad && disponibilidad.valido && disponibilidad.disponible;
 
   function irAPaso2(e) {
     e.preventDefault();
     if (!nombreValido) return setError('Ingresá el nombre público de tu tienda.');
     if (!subdominio || subdominio.length < 3) return setError('La URL de tu tienda necesita al menos 3 letras o números.');
-    if (disponibilidad === 'cargando') return setError('Esperá un momento mientras verificamos si la URL está disponible.');
+    if (validandoSubdominio) return setError('Esperá un momento mientras verificamos si la URL está disponible.');
     if (!subdominioOk) return setError(disponibilidad?.motivo || 'Esa URL no está disponible. Probá con otro prefijo.');
     if (!documentoValido) return setError('Ingresá una cédula válida: 5 a 20 caracteres, solo números, puntos o guiones.');
     if (!whatsappValido) return setError('Ingresá un WhatsApp válido con código de país o formato local, por ejemplo 0981 123 456.');
@@ -380,7 +383,7 @@ export default function Onboarding() {
               <input
                 autoFocus
                 value={nombre}
-                onChange={e => setNombre(e.target.value)}
+                onChange={e => { setNombre(e.target.value); setError(null); }}
                 placeholder="Ej: Ropa Fina"
               />
             </label>
@@ -394,6 +397,7 @@ export default function Onboarding() {
                   onChange={e => {
                     setSubdominioEditado(true);
                     setSubdominioManual(slugifyLigero(e.target.value));
+                    setError(null);
                   }}
                   placeholder="tu-tienda"
                   aria-label="Prefijo URL de tu tienda"
@@ -403,11 +407,11 @@ export default function Onboarding() {
             </label>
 
             <div className="tn-disponibilidad">
-              {disponibilidad === 'cargando' && <span className="tn-check cargando"><Loader size={13} className="spin-icon" /> Verificando...</span>}
-              {disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
+              {validandoSubdominio && <span className="tn-check cargando"><Loader size={13} className="spin-icon" /> Verificando...</span>}
+              {!validandoSubdominio && disponibilidad && disponibilidad !== 'cargando' && disponibilidad.disponible && (
                 <span className="tn-check ok"><Check size={13} /> Disponible</span>
               )}
-              {disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
+              {!validandoSubdominio && disponibilidad && disponibilidad !== 'cargando' && !disponibilidad.disponible && (
                 <span className="tn-check error"><X size={13} /> {disponibilidad.motivo || 'Ese nombre ya está en uso. Probá con otro.'}</span>
               )}
             </div>
@@ -432,7 +436,7 @@ export default function Onboarding() {
               <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="0981 123 456" inputMode="tel" />
             </label>
 
-            <button type="submit" className="onb-primary-action" disabled={disponibilidad === 'cargando'}>
+            <button type="submit" className="onb-primary-action" disabled={validandoSubdominio}>
               Continuar
             </button>
           </form>

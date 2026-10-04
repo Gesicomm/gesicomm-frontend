@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, Layers, Loader2, Plus, ShoppingCart, Sparkles, Tag } from 'lucide-react';
 import { PanelOfertas } from './ConfigurarVentaCodigo';
-// El combo NO se arma con el formulario genérico de ofertas: tiene su propio
-// armador por fases (elegís el principal, sumás los complementarios con su
-// descuento, y ves precio y ganancia en vivo). Es el mismo criterio que la
-// sección Combos, y estaba escrito pero sin usar en ninguna pantalla.
+// Comparte los siete pasos del armador de Productos.
 import ArmarComboPanel from './ArmarComboPanel';
 import { ofertaService } from '../../services/ofertaService';
 import { contentIdPanel } from './datosRuntime';
@@ -407,9 +404,10 @@ export default function PasoOfertas({
           onCerrar={() => setCombo(null)}
           onCreado={async nuevo => {
             setCombo(null);
+            if (nuevo.estado !== 'ACTIVO') return;
             // El combo recién creado entra a la landing y queda destacado:
             // si lo acabás de armar, es porque lo querés mostrar.
-            onComboCreado?.(nuevo);
+            await onComboCreado?.(nuevo);
             await cargar();
           }}
         />
@@ -424,6 +422,12 @@ export default function PasoOfertas({
           onElegir={producto => setPanel(p => ({ ...p, producto }))}
           onCambiarProducto={() => setPanel(p => ({ ...p, producto: null }))}
           onCerrar={cerrarPanel}
+          onComboCreado={async nuevo => {
+            setPanel(null);
+            if (nuevo.estado !== 'ACTIVO') return;
+            await onComboCreado?.(nuevo);
+            await cargar();
+          }}
         />
       )}
     </div>

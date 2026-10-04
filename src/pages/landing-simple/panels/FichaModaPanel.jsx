@@ -1,4 +1,5 @@
 import React from 'react';
+import { claveConfigVariante, configuracionVariante } from '../templates/fichaComun';
 import { Link2Off } from 'lucide-react';
 import {
   SECCIONES_MODA, GRUPOS_PANEL_MODA, LIMITES, ETIQUETA_FUENTE,
@@ -311,11 +312,12 @@ const CAMPOS = {
       ) : (
         <div className="flex flex-col gap-2">
           {variantes.map(v => {
-            const conf = d.variantes?.[String(v.id)] || {};
+            const clave = claveConfigVariante(v);
+            const conf = configuracionVariante(d.variantes, v);
             return (
-              <div key={v.id} className="bg-fg/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
+              <div key={clave} className="bg-fg/[0.03] border border-fg/10 rounded-lg p-2 flex flex-col gap-1.5">
                 <p className="text-[11px] font-semibold text-fg/70 truncate">{v.nombre}</p>
-                <input className={MINI} value={conf.nota || ''} placeholder="Nota (ej: Ideal para probar)" onChange={e => set({ variantes: { ...(d.variantes || {}), [String(v.id)]: { ...conf, nota: e.target.value } } })} />
+                <input className={MINI} value={conf.nota || ''} placeholder="Nota (ej: Ideal para probar)" onChange={e => set({ variantes: { ...(d.variantes || {}), [clave]: { ...conf, nota: e.target.value } } })} />
               </div>
             );
           })}

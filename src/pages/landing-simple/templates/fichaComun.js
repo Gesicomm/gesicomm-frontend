@@ -16,6 +16,18 @@
  * este módulo y borrar la copia.
  */
 
+// Una variante nueva todavía no tiene ID. Su nombre conserva la nota al
+// recibir el ID del backend; las configuraciones existentes por ID siguen válidas.
+export function claveConfigVariante(variante) {
+  return Number(variante?.id) > 0 ? String(variante.id) : 'nombre:' + (variante?.nombre || '');
+}
+
+export function configuracionVariante(configuraciones, variante) {
+  return configuraciones?.[claveConfigVariante(variante)]
+    || configuraciones?.['nombre:' + (variante?.nombre || '')]
+    || {};
+}
+
 export function esObjeto(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
 }

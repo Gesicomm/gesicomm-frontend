@@ -6,7 +6,7 @@ import { getMediaUrl } from '../../../../services/api';
 import { formatPrecio } from '../../../../lib/mensajeWhatsapp';
 import { getIconoBeneficio, CATALOGO_ICONOS_BENEFICIOS } from '../iconosBeneficios';
 import { hexToRgba, componer, contraste, resolverTemaPorSlug, textoLegible, ajustarLegible } from '../themeUtils';
-import { ahorroDePack } from '../fichaComun';
+import { ahorroDePack, configuracionVariante } from '../fichaComun';
 import { numeroDeSeccion as n } from './fichaBazar';
 import { RedesSocialesFooter, ImagenProductoHover } from '../sections';
 import {
@@ -250,7 +250,7 @@ export default function BazarProductPage({
               {ficha.opciones.titulo && <b>{ficha.opciones.titulo}</b>}
               <div className="hpg-opciones">
                 {variantes.map(v => {
-                  const conf = ficha.opciones.variantes?.[String(v.id)] || {};
+                  const conf = configuracionVariante(ficha.opciones.variantes, v);
                   const agotada = v.stock != null && Number(v.stock) <= 0;
                   return (
                     <button
@@ -459,7 +459,7 @@ export default function BazarProductPage({
       {ficha.medidas.activo && (ficha.medidas.texto || ficha.medidas.items.length > 0 || previewMode) && (
         <section className="hpg-medidas hpg-wrap hpg-preview-section">
           <MarcadorPreview previewMode={previewMode} seccion="medidas" />
-          <Intro eyebrow={ficha.medidas.eyebrow} titulo={ficha.medidas.titulo} texto={ficha.medidas.texto} />
+          <Intro eyebrow={ficha.medidas.eyebrow} titulo={ficha.medidas.titulo} destacado={ficha.medidas.titulo_destacado} texto={ficha.medidas.texto} />
           <div className="hpg-medidas-items">
             {ficha.medidas.items.filter(x => x?.trim()).map((texto, i) => <span key={i}><Check size={16} />{texto}</span>)}
           </div>

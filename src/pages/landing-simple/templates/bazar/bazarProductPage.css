@@ -502,7 +502,17 @@
 
 .hpg-acordeon button svg { flex-shrink: 0; color: var(--hpg-destacado); transition: transform .2s ease; }
 .hpg-acordeon.abierto button svg { transform: rotate(180deg); }
-.hpg-acordeon-texto { max-width: 600px; margin: 0 0 20px; color: var(--hpg-muted); font-size: 13px; line-height: 1.6; }
+.hpg-acordeon-texto {
+  max-width: 640px;
+  margin: 0 0 20px;
+  padding: 14px 18px 16px;
+  border-left: 2px solid var(--hpg-destacado);
+  background: var(--hpg-blush);
+  color: var(--hpg-muted);
+  font-size: 13px;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
 
 /* ── Reseñas ──────────────────────────────────────────────────────── */
 

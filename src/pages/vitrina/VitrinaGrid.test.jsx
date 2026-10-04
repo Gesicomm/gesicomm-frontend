@@ -105,4 +105,38 @@ describe('VitrinaGrid Component', () => {
     const btnEditar = screen.getByTitle('Editar producto');
     expect(btnEditar).toBeInTheDocument();
   });
+
+  it('separa Combos Gesicom de Mis combos y mantiene ambos en Todos', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+    fireEvent.click(screen.getByRole('button', { name: 'Combos Gesicom', exact: true }));
+    await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
+      expect.objectContaining({ tipo: 'combo', solamenteMios: false, origenCatalogo: 'GESICOMM' }),
+    ));
+    fireEvent.click(screen.getByRole('button', { name: 'Mis combos', exact: true }));
+    await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
+      expect.objectContaining({ tipo: 'combo', solamenteMios: true, origenCatalogo: null }),
+    ));
+    fireEvent.click(screen.getByRole('button', { name: 'Todos', exact: true }));
+    await waitFor(() => expect(vitrinaService.catalogoPaginado).toHaveBeenLastCalledWith(
+      expect.objectContaining({ tipo: 'todos', solamenteMios: false, origenCatalogo: null }),
+    ));
+  });
+
+  it('lleva las fotos del catálogo al editor del combo', async () => {
+    const items = [1, 2].map(id => ({
+      id, tipo: 'producto', nombre: `Producto ${id}`, precio_base: 50000,
+      imagen: `/producto-${id}.png`, imagenes: [`/producto-${id}.png`], creado_por: 1,
+    }));
+    vitrinaService.catalogoPaginado.mockResolvedValue({ items, total: 2, totalPages: 1 });
+    renderWithRouter(<VitrinaGrid />);
+    for (const item of items) fireEvent.click(await screen.findByRole('checkbox', { name: `Seleccionar ${item.nombre}` }));
+    fireEvent.click(screen.getByRole('button', { name: 'Armar combo', exact: true }));
+    expect(JSON.parse(sessionStorage.getItem('gesicomm:comboPrefillItems'))).toEqual([
+      expect.objectContaining({ id: 1, imagen: '/producto-1.png', imagenes: ['/producto-1.png'] }),
+      expect.objectContaining({ id: 2, imagen: '/producto-2.png', imagenes: ['/producto-2.png'] }),
+    ]);
+    sessionStorage.clear();
+    window.history.replaceState({}, '', '/');
+  });
 });

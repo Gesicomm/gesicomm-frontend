@@ -802,10 +802,15 @@
 .tpp-faq-item button svg { flex-shrink: 0; transition: transform .2s; }
 .tpp-faq-item.abierta button svg { transform: rotate(180deg); color: var(--tpp-accent); }
 .tpp-faq-respuesta {
-  padding: 0 18px 18px;
+  margin: 0 18px 18px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--tpp-border);
+  border-radius: 0 0 6px 6px;
+  background: color-mix(in srgb, var(--tpp-card) 88%, var(--tpp-accent) 12%);
   color: var(--tpp-muted);
   font-size: 12px;
   line-height: 1.65;
+  box-sizing: border-box;
 }
 .tpp-faq-respuesta > * { margin-top: 0; }
 .tpp-faq-respuesta > *:last-child { margin-bottom: 0; }

@@ -50,30 +50,26 @@ export const DEFAULTS_COMBO = {
     animado: true,
     velocidad: 28,
     separador: '·',
-    items: [
-      { icono: 'truck',  texto: 'Envío gratis' },
-      { icono: 'shield', texto: 'Garantía 30 días' },
-      { icono: 'lock',   texto: 'Pago seguro' },
-    ],
+    items: [],
     cta_texto: 'Comprar ahora',
   },
 
   hero: {
     activo: true,
-    etiqueta_oferta: 'Oferta por tiempo limitado',
-    contador: { activo: true, horas: 2, minutos: 45, segundos: 57 },
+    etiqueta_oferta: '',
+    contador: { activo: false, horas: 2, minutos: 45, segundos: 57 },
     eyebrow: '',              // vacío = la categoría del combo
     titulo: '',                // vacío = el nombre del combo
     titulo_destacado: '',
     lead: '',                  // vacío = la propuesta de valor / descripción del combo
-    etiqueta: 'Más vendido',
-    caracteristicas: ['Combo completo', 'Mejor precio juntos', 'Listo para recibir'],
-    rating_activo: true,
+    etiqueta: '',
+    caracteristicas: [],
+    rating_activo: false,
     rating_valor: 4.8,
     cta_texto: 'Comprar ahora',
-    nota_stock: 'Stock limitado',
-    nota_envio: 'Envío gratis',
-    nota_garantia: 'Garantía 30 días',
+    nota_stock: '',
+    nota_envio: '',
+    nota_garantia: '',
   },
 
   incluye: {
@@ -92,14 +88,10 @@ export const DEFAULTS_COMBO = {
   beneficio_principal: {
     activo: true,
     titulo: '¿Por qué este combo?',
-    texto: 'Una selección simple: productos que se complementan para resolver más con menos.',
+    texto: '',
     // [{icono, titulo, texto}] — se pisa con lo cargado en Vista del combo
     // (beneficios) en cuanto el comercio carga alguno.
-    items: [
-      { icono: 'package',  titulo: 'Todo resuelto',      texto: 'Recibís una solución completa sin perder tiempo buscando por separado.' },
-      { icono: 'star',     titulo: 'Calidad que se nota', texto: 'Cada producto fue elegido por su utilidad, acabado y duración.' },
-      { icono: 'thumbs-up', titulo: 'Más por tu dinero',  texto: 'El precio especial del combo te permite ahorrar desde el primer día.' },
-    ],
+    items: [],
   },
 
   detalle_productos: {
@@ -117,12 +109,7 @@ export const DEFAULTS_COMBO = {
   confianza: {
     activo: true,
     titulo: 'Comprá con confianza',
-    items: [
-      { icono: 'truck',      titulo: 'Envío rápido',      texto: 'Gratis a todo el país.' },
-      { icono: 'lock',       titulo: 'Pago seguro',       texto: 'Datos protegidos.' },
-      { icono: 'shield',     titulo: 'Garantía 30 días',  texto: 'Compra sin riesgos.' },
-      { icono: 'headphones', titulo: 'Soporte WhatsApp',  texto: 'Estamos para ayudarte.' },
-    ],
+    items: [],
   },
 
   faq: {
@@ -132,10 +119,10 @@ export const DEFAULTS_COMBO = {
 
   cta_final: {
     activo: true,
-    etiqueta: 'No pierdas esta oferta',
+    etiqueta: '',
     titulo: '',       // vacío = el nombre del combo
     cta_texto: 'Comprar ahora',
-    contador: { activo: true, horas: 2, minutos: 45, segundos: 57 },
+    contador: { activo: false, horas: 2, minutos: 45, segundos: 57 },
   },
 };
 

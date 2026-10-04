@@ -51,7 +51,7 @@ export const DEFAULTS_MODA = {
   historia: { activo: false, eyebrow: '', titulo: '', texto: '', puntos: [], imagen: '' },
   materiales: { activo: false, eyebrow: 'Conocé el producto', titulo: 'Telas y composición', titulo_destacado: '', subtitulo: '', color_fondo: '', items: [] },
   looks: { activo: false, eyebrow: 'Ideas para usarlo', titulo: 'Más formas de usarlo', titulo_destacado: '', pasos: [] },
-  guia_talles: { activo: false, eyebrow: 'Comprá sin dudas', titulo: 'Tu talle, más fácil.', texto: '', columnas: [], filas: [], enlace_texto: '¿Cuál es el mío?' },
+  guia_talles: { activo: false, eyebrow: 'Comprá sin dudas', titulo: 'Tu talle, más fácil.', titulo_destacado: '', texto: '', columnas: [], filas: [], enlace_texto: '¿Cuál es el mío?' },
   faq: { activo: true, eyebrow: 'Detalles del producto', titulo: 'Todo lo que necesitás saber.' },
   resenas: { activo: false, eyebrow: 'Reseñas', titulo: 'Así les queda.', items: [] },
   upsells: { activo: true, titulo: 'Completá tu look', cta_texto: 'Agregar' },

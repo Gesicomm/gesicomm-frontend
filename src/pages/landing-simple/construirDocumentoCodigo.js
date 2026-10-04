@@ -147,33 +147,96 @@ body {
   background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
   color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
-body > :where(header, main, footer, section, article, aside, nav, div) {
+body > :where(header, main, footer, section, article, aside, nav, div):not(.container) {
   min-width: 100% !important;
 }
 
+/* Valores por defecto sin especificidad: las miniaturas de una ficha deben
+   conservar las dimensiones de su diseño, también en landings ya guardadas. */
+:where(img[data-gesicomm-bind="imagen"]) {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 /* Las fotos reales del catálogo no son banners decorativos: si el CSS de IA
    las fuerza a cover se cortan botellas, pulseras, cajas y combos. */
 img[data-gesicomm-bind="imagen"],
 [data-gesicomm-lista] img[data-gesicomm-bind="imagen"] {
-  display: block !important;
-  width: 100% !important;
-  /* height: auto, NO 100%. Con 100% sobre una tarjeta de alto automático la
-     imagen se comía la tarjeta entera y el nombre, el precio y el botón de
-     comprar quedaban fuera, recortados por el overflow:hidden de la tarjeta:
-     la grilla mostraba solo fotos y no se podía comprar. El alto fijo se
-     aplica más abajo, solo dentro de un contenedor de media que sí lo tiene. */
-  height: auto !important;
   max-width: 100% !important;
   object-fit: contain !important;
   object-position: center !important;
   background: #fff !important;
 }
-[data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
+/* El contenido del combo comparte espacio con la foto, no con una imagen
+   del ancho de toda la tarjeta. Mantiene legibles nombres y precios largos. */
+:where(.incluye-card) { min-width: 0; }
+:where(.incluye-card > img, .trae-lista img) { flex-shrink: 0; }
+:where(.incluye-card > div) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+:where(.description-body) { line-height: 1.7; overflow-wrap: anywhere; }
+.gc-catalog-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+.gc-catalog-controls > :where(input, select) {
+  flex: 1 1 210px; min-width: min(210px, 100%); max-width: 100%; min-height: 44px; padding: 10px 12px;
+  color: inherit; background: var(--gc-superficie); border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 12px;
+}
+.gc-catalog-controls > [data-gesicomm-buscar] { flex-basis: 100%; }
+:where(.gc-product-shipping) { margin: 8px 0 0; font-size: .8rem; font-weight: 500; color: inherit; opacity: .85; }
+.gc-commercial-badges { display:flex; flex-wrap:wrap; gap:6px; padding:12px 14px; position:relative; z-index:1; }
+.gc-commercial-badges span { background:var(--gc-primario,#155e63); color:white; border-radius:999px; padding:6px 10px; font:700 12px/1.3 system-ui,sans-serif; }
+.gc-commercial-badges span + span { background:transparent; color:inherit; border:1px solid currentColor; }
+.gc-commercial-copy { margin:8px 0 14px; font:400 14px/1.6 system-ui,sans-serif; color:inherit; opacity:.85; }
+.gc-commercial-saving { margin:12px 0 0; font:700 14px/1.5 system-ui,sans-serif; color:inherit; }
+.gc-commercial-details { display:inline-flex; margin:14px 0 0; padding:0; border:0; background:transparent; color:inherit; font:700 14px/1.5 system-ui,sans-serif; cursor:pointer; }
+[data-gesicomm-lista] :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
   overflow: hidden !important;
   background: #fff !important;
 }
-[data-gesicomm-lista] :where(.card__media, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) img[data-gesicomm-bind="imagen"] {
+[data-gesicomm-lista] :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) img[data-gesicomm-bind="imagen"] {
   height: 100% !important;
+}
+/* El carrusel cambia entre fotos horizontales y verticales. La foto queda
+   dentro de su área y nunca invade el nombre, los incluidos o el precio. */
+[data-gesicomm-lista] .product-card > .product-image {
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
+  isolation: isolate;
+}
+[data-gesicomm-lista] .product-image img[data-gesicomm-bind="imagen"] {
+  min-width: 0;
+  min-height: 0;
+  max-height: 100% !important;
+  mix-blend-mode: normal !important;
+}
+[data-gesicomm-lista] .product-card > .product-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  position: relative;
+  isolation: isolate;
+  background: var(--gc-superficie);
+}
+[data-gesicomm-lista] .product-card > .product-content h3 {
+  line-height: 1.35;
+}
+[data-gesicomm-lista] .product-card .product-footer {
+  flex-wrap: wrap;
+}
+[data-gesicomm-lista] .product-card .product-footer > * {
+  min-width: 0;
+  max-width: 100%;
+}
+/* Un solo combo relacionado aprovecha el ancho de la ficha. Con varios
+   combos se conserva la grilla; en celular sigue la tarjeta vertical. */
+@media (min-width: 701px) {
+  .product-grid[data-gesicomm-lista="combos_producto"]:has(> .product-card:only-of-type) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .product-grid[data-gesicomm-lista="combos_producto"] > .product-card:only-of-type {
+    display: grid;
+    grid-template-columns: minmax(240px, .8fr) minmax(0, 1.2fr);
+  }
+  .product-grid[data-gesicomm-lista="combos_producto"] > .product-card:only-of-type > .product-image {
+    height: 260px;
+  }
 }
 /* Las redes las crea el runtime (pintarRedes) DESPUÉS de que el modelo
    escribió su CSS, así que nunca tienen estilo propio y salían como el link

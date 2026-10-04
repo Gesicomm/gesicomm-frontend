@@ -5,6 +5,7 @@ import StoreHeader from './StoreHeader';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 import { AccionesProducto, BeneficiosSection, FaqSection, ImagenProductoHover, RedesSocialesFooter, textoOMuestra } from './sections';
 import { formatPrecio } from '../../../lib/mensajeWhatsapp';
+import HeroCarousel from './HeroCarousel';
 import './moda/modaTemplate.css';
 
 const NOOP = () => {};
@@ -52,7 +53,13 @@ export default function ModaTemplate({
           {heroBoton.texto && <a className={`fashion-store-button ${heroBoton.clase}`} href={hero.ctaLink || '#productos'}>{heroBoton.texto} <ArrowRight size={16} /></a>}
         </div>
         <div className="fashion-store-editorial">
-          {hero.imagen ? <img src={hero.imagen} alt={hero.titulo || nombreComercio} style={{ opacity: hero.opacidad != null ? Number(hero.opacidad) / 100 : 1 }} /> : <ImageOff size={40} />}
+          <HeroCarousel
+            hero={hero}
+            alt={hero.titulo || nombreComercio}
+            className="relative h-full w-full"
+            imageOpacity={hero.opacidad != null ? Number(hero.opacidad) / 100 : 1}
+          />
+          {!hero.imagenes?.length && !hero.imagen && <ImageOff size={40} />}
         </div>
       </section>
       {beneficios?.length > 0 && <BeneficiosSection beneficios={beneficios} acento={tema.acento} textoSuave={textoSuave} tituloClase="font-semibold" bordeSuave={bordeSuave} isMobile={isMobile} />}

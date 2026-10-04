@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader, LayoutTemplate, Code2, ArrowRight, Wand2 } from 'lucide-react';
+import { Loader, LayoutTemplate, Code2, ArrowRight } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import TemplateSelector from './TemplateSelector';
 import AILandingWizard from './AILandingWizard';
+import { leerItemsPrefill } from './prefilledLandingItems';
 
 /**
  * Primera pantalla de "/landing" cuando el comercio todavía no tiene
@@ -13,7 +14,7 @@ import AILandingWizard from './AILandingWizard';
  *     los templates rígidos → editor de contenido).
  *   - Lienzo en blanco → crea una landing kind='codigo' y abre el editor
  *     de HTML/CSS/JS (LandingCodigoEditor).
- *   - Generar con IA → wizard propio, pero termina en el mismo editor libre
+ *   - Generar con IA → (Oculto temporalmente) wizard propio, pero termina en el mismo editor libre
  *     que el lienzo porque el resultado técnico también es código.
  *
  * Los tres caminos terminan en la misma entidad Landing (mismo slug,
@@ -30,12 +31,7 @@ export default function ModoSelector({ onCreada }) {
     setError('');
     setCreando(true);
     try {
-      let items = [];
-      try {
-        const stored = sessionStorage.getItem('gesicomm:prefilledLandingItems');
-        if (stored) items = JSON.parse(stored);
-      } catch (e) {}
-      const landing = await landingSimpleService.crearLienzoBlanco(items);
+      const landing = await landingSimpleService.crearLienzoBlanco(leerItemsPrefill());
       if (onCreada) onCreada(landing);
       else navigate(`/landing/${landing.id}`, { replace: true });
     } catch (err) {
@@ -63,15 +59,7 @@ export default function ModoSelector({ onCreada }) {
 
       {error && <div className="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/40 text-danger text-sm font-medium">{error}</div>}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Opcion
-          icono={Wand2}
-          titulo="Generar con IA"
-          descripcion="Elegís productos, oferta e instrucciones. La IA arma la landing y después la editás en el editor libre."
-          puntos={['Wizard con producto y oferta', 'Diseño y textos generados', 'Luego podés pedir cambios o editar código']}
-          accion="Generar con IA"
-          onClick={() => setModo('ia')}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Opcion
           icono={LayoutTemplate}
           titulo="Landing rígida"

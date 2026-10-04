@@ -90,7 +90,7 @@ const FILTROS_VACIOS = {
   producto: "",
   metodo_pago_id: "TODOS",
   etiqueta_id: "TODOS",
-  plantilla_id: "TODOS",
+  flujo_id: "TODOS",
   seguimiento_responsable_id: "TODOS",
   seguimiento_pendiente: false,
   seguimiento_vencido: false,
@@ -533,7 +533,7 @@ export function PedidosTable({
   const [modalAbastecimientoDismissedKey, setModalAbastecimientoDismissedKey] = useState(null);
   
   const [etiquetas, setEtiquetas] = useState([]);
-  const [plantillas, setPlantillas] = useState([]);
+  const [flujos, setFlujos] = useState([]);
 
   // Modals
   const [modalOpen, setModalOpen] = useState(false);
@@ -543,7 +543,7 @@ export function PedidosTable({
     canalVentaService.listar().then((data) => setCanalesVenta(data || [])).catch(() => setCanalesVenta([]));
     verificarSesion().then((res) => setUsuarioActual(res)).catch(() => setUsuarioActual(null));
     seguimientoService.getEtiquetas({ activo: true }).then(d => setEtiquetas(d || [])).catch(()=>{});
-    seguimientoService.getPlantillas({ activo: true }).then(d => setPlantillas(d || [])).catch(()=>{});
+    seguimientoService.getFlujos({ activo: true }).then(d => setFlujos(d || [])).catch(()=>{});
   }, []);
 
   useEffect(() => {
@@ -577,7 +577,7 @@ export function PedidosTable({
     if (f.metodo_pago_id !== "TODOS") payload.metodo_pago_id = f.metodo_pago_id;
     
     if (f.etiqueta_id !== "TODOS") payload.etiqueta_id = f.etiqueta_id;
-    if (f.plantilla_id !== "TODOS") payload.plantilla_id = f.plantilla_id;
+    if (f.flujo_id !== "TODOS") payload.flujo_id = f.flujo_id;
     if (f.seguimiento_responsable_id !== "TODOS") payload.seguimiento_responsable_id = f.seguimiento_responsable_id;
     if (f.seguimiento_pendiente) payload.seguimiento_pendiente = f.seguimiento_pendiente;
     if (f.seguimiento_vencido) payload.seguimiento_vencido = f.seguimiento_vencido;
@@ -842,7 +842,7 @@ export function PedidosTable({
       reset: "TODOS",
     },
     filtros.etiqueta_id !== "TODOS" && { key: "etiqueta_id", label: "Etiqueta aplicada", reset: "TODOS" },
-    filtros.plantilla_id !== "TODOS" && { key: "plantilla_id", label: "Plantilla aplicada", reset: "TODOS" },
+    filtros.flujo_id !== "TODOS" && { key: "flujo_id", label: "Flujo usado", reset: "TODOS" },
     filtros.seguimiento_pendiente && { key: "seguimiento_pendiente", label: "Seguimiento pendiente", reset: false },
     filtros.seguimiento_vencido && { key: "seguimiento_vencido", label: "Seguimiento vencido", reset: false },
   ].filter(Boolean);
@@ -1378,9 +1378,9 @@ export function PedidosTable({
               </label>
               <label className="pt-extra-label">
                 <MessageCircle size={13} />
-                <select className="pt-filter-select" style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }} value={filtros.plantilla_id} onChange={(e) => setFiltro("plantilla_id", e.target.value)}>
-                  <option value="TODOS">Todas las plantillas</option>
-                  {plantillas.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                <select className="pt-filter-select" style={{ border: "none", padding: "0.4rem 0.5rem", background: "transparent" }} value={filtros.flujo_id} onChange={(e) => setFiltro("flujo_id", e.target.value)}>
+                  <option value="TODOS">Todos los flujos</option>
+                  {flujos.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                 </select>
               </label>
               <label className="pt-extra-label" style={{ display: "flex", gap: "6px", alignItems: "center" }}>

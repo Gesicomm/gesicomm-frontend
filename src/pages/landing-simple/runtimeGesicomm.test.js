@@ -53,6 +53,61 @@ function montar(plantilla, datos) {
 describe('runtime del lienzo en blanco — inicio', () => {
   const datos = { vista: 'inicio', tienda: { nombre: 'Mi Tienda', whatsapp: '0981 123' }, productos: [airFryer, remera, malicioso], producto: null, recomendados: [] };
 
+  it('filtra por cada etiqueta, marca, precio y disponibilidad sin perder las opciones del catálogo', () => {
+    const { window, document, dom } = montar(PLANTILLA_INICIO, { ...datos, productos: [
+      { ...airFryer, etiqueta: 'Cocina, Oferta', marca: 'Marca A' }, { ...remera, marca: 'Marca B', etiqueta: 'Oferta', stock: 0 },
+    ] });
+    const ids = () => [...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'));
+    function filtrar(campo, valor) {
+      const el = document.querySelector('[data-gesicomm-filtro="' + campo + '"]');
+      el.value = valor;
+      el.dispatchEvent(new window.Event('change', { bubbles: true }));
+    }
+    filtrar('etiqueta', 'Cocina');
+    expect(ids()).toEqual(['air-fryer-26l']);
+    expect([...document.querySelector('[data-gesicomm-filtro="etiqueta"]').options].map(o => o.value)).toEqual(['', 'Cocina', 'Oferta']);
+    filtrar('etiqueta', 'Oferta'); filtrar('marca', 'Marca B');
+    expect(ids()).toEqual(['remera']);
+    filtrar('marca', ''); filtrar('precioMin', '100000');
+    expect(ids()).toEqual(['air-fryer-26l']);
+    filtrar('precioMin', ''); filtrar('disponibilidad', 'agotado');
+    expect(ids()).toEqual(['remera']);
+    dom.window.close();
+  });
+
+  it('aplica el rango de precios mientras se escribe sin necesitar salir del campo', async () => {
+    const { window, document, dom } = montar(PLANTILLA_INICIO, datos);
+    const campo = document.querySelector('[data-gesicomm-filtro="precioMax"]');
+    campo.value = '60000';
+    campo.dispatchEvent(new window.Event('input', { bubbles: true }));
+    await new Promise(resolve => setTimeout(resolve, 400));
+    expect([...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'))).toEqual(['remera', 'malo']);
+    dom.window.close();
+  });
+
+  it('respeta los filtros desactivados y los productos ocultos del inicio, también en el hero', () => {
+    const { document, dom } = montar(PLANTILLA_INICIO, { ...datos,
+      venta: { catalogo_filtros: { marca: false, buscador: false, precio: false } },
+      productos: [{ ...airFryer, mostrar_en_inicio: false }, remera],
+    });
+    expect(document.querySelectorAll('#productos [data-gesicomm-item]')).toHaveLength(1);
+    expect(document.querySelector('.hero-card [data-gesicomm-bind="nombre"]').textContent).toBe('Remera');
+    expect(document.querySelector('[data-gesicomm-filtro="marca"]').style.display).toBe('none');
+    expect(document.querySelector('[data-gesicomm-buscar]').style.display).toBe('none');
+    expect(document.querySelector('[data-gesicomm-filtro="precioMin"]').style.display).toBe('none');
+    dom.window.close();
+  });
+
+  it('manda los filtros al servidor cuando el catálogo está paginado', () => {
+    const { window, document, mensajes, dom } = montar(PLANTILLA_INICIO, { ...datos, catalogo: { paginado: true, total: 80 }, productos: [{ ...airFryer, marca: 'Marca A', etiqueta: 'Oferta' }] });
+    const pedido = mensajes.find(m => m.tipo === 'gesicomm:catalogo');
+    window.dispatchEvent(new window.MessageEvent('message', { source: window, data: { tipo: 'gesicomm:catalogo-respuesta', id: pedido.id, productos: [airFryer], marcas: ['Marca A'], etiquetas: ['Oferta'], total: 80 } }));
+    const el = document.querySelector('[data-gesicomm-filtro="etiqueta"]');
+    el.value = 'Oferta'; el.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ etiqueta: 'Oferta', soloInicio: true, pagina: 1 });
+    dom.window.close();
+  });
+
   it('pinta una tarjeta por producto, los destacados y el contador', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     const tarjetas = document.querySelectorAll('#productos [data-gesicomm-item]');
@@ -379,6 +434,54 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'contacto' });
     click('#b');
     expect(mensajes.filter(m => m.destino === 'pagina')).toHaveLength(1);
+  });
+});
+
+describe('ficha: imágenes y descripciones legibles', () => {
+  it('conserva el contenedor centrado de una ficha sin dejar estrecho el fondo completo', () => {
+    const { window, document, dom } = montar({
+      html: '<main class="container"></main><footer></footer>',
+      css: '.container{width:1180px;min-width:0}', js: '',
+    }, { tienda: {} });
+    expect(window.getComputedStyle(document.querySelector('main')).minWidth).toBe('0px');
+    expect(window.getComputedStyle(document.querySelector('footer')).minWidth).toBe('100%');
+    dom.window.close();
+  });
+
+  it('respeta el tamaño de miniaturas, imágenes principales y fotos de tarjetas guardadas', () => {
+    const { window, document, dom } = montar({
+      html: '<img class="mini" data-gesicomm-bind="imagen"><img class="principal" data-gesicomm-bind="imagen"><img class="tarjeta" data-gesicomm-bind="imagen">',
+      css: '.mini{width:72px;height:72px}.principal{width:100%;height:440px}.tarjeta{width:100%;height:auto}',
+      js: '',
+    }, { vista: 'producto', productos: [airFryer], producto: airFryer, tienda: {} });
+    const estilo = selector => window.getComputedStyle(document.querySelector(selector));
+    expect(estilo('.mini').width).toBe('72px');
+    expect(estilo('.mini').height).toBe('72px');
+    expect(estilo('.principal').height).toBe('440px');
+    expect(estilo('.tarjeta').height).toBe('auto');
+    expect(estilo('.principal').objectFit).toBe('contain');
+    dom.window.close();
+  });
+
+  it('una foto ausente se mantiene oculta y no ocupa el lugar del texto', () => {
+    const { window, document, dom } = montar(PLANTILLA_PRODUCTO, {
+      vista: 'producto', productos: [remera], producto: remera, tienda: {}, recomendados: [],
+    });
+    expect(window.getComputedStyle(document.querySelector('img[data-gesicomm-bind="imagen"]')).display).toBe('none');
+    expect(document.querySelector('#descripcion').style.display).toBe('none');
+    expect(document.querySelector('a[href="#descripcion"]').style.display).toBe('none');
+    dom.window.close();
+  });
+
+  it('muestra la descripción real con sus párrafos cuando está cargada', () => {
+    const producto = { ...airFryer, sobre: 'Una opción práctica.', descripcion_larga: 'Primer párrafo.\n\nSegundo párrafo.' };
+    const { document, dom } = montar(PLANTILLA_PRODUCTO, {
+      vista: 'producto', productos: [producto], producto, tienda: {}, recomendados: [],
+    });
+    expect(document.querySelector('#descripcion').style.display).toBe('');
+    expect(document.querySelector('a[href="#descripcion"]').style.display).toBe('');
+    expect(document.querySelector('[data-gesicomm-bind="descripcion_larga"]').textContent).toBe(producto.descripcion_larga);
+    dom.window.close();
   });
 });
 
@@ -839,5 +942,25 @@ describe('ficha: etiquetas y paquete destacado (Configurar venta)', () => {
     const { document, click } = montar(PLANTILLA_PRODUCTO, { vista: 'producto', tienda: {}, productos: [prod], producto: prod, recomendados: [] });
     click('.paquete[data-gesicomm-paquete="unidad"]');
     expect(document.querySelector('.buy-row [data-gesicomm-cta]').textContent).toBe('Comprar ahora');
+  });
+});
+
+
+describe('presentacion comercial del lienzo', () => {
+  it('usa el mismo copy guardado en el panel y en la landing publica', () => {
+    const venta = { presentacion_productos: { 'producto:10': { titulo_comercial: 'Cocina facil', mensaje_comercial: 'Para compartir', insignia_principal: 'Oferta', insignia_secundaria: 'Exclusivo online' } } };
+    const panel = datosRuntimePreview({ productos: [{ ...airFryer, id: 10, slug: airFryer.id, precio_efectivo: airFryer.precio }], venta });
+    const publico = datosRuntimePublico({ items: [airFryer], content: { venta } });
+    expect(panel.productos[0].titulo_comercial).toBe('Cocina facil');
+    expect(publico.productos[0].titulo_comercial).toBe('Cocina facil');
+    const plantilla = { html: '<div data-gesicomm-lista="productos"><template><article><div data-gesicomm-bind="etiqueta"></div><div class="product-content"><h3 data-gesicomm-bind="nombre"></h3><span data-gesicomm-bind="precio"></span></div></article></template></div>', css: '', js: '' };
+    const { dom, document, click, mensajes } = montar(plantilla, { vista: 'inicio', productos: [{ ...airFryer, ...venta.presentacion_productos['producto:10'], etiqueta: 'Cocina' }] });
+    expect(document.querySelector('h3').textContent).toBe('Cocina facil');
+    expect(document.querySelector('.gc-commercial-badges').textContent).toContain('Oferta');
+    expect(document.querySelector('.gc-commercial-saving').textContent).toContain('34.265');
+    expect(document.querySelector('[data-gesicomm-bind="etiqueta"]').style.display).toBe('none');
+    click('.gc-commercial-details');
+    expect(mensajes.some(m => m.destino === 'producto')).toBe(true);
+    dom.window.close();
   });
 });

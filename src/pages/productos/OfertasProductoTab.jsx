@@ -160,6 +160,7 @@ export default function OfertasProductoTab({
   // Si llega un tipo contextual, abre directo el formulario correspondiente
   // sin volver a pedirle al usuario la misma decisión.
   crearAlAbrir = null,
+  onCrearCombo = null,
   borradores = null, onBorradoresChange,
 }) {
   const modoBorrador = Array.isArray(borradores);
@@ -262,6 +263,11 @@ export default function OfertasProductoTab({
 
   function openCrear(tipo = estrategiaVista) {
     const tipoNormalizado = normalizarTipoCreacion(tipo);
+    if (tipoNormalizado === 'combo' && onCrearCombo) {
+      setOpen(false);
+      onCrearCombo();
+      return;
+    }
     precioManualRef.current = false;
     setEditando(null);
     setForm(formPorTipo(tipoNormalizado));
@@ -340,6 +346,11 @@ export default function OfertasProductoTab({
   //   - normal → no-normal: si estaba en "pack", pasa a "combo" y cantidad a 1.
   //   - no-normal → normal: si estaba en "combo", vuelve a "pack" y cantidad a 2.
   function handleTipoOfertaChange(tipo) {
+    if (!editando && tipo === 'combo' && onCrearCombo) {
+      setOpen(false);
+      onCrearCombo();
+      return;
+    }
     precioManualRef.current = false;
     setForm(formPorTipo(tipo));
   }
@@ -877,12 +888,41 @@ export default function OfertasProductoTab({
                       type="number"
                       min="1"
                       value={form.componentes[0]?.cantidad ?? 1}
-                      onChange={e => setForm(f => ({ ...f, componentes: [{ producto_id: productoId, cantidad: e.target.value }] }))}
+                      aria-label="Unidades del paquete"
+                    onChange={e => updateComponente(0, 'cantidad', e.target.value)}
                       style={{ width: '70px', padding: '0.45rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
                       required
                     />
                   </div>
                 </div>
+
+                {(variantesPorProducto[Number(productoId)] || []).length > 0 && (
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                    <label style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!form.componentes[0]?.permite_elegir_variante}
+                        onChange={e => updateComponente(0, 'permite_elegir_variante', e.target.checked)}
+                      />
+                      Dejar que el cliente elija la variante del paquete
+                    </label>
+                    {!form.componentes[0]?.permite_elegir_variante && (
+                      <label>
+                        Variante del paquete
+                        <select
+                          value={form.componentes[0]?.variante_id || ''}
+                          onChange={e => updateComponente(0, 'variante_id', e.target.value ? Number(e.target.value) : null)}
+                          required
+                        >
+                          <option value="">Elegí qué variante incluye el paquete...</option>
+                          {(variantesPorProducto[Number(productoId)] || []).map(v => (
+                            <option key={v.id} value={v.id}>{v.nombre}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                )}
 
                 {/* El ahorro se deriva del precio que puso el usuario; el
                     sistema informa, no impone. */}
@@ -921,7 +961,8 @@ export default function OfertasProductoTab({
                     type="number"
                     min="1"
                     value={form.componentes[0]?.cantidad ?? 1}
-                    onChange={e => setForm(f => ({ ...f, componentes: [{ producto_id: productoId, cantidad: e.target.value }] }))}
+                    aria-label="Unidades del paquete"
+                    onChange={e => updateComponente(0, 'cantidad', e.target.value)}
                     style={{ width: '70px', padding: '0.45rem', textAlign: 'center', fontWeight: 'bold', fontSize: '1rem' }}
                     required
                   />

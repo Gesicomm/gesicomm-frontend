@@ -6,7 +6,6 @@ import DepositoFilters from '../../components/depositos/DepositoFilters';
 import DepositoCard from '../../components/depositos/DepositoCard';
 import DepositoForm from '../../components/depositos/DepositoForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
-import CouriersDepositoModal from '../../components/depositos/CouriersDepositoModal';
 import FulfillmentCard from '../../components/depositos/FulfillmentCard';
 import useSesion from '../../hooks/useSesion';
 
@@ -25,11 +24,6 @@ export default function DepositosPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [formValues, setFormValues] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
-
-  const [couriersDeposito, setCouriersDeposito] = useState(null);
-  // Habilitar couriers cambia si la logística propia es viable: al guardar,
-  // se remonta la tarjeta para que relea su estado.
-  const [fulfillmentKey, setFulfillmentKey] = useState(0);
 
   const [confirmDialog, setConfirmDialog] = useState({ open: false, title: '', desc: '', action: null, danger: false });
 
@@ -164,7 +158,7 @@ export default function DepositosPage() {
 
       {!esAdmin && (
         <div className="mb-6">
-          <FulfillmentCard key={fulfillmentKey} />
+          <FulfillmentCard />
         </div>
       )}
 
@@ -189,7 +183,6 @@ export default function DepositosPage() {
                   onEdit={handleOpenEditar}
                   onToggleEstado={handleToggleEstado}
                   onDelete={handleDelete}
-                  onGestionarCouriers={(dep) => setCouriersDeposito(dep)}
                 />
               ))}
             </div>
@@ -269,13 +262,6 @@ export default function DepositosPage() {
           loading={formLoading}
         />
       )}
-
-      <CouriersDepositoModal
-        open={!!couriersDeposito}
-        deposito={couriersDeposito}
-        onClose={() => setCouriersDeposito(null)}
-        onGuardado={() => { fetchDepositos(); setFulfillmentKey((k) => k + 1); }}
-      />
 
       <ConfirmDialog
         open={confirmDialog.open}

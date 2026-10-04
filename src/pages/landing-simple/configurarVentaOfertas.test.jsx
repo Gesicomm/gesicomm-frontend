@@ -86,7 +86,7 @@ describe('Configurar venta → crear una oferta', () => {
     // El formulario va en un portal a <body>, dentro de .modal-overlay.
     const modal = document.body.querySelector('.modal-overlay form');
     expect(modal).not.toBeNull();
-    fireEvent.change(within(modal).getByPlaceholderText('Ej. Llevá 2 y ahorrá'), { target: { value: 'Pack x2' } });
+    fireEvent.change(within(modal).getByPlaceholderText('Ej. Llevá 2 y ahorrá'), { target: { value: 'Pack x2' } });    // El paquete tiene precio propio; no se vende gratis por dejarlo vacío.    const precio = within(modal).getByText('Precio del paquete').closest('.form-group');    fireEvent.change(within(precio).getByRole('textbox'), { target: { value: '500000' } });
     // El código interno ya no es obligatorio: vacío, se genera solo.
     expect(within(modal).getByPlaceholderText('Se genera solo').value).toBe('');
     fireEvent.submit(modal);

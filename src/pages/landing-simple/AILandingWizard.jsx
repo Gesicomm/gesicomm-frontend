@@ -639,7 +639,7 @@ export default function AILandingWizard({ onCreada }) {
             onComboCreado={async (combo) => {
               // Entra a la landing sin volver al paso anterior: lo acabás de
               // armar acá, sería absurdo pedirte que lo busques de nuevo.
-              const item = { tipo: 'combo', id: Number(combo.id), nombre: combo.nombre, precio: combo.precio_total };
+              const item = { ...combo, tipo: 'combo', id: Number(combo.id), precio: Number(combo.precio_total) };
               setProductosSeleccionados(prev => new Map(prev).set(`combo:${item.id}`, item));
               setCatalogo(await vitrinaService.catalogo().catch(() => catalogo));
             }}

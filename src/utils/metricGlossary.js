@@ -15,9 +15,11 @@ export const METRIC_TERMS = Object.freeze({
   costosVariables: 'Costos Variables',
   flujoCajaNeto: 'Flujo de caja neto',
   cajaDisponible: 'Caja disponible',
+  valorStockActual: 'Valor estimado del stock actual',
 });
 
 export const METRIC_HELP = Object.freeze({
+  valorStockActual: 'Suma del stock actual de los productos activos creados por tu usuario, multiplicado por su precio de costo. Si el costo falta o es cero, usa el precio base de venta. Refleja el stock de hoy, no el del cierre del período seleccionado.',
   ventasNetas: 'Venta de productos entregados, sin delivery/flete. Los pedidos pendientes o cancelados no entran.',
   ticketPromedio: 'Promedio vendido por cada pedido entregado. Fórmula: ventas netas divididas por pedidos entregados.',
   utilidadNeta: 'Lo que te quedó limpio: las ventas netas menos todos los costos y gastos del período.',

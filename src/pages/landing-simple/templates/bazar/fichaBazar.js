@@ -51,7 +51,7 @@ export const DEFAULTS_BAZAR = {
   historia: { activo: false, eyebrow: '', titulo: '', texto: '', puntos: [], imagen: '' },
   materiales: { activo: false, eyebrow: 'Conocé el producto', titulo: 'Materiales y terminaciones', titulo_destacado: '', subtitulo: '', color_fondo: '#66705A', items: [] },
   ambientes: { activo: false, eyebrow: 'Ideas para usarlo', titulo: 'En tu ambiente', titulo_destacado: '', pasos: [] },
-  medidas: { activo: false, eyebrow: '', titulo: 'Medidas en contexto', texto: '', items: [] },
+  medidas: { activo: false, eyebrow: '', titulo: 'Medidas en contexto', titulo_destacado: '', texto: '', items: [] },
   faq: { activo: true, eyebrow: 'Detalles del producto', titulo: 'Todo lo que necesitás saber.' },
   resenas: { activo: false, eyebrow: 'Reseñas', titulo: 'Así se siente en sus casas.', items: [] },
   upsells: { activo: true, titulo: 'Completá tu ambiente', cta_texto: 'Agregar' },

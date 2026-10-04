@@ -1,4 +1,5 @@
 import React from 'react';
+import CurrencyInput from '../../components/CurrencyInput';
 
 /**
  * Precio ancla (el tachado al lado del precio real) de un producto EN ESTA
@@ -26,12 +27,12 @@ export default function PrecioAncla({ venta, valor, onCambiar, id }) {
 
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      <label className="text-[12px] text-fg-muted" htmlFor={campo}>Precio tachado</label>
-      <input
+      <label className="text-[12px] text-fg-muted" htmlFor={campo}>Precio ancla</label>
+      <CurrencyInput
         id={campo}
         inputMode="numeric"
         value={valor ?? ''}
-        onChange={e => onCambiar(e.target.value.replace(/\D/g, ''))}
+        onChange={v => onCambiar(v == null ? '' : String(v))}
         placeholder="Opcional"
         className="h-8 w-28 rounded-lg border border-border bg-surface-2 px-2 text-[13px] text-fg tabular-nums placeholder:text-fg-subtle focus:border-primary focus:outline-none"
       />
@@ -41,7 +42,7 @@ export default function PrecioAncla({ venta, valor, onCambiar, id }) {
       )}
       {valido && (
         <span className="text-[12px] font-semibold text-success">
-          Se ve <s className="opacity-70">{gs(n)}</s> · −{pct}%
+          Tu cliente verá: Ahorrás {gs(n - venta)} · {pct}% OFF
         </span>
       )}
     </div>

@@ -489,10 +489,14 @@
 .bsc-faq-item > button svg { flex-shrink: 0; transition: transform .2s; }
 .bsc-faq-item.abierta > button svg { transform: rotate(180deg); }
 .bsc-faq-respuesta {
-  padding: 0 18px 18px;
+  margin: 0 18px 18px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--bsc-border);
+  background: color-mix(in srgb, var(--bsc-card) 88%, var(--bsc-accent) 12%);
   color: var(--bsc-muted);
   font-size: 13px;
   line-height: 1.65;
+  box-sizing: border-box;
 }
 .bsc-faq-respuesta > * { margin-top: 0; }
 .bsc-faq-respuesta > *:last-child { margin-bottom: 0; }

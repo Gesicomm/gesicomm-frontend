@@ -19,6 +19,22 @@ export function urlTarjetaDeMedio(medio) {
   return medio.url || medio.imagen || medio.src || null;
 }
 
+function imagenesHeroDesdeDraft(draft) {
+  const propias = draft?.content?.portada?.banner_imagenes;
+  if (Array.isArray(propias)) {
+    return propias.filter(Boolean).slice(0, 5).map(getMediaUrl);
+  }
+  return draft?.banner_imagen ? [getMediaUrl(draft.banner_imagen)] : [];
+}
+
+function imagenesHeroDesdeDto(dto) {
+  const propias = dto?.content?.portada?.banner_imagenes;
+  if (Array.isArray(propias)) {
+    return propias.filter(Boolean).slice(0, 5).map(getMediaUrl);
+  }
+  return dto?.banner?.imagen ? [getMediaUrl(dto.banner.imagen)] : [];
+}
+
 /**
  * Forma canónica que consumen los 3 componentes de template rígido
  * (templates/FitnessTemplate.jsx, BeautyTemplate.jsx, TechTemplate.jsx).
@@ -90,6 +106,7 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
       titulo: draft?.banner_titulo || '',
       subtitulo: draft?.banner_subtitulo || '',
       imagen: draft?.banner_imagen ? getMediaUrl(draft.banner_imagen) : null,
+      imagenes: imagenesHeroDesdeDraft(draft),
       ctaTexto: draft?.banner_boton_texto || '',
       ctaLink: draft?.banner_boton_link || '',
       opacidad: draft?.banner_opacidad,
@@ -155,6 +172,7 @@ export function mapPublicDtoToTemplateData(dto) {
       titulo: dto?.banner?.titulo || '',
       subtitulo: dto?.banner?.subtitulo || '',
       imagen: dto?.banner?.imagen ? getMediaUrl(dto.banner.imagen) : null,
+      imagenes: imagenesHeroDesdeDto(dto),
       ctaTexto: dto?.banner?.boton_texto || '',
       ctaLink: dto?.banner?.boton_link || '',
       eyebrow: dto?.content?.portada?.eyebrow || '',

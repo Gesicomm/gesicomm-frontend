@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
-  Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck
+  Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
+  Circle
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
@@ -16,12 +17,49 @@ import './dashboard.css';
 import '../pages/vitrina/vitrina.css';
 import '../pages/educacion/EducacionView.css';
 
+const ICONOS_SIDEBAR = {
+  Store,
+  Grid,
+  ShoppingCart,
+  Megaphone,
+  Settings,
+  GraduationCap,
+  Sparkles,
+  LayoutDashboard,
+  Receipt,
+  Truck,
+  Bot,
+  BadgeDollarSign,
+  MapPin,
+  PackageCheck,
+  Circle,
+};
+
+const SIDEBAR_FALLBACK = [
+  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda', label: 'Mi tienda', icono: 'Store', menuKey: 'mi-tienda', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-tienda/depositos', label: 'Depósitos', icono: 'MapPin', menuKey: 'mi-tienda-depositos', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'VENTAS', path: '/mi-catalogo', label: 'Productos', icono: 'Grid', menuKey: 'mi-catalogo', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'MARKETING', path: '/landing', label: 'Páginas de venta', icono: 'Sparkles', menuKey: 'landing', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'MARKETING', path: '/mis-anuncios', label: 'Publicidad', icono: 'Megaphone', menuKey: 'mis-anuncios', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-pedidos', label: 'Pedidos', icono: 'ShoppingCart', menuKey: 'mis-pedidos', dangerBadgeKey: 'seguimientos_vencidos' },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/inventario', label: 'Inventario / Ingresos', icono: 'PackageCheck', menuKey: 'inventario', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icono: 'Truck', menuKey: 'mis-abastecimientos', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos de mensajes', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/mi-dashboard', label: 'Dashboard', icono: 'LayoutDashboard', menuKey: 'mi-dashboard', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/proveedores', label: 'Proveedores', icono: 'Truck', menuKey: 'finanzas-proveedores', rolesPermitidos: ['administrador'] },
+  { contexto: 'ecommerce', seccion: 'APRENDIZAJE', path: '/academia', label: 'Academia & Cursos', icono: 'GraduationCap', menuKey: 'academia', badge: 'PRO', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'AFILIADOS', path: '/afiliados', label: 'Quiero ser afiliado', icono: 'BadgeDollarSign', menuKey: 'afiliados', requierePlan: 'founders', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'marca_personal', seccion: 'MARCA PERSONAL', path: '/automatizacion', label: 'Automation Hub', icono: 'Bot', menuKey: 'automatizacion', rolesPermitidos: ['usuario', 'administrador'] },
+];
+
 const UserLayout = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
   const [estadoCuenta, setEstadoCuenta] = useState(null);
   const [progresoSidebar, setProgresoSidebar] = useState({
     menusDesbloqueados: [],
     bloqueos: {},
+    modulos: [],
   });
   const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -104,7 +142,10 @@ const UserLayout = ({ children }) => {
   const cargarProgreso = async () => {
     try {
       const data = await getProgresoSidebar();
-      setProgresoSidebar(data);
+      setProgresoSidebar({
+        ...data,
+        bloqueos: data.bloqueos || data.menusBloqueados || data.menus_bloqueados || {},
+      });
     } catch (err) {
       console.error('Error al cargar progreso del sidebar:', err);
     }
@@ -117,7 +158,7 @@ const UserLayout = ({ children }) => {
 
   const isActive = (path) => location.pathname === path;
   const isActivePrefix = (prefix) => location.pathname.startsWith(prefix);
-  const esPlanFundador = estadoCuenta?.suscripcion?.plan?.codigo === 'founders';
+  const codigoPlan = estadoCuenta?.suscripcion?.plan?.codigo || null;
 
   // Comprueba si una ruta está bloqueada por requerimientos pedagógicos
   const checkBloqueo = (menuKey) => {
@@ -198,6 +239,64 @@ const UserLayout = ({ children }) => {
     );
   };
 
+  const normalizarItemSidebar = (item) => {
+    const Icono = ICONOS_SIDEBAR[item.icono] || Circle;
+    const badgeDanger = item.dangerBadgeKey === 'seguimientos_vencidos' && vencidosCount > 0
+      ? vencidosCount
+      : null;
+
+    return {
+      ...item,
+      label: item.label || item.etiqueta,
+      menuKey: item.menuKey || item.menu_key,
+      icon: <Icono size={14} />,
+      danger: Boolean(badgeDanger),
+      badgeDanger,
+    };
+  };
+
+  const moduloEsVisible = (item) => {
+    const rolesPermitidos = item.rolesPermitidos || item.roles_permitidos || [];
+    if (Array.isArray(rolesPermitidos) && rolesPermitidos.length > 0 && !rolesPermitidos.includes(usuario?.rol)) {
+      return false;
+    }
+
+    const requierePlan = item.requierePlan || item.requiere_plan;
+    if (requierePlan && requierePlan !== codigoPlan) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const renderSidebarDinamico = () => {
+    const contexto = enMarcaPersonal ? 'marca_personal' : 'ecommerce';
+    const modulosBase = progresoSidebar?.modulos?.length ? progresoSidebar.modulos : SIDEBAR_FALLBACK;
+    const grupos = modulosBase
+      .filter((item) => item.contexto === contexto)
+      .filter(moduloEsVisible)
+      .reduce((acc, item) => {
+        const seccion = usuario?.rol === 'solo_pedidos' && item.menuKey === 'mis-pedidos'
+          ? 'VENTAS'
+          : item.seccion;
+        if (!acc.has(seccion)) acc.set(seccion, []);
+        acc.get(seccion).push(normalizarItemSidebar(item));
+        return acc;
+      }, new Map());
+
+    return Array.from(grupos.entries()).map(([seccion, items]) => (
+      <React.Fragment key={`${contexto}-${seccion}`}>
+        <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
+          {seccion}
+        </div>
+        <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
+          <ul className="sidebar-list">
+            {items.map(renderLink)}
+          </ul>
+        </div>
+      </React.Fragment>
+    ));
+  };
 
   return (
     <div className="dashboard-layout user-layout-container">
@@ -260,97 +359,7 @@ const UserLayout = ({ children }) => {
         </header>
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
-          
-          {!enMarcaPersonal ? (
-            <>
-              {/* --- MÓDULO: E-COMMERCE --- */}
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>VENTAS</div>
-              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                <ul className="sidebar-list">
-                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda', label: 'Mi tienda', icon: <Store size={14} />, menuKey: 'mi-tienda' })}
-                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-tienda/depositos', label: 'Depósitos', icon: <MapPin size={14} />, menuKey: 'mi-tienda-depositos' })}
-                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mi-catalogo', label: 'Productos', icon: <Grid size={14} />, menuKey: 'mi-catalogo' })}
-                </ul>
-              </div>
-
-              {usuario?.rol !== 'solo_pedidos' && (
-                <>
-                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>MARKETING</div>
-                  <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                    <ul className="sidebar-list">
-                      {renderLink({ path: '/landing', label: 'Páginas de venta', icon: <Sparkles size={14} />, menuKey: 'landing' })}
-                      {renderLink({ path: '/mis-anuncios', label: 'Publicidad', icon: <Megaphone size={14} />, menuKey: 'mis-anuncios' })}
-                    </ul>
-                  </div>
-                </>
-              )}
-
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>
-                {usuario?.rol === 'solo_pedidos' ? 'VENTAS' : 'OPERACIONES'}
-              </div>
-              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                <ul className="sidebar-list">
-                  {renderLink({ 
-                    path: '/mis-pedidos', 
-                    label: 'Pedidos', 
-                    icon: <ShoppingCart size={14} />, 
-                    menuKey: 'mis-pedidos',
-                    danger: vencidosCount > 0
-                  })}
-                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/inventario', label: 'Inventario / Ingresos', icon: <PackageCheck size={14} />, menuKey: 'inventario' })}
-                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icon: <Truck size={14} />, menuKey: 'mis-abastecimientos' })}
-                  {usuario?.rol !== 'solo_pedidos' && renderLink({ path: '/pedidos/configuracion', label: 'Plantillas y Envios', icon: <Settings size={14} />, menuKey: 'pedidos-configuracion' })}
-                </ul>
-              </div>
-
-              {usuario?.rol !== 'solo_pedidos' && (
-                <>
-                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>ANÁLISIS</div>
-                  <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                    <ul className="sidebar-list">
-                      {renderLink({ path: '/mi-dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} />, menuKey: 'mi-dashboard' })}
-                      {renderLink({ path: '/finanzas/costos-gastos', label: 'Control financiero', icon: <Receipt size={14} />, menuKey: 'finanzas-costos-gastos' })}
-                      {usuario?.rol === 'administrador' && renderLink({ path: '/finanzas/proveedores', label: 'Proveedores', icon: <Truck size={14} />, menuKey: 'finanzas-proveedores' })}
-                    </ul>
-                  </div>
-
-                  <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>APRENDIZAJE</div>
-                  <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                    <ul className="sidebar-list">
-                      {renderLink({
-                        path: '/academia',
-                        label: 'Academia & Cursos',
-                        icon: <GraduationCap size={14} style={{ color: '#60a5fa' }} />,
-                        badge: 'PRO'
-                      })}
-                    </ul>
-                  </div>
-
-                  {esPlanFundador && (
-                    <>
-                      <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>AFILIADOS</div>
-                      <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                        <ul className="sidebar-list">
-                          {renderLink({ path: '/afiliados', label: 'Quiero ser afiliado', icon: <BadgeDollarSign size={14} />, menuKey: 'afiliados' })}
-                        </ul>
-                      </div>
-                    </>
-                  )}
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              {/* --- MÓDULO: MARCA PERSONAL / AUTOMATION HUB --- */}
-              <div className="sidebar-section-label" style={{ color: '#475569', fontSize: '10px', fontWeight: 700 }}>MARCA PERSONAL</div>
-              <div className="sidebar-nav" style={{ paddingTop: 0, paddingBottom: 0 }}>
-                <ul className="sidebar-list">
-                  {renderLink({ path: '/automatizacion', label: 'Automation Hub', icon: <Bot size={14} />, menuKey: 'automatizacion' })}
-                </ul>
-              </div>
-            </>
-          )}
-
+          {renderSidebarDinamico()}
         </nav>
 
         <footer className="sidebar-footer" style={{ borderTop: '1px solid var(--color-border)' }}>

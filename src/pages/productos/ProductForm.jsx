@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { productService } from '../../services/productService';
 import { getMediaUrl } from '../../services/api';
 import { categoriaService } from '../../services/catalogoService';
+import { depositoService } from '../../services/deposito.service';
 import { comboAdminService } from '../../services/comboAdminService';
 import { proveedoresService } from '../../services/costosGastosService';
 import { verificarSesion } from '../../utils/auth';
@@ -361,6 +362,8 @@ export default function ProductForm() {
   const [nuevaCategoria, setNuevaCategoria] = useState('');
   const [guardandoCategoria, setGuardandoCategoria] = useState(false);
   const [proveedores, setProveedores] = useState([]);
+  const [depositosStock, setDepositosStock] = useState([]);
+  const [stockPorDeposito, setStockPorDeposito] = useState({ producto: {} });
   const [creandoProveedor, setCreandoProveedor] = useState(false);
   const [nuevoProveedor, setNuevoProveedor] = useState('');
   const [guardandoProveedor, setGuardandoProveedor] = useState(false);
@@ -454,7 +457,7 @@ export default function ProductForm() {
   // necesidad — medido ~2x más lento que pedirlas todas juntas.
   useEffect(() => {
     const init = async () => {
-      const [catData, conf, p, vars, opcs, imgs, provData, faqData, sesion] = await Promise.all([
+      const [catData, conf, p, vars, opcs, imgs, provData, faqData, depositosData, sesion] = await Promise.all([
         categoriaService.buscar({ solo_activas: true, limit: 1000 }),
         comboAdminService.obtenerConfiguracion().catch(() => null),
         esEdicion ? productService.detalle(id).catch(() => null) : Promise.resolve(null),
@@ -463,10 +466,12 @@ export default function ProductForm() {
         esEdicion ? productService.imagenes(id).catch(() => []) : Promise.resolve([]),
         proveedoresService.buscar({}).catch(() => ({ proveedores: [] })),
         esEdicion ? productService.faq(id).catch(() => []) : Promise.resolve([]),
+        depositoService.listarDepositos({ activo: true, limit: 100 }).catch(() => ({ data: [] })),
         esEdicion ? verificarSesion().catch(() => null) : Promise.resolve(null),
       ]);
       setCategorias(catData.categorias || catData);
       setProveedores(provData.proveedores || provData || []);
+      setDepositosStock(depositosData.data || []);
       if (conf) setConfig(conf);
 
       if (esEdicion) {
@@ -535,6 +540,15 @@ export default function ProductForm() {
             ficha_rubro: p.ficha_rubro || 'basico',
             ficha_datos: p.ficha_datos || {},
           });
+
+          const stockInicial = { producto: {} };
+          (p.stock_depositos || []).forEach((fila) => {
+            const key = fila.variante_id ? `variante:${fila.variante_id}` : 'producto';
+            if (!stockInicial[key]) stockInicial[key] = {};
+            stockInicial[key][String(fila.deposito_id)] = parseInt(fila.cantidad, 10) || 0;
+          });
+          setStockPorDeposito(stockInicial);
+
           if (vars?.length > 0) setTieneVariantes(true);
           // Legacy = tenía variantes antes de este cambio y nunca las
           // migró a Opciones. Se deja intacto hasta que el admin decida
@@ -801,6 +815,79 @@ export default function ProductForm() {
     if (primero) abrirCampo(primero);
   };
 
+  const sumarStockDepositos = (key) => Object.values(stockPorDeposito[key] || {})
+    .reduce((acc, cantidad) => acc + (parseInt(cantidad, 10) || 0), 0);
+
+  const tipoUbicacion = (depositoId) => (
+    depositosStock.find((dep) => String(dep.id) === String(depositoId))?.tipoUbicacion
+    || depositosStock.find((dep) => String(dep.id) === String(depositoId))?.tipo_ubicacion
+    || 'DEPOSITO'
+  );
+
+  const sumarStockPorTipo = (key, tipos) => Object.entries(stockPorDeposito[key] || {})
+    .reduce((acc, [depositoId, cantidad]) => (
+      tipos.includes(tipoUbicacion(depositoId)) ? acc + (parseInt(cantidad, 10) || 0) : acc
+    ), 0);
+
+  const cambiarStockDeposito = (key, depositoId, valor) => {
+    const cantidad = Math.max(0, parseInt(valor, 10) || 0);
+    setStockPorDeposito((prev) => {
+      const siguiente = {
+        ...prev,
+        [key]: {
+          ...(prev[key] || {}),
+          [String(depositoId)]: cantidad,
+        },
+      };
+
+      if (key === 'producto') {
+        const totalSalon = Object.entries(siguiente.producto || {})
+          .reduce((acc, [id, item]) => (tipoUbicacion(id) === 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
+        const totalDeposito = Object.entries(siguiente.producto || {})
+          .reduce((acc, [id, item]) => (tipoUbicacion(id) !== 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
+        setValue('stock_salon', totalSalon, { shouldDirty: true, shouldValidate: true });
+        setValue('stock_deposito', totalDeposito, { shouldDirty: true, shouldValidate: true });
+      } else if (key.startsWith('variante:')) {
+        const varianteId = key.slice('variante:'.length);
+        const idx = (getValues('variantes') || []).findIndex((v) => String(v.id) === String(varianteId));
+        if (idx >= 0) {
+          const totalSalon = Object.entries(siguiente[key] || {})
+            .reduce((acc, [id, item]) => (tipoUbicacion(id) === 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
+          const totalDeposito = Object.entries(siguiente[key] || {})
+            .reduce((acc, [id, item]) => (tipoUbicacion(id) !== 'SALON' ? acc + (parseInt(item, 10) || 0) : acc), 0);
+          setValue(`variantes.${idx}.stock_salon`, totalSalon, { shouldDirty: true, shouldValidate: true });
+          setValue(`variantes.${idx}.stock_deposito`, totalDeposito, { shouldDirty: true, shouldValidate: true });
+        }
+      }
+
+      return siguiente;
+    });
+  };
+
+  const construirStockDepositosPayload = (variantes = []) => {
+    if (tieneVariantes) {
+      return variantes.flatMap((variante) => {
+        if (!variante.id) return [];
+        const key = `variante:${variante.id}`;
+        return Object.entries(stockPorDeposito[key] || {})
+          .map(([depositoId, cantidad]) => ({
+            deposito_id: Number(depositoId),
+            variante_id: Number(variante.id),
+            cantidad: parseInt(cantidad, 10) || 0,
+          }))
+          .filter((fila) => fila.deposito_id && fila.cantidad > 0);
+      });
+    }
+
+    return Object.entries(stockPorDeposito.producto || {})
+      .map(([depositoId, cantidad]) => ({
+        deposito_id: Number(depositoId),
+        variante_id: null,
+        cantidad: parseInt(cantidad, 10) || 0,
+      }))
+      .filter((fila) => fila.deposito_id && fila.cantidad > 0);
+  };
+
   // Fotos de la ficha del rubro (Vista del producto): van a R2 y vuelven como
   // URL, sin tocar la galería. Solo con el producto ya guardado (hay id).
   async function subirImagenFicha(file) {
@@ -816,6 +903,43 @@ export default function ProductForm() {
     setAviso(null);
     let productoCreadoId = null;
     try {
+      const variantesActivas = (data.variantes || [])
+        .filter(v => modoLegacyVariantes || v.incluida !== false);
+      const stockFisicoTotal = data.variantes?.length
+        ? variantesActivas
+          .reduce((acc, v) => acc + (parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0), 0)
+        : (parseInt(data.stock_salon, 10) || 0) + (parseInt(data.stock_deposito, 10) || 0);
+      const stockDepositosPayload = construirStockDepositosPayload(variantesActivas);
+      const totalDistribuido = stockDepositosPayload.reduce((acc, fila) => acc + fila.cantidad, 0);
+
+      if (stockFisicoTotal > 0 && depositosStock.length === 0) {
+        setTabActiva('stock');
+        throw new Error('Para cargar stock, primero creá una ubicación en Mi Tienda → Depósitos.');
+      }
+
+      if (stockFisicoTotal > 0 && totalDistribuido !== stockFisicoTotal) {
+        setTabActiva('stock');
+        throw new Error(`La distribución por ubicación (${totalDistribuido}) debe sumar el stock total (${stockFisicoTotal}).`);
+      }
+
+      if (tieneVariantes) {
+        const varianteNuevaConDeposito = variantesActivas.some((v) => !v.id && ((parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0)) > 0);
+        if (varianteNuevaConDeposito) {
+          setTabActiva('stock');
+          throw new Error('Guardá primero las variantes nuevas y luego distribuí su stock por ubicación.');
+        }
+
+        const varianteDesbalanceada = variantesActivas.find((v) => {
+          const totalVariante = (parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0);
+          const distribuidoVariante = v.id ? sumarStockDepositos(`variante:${v.id}`) : 0;
+          return distribuidoVariante !== totalVariante;
+        });
+        if (varianteDesbalanceada) {
+          setTabActiva('stock');
+          throw new Error('Cada variante debe tener distribuido exactamente su stock por ubicación.');
+        }
+      }
+
       const payload = {
         nombre: data.nombre.trim(),
         categoria_id: data.categoria_id || null,
@@ -842,6 +966,7 @@ export default function ProductForm() {
         // manda cantidad_disponible para que no queden dos fuentes de verdad.
         stock_salon: parseInt(data.stock_salon) || 0,
         stock_deposito: parseInt(data.stock_deposito) || 0,
+        stock_depositos: stockDepositosPayload,
         stock_minimo: parseInt(data.stock_minimo) || 0,
         stock_minimo_salon: data.stock_minimo_salon === '' || data.stock_minimo_salon == null
           ? null
@@ -860,8 +985,7 @@ export default function ProductForm() {
         // para que no pueda quedar desincronizado con el desglose. Con
         // Opciones activas, solo se mandan las combinaciones que quedaron
         // tildadas ("incluida") — las desmarcadas no se guardan como variante.
-        variantes: data.variantes
-          .filter(v => modoLegacyVariantes || v.incluida !== false)
+        variantes: variantesActivas
           .map(v => ({
             id: v.id,
             nombre: v.nombre,
@@ -932,9 +1056,10 @@ export default function ProductForm() {
       const errores = err.response?.data?.errores;
       const msg = errores
         ? errores.join('\n')
-        : (err.response?.data?.message || 'Error al guardar el producto.');
+        : (err.response?.data?.message || err.message || 'Error al guardar el producto.');
       setError(msg);
       if (err.response?.data?.seccion === 'venta') setTabActiva('venta');
+      if (err.response?.data?.seccion === 'stock') setTabActiva('stock');
     } finally {
       setGuardando(false);
     }
@@ -1215,6 +1340,12 @@ export default function ProductForm() {
   // esperar a guardar. El backend vuelve a hacer la misma suma al persistir.
   const stockSalonVal = parseInt(watch('stock_salon'), 10) || 0;
   const stockDepositoVal = parseInt(watch('stock_deposito'), 10) || 0;
+  const variantesWatch = watch('variantes') || [];
+  const stockUbicacionesTotalVal = tieneVariantes
+    ? variantesWatch
+      .filter(v => modoLegacyVariantes || v.incluida !== false)
+      .reduce((acc, v) => acc + (parseInt(v.stock_salon, 10) || 0) + (parseInt(v.stock_deposito, 10) || 0), 0)
+    : stockSalonVal + stockDepositoVal;
   const stockActualVal = stockSalonVal + stockDepositoVal;
   const stockMinimoVal = parseInt(watch('stock_minimo'), 10) || 0;
   const unidadVal = watch('unidad_medida') || 'unidad';
@@ -1980,20 +2111,21 @@ export default function ProductForm() {
                 type="number"
                 min="0"
                 {...register('stock_salon')}
+                readOnly={!tieneVariantes}
                 disabled={tieneVariantes}
               />
             </div>
             <div className="form-group">
               <label htmlFor="prod-stock-deposito">
                 Stock en depósito
-                {tieneVariantes && <span className="hint"> (calculado)</span>}
+                <span className="hint"> {tieneVariantes ? '(calculado)' : '(según ubicaciones)'}</span>
               </label>
               <input
                 id="prod-stock-deposito"
                 type="number"
                 min="0"
                 {...register('stock_deposito')}
-                disabled={tieneVariantes}
+                readOnly
               />
             </div>
             <div className="form-group">
@@ -2029,6 +2161,106 @@ export default function ProductForm() {
               </select>
             </div>
           </div>
+
+          {!tieneVariantes && (
+            <div className="stock-depositos-panel">
+              <div className="stock-depositos-header">
+                <div>
+                  <h3>Stock por ubicación</h3>
+                  <p>Indicá cuántas unidades están físicamente en cada salón o depósito.</p>
+                </div>
+                <strong>{stockUbicacionesTotalVal} {unidadVal}{stockUbicacionesTotalVal === 1 ? '' : 's'}</strong>
+              </div>
+
+              {depositosStock.length > 0 ? (
+                <div className="stock-depositos-grid">
+                  {depositosStock.map((dep) => (
+                    <label key={dep.id} className="stock-deposito-row">
+                      <span>
+                        <strong>{dep.nombre}</strong>
+                        <small>{dep.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito'} · {dep.ciudad}{dep.departamento ? `, ${dep.departamento}` : ''}</small>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={stockPorDeposito.producto?.[String(dep.id)] ?? ''}
+                        onChange={(e) => cambiarStockDeposito('producto', dep.id, e.target.value)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-inline-state">
+                  <span>Sin ubicaciones cargadas. Creá un salón o depósito para cargar stock.</span>
+                  <Link to="/mi-tienda/depositos">Crear ubicación</Link>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tieneVariantes && (
+            <div className="stock-depositos-panel">
+              <div className="stock-depositos-header">
+                <div>
+                  <h3>Stock por ubicación</h3>
+                  <p>Distribuí el stock físico de cada variante entre tus salones y depósitos.</p>
+                </div>
+                <strong>{stockUbicacionesTotalVal} {unidadVal}{stockUbicacionesTotalVal === 1 ? '' : 's'}</strong>
+              </div>
+
+              {depositosStock.length > 0 ? (
+                <div className="stock-variant-depositos">
+                  {variantesWatch
+                    .filter(v => modoLegacyVariantes || v.incluida !== false)
+                    .map((variante, idx) => {
+                      const key = variante.id ? `variante:${variante.id}` : `nueva:${idx}`;
+                      const totalVariante = parseInt(variante.stock_deposito, 10) || 0;
+                      const distribuido = sumarStockDepositos(key);
+                      const nombreVariante = variante.nombre
+                        || (variante.valores || []).map(v => `${v.opcion}: ${v.valor}`).join(' · ')
+                        || `Variante ${idx + 1}`;
+
+                      return (
+                        <div key={variante.id || variantesFields[idx]?._rhfKey || idx} className="stock-variant-card">
+                          <div className="stock-variant-card-head">
+                            <div>
+                              <strong>{nombreVariante}</strong>
+                              <small>{distribuido}/{totalVariante} {unidadVal}{totalVariante === 1 ? '' : 's'} distribuidas</small>
+                            </div>
+                          </div>
+                          {!variante.id && totalVariante > 0 ? (
+                            <p className="field-hint">Guardá primero esta variante para poder asignarle stock por ubicación.</p>
+                          ) : (
+                            <div className="stock-depositos-grid compact">
+                              {depositosStock.map((dep) => (
+                                <label key={dep.id} className="stock-deposito-row">
+                                  <span>
+                                    <strong>{dep.nombre}</strong>
+                                    <small>{dep.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito'} · {dep.ciudad}</small>
+                                  </span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={stockPorDeposito[key]?.[String(dep.id)] ?? ''}
+                                    disabled={!variante.id || totalVariante <= 0}
+                                    onChange={(e) => cambiarStockDeposito(key, dep.id, e.target.value)}
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              ) : (
+                <div className="empty-inline-state">
+                  <span>Sin ubicaciones cargadas. Creá un salón o depósito para cargar stock.</span>
+                  <Link to="/mi-tienda/depositos">Crear ubicación</Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={`inventory-panel ${stockActualVal <= 0 ? 'empty' : stockActualVal <= stockMinimoVal ? 'low' : 'ok'}`}>
             <div>
@@ -2740,6 +2972,7 @@ export default function ProductForm() {
                         onRubro={(v) => campoRubro.onChange(v || '')}
                         onDatos={campoDatos.onChange}
                         modo="campos"
+                        productoId={esEdicion ? id : null}
                         onSubirImagen={esEdicion ? subirImagenFicha : null}
                         variantes={valoresProducto.variantes || []}
                       />
@@ -2798,6 +3031,7 @@ export default function ProductForm() {
             </div>
 
             <ProductLandingPreview
+              activo={tabActiva === 'marketing'}
               productoId={esEdicion ? id : null}
               producto={valoresProducto}
               categoriaNombre={categoriaActual?.nombre}

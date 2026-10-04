@@ -33,6 +33,31 @@
    ARMADO POR FASES (cw-*)
 ═══════════════════════════════════════════════════════════════════════════════ */
 .prod-page.cw-page { max-width: 1240px; }
+.cw-landing-overlay {
+  position: fixed; inset: 0; z-index: 1100;
+  display: flex; justify-content: center; align-items: center;
+  padding: 1.25rem; background: rgb(0 0 0 / 55%);
+}
+.cw-landing-panel {
+  width: min(1240px, 100%); height: min(900px, 94dvh); min-height: 0;
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--color-border); border-radius: 18px;
+  background: var(--color-canvas); box-shadow: 0 24px 80px rgb(0 0 0 / 25%);
+}
+.cw-landing-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  flex-shrink: 0; padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.cw-landing-header strong { color: var(--color-fg); font-size: 1rem; }
+.cw-landing-header p { margin: .25rem 0 0; color: var(--color-fg-muted); font-size: .8rem; }
+.cw-landing-body { flex: 1; min-height: 0; overflow-y: auto; }
+.prod-page.cw-page-integrado { width: 100%; margin: 0; padding: 1.5rem; }
+@media (max-width: 640px) {
+  .cw-landing-overlay { padding: 0; }
+  .cw-landing-panel { height: 100dvh; border-radius: 0; }
+  .cw-landing-header { padding: .75rem 1rem; }
+}
 .cw-modos { margin: 0; }
 .cw-modos .prod-view-tab { display: inline-flex; align-items: center; gap: 0.35rem; }
 
@@ -183,6 +208,21 @@
   gap: 0.5rem;
 }
 .cw-selector-vacio { grid-column: 1 / -1; padding: 1.5rem; text-align: center; color: var(--color-fg-subtle); font-size: 0.875rem; }
+.cw-selector-tarjeta {
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
+  background: var(--color-surface, var(--color-canvas));
+}
+.cw-selector-tarjeta .cw-selector-item { border: 0; border-radius: 0; }
+.cw-selector-tarjeta > .cw-precio-venta {
+  padding: 0.6rem 0.75rem;
+  align-items: stretch;
+  border-top: 1px solid color-mix(in srgb, var(--color-fg) 7%, transparent);
+}
+.cw-selector-tarjeta .cw-precio-venta label { justify-content: space-between; }
+.cw-selector-tarjeta .cw-input.cw-input-venta { width: 150px; max-width: 55%; }
+.cw-selector-tarjeta .cw-precio-venta small { white-space: normal; }
 .cw-selector-item {
   width: 100%;
   display: flex; align-items: center; gap: 0.75rem;

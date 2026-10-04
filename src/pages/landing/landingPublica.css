@@ -3349,10 +3349,15 @@ button.lp-tier-card--imagen {
   transform: rotate(180deg);
 }
 .lp-product-faq-respuesta {
-  margin: 0.6rem 0 0;
+  margin: 0.75rem 0 0;
+  padding: 0.9rem 1rem;
+  border-left: 2px solid var(--l-primary);
+  border-radius: 0.75rem;
+  background: var(--l-surface, rgba(148, 163, 184, 0.08));
   font-size: 0.9rem;
   line-height: 1.6;
   color: var(--l-text-muted, #94a3b8);
+  box-sizing: border-box;
 }
 
 /* Productos relacionados en la página de un producto — curados a mano o

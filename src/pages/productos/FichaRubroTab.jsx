@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ofertaService } from '../../services/ofertaService';
 import { Plus, Trash2, Cpu, Leaf, Package, Sparkles, Image as ImageIcon, Loader } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import FichaBazarPanel from '../landing-simple/panels/FichaBazarPanel';
@@ -71,11 +72,29 @@ const LIMITES = {
  * @param variantes las variantes del producto, para las notas de "Elegí tu
  *   tamaño" de la ficha Beauty (solo las ya guardadas, que tienen id).
  */
-export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = 'completo', onSubirImagen = null, variantes = [] }) {
+export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = 'completo', onSubirImagen = null, variantes = [], productoId = null, activo = true }) {
   const rubroActual = rubro || 'basico';
+  const variantesFicha = variantes.filter(v => v.incluida !== false).map(v => ({
+    ...v, nombre: v.nombre || (v.valores || []).map(valor => valor.valor).join(' / '),
+  }));
   const actual = RUBROS.find(r => r.value === rubroActual) || null;
   const mostrarSelector = modo === 'selector' || modo === 'completo';
   const mostrarCampos = modo === 'campos' || modo === 'completo';
+
+  const [packs, setPacks] = useState([]);
+  useEffect(() => {
+    if (!activo || !productoId || !mostrarCampos || !['bazar', 'moda'].includes(rubroActual)) {
+      setPacks([]);
+      return undefined;
+    }
+    let vigente = true;
+    ofertaService.listarPorProducto(productoId, { soloActivas: true })
+      .then(data => {
+        if (vigente) setPacks((Array.isArray(data) ? data : []).filter(oferta => oferta.activo !== false && oferta.estrategia === 'normal'));
+      })
+      .catch(() => { if (vigente) setPacks([]); });
+    return () => { vigente = false; };
+  }, [productoId, mostrarCampos, rubroActual, activo]);
 
   const set = (clave, valor) => onDatos({ ...(datos || {}), [clave]: valor });
   const listaDe = (clave) => (Array.isArray(datos?.[clave]) ? datos[clave] : []);
@@ -118,7 +137,8 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             desdeProducto
             ficha={datos?.bazar_ficha || null}
             fichaResuelta={resolverFichaBazar(datos?.bazar_ficha, null, null)}
-            variantes={variantes}
+            variantes={variantesFicha}
+            packs={packs}
             onSubirImagen={onSubirImagen}
             onChange={ficha => set('bazar_ficha', ficha)}
           />
@@ -131,7 +151,8 @@ export default function FichaRubroTab({ rubro, datos, onRubro, onDatos, modo = '
             desdeProducto
             ficha={datos?.moda_ficha || null}
             fichaResuelta={resolverFichaModa(datos?.moda_ficha, null, null)}
-            variantes={variantes}
+            variantes={variantesFicha}
+            packs={packs}
             onSubirImagen={onSubirImagen}
             onChange={ficha => set('moda_ficha', ficha)}
           />

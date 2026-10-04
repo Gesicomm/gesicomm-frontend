@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { X, MessageCircle, Clock, Check, Calendar, Plus, Trash2, Tag, Loader2, Ban } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { X, MessageCircle, Clock, Check, Tag, Loader2, Ban, Circle, CheckCircle2, RotateCcw, Send, Bell } from "lucide-react";
 import Select, { components } from "react-select";
 import { seguimientoService } from "../../services/seguimiento.service";
+import { formatEspera } from "./variablesWhatsapp";
 
 const selectStyles = {
   control: (base, state) => ({
@@ -49,37 +50,68 @@ const EtiquetaOption = (props) => {
   );
 };
 
+/** "hoy 18:42" si es de hoy, "28/09 18:42" si no. */
+function formatMomento(iso) {
+  if (!iso) return "";
+  const f = new Date(iso);
+  const hora = f.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' });
+  const hoy = new Date();
+  const mismoDia = f.toDateString() === hoy.toDateString();
+  if (mismoDia) return `hoy ${hora}`;
+  return `${f.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit' })} ${hora}`;
+}
+
+/** Valor para un <input type="datetime-local"> a partir de minutos desde ahora. */
+function dentroDeMinutosLocal(minutos) {
+  const f = new Date(Date.now() + minutos * 60 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T${pad(f.getHours())}:${pad(f.getMinutes())}`;
+}
+
 export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
-  const [plantillas, setPlantillas] = useState([]);
+  const [flujos, setFlujos] = useState([]);
+  const [flujoId, setFlujoId] = useState(null);
   const [configuracion, setConfiguracion] = useState(null);
   const [etiquetasPedido, setEtiquetasPedido] = useState([]);
   const [etiquetasDisponibles, setEtiquetasDisponibles] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [loadingAccion, setLoadingAccion] = useState(false);
-  const [horasProgramadas, setHorasProgramadas] = useState(null); // feedback visual botones de tiempo
+  const [faseEnviando, setFaseEnviando] = useState(null);
+  const [horasProgramadas, setHorasProgramadas] = useState(null);
 
-  // Form states
-  const [plantillaSeleccionada, setPlantillaSeleccionada] = useState("");
+  // Propuesta de recordatorio que aparece después de abrir una fase.
+  const [propuesta, setPropuesta] = useState(null);
+
   const [telefonoPersonalizado, setTelefonoPersonalizado] = useState("");
-
   const [fechaCustom, setFechaCustom] = useState("");
   const [notaRecordatorio, setNotaRecordatorio] = useState("");
+
+  const cargarFlujos = useCallback(async (envioId) => {
+    const resFlujos = await seguimientoService.getFlujosPedido(envioId);
+    setFlujos(resFlujos || []);
+    return resFlujos || [];
+  }, []);
 
   useEffect(() => {
     if (!open || !envio) return;
     let activo = true;
-    
+
     setCargando(true);
+    setPropuesta(null);
     setTelefonoPersonalizado(envio.telefono || "");
 
     Promise.all([
-      seguimientoService.getPlantillas({ activo: true }),
+      seguimientoService.getFlujosPedido(envio.id),
       seguimientoService.getConfiguracion(),
       seguimientoService.getEtiquetasPedido(envio.id),
       seguimientoService.getEtiquetas()
-    ]).then(([resPlantillas, resConfig, resEtiqPed, resEtiqDisp]) => {
+    ]).then(([resFlujos, resConfig, resEtiqPed, resEtiqDisp]) => {
       if (!activo) return;
-      setPlantillas(resPlantillas || []);
+      const lista = resFlujos || [];
+      setFlujos(lista);
+      // Arranca en el flujo que ya se venía usando con este pedido.
+      const enUso = lista.find(f => (f.envios_totales || 0) > 0);
+      setFlujoId((enUso || lista[0])?.id ?? null);
       setConfiguracion(resConfig || { tiempos_rapidos_horas: [1, 2, 4, 8, 24] });
       setEtiquetasPedido(resEtiqPed || []);
       setEtiquetasDisponibles(resEtiqDisp || []);
@@ -92,34 +124,73 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     return () => { activo = false; };
   }, [open, envio]);
 
-  const handleContactar = async () => {
-    if (!plantillaSeleccionada) {
-      alert("Selecciona una plantilla");
-      return;
+  const flujo = flujos.find(f => f.id === flujoId) || null;
+  const fases = flujo?.fases || [];
+
+  /**
+   * Abre una fase en WhatsApp. No valida ningún orden a propósito: se puede
+   * abrir cualquier fase, y repetirla las veces que haga falta.
+   */
+  const abrirFase = async (fase) => {
+    setFaseEnviando(fase.id);
+    setPropuesta(null);
+    try {
+      const res = await seguimientoService.crearContacto(envio.id, {
+        fase_id: fase.id,
+        telefono: telefonoPersonalizado || envio.telefono
+      });
+      if (res.whatsapp_url) window.open(res.whatsapp_url, '_blank');
+
+      const actualizados = await cargarFlujos(envio.id);
+      const flujoActual = actualizados.find(f => f.id === fase.flujo_id) || flujo;
+      const siguiente = (flujoActual?.fases || []).find(f => f.orden === fase.orden + 1);
+      if (siguiente && siguiente.espera_sugerida_minutos > 0) {
+        setPropuesta({ fase: siguiente, minutos: siguiente.espera_sugerida_minutos });
+      }
+
+      const resEtiqPed = await seguimientoService.getEtiquetasPedido(envio.id);
+      setEtiquetasPedido(resEtiqPed || []);
+      if (onRefreshPedido) onRefreshPedido();
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "No se pudo registrar el envío");
+    } finally {
+      setFaseEnviando(null);
     }
-    await saveAll({ whatsapp: true });
   };
 
-  const handleGuardarSolo = async () => {
-    await saveAll({ whatsapp: false });
-  };
-
-  const saveAll = async ({ whatsapp }) => {
+  /** Agenda el recordatorio que propuso la fase siguiente. */
+  const aceptarPropuesta = async () => {
+    if (!propuesta) return;
     setLoadingAccion(true);
     try {
-      // 1. WhatsApp Contact (only if requested)
-      if (whatsapp) {
-        const res = await seguimientoService.crearContacto(envio.id, {
-          plantilla_id: plantillaSeleccionada,
-          telefono: telefonoPersonalizado || envio.telefono
-        });
-        if (res.whatsapp_url) {
-          window.open(res.whatsapp_url, '_blank');
-        }
-      }
-      
-      // 2. Note and Reminder
-      if (notaRecordatorio.trim() || horasProgramadas || fechaCustom) {
+      await seguimientoService.programarRecordatorio(envio.id, {
+        ejecutar_en: new Date(Date.now() + propuesta.minutos * 60 * 1000).toISOString(),
+        nota: `Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`
+      });
+      setPropuesta(null);
+      if (onRefreshPedido) onRefreshPedido();
+    } catch (e) {
+      console.error(e);
+      alert(e.response?.data?.error || "No se pudo agendar el recordatorio");
+    } finally {
+      setLoadingAccion(false);
+    }
+  };
+
+  /** "Cambiar": pasa la fecha sugerida al campo manual para ajustarla. */
+  const editarPropuesta = () => {
+    if (!propuesta) return;
+    setFechaCustom(dentroDeMinutosLocal(propuesta.minutos));
+    setHorasProgramadas('custom');
+    setNotaRecordatorio(`Enviar "${propuesta.fase.nombre}" (Fase ${propuesta.fase.orden}) si el cliente no responde`);
+    setPropuesta(null);
+  };
+
+  const guardarNotaORecordatorio = async () => {
+    setLoadingAccion(true);
+    try {
+      if (horasProgramadas || fechaCustom) {
         const payload = { nota: notaRecordatorio.trim() };
         if (horasProgramadas && horasProgramadas !== 'custom') {
           payload.horas = horasProgramadas;
@@ -127,21 +198,16 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
           payload.ejecutar_en = new Date(fechaCustom).toISOString();
         }
         await seguimientoService.programarRecordatorio(envio.id, payload);
-        setNotaRecordatorio("");
-        setHorasProgramadas(null);
-        setFechaCustom("");
       } else if (notaRecordatorio.trim()) {
         await seguimientoService.guardarNota(envio.id, notaRecordatorio.trim());
-        setNotaRecordatorio("");
       }
-
+      setNotaRecordatorio("");
+      setHorasProgramadas(null);
+      setFechaCustom("");
       if (onRefreshPedido) onRefreshPedido();
-      // Reload etiquetas to reflect changes (in case plantilla had auto tag)
-      const resEtiqPed = await seguimientoService.getEtiquetasPedido(envio.id);
-      setEtiquetasPedido(resEtiqPed || []);
     } catch (err) {
       console.error(err);
-      alert("Ocurri un error al guardar");
+      alert("Ocurrió un error al guardar");
     } finally {
       setLoadingAccion(false);
     }
@@ -150,11 +216,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   const programarRapido = (horas) => {
     setHorasProgramadas(horas);
     setFechaCustom("");
-  };
-
-  const programarCustom = () => {
-    if (!fechaCustom) return;
-    setHorasProgramadas('custom');
   };
 
   const completar = async () => {
@@ -187,7 +248,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
 
   const agregarEtiqueta = async (optValue) => {
     if (!optValue) return;
-    // Optimistic update: find the etiqueta in available list and add it locally
     const etiqueta = etiquetasDisponibles.find(e => e.id === optValue);
     if (!etiqueta) return;
     const tempEntry = { id: Date.now(), etiqueta_id: etiqueta.id, etiqueta };
@@ -195,12 +255,10 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
     setLoadingAccion(true);
     try {
       await seguimientoService.addEtiquetaPedido(envio.id, optValue);
-      // Refresh from server to get real ID
       const resEtiqPed = await seguimientoService.getEtiquetasPedido(envio.id);
       setEtiquetasPedido(resEtiqPed || []);
     } catch (err) {
       console.error(err);
-      // Revert optimistic update on error
       setEtiquetasPedido(prev => prev.filter(e => e.id !== tempEntry.id));
       alert('Error al agregar etiqueta');
     } finally {
@@ -209,7 +267,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
   };
 
   const quitarEtiqueta = async (etiquetaId) => {
-    // Optimistic update: remove locally immediately
     const prev = etiquetasPedido;
     setEtiquetasPedido(etiquetasPedido.filter(e => e.etiqueta_id !== etiquetaId));
     setLoadingAccion(true);
@@ -217,7 +274,6 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
       await seguimientoService.removeEtiquetaPedido(envio.id, etiquetaId);
     } catch (err) {
       console.error(err);
-      // Revert on error
       setEtiquetasPedido(prev);
       alert('Error al quitar etiqueta');
     } finally {
@@ -229,13 +285,13 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end", background: "rgba(0,0,0,0.5)" }} onClick={onClose}>
-      <div style={{ width: "420px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+      <div style={{ width: "460px", maxWidth: "100%", height: "100%", background: "var(--color-canvas)", borderLeft: "1px solid color-mix(in srgb, var(--color-fg) 12%, transparent)", color: "var(--color-fg)", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1rem 1.25rem", borderBottom: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
           <h2 style={{ margin: 0, fontSize: "1.05rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <MessageCircle size={18} color="var(--color-primary-text)" /> Seguimiento
+            <MessageCircle size={18} color="var(--color-primary-text)" /> Seguimiento por WhatsApp
           </h2>
           <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <button type="button" className="icon-button" onClick={() => window.open("/pedidos/configuracion", "_blank")} title="Configuración de Etiquetas y Plantillas">
+            <button type="button" className="icon-button" onClick={() => window.open("/pedidos/configuracion", "_blank")} title="Configuración de flujos y etiquetas">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
             <button type="button" className="close-btn dark" onClick={onClose}><X size={18} /></button>
@@ -247,7 +303,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--color-fg-muted)" }}><Loader2 className="animate-spin" size={16} /> Cargando...</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              
+
               {/* Etiquetas */}
               <div style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
                 <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.9rem", color: "var(--color-fg-subtle)", display: "flex", alignItems: "center", gap: "6px" }}><Tag size={14}/> Etiquetas</h3>
@@ -256,7 +312,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                   {etiquetasPedido.map(ep => {
                     const bgColor = ep.etiqueta?.color ? `color-mix(in srgb, ${ep.etiqueta.color} 15%, transparent)` : 'color-mix(in srgb, var(--color-primary) 15%, transparent)';
                     const textColor = ep.etiqueta?.color || 'var(--color-primary-text)';
-                    
+
                     return (
                       <div key={ep.id} style={{ background: bgColor, color: textColor, border: `1px solid color-mix(in srgb, ${textColor} 30%, transparent)`, fontSize: "0.75rem", padding: "4px 10px", borderRadius: "16px", display: "flex", alignItems: "center", gap: "6px", fontWeight: 500 }}>
                         {ep.etiqueta?.nombre || "Etiqueta"}
@@ -267,7 +323,7 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                     );
                   })}
                 </div>
-                
+
                 <div style={{ marginTop: '0.5rem' }}>
                   {etiquetasDisponibles.length === 0 ? (
                     <div style={{ background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', color: 'var(--color-warning)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -293,44 +349,69 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                 </div>
               </div>
 
-              {/* Contactar por WhatsApp */}
+              {/* Flujo de WhatsApp */}
               <div style={{ background: "var(--color-surface-2)", padding: "1rem", borderRadius: "8px", border: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)" }}>
-                <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.9rem", color: "var(--color-fg-subtle)" }}>Acción WhatsApp</h3>
-                <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "4px" }}>Plantilla</label>
-                
-                {plantillas.length === 0 ? (
-                  <div style={{ background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', color: 'var(--color-warning)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                {flujos.length === 0 ? (
+                  <div style={{ background: 'color-mix(in srgb, var(--color-warning) 10%, transparent)', color: 'var(--color-warning)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <MessageCircle size={16} style={{ flexShrink: 0 }} />
-                    <span>No tienes plantillas. <a href="/pedidos/configuracion" target="_blank" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>Crea una plantilla primero</a>.</span>
+                    <span>No tenés flujos activos. <a href="/pedidos/configuracion" target="_blank" style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 600 }}>Creá un flujo primero</a>.</span>
                   </div>
                 ) : (
-                  <Select
-                    styles={selectStyles}
-                    placeholder="Seleccionar plantilla..."
-                    value={plantillas.map(p => ({ value: p.id, label: p.nombre })).find(o => o.value === plantillaSeleccionada) || null}
-                    onChange={opt => setPlantillaSeleccionada(opt ? opt.value : "")}
-                    options={plantillas.map(p => ({ value: p.id, label: p.nombre }))}
-                    isClearable
-                    isDisabled={loadingAccion}
-                    noOptionsMessage={() => "No hay plantillas"}
-                    className="react-select-container"
-                    classNamePrefix="react-select"
-                  />
-                )}
-                
-                <div style={{ height: '10px' }}></div>
+                  <>
+                    <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "4px", color: "var(--color-fg-subtle)" }}>Flujo</label>
+                    <Select
+                      styles={selectStyles}
+                      placeholder="Seleccionar flujo..."
+                      value={flujos.map(f => ({ value: f.id, label: f.nombre })).find(o => o.value === flujoId) || null}
+                      onChange={opt => { setFlujoId(opt ? opt.value : null); setPropuesta(null); }}
+                      options={flujos.map(f => ({ value: f.id, label: f.nombre }))}
+                      isDisabled={!!faseEnviando}
+                      isSearchable={false}
+                    />
 
-                <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "4px" }}>Teléfono</label>
-                <input type="text" className="form-input" value={telefonoPersonalizado} onChange={e => setTelefonoPersonalizado(e.target.value)} style={{ marginBottom: "12px" }} disabled={loadingAccion} />
-                
-                <button 
-                  className="btn-primary" 
-                  style={{ width: "100%", display: "flex", justifyContent: "center", gap: "6px", background: "#10b981", borderColor: "#10b981" }}
-                  onClick={handleContactar}
-                  disabled={loadingAccion || !plantillaSeleccionada}
-                >
-                  <MessageCircle size={16} /> Contactar por WhatsApp
-                </button>
+                    <label style={{ display: "block", fontSize: "0.8rem", margin: "12px 0 4px", color: "var(--color-fg-subtle)" }}>Teléfono</label>
+                    <input type="text" className="form-input" style={{ width: "100%" }} value={telefonoPersonalizado} onChange={e => setTelefonoPersonalizado(e.target.value)} disabled={!!faseEnviando} />
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
+                      {fases.map(fase => (
+                        <FaseFila
+                          key={fase.id}
+                          fase={fase}
+                          enviando={faseEnviando === fase.id}
+                          deshabilitado={!!faseEnviando}
+                          onAbrir={() => abrirFase(fase)}
+                        />
+                      ))}
+                      {fases.length === 0 && (
+                        <span style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)" }}>Este flujo no tiene fases activas.</span>
+                      )}
+                    </div>
+
+                    <p style={{ fontSize: "0.72rem", color: "var(--color-fg-muted)", margin: "12px 0 0 0" }}>
+                      Se registra que abriste WhatsApp con el mensaje, no que el cliente lo recibió:
+                      el envío lo confirmás vos desde WhatsApp.
+                    </p>
+
+                    {propuesta && (
+                      <div style={{ marginTop: "14px", padding: "0.85rem", borderRadius: "8px", background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--color-primary) 35%, transparent)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.82rem", fontWeight: 600, color: "var(--color-primary-text)", marginBottom: "4px" }}>
+                          <Bell size={14} /> ¿Te recordamos el seguimiento?
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "var(--color-fg-muted)", marginBottom: "10px" }}>
+                          Si el cliente no responde, la fase {propuesta.fase.orden} “{propuesta.fase.nombre}”
+                          está sugerida {formatEspera(propuesta.minutos)} después.
+                        </div>
+                        <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                          <button className="btn-primary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={aceptarPropuesta} disabled={loadingAccion}>
+                            En {formatEspera(propuesta.minutos)}
+                          </button>
+                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={editarPropuesta} disabled={loadingAccion}>Cambiar</button>
+                          <button className="btn-secondary" style={{ padding: "5px 12px", fontSize: "0.8rem" }} onClick={() => setPropuesta(null)} disabled={loadingAccion}>No recordar</button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Recordatorio */}
@@ -338,12 +419,12 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                 <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "0.9rem", color: "var(--color-fg-subtle)", display: "flex", alignItems: "center", gap: "6px" }}>
                   <Clock size={14}/> Próximo seguimiento
                 </h3>
-                
+
                 {envio.recordatorio_id && envio.recordatorio_estado === 'PENDIENTE' ? (
                   <div style={{ marginBottom: "1rem", padding: "0.75rem", background: "color-mix(in srgb, var(--color-primary) 10%, transparent)", borderRadius: "6px" }}>
                     <div style={{ fontSize: "0.85rem", fontWeight: "bold", color: "var(--color-primary-text)" }}>Programado para:</div>
                     <div style={{ fontSize: "0.9rem", margin: "4px 0 10px 0" }}>{new Date(envio.recordatorio_ejecutar_en).toLocaleString('es-PY')}</div>
-                    
+
                     <div style={{ display: "flex", gap: "6px" }}>
                       <button className="btn-secondary" style={{ flex: 1, padding: "4px", fontSize: "0.8rem" }} onClick={completar} disabled={loadingAccion}><Check size={14}/> Completar</button>
                       <button className="btn-secondary" style={{ flex: 1, padding: "4px", fontSize: "0.8rem", color: "var(--color-danger)" }} onClick={cancelarRecordatorio} disabled={loadingAccion}><Ban size={14}/> Cancelar</button>
@@ -361,11 +442,11 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
 
                 <div style={{ borderTop: "1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)", paddingTop: "1rem" }}>
                   <label style={{ display: "block", fontSize: "0.8rem", marginBottom: "4px" }}>Nota (opcional)</label>
-                  
+
                   <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
                     <textarea className="form-input" value={notaRecordatorio} onChange={e => setNotaRecordatorio(e.target.value)} style={{ flex: 1, minHeight: '60px', resize: 'vertical' }} placeholder="Escribe una nota..." />
                   </div>
-                  
+
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
                     {configuracion?.tiempos_rapidos_horas?.map(h => {
                       const activo = horasProgramadas === h;
@@ -399,18 +480,77 @@ export function SeguimientoPanel({ open, envio, onClose, onRefreshPedido }) {
                   </div>
 
                   {(notaRecordatorio.trim() || horasProgramadas || fechaCustom) && (
-                    <button className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={handleGuardarSolo} disabled={loadingAccion}>
+                    <button className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={guardarNotaORecordatorio} disabled={loadingAccion}>
                       Guardar nota / recordatorio
                     </button>
                   )}
                 </div>
-                
+
               </div>
 
             </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Una fase del flujo dentro del pedido. Siempre se puede abrir: haberla
+ * abierto antes no la bloquea, solo cambia lo que dice el botón.
+ */
+function FaseFila({ fase, enviando, deshabilitado, onAbrir }) {
+  const abierta = (fase.envios || 0) > 0;
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "10px",
+      padding: "10px 12px",
+      borderRadius: "8px",
+      background: "var(--color-canvas)",
+      border: `1px solid ${abierta ? "color-mix(in srgb, var(--color-success) 35%, transparent)" : "color-mix(in srgb, var(--color-fg) 10%, transparent)"}`,
+    }}>
+      <div style={{ paddingTop: "2px", color: abierta ? "var(--color-success)" : "var(--color-fg-subtle)", flexShrink: 0 }}>
+        {abierta ? <CheckCircle2 size={16} /> : <Circle size={16} />}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>
+          Fase {fase.orden} — {fase.nombre}
+        </div>
+        <div style={{ fontSize: "0.75rem", color: "var(--color-fg-muted)", marginTop: "2px" }}>
+          {abierta
+            ? `Abierta ${formatMomento(fase.ultimo_envio_en)}${fase.envios > 1 ? ` · ${fase.envios} veces` : ""}`
+            : fase.espera_sugerida_minutos > 0
+              ? `Sugerida ${formatEspera(fase.espera_sugerida_minutos)} después de la anterior`
+              : "Sin enviar"}
+        </div>
+      </div>
+
+      <button
+        className="btn-secondary"
+        style={{
+          padding: "5px 10px",
+          fontSize: "0.75rem",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: "5px",
+          ...(abierta ? {} : { background: "#10b981", borderColor: "#10b981", color: "#fff" }),
+        }}
+        onClick={onAbrir}
+        disabled={deshabilitado}
+        title={abierta ? "Volver a abrir esta fase en WhatsApp" : "Abrir esta fase en WhatsApp"}
+      >
+        {enviando
+          ? <Loader2 size={13} className="animate-spin" />
+          : abierta ? <RotateCcw size={13} /> : <Send size={13} />}
+        {abierta ? "Abrir otra vez" : "Abrir en WhatsApp"}
+      </button>
     </div>
   );
 }

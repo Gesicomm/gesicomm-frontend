@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Image as ImageIcon, X, Loader, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Image as ImageIcon, X, Loader, Link as LinkIcon, Sparkles, Upload } from 'lucide-react';
 
 const CAMPO = 'w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg/30 focus:outline-none focus:border-fg/30';
 const LABEL = 'block text-xs font-semibold text-fg/60 mb-1.5';
@@ -16,14 +16,59 @@ const ATAJOS_CTA = [
   { label: '📞 Contacto (#contacto)', value: '#contacto' },
 ];
 
+const MAX_HERO_IMAGENES = 5;
+
+function imagenesHeroDraft(draft, heroUrl) {
+  const propias = draft?.content?.portada?.banner_imagenes;
+  if (Array.isArray(propias) && propias.length) return propias.slice(0, MAX_HERO_IMAGENES);
+  return heroUrl ? [heroUrl] : [];
+}
+
 export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, onSubirHero, onQuitarHero, error }) {
   const inputRef = useRef(null);
+  const imagenesHero = imagenesHeroDraft(draft, heroUrl);
 
-  function handleFile(e) {
-    const file = e.target.files?.[0];
+  function actualizarImagenesHero(imagenes) {
+    const limpias = imagenes.filter(Boolean).slice(0, MAX_HERO_IMAGENES);
+    onCampo('content', {
+      ...(draft.content || {}),
+      portada: {
+        ...(draft.content?.portada || {}),
+        banner_imagenes: limpias,
+      },
+    });
+  }
+
+  async function handleFile(e) {
+    const files = Array.from(e.target.files || []);
     e.target.value = '';
-    if (!file) return;
-    onSubirHero(file);
+    if (!files.length) return;
+    const disponibles = MAX_HERO_IMAGENES - imagenesHero.length;
+    if (disponibles <= 0) return;
+    const elegidas = files.slice(0, disponibles);
+    const subidas = [];
+    for (const file of elegidas) {
+      const url = await onSubirHero(file);
+      if (url) subidas.push(url);
+    }
+    if (subidas.length) actualizarImagenesHero([...imagenesHero, ...subidas]);
+  }
+
+  function quitarImagenHero(indice) {
+    const siguientes = imagenesHero.filter((_, i) => i !== indice);
+    actualizarImagenesHero(siguientes);
+    if (!siguientes.length && draft.banner_imagen && !Array.isArray(draft?.content?.portada?.banner_imagenes)) {
+      onQuitarHero();
+    }
+  }
+
+  function moverImagenHero(indice, direccion) {
+    const destino = indice + direccion;
+    if (destino < 0 || destino >= imagenesHero.length) return;
+    const siguientes = [...imagenesHero];
+    const [item] = siguientes.splice(indice, 1);
+    siguientes.splice(destino, 0, item);
+    actualizarImagenesHero(siguientes);
   }
 
   return (
@@ -100,31 +145,58 @@ export default function ContenidoPanel({ draft, onCampo, heroUrl, subiendoHero, 
         )}
       </div>
 
-      {/* Imagen */}
+      {/* Imagenes */}
       <div>
-        <label className={LABEL}>Imagen</label>
-        <div className="flex items-center gap-3">
-          <div className="h-16 w-24 rounded-lg bg-fg/5 border border-fg/10 flex items-center justify-center overflow-hidden shrink-0">
-            {subiendoHero ? <Loader size={16} className="animate-spin text-fg/50" />
-              : heroUrl ? <img src={heroUrl} alt="Hero" className="w-full h-full object-cover" />
-                : <ImageIcon size={16} className="text-fg/30" />}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <button type="button" onClick={() => inputRef.current?.click()} className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-fg/10 hover:bg-fg/15 text-fg">
-              Cambiar imagen
-            </button>
-            {heroUrl && (
-              <button type="button" onClick={onQuitarHero} className="text-xs text-fg/40 hover:text-red-400 flex items-center gap-1">
-                <X size={12} /> Quitar
-              </button>
-            )}
-          </div>
-          <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <label className={LABEL} style={{ marginBottom: 0 }}>Imágenes del banner</label>
+          <span className="text-[11px] text-fg/45">{imagenesHero.length}/{MAX_HERO_IMAGENES}</span>
         </div>
+        <div className="grid grid-cols-2 gap-2">
+          {imagenesHero.map((url, indice) => (
+            <div key={`${url}-${indice}`} className="relative h-24 rounded-lg border border-fg/10 bg-fg/5 overflow-hidden group">
+              <img src={url} alt={`Banner ${indice + 1}`} className="h-full w-full object-cover" />
+              {indice === 0 && (
+                <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+                  Portada
+                </span>
+              )}
+              <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1">
+                  <button type="button" onClick={() => moverImagenHero(indice, -1)} disabled={indice === 0} className="h-7 w-7 rounded-full bg-black/55 text-white inline-flex items-center justify-center disabled:opacity-30">
+                    <ArrowLeft size={13} />
+                  </button>
+                  <button type="button" onClick={() => moverImagenHero(indice, 1)} disabled={indice === imagenesHero.length - 1} className="h-7 w-7 rounded-full bg-black/55 text-white inline-flex items-center justify-center disabled:opacity-30">
+                    <ArrowRight size={13} />
+                  </button>
+                </div>
+                <button type="button" onClick={() => quitarImagenHero(indice)} className="h-7 w-7 rounded-full bg-red-500/85 text-white inline-flex items-center justify-center">
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {imagenesHero.length < MAX_HERO_IMAGENES && (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={subiendoHero}
+              className="h-24 rounded-lg border border-dashed border-fg/20 bg-fg/5 text-fg/60 hover:bg-fg/10 hover:text-fg transition-colors inline-flex flex-col items-center justify-center gap-2 text-xs font-semibold disabled:opacity-60"
+            >
+              {subiendoHero ? <Loader size={16} className="animate-spin" /> : <Upload size={16} />}
+              Agregar imagen
+            </button>
+          )}
+          {!imagenesHero.length && !subiendoHero && (
+            <div className="h-24 rounded-lg bg-fg/5 border border-fg/10 flex items-center justify-center text-fg/30">
+              <ImageIcon size={18} />
+            </div>
+          )}
+        </div>
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handleFile} />
         <p className="text-[11px] text-fg/40 mt-2">
-          Recomendado: 1600x900 o mayor. Se optimiza a WebP al subir y el diseño recorta el sobrante para mantener el hero prolijo.
+          Hasta 5 imágenes. La primera es la portada; en la landing se muestran como carrusel automático con controles.
         </p>
-        {heroUrl && (
+        {imagenesHero.length > 0 && (
           <div className="mt-4 flex flex-col gap-1.5">
             <div className="flex justify-between items-center">
               <span className="text-xs text-fg/50">Opacidad de la imagen</span>

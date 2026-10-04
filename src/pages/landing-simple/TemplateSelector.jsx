@@ -6,6 +6,8 @@ import { getComponenteTemplate } from './templates';
 import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import TemplatePreviewModal from './TemplatePreviewModal';
 import { demoDeTemplate } from './templates/demoTemplates';
+import { resolverTemaPorSlug } from './templates/themeUtils';
+import { leerItemsPrefill } from './prefilledLandingItems';
 
 const ICONOS = {
   'fitness-suplementos': Dumbbell,
@@ -45,11 +47,13 @@ export default function TemplateSelector({ onCreada, onVolver }) {
     return () => { activo = false; };
   }, []);
 
-  async function usarTemplate(template) {
+  async function usarTemplate(template, usarColoresPreview = true) {
     setError('');
     setCreandoId(template.id);
     try {
-      const landing = await landingSimpleService.crear(template.id);
+      const colores = usarColoresPreview ? resolverTemaPorSlug(demoDeTemplate(template.slug)?.tienda?.tema, template.slug) : null;
+      const items = leerItemsPrefill();
+      const landing = await landingSimpleService.crear(template.id, colores, items);
       if (onCreada) onCreada(landing);
       else navigate(`/landing/${landing.id}`, { replace: true });
     } catch (err) {
@@ -119,7 +123,7 @@ export default function TemplateSelector({ onCreada, onVolver }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => usarTemplate(template)}
+                  onClick={() => setEnPreview(template)}
                   disabled={creandoId === template.id}
                   className="inline-flex items-center justify-center gap-2 bg-fg text-canvas font-semibold text-sm px-4 py-2.5 rounded-lg hover:bg-fg-muted transition-colors disabled:opacity-50"
                 >
@@ -136,7 +140,7 @@ export default function TemplateSelector({ onCreada, onVolver }) {
         <TemplatePreviewModal
           template={enPreview}
           creando={creandoId === enPreview.id}
-          onUsar={() => usarTemplate(enPreview)}
+          onUsar={(usarColoresPreview) => usarTemplate(enPreview, usarColoresPreview)}
           onCerrar={() => setEnPreview(null)}
         />
       )}

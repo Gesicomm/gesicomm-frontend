@@ -19,7 +19,8 @@ import './comboProductPage.css';
  * (ver ComboProductPagePublica.jsx) — mismo criterio que las otras fichas
  * (ver BasicoProductPage.jsx). Se usa SIEMPRE que el ítem abierto es un
  * combo, sin importar qué template rígido (Fitness/Beauty/Tech/Básico) use
- * el resto de la landing: un combo no tiene rubro, tiene su propio diseño.
+ * el resto de la landing. Conserva las secciones de un combo y acompaña
+ * los colores y la tipografía del template elegido.
  *
  * `previewMode` solo muestra ayudas del editor. La landing publicada
  * conserva el mismo contenido sin esas guías.
@@ -48,7 +49,15 @@ export default function ComboProductPage({
   const [preguntaAbierta, setPreguntaAbierta] = useState(null);
 
   const t = resolverTemaPorSlug(tema, templateSlug);
-  const vars = useMemo(() => calcularVariables(t), [t.fondo, t.texto, t.acento]);
+  const vars = useMemo(() => {
+    const editorial = ['bazar-hogar', 'moda-indumentaria', 'beauty-skincare'].includes(templateSlug);
+    return {
+      ...calcularVariables(t),
+      '--cmb-font-body': templateSlug === 'tech-electronica' ? "system-ui, -apple-system, 'Segoe UI', Arial, sans-serif" : 'Arial, Helvetica, sans-serif',
+      '--cmb-font-heading': editorial ? "Georgia, 'Times New Roman', serif" : 'inherit',
+      '--cmb-heading-weight': editorial ? 400 : 800,
+    };
+  }, [t.fondo, t.texto, t.acento, templateSlug]);
 
   useEffect(() => { setIndiceImagen(0); }, [item?.nombre]);
 
@@ -87,7 +96,7 @@ export default function ComboProductPage({
   const resumenUnidades = totalUnidades === 1 ? '1 producto incluido' : `${totalUnidades} productos incluidos`;
 
   return (
-    <div className={`cmb-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
+    <div data-template={templateSlug} className={`cmb-root ${isMobile ? 'es-movil' : ''}`} style={vars}>
       {/* Barra superior de urgencia (envío, garantía, pago) ─────────── */}
       {ficha.barra_superior.activo && ficha.barra_superior.items.length > 0 && (
         <BarraMarquee

@@ -3,6 +3,7 @@ import { ArrowRight, Loader, Monitor, Smartphone, X } from 'lucide-react';
 import { getComponenteTemplate } from './templates';
 import StoreHeader from './templates/StoreHeader';
 import { demoDeTemplate } from './templates/demoTemplates';
+import { resolverTemaPorSlug } from './templates/themeUtils';
 
 /**
  * "Ver preview" de un template rígido, antes de crear la landing.
@@ -15,6 +16,7 @@ import { demoDeTemplate } from './templates/demoTemplates';
 export default function TemplatePreviewModal({ template, creando = false, onUsar, onCerrar }) {
   const [vista, setVista] = useState('producto');
   const [movil, setMovil] = useState(false);
+  const [usarColoresPreview, setUsarColoresPreview] = useState(true);
   const scrollRef = useRef(null);
 
   const demo = useMemo(() => demoDeTemplate(template.slug), [template.slug]);
@@ -85,7 +87,7 @@ export default function TemplatePreviewModal({ template, creando = false, onUsar
 
         <button
           type="button"
-          onClick={onUsar}
+          onClick={() => onUsar(usarColoresPreview)}
           disabled={creando}
           className="inline-flex items-center gap-2 bg-fg text-canvas font-semibold text-sm px-4 py-2 rounded-lg hover:bg-fg-muted transition-colors disabled:opacity-50"
         >
@@ -96,6 +98,22 @@ export default function TemplatePreviewModal({ template, creando = false, onUsar
           <X size={18} />
         </button>
       </div>
+
+      <fieldset className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 bg-canvas border-b border-fg/10 text-sm text-fg">
+        <legend className="sr-only">Colores de la nueva landing</legend>
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="paleta-template" checked={usarColoresPreview} disabled={creando} onChange={() => setUsarColoresPreview(true)} />
+          Usar colores de preview
+          <span className="inline-flex gap-1" aria-hidden="true">
+            {Object.values(resolverTemaPorSlug(demo?.tienda?.tema, template.slug)).map((color, i) => <span key={i} className="size-4 rounded-full border border-fg/20" style={{ backgroundColor: color }} />)}
+          </span>
+        </label>
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="paleta-template" checked={!usarColoresPreview} disabled={creando} onChange={() => setUsarColoresPreview(false)} />
+          Usar colores de mi tienda
+        </label>
+        <span className="text-xs text-fg/50">Podés cambiarlos después en Estilo.</span>
+      </fieldset>
 
       <div className="flex-1 min-h-0 flex justify-center p-3 md:p-5">
         <div

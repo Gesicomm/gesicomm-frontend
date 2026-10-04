@@ -297,47 +297,80 @@ const JS_COMUN = `(() => {
 
 const INICIO_CSS = `${TOKENS_CSS}
 
-.hero { position: relative; overflow: hidden; padding: 76px 0 92px; background: radial-gradient(circle at 74% 20%, rgba(255, 181, 71, .2), transparent 25%), radial-gradient(circle at 95% 90%, color-mix(in srgb, var(--brand) 17%, transparent), transparent 29%), linear-gradient(135deg, #f9fbfd 0%, #eef8f3 100%); }
-.hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); align-items: center; gap: 64px; }
-h1 { max-width: 620px; margin-bottom: 22px; font-size: clamp(2.65rem, 5vw, 5rem); line-height: .99; letter-spacing: -.075em; }
+.hero { position: relative; overflow: hidden; padding: 70px 0 78px; background: radial-gradient(circle at 82% 18%, rgba(255, 181, 71, .22), transparent 26%), linear-gradient(135deg, #f9fbfd 0%, #edf8f3 58%, #f4f7fb 100%); }
+.hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); align-items: center; gap: 58px; }
+h1 { max-width: 680px; margin-bottom: 22px; font-size: clamp(2.7rem, 5.3vw, 5.2rem); line-height: .98; letter-spacing: -.075em; }
 h1 em { color: var(--brand); font-style: normal; }
-.hero-copy { max-width: 570px; margin-bottom: 30px; color: var(--ink-soft); font-size: 1.1rem; }
+.hero-copy { max-width: 590px; margin-bottom: 30px; color: var(--ink-soft); font-size: 1.1rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; }
-.mini-trust { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 28px; color: var(--ink-soft); font-size: .82rem; font-weight: 650; }
+.mini-trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 28px; }
+.mini-trust span { padding: 12px 13px; color: var(--ink-soft); background: rgba(255,255,255,.72); border: 1px solid rgba(228,234,240,.86); border-radius: 14px; font-size: .82rem; font-weight: 750; }
 .mini-trust b { color: var(--brand); }
-.hero-card { overflow: hidden; background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); transform: rotate(2deg); cursor: pointer; }
-.featured-carousel { position: relative; min-height: 510px; }
-.featured-carousel .hero-card { display: none; opacity: 0; transform: rotate(2deg) translateY(8px); transition: opacity .35s ease, transform .35s ease; }
+.hero-card { overflow: hidden; background: var(--white); border: 1px solid rgba(255,255,255,.75); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); cursor: pointer; }
+.featured-carousel { position: relative; min-height: 520px; }
+.featured-carousel .hero-card { display: none; opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease; }
 .featured-carousel:not(.is-ready) .hero-card:first-of-type,
-.featured-carousel .hero-card.is-active { display: block; opacity: 1; transform: rotate(2deg) translateY(0); }
+.featured-carousel .hero-card.is-active { display: block; opacity: 1; transform: translateY(0); }
 .featured-dots { position: absolute; right: 18px; bottom: 18px; z-index: 3; display: flex; gap: 7px; }
 .featured-dot { width: 8px; height: 8px; padding: 0; background: rgba(16, 32, 47, .22); border: 0; border-radius: 999px; }
 .featured-dot.is-active { width: 22px; background: var(--brand); }
-.hero-image-wrap { display: grid; min-height: 335px; padding: 20px; place-items: center; background: #f2f2ed; }
+.hero-image-wrap { display: grid; min-height: 345px; padding: 20px; place-items: center; background: linear-gradient(145deg, #f8f2e8, #edf3f7); }
 .hero-image-wrap img { width: 100%; height: 330px; object-fit: contain; mix-blend-mode: multiply; }
-.hero-card-copy { padding: 20px 24px 24px; }
+.hero-card-copy { padding: 22px 24px 26px; }
 .product-kicker { margin-bottom: 8px; color: var(--brand-dark); font-size: .72rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
 .hero-card h2 { margin-bottom: 12px; font-size: 1.5rem; line-height: 1.08; letter-spacing: -.04em; }
 .price-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 .trust-strip { border-bottom: 1px solid var(--line); background: var(--white); }
-.trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; padding: 24px 0; }
-.trust-item { display: flex; align-items: center; gap: 12px; color: var(--ink-soft); font-size: .86rem; }
+.trust-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; padding: 18px 0; }
+.trust-item { display: flex; align-items: center; gap: 12px; color: var(--ink-soft); font-size: .84rem; }
 .trust-icon { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; color: var(--brand-dark); background: var(--brand-soft); border-radius: 10px; font-weight: 900; }
 .trust-item strong { display: block; color: var(--ink); font-size: .87rem; }
 
-.benefit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-.benefit-card { padding: 28px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); }
-.benefit-icon { display: grid; width: 48px; height: 48px; margin-bottom: 20px; place-items: center; color: var(--brand-dark); background: var(--brand-soft); border-radius: 15px; font-size: 1.25rem; }
-.benefit-card h3 { margin-bottom: 8px; font-size: 1.1rem; }
-.benefit-card p { margin: 0; color: var(--ink-soft); font-size: .92rem; }
+.category-strip { padding: 48px 0 30px; background: var(--white); }
+.category-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+.category-card { display: grid; gap: 10px; width: 100%; min-height: 150px; padding: 12px; text-align: left; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 18px; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.category-card:hover { border-color: color-mix(in srgb, var(--brand) 42%, var(--line)); box-shadow: var(--shadow-sm); transform: translateY(-3px); }
+.category-media { display: grid; height: 74px; place-items: center; overflow: hidden; background: var(--white); border-radius: 14px; }
+.category-media img { width: 100%; height: 74px; object-fit: contain; mix-blend-mode: multiply; }
+.category-card strong { font-size: .95rem; line-height: 1.15; }
+.category-card small { color: var(--ink-soft); font-weight: 750; }
+
+.showcase-section { background: var(--white); }
+.muted-section { background: #f1f6f8; }
+.section-action { margin-top: -18px; text-align: right; }
+.spotlight-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.product-grid { grid-template-columns: repeat(4, 1fr); }
+.product-card { border-radius: 18px; }
+.product-image { height: 220px; background: #f6f4ef; }
+.product-image img { height: 188px; }
+.product-content { padding: 20px; }
+.product-content h3 { font-size: 1.05rem; }
+.product-footer { align-items: center; }
+.product-card .button-primary { min-height: 40px; padding-inline: 13px; }
+.combo-includes { margin: 0 0 18px; color: var(--ink-soft); font-size: .82rem; }
+
+.promo-band { padding: 0 0 70px; background: var(--white); }
+.promo-inner { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr); gap: 30px; align-items: center; padding: 42px; color: var(--white); background: linear-gradient(135deg, #10202f 0%, #184869 52%, var(--brand-dark) 100%); border-radius: 28px; box-shadow: var(--shadow-lg); }
+.promo-inner h2 { margin-bottom: 10px; font-size: clamp(2rem, 4vw, 3.3rem); line-height: 1.02; letter-spacing: -.06em; }
+.promo-inner p { max-width: 560px; margin-bottom: 22px; color: rgba(255,255,255,.76); }
+.promo-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.promo-metrics div { padding: 18px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; }
+.promo-metrics strong { display: block; font-size: 1.8rem; line-height: 1; }
+.promo-metrics span { color: rgba(255,255,255,.74); font-size: .82rem; }
+
+.collection-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.collection-card { min-height: 210px; padding: 26px; color: var(--white); background: linear-gradient(135deg, #1d3557, #457b9d); border-radius: 22px; }
+.collection-card:nth-child(2) { background: linear-gradient(135deg, #3b2f2f, #b55b45); }
+.collection-card:nth-child(3) { background: linear-gradient(135deg, #1b4332, #40916c); }
+.collection-card h3 { max-width: 260px; margin-bottom: 12px; font-size: 1.55rem; line-height: 1.08; letter-spacing: -.04em; }
+.collection-card p { max-width: 280px; color: rgba(255,255,255,.78); }
 
 .products-section { background: var(--white); }
 .combos-section { background: var(--brand-soft); }
 .product-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
 .product-toolbar .section-heading { margin-bottom: 0; }
 .product-count { color: var(--ink-soft); font-size: .9rem; font-weight: 700; }
-.combo-includes { margin: 0 0 18px; color: var(--ink-soft); font-size: .82rem; }
 .catalog-toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; margin-bottom: 22px; }
 .catalog-search, .catalog-select { min-height: 46px; padding: 0 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 12px; outline: none; }
 .catalog-search:focus, .catalog-select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 13%, transparent); }
@@ -345,8 +378,23 @@ h1 em { color: var(--brand); font-style: normal; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 34px; color: var(--ink-soft); font-size: .9rem; font-weight: 700; }
 .pagination button:disabled { opacity: .45; cursor: default; transform: none; }
 
+.reviews-section { background: #fbfcfd; }
+.review-grid { display: grid; grid-template-columns: .8fr repeat(2, 1fr); gap: 18px; align-items: stretch; }
+.rating-card, .review-card { padding: 26px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
+.rating-card strong { display: block; margin-bottom: 8px; color: var(--brand-dark); font-size: 2.4rem; letter-spacing: -.06em; }
+.stars { color: #f59e0b; font-size: 1.1rem; letter-spacing: .06em; }
+.review-card p { color: var(--ink-soft); }
+.review-card b { display: block; margin-top: 18px; }
+.review-card small { color: var(--ink-soft); font-weight: 750; }
+
+.benefit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.benefit-card { padding: 24px; background: var(--white); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.benefit-icon { display: grid; width: 42px; height: 42px; margin-bottom: 16px; place-items: center; color: var(--brand-dark); background: var(--brand-soft); border-radius: 13px; font-size: 1.05rem; }
+.benefit-card h3 { margin-bottom: 8px; font-size: 1rem; }
+.benefit-card p { margin: 0; color: var(--ink-soft); font-size: .9rem; }
+
 .faq-section { background: var(--white); }
-.faq-list { max-width: 820px; margin: 0 auto; border-top: 1px solid var(--line); }
+.faq-list { max-width: 860px; margin: 0 auto; border-top: 1px solid var(--line); }
 .faq-item { border-bottom: 1px solid var(--line); }
 .faq-question { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; padding: 22px 0; color: var(--ink); background: transparent; border: 0; text-align: left; font-weight: 800; }
 .faq-plus { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; color: var(--brand-dark); background: var(--brand-soft); border-radius: 50%; font-size: 1.25rem; transition: transform .2s ease; }
@@ -375,57 +423,65 @@ h1 em { color: var(--brand); font-style: normal; }
 .contact-form .button-primary { width: 100%; margin-top: 16px; }
 .form-feedback { margin-top: 12px; padding: 10px 12px; color: var(--brand-dark); background: var(--brand-soft); border-radius: 9px; font-size: .82rem; }
 
+@media (max-width: 1080px) {
+  .category-grid { grid-template-columns: repeat(3, 1fr); }
+  .spotlight-grid, .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .benefit-grid { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 960px) {
-  .hero-grid, .contact-layout { grid-template-columns: 1fr; gap: 45px; }
+  .hero-grid, .contact-layout, .promo-inner { grid-template-columns: 1fr; gap: 36px; }
   .trust-grid { grid-template-columns: repeat(2, 1fr); }
-  .benefit-grid { grid-template-columns: 1fr; }
+  .review-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
-  .hero { padding: 52px 0 65px; }
-  .featured-carousel { min-height: 440px; }
-  .hero-image-wrap { min-height: 260px; }
-  .hero-image-wrap img { height: 250px; }
-  .trust-grid { grid-template-columns: 1fr; gap: 14px; }
+  .hero { padding: 48px 0 58px; }
+  h1 { font-size: 2.28rem; line-height: 1.1; }
+  .hero-copy { font-size: 1rem; }
+  .featured-carousel { min-height: 0; }
+  .hero-image-wrap { min-height: 220px; }
+  .hero-image-wrap img { height: 210px; }
+  .hero-card-copy { padding: 18px; }
+  .mini-trust, .trust-grid, .category-grid, .spotlight-grid, .product-grid, .collection-grid, .benefit-grid, .promo-metrics { grid-template-columns: 1fr; }
+  .spotlight-grid > article:nth-of-type(n+3) { display: none; }
   .product-toolbar { align-items: start; flex-direction: column; gap: 5px; }
-  .catalog-toolbar { grid-template-columns: 1fr 1fr; }
-  .catalog-search { grid-column: 1 / -1; }
+  .catalog-toolbar { grid-template-columns: 1fr; }
+  .promo-inner { padding: 28px; border-radius: 22px; }
   .form-grid { grid-template-columns: 1fr; }
 }`;
 
 const INICIO_HTML = `${ANNOUNCEMENT_HTML}
 
-${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
-      <a href="#productos">Productos</a>
-      <a href="#preguntas">Preguntas</a>
-      <a href="#contacto">Contacto</a>
-      <a class="nav-cta" href="#productos">Ver ofertas</a>`)}
+${HEADER_HTML.replace('__LINKS__', `<a href="#categorias">Categorías</a>
+      <a href="#destacados">Destacados</a>
+      <a href="#combos">Combos</a>
+      <a href="#productos">Catálogo</a>
+      <a class="nav-cta" href="#productos">Comprar ahora</a>`)}
 
 <main data-gesicomm-base="catalogo">
   <section id="inicio" class="hero">
     <div class="container hero-grid">
       <div class="reveal">
-        <p class="eyebrow">Elegido para tu día a día</p>
-        <h1>Pequeños cambios. <em>Más comodidad.</em></h1>
-        <p class="hero-copy">Productos prácticos, precios claros y una compra sin vueltas. Descubrí opciones pensadas para tu rutina, todo desde un solo lugar.</p>
+        <p class="eyebrow">Campañas de la tienda</p>
+        <h1>Ofertas, novedades y favoritos <em>en un solo lugar.</em></h1>
+        <p class="hero-copy">Una homepage preparada para vender: categorías rápidas, vitrinas comerciales, combos, catálogo completo y ayuda por WhatsApp.</p>
         <div class="hero-actions">
-          <a class="button-primary" href="#productos">Explorar productos <span aria-hidden="true">→</span></a>
-          <a class="button-secondary" href="#beneficios">¿Por qué elegirnos?</a>
+          <a class="button-primary" href="#destacados">Ver destacados <span aria-hidden="true">→</span></a>
+          <a class="button-secondary" href="#categorias">Explorar categorías</a>
         </div>
         <div class="mini-trust">
-          <span><b>✓</b> Compra rápida</span>
-          <span><b>✓</b> Atención cercana</span>
           <span><b>✓</b> Pago seguro</span>
+          <span><b>✓</b> Envío coordinado</span>
+          <span><b>✓</b> Atención por WhatsApp</span>
         </div>
       </div>
 
-      <!-- Productos destacados: los elegidos en Configurar venta; si no hay,
-           Gesicomm usa los primeros de la selección. -->
+      <!-- Carrusel de campaña: usa productos destacados reales de Configurar venta. -->
       <div class="reveal featured-carousel" data-gesicomm-lista="productos_destacados">
         <template>
           <article class="hero-card" data-gesicomm-ver>
             <div class="hero-image-wrap"><img data-gesicomm-bind="imagen" alt=""></div>
             <div class="hero-card-copy">
-              <div class="product-kicker">Destacado · <span data-gesicomm-bind="categoria"></span></div>
+              <div class="product-kicker">Campaña · <span data-gesicomm-bind="categoria"></span></div>
               <h2 data-gesicomm-bind="nombre"></h2>
               <div class="price-row">
                 <span class="price" data-gesicomm-bind="precio"></span>
@@ -438,63 +494,42 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
     </div>
   </section>
 
-  ${LIMITED_OFFER_HTML}
-
   <section class="trust-strip" aria-label="Beneficios de compra">
     <div class="container trust-grid">
       <div class="trust-item"><span class="trust-icon">✓</span><div><strong>Checkout simple</strong><span>Sin pasos innecesarios</span></div></div>
       <div class="trust-item"><span class="trust-icon">⌁</span><div><strong>Pago seguro</strong><span>Procesado por PagoPar</span></div></div>
-      <div class="trust-item"><span class="trust-icon">♡</span><div><strong>Atención cercana</strong><span>Estamos para ayudarte</span></div></div>
-      <div class="trust-item"><span class="trust-icon">↗</span><div><strong>Desde cualquier lugar</strong><span>En celular o computadora</span></div></div>
+      <div class="trust-item"><span class="trust-icon">↗</span><div><strong>Envío claro</strong><span>Costo visible antes de confirmar</span></div></div>
+      <div class="trust-item"><span class="trust-icon">♡</span><div><strong>Atención cercana</strong><span>Te ayudamos por WhatsApp</span></div></div>
     </div>
   </section>
 
-  <section id="beneficios" class="section">
+  <section id="categorias" class="category-strip">
     <div class="container">
-      <div class="section-heading center reveal">
-        <p class="eyebrow">Nuestra experiencia</p>
-        <h2>Comprar bien también debería sentirse fácil.</h2>
-        <p>Todo lo importante está a la vista para que elijas con confianza y avances rápido.</p>
+      <div class="section-heading reveal">
+        <p class="eyebrow">Categorías rápidas</p>
+        <h2>Entrá por lo que estás buscando.</h2>
       </div>
-      <div class="benefit-grid">
-        <article class="benefit-card reveal"><div class="benefit-icon">⌁</div><h3>Elegí sin complicarte</h3><p>Información clara, imágenes del producto y precios visibles desde el primer momento.</p></article>
-        <article class="benefit-card reveal"><div class="benefit-icon">⚡</div><h3>Menos vueltas, más acción</h3><p>Encontrá lo que buscás y pasá al pago con un botón directo.</p></article>
-        <article class="benefit-card reveal"><div class="benefit-icon">◈</div><h3>Una compra con respaldo</h3><p>Pagás en un entorno seguro, con atención cuando la necesites.</p></article>
-      </div>
-    </div>
-  </section>
-
-  <section id="productos" class="section products-section">
-    <div class="container">
-      <div class="product-toolbar">
-        <div class="section-heading reveal">
-          <p class="eyebrow">Ofertas seleccionadas</p>
-          <h2>Encontrá tu próximo favorito.</h2>
-          <p>Opciones pensadas para hacer más práctico tu día.</p>
-        </div>
-        <div class="product-count" data-gesicomm-total></div>
-      </div>
-
-      <!-- Buscador y filtros: funcionan igual con 10 productos que con 5.000
-           (con muchos, Gesicomm pide cada página al servidor). -->
-      <div class="catalog-toolbar">
-        <input class="catalog-search" type="search" placeholder="Buscar productos" aria-label="Buscar productos" data-gesicomm-buscar>
-        <select class="catalog-select" aria-label="Categoría" data-gesicomm-filtro="categoria">
-          <option value="">Todas las categorías</option>
-        </select>
-        <select class="catalog-select" aria-label="Ordenar" data-gesicomm-filtro="orden">
-          <option value="">Destacados</option>
-          <option value="min-max">Menor precio</option>
-          <option value="max-min">Mayor precio</option>
-          <option value="az">A → Z</option>
-        </select>
-      </div>
-
-      <!-- Gesicomm clona el <template> una vez por producto de la página actual. -->
-      <div class="product-grid" data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
+      <div class="category-grid" data-gesicomm-lista="categorias" data-gesicomm-limite="6">
         <template>
-          <!-- Sin .reveal: el catálogo se repinta al filtrar o cambiar de
-               página, y la animación de aparición corre una sola vez. -->
+          <button class="category-card" type="button">
+            <span class="category-media"><img data-gesicomm-bind="imagen" alt="" loading="lazy"></span>
+            <strong data-gesicomm-bind="nombre"></strong>
+            <small data-gesicomm-bind="cantidad_texto"></small>
+          </button>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  <section id="destacados" class="section showcase-section">
+    <div class="container">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Productos destacados</p>
+        <h2>Elegidos para abrir la vidriera.</h2>
+        <p>Los productos marcados en Configurar venta aparecen primero para que el cliente no tenga que buscar desde cero.</p>
+      </div>
+      <div class="spotlight-grid" data-gesicomm-lista="productos_destacados" data-gesicomm-limite="4">
+        <template>
           <article class="product-card">
             <div class="product-badge" data-gesicomm-bind="etiqueta"></div>
             <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
@@ -507,19 +542,91 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
                   <span class="price-old" data-gesicomm-bind="precio_antes"></span>
                   <span class="price" data-gesicomm-bind="precio"></span>
                 </div>
-                <button class="button-primary" type="button" data-gesicomm-comprar>Comprar ahora</button>
+                <button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button>
               </div>
             </div>
           </article>
         </template>
       </div>
-      <p class="catalog-state" data-gesicomm-cargando style="display:none">Cargando productos…</p>
-      <p class="catalog-state" data-gesicomm-sin-resultados style="display:none">No encontramos productos con esa búsqueda.</p>
-      <nav class="pagination" aria-label="Páginas del catálogo">
-        <button class="button-secondary" type="button" data-gesicomm-pagina="anterior">← Anterior</button>
-        <span data-gesicomm-paginacion></span>
-        <button class="button-secondary" type="button" data-gesicomm-pagina="siguiente">Siguiente →</button>
-      </nav>
+    </div>
+  </section>
+
+  <section class="promo-band">
+    <div class="container promo-inner reveal">
+      <div>
+        <p class="eyebrow">Banner comercial</p>
+        <h2>Promoción principal lista para personalizar.</h2>
+        <p>Usá este bloque para Semana de cocina, nuevos ingresos, envío gratis o la campaña que más convenga en tu tienda.</p>
+        <a class="button-primary" href="#productos">Ver productos</a>
+      </div>
+      <div class="promo-metrics" aria-label="Datos comerciales">
+        <div><strong>24 h</strong><span>para destacar urgencia</span></div>
+        <div><strong>+4</strong><span>vitrinas antes del catálogo</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section muted-section">
+    <div class="container">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Más vendidos</p>
+        <h2>Lo que conviene mostrar antes del catálogo.</h2>
+      </div>
+      <div class="spotlight-grid" data-gesicomm-lista="productos" data-gesicomm-limite="4">
+        <template>
+          <article class="product-card">
+            <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
+            <div class="product-content">
+              <div class="product-category" data-gesicomm-bind="categoria"></div>
+              <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+              <div class="product-footer">
+                <div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span></div>
+                <button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button>
+              </div>
+            </div>
+          </article>
+        </template>
+      </div>
+    </div>
+  </section>
+
+  ${LIMITED_OFFER_HTML}
+
+  <section class="section showcase-section">
+    <div class="container">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Colecciones</p>
+        <h2>Rutas comerciales para ordenar la compra.</h2>
+      </div>
+      <div class="collection-grid">
+        <a class="collection-card reveal" href="#productos"><h3>Ofertas especiales</h3><p>Productos con precio anterior, packs o campaña activa.</p></a>
+        <a class="collection-card reveal" href="#categorias"><h3>Comprar por categoría</h3><p>Un acceso visual para entrar directo a la familia correcta.</p></a>
+        <a class="collection-card reveal" href="#combos"><h3>Combos y bundles</h3><p>La sección ideal para aumentar ticket promedio.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section muted-section">
+    <div class="container">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Nuevos ingresos</p>
+        <h2>Más motivos para seguir navegando.</h2>
+      </div>
+      <div class="spotlight-grid" data-gesicomm-lista="productos" data-gesicomm-limite="4">
+        <template>
+          <article class="product-card">
+            <div class="product-badge">Nuevo</div>
+            <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
+            <div class="product-content">
+              <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+              <div class="product-footer">
+                <span class="price" data-gesicomm-bind="precio"></span>
+                <button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button>
+              </div>
+            </div>
+          </article>
+        </template>
+      </div>
     </div>
   </section>
 
@@ -553,28 +660,119 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
     </div>
   </section>
 
+  <section id="productos" class="section products-section">
+    <div class="container">
+      <div class="product-toolbar">
+        <div class="section-heading reveal">
+          <p class="eyebrow">Catálogo completo</p>
+          <h2>Ahora sí, todos los productos.</h2>
+          <p>Buscá, filtrá y ordená cuando ya viste la vidriera principal.</p>
+        </div>
+        <div class="product-count" data-gesicomm-total></div>
+      </div>
+
+      <!-- Buscador y filtros: funcionan igual con 10 productos que con 5.000
+           (con muchos, Gesicomm pide cada página al servidor). -->
+      <div class="catalog-toolbar">
+        <input class="catalog-search" type="search" placeholder="Buscar productos" aria-label="Buscar productos" data-gesicomm-buscar>
+        <select class="catalog-select" aria-label="Categoría" data-gesicomm-filtro="categoria">
+          <option value="">Todas las categorías</option>
+        </select>
+        <select class="catalog-select" aria-label="Ordenar" data-gesicomm-filtro="orden">
+          <option value="">Destacados</option>
+          <option value="min-max">Menor precio</option>
+          <option value="max-min">Mayor precio</option>
+          <option value="az">A → Z</option>
+        </select>
+      </div>
+
+      <!-- Gesicomm clona el <template> una vez por producto de la página actual. -->
+      <div class="product-grid" data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
+        <template>
+          <article class="product-card">
+            <div class="product-badge" data-gesicomm-bind="etiqueta"></div>
+            <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
+            <div class="product-content">
+              <div class="product-category" data-gesicomm-bind="categoria"></div>
+              <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+              <p class="product-description" data-gesicomm-bind="descripcion"></p>
+              <div class="product-footer">
+                <div class="product-prices">
+                  <span class="price-old" data-gesicomm-bind="precio_antes"></span>
+                  <span class="price" data-gesicomm-bind="precio"></span>
+                </div>
+                <button class="button-primary" type="button" data-gesicomm-comprar>Comprar ahora</button>
+              </div>
+            </div>
+          </article>
+        </template>
+      </div>
+      <p class="catalog-state" data-gesicomm-cargando style="display:none">Cargando productos...</p>
+      <p class="catalog-state" data-gesicomm-sin-resultados style="display:none">No encontramos productos con esa búsqueda.</p>
+      <nav class="pagination" aria-label="Páginas del catálogo">
+        <button class="button-secondary" type="button" data-gesicomm-pagina="anterior">Anterior</button>
+        <span data-gesicomm-paginacion></span>
+        <button class="button-secondary" type="button" data-gesicomm-pagina="siguiente">Siguiente</button>
+      </nav>
+    </div>
+  </section>
+
+  <section class="section reviews-section">
+    <div class="container">
+      <div class="section-heading reveal">
+        <p class="eyebrow">Confianza</p>
+        <h2>Prueba social lista para datos reales.</h2>
+      </div>
+      <div class="review-grid">
+        <div class="rating-card reveal"><strong>4,8</strong><div class="stars">★★★★★</div><p>Promedio de referencia. Reemplazalo por reseñas reales cuando las tengas.</p></div>
+        <article class="review-card reveal"><div class="stars">★★★★★</div><p>"Llegó rápido y exactamente como esperaba."</p><b>María G.</b><small>Compra verificada</small></article>
+        <article class="review-card reveal"><div class="stars">★★★★★</div><p>"Muy buena atención por WhatsApp."</p><b>Carlos R.</b><small>Compra verificada</small></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="beneficios" class="section">
+    <div class="container">
+      <div class="section-heading center reveal">
+        <p class="eyebrow">Beneficios de compra</p>
+        <h2>Las garantías quedan cerca del cierre.</h2>
+        <p>Compactas, claras y sin competir con las vitrinas de producto.</p>
+      </div>
+      <div class="benefit-grid">
+        <article class="benefit-card reveal"><div class="benefit-icon">⌁</div><h3>Pago claro</h3><p>Precio y medio de pago visibles antes de confirmar.</p></article>
+        <article class="benefit-card reveal"><div class="benefit-icon">↗</div><h3>Envío coordinado</h3><p>Consultá cobertura y costo desde el checkout.</p></article>
+        <article class="benefit-card reveal"><div class="benefit-icon">♡</div><h3>Soporte humano</h3><p>WhatsApp disponible para dudas sobre productos o pedidos.</p></article>
+        <article class="benefit-card reveal"><div class="benefit-icon">✓</div><h3>Compra simple</h3><p>Sin cuenta obligatoria y con los datos justos.</p></article>
+      </div>
+    </div>
+  </section>
+
   <section id="preguntas" class="section faq-section">
     <div class="container">
       <div class="section-heading center reveal">
         <p class="eyebrow">Preguntas frecuentes</p>
-        <h2>Lo que necesitás saber antes de comprar.</h2>
+        <h2>Reducí dudas antes del pago.</h2>
       </div>
       <div class="faq-list reveal">
         <div class="faq-item is-open">
           <button class="faq-question" type="button" aria-expanded="true"><span>¿Cómo realizo mi compra?</span><span class="faq-plus" aria-hidden="true">+</span></button>
-          <div class="faq-answer"><div><p>Elegí el producto, tocá “Comprar ahora”, completá tus datos de entrega y elegí cómo pagar.</p></div></div>
+          <div class="faq-answer"><div><p>Elegí el producto, tocá "Comprar ahora", completá tus datos de entrega y elegí cómo pagar.</p></div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false"><span>¿Cómo se procesa el pago?</span><span class="faq-plus" aria-hidden="true">+</span></button>
-          <div class="faq-answer"><div><p>Podés pagar online con PagoPar (tarjeta, billeteras, transferencia) o en efectivo al recibir, según lo que esté habilitado.</p></div></div>
+          <button class="faq-question" type="button" aria-expanded="false"><span>¿Qué medios de pago aceptan?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+          <div class="faq-answer"><div><p>Podés pagar online con PagoPar o en efectivo al recibir, según lo que esté habilitado por la tienda.</p></div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false"><span>¿Hacen envíos a todo el país?</span><span class="faq-plus" aria-hidden="true">+</span></button>
-          <div class="faq-answer"><div><p>Al completar tu pedido vas a ver las ciudades disponibles y el costo de envío antes de confirmar.</p></div></div>
+          <button class="faq-question" type="button" aria-expanded="false"><span>¿Cuánto tarda la entrega?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+          <div class="faq-answer"><div><p>El plazo depende de tu ciudad. Al completar el pedido ves cobertura y costo antes de confirmar.</p></div></div>
         </div>
         <div class="faq-item">
-          <button class="faq-question" type="button" aria-expanded="false"><span>¿Necesito crear una cuenta?</span><span class="faq-plus" aria-hidden="true">+</span></button>
-          <div class="faq-answer"><div><p>No. Solo te pedimos los datos necesarios para entregarte el pedido.</p></div></div>
+          <button class="faq-question" type="button" aria-expanded="false"><span>¿Tienen cambios o devoluciones?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+          <div class="faq-answer"><div><p>Revisá la política de reembolso del footer o escribinos por WhatsApp para confirmar las condiciones de tu producto.</p></div></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false"><span>¿Cómo hago seguimiento del pedido?</span><span class="faq-plus" aria-hidden="true">+</span></button>
+          <div class="faq-answer"><div><p>Te contactamos por WhatsApp o el canal definido por la tienda cuando el pedido avance.</p></div></div>
         </div>
       </div>
     </div>
@@ -583,13 +781,13 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
   <section id="contacto" class="section contact-section">
     <div class="container contact-layout">
       <div class="reveal">
-        <p class="eyebrow">¿Necesitás ayuda?</p>
-        <h2>Estamos a un mensaje de distancia.</h2>
-        <p class="contact-copy">¿Tenés una duda sobre un producto o tu pedido? Escribinos y te orientamos.</p>
+        <p class="eyebrow">CTA final</p>
+        <h2>¿Querés ayuda para elegir?</h2>
+        <p class="contact-copy">Escribinos por WhatsApp o dejá tu consulta. La última pantalla vuelve a abrir una acción clara.</p>
         <div class="contact-list">
-          <button class="contact-link" type="button" data-gesicomm-whatsapp="Hola! Tengo una consulta">◌ Escribinos por WhatsApp</button>
-          <span class="contact-link">✉ <span data-gesicomm-tienda="email"></span></span>
-          <span class="contact-link">⌂ <span data-gesicomm-tienda="direccion"></span></span>
+          <button class="contact-link" type="button" data-gesicomm-whatsapp="Hola! Tengo una consulta">Escribinos por WhatsApp</button>
+          <span class="contact-link">Email: <span data-gesicomm-tienda="email"></span></span>
+          <span class="contact-link">Dirección: <span data-gesicomm-tienda="direccion"></span></span>
         </div>
       </div>
 
@@ -601,7 +799,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#beneficios">Beneficios</a>
           <div class="field full"><label for="mensaje">¿En qué podemos ayudarte?</label><textarea id="mensaje" name="mensaje" placeholder="Escribí tu consulta" required></textarea></div>
         </div>
         <button class="button-primary" type="submit">Enviar consulta <span aria-hidden="true">→</span></button>
-        <div class="form-feedback" data-gesicomm-form-ok style="display:none">¡Gracias! Te abrimos WhatsApp para que nos mandes la consulta.</div>
+        <div class="form-feedback" data-gesicomm-form-ok style="display:none">Gracias. Te abrimos WhatsApp para que nos mandes la consulta.</div>
       </form>
     </div>
   </section>
@@ -720,7 +918,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .mini-trust strong { display: block; color: var(--ink); font-size: .84rem; }
 
 .description { padding: 70px 0; background: var(--white); }
-.description-body { max-width: 760px; color: var(--ink-soft); font-size: 1.02rem; white-space: pre-line; }
+.description-body { max-width: 760px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
 
 .related { padding: 80px 0; }
 
@@ -800,9 +998,10 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .beneficio p { margin: 0; color: var(--ink-soft); font-size: .92rem; }
 
 .incluye-section { padding: 72px 0; }
-.incluye-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
-.incluye-card { display: flex; gap: 14px; align-items: center; padding: 14px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; }
-.incluye-card img { width: 72px; height: 72px; object-fit: contain; background: #f3f2ee; border-radius: 12px; }
+.incluye-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.incluye-card { display: flex; min-width: 0; gap: 14px; align-items: center; padding: 14px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; }
+.incluye-card img { flex-shrink: 0; width: 72px; height: 72px; object-fit: contain; background: #f3f2ee; border-radius: 12px; }
+.incluye-card > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .incluye-card h3 { margin: 0 0 4px; font-size: .98rem; }
 .incluye-card em { color: var(--ink-soft); font-style: normal; }
 .incluye-card p { margin: 0; color: var(--ink-soft); font-size: .85rem; }

@@ -4,6 +4,7 @@ import { hexToRgba, resolverTema } from './themeUtils';
 import { BeneficiosSection, ContactoSection, FaqSection, CartButton, RedesSocialesFooter, AccionesProducto, ImagenProductoHover, textoOMuestra } from './sections';
 import StoreFooterLegal from '../../landing/StoreFooterLegal';
 import StoreHeader from './StoreHeader';
+import HeroCarousel from './HeroCarousel';
 
 const DEFAULT_TEMA = { fondo: '#FFFFFF', texto: '#173C2D', acento: '#0F4933' };
 const NOOP = () => {};
@@ -69,9 +70,12 @@ export default function FitnessTemplate({ data, onClickProducto = NOOP, onClickI
 
       {/* Hero */}
       <section id="hero" className="relative overflow-hidden">
-        {hero.imagen && (
-          <img src={hero.imagen} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ opacity: hero.opacidad !== undefined && hero.opacidad !== null ? hero.opacidad / 100 : 0.40 }} />
-        )}
+        <HeroCarousel
+          hero={hero}
+          alt={hero.titulo || nombreComercio}
+          className="absolute inset-0"
+          imageOpacity={hero.opacidad !== undefined && hero.opacidad !== null ? hero.opacidad / 100 : 0.40}
+        />
         <div className="relative px-6 py-20 md:py-28 max-w-3xl">
           {heroRotulo.texto && (
             <span className={`inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest mb-3 ${heroRotulo.clase}`} style={{ color: tema.acento }}>

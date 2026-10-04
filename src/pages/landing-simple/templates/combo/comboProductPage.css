@@ -525,10 +525,15 @@
 .cmb-faq-item svg { flex-shrink: 0; color: var(--cmb-muted); transition: transform 0.15s; }
 .cmb-faq-item.abierta > button svg { transform: rotate(180deg); color: var(--cmb-accent); }
 .cmb-faq-answer {
-  padding: 0 20px 20px;
+  margin: 0 20px 20px;
+  padding: 15px 18px 18px;
+  border-top: 1px solid var(--cmb-border);
+  border-radius: 0 0 8px 8px;
+  background: color-mix(in srgb, var(--cmb-bg) 88%, var(--cmb-accent) 12%);
   color: var(--cmb-muted);
   font-size: 13.5px;
   line-height: 1.65;
+  box-sizing: border-box;
 }
 .cmb-faq-answer > * { margin-top: 0; }
 .cmb-faq-answer > *:last-child { margin-bottom: 0; }
@@ -609,3 +614,12 @@
 .cmb-root.es-movil .cmb-hero-kit { margin-left: auto; margin-right: auto; text-align: left; }
 .cmb-root.es-movil .cmb-value-grid { grid-template-columns: 1fr; }
 .cmb-root.es-movil .cmb-barra-movil { display: flex; }
+
+/* Identidad del template de la landing, también cuando el combo no tiene ficha propia. */
+.cmb-root { font-family: var(--cmb-font-body); }
+.cmb-root h1,
+.cmb-root h2 {
+  font-family: var(--cmb-font-heading);
+  font-weight: var(--cmb-heading-weight);
+}
+.cmb-root button { font-family: inherit; }

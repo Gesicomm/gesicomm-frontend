@@ -338,7 +338,11 @@ export function FaqSection({ faq, titulo, acento, bordeSuave, textoSuave, titulo
               <ChevronDown size={16} style={{ color: acento, transform: abierta === idx ? 'rotate(180deg)' : 'none' }} />
             </button>
             {abierta === idx && (
-              <FormattedText content={f.respuesta} className="mt-2 text-sm" style={textoSuave(0.6)} />
+              <FormattedText
+                content={f.respuesta}
+                className="mt-3 rounded-lg border-l-2 px-4 py-3 text-sm"
+                style={{ ...textoSuave(0.6), borderColor: acento, backgroundColor: 'rgba(148, 163, 184, 0.08)' }}
+              />
             )}
           </div>
         ))}

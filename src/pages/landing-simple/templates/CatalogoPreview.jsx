@@ -18,7 +18,7 @@ function normalizarProducto(p) {
   return {
     id: `${p.tipo}:${p.id}`,
     nombre: p.nombre,
-    precio: p.precio_efectivo ?? p.precio_base ?? null,
+    precio: p.precio_publico ?? p.precio_efectivo ?? p.precio_base ?? null,
     // precio_ancla (de esta landing) manda sobre precio_tachado (del
     // producto global) — mismo criterio que la landing pública.
     precioAntes: p.precio_ancla ?? p.precio_tachado ?? null,

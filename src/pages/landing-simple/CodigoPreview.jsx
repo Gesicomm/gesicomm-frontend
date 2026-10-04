@@ -44,7 +44,9 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, on
   const datosJson = useMemo(() => JSON.stringify(datos ?? null), [datos]);
   const doc = useMemo(
     () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson), extras }),
-    [codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, datosJson, extras?.html, extras?.css, extras?.script],
+    // Si cambia el generador durante una actualización de estilos/runtime,
+    // no conservar un srcDoc anterior con fotos que invaden el contenido.
+    [construirDocumentoCodigo, codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, datosJson, extras?.html, extras?.css, extras?.script],
   );
 
   // Refs para los handlers: se registran una sola vez y siempre llaman a

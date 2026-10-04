@@ -10,6 +10,7 @@ export const mapDepositoFromApi = (raw) => {
     personaContacto: raw.persona_contacto || '',
     telefonoContacto: raw.telefono_contacto || '',
     googleMapsUrl: raw.google_maps_url || '',
+    tipoUbicacion: raw.tipo_ubicacion || 'DEPOSITO',
   };
 };
 
@@ -32,6 +33,10 @@ export const mapDepositoToApi = (form) => {
   if ('googleMapsUrl' in payload) {
     payload.google_maps_url = payload.googleMapsUrl;
     delete payload.googleMapsUrl;
+  }
+  if ('tipoUbicacion' in payload) {
+    payload.tipo_ubicacion = payload.tipoUbicacion;
+    delete payload.tipoUbicacion;
   }
   
   return payload;

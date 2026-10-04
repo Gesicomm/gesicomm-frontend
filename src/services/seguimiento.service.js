@@ -1,7 +1,42 @@
 import api from './api';
 
 export const seguimientoService = {
-  // Plantillas
+  // Flujos de mensajes (la unidad principal: proceso + fases ordenadas)
+  getFlujos: async (params = {}) => {
+    const { data } = await api.get('/seguimiento/flujos', { params });
+    return data;
+  },
+  getFlujo: async (id) => {
+    const { data } = await api.get(`/seguimiento/flujos/${id}`);
+    return data;
+  },
+  createFlujo: async (payload) => {
+    const { data } = await api.post('/seguimiento/flujos', payload);
+    return data;
+  },
+  updateFlujo: async (id, payload) => {
+    const { data } = await api.put(`/seguimiento/flujos/${id}`, payload);
+    return data;
+  },
+  deleteFlujo: async (id) => {
+    const { data } = await api.delete(`/seguimiento/flujos/${id}`);
+    // 204 cuando se borro de verdad; { desactivado: true } cuando tenia historial.
+    return data || null;
+  },
+
+  // Flujos + lo que ya se abrio de cada fase EN ESTE pedido
+  getFlujosPedido: async (envioId) => {
+    const { data } = await api.get(`/envios/${envioId}/seguimiento/flujos`);
+    return data;
+  },
+
+  // Variables disponibles para los mensajes (fuente unica: el backend)
+  getVariables: async () => {
+    const { data } = await api.get('/seguimiento/variables');
+    return data;
+  },
+
+  // Plantillas sueltas (legacy pre-flujos)
   getPlantillas: async (params = {}) => {
     const { data } = await api.get('/seguimiento/plantillas', { params });
     return data;

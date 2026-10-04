@@ -25,6 +25,7 @@ const CategoriaList = lazy(() => import('./pages/categorias/CategoriaList'));
 const ComboList = lazy(() => import('./pages/combos/ComboList'));
 const ComboEditor = lazy(() => import('./pages/combos/ComboEditor'));
 const VitrinaGrid = lazy(() => import('./pages/vitrina/VitrinaGrid'));
+const CambiarPrecios = lazy(() => import('./pages/vitrina/CambiarPrecios'));
 const MiDashboard = lazy(() => import('./pages/dashboard/MiDashboard'));
 const MiLandingEntry = lazy(() => import('./pages/landing/MiLandingEntry'));
 const LandingEditor = lazy(() => import('./pages/landing/LandingEditor'));
@@ -93,6 +94,7 @@ const DevFichaBasico = lazy(() => import('./pages/landing-simple/templates/basic
 const DevProductoPanel = lazy(() => import('./pages/landing-simple/templates/beauty/__DevProductoPanel'));
 // Lienzo en blanco publicado con catálogo falso (bump, upsell, cross-sell): /dev/lienzo[/:productId].
 const DevLienzo = lazy(() => import('./pages/landing-simple/__DevLienzo'));
+const DevFlujos = lazy(() => import('./pages/courier/__DevFlujos'));
 const NotFound = lazy(() => import('./pages/public/NotFound'));
 const Privacy = lazy(() => import('./pages/legal/Privacy'));
 const Terms = lazy(() => import('./pages/legal/Terms'));
@@ -252,6 +254,7 @@ function App() {
         <Route path="/dev/ficha-moda" element={<DevFichaModa />} />
         <Route path="/dev/ficha-basico" element={<DevFichaBasico />} />
         <Route path="/dev/producto-panel" element={<DevProductoPanel />} />
+        <Route path="/dev/flujos" element={<DevFlujos />} />
         <Route path="/dev/lienzo" element={<DevLienzo />} />
         <Route path="/dev/lienzo/:productId" element={<DevLienzo />} />
         <Route path="/login" element={<Login />} />
@@ -412,6 +415,9 @@ function App() {
         } />
         <Route path="/mi-catalogo" element={
           <RequireTienda><UserLayout><VitrinaGrid /></UserLayout></RequireTienda>
+        } />
+        <Route path="/mi-catalogo/precios" element={
+          <RequireTienda><UserLayout><CambiarPrecios /></UserLayout></RequireTienda>
         } />
         <Route path="/mis-pedidos" element={
           <RequireTienda><UserLayout><ControlCourier /></UserLayout></RequireTienda>

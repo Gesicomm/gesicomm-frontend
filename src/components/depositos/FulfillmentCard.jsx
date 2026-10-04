@@ -41,7 +41,7 @@ export default function FulfillmentCard({ onCambio }) {
   const [depositosLoading, setDepositosLoading] = useState(false);
   const [depositosError, setDepositosError] = useState(null);
   const [buscarDeposito, setBuscarDeposito] = useState('');
-  const [filtrosDeposito, setFiltrosDeposito] = useState({ ciudad: '', departamento: '', estadoCouriers: 'todos' });
+  const [filtrosDeposito, setFiltrosDeposito] = useState({ ciudad: '', departamento: '' });
   const [opcionesFiltros, setOpcionesFiltros] = useState({ ciudades: [], departamentos: [] });
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -80,7 +80,6 @@ export default function FulfillmentCard({ onCambio }) {
       filtros: {
         ciudad: filtrosDeposito.ciudad || undefined,
         departamento: filtrosDeposito.departamento || undefined,
-        estadoCouriers: filtrosDeposito.estadoCouriers,
       },
       depositoSeleccionadoId: depositoId || undefined,
     })
@@ -92,8 +91,7 @@ export default function FulfillmentCard({ onCambio }) {
         setDepositosMeta({ total: data.total || 0, totalPages: data.totalPages || 0 });
         setOpcionesFiltros(data.filtros || { ciudades: [], departamentos: [] });
         if (!depositoId && lista.length > 0) {
-          const preferido = lista.find((d) => d.couriers_habilitados > 0) || lista[0];
-          setDepositoId(preferido.id);
+          setDepositoId(lista[0].id);
         }
       })
       .catch((err) => {
@@ -114,7 +112,6 @@ export default function FulfillmentCard({ onCambio }) {
     debouncedBuscarDeposito,
     filtrosDeposito.ciudad,
     filtrosDeposito.departamento,
-    filtrosDeposito.estadoCouriers,
     depositoId,
   ]);
 
@@ -154,8 +151,7 @@ export default function FulfillmentCard({ onCambio }) {
   const hayFiltrosDeposito = Boolean(
     debouncedBuscarDeposito
       || filtrosDeposito.ciudad
-      || filtrosDeposito.departamento
-      || filtrosDeposito.estadoCouriers !== 'todos',
+      || filtrosDeposito.departamento,
   );
   const totalDepositosPropios = config.propia.total_depositos ?? config.propia.depositos?.length ?? 0;
   const hayDepositosPropios = Boolean(totalDepositosPropios > 0 || depositosMeta.total > 0 || depositos.length > 0 || depositoFueraDePagina);
@@ -168,7 +164,6 @@ export default function FulfillmentCard({ onCambio }) {
 
   const DepositoOpcion = ({ deposito, destacado = false }) => {
     const elegido = depositoId === deposito.id;
-    const sinCouriers = deposito.couriers_habilitados === 0;
     return (
       <button
         key={deposito.id}
@@ -183,14 +178,11 @@ export default function FulfillmentCard({ onCambio }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-medium text-fg">{deposito.nombre}</span>
-          <span className={`mt-0.5 flex items-center gap-1 text-[12px] ${sinCouriers ? 'text-warning' : 'text-fg-muted'}`}>
+          <span className="mt-0.5 flex items-center gap-1 text-[12px] text-fg-muted">
             <MapPin size={11} className="flex-shrink-0" />
             <span className="truncate">
               {deposito.ciudad}
-              {deposito.departamento ? ` · ${deposito.departamento}` : ''} ·{' '}
-              {sinCouriers
-                ? 'sin couriers habilitados'
-                : `${deposito.couriers.map((c) => c.nombre).join(', ')}`}
+              {deposito.departamento ? ` · ${deposito.departamento}` : ''}
             </span>
           </span>
         </span>
@@ -263,9 +255,9 @@ export default function FulfillmentCard({ onCambio }) {
           icono={Building2}
           titulo="Quiero gestionar mis propios envíos"
           deshabilitada={!config.propia.disponible}
-          motivo="Necesitás un depósito con al menos un courier habilitado."
+          motivo="Necesitás tener al menos un depósito activo."
         >
-          Despachás desde tu depósito con los couriers que habilitaste.
+          Despachás desde tu depósito y elegís el courier al crear el pedido.
         </Opcion>
       </div>
 
@@ -294,7 +286,7 @@ export default function FulfillmentCard({ onCambio }) {
       {modalidad === 'PROPIA' && (hayDepositosPropios || hayFiltrosDeposito || depositosLoading) && (
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-fg">¿Desde qué depósito despachás?</label>
-          <div className="mb-3 grid gap-2 md:grid-cols-[minmax(180px,1fr)_160px_160px_170px]">
+          <div className="mb-3 grid gap-2 md:grid-cols-[minmax(180px,1fr)_160px_160px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-muted" size={15} />
               <input
@@ -333,18 +325,6 @@ export default function FulfillmentCard({ onCambio }) {
               {opcionesFiltros.departamentos.map((departamento) => (
                 <option key={departamento} value={departamento}>{departamento}</option>
               ))}
-            </select>
-            <select
-              value={filtrosDeposito.estadoCouriers}
-              onChange={(e) => {
-                setFiltrosDeposito((prev) => ({ ...prev, estadoCouriers: e.target.value }));
-                setDepositosPage(1);
-              }}
-              className="h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg outline-none transition-colors focus:border-primary"
-            >
-              <option value="todos">Todos los depósitos</option>
-              <option value="con_couriers">Con couriers</option>
-              <option value="sin_couriers">Sin couriers</option>
             </select>
           </div>
 
@@ -404,7 +384,7 @@ export default function FulfillmentCard({ onCambio }) {
                 type="button"
                 onClick={() => {
                   setBuscarDeposito('');
-                  setFiltrosDeposito({ ciudad: '', departamento: '', estadoCouriers: 'todos' });
+                  setFiltrosDeposito({ ciudad: '', departamento: '' });
                   setDepositosPage(1);
                 }}
                 className="border-none bg-transparent p-0 text-[12px] font-medium text-primary hover:underline"
@@ -426,12 +406,6 @@ export default function FulfillmentCard({ onCambio }) {
           <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
           <p className="m-0">{error}</p>
         </div>
-      )}
-
-      {modalidad === 'PROPIA' && hayDepositosPropios && (
-        <p className="m-0 mt-3 text-[12px] text-fg-subtle">
-          Los couriers y sus tarifas se configuran en Pedidos → Delivery.
-        </p>
       )}
 
       <div className="mt-4 flex items-center justify-end gap-3">

@@ -22,7 +22,7 @@ import './comboArmado.css';
 
 // El armado va en fases, en el orden en que se piensa un combo: qué es, qué
 // se vende, qué se suma, cuánto se descuenta, a qué precio conviene y, al
-// final y opcional, con qué foto se muestra.
+// final, con qué foto se muestra y cómo se ve en la landing.
 const FASES = [
   { id: 'nombre', titulo: 'Nombre' },
   { id: 'principal', titulo: 'Producto principal' },
@@ -30,6 +30,7 @@ const FASES = [
   { id: 'descuentos', titulo: 'Descuentos' },
   { id: 'analisis', titulo: 'Precio y análisis' },
   { id: 'foto', titulo: 'Foto', opcional: true },
+  { id: 'vista', titulo: 'Vista del combo' },
 ];
 const FASE = Object.fromEntries(FASES.map((f, i) => [f.id, i]));
 
@@ -124,6 +125,8 @@ function productoParaCombo(producto, contexto = {}) {
     precio_base: economia.precio,
     precio_costo: economia.costo,
     sku: producto.sku,
+    slug: producto.slug || null,
+    categoria: producto.categoria || null,
     creado_por: producto.creado_por ?? null,
     imagen: principal,
     imagenes: todas,
@@ -141,7 +144,7 @@ function Miniatura({ src, size = 40 }) {
   );
 }
 
-function SelectorProductos({ onElegir, excluir = [], contexto, placeholder, accion = 'Elegir', autoFocus }) {
+function SelectorProductos({ onElegir, onPrecioGuardado, onGuardandoPrecio, guardandoPrecio, excluir = [], contexto, placeholder, accion = 'Elegir', autoFocus }) {
   const [texto, setTexto] = useState('');
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -191,8 +194,8 @@ function SelectorProductos({ onElegir, excluir = [], contexto, placeholder, acci
         {visibles.map(p => {
           const eco = normalizarEconomiaProducto(p, contexto);
           return (
-            <li key={p.id}>
-              <button type="button" className="cw-selector-item" onClick={() => onElegir(p)}>
+            <li key={p.id} className="cw-selector-tarjeta">
+              <button type="button" className="cw-selector-item" disabled={guardandoPrecio} onClick={() => onElegir(p)}>
                 <Miniatura src={imagenDeProducto(p).principal || p.imagenes?.[0]?.url} />
                 <span className="cw-selector-nombre">
                   <b>{p.nombre}</b>
@@ -200,6 +203,17 @@ function SelectorProductos({ onElegir, excluir = [], contexto, placeholder, acci
                 </span>
                 <span className="cw-selector-accion"><Plus size={14} /> {accion}</span>
               </button>
+              <PrecioVenta
+                producto={productoParaCombo(p, contexto)}
+                esAdmin={contexto?.esAdmin}
+                onGuardando={onGuardandoPrecio}
+                onGuardado={precio => {
+                  setResultados(prev => prev.map(item => item.id === p.id
+                    ? { ...item, ...(contexto?.esAdmin ? { precio_base: precio } : { precio_usuario: precio, precio_efectivo: precio }) }
+                    : item));
+                  onPrecioGuardado(p.id, precio);
+                }}
+              />
             </li>
           );
         })}
@@ -212,17 +226,19 @@ function SelectorProductos({ onElegir, excluir = [], contexto, placeholder, acci
 
 /**
  * Precio de venta del producto, editable en el lugar. Se guarda en Mi
- * catálogo (PrecioUsuario): es el mismo precio que usa el backend para
+ * catálogo (PrecioUsuario para tiendas, precio_base para admin): es el mismo precio que usa el backend para
  * calcular el combo, así que no hay un "precio del combo" aparte que después
  * no coincida. Se guarda al salir del campo o con Enter.
  */
-function PrecioVenta({ producto, onGuardado }) {
+function PrecioVenta({ producto, esAdmin, onGuardado, onGuardando }) {
   const [valor, setValor] = useState(String(Math.round(producto.precio_base || 0)));
   const [estado, setEstado] = useState(null); // null | 'guardando' | 'ok' | { error }
+  const guardandoRef = useRef(false);
 
   useEffect(() => { setValor(String(Math.round(producto.precio_base || 0))); }, [producto.precio_base]);
 
   const guardar = async () => {
+    if (guardandoRef.current) return;
     const nuevo = Number(valor) || 0;
     if (nuevo === Math.round(producto.precio_base || 0)) return;
     if (nuevo <= 0) {
@@ -230,13 +246,22 @@ function PrecioVenta({ producto, onGuardado }) {
       return;
     }
     setEstado('guardando');
+    guardandoRef.current = true;
+    onGuardando(producto.id, true);
     try {
-      await vitrinaService.guardarPrecioProducto(producto.id, nuevo);
-      onGuardado(nuevo);
+      // El motor usa precio_base para administradores y PrecioUsuario para tiendas.
+      const respuesta = esAdmin
+        ? await productService.actualizar(producto.id, { precio_base: nuevo })
+        : await vitrinaService.guardarPrecioProducto(producto.id, nuevo);
+      const guardado = Number(esAdmin ? respuesta?.precio_base : respuesta?.precio) || nuevo;
+      onGuardado(guardado);
       setEstado('ok');
     } catch (err) {
       setEstado({ error: err.response?.data?.message || 'No se pudo guardar el precio.' });
       setValor(String(Math.round(producto.precio_base || 0)));
+    } finally {
+      guardandoRef.current = false;
+      onGuardando(producto.id, false);
     }
   };
 
@@ -244,19 +269,21 @@ function PrecioVenta({ producto, onGuardado }) {
   return (
     <div className="cw-precio-venta">
       <label>
-        <span>Vendés a</span>
+        <span>Precio de venta</span>
         <CurrencyInput
           className="cw-input cw-input-venta"
           value={valor}
+          disabled={estado === 'guardando'}
           onChange={v => { setValor(v === '' ? '' : String(v)); setEstado(null); }}
           onBlur={guardar}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
           aria-label={`Precio de venta de ${producto.nombre}`}
+          aria-invalid={!!estado?.error}
         />
       </label>
       <small className={estado?.error ? 'neg' : ''} aria-live="polite">
-        {estado === 'guardando' && 'Guardando en Mi catálogo...'}
-        {estado === 'ok' && <><Check size={11} /> Guardado en Mi catálogo</>}
+        {estado === 'guardando' && 'Guardando precio...'}
+        {estado === 'ok' && <><Check size={11} /> Precio guardado</>}
         {estado?.error}
         {!estado && <>Costo {gs(producto.precio_costo)} · <span className={signo(ganancia)}>{etiquetaGanancia(ganancia).toLowerCase()} {gsAbs(ganancia)}</span></>}
       </small>
@@ -343,6 +370,11 @@ function Recibo({ titulo, precio, costoProductos, etiquetaCostoProductos, public
 export default function ComboEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
+  return <ComboBuilder id={id} usarPrefillCatalogo onCancelar={() => navigate('/combos')} onGuardado={(_, aviso) => navigate('/combos', { state: { aviso } })} />;
+}
+
+// Las landings usan el mismo armador sin leer su :id como si fuera un combo.
+export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCatalogo = false, onCancelar, onGuardado, integrado = false, renderVistaCombo = null }) {
   const isEditing = Boolean(id);
 
   // ─── Datos del combo ─────────────────────────────────────────────────────
@@ -373,8 +405,16 @@ export default function ComboEditor() {
   // ─── UI ──────────────────────────────────────────────────────────────────
   const [fase, setFase] = useState(0);
   const [resultado, setResultado] = useState(null);
-  const [loadingInit, setLoadingInit] = useState(isEditing);
+  const [loadingInit, setLoadingInit] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [preciosGuardando, setPreciosGuardando] = useState(() => new Set());
+  const precioPendiente = preciosGuardando.size > 0;
+  const registrarGuardadoPrecio = (prodId, pendiente) => setPreciosGuardando(prev => {
+    const next = new Set(prev);
+    if (pendiente) next.add(prodId);
+    else next.delete(prodId);
+    return next;
+  });
   const [subiendoImagen, setSubiendoImagen] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [estadoAConfirmar, setEstadoAConfirmar] = useState(null);
@@ -422,7 +462,9 @@ export default function ComboEditor() {
           // Un combo guardado abre directo en el análisis: es lo que más se
           // vuelve a mirar. Todas las fases quedan a un click.
           setFase(FASE.analisis);
-        } else {
+        } else if (principalInicial) {
+          setPrincipal(productoParaCombo(principalInicial, contexto));
+        } else if (usarPrefillCatalogo) {
           const crudoPrefill = sessionStorage.getItem('gesicomm:comboPrefillItems');
           if (crudoPrefill) {
             sessionStorage.removeItem('gesicomm:comboPrefillItems');
@@ -432,6 +474,9 @@ export default function ComboEditor() {
                 .map(p => ({
                   id: Number(p.id),
                   nombre: p.nombre,
+                  imagen: p.imagen || null,
+                  imagenes: p.imagenes || [],
+                  beneficios: p.beneficios || [],
                   precio_base: Number(p.precio_base) || 0,
                   precio_costo: Number(p.costo_tienda ?? p.precio_base ?? p.precio_costo) || 0,
                   precio_venta: Number(p.precio_venta ?? p.precio_efectivo ?? p.precio_usuario ?? p.precio_base) || 0,
@@ -459,7 +504,7 @@ export default function ComboEditor() {
       }
     }
     init();
-  }, [id]);
+  }, [id, principalInicial, usarPrefillCatalogo]);
 
   // ─── Motor local ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -508,6 +553,7 @@ export default function ComboEditor() {
     true,
     Number(precioTotal) > 0,
     true,
+    true,
   ];
   const motivoBloqueo = [
     'Poné un nombre para seguir.',
@@ -516,10 +562,11 @@ export default function ComboEditor() {
     null,
     'Definí el precio del combo.',
     null,
+    null,
   ];
   // Hasta qué fase se puede saltar: la primera incompleta (inclusive).
   const faseMaxima = completa.findIndex(ok => !ok) === -1 ? FASES.length - 1 : completa.findIndex(ok => !ok);
-  const irA = (i) => { if (i <= faseMaxima) { setError(null); setFase(i); } };
+  const irA = (i) => { if (!precioPendiente && i <= faseMaxima) { setError(null); setFase(i); } };
   const siguiente = () => {
     if (!completa[fase]) { setError(motivoBloqueo[fase]); return; }
     irA(fase + 1);
@@ -530,7 +577,6 @@ export default function ComboEditor() {
     setPrincipal(productoParaCombo(prod, contextoPrecios));
     setUpsells(prev => prev.filter(u => u.id !== prod.id));
     setError(null);
-    setFase(FASE.complementos);
   };
 
   const agregarComplemento = (prod) => {
@@ -542,7 +588,7 @@ export default function ComboEditor() {
 
   const quitarComplemento = (prodId) => setUpsells(prev => prev.filter(u => u.id !== prodId));
 
-  // El precio nuevo ya quedó en Mi catálogo; acá solo se refleja en el armado.
+  // El precio nuevo ya quedó guardado; acá se refleja en el armado.
   const precioVentaGuardado = (prodId, precioNuevo) => {
     setPrincipal(prev => (prev?.id === prodId ? { ...prev, precio_base: precioNuevo } : prev));
     setUpsells(prev => prev.map(u => (u.id === prodId ? { ...u, precio_base: precioNuevo } : u)));
@@ -641,17 +687,20 @@ export default function ComboEditor() {
   };
 
   const subirImagenesPendientes = async (comboId) => {
+    const subidas = [];
     for (const img of imagenesNuevas) {
       const fd = new FormData();
       fd.append('imagen', img.file);
       if (img.es_principal) fd.append('es_principal', 'true');
-      await comboAdminService.subirImagen(comboId, fd);
+      subidas.push(await comboAdminService.subirImagen(comboId, fd));
     }
     setImagenesNuevas([]);
+    return subidas;
   };
 
   // ─── Guardar ─────────────────────────────────────────────────────────────
   async function handleGuardar(activar = false) {
+    if (precioPendiente) return;
     const pendiente = completa.findIndex((ok, i) => !ok && i <= FASE.analisis);
     if (pendiente !== -1) {
       setFase(pendiente);
@@ -689,12 +738,20 @@ export default function ComboEditor() {
       const saved = isEditing
         ? await comboAdminService.actualizar(id, payload)
         : await comboAdminService.crear(payload);
-      if (imagenesNuevas.length) await subirImagenesPendientes(saved.id);
+      const subidas = imagenesNuevas.length ? await subirImagenesPendientes(saved.id) : [];
       if (activar) await comboAdminService.cambiarEstado(saved.id, 'ACTIVO');
       const aviso = activar
         ? `"${payload.nombre}" ya está en venta.`
         : isEditing ? `Guardaste los cambios de "${payload.nombre}".` : `"${payload.nombre}" quedó guardado como borrador.`;
-      navigate('/combos', { state: { aviso } });
+      await onGuardado?.({
+        ...saved, ...payload,
+        estado: activar ? 'ACTIVO' : (saved.estado || estadoActual),
+        activo: activar || saved.activo === true,
+        producto_id: principal.id,
+        producto_padre: principal,
+        items: upsells.map(u => ({ producto_id: u.id, producto_incluido: u, descuento_porcentaje: u.descuento_porcentaje })),
+        imagenes: [...imagenes, ...subidas],
+      }, aviso);
     } catch (err) {
       setError(err.response?.data?.message || 'No se pudo guardar el combo. Probá de nuevo.');
     } finally {
@@ -760,11 +817,11 @@ export default function ComboEditor() {
   const esUltima = fase === FASES.length - 1;
 
   return (
-    <div className="prod-page cw-page">
+    <div className={`prod-page cw-page${integrado ? ' cw-page-integrado' : ''}`}>
       {/* ══ Encabezado ════════════════════════════════════════════════════ */}
       <div className="prod-header">
         <div className="prod-header-left">
-          <button className="btn-icon" onClick={() => navigate('/combos')} aria-label="Volver a Mis combos" title="Volver a Mis combos">
+          <button className="btn-icon" onClick={onCancelar} disabled={guardando || precioPendiente} aria-label={integrado ? 'Volver a la landing' : 'Volver a Mis combos'} title={integrado ? 'Volver a la landing' : 'Volver a Mis combos'}>
             <ArrowLeft size={18} />
           </button>
           <div className="prod-icon-wrap"><Layers size={22} /></div>
@@ -810,7 +867,7 @@ export default function ComboEditor() {
                       type="button"
                       className={`cw-fase ${estado} ${bloqueada ? 'bloqueada' : ''}`}
                       onClick={() => irA(i)}
-                      disabled={bloqueada}
+                      disabled={bloqueada || precioPendiente}
                       aria-current={i === fase ? 'step' : undefined}
                     >
                       <span className="cw-fase-num">{estado === 'hecha' ? <Check size={12} strokeWidth={3} /> : i + 1}</span>
@@ -860,20 +917,18 @@ export default function ComboEditor() {
                   descuentos: '¿Cuánto descontás en cada complemento?',
                   analisis: '¿A qué precio lo vendés?',
                   foto: 'Agregá una foto del combo',
+                  vista: 'Vista del combo',
                 }[faseActual.id]}
               </h2>
               <p>
                 {{
                   nombre: 'Es el nombre que ve tu cliente en el catálogo y en la landing.',
-                  principal: esAdmin || !principal
-                    ? 'Es el producto que el cliente viene a comprar. El resto del combo se arma alrededor de este.'
-                    : 'Es el producto que el cliente viene a comprar. Si querés, ajustá a cuánto lo vendés: se guarda en Mi catálogo.',
-                  complementos: esAdmin
-                    ? 'Productos que acompañan al principal. Sumá los que quieras; el descuento lo definís en la fase siguiente.'
-                    : 'Productos que acompañan al principal. Podés ajustar a cuánto vendés cada uno (se guarda en Mi catálogo); el descuento lo definís en la fase siguiente.',
+                  principal: 'Elegí el producto principal y ajustá su precio de venta desde acá. El precio se guarda al salir del campo o presionar Enter.',
+                  complementos: 'Sumá productos y ajustá su precio de venta desde acá. El descuento lo definís en la fase siguiente.',
                   descuentos: 'El principal va a precio lleno. El descuento se aplica sobre los complementos, que es lo que hace atractivo al combo.',
                   analisis: 'Mové el precio y mirá qué pasa con tu ganancia. La marca "Margen mínimo" es lo más bajo a lo que te conviene llegar.',
                   foto: 'Si no subís ninguna, se usa la foto del producto principal. Podés agregarla ahora o más adelante.',
+                  vista: renderVistaCombo ? 'Revisá cómo queda el combo en el HTML de esta landing antes de ponerlo en venta.' : 'Revisá el nombre, los productos, el precio y las fotos en la ficha de la landing antes de poner el combo en venta.',
                 }[faseActual.id]}
               </p>
             </header>
@@ -915,14 +970,16 @@ export default function ComboEditor() {
                     <div className="cw-elegido-info">
                       <span className="cw-elegido-tag"><Star size={11} fill="currentColor" /> Principal</span>
                       <b>{principal.nombre}</b>
-                      {esAdmin && <small>Costo {gs(principal.precio_costo)} · Precio a tiendas {gs(principal.precio_base)}</small>}
                     </div>
-                    {!esAdmin && <PrecioVenta key={principal.id} producto={principal} onGuardado={v => precioVentaGuardado(principal.id, v)} />}
-                    <button type="button" className="btn-secondary" onClick={() => setPrincipal(null)}>Cambiar</button>
+                    <PrecioVenta key={principal.id} producto={principal} esAdmin={esAdmin} onGuardando={registrarGuardadoPrecio} onGuardado={v => precioVentaGuardado(principal.id, v)} />
+                    <button type="button" className="btn-secondary" disabled={precioPendiente} onClick={() => setPrincipal(null)}>Cambiar</button>
                   </div>
                 ) : (
                   <SelectorProductos
                     onElegir={elegirPrincipal}
+                    onPrecioGuardado={precioVentaGuardado}
+                    onGuardandoPrecio={registrarGuardadoPrecio}
+                    guardandoPrecio={precioPendiente}
                     excluir={upsells.map(u => u.id)}
                     contexto={contextoPrecios}
                     placeholder="Buscar el producto principal..."
@@ -941,10 +998,8 @@ export default function ComboEditor() {
                         <li key={u.id}>
                           <Miniatura src={u.imagen} size={32} />
                           <span className="cw-agregado-nombre">{u.nombre}</span>
-                          {esAdmin
-                            ? <small>{gs(u.precio_base)}</small>
-                            : <PrecioVenta producto={u} onGuardado={v => precioVentaGuardado(u.id, v)} />}
-                          <button type="button" className="btn-icon" onClick={() => quitarComplemento(u.id)} aria-label={`Quitar ${u.nombre}`} title="Quitar">
+                          <PrecioVenta producto={u} esAdmin={esAdmin} onGuardando={registrarGuardadoPrecio} onGuardado={v => precioVentaGuardado(u.id, v)} />
+                          <button type="button" className="btn-icon" disabled={precioPendiente} onClick={() => quitarComplemento(u.id)} aria-label={`Quitar ${u.nombre}`} title="Quitar">
                             <X size={14} />
                           </button>
                         </li>
@@ -953,6 +1008,9 @@ export default function ComboEditor() {
                   )}
                   <SelectorProductos
                     onElegir={agregarComplemento}
+                    onPrecioGuardado={precioVentaGuardado}
+                    onGuardandoPrecio={registrarGuardadoPrecio}
+                    guardandoPrecio={precioPendiente}
                     excluir={excluir}
                     contexto={contextoPrecios}
                     placeholder="Buscar productos para sumar..."
@@ -1183,21 +1241,37 @@ export default function ComboEditor() {
                   <p className="combo-help-text">JPG, PNG o WEBP de hasta 5 MB. Máximo {MAX_COMBO_IMAGENES} fotos; la portada es la que aparece primero.</p>
                 </div>
               )}
+              {faseActual.id === 'vista' && (renderVistaCombo ? renderVistaCombo({
+                combo: comboVistaDto, principal, upsells, precioTotal, imagenes: imagenesVista, faq,
+                device: previewDevice, onDeviceChange: setPreviewDevice,
+              }) : (
+                <ComboLandingPreview
+                  combo={comboVistaDto}
+                  principal={principal}
+                  upsells={upsells}
+                  precioTotal={precioTotal}
+                  imagenes={imagenesVista}
+                  faq={faq}
+                  faqTitulo=""
+                  device={previewDevice}
+                  onDeviceChange={setPreviewDevice}
+                />
+              ))}
             </div>
 
             {/* ══ Navegación entre fases ═══════════════════════════════ */}
             <footer className="cw-nav">
-              <button type="button" className="btn-secondary" onClick={() => (fase === 0 ? navigate('/combos') : irA(fase - 1))}>
+              <button type="button" className="btn-secondary" disabled={guardando || precioPendiente} onClick={() => (fase === 0 ? onCancelar?.() : irA(fase - 1))}>
                 <ArrowLeft size={15} /> {fase === 0 ? 'Cancelar' : 'Atrás'}
               </button>
               <div className="cw-nav-derecha">
                 {(isEditing || fase >= FASE.analisis) && (
-                  <button type="button" className="btn-secondary" onClick={() => handleGuardar(false)} disabled={guardando}>
+                  <button type="button" className="btn-secondary" onClick={() => handleGuardar(false)} disabled={guardando || precioPendiente}>
                     <Save size={15} /> {guardando ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Guardar borrador'}
                   </button>
                 )}
                 {!esUltima ? (
-                  <button type="button" className="btn-primary" onClick={siguiente}>
+                  <button type="button" className="btn-primary" onClick={siguiente} disabled={precioPendiente}>
                     {FASES[fase + 1].opcional ? `Seguir: ${FASES[fase + 1].titulo.toLowerCase()}` : `Siguiente: ${FASES[fase + 1].titulo.toLowerCase()}`} <ArrowRight size={15} />
                   </button>
                 ) : estadoActual !== 'ACTIVO' ? (
@@ -1205,9 +1279,9 @@ export default function ComboEditor() {
                     type="button"
                     className="btn-primary"
                     onClick={isEditing ? () => setEstadoAConfirmar('ACTIVO') : () => handleGuardar(true)}
-                    disabled={guardando || cambiandoEstado}
+                    disabled={guardando || cambiandoEstado || precioPendiente}
                   >
-                    <Power size={15} /> Poner en venta
+                    <Power size={15} /> {integrado ? 'Crear combo y sumarlo a la landing' : 'Poner en venta'}
                   </button>
                 ) : (
                   <button type="button" className="btn-secondary" onClick={() => setEstadoAConfirmar('INACTIVO')} disabled={cambiandoEstado}>

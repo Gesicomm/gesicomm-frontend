@@ -44,7 +44,7 @@ export async function obtenerLandingPublica(slug, opciones = {}) {
  */
 export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   const {
-    pagina, porPagina, orden, disponibilidad, categoria, etiqueta, precioMin, precioMax, busqueda,
+    pagina, porPagina, orden, disponibilidad, categoria, marca, etiqueta, precioMin, precioMax, busqueda, soloInicio,
   } = opciones;
   const params = new URLSearchParams({ vista: 'catalogo' });
   if (pagina) params.set('pagina', pagina);
@@ -52,6 +52,8 @@ export async function obtenerCatalogoLandingPublica(slug, opciones = {}) {
   if (orden) params.set('orden', orden);
   if (disponibilidad && disponibilidad !== 'todos') params.set('disponibilidad', disponibilidad);
   if (categoria && categoria !== 'todas') params.set('categoria', categoria);
+  if (marca && marca !== 'todas') params.set('marca', marca);
+  if (soloInicio === true) params.set('soloInicio', 'true');
   if (etiqueta && etiqueta !== 'todas') params.set('etiqueta', etiqueta);
   if (precioMin !== undefined && precioMin !== null && precioMin !== '') params.set('precioMin', precioMin);
   if (precioMax !== undefined && precioMax !== null && precioMax !== '') params.set('precioMax', precioMax);

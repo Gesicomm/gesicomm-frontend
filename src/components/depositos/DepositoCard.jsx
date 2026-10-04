@@ -1,8 +1,8 @@
 import React from 'react';
-import { MapPin, Phone, User, Edit2, Trash2, Power, PowerOff, MoreVertical, Truck } from 'lucide-react';
+import { MapPin, Phone, User, Edit2, Trash2, Power, PowerOff, MoreVertical } from 'lucide-react';
 import DepositoStatusBadge from './DepositoStatusBadge';
 
-export default function DepositoCard({ deposito, onEdit, onToggleEstado, onDelete, onGestionarCouriers }) {
+export default function DepositoCard({ deposito, onEdit, onToggleEstado, onDelete }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
 
   return (
@@ -11,6 +11,9 @@ export default function DepositoCard({ deposito, onEdit, onToggleEstado, onDelet
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h3 className="m-0 text-base font-semibold text-fg">{deposito.nombre}</h3>
+            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-fg-muted">
+              {deposito.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito'}
+            </span>
             <DepositoStatusBadge activo={deposito.activo} />
           </div>
           <p className="m-0 text-sm text-fg-muted flex items-center gap-1.5">
@@ -45,17 +48,6 @@ export default function DepositoCard({ deposito, onEdit, onToggleEstado, onDelet
       </div>
 
       <div className="flex items-center sm:items-start gap-2 self-end sm:self-auto">
-        {onGestionarCouriers && (
-          <button
-            type="button"
-            onClick={() => onGestionarCouriers(deposito)}
-            title="Elegir con qué couriers se despacha desde este depósito"
-            className="flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium text-fg-muted transition-colors hover:bg-surface-2 hover:text-fg"
-          >
-            <Truck size={14} />
-            Couriers
-          </button>
-        )}
         <button
           type="button"
           onClick={() => onEdit(deposito)}

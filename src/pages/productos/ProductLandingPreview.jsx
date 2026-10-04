@@ -86,6 +86,7 @@ function variantesPreview(variantes = [], precioBase = 0, imagenes = []) {
 
 export default function ProductLandingPreview({
   productoId,
+  activo = true,
   producto,
   categoriaNombre,
   imagenes,
@@ -111,7 +112,7 @@ export default function ProductLandingPreview({
   }, []);
 
   useEffect(() => {
-    if (!productoId) {
+    if (!activo || !productoId) {
       setOfertas([]);
       return undefined;
     }
@@ -126,7 +127,7 @@ export default function ProductLandingPreview({
         if (vivo) setOfertas([]);
       });
     return () => { vivo = false; };
-  }, [productoId]);
+  }, [productoId, activo]);
 
   const dto = useMemo(() => {
     const precio = Number(precioFinal) || null;

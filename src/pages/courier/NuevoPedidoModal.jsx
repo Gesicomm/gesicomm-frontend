@@ -3,6 +3,7 @@ import { X, Plus, Trash2, MapPin, ShoppingBag, User, Truck, AlertCircle, ImageOf
 import { productService } from "../../services/productService";
 import { ofertaService } from "../../services/ofertaService";
 import { getCouriers, getMetodosPago, actualizarPrecioItemEnvio, getCourierGeografia } from "../../services/courierApi";
+import { depositoService } from "../../services/deposito.service";
 import { canalVentaService } from "../../services/canalVentaService";
 import { obtenerTarifaPara, buscarCourierYTarifa, buscarZonaDelivery } from "../../lib/tarifaCourier";
 import { getMediaUrl } from "../../services/api";
@@ -119,6 +120,7 @@ function buildFormFromEnvio(envio) {
       ruc: "",
       nro_comprobante: "",
       observaciones: "",
+      origen_preferido_id: "",
       courier_id: "",
       incluye_delivery: false,
       // Si el cliente paga cuando recibe (contra entrega, el caso normal)
@@ -170,6 +172,7 @@ function buildFormFromEnvio(envio) {
     ruc: envio.ruc || "",
     nro_comprobante: envio.nro_comprobante || "",
     observaciones: envio.observaciones || "",
+    origen_preferido_id: "",
     courier_id: envio.courier_id || "",
     incluye_delivery: envio.delivery_a_cargo === "negocio",
     // NULL en pedidos anteriores a esta columna (no se registró, ver
@@ -200,6 +203,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   const [couriers, setCouriers] = useState([]);
   const [metodosPago, setMetodosPago] = useState([]);
   const [canalesVenta, setCanalesVenta] = useState([]);
+  const [ubicaciones, setUbicaciones] = useState([]);
   const [geografia, setGeografia] = useState([]);
   const [geografiaError, setGeografiaError] = useState(false);
   const [ofertasPorProducto, setOfertasPorProducto] = useState({});
@@ -270,7 +274,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
   const cargarDatosIniciales = async () => {
     setGeografiaError(false);
     try {
-      const [resProds, dataCouriers, dataMetodos, dataCanales, dataGeografia] = await Promise.all([
+      const [resProds, dataCouriers, dataMetodos, dataCanales, dataUbicaciones, dataGeografia] = await Promise.all([
         // Sin `sin_limite` solo llegan 10 productos (paginación por defecto
         // de ProductoService.buscar) y el pedido no se puede cargar con el
         // resto del catálogo.
@@ -278,6 +282,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
         getCouriers(),
         getMetodosPago(),
         canalVentaService.listar().catch(() => []),
+        depositoService.listarDepositos({ activo: true, limit: 100 }).catch(() => ({ data: [] })),
         getCourierGeografia({ conCiudades: true }).catch(() => {
           setGeografiaError(true);
           return [];
@@ -287,6 +292,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       setProductosDisponibles(prods);
       setCouriers(dataCouriers || []);
       setCanalesVenta(dataCanales || []);
+      setUbicaciones(dataUbicaciones.data || []);
       setGeografia(Array.isArray(dataGeografia) ? dataGeografia : []);
 
       const metodosActivos = (dataMetodos || []).filter(m => m.activo);
@@ -823,6 +829,7 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
       costo_envio: Number(form.costo_envio) || 0,
       delivery_a_cargo: deliveryLoPagaNegocio ? "negocio" : "cliente",
       pago_anticipado: form.pago_anticipado === true,
+      origen_preferido_id: form.origen_preferido_id ? Number(form.origen_preferido_id) : null,
       monto: precioTotalVendido
     };
 
@@ -842,7 +849,12 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
     try {
       await onSubmit(payload, modoCompletar);
     } catch (err) {
-      setSubmitError(err.response?.data?.error || "Ocurrió un error al guardar el pedido.");
+      const data = err.response?.data || {};
+      setSubmitError(
+        data.code === 'STOCK_DISTRIBUIDO_ENTRE_UBICACIONES'
+          ? 'Hay stock suficiente, pero está distribuido entre varias ubicaciones. Elegí una ubicación con stock suficiente o separá el pedido.'
+          : (data.error || "Ocurrió un error al guardar el pedido.")
+      );
     } finally {
       setGuardando(false);
     }
@@ -1259,6 +1271,25 @@ export function NuevoPedidoModal({ open, onClose, onSubmit, envio = null, delive
                   }}
                 />
                 {errors.link_maps && <span id="np-link-maps-error" className="field-error">{errors.link_maps}</span>}
+              </div>
+
+              <div className="np-row">
+                <label>Origen de despacho</label>
+                <select
+                  className="form-input"
+                  value={form.origen_preferido_id}
+                  onChange={e => setForm({ ...form, origen_preferido_id: e.target.value })}
+                >
+                  <option value="">Automático según stock</option>
+                  {ubicaciones.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {(u.tipoUbicacion === 'SALON' ? 'Salón' : 'Depósito')} · {u.nombre} · {u.ciudad}
+                    </option>
+                  ))}
+                </select>
+                <span className="np-hint">
+                  Si elegís una ubicación, el pedido se reserva desde ahí. Si no tiene stock suficiente, el sistema lo va a avisar.
+                </span>
               </div>
 
               {/* El tilde dice UNA sola cosa: si el envío se suma o no al

@@ -9,7 +9,7 @@ import { costosGastosService, categoriasCostosGastosService, proveedoresService 
 import { formatMoneda } from '../../utils/currency';
 import { getMediaUrl } from '../../services/api';
 import { useDebounce } from '../../hooks/useDebounce';
-import { METRIC_TERMS } from '../../utils/metricGlossary';
+import { METRIC_HELP, METRIC_TERMS } from '../../utils/metricGlossary';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import CostoGastoForm from './CostoGastoForm';
 import CategoriasConfig from './CategoriasConfig';
@@ -236,7 +236,14 @@ function ReporteBloque({ titulo, filas, totalLabel, total, tone = 'default' }) {
       <div className="space-y-2">
         {filasVisibles.map(fila => (
           <div key={fila.id || fila.label} className="flex items-center justify-between gap-3 text-sm">
-            <span className="min-w-0 text-fg-muted">{fila.label}</span>
+            <span className="min-w-0 text-fg-muted">
+              {fila.id === 'inventario' ? METRIC_TERMS.valorStockActual : fila.label}
+              {fila.id === 'inventario' && (
+                <span className="ml-1.5 inline-flex align-middle">
+                  <Ayuda texto={METRIC_HELP.valorStockActual} />
+                </span>
+              )}
+            </span>
             <span className="shrink-0 font-semibold text-fg">{formatMoneda(fila.valor)}</span>
           </div>
         ))}

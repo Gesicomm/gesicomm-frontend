@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { ofertaService } from '../../services/ofertaService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { tiendaService } from '../../services/tiendaService';
@@ -239,7 +240,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     let activo = true;
     Promise.all([
       landingInicial ? Promise.resolve(landingInicial) : landingSimpleService.obtener(id),
-      vitrinaService.catalogo().catch(() => ({ productos: [], combos: [] })),
+      vitrinaService.catalogo(),
       tiendaService.obtener().catch(() => null),
     ]).then(([l, cat, t]) => {
       if (!activo) return;
@@ -247,33 +248,22 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setDraft(l);
       setFaq(l.faq || []);
       setBeneficios(beneficiosDesdeLanding(l));
-      let prefilledItems = [];
-      try {
-        const stored = sessionStorage.getItem('gesicomm:prefilledLandingItems');
-        if (stored) {
-          prefilledItems = JSON.parse(stored);
-          sessionStorage.removeItem('gesicomm:prefilledLandingItems');
-        }
-      } catch(e){}
-
+      const prefilledItems = leerItemsPrefill();
       const currentItems = itemsDesdeLanding(l);
-      const newItems = [...currentItems];
-      
-      prefilledItems.forEach(pi => {
-        if (!newItems.find(it => it.tipo === pi.tipo && Number(it.referencia_id) === Number(pi.referencia_id))) {
-          newItems.push({ tipo: pi.tipo, referencia_id: pi.referencia_id, etiqueta: '', orden: newItems.length, precio_ancla: null, envio_incluido: false, mostrar_en_inicio: true });
-        }
-      });
+      const newItems = unirItemsPrefill(currentItems, prefilledItems);
       
       setItems(newItems);
       if (prefilledItems.length > 0) {
-        setAviso('Productos seleccionados añadidos al catálogo. Recordá hacer clic en Guardar.');
+        setAviso(newItems.length > currentItems.length
+          ? 'Productos seleccionados añadidos al catálogo. Recordá hacer clic en Guardar.'
+          : 'Productos seleccionados cargados en el catálogo.');
         setTab('catalogo');
         setVistaCatalogo(true);
       }
       setCatalogo(cat);
       setTienda(t);
       setCargando(false);
+      limpiarItemsPrefill();
     }).catch(() => { if (activo) { setError('No se pudo cargar la landing.'); setCargando(false); } });
     return () => { activo = false; };
   }, [id, landingInicial]);
@@ -296,7 +286,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     // El preview vive en el mismo árbol de React (no un iframe), así que
     // alcanza con buscar el id dentro del contenedor con scroll propio.
     requestAnimationFrame(() => {
-      previewRef.current?.querySelector(`#${seccionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      (previewRef.current || containerRef.current)?.querySelector(`#${seccionId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
@@ -402,10 +392,11 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     try {
       const formData = new FormData();
       formData.append('imagen', file);
-      const actualizada = await landingSimpleService.subirHeroImagen(id, formData);
-      setDraft(prev => ({ ...prev, banner_imagen: actualizada.banner_imagen }));
+      const { url } = await landingSimpleService.subirImagenFicha(id, formData);
+      return url;
     } catch (err) {
       setError(err?.response?.data?.message || 'No se pudo subir la imagen.');
+      return null;
     } finally {
       setSubiendoHero(false);
     }
@@ -495,7 +486,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
       setCarritoPreview([]);
       return;
     }
-    const precioAncla = productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio ?? 0;
+    const precioAncla = (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio ?? 0;
     setCarritoPreview([{
       clave: `producto:${productoPreview.id}:base:individual`,
       tipo: 'producto',
@@ -568,7 +559,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     const precio = eleccion?.precio
       ?? (pack ? (pack.precio_efectivo ?? pack.precio) : null)
       ?? (variante ? variante.precio_efectivo : null)
-      ?? productoPreview.precio_efectivo
+      ?? (productoPreview.precio_publico ?? productoPreview.precio_efectivo)
       ?? productoPreview.precio_base
       ?? productoPreview.precio
       ?? 0;
@@ -646,6 +637,23 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const [viewportMode, setViewportMode] = useState('desktop'); // desktop | tablet | mobile
   const [desktopScale, setDesktopScale] = useState(1);
   const containerRef = useRef(null);
+
+  // Cada página comienza arriba. El encabezado fijo ocultaba el título del
+  // catálogo cuando este heredaba el scroll de la portada o de una ficha.
+  // Desktop escalado desplaza el contenedor exterior; los demás viewports
+  // desplazan previewRef. Reiniciar ambos cubre también cambios de dispositivo.
+  const paginaPreview = productoPreview
+    ? `${productoPreview.tipo}:${productoPreview.id}`
+    : vistaCatalogo ? 'catalogo' : vistaContacto ? 'contacto' : 'inicio';
+  const desktopEscalado = viewportMode === 'desktop' && desktopScale < 1;
+  useLayoutEffect(() => {
+    for (const contenedor of [containerRef.current, previewRef.current]) {
+      if (contenedor) {
+        contenedor.scrollTop = 0;
+        contenedor.scrollLeft = 0;
+      }
+    }
+  }, [paginaPreview, viewportMode, desktopEscalado, cargando]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -815,7 +823,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
           // Galería completa: la tarjeta de relacionado la rota al pasar el
           // mouse por encima (ver ImagenProductoHover).
           imagenes: r.imagenes || [],
-          precio_efectivo: r.precio ?? r.precio_efectivo,
+          precio_efectivo: catalogo.productos.find(p => Number(p.id) === Number(r.id))?.precio_publico ?? r.precio ?? r.precio_efectivo,
           precio_ancla: landingItem?.precio_ancla || r.precio_tachado || null,
           etiqueta: landingItem?.etiqueta || null,
         };
@@ -922,7 +930,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
         nombre: item.nombre, 
         imagen: item.imagen, 
         imagenes: item.imagenes || [],
-        precio_efectivo: item.precio_efectivo ?? item.precio_base,
+        precio_efectivo: item.precio_publico ?? item.precio_efectivo ?? item.precio_base,
         precio_ancla: landingItem?.precio_ancla || item.precio_tachado || null,
         etiqueta: landingItem?.etiqueta || null
       }];
@@ -1069,6 +1077,10 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     } finally {
       setProductoGuardando(false);
     }
+  }
+
+  if (error && !draft && !cargando) {
+    return <div role="alert" className="p-8 text-danger">{error}</div>;
   }
 
   if (cargando || !draft) {
@@ -1298,7 +1310,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               onPrecioAncla={itemDeLanding(productoPreview) ? cambiarPrecioAncla : null}
               envioIncluido={envioIncluidoDe(productoPreview)}
               onEnvioIncluido={itemDeLanding(productoPreview) ? cambiarEnvioIncluido : null}
-              precioActual={productoPreview?.precio_efectivo ?? productoPreview?.precio_base ?? productoPreview?.precio ?? null}
+              precioActual={(productoPreview?.precio_publico ?? productoPreview?.precio_efectivo) ?? productoPreview?.precio_base ?? productoPreview?.precio ?? null}
               fichaActiva={fichaActiva}
               ficha={productoFicha}
               fichaResuelta={fichaResuelta}
@@ -1417,7 +1429,9 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
                   <ContenidoPanel
                     draft={draft}
                     onCampo={campo}
-                    heroUrl={draft.banner_imagen ? `${datosPreview.hero.imagen}` : null}
+                    heroUrl={Array.isArray(draft.content?.portada?.banner_imagenes)
+                      ? (datosPreview.hero.imagenes?.[0] || null)
+                      : (datosPreview.hero.imagenes?.[0] || (draft.banner_imagen ? `${datosPreview.hero.imagen}` : null))}
                     subiendoHero={subiendoHero}
                     onSubirHero={subirHero}
                     onQuitarHero={quitarHero}
@@ -1781,10 +1795,10 @@ function PreviewContent({
     // dependen de datos en vivo (precio base editándose, imágenes recién
     // subidas) que `productoVariantes` no trae — mismo criterio que
     // ProductLandingPreview.jsx#variantesPreview en el armador de productos.
-    const precioBaseVariantes = Number(productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio) || 0;
+    const precioBaseVariantes = Number(productoPreview.precio_publico_base ?? productoPreview.precio_publico ?? productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio) || 0;
     const variantesParaFicha = productoVariantes.map(v => ({
       ...v,
-      precio_efectivo: Math.max(0, precioBaseVariantes + (Number(v.precio_diferencial) || 0)),
+      precio_efectivo: Math.max(0, Number(productoPreview.precio_minimo) || 0, precioBaseVariantes + (Number(v.precio_diferencial) || 0)),
       imagenes: (productoImagenes || []).filter(img => img.variante_id === v.id),
     }));
 
@@ -1820,7 +1834,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               // Las imágenes y productos incluidos vienen del catálogo (se
               // administran en Mis Productos → Combos). FAQ y faq_titulo SÍ
@@ -1860,7 +1874,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: productoMedios,
               ofertas: ofertasPublicas,
@@ -1896,7 +1910,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: productoMedios,
               ofertas: ofertasPublicas,
@@ -1933,7 +1947,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: productoMedios,
               ofertas: ofertasPublicas,
@@ -1970,7 +1984,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: productoMedios,
               ofertas: ofertasPublicas,
@@ -2007,7 +2021,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: productoMedios,
               ofertas: ofertasPublicas,
@@ -2044,7 +2058,7 @@ function PreviewContent({
               nombre: productoPreview.nombre,
               categoria: productoPreview.categoria?.nombre || productoPreview.categoria || null,
               descripcion: productoDescripcion,
-              precio: productoPreview.precio_efectivo ?? productoPreview.precio_base ?? productoPreview.precio,
+              precio: (productoPreview.precio_publico ?? productoPreview.precio_efectivo) ?? productoPreview.precio_base ?? productoPreview.precio,
               precioAntes: precioAnclaEnVivo ?? productoPreview.precio_tachado ?? null,
               imagenes: productoMedios,
               ofertas: ofertasPublicas,

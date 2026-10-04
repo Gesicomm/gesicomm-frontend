@@ -108,13 +108,25 @@ function ofertasRuntime(item, venta) {
     });
 }
 
+export function presentacionComercial(item, venta) {
+  const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
+  const fuente = venta?.presentacion_productos?.[key] || item;
+  return Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria'].map(campo => [campo, String(fuente[campo] || '').trim()]));
+}
+
+export function imagenesParaLanding(item, venta = null) {
+  const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
+  const propia = venta?.presentacion_productos?.[key]?.imagenes_landing ?? item.imagenes_landing;
+  // Una lista vacía significa que el comercio quitó TODAS las fotos en esta landing.
+  const fotos = Array.isArray(propia) ? propia : [item.imagen, ...(item.imagenes || []).filter(i => typeof i === 'string' || i?.tipo !== 'video')];
+  return [...new Set(fotos.map(media).filter(Boolean))];
+}
+
 /** Item de /api/l (landing pública) → item del runtime. */
 export function itemPublicoARuntime(item, slug, venta = null) {
-  const imagenes = (item.imagenes || [])
-    .filter(m => typeof m === 'string' || m?.tipo !== 'video')
-    .map(media)
-    .filter(Boolean);
+  const imagenes = imagenesParaLanding(item, venta);
   return {
+    ...presentacionComercial(item, venta),
     id: item.content_id,
     referencia_id: item.referencia_id,
     tipo: item.tipo,
@@ -124,10 +136,13 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     precio: item.precio,
     precio_antes: item.precio_antes || null,
     descuento_pct: item.descuento_pct || 0,
-    imagen: media(item.imagen) || imagenes[0] || null,
+    imagen: imagenes[0] || null,
     imagenes_url: imagenes,
     categoria: item.categoria || null,
+    marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
     etiqueta: item.etiqueta || null,
+    mostrar_en_inicio: item.mostrar_en_inicio !== false,
+    envio_incluido: item.envio_incluido === true,
     stock: item.stock ?? null,
     agotado: agotado(item.stock, item.variantes),
     // Los productos de una página pedida al servidor vienen livianos: sin
@@ -232,12 +247,14 @@ export function contenidoFicha(item) {
 }
 
 /** Item del catálogo del panel (vitrina) → item del runtime, para el preview del editor. */
-export function itemPanelARuntime(item, ofertas = [], imagenDeProducto) {
+export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = null) {
   const contentId = contentIdPanel(item);
   const precio = item.precio_efectivo ?? item.precio_usuario ?? item.precio_base ?? item.precio ?? 0;
-  const imagenes = (item.imagenes || []).map(media).filter(Boolean);
-  const precioAntes = item.precio_tachado && item.precio_tachado > precio ? item.precio_tachado : null;
+  const imagenes = imagenesParaLanding(item, venta);
+  const ancla = Number(item.precio_ancla ?? item.precio_tachado);
+  const precioAntes = ancla > Number(precio) ? ancla : null;
   return {
+    ...presentacionComercial(item, venta),
     id: contentId,
     referencia_id: item.id,
     tipo: item.tipo,
@@ -247,10 +264,13 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto) {
     precio,
     precio_antes: precioAntes,
     descuento_pct: precioAntes ? Math.round((1 - precio / precioAntes) * 100) : 0,
-    imagen: media(item.imagen) || imagenes[0] || null,
-    imagenes_url: imagenes.length ? imagenes : [media(item.imagen)].filter(Boolean),
+    imagen: imagenes[0] || null,
+    imagenes_url: imagenes,
     categoria: item.categoria || null,
-    etiqueta: null,
+    marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
+    etiqueta: item.etiqueta || null,
+    mostrar_en_inicio: item.mostrar_en_inicio !== false,
+    envio_incluido: item.envio_incluido === true,
     stock: item.stock ?? null,
     agotado: agotado(item.stock, []),
     // El catálogo del panel no trae variantes ni ofertas: el preview de la
@@ -346,6 +366,7 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
     destacados: venta.destacados || [],
     recomendados_titulo: venta.recomendados?.titulo || '',
     paquetes: venta.paquetes || {},
+    catalogo_filtros: venta.catalogo_filtros || {},
     urgencia,
     prueba_social: pruebaSocial,
   };
@@ -390,7 +411,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     });
   const imagenPorProducto = new Map(productos.filter(p => p.tipo === 'producto').map(p => [Number(p.id), p.imagen]));
   const imagenDeProducto = id => imagenPorProducto.get(Number(id)) || null;
-  const catalogo = productos.map(p => itemPanelARuntime(p, p.tipo === 'producto' ? (porProducto.get(Number(p.id)) || []) : [], imagenDeProducto));
+  const catalogo = productos.map(p => itemPanelARuntime(p, p.tipo === 'producto' ? (porProducto.get(Number(p.id)) || []) : [], imagenDeProducto, venta));
   const producto = vista === 'producto'
     ? (catalogo.find(i => i.id === productoId) || catalogo[0] || null)
     : null;

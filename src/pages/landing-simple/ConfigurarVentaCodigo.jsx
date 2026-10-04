@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { comboAdminService } from '../../services/comboAdminService';
-import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
+import { claveItem, precioDeVenta } from './PrecioAnclaItem';
+import PresentacionProducto from './PresentacionProducto';
 import { contentIdPanel, datosRuntimePreview } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
@@ -22,6 +23,7 @@ const OfertasProductoTab = lazy(() => Promise.all([
   import('../productos/OfertasProductoTab'),
   import('../productos/productos.css'),
 ]).then(([modulo]) => modulo));
+const ArmarComboPanel = lazy(() => import('./ArmarComboPanel'));
 
 /**
  * El paso intermedio del lienzo en blanco: ANTES de escribir código, qué
@@ -122,6 +124,10 @@ const MODOS = [
 const CANTIDADES_RECO = [2, 3, 4, 6, 8];
 // Con catálogos enormes, el preview no necesita más que esto para verse igual.
 const MAX_PRODUCTOS_PREVIEW = 120;
+const FILTROS_CATALOGO = [
+  ['buscador', 'Buscador'], ['categoria', 'Categoría'], ['marca', 'Marca'], ['etiqueta', 'Etiquetas'],
+  ['precio', 'Rango de precios'], ['disponibilidad', 'Disponibilidad'], ['orden', 'Ordenar productos'],
+];
 const MARCA_CODIGO_INICIAL = 'Escribí acá el HTML de tu landing';
 
 const clave = item => `${item.tipo}:${item.id}`;
@@ -177,7 +183,7 @@ const cargarOfertasTienda = () => ofertaService.listarTodas({ estrategias: ['ord
 
 export default function ConfigurarVentaCodigo({
   catalogo, inicial, onConfirmar, onVolver, onCambiarModo, guardando, cargarOfertas = cargarOfertasTienda,
-  tienda = null, codigos = null,
+  tienda = null, codigos = null, onSubirImagen = null,
   disenoPendienteIA = false,
   // Error del guardado (viene del editor): sin esto, si el servidor
   // rechazaba el guardado, el botón "no hacía nada" a la vista.
@@ -189,6 +195,12 @@ export default function ConfigurarVentaCodigo({
   anclasIniciales = {},
 }) {
   const ventaInicial = inicial?.venta || {};
+  const [subidasPendientes, setSubidasPendientes] = useState(0);
+  async function subirImagenLanding(archivo) {
+    setSubidasPendientes(n => n + 1);
+    try { return await onSubirImagen(archivo); }
+    finally { setSubidasPendientes(n => n - 1); }
+  }
   const [abrirEn, setAbrirEn] = useState(ventaInicial.abrir_en || (ventaInicial.tipo === 'producto_unico' ? 'producto' : 'tienda'));
   const [combosPrimero, setCombosPrimero] = useState(ventaInicial.combos_primero ?? ventaInicial.tipo === 'combos');
   const tipo = abrirEn === 'producto' ? 'producto_unico' : (combosPrimero ? 'combos' : 'catalogo');
@@ -224,7 +236,27 @@ export default function ConfigurarVentaCodigo({
   // Panel de ofertas: null cerrado · { producto: null } eligiendo producto ·
   // { producto } editando las ofertas de ese producto.
   const [panelOfertas, setPanelOfertas] = useState(null);
-  const [anclas, setAnclas] = useState(() => ({ ...anclasIniciales }));
+  const [anclas, setAnclas] = useState(() => ({
+    ...Object.fromEntries((inicial?.seleccion || []).filter(i => i.precio_ancla != null).map(i => [claveItem(i), String(i.precio_ancla)])),
+    ...anclasIniciales,
+  }));
+  const [presentacion, setPresentacion] = useState(() => ({ ...Object.fromEntries((inicial?.seleccion || []).map(i => [claveItem(i), {
+    etiqueta: i.etiqueta || '', mostrar_en_inicio: i.mostrar_en_inicio !== false, envio_incluido: i.envio_incluido === true,
+  }])), ...ventaInicial.presentacion_productos }));
+  const [filtrosCatalogo, setFiltrosCatalogo] = useState(() => ventaInicial.catalogo_filtros || {});
+  function cambiarPresentacion(item, campo, valor) {
+    setPresentacion(prev => ({ ...prev, [claveItem(item)]: { ...prev[claveItem(item)], [campo]: valor } }));
+  }
+  function moverProducto(item, direccion) {
+    setManual(prev => {
+      const siguiente = [...prev];
+      const desde = siguiente.indexOf(claveItem(item));
+      const hasta = desde + direccion;
+      if (desde < 0 || hasta < 0 || hasta >= siguiente.length) return prev;
+      [siguiente[desde], siguiente[hasta]] = [siguiente[hasta], siguiente[desde]];
+      return siguiente;
+    });
+  }
 
   const [recoActivo, setRecoActivo] = useState(ventaInicial.recomendados?.activo !== false);
   const [recoModo, setRecoModo] = useState(ventaInicial.recomendados?.modo || 'auto');
@@ -296,12 +328,16 @@ export default function ConfigurarVentaCodigo({
     verificarSesion().then(setUsuarioActual).catch(() => setUsuarioActual(null));
   }, []);
 
+  const [combosCreados, setCombosCreados] = useState([]);
+  const catalogoActual = useMemo(() => ({ ...catalogo, combos: Array.from(new Map([
+    ...(catalogo?.combos || []), ...combosCreados,
+  ].map(c => [Number(c.id), c])).values()) }), [catalogo, combosCreados]);
   const todos = useMemo(() => [
-    ...(catalogo?.productos || []).map(p => ({ ...p, tipo: 'producto' })),
-    ...(catalogo?.combos || []).map(c => ({ ...c, tipo: 'combo' })),
-  ], [catalogo]);
+    ...(catalogoActual.productos || []).map(p => ({ ...p, tipo: 'producto' })),
+    ...catalogoActual.combos.map(c => ({ ...c, tipo: 'combo' })),
+  ], [catalogoActual]);
   const porClave = useMemo(() => new Map(todos.map(i => [clave(i), i])), [todos]);
-  const idsCombosCatalogo = useMemo(() => new Set((catalogo?.combos || []).map(c => Number(c.id))), [catalogo]);
+  const idsCombosCatalogo = useMemo(() => new Set(catalogoActual.combos.map(c => Number(c.id))), [catalogoActual]);
 
   const categoriasDisponibles = useMemo(() => {
     const conteo = new Map();
@@ -320,7 +356,7 @@ export default function ConfigurarVentaCodigo({
   // estrella), después el resto.
   const seleccion = useMemo(() => {
     let lista = esRegla
-      ? aplicarReglaVenta(catalogo, { seleccion: modo, categorias: Array.from(categorias), incluir_combos: incluirCombos, tipo })
+      ? aplicarReglaVenta(catalogoActual, { seleccion: modo, categorias: Array.from(categorias), incluir_combos: incluirCombos, tipo })
       : manual.map(k => porClave.get(k)).filter(Boolean);
     if (!esRegla && tipo === 'combos') {
       lista = [...lista.filter(i => i.tipo === 'combo'), ...lista.filter(i => i.tipo !== 'combo')];
@@ -329,8 +365,10 @@ export default function ConfigurarVentaCodigo({
       const p = lista.find(i => clave(i) === principal);
       if (p) lista = [p, ...lista.filter(i => i !== p)];
     }
-    return lista;
-  }, [esRegla, catalogo, modo, categorias, incluirCombos, tipo, manual, porClave, principal]);
+    return lista.map(i => ({ ...i, ...presentacion[claveItem(i)],
+      precio_ancla: Object.prototype.hasOwnProperty.call(anclas, claveItem(i)) ? (Number(anclas[claveItem(i)]) || null) : (i.precio_ancla ?? null),
+    }));
+  }, [esRegla, catalogoActual, modo, categorias, incluirCombos, tipo, manual, porClave, principal, presentacion, anclas]);
 
   const excedeManual = !esRegla && seleccion.length > MAX_PRODUCTOS_MANUAL;
   const idsProductoEnLanding = useMemo(
@@ -415,6 +453,11 @@ export default function ConfigurarVentaCodigo({
     combos_primero: abrirEn === 'tienda' && combosPrimero,
     destacados: destacadosValidos,
     paquetes: confPaquetes,
+    catalogo_filtros: filtrosCatalogo,
+    presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
+      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria'].map(campo => [campo, value[campo] || ''])),
+      ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
+    }])),
     // El producto que abre la landing en "Directo en un producto" (con una
     // regla no hay items guardados que lo pongan primero).
     principal_id: abrirEn === 'producto'
@@ -431,7 +474,7 @@ export default function ConfigurarVentaCodigo({
     urgencia: { activo: urgenciaActiva, fin_at: inputLocalAIso(urgenciaFinAt), producto_id: urgenciaProductoValido || null },
     prueba_social: { activo: pruebaSocialActiva, producto_id: pruebaSocialProductoValido || null, items: pruebaSocialItems },
   }), [
-    tipo, abrirEn, combosPrimero, destacadosValidos, confPaquetes, principal, seleccion, modo, categorias, incluirCombos,
+    tipo, abrirEn, combosPrimero, destacadosValidos, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
     crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo,
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
   ]);
@@ -488,6 +531,23 @@ export default function ConfigurarVentaCodigo({
   // editar: así no parece que el sistema eligió el producto por su cuenta.
   function abrirNuevaOferta(tipoOferta = null) {
     setPanelOfertas({ producto: null, estrategia: tipoOferta });
+  }
+
+  function comboCreado(nuevo) {
+    setPanelOfertas(null);
+    // Los borradores quedan en Mis combos, fuera de la venta de la landing.
+    if (nuevo.estado !== 'ACTIVO') return;
+    const item = nuevo;
+    setCombosCreados(prev => [...prev.filter(c => Number(c.id) !== Number(item.id)), item]);
+    if (esRegla) {
+      setIncluirCombos(true);
+      if (modo === 'categoria') setCategorias(prev => new Set([...prev, item.categoria]));
+    } else {
+      setManual(prev => [...new Set([...prev, clave(item)])]);
+    }
+    // La lista local ya permite previsualizarlo aunque el catálogo tarde en recargar.
+    onRecargarCatalogo?.()?.catch?.(() => {});
+    setVistaPreview('inicio');
   }
 
   function abrirOfertasDe(productoId) {
@@ -607,10 +667,12 @@ export default function ConfigurarVentaCodigo({
     if (modo === 'categoria' && !categorias.size) return 'Elegí al menos una categoría.';
     if (!seleccion.length) return modo === 'manual' ? 'Marcá al menos un producto.' : 'Esta selección no tiene productos en venta.';
     if (excedeManual) return `Uno por uno admite hasta ${MAX_PRODUCTOS_MANUAL}. Para más, usá “Todo el catálogo”.`;
+    if (esRegla && seleccion.filter(i => i.precio_ancla != null || i.etiqueta || i.envio_incluido || i.mostrar_en_inicio === false).length > MAX_PRODUCTOS_MANUAL) return `Podés personalizar hasta ${MAX_PRODUCTOS_MANUAL} productos; el resto sigue entrando con la configuración del catálogo.`;
     return null;
   })();
 
   async function confirmar() {
+    if (subidasPendientes) return;
     setError('');
     if (bloqueo) {
       setError(bloqueo);
@@ -625,12 +687,9 @@ export default function ConfigurarVentaCodigo({
         recomendados: { ...ventaActual.recomendados, items: recoItems.filter(id => idsSeleccion.has(id)) },
       },
       seleccion,
-      // Con una regla no hay lista: el backend resuelve los productos.
-      // El precio ancla viaja pegado a cada item porque es de ESTA landing.
-      items: esRegla ? [] : seleccion.map(i => ({
-        ...i,
-        precio_ancla: Number(anclas[claveItem(i)]) || null,
-      })),
+      // En una regla estos items son ajustes de presentación, no una lista
+      // cerrada: los productos nuevos siguen entrando automáticamente.
+      items: esRegla ? seleccion.filter(i => i.precio_ancla != null || i.etiqueta || i.envio_incluido || i.mostrar_en_inicio === false) : seleccion,
       // Estado "confirmado" para urgencia/prueba_social: solo si el checkbox
       // de confirmación está tildado EN ESTE guardado — cualquier edición de
       // la fecha o de las cifras lo destilda solo (ver cambiarUrgenciaFinAt/
@@ -831,38 +890,6 @@ export default function ConfigurarVentaCodigo({
                       })}
                     </ul>
 
-                    {/* Precio tachado: va DESPUÉS de elegir, sobre los que
-                        ya entraron. Dentro del buscador sería una trampa —
-                        cada fila es un <label> y tocar el input marcaría el
-                        checkbox. */}
-                    {seleccion.length > 0 && (
-                      <div className="mt-4 rounded-xl border border-border bg-surface p-4">
-                        <p className="text-sm font-semibold text-fg">Precio tachado (opcional)</p>
-                        <p className="mt-1 text-[13px] text-fg-muted">
-                          El precio “antes” que se ve cruzado al lado del real, para que se note el descuento.
-                          Es solo de esta landing: no cambia el precio del producto ni el de otras páginas.
-                        </p>
-                        <ul className="mt-3 divide-y divide-border">
-                          {seleccion.map(item => (
-                            <li key={claveItem(item)} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
-                              <span className="flex min-w-0 items-center gap-2.5">
-                                <Miniatura item={item} />
-                                <span className="min-w-0">
-                                  <span className="block truncate text-sm text-fg">{item.nombre}</span>
-                                  <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item))}</span>
-                                </span>
-                              </span>
-                              <PrecioAncla
-                                id={`ancla-${claveItem(item)}`}
-                                venta={precioDeVenta(item)}
-                                valor={anclas[claveItem(item)] ?? ''}
-                                onCambiar={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
-                              />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -911,6 +938,45 @@ export default function ConfigurarVentaCodigo({
                     <ProductosIncluidos lista={seleccion} vacio={modo === 'categoria' && !categorias.size ? 'Marcá una o más categorías para ver qué productos entran.' : 'Ningún producto en venta coincide con esta selección.'} />
                   </>
                 )}
+
+                {seleccion.length > 0 && (
+                  <div className="mt-5 rounded-xl border border-border bg-surface p-4">
+                    <h3 className="text-sm font-semibold text-fg">Presentación en la tienda</h3>
+                    <p className="mt-1 text-[13px] text-fg-muted">Configurá el mensaje y las insignias que verá tu cliente. Categorías y etiquetas sirven para filtrar. Estos ajustes son de esta landing.</p>
+                    <ul className="mt-3 divide-y divide-border">
+                      {seleccion.map((item, idx) => (
+                        <li key={claveItem(item)} className="py-4 pr-2" aria-label={`Presentación de ${item.nombre}`}>
+                          <div className="flex items-start gap-3">
+                            <Miniatura item={item} />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-fg break-words">{item.nombre}</p>
+                              <p className="text-xs text-fg-muted tabular-nums">Precio de venta: {formatearGs(precioDeVenta(item))}</p>
+                            </div>
+                            {!esRegla && tipo === 'catalogo' && (
+                              <div className="flex shrink-0 gap-1">
+                                <button type="button" aria-label={`Subir ${item.nombre}`} disabled={idx === 0} onClick={() => moverProducto(item, -1)} className="p-1 border border-border rounded disabled:opacity-30"><ChevronUp size={16} /></button>
+                                <button type="button" aria-label={`Bajar ${item.nombre}`} disabled={idx === seleccion.length - 1} onClick={() => moverProducto(item, 1)} className="p-1 border border-border rounded disabled:opacity-30"><ChevronDown size={16} /></button>
+                              </div>
+                            )}
+                          </div>
+                          <PresentacionProducto item={item} ancla={anclas[claveItem(item)] ?? ''}
+                            onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
+                            onCambiar={(campo, valor) => cambiarPresentacion(item, campo, valor)}
+                            destacado={destacadosValidos.includes(contentIdPanel(item))} onDestacar={() => alternarDestacado(contentIdPanel(item))}
+                            codigo={codigos?.inicio} tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} inicialmenteAbierto={idx === 0} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="mt-5 rounded-xl border border-border bg-surface p-4">
+                  <h3 className="text-sm font-semibold text-fg">Filtros para el visitante</h3>
+                  <p className="mt-1 text-[13px] text-fg-muted">Elegí los controles que aparecen junto a los productos en la homepage.</p>
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {FILTROS_CATALOGO.map(([campo, titulo]) => <label key={campo} className="flex items-center gap-2 text-sm text-fg"><input type="checkbox" checked={filtrosCatalogo[campo] !== false} onChange={e => setFiltrosCatalogo(prev => ({ ...prev, [campo]: e.target.checked }))} />{titulo}</label>)}
+                  </div>
+                </div>
 
                 {tipo === 'producto_unico' && seleccion.length > 0 && (
                   <label className="mt-4 block">
@@ -1394,7 +1460,7 @@ export default function ConfigurarVentaCodigo({
           <button
             type="button"
             onClick={confirmar}
-            disabled={guardando || !!bloqueo}
+            disabled={guardando || !!bloqueo || subidasPendientes > 0}
             className="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-primary text-primary-fg text-sm font-semibold transition-colors hover:bg-primary-hover disabled:opacity-45 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             {guardando && <Loader size={15} className="animate-spin" />}
@@ -1431,6 +1497,8 @@ export default function ConfigurarVentaCodigo({
           onElegir={producto => setPanelOfertas(p => ({ ...p, producto }))}
           onCambiarProducto={() => setPanelOfertas(p => ({ ...p, producto: null }))}
           onCerrar={cerrarPanelOfertas}
+          onComboCreado={comboCreado}
+          landingPreview={{ codigos, tienda, venta: ventaActual, productos: seleccion, ofertas: ofertasConImagen }}
         />
       )}
     </div>
@@ -1961,8 +2029,9 @@ function ProductosIncluidos({ lista, vacio }) {
 // Lo usa también el paso de ofertas del wizard de IA (PasoOfertas): es el
 // mismo editor real de la ficha de producto, así una oferta creada desde la
 // IA es idéntica a una creada desde Productos.
-export function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar }) {
+export function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar, onComboCreado, landingPreview = null }) {
   const [busqueda, setBusqueda] = useState('');
+  const [armandoCombo, setArmandoCombo] = useState(false);
   const tipoElegido = LABEL_TIPO_OFERTA_RAPIDA[estrategia] || null;
 
   useEffect(() => {
@@ -1979,6 +2048,15 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
     // Los de esta landing primero: son los que tiene sentido ofertar.
     return [...lista].sort((a, b) => Number(enLanding.has(Number(b.id))) - Number(enLanding.has(Number(a.id))));
   }, [productos, busqueda, enLanding]);
+
+  if (producto && (estrategia === 'combo' || armandoCombo)) {
+    return <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-canvas" role="status">Abriendo el armador de combos…</div>}>
+      <ArmarComboPanel principalInicial={producto} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
+        if (onComboCreado) return onComboCreado(nuevo);
+        else onCerrar();
+      }} />
+    </Suspense>;
+  }
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end" role="dialog" aria-modal="true" aria-label="Ofertas">
@@ -2015,6 +2093,7 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
                 <OfertasProductoTab
                   key={`${producto.id}-${estrategia || ''}`}
                   crearAlAbrir={estrategia}
+                  onCrearCombo={() => setArmandoCombo(true)}
                   productoId={producto.id}
                   productoNombre={producto.nombre}
                   productoAnclaPrecioBase={Number(precioPanel(producto)) || 0}

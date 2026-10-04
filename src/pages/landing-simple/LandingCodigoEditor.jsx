@@ -15,6 +15,7 @@ import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodig
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
 import { PLANTILLA_PRODUCTO, plantillaInicioPara, formatoDeBase } from './plantillasBaseCodigo';
+import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { armarPromptVista } from './promptsCodigo';
 import {
   LABEL_LEGAL_CODIGO,
@@ -102,12 +103,16 @@ const ANCHOS_VIEWPORT = { desktop: '100%', tablet: '768px', mobile: '390px' };
 const MARCA_CODIGO_INICIAL = 'Escribí acá el HTML de tu landing';
 
 /** Items de la landing ({tipo, referencia_id}) → items del catálogo del panel, en el mismo orden. */
-function resolverSeleccion(items, catalogo) {
+export function resolverSeleccion(items, catalogo) {
   const productos = new Map((catalogo?.productos || []).map(p => [Number(p.id), { ...p, tipo: 'producto' }]));
   const combos = new Map((catalogo?.combos || []).map(c => [Number(c.id), { ...c, tipo: 'combo' }]));
   return [...(items || [])]
     .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-    .map(i => (i.tipo === 'combo' ? combos : productos).get(Number(i.referencia_id)))
+    .map(i => {
+      const producto = (i.tipo === 'combo' ? combos : productos).get(Number(i.referencia_id));
+      return producto ? { ...producto, etiqueta: i.etiqueta || '', precio_ancla: i.precio_ancla ?? null,
+        envio_incluido: i.envio_incluido === true, mostrar_en_inicio: i.mostrar_en_inicio !== false } : null;
+    })
     .filter(Boolean);
 }
 
@@ -116,20 +121,20 @@ function resolverSeleccion(items, catalogo) {
  * landing (etiqueta, precio ancla, envío incluido): el paso de venta elige
  * QUÉ productos, no pisa cómo estaban configurados.
  */
-function seleccionAItems(seleccion, itemsPrevios = []) {
+export function seleccionAItems(seleccion, itemsPrevios = []) {
   const previos = new Map(itemsPrevios.map(i => [`${i.tipo}:${Number(i.referencia_id)}`, i]));
   return seleccion.map((p, idx) => {
     const previo = previos.get(`${p.tipo}:${Number(p.id)}`) || {};
     return {
       tipo: p.tipo,
       referencia_id: Number(p.id),
-      etiqueta: previo.etiqueta || '',
+      etiqueta: p.etiqueta ?? previo.etiqueta ?? '',
       orden: idx,
       // El panel de venta ahora puede cargarlo; si no vino, se conserva el
       // que ya tenía la landing.
-      precio_ancla: p.precio_ancla ?? previo.precio_ancla ?? null,
-      envio_incluido: previo.envio_incluido === true,
-      mostrar_en_inicio: previo.mostrar_en_inicio !== false,
+      precio_ancla: Object.prototype.hasOwnProperty.call(p, 'precio_ancla') ? p.precio_ancla : (previo.precio_ancla ?? null),
+      envio_incluido: p.envio_incluido ?? previo.envio_incluido ?? false,
+      mostrar_en_inicio: p.mostrar_en_inicio ?? previo.mostrar_en_inicio ?? true,
     };
   });
 }
@@ -210,7 +215,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [landing, setLanding] = useState(landingInicial || null);
   const [tienda, setTienda] = useState(null);
   const [catalogo, setCatalogo] = useState(null);
-  const [cargando, setCargando] = useState(!landingInicial);
+  const [cargando, setCargando] = useState(true);
   const [paso, setPaso] = useState(landingInicial?.content?.venta?.configurado ? 'codigo' : 'venta');
   const [venta, setVenta] = useState(landingInicial?.content?.venta || null);
   const [seleccion, setSeleccion] = useState([]);
@@ -254,14 +259,13 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   useEffect(() => {
     let activo = true;
-    // Los productos que llegaron preelegidos desde la vitrina ya los guardó
-    // crearLienzoBlanco() como items de la landing: acá solo se limpia la
-    // marca para que no se cuele en la próxima landing.
-    try { sessionStorage.removeItem('gesicomm:prefilledLandingItems'); } catch (e) { /* sin storage */ }
+    // El panel inicializa su selección al montarse: esperar al catálogo
+    // incluso cuando EditorSegunModo ya nos entregó la landing.
+    setCargando(true);
     Promise.all([
       landingInicial ? Promise.resolve(landingInicial) : landingSimpleService.obtener(id),
       tiendaService.obtener().catch(() => null),
-      vitrinaService.catalogo().catch(() => ({ productos: [], combos: [] })),
+      vitrinaService.catalogo(),
     ]).then(([l, t, cat]) => {
       if (!activo) return;
       const inicial = codigosDesdeContent(l.content, PLANTILLA_PRODUCTO, t || l?.tienda || null);
@@ -270,9 +274,20 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       setCatalogo(cat);
       // Con una regla (todos / por categoría) no hay items guardados: la
       // selección del preview y de los prompts se calcula con la regla.
-      setSeleccion(aplicarReglaVenta(cat, l.content?.venta) ?? resolverSeleccion(l.items, cat));
-      setVenta(l.content?.venta || null);
-      setPaso(l.content?.venta?.configurado ? 'codigo' : 'venta');
+      const prefilled = leerItemsPrefill();
+      const regla = aplicarReglaVenta(cat, l.content?.venta);
+      const seleccionActual = regla
+        ? resolverSeleccion(regla.map((p, orden) => ({ tipo: p.tipo, referencia_id: p.id, orden,
+          ...(l.items || []).find(i => i.tipo === p.tipo && Number(i.referencia_id) === Number(p.id)) })), cat)
+        : resolverSeleccion(l.items, cat);
+      const seleccionInicial = prefilled.length
+        ? resolverSeleccion(unirItemsPrefill(seleccionAItems(seleccionActual, l.items), prefilled), cat)
+        : seleccionActual;
+      setSeleccion(seleccionInicial);
+      // Al llegar del catálogo se revisa la selección manual antes de guardar.
+      setVenta(prefilled.length ? { ...l.content?.venta, seleccion: 'manual' } : l.content?.venta || null);
+      setPaso(prefilled.length || !l.content?.venta?.configurado ? 'venta' : 'codigo');
+      if (prefilled.length) setSinGuardar(true);
       setCodigos(inicial);
       setCodigosPreview(inicial);
       if (creationSourceDe(l) === 'ai') setAsistenteAbierto(true);
@@ -282,6 +297,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         seo_descripcion: l.seo_descripcion || '',
       });
       setCargando(false);
+      limpiarItemsPrefill();
     }).catch(() => {
       if (activo) { setError('No se pudo cargar la landing.'); setCargando(false); }
     });
@@ -341,10 +357,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   async function guardar(extra = {}) {
     const ventaAGuardar = extra.venta ?? venta;
-    // Items que se guardan: la lista manual. Con una regla, ninguno (el
-    // backend resuelve los productos con la regla, sin tope).
+    // Una selección manual guarda la lista. Una regla guarda solo los
+    // ajustes por producto; el backend sigue resolviendo todo el catálogo.
     const esRegla = ['todos', 'categoria'].includes(ventaAGuardar?.seleccion);
-    const itemsAGuardar = extra.items ?? (esRegla ? [] : seleccion);
+    const itemsAGuardar = extra.items ?? (esRegla
+      ? seleccion.filter(p => p.precio_ancla != null || p.etiqueta || p.envio_incluido || p.mostrar_en_inicio === false)
+      : seleccion);
     const codigosAGuardar = extra.codigos ?? codigos;
     const legalesAGuardar = Object.fromEntries(PAGINAS_LEGALES_CODIGO.map(p => [
       p.key,
@@ -697,6 +715,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     );
   }
 
+  if (!catalogo) {
+    return <div role="alert" className="p-8 text-danger">{error || 'No se pudo cargar el catálogo.'}</div>;
+  }
+
   if (paso === 'venta') {
     return (
       <ConfigurarVentaCodigo
@@ -711,6 +733,13 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}
         codigos={codigos}
+        onSubirImagen={async archivo => {
+          const form = new FormData();
+          form.append('imagen', archivo);
+          const { url } = await landingSimpleService.subirImagenFicha(idParam, form);
+          if (!url) throw new Error('No se recibió la imagen subida.');
+          return url;
+        }}
       />
     );
   }
