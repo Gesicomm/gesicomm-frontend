@@ -94,7 +94,7 @@ const TABS = [
     label: 'Pagos',
     icono: CreditCard,
     titulo: 'Medios de cobro',
-    desc: 'Conectá una pasarela para que tus clientes puedan pagar online.',
+    desc: 'Definí los métodos de pago de tu negocio.',
   },
   { id: 'raha', label: 'Conexión Raha', icono: ShieldCheck, titulo: 'Conexión Raha', desc: '' },
   { id: 'speedbox', label: 'Validación RAHA', icono: Link2, titulo: 'Validación RAHA', desc: '' },
@@ -144,7 +144,7 @@ export default function ConfigurarTienda() {
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
-  const [subTabPasarelas, setSubTabPasarelas] = useState('metodos');
+  const [mostrarPagopar, setMostrarPagopar] = useState(true);
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
@@ -452,6 +452,23 @@ export default function ConfigurarTienda() {
 
         <div className="tn-panel">
           <div className="tn-panel-head">
+            {tab === 'pasarelas' && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '0.22rem 0.65rem',
+                borderRadius: '0.375rem',
+                background: 'var(--vit-accent)',
+                color: '#ffffff',
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                marginBottom: '0.5rem'
+              }}>
+                PASO 1
+              </div>
+            )}
             <h2>{tabActual.titulo}</h2>
             <p>{tabActual.desc}</p>
           </div>
@@ -987,90 +1004,89 @@ export default function ConfigurarTienda() {
               {/* ═════════════════════ TAB: PAGOS ═════════════════════════ */}
               {tab === 'pasarelas' && (
                 <div className="tn-tab-content" key="pasarelas">
-                  <div style={{
-                    display: 'flex',
-                    gap: '0.5rem',
-                    marginBottom: '1.5rem',
-                    borderBottom: '1px solid color-mix(in srgb, var(--vit-border) 70%, transparent)',
-                    paddingBottom: '0.75rem'
-                  }}>
-                    <button
-                      type="button"
-                      onClick={() => setSubTabPasarelas('metodos')}
-                      style={{
-                        padding: '0.55rem 1.1rem',
-                        borderRadius: '0.5rem',
-                        border: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        background: subTabPasarelas === 'metodos' ? 'var(--vit-accent)' : 'color-mix(in srgb, var(--color-fg) 5%, transparent)',
-                        color: subTabPasarelas === 'metodos' ? '#fff' : 'var(--vit-muted)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <CreditCard size={15} />
-                      Métodos de Pago
-                    </button>
+                  {/* PASO 1: Métodos de Pago del Negocio */}
+                  <div style={{ marginBottom: '2rem' }}>
+                    <div style={{ fontSize: '0.84rem', color: 'var(--vit-muted)', lineHeight: '1.65', marginBottom: '1.25rem' }}>
+                      <p style={{ margin: '0 0 0.6rem 0' }}>
+                        Inicialmente estos métodos son los mínimos recomendados para operar, sea que trabajes con logística propia o con Gesicom-RAHA (te recomendamos tener activados los 3):
+                      </p>
+                      <ul style={{ margin: '0.5rem 0 0.85rem 1.25rem', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.45rem', listStyleType: 'disc', color: 'var(--vit-text)' }}>
+                        <li><strong>1) Efectivo contra entrega</strong></li>
+                        <li><strong>2) Transferencia bancaria contra entrega</strong></li>
+                        <li><strong>3) Transferencia bancaria anticipado</strong></li>
+                      </ul>
 
-                    <button
-                      type="button"
-                      onClick={() => setSubTabPasarelas('pagopar')}
-                      style={{
-                        padding: '0.55rem 1.1rem',
-                        borderRadius: '0.5rem',
-                        border: 'none',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        background: subTabPasarelas === 'pagopar' ? 'var(--vit-accent)' : 'color-mix(in srgb, var(--color-fg) 5%, transparent)',
-                        color: subTabPasarelas === 'pagopar' ? '#fff' : 'var(--vit-muted)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <Globe size={15} />
-                      Integración Pagopar
-                    </button>
-                  </div>
-
-                  {subTabPasarelas === 'metodos' && (
-                    <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
-                      <div className="tn-group-head">
-                        <h3>Métodos de Pago del Negocio</h3>
-                        <p>
-                          Definí tus métodos de cobro disponibles (Efectivo al recibir, Transferencia Bancaria, Tarjeta de Crédito/Débito, etc.).
-                          Los nuevos métodos se crean <strong>inactivos</strong>; podés activarlos o desactivarlos en cualquier momento con el interruptor de la tabla.
-                        </p>
+                      <div style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.65rem',
+                        background: 'color-mix(in srgb, var(--vit-accent) 8%, transparent)',
+                        border: '1px solid color-mix(in srgb, var(--vit-accent) 22%, transparent)',
+                        color: 'var(--vit-text)',
+                        fontSize: '0.8rem',
+                        lineHeight: '1.5'
+                      }}>
+                        <strong>💡 Nota para la operación:</strong> Estos métodos son utilizados por el <em>confirmador de pedidos</em> al momento de la confirmación de la venta. Se crean inactivos por defecto para que los actives según tu preferencia.
                       </div>
+                    </div>
+
+                    <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
                       <div className="tn-group-body">
                         <div className="tn-embed tn-embed-metodos-pago">
                           <MetodosPagoCrud />
                         </div>
                       </div>
                     </section>
-                  )}
+                  </div>
 
-                  {subTabPasarelas === 'pagopar' && (
+                  {/* PASO 2: Integración Pagopar & Cobro Anticipado */}
+                  <div style={{ borderTop: '1px solid color-mix(in srgb, var(--vit-border) 70%, transparent)', paddingTop: '1.75rem' }}>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0.22rem 0.65rem',
+                      borderRadius: '0.375rem',
+                      background: 'var(--vit-accent)',
+                      color: '#ffffff',
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      marginBottom: '0.75rem'
+                    }}>
+                      PASO 2 (No es obligatorio, pero es recomendado) 
+                    
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.6rem',
+                      padding: '0.85rem 1.1rem',
+                      borderRadius: '0.85rem',
+                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(59, 130, 246, 0.12))',
+                      border: '1px dashed color-mix(in srgb, var(--vit-accent) 40%, transparent)',
+                      color: 'var(--vit-text)',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      marginBottom: '1.5rem'
+                    }}>
+                      <span>🚀 El futuro del e-commerce está en el pago anticipado, conectate a pagopar y empezá a cobrar por anticipado en tu sitio web </span>
+                    </div>
+
                     <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
-                      <div className="tn-group-head">
-                        <h3>Integración con Pasarela Pagopar</h3>
-                        <p>
-                          Conectá tu cuenta de Pagopar cargando tu Token Público y Privado para recibir pagos automáticos con Tarjetas de Crédito/Débito, Billetera Zimple, Tigo Money y redes de cobranza desde el checkout de tus Landings.
-                        </p>
+                      <div className="tn-group-head" style={{ marginBottom: '1rem' }}>
+                       
                       </div>
-                      <div className="tn-group-body">
-                        <div className="tn-embed tn-embed-pagopar">
-                          <PagoParConfig />
+
+                      {mostrarPagopar && (
+                        <div className="tn-group-body">
+                          <div className="tn-embed tn-embed-pagopar">
+                            <PagoParConfig />
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </section>
-                  )}
+                  </div>
                 </div>
               )}
 
@@ -1239,32 +1255,7 @@ export default function ConfigurarTienda() {
                     </div>
                   </section>
 
-                  <section className="tn-group">
-                    <div className="tn-group-head">
-                      <h3>Otras plataformas</h3>
-                      <p>Solo el lado navegador — a diferencia de Meta, acá no hay envío server-side (CAPI / Events API).</p>
-                    </div>
-                    <div className="tn-group-body">
-                      <div className="tn-fields">
-                        <label className="tn-field">
-                          <span className="tn-field-label">Google Analytics — Measurement ID</span>
-                          <input
-                            value={form.google_analytics_id}
-                            onChange={e => handleChange('google_analytics_id', e.target.value.toUpperCase())}
-                            placeholder="Ej: G-ABC1234DEF"
-                          />
-                        </label>
-                        <label className="tn-field">
-                          <span className="tn-field-label">TikTok Pixel ID</span>
-                          <input
-                            value={form.tiktok_pixel_id}
-                            onChange={e => handleChange('tiktok_pixel_id', e.target.value)}
-                            placeholder="Pegá el Pixel ID de TikTok Ads Manager"
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </section>
+
                 </div>
               )}
             </div>

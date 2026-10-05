@@ -301,10 +301,7 @@
 
 /* ─── Campo COD fijo RAHA ────────────────────────────────────────────────── */
 .raha-cod-field {
-  grid-column: 1 / -1;  /* ocupa todo el ancho del grid */
-  padding-top: 0.75rem;
-  border-top: 1px solid color-mix(in srgb, var(--color-fg) 8%, transparent);
-  margin-top: 0.25rem;
+  min-width: 0;
 }
 
 .raha-cod-badge {
@@ -314,9 +311,9 @@
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 600;
-  background: color-mix(in srgb, #3b82f6 12%, transparent);
-  color: #3b82f6;
-  border: 1px solid color-mix(in srgb, #3b82f6 25%, transparent);
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  color: #b45309;
+  border: 1px solid color-mix(in srgb, #f59e0b 32%, transparent);
   letter-spacing: 0.01em;
 }
 
@@ -427,6 +424,126 @@
 
 @media (max-width: 1024px) {
   .combo-editor-grid { grid-template-columns: 1fr; }
+}
+
+.combo-cost-field {
+  border-radius: 10px;
+  padding: 0.65rem;
+  border: 1px solid transparent;
+}
+
+.combo-cost-field.editable {
+  background: color-mix(in srgb, #10b981 5%, transparent);
+  border-color: color-mix(in srgb, #10b981 18%, transparent);
+}
+
+.combo-cost-field.locked {
+  background: color-mix(in srgb, #f59e0b 7%, transparent);
+  border-color: color-mix(in srgb, #f59e0b 24%, transparent);
+}
+
+.combo-cost-input.editable {
+  background: color-mix(in srgb, #10b981 5%, var(--color-surface-2)) !important;
+  border-color: color-mix(in srgb, #10b981 24%, var(--color-border)) !important;
+}
+
+.combo-cost-input.locked {
+  background: color-mix(in srgb, #f59e0b 10%, var(--color-surface-2)) !important;
+  border-color: color-mix(in srgb, #f59e0b 32%, var(--color-border)) !important;
+  cursor: not-allowed;
+}
+
+.combo-cost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.combo-cost-badge.locked {
+  background: color-mix(in srgb, #f59e0b 14%, transparent);
+  color: #b45309;
+  border: 1px solid color-mix(in srgb, #f59e0b 32%, transparent);
+}
+
+.combo-pagopar-costs {
+  grid-column: 1 / -1;
+}
+
+.combo-pagopar-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, #f59e0b 8%, var(--color-surface-2));
+  border: 1px solid color-mix(in srgb, #f59e0b 22%, transparent);
+}
+
+.combo-pagopar-summary svg {
+  color: #b45309;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+}
+
+.combo-pagopar-summary strong {
+  display: block;
+  color: var(--color-fg);
+  font-size: 0.88rem;
+}
+
+.combo-pagopar-summary span {
+  display: block;
+  color: var(--color-fg-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  margin-top: 0.1rem;
+}
+
+.combo-pagopar-methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.combo-pagopar-method {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 42px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, #f59e0b 5%, var(--color-canvas));
+  border: 1px solid color-mix(in srgb, #f59e0b 18%, transparent);
+  font-size: 0.8rem;
+}
+
+.combo-pagopar-method span {
+  color: var(--color-fg-muted);
+  min-width: 0;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.combo-pagopar-method strong {
+  color: #b45309;
+  flex-shrink: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.combo-pagopar-empty {
+  margin-top: 0.65rem;
+  color: var(--color-fg-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 /* ─── Galería del combo ─────────────────────────────────────────────────── */

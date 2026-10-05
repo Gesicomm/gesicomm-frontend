@@ -577,6 +577,7 @@ export function ComboBuilder({ id = null, principalInicial = null, usarPrefillCa
         shipping: Number(config.costo_envio),
         confirmation: Number(config.costo_confirmacion),
         packaging: Number(config.costo_empaque),
+        paymentCommissionPercentage: Number(config.pagopar_comision_porcentaje) || 0,
       },
       targetMargins: config.margenes_objetivo || [15, 30, 45],
       minimumMargin: Number(config.margen_minimo),

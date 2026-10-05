@@ -33,10 +33,11 @@ export function calcularPrincipal(principal, costs) {
   const costo = principal.cost || 0;
   const precio = principal.salePrice || 0;
   const cpaMax = r2(precio * (costs.cpaPercentage / 100));
-  const totalCosts = r2(costo + cpaMax + costs.shipping + costs.confirmation + costs.packaging);
+  const paymentCommissionCost = r2(precio * ((costs.paymentCommissionPercentage || 0) / 100));
+  const totalCosts = r2(costo + cpaMax + paymentCommissionCost + costs.shipping + costs.confirmation + costs.packaging);
   const profit = r2(precio - totalCosts);
   const margin = r4(div(profit, precio));
-  return { cpaMax, totalCosts, profit, margin };
+  return { cpaMax, paymentCommissionCost, totalCosts, profit, margin };
 }
 
 export function simularDescuentosPrincipal(salePrice, totalCosts, scenarios = [0, 10, 20, 30, 40]) {
@@ -146,7 +147,7 @@ export function calcularSensibilidad(comboData, scenarios = [0, 5, 10, 15, 20, 2
 export function calcular(input) {
   const {
     principal, upsells = [],
-    costs = { cpaPercentage: 20, shipping: 0, confirmation: 0, packaging: 0 },
+    costs = { cpaPercentage: 20, shipping: 0, confirmation: 0, packaging: 0, paymentCommissionPercentage: 0 },
     targetMargins = [15, 30, 45],
     minimumMargin = 10,
     excellentThreshold = 50,

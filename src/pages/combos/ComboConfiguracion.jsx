@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Save, AlertTriangle, Info, PackageCheck, Truck } from 'lucide-react';
+import { Settings, Save, AlertTriangle, Info, PackageCheck, Truck, CreditCard, Lock } from 'lucide-react';
 import { comboAdminService } from '../../services/comboAdminService';
 import CurrencyInput from '../../components/CurrencyInput';
 import { verificarSesion } from '../../utils/auth';
@@ -10,6 +10,44 @@ function fmtNumber(n) {
   if (n === null || n === undefined) return '';
   return String(Number(n));
 }
+
+function fmtPct(n) {
+  return `${(Number(n) || 0).toLocaleString('es-PY', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
+}
+
+function normalizarTexto(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function categoriaCheckoutPagopar(metodo = {}) {
+  const nombre = normalizarTexto(metodo.nombre);
+  if (nombre.includes('transferencia')) return { id: 'transferencia-bancaria', nombre: 'Transferencia bancaria PagoPar' };
+  if (nombre.includes('qr') || nombre.includes('pix')) return { id: 'qr', nombre: 'Pago con QR' };
+  if (/(tarjeta|mastercard|visa|american express|cabal|panal|discover|diners)/.test(nombre)) return { id: 'tarjetas', nombre: 'Tarjetas de crédito/débito' };
+  if (/(zimple|tigo money|personal pay|pago movil|wally|billetera claro|billetera|fondos)/.test(nombre)) return { id: 'billeteras', nombre: 'Billeteras' };
+  if (/(boca|acercandose|pagos habilitadas)/.test(nombre)) return { id: 'bocas-de-pago', nombre: 'Bocas de pago' };
+  return null;
+}
+
+function agruparOpcionesCheckoutPagopar(metodos = []) {
+  const orden = ['transferencia-bancaria', 'qr', 'tarjetas', 'billeteras', 'bocas-de-pago'];
+  const grupos = new Map();
+  metodos.forEach((metodo) => {
+    const categoria = categoriaCheckoutPagopar(metodo);
+    if (!categoria) return;
+    const actual = grupos.get(categoria.id) || { ...categoria, comision_porcentaje: 0 };
+    grupos.set(categoria.id, {
+      ...actual,
+      comision_porcentaje: Math.max(actual.comision_porcentaje, Number(metodo.comision_porcentaje) || 0),
+    });
+  });
+  return orden.map(id => grupos.get(id)).filter(Boolean);
+}
+
+const RAHA_COSTO_ENVIO_FIJO = 30000;
 
 export default function ComboConfiguracion({ asTab = false }) {
   const navigate = useNavigate();
@@ -54,9 +92,9 @@ export default function ComboConfiguracion({ asTab = false }) {
       setConfirmacion(fmtNumber(cfg.costo_confirmacion));
       setEmpaque(fmtNumber(cfg.costo_empaque));
       setRahaCpa(fmtNumber(cfg.raha_cpa_porcentaje ?? cfg.cpa_porcentaje));
-      setRahaEnvio(fmtNumber(cfg.raha_costo_envio ?? cfg.costo_envio));
+      setRahaEnvio(fmtNumber(RAHA_COSTO_ENVIO_FIJO));
       setRahaConfirmacion(fmtNumber(cfg.raha_costo_confirmacion ?? cfg.costo_confirmacion));
-      setRahaEmpaque(fmtNumber(cfg.raha_costo_empaque ?? cfg.costo_empaque));
+      setRahaEmpaque(fmtNumber(0));
       setMargenMinimo(fmtNumber(cfg.margen_minimo));
       setUmbralExcelente(fmtNumber(cfg.umbral_excelente));
       setMargenes((cfg.margenes_objetivo || [15, 30, 45]).join(', '));
@@ -89,9 +127,9 @@ export default function ComboConfiguracion({ asTab = false }) {
       costo_confirmacion: parseFloat(confirmacion) || 0,
       costo_empaque: parseFloat(empaque) || 0,
       raha_cpa_porcentaje: parseFloat(rahaCpa) || 0,
-      raha_costo_envio: parseFloat(rahaEnvio) || 0,
+      raha_costo_envio: RAHA_COSTO_ENVIO_FIJO,
       raha_costo_confirmacion: parseFloat(rahaConfirmacion) || 0,
-      raha_costo_empaque: parseFloat(rahaEmpaque) || 0,
+      raha_costo_empaque: 0,
       margen_minimo: parseFloat(margenMinimo) || 10,
       umbral_excelente: parseFloat(umbralExcelente) || 50,
       margenes_objetivo: margenesArr,
@@ -100,7 +138,8 @@ export default function ComboConfiguracion({ asTab = false }) {
 
     try {
       setGuardando(true);
-      await comboAdminService.actualizarConfiguracion(payload);
+      const cfg = await comboAdminService.actualizarConfiguracion(payload);
+      setConfig(cfg);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -153,6 +192,11 @@ export default function ComboConfiguracion({ asTab = false }) {
 
   const costoActual = costoSets[costosTab];
   const CostoIcono = costoActual.icono;
+  const opcionesCheckoutPagopar = config?.pagopar?.opciones_checkout?.length
+    ? config.pagopar.opciones_checkout
+    : agruparOpcionesCheckoutPagopar(config?.pagopar?.metodos || []);
+  const comisionPagopar = Number(config?.pagopar_comision_porcentaje || config?.pagopar?.comision_maxima || 0);
+  const esRaha = costosTab === 'raha';
 
   if (loading) {
     return (
@@ -239,40 +283,11 @@ export default function ComboConfiguracion({ asTab = false }) {
 
           {/* Servicios incluidos — solo visible en tab RAHA */}
           {costosTab === 'raha' && (
-            <div className="raha-servicios-bloque">
-              <div className="raha-servicios-titulo">Servicios incluidos en la operación Gesicom‑RAHA</div>
-              <div className="raha-servicios-grid">
-                {[
-                  { ok: true,  label: 'Stockeo' },
-                  { ok: true,  label: 'Packing' },
-                  { ok: true,  label: 'Gestión y sistema' },
-                  { ok: true,  label: 'Entrega + cobranza COD' },
-                  { ok: true,  label: 'Tecnología' },
-                  { ok: true,  label: 'Procesamiento de devoluciones' },
-                  { ok: true,  label: 'Seguro de mercancía' },
-                  { ok: true,  label: 'Trazabilidad total' },
-                  { ok: true,  label: 'Catálogo' },
-                ].map(s => (
-                  <span key={s.label} className={`raha-svc-chip ${s.ok ? 'ok' : 'no'}`}>
-                    {s.ok ? '✓' : '✗'} {s.label}
-                  </span>
-                ))}
-              </div>
-              <div className="raha-servicios-extras">
-                <div className="raha-svc-extra">
-                  <strong>Seguro de mercancía</strong>
-                  <span>Mercadería asegurada. Ante pérdida o robo bajo nuestra custodia, reembolso según el valor declarado.</span>
-                </div>
-                <div className="raha-svc-extra">
-                  <strong>Trazabilidad total</strong>
-                  <span>Seguís cada pedido y cada guaraní, de la venta a la liquidación.</span>
-                </div>
-              </div>
-            </div>
+            <></>
           )}
 
           <div className="combo-editor-grid">
-            <div>
+            <div className="combo-cost-field editable">
               <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                 <span>CPA proyectado (%)</span>
                 <Info
@@ -281,34 +296,48 @@ export default function ComboConfiguracion({ asTab = false }) {
                   title="El CPA proyectado se calcula sobre el ticket de venta."
                 />
               </div>
-              <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={costoActual.cpa} onChange={e => costoActual.setCpa(e.target.value)} />
+              <input className="combo-cost-input editable" style={inputStyle} type="number" min="0" max="100" step="0.01" value={costoActual.cpa} onChange={e => costoActual.setCpa(e.target.value)} />
               <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
                 Costo por Adquisición como % del ticket de venta. Ej: 20 = 20%.
               </div>
             </div>
-            <div>
-              <div className="combo-section-label">Costo de envío promedio</div>
-              <CurrencyInput style={inputStyle} value={costoActual.envio} onChange={costoActual.setEnvio} />
-            </div>
-            <div>
+            {esRaha ? (
+              <div className="combo-cost-field locked">
+                <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span><b>Costo Logistico por pedido</b> (Stockeo, Packing, Gestión y sistema, Entrega + cobranza COD, Tecnología, Procesamiento de devoluciones, Seguro de mercancía, Trazabilidad total, Catálogo)</span>
+                  <span className="combo-cost-badge locked"><Lock size={11} /></span>
+                </div>
+                <CurrencyInput
+                  className="combo-cost-input locked"
+                  style={inputStyle}
+                  value={RAHA_COSTO_ENVIO_FIJO}
+                  onChange={() => {}}
+                  disabled
+                />
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
+                  Costo fijo de envío de la operación Gesicom-RAHA. No se edita desde costos.
+                </div>
+              </div>
+            ) : (
+              <div className="combo-cost-field editable">
+                <div className="combo-section-label">Costo de envío promedio</div>
+                <CurrencyInput className="combo-cost-input editable" style={inputStyle} value={costoActual.envio} onChange={costoActual.setEnvio} />
+              </div>
+            )}
+            <div className="combo-cost-field editable">
               <div className="combo-section-label">Costo de confirmación promedio</div>
-              <CurrencyInput style={inputStyle} value={costoActual.confirmacion} onChange={costoActual.setConfirmacion} />
+              <CurrencyInput className="combo-cost-input editable" style={inputStyle} value={costoActual.confirmacion} onChange={costoActual.setConfirmacion} />
             </div>
-            <div>
-              <div className="combo-section-label">Costo de empaque promedio</div>
-              <CurrencyInput style={inputStyle} value={costoActual.empaque} onChange={costoActual.setEmpaque} />
-            </div>
-
-            {/* COD fijo 2% — solo RAHA, intocable */}
-            {costosTab === 'raha' && (
-              <div className="raha-cod-field">
+            {esRaha ? (
+              <div className="raha-cod-field combo-cost-field locked">
                 <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
                   <span>Costo COD — pago contra entrega</span>
                   <span className="raha-cod-badge">Fijo Gesicom‑RAHA</span>
                 </div>
                 <div className="raha-cod-input-wrap">
                   <input
-                    style={{ ...inputStyle, cursor: 'not-allowed', opacity: 0.65, background: 'color-mix(in srgb, #3b82f6 6%, var(--color-surface-2))' }}
+                    className="combo-cost-input locked"
+                    style={{ ...inputStyle, cursor: 'not-allowed', opacity: 0.9 }}
                     type="text"
                     value="2% del ticket total"
                     readOnly
@@ -321,10 +350,47 @@ export default function ComboConfiguracion({ asTab = false }) {
                   Comisión fija por cobro contra entrega. Se calcula automáticamente sobre el ticket de venta y no es editable.
                 </div>
               </div>
+            ) : (
+              <div className="combo-cost-field editable">
+                <div className="combo-section-label">Costo de empaque promedio</div>
+                <CurrencyInput className="combo-cost-input editable" style={inputStyle} value={costoActual.empaque} onChange={costoActual.setEmpaque} />
+              </div>
             )}
           </div>
         </div>
       </div>
+
+            <div className="combo-cost-field locked combo-pagopar-costs">
+              <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span>Costos por cobro PagoPar</span>
+                <span className="combo-cost-badge locked"><Lock size={11} /> No editable</span>
+              </div>
+              <div className="combo-pagopar-summary">
+                <CreditCard size={16} />
+                <div>
+                  <strong>Opciones de checkout PagoPar · hasta {fmtPct(comisionPagopar)} usado en pricing</strong>
+                  <span>Se muestran solo las opciones que ve el cliente en el checkout. Si PagoPar devuelve varias formas internas para una opción, usamos la comisión más alta de ese grupo.</span>
+                </div>
+              </div>
+              {opcionesCheckoutPagopar.length > 0 ? (
+                <div className="combo-pagopar-methods">
+                  {opcionesCheckoutPagopar.map((metodo) => (
+                    <div className="combo-pagopar-method" key={metodo.id}>
+                      <span>{metodo.nombre}</span>
+                      <strong>{fmtPct(metodo.comision_porcentaje)}</strong>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="combo-pagopar-empty">
+                  {config?.pagopar?.error
+                    ? `No pudimos leer PagoPar: ${config.pagopar.error}`
+                    : 'Conectá o probá PagoPar para traer la comisión del pago online.'}
+                </div>
+              )}
+            </div>
+
+            
 
       {/* ── Parámetros de análisis ── */}
       {isAdmin && (

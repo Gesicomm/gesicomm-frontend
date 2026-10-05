@@ -152,7 +152,7 @@ export default function DepositosPage() {
           className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
         >
           <Plus size={16} />
-          Nuevo depósito
+          Agrega un nuevo depósito o Salón
         </button>
       </div>
 

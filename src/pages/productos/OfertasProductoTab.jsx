@@ -505,6 +505,7 @@ export default function OfertasProductoTab({
         shipping: Number(comboConfig.costo_envio),
         confirmation: Number(comboConfig.costo_confirmacion),
         packaging: Number(comboConfig.costo_empaque),
+        paymentCommissionPercentage: Number(comboConfig.pagopar_comision_porcentaje) || 0,
       },
       targetMargins: comboConfig.margenes_objetivo || [15, 30, 45],
       minimumMargin: Number(comboConfig.margen_minimo),

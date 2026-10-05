@@ -250,7 +250,7 @@ export default function PagoParConfig() {
           </code>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
           <div className="space-y-2">
             <label className="text-sm font-medium text-[var(--vit-muted)]">Public Key</label>
             <input 
@@ -260,17 +260,6 @@ export default function PagoParConfig() {
               value={publicKey}
               onChange={e => setPublicKey(e.target.value)}
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[var(--vit-muted)]">Entorno</label>
-            <select 
-              className="w-full bg-[var(--vit-card-bg)] text-[var(--vit-text)] border border-[var(--vit-border)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-colors appearance-none"
-              value={environment}
-              onChange={e => setEnvironment(e.target.value)}
-            >
-              <option value="sandbox" className="bg-[var(--vit-card-bg)] text-[var(--vit-text)]">Sandbox (Pruebas)</option>
-              <option value="production" className="bg-[var(--vit-card-bg)] text-[var(--vit-text)]">Producción (Real)</option>
-            </select>
           </div>
         </div>
 

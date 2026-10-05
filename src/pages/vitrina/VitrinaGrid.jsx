@@ -806,6 +806,7 @@ export default function VitrinaGrid() {
         <SensibilidadPanel
           item={seleccionSensibilidad}
           onClose={() => setSeleccionSensibilidad(null)}
+          onAplicarPrecio={handleGuardarPrecio}
         />
       )}
 

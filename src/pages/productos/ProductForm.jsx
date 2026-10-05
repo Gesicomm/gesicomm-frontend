@@ -703,7 +703,8 @@ export default function ProductForm() {
       cpaPercentage: Number(config.cpa_porcentaje) || 0,
       shipping: Number(config.costo_envio) || 0,
       confirmation: Number(config.costo_confirmacion) || 0,
-      packaging: Number(config.costo_empaque) || 0
+      packaging: Number(config.costo_empaque) || 0,
+      paymentCommissionPercentage: Number(config.pagopar_comision_porcentaje) || 0
     });
 
     // Precio de venta real con el descuento actual aplicado: la utilidad y el

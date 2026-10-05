@@ -101,9 +101,9 @@ export function MetodosPagoCrud() {
     <div style={{ background: 'var(--color-canvas)', borderRadius: '0.85rem', border: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)', overflow: 'hidden', color: 'var(--color-fg)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', padding: '1.2rem', borderBottom: '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-fg)' }}>Métodos de Pago</h2>
+          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-fg)' }}>Activa Tus Métodos de Pago</h2>
           <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--color-fg-muted)' }}>
-            Configurá la comisión que cobra cada medio de pago — se usa en los reportes para calcular cuánto pagás de comisión vs. producto.
+            Configurá la comisión y custodia de cada medio de pago. El confirmador asignará estos métodos al momento de procesar cada pedido.
           </p>
         </div>
         <button type="button" onClick={openCreate} className="btn-nuevo-pedido">
@@ -243,7 +243,7 @@ export function MetodosPagoCrud() {
                     style={{ paddingLeft: '2.5rem', width: '100%' }}
                     value={form.nombre}
                     onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
-                    placeholder="Ej. Tarjeta de Crédito"
+                    placeholder="Ej. Transferencia bancaria contra entrega"
                     required
                   />
                 </div>
