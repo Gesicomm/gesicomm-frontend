@@ -466,6 +466,19 @@
   font-size: 0.875rem;
 }
 
+.vit-inline-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: -0.25rem 0 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: 8px;
+  color: #86efac;
+  background: rgba(16, 185, 129, 0.12);
+  font-size: 0.875rem;
+}
+
 /* ─── Card ────────────────────────────────────────────────────────────── */
 .vit-card {
   background: var(--vit-card-bg);
@@ -1004,6 +1017,69 @@
 .vit-modal-close:hover { color: var(--vit-text); background: color-mix(in srgb, var(--color-fg) 6%, transparent); }
 
 .vit-modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.vit-category-modal {
+  max-width: 520px;
+}
+
+.vit-category-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.vit-category-field span {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--vit-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vit-category-field input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--vit-surface);
+  border: 1px solid var(--vit-border);
+  border-radius: 9px;
+  padding: 0.7rem 0.85rem;
+  color: var(--vit-text);
+  font: inherit;
+  outline: none;
+}
+
+.vit-category-field input:focus {
+  border-color: rgba(61, 95, 163, 0.45);
+  box-shadow: 0 0 0 2px rgba(61, 95, 163, 0.08);
+}
+
+.vit-category-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.vit-category-preview span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid var(--vit-border);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  color: var(--vit-muted);
+  background: color-mix(in srgb, var(--color-fg) 3%, transparent);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.vit-category-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 1rem 1.5rem 1.25rem;
+  border-top: 1px solid var(--vit-border);
+}
 
 .vit-sensib-summary {
   display: grid;

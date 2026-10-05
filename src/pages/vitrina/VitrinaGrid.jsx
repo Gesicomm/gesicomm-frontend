@@ -133,6 +133,96 @@ function PrecioEditable({ item, onGuardar }) {
   );
 }
 
+function CategoriaSeleccionModal({ abierto, productos, categorias, onClose, onGuardar }) {
+  const [categoria, setCategoria] = useState('');
+  const [subcategoria, setSubcategoria] = useState('');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!abierto) return;
+    setCategoria('');
+    setSubcategoria('');
+    setError(null);
+    setGuardando(false);
+  }, [abierto]);
+
+  if (!abierto) return null;
+
+  async function guardar() {
+    if (!categoria.trim()) {
+      setError('Ingresá una categoría.');
+      return;
+    }
+    setGuardando(true);
+    setError(null);
+    try {
+      await onGuardar({
+        categoria_nombre: categoria.trim(),
+        subcategoria_nombre: subcategoria.trim() || null,
+        producto_ids: productos.map(p => p.id),
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'No se pudo agrupar la selección.');
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="vit-modal-overlay" role="dialog" aria-modal="true" aria-label="Agrupar en categoría">
+      <div className="vit-modal vit-category-modal">
+        <div className="vit-modal-header">
+          <div>
+            <h2>Agrupar en categoría</h2>
+            <p>{productos.length} producto{productos.length === 1 ? '' : 's'} seleccionado{productos.length === 1 ? '' : 's'}</p>
+          </div>
+          <button type="button" className="vit-modal-close" onClick={onClose} aria-label="Cerrar">×</button>
+        </div>
+        <div className="vit-modal-body">
+          <label className="vit-category-field">
+            <span>Categoría</span>
+            <input
+              type="text"
+              value={categoria}
+              onChange={(e) => { setCategoria(e.target.value); setError(null); }}
+              placeholder="Ej: Suplementos A del fit"
+              list="vit-categorias-existentes"
+              autoFocus
+            />
+          </label>
+          <datalist id="vit-categorias-existentes">
+            {(categorias || []).map(cat => <option key={cat} value={cat} />)}
+          </datalist>
+
+          <label className="vit-category-field">
+            <span>Subcategoría opcional</span>
+            <input
+              type="text"
+              value={subcategoria}
+              onChange={(e) => { setSubcategoria(e.target.value); setError(null); }}
+              placeholder="Ej: Baja de peso, energía, proteína"
+            />
+          </label>
+
+          {error && <div className="vit-inline-error" role="alert"><AlertCircle size={16} /> {error}</div>}
+
+          <div className="vit-category-preview">
+            {(productos || []).slice(0, 4).map(p => <span key={p.id}>{p.nombre}</span>)}
+            {productos.length > 4 && <span>+{productos.length - 4} más</span>}
+          </div>
+        </div>
+        <div className="vit-category-actions">
+          <button type="button" className="btn-secondary" onClick={onClose} disabled={guardando}>Cancelar</button>
+          <button type="button" className="vit-seleccion-cta" onClick={guardar} disabled={guardando}>
+            {guardando ? <Loader size={15} className="spin-icon" /> : <Tag size={15} />}
+            Guardar categoría
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Componente: card ────────────────────────────────────────────────── */
 function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, onAbastecer, filtro }) {
   const esCombo = item.tipo === 'combo';
@@ -291,6 +381,8 @@ export default function VitrinaGrid() {
   const [usuarioActual, setUsuarioActual] = useState(null);
   const [generandoLanding, setGenerandoLanding] = useState(false);
   const [errorGenerarLanding, setErrorGenerarLanding] = useState(null);
+  const [modalCategoriaAbierto, setModalCategoriaAbierto] = useState(false);
+  const [mensajeCategoria, setMensajeCategoria] = useState(null);
 
   const [searchParams] = useSearchParams();
   const enOnboarding = searchParams.get('onboarding') === 'productos';
@@ -362,6 +454,18 @@ export default function VitrinaGrid() {
     () => itemsSeleccionados.filter(item => item.tipo === 'producto'),
     [itemsSeleccionados]
   );
+
+  async function guardarCategoriaSeleccion(payload) {
+    const resultado = await vitrinaService.categorizarProductos(payload);
+    setModalCategoriaAbierto(false);
+    setMensajeCategoria(
+      resultado.subcategoria
+        ? `Se agruparon ${resultado.actualizados} producto${resultado.actualizados === 1 ? '' : 's'} en ${resultado.categoria.nombre} / ${resultado.subcategoria.nombre}.`
+        : `Se agruparon ${resultado.actualizados} producto${resultado.actualizados === 1 ? '' : 's'} en ${resultado.categoria.nombre}.`
+    );
+    setSeleccionados(new Set());
+    await cargar();
+  }
 
   function armarCombo(itemsBase = productosSeleccionados) {
     const productos = (itemsBase || []).filter(item => item?.tipo === 'producto');
@@ -529,6 +633,16 @@ export default function VitrinaGrid() {
               <Layers size={15} />
               Armar combo
             </button>
+            <button
+              type="button"
+              className="vit-seleccion-cancelar vit-seleccion-combo"
+              onClick={() => setModalCategoriaAbierto(true)}
+              disabled={productosSeleccionados.length === 0}
+              title={productosSeleccionados.length === 0 ? 'Seleccioná al menos un producto para agruparlo.' : 'Agrupar productos seleccionados en una categoría interna'}
+            >
+              <Tag size={15} />
+              Categorizar
+            </button>
             <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
               {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}
               {enOnboarding ? 'Generar landing' : 'Generar mi landing'} <ChevronRight size={15} />
@@ -540,6 +654,12 @@ export default function VitrinaGrid() {
       {errorGenerarLanding && (
         <div className="vit-inline-error" role="alert">
           <AlertCircle size={16} /> {errorGenerarLanding}
+        </div>
+      )}
+
+      {mensajeCategoria && (
+        <div className="vit-inline-success" role="status">
+          <Check size={16} /> {mensajeCategoria}
         </div>
       )}
 
@@ -699,6 +819,14 @@ export default function VitrinaGrid() {
         abierto={cuponesAbierto}
         onCerrar={() => setCuponesAbierto(false)}
         catalogo={catalogoCompleto}
+      />
+
+      <CategoriaSeleccionModal
+        abierto={modalCategoriaAbierto}
+        productos={productosSeleccionados}
+        categorias={categoriasUnicas}
+        onClose={() => setModalCategoriaAbierto(false)}
+        onGuardar={guardarCategoriaSeleccion}
       />
     </div>
   );

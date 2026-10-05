@@ -195,6 +195,58 @@
 
 .gw-input--num { width: 5.5rem; flex: 0 0 auto; }
 
+.gw-flow-config {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) minmax(220px, 0.8fr) minmax(240px, 1fr);
+  gap: 0.85rem;
+  align-items: end;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  padding: 0.95rem;
+  margin: -0.25rem 0 1.25rem;
+}
+
+.gw-flow-config__field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gw-flow-config__field p {
+  margin: 0;
+  color: var(--color-fg-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.gw-segmented {
+  display: inline-flex;
+  padding: 0.18rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.gw-segmented button {
+  min-height: 2rem;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 2px);
+  background: transparent;
+  color: var(--color-fg-muted);
+  padding: 0.35rem 0.75rem;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.gw-segmented button.active {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary-text);
+}
+
 .gw-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -917,6 +969,12 @@
   margin-top: 1.1rem;
 }
 
+.gw-switch--inline {
+  margin-top: 0;
+  align-self: center;
+  min-height: 2.3rem;
+}
+
 .gw-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -954,6 +1012,11 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface-3);
   color: var(--color-fg-muted);
+}
+
+.gw-pill--ok {
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color: var(--color-success);
 }
 
 .gw-card-meta { font-size: 0.78rem; color: var(--color-fg-muted); margin-top: 0.2rem; }
@@ -1000,6 +1063,7 @@
 
 @media (max-width: 1080px) {
   .gw-grid { grid-template-columns: minmax(0, 1fr); }
+  .gw-flow-config { grid-template-columns: minmax(0, 1fr); }
   .gw-aside { display: none; }
   .gw-fab { display: flex; }
 }

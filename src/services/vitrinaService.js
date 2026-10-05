@@ -25,6 +25,9 @@ export const vitrinaService = {
   guardarPrecioProducto: (id, precio) =>
     API.put(`/vitrina/productos/${id}/precio`, { precio }).then(r => r.data),
 
+  categorizarProductos: (payload) =>
+    API.post('/vitrina/productos/categorizar', payload).then(r => r.data),
+
   guardarPrecioCombo: (id, precio) =>
     API.put(`/vitrina/combos/${id}/precio`, { precio }).then(r => r.data),
 

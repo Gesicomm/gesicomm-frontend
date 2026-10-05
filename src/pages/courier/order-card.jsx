@@ -1,6 +1,14 @@
 import { useRef } from "react";
-import { formatGs, STATUS_ORDER } from "../../lib/courier";
+import { formatGs } from "../../lib/courier";
 import { AlertCircle, Bike, Car, Clock, CreditCard, Package, Phone, ShoppingBag, MapPin, MessageCircle, Truck } from "lucide-react";
+import {
+  estadoComercial,
+  estadoLogistico,
+  paymentLine,
+  seguimientoComercial,
+  seguimientoLogistico,
+  seguimientoRecompra,
+} from "./orderLifecycle";
 
 function VehiculoIcon({ v }) {
   if (v === "Moto" || v === "Bicicleta") return <Bike size={13} />;
@@ -92,6 +100,11 @@ export function OrderCard({
     puedeAbrirTimelineAbastecimiento &&
     !["pagar_abastecimiento", "pago_rechazado"].includes(accion?.tipo);
   const mostrarAlertas = necesitaSeguimiento || seguimientoPendiente || puedeAccionarAbastecimiento || puedeValidarPago || abastecimientoEnTransito || abastecimientoInformativo || mostrarTimelineAbastecimiento;
+  const comercial = estadoComercial(envio);
+  const logistico = estadoLogistico(envio);
+  const segComercial = seguimientoComercial(envio);
+  const segLogistico = seguimientoLogistico(envio);
+  const segRecompra = seguimientoRecompra(envio);
 
   const handleSeguimientoClick = (event) => {
     event.stopPropagation();
@@ -157,30 +170,9 @@ export function OrderCard({
             </p>
           )}
         </div>
-        <div style={{ position: 'relative' }}>
-          {readOnly ? (
-            <span className="order-state-readonly" title="Estado operativo del pedido">
-              {envio.estado}
-            </span>
-          ) : (
-            <select
-              value={envio.estado}
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              onChange={(e) => onChangeEstado(envio.id, e.target.value)}
-              style={{
-                background: 'var(--color-canvas)',
-                color: 'var(--color-fg-muted)',
-                border: '1px solid color-mix(in srgb, var(--color-fg) 10%, transparent)',
-                borderRadius: '0.375rem',
-                fontSize: '0.7rem',
-                padding: '0.15rem 0.3rem',
-                cursor: 'pointer'
-              }}
-            >
-              {STATUS_ORDER.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          )}
+        <div className="order-stage-stack" title="Etapa actual del pedido">
+          <span>{comercial.label}</span>
+          {logistico.id !== "SinLogistica" && <small>{logistico.label}</small>}
         </div>
       </div>
 
@@ -221,6 +213,21 @@ export function OrderCard({
           </span>
         </div>
       )}
+
+      <div className="order-card-lifecycle" aria-label="Resumen por etapa">
+        <div>
+          <span>Estado comercial</span>
+          <strong>{segComercial.active ? segComercial.label : paymentLine(envio)}</strong>
+        </div>
+        <div>
+          <span>Estado logístico</span>
+          <strong>{segLogistico.active ? segLogistico.label : logistico.label}</strong>
+        </div>
+        <div>
+          <span>Estado recompra</span>
+          <strong>{segRecompra.status}</strong>
+        </div>
+      </div>
 
       {mostrarAlertas && (
         <div className="order-card-alerts" aria-label="Pendientes del pedido">

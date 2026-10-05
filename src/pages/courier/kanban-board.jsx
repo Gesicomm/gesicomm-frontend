@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { STATUS_ORDER } from "../../lib/courier"
 import { KanbanColumn } from "./kanban-column"
+import { KANBAN_CONTEXTS } from "./orderLifecycle"
 
 const ABASTECIMIENTO_SEGUIMIENTO_ESTADOS = [
   "pago_enviado",
@@ -30,7 +31,10 @@ function tieneSeguimientoAbastecimiento(envio) {
   return ABASTECIMIENTO_SEGUIMIENTO_ESTADOS.includes(envio?.abastecimiento_estado)
 }
 
-function buildLanes() {
+function buildLanes(context = "legacy") {
+  if (context !== "legacy") {
+    return KANBAN_CONTEXTS[context]?.lanes || KANBAN_CONTEXTS.comercial.lanes
+  }
   return STATUS_ORDER.flatMap((estado) => {
     const lane = { id: estado, type: "estado", estado }
     return estado === "Confirmado" ? [lane, ABASTECIMIENTO_SEGUIMIENTO_LANE] : [lane]
@@ -50,6 +54,7 @@ export function KanbanBoard({
   onAbrirTimelineAbastecimiento,
   onAccionSiguiente,
   isAdmin,
+  context = "legacy",
 }) {
   const boardRef = useRef(null)
   const pointerRef = useRef({ x: 0, y: 0 })
@@ -118,7 +123,7 @@ export function KanbanBoard({
     }
   }, [draggingId])
 
-  const lanes = buildLanes()
+  const lanes = buildLanes(context)
 
   return (
     <div ref={boardRef} className="kanban-board">
@@ -126,9 +131,11 @@ export function KanbanBoard({
         <KanbanColumn
           key={lane.id}
           estado={lane.estado || lane.id}
-          meta={lane.type === "abastecimiento" ? lane : undefined}
+          meta={lane.type === "abastecimiento" || lane.operational ? lane : undefined}
           envios={envios.filter((e) => (
-            lane.type === "abastecimiento"
+            lane.match
+              ? lane.match(e)
+              : lane.type === "abastecimiento"
               ? tieneSeguimientoAbastecimiento(e)
               : e.estado === lane.estado && !(lane.estado === "Confirmado" && tieneSeguimientoAbastecimiento(e))
           ))}
@@ -143,7 +150,7 @@ export function KanbanBoard({
           onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
           onAccionSiguiente={onAccionSiguiente}
           isAdmin={isAdmin}
-          readOnly={lane.type === "abastecimiento"}
+          readOnly={lane.type === "abastecimiento" || lane.operational}
           emptyText={lane.emptyText}
         />
       ))}

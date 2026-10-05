@@ -44,7 +44,7 @@ const SIDEBAR_FALLBACK = [
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-pedidos', label: 'Pedidos', icono: 'ShoppingCart', menuKey: 'mis-pedidos', dangerBadgeKey: 'seguimientos_vencidos' },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/inventario', label: 'Inventario / Ingresos', icono: 'PackageCheck', menuKey: 'inventario', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/mis-abastecimientos', label: 'Mis Abastecimientos', icono: 'Truck', menuKey: 'mis-abastecimientos', rolesPermitidos: ['usuario', 'administrador'] },
-  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos de mensajes', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
+  { contexto: 'ecommerce', seccion: 'OPERACIONES', path: '/pedidos/configuracion', label: 'Flujos y plantillas', icono: 'Settings', menuKey: 'pedidos-configuracion', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/mi-dashboard', label: 'Dashboard', icono: 'LayoutDashboard', menuKey: 'mi-dashboard', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/costos-gastos', label: 'Control financiero', icono: 'Receipt', menuKey: 'finanzas-costos-gastos', rolesPermitidos: ['usuario', 'administrador'] },
   { contexto: 'ecommerce', seccion: 'ANÁLISIS', path: '/finanzas/proveedores', label: 'Proveedores', icono: 'Truck', menuKey: 'finanzas-proveedores', rolesPermitidos: ['administrador'] },
@@ -249,11 +249,15 @@ const UserLayout = ({ children }) => {
     const badgeDanger = item.dangerBadgeKey === 'seguimientos_vencidos' && vencidosCount > 0
       ? vencidosCount
       : null;
+    const menuKey = item.menuKey || item.menu_key;
+    const label = menuKey === 'pedidos-configuracion'
+      ? 'Flujos y plantillas'
+      : (item.label || item.etiqueta);
 
     return {
       ...item,
-      label: item.label || item.etiqueta,
-      menuKey: item.menuKey || item.menu_key,
+      label,
+      menuKey,
       icon: <Icono size={14} />,
       danger: Boolean(badgeDanger),
       badgeDanger,
@@ -399,7 +403,7 @@ const UserLayout = ({ children }) => {
         </footer>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 min-h-0 flex-1 flex-col">
         <header className={`flex h-14 flex-shrink-0 items-center justify-between border-b border-border px-4 ${desktopClosed ? '' : 'lg:hidden'}`}>
           <div className="flex items-center gap-3">
             <button
@@ -436,7 +440,17 @@ const UserLayout = ({ children }) => {
           </div>
         </header>
 
-        <main className="dashboard-main" style={{ background: 'var(--color-canvas)', flex: 1, padding: 0, overflowY: 'auto' }}>
+        <main
+          className="dashboard-main"
+          style={{
+            background: 'var(--color-canvas)',
+            flex: 1,
+            minHeight: 0,
+            padding: 0,
+            overflowY: isLandingRoute ? 'hidden' : 'auto',
+            overflowX: isLandingRoute ? 'hidden' : undefined,
+          }}
+        >
           {children}
         </main>
       </div>

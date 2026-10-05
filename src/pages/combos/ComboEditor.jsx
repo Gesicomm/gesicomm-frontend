@@ -37,6 +37,7 @@ const FASE = Object.fromEntries(FASES.map((f, i) => [f.id, i]));
 const MAX_COMBO_IMAGENES = 5;
 const MAX_COMBO_IMAGEN_BYTES = 5 * 1024 * 1024;
 const DESCUENTOS_RAPIDOS = [0, 10, 20, 30, 50];
+const PRODUCTOS_SELECTOR_LIMIT = 12;
 
 // ─── Formato ──────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,9 @@ function SelectorProductos({ onElegir, onPrecioGuardado, onGuardandoPrecio, guar
   const [texto, setTexto] = useState('');
   const [resultados, setResultados] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [pagina, setPagina] = useState(1);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalProductos, setTotalProductos] = useState(0);
   const timer = useRef(null);
   const pedido = useRef(0);
 
@@ -157,18 +161,38 @@ function SelectorProductos({ onElegir, onPrecioGuardado, onGuardandoPrecio, guar
       const n = ++pedido.current;
       setCargando(true);
       try {
-        const res = await productService.buscar({ texto: texto.trim() || undefined, activo: true, limit: 12 });
-        if (n === pedido.current) setResultados(res.productos || []);
+        const res = await productService.buscar({
+          texto: texto.trim() || undefined,
+          activo: true,
+          page: pagina,
+          limit: PRODUCTOS_SELECTOR_LIMIT,
+        });
+        if (n === pedido.current) {
+          const productos = Array.isArray(res) ? res : (res?.productos || []);
+          setResultados(productos);
+          setTotalPaginas(Math.max(1, Number(res?.total_paginas || res?.totalPages || 1)));
+          setTotalProductos(Number(res?.total || productos.length));
+        }
       } catch {
-        if (n === pedido.current) setResultados([]);
+        if (n === pedido.current) {
+          setResultados([]);
+          setTotalPaginas(1);
+          setTotalProductos(0);
+        }
       } finally {
         if (n === pedido.current) setCargando(false);
       }
     }, texto ? 280 : 0);
     return () => clearTimeout(timer.current);
-  }, [texto]);
+  }, [texto, pagina]);
 
   const visibles = resultados.filter(p => !excluir.includes(p.id));
+  const puedeRetroceder = pagina > 1;
+  const puedeAvanzar = pagina < totalPaginas;
+  const cambiarTexto = e => {
+    setTexto(e.target.value);
+    setPagina(1);
+  };
 
   return (
     <div className="cw-selector">
@@ -177,7 +201,7 @@ function SelectorProductos({ onElegir, onPrecioGuardado, onGuardandoPrecio, guar
         <input
           className="filter-input"
           value={texto}
-          onChange={e => setTexto(e.target.value)}
+          onChange={cambiarTexto}
           placeholder={placeholder}
           autoFocus={autoFocus}
           autoComplete="off"
@@ -218,6 +242,30 @@ function SelectorProductos({ onElegir, onPrecioGuardado, onGuardandoPrecio, guar
           );
         })}
       </ul>
+      {(totalPaginas > 1 || totalProductos > PRODUCTOS_SELECTOR_LIMIT) && (
+        <div className="cw-selector-paginacion" aria-label="Paginación de productos">
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={cargando || !puedeRetroceder}
+            onClick={() => setPagina(prev => Math.max(1, prev - 1))}
+          >
+            <ArrowLeft size={14} /> Anterior
+          </button>
+          <span>
+            Página <b>{pagina}</b> de <b>{totalPaginas}</b>
+            {totalProductos > 0 && <small>{totalProductos.toLocaleString('es-PY')} productos</small>}
+          </span>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={cargando || !puedeAvanzar}
+            onClick={() => setPagina(prev => Math.min(totalPaginas, prev + 1))}
+          >
+            Siguiente <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -89,8 +89,14 @@ export default function ComboProductPage({
   // Valor del combo: suma de precios individuales de referencia de cada
   // producto (a lo que costaría comprarlos sueltos) vs. lo que sale el
   // combo. Se arma sola con lo que ya trae el combo — no se inventa nada.
+  const precioCombo = Number(item.precio) || 0;
   const totalIndividual = productos.reduce((sum, p) => sum + (Number(p.precio) || 0) * (p.cantidad || 1), 0);
-  const ahorroValor = totalIndividual > (item.precio || 0) ? totalIndividual - (item.precio || 0) : null;
+  const totalIndividualValido = totalIndividual > 0 ? totalIndividual : null;
+  const precioReferenciaCombo = totalIndividualValido || (Number(item.precioAntes) > precioCombo ? Number(item.precioAntes) : null);
+  const ahorroValor = precioReferenciaCombo && precioReferenciaCombo > precioCombo ? precioReferenciaCombo - precioCombo : null;
+  const descuentoPorcentaje = ahorroValor && precioReferenciaCombo
+    ? Math.round((ahorroValor / precioReferenciaCombo) * 100)
+    : null;
   const productosHero = productos.slice(0, 4);
   const totalUnidades = productos.reduce((sum, p) => sum + (Number(p.cantidad) || 1), 0);
   const resumenUnidades = totalUnidades === 1 ? '1 producto incluido' : `${totalUnidades} productos incluidos`;
@@ -139,35 +145,6 @@ export default function ComboProductPage({
           )}
 
           <section className="cmb-hero cmb-wrap" id="cmb-hero">
-            <div className="cmb-hero-visual">
-              <div className={`cmb-hero-foto ${!imagenActual ? 'sin-imagen' : ''}`}>
-                {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
-                {imagenActual
-                  ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
-                  : (
-                    <div className="cmb-hero-foto-vacio">
-                      <ImageOff size={32} />
-                      {previewMode && <span>Sin imagen — subila en "Imágenes del combo"</span>}
-                    </div>
-                  )}
-              </div>
-              {galeria.length > 1 && (
-                <div className="cmb-miniaturas">
-                  {galeria.slice(0, 6).map((medio, i) => (
-                    <button
-                      type="button"
-                      key={claveMedioProducto(medio, i)}
-                      aria-label={`Medio ${i + 1} de ${galeria.length}`}
-                      className={`cmb-miniatura ${i === indiceImagen ? 'activa' : ''}`}
-                      onClick={() => setIndiceImagen(i)}
-                    >
-                      <MiniaturaMediaProducto medio={medio} alt="" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
             <div className={`cmb-hero-copy ${claseTitulo}`}>
               {(ficha.hero.eyebrow || item.categoria) && (
                 <p className="cmb-eyebrow">{ficha.hero.eyebrow || nombreCategoria(item.categoria)}</p>
@@ -185,66 +162,101 @@ export default function ComboProductPage({
               )}
 
               {leadTexto && <RichText text={leadTexto} className="cmb-lead" />}
+            </div>
 
-              {Array.isArray(ficha.hero.caracteristicas) && ficha.hero.caracteristicas.length > 0 && (
-                <ul className="cmb-hero-checklist">
-                  {ficha.hero.caracteristicas.map((linea, i) => (
-                    <li key={i}><span className="cmb-check"><Check size={12} strokeWidth={3} /></span> {linea}</li>
-                  ))}
-                </ul>
-              )}
-
-              <div className="cmb-precio-row">
-                {item.precioAntes != null && <del className="cmb-precio-antes">{formatPrecio(item.precioAntes)}</del>}
-                <strong className="cmb-precio-valor">{formatPrecio(item.precio)}</strong>
-              </div>
-              {item.ahorroAbsoluto > 0 && (
-                <p className="cmb-saving">Ahorrás {formatPrecio(item.ahorroAbsoluto)}</p>
-              )}
-
-              {(ficha.hero.nota_stock || ficha.hero.nota_envio) && (
-                <p className="cmb-availability">
-                  <span />
-                  {[ficha.hero.nota_stock, ficha.hero.nota_envio].filter(Boolean).join(' · ')}
-                </p>
-              )}
-
-              {productos.length > 0 && (
-                <div className="cmb-hero-kit" aria-label="Resumen del combo">
-                  <div className="cmb-hero-kit-head">
-                    <span><Layers size={15} /> Combo armado</span>
-                    <strong>{resumenUnidades}</strong>
-                  </div>
-                  <div className="cmb-hero-kit-list">
-                    {productosHero.map(p => (
-                      <div className="cmb-hero-kit-item" key={p.id}>
-                        <div className="cmb-hero-kit-thumb">
-                          {p.imagen ? <img src={getMediaUrl(p.imagen)} alt="" loading="lazy" /> : <ImageOff size={18} />}
-                        </div>
-                        <span>{p.nombre}</span>
-                        <b>×{p.cantidad || 1}</b>
+            <div className="cmb-offer-card" aria-label="Oferta del combo">
+              <div className="cmb-hero-visual">
+                <div className={`cmb-hero-foto ${!imagenActual ? 'sin-imagen' : ''}`}>
+                  {ficha.hero.etiqueta && <span className="cmb-hero-badge">{ficha.hero.etiqueta}</span>}
+                  {imagenActual
+                    ? <div className="lsp-media-frame"><MediaProducto medio={imagenActual} alt={item.nombre} /></div>
+                    : (
+                      <div className="cmb-hero-foto-vacio">
+                        <ImageOff size={32} />
+                        {previewMode && <span>Sin imagen — subila en "Imágenes del combo"</span>}
                       </div>
+                    )}
+                </div>
+                {productos.length > 0 && (
+                  <div className="cmb-kit-strip" aria-label={resumenUnidades}>
+                    {productosHero.map((p, i) => (
+                      <React.Fragment key={p.id}>
+                        {i > 0 && <span className="cmb-kit-plus">+</span>}
+                        <div className="cmb-kit-product">
+                          <div className="cmb-kit-thumb">
+                            {p.imagen ? <img src={getMediaUrl(p.imagen)} alt="" loading="lazy" /> : <ImageOff size={18} />}
+                          </div>
+                          <span>{p.nombre}</span>
+                          <b>×{p.cantidad || 1}</b>
+                        </div>
+                      </React.Fragment>
+                    ))}
+                    {productos.length > productosHero.length && (
+                      <span className="cmb-kit-more">+{productos.length - productosHero.length}</span>
+                    )}
+                  </div>
+                )}
+                {galeria.length > 1 && (
+                  <div className="cmb-miniaturas">
+                    {galeria.slice(0, 6).map((medio, i) => (
+                      <button
+                        type="button"
+                        key={claveMedioProducto(medio, i)}
+                        aria-label={`Medio ${i + 1} de ${galeria.length}`}
+                        className={`cmb-miniatura ${i === indiceImagen ? 'activa' : ''}`}
+                        onClick={() => setIndiceImagen(i)}
+                      >
+                        <MiniaturaMediaProducto medio={medio} alt="" />
+                      </button>
                     ))}
                   </div>
-                  {productos.length > productosHero.length && (
-                    <small className="cmb-hero-kit-more">+{productos.length - productosHero.length} producto{productos.length - productosHero.length === 1 ? '' : 's'} más en el combo</small>
+                )}
+              </div>
+
+              <div className="cmb-offer-panel">
+                <div className="cmb-offer-panel-head">
+                  <span><Layers size={15} /> Combo armado</span>
+                  <strong>{resumenUnidades}</strong>
+                </div>
+
+                <div className="cmb-offer-pricing">
+                  {precioReferenciaCombo && (
+                    <div className="cmb-price-line">
+                      <span>Valor por separado</span>
+                      <del>{formatPrecio(precioReferenciaCombo)}</del>
+                    </div>
                   )}
-                  <div className="cmb-hero-kit-price">
-                    <span>Por separado <b>{formatPrecio(totalIndividual)}</b></span>
-                    <span>En combo <b>{formatPrecio(item.precio)}</b></span>
-                    {ahorroValor != null && <strong>Ahorrás {formatPrecio(ahorroValor)}</strong>}
+                  <div className="cmb-price-main">
+                    <span>Hoy llevás el combo por</span>
+                    <strong>{formatPrecio(item.precio)}</strong>
+                  </div>
+                  {ahorroValor != null && (
+                    <div className="cmb-saving-xl">
+                      <span>Ahorrás {formatPrecio(ahorroValor)}</span>
+                      {descuentoPorcentaje != null && <b>{descuentoPorcentaje}% OFF</b>}
+                    </div>
+                  )}
+                </div>
+
+                {Array.isArray(ficha.hero.caracteristicas) && ficha.hero.caracteristicas.length > 0 && (
+                  <ul className="cmb-hero-checklist">
+                    {ficha.hero.caracteristicas.slice(0, 4).map((linea, i) => (
+                      <li key={i}><span className="cmb-check"><Check size={12} strokeWidth={3} /></span> {linea}</li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="cmb-hero-accion">
+                  <button type="button" className="cmb-cta" onClick={comprar}>
+                    {ficha.hero.cta_texto || 'Quiero mi combo'} <ArrowRight size={16} />
+                  </button>
+
+                  <div className="cmb-trust-row">
+                    {[ficha.hero.nota_envio, ficha.hero.nota_garantia, ficha.hero.nota_stock].filter(Boolean).slice(0, 3).map((nota, i) => (
+                      <span key={i}><Check size={13} strokeWidth={3} /> {nota}</span>
+                    ))}
                   </div>
                 </div>
-              )}
-
-              <div className="cmb-hero-accion">
-                <button type="button" className="cmb-cta" onClick={comprar}>
-                  {ficha.hero.cta_texto || 'Comprar combo'} <ArrowRight size={16} />
-                </button>
-
-                {ficha.hero.nota_garantia && (
-                  <p className="cmb-hero-garantia"><Check size={13} strokeWidth={3} /> {ficha.hero.nota_garantia}</p>
-                )}
               </div>
             </div>
           </section>
@@ -296,7 +308,7 @@ export default function ComboProductPage({
               ))}
               <div className="cmb-breakdown-total">
                 <span>Valor por separado</span>
-                <strong>{formatPrecio(totalIndividual)}</strong>
+                <strong>{precioReferenciaCombo ? formatPrecio(precioReferenciaCombo) : '—'}</strong>
               </div>
             </div>
             <div className="cmb-combo-price">

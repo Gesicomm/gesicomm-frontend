@@ -237,7 +237,7 @@ export default function FulfillmentCard({ onCambio }) {
         <Opcion
           valor="GESICOMM"
           icono={Truck}
-          titulo="Gesicomm gestiona mis envíos"
+          titulo="Gesicom-RAHA gestiona mis envíos"
           deshabilitada={!config.gesicomm.disponible}
           motivo="Gesicomm todavía no tiene cobertura configurada."
         >

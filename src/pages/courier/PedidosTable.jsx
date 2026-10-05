@@ -12,6 +12,17 @@ import { seguimientoService } from "../../services/seguimiento.service";
 import { verificarSesion } from "../../utils/auth";
 import { numeroPedidoVisible } from "./pedidoNumero";
 import { KanbanBoard } from "./kanban-board";
+import {
+  COMMERCIAL_STATUSES,
+  LOGISTIC_STATUSES,
+  STAGE_FILTERS,
+  estadoComercial,
+  estadoLogistico,
+  paymentLine,
+  seguimientoComercial,
+  seguimientoLogistico,
+  seguimientoRecompra,
+} from "./orderLifecycle";
 
 
 const LIMITE = 10;
@@ -28,6 +39,7 @@ const TAB_ABASTECIMIENTO_CFG = {
   chipBg: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
   chipText: "var(--color-primary)",
 };
+const TODOS_ESTADOS_ID = "TODOS";
 
 const STATUS_COMPACT_LABEL = {
   EnSeguimiento: "Seguimiento Contacto",
@@ -94,6 +106,13 @@ const FILTROS_VACIOS = {
   seguimiento_responsable_id: "TODOS",
   seguimiento_pendiente: false,
   seguimiento_vencido: false,
+};
+
+const STAGE_TO_ESTADOS = {
+  todos: null,
+  comercial: COMMERCIAL_STATUSES,
+  logistica: LOGISTIC_STATUSES,
+  recompra: [],
 };
 
 function EstadoBadgeDropdown({ estado, onChange }) {
@@ -314,6 +333,62 @@ function AbastecimientoBadge({ envio, onAbrirTimeline }) {
   );
 }
 
+function LifecycleCell({ primary, secondary, alert, tone = "neutral" }) {
+  return (
+    <div className={`pt-life-cell pt-life-cell--${tone}`}>
+      <strong>{primary}</strong>
+      {secondary && <span>{secondary}</span>}
+      {alert && <em>{alert}</em>}
+    </div>
+  );
+}
+
+function ComercialCell({ envio }) {
+  const estado = estadoComercial(envio);
+  const seguimiento = seguimientoComercial(envio);
+  const secondary = seguimiento.active
+    ? seguimiento.label
+    : estado.id === "confirmado"
+    ? paymentLine(envio)
+    : null;
+  return (
+    <LifecycleCell
+      primary={estado.label}
+      secondary={secondary}
+      alert={envio.recordatorio_vencido ? "Acción vencida" : null}
+      tone={estado.id === "cancelado" ? "danger" : estado.id === "confirmado" ? "success" : seguimiento.active ? "info" : "warning"}
+    />
+  );
+}
+
+function LogisticaCell({ envio }) {
+  const estado = estadoLogistico(envio);
+  const seguimiento = seguimientoLogistico(envio);
+  const courier = envio.Courier?.nombre || envio.proveedor_logistico_nombre || null;
+  const secondary = estado.id === "SinLogistica"
+    ? "Disponible al confirmar"
+    : [courier, seguimiento.active ? "Seguimiento activo" : null].filter(Boolean).join(" · ");
+  return (
+    <LifecycleCell
+      primary={estado.label}
+      secondary={secondary}
+      alert={estado.id === "DevolucionPendiente" ? "Revisar devolución" : null}
+      tone={estado.id === "Entregado" ? "success" : estado.id === "DevolucionPendiente" ? "danger" : seguimiento.active ? "info" : "neutral"}
+    />
+  );
+}
+
+function RecompraCell({ envio }) {
+  const seguimiento = seguimientoRecompra(envio);
+  return (
+    <LifecycleCell
+      primary={seguimiento.status}
+      secondary={seguimiento.active ? seguimiento.label : "—"}
+      tone={seguimiento.active ? "info" : "neutral"}
+    />
+  );
+}
+
 function ResumenItem({ label, value, color, tone = "default" }) {
   return (
     <span className={`pt-resumen-item pt-resumen-item--${tone}`}>
@@ -506,12 +581,13 @@ export function PedidosTable({
   onAbrirSeguimiento,
   refrescarKey = 0,
   initialPedidoId = "",
-  initialEstado = "Pendiente",
+  initialEstado = TODOS_ESTADOS_ID,
   soloAbastecimiento = false,
   initialAbastecimientoEstado = "en_seguimiento",
 }) {
   const filtrosBase = useMemo(() => ({ ...FILTROS_VACIOS, pedido_id: initialPedidoId || "" }), [initialPedidoId]);
   const [estadoActivo, setEstadoActivo] = useState(initialEstado);
+  const [etapaActiva, setEtapaActiva] = useState("todos");
   // Fila expandida con el seguimiento de abastecimiento (solo en esa pestaña).
   const [timelineExpandidoId, setTimelineExpandidoId] = useState(null);
   const [abastecimientoEstadoActivo, setAbastecimientoEstadoActivo] = useState(initialAbastecimientoEstado);
@@ -552,7 +628,7 @@ export function PedidosTable({
   }, [initialPedidoId]);
 
   useEffect(() => {
-    setEstadoActivo(initialEstado);
+    setEstadoActivo(initialEstado || TODOS_ESTADOS_ID);
     setPage(1);
   }, [initialEstado]);
 
@@ -596,9 +672,16 @@ export function PedidosTable({
     setLoading(true);
     try {
       const payload = { ...construirPayloadBase(f), page: p, limit: LIMITE };
+      const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
       if (!soloAbastecimiento && estado === TAB_ABASTECIMIENTO_ID) {
         payload.abastecimiento_estado = "pagado";
-      } else if (!soloAbastecimiento && estado) {
+      } else if (!soloAbastecimiento && etapaActiva === "recompra") {
+        payload.recompra_activa = true;
+      } else if (!soloAbastecimiento && etapaActiva !== "todos" && estadosEtapa?.length) {
+        payload.estados = estado && estado !== TODOS_ESTADOS_ID && estadosEtapa.includes(estado)
+          ? [estado]
+          : estadosEtapa;
+      } else if (!soloAbastecimiento && estado && estado !== TODOS_ESTADOS_ID) {
         payload.estados = [estado];
       }
       const res = await getEnviosPaginados(payload);
@@ -608,7 +691,7 @@ export function PedidosTable({
     } finally {
       setLoading(false);
     }
-  }, [construirPayloadBase, soloAbastecimiento]);
+  }, [construirPayloadBase, soloAbastecimiento, etapaActiva]);
 
   // El kanban es un tablero por estado: tiene que mostrar TODOS los estados
   // a la vez (una columna por cada uno), no solo la pestana de estado activa
@@ -620,6 +703,9 @@ export function PedidosTable({
     setKanbanLoading(true);
     try {
       const payloadBase = { ...construirPayloadBase(f), limit: 100 };
+      const estadosEtapa = STAGE_TO_ESTADOS[etapaActiva];
+      if (etapaActiva !== "todos" && estadosEtapa?.length) payloadBase.estados = estadosEtapa;
+      if (etapaActiva === "recompra") payloadBase.recompra_activa = true;
 
       const acumulado = [];
       let pageToLoad = 1;
@@ -638,7 +724,7 @@ export function PedidosTable({
     } finally {
       setKanbanLoading(false);
     }
-  }, [construirPayloadBase, soloAbastecimiento]);
+  }, [construirPayloadBase, soloAbastecimiento, etapaActiva]);
 
   const handleEliminarPedido = async (envio) => {
     if (!window.confirm(`¿Estás seguro de que deseas eliminar permanentemente el pedido de ${envio.cliente || "Cliente"}? Esta acción no se puede deshacer y liberará cualquier stock reservado.`)) {
@@ -725,6 +811,20 @@ export function PedidosTable({
     setEstadoActivo(estado);
     setTimelineExpandidoId(null);
     setPage(1);
+  };
+
+  const handleSelectEtapa = (etapa) => {
+    setEtapaActiva(etapa);
+    setPage(1);
+    setTimelineExpandidoId(null);
+    if (etapa === "todos" || etapa === "recompra") {
+      setEstadoActivo(TODOS_ESTADOS_ID);
+      return;
+    }
+    const estados = STAGE_TO_ESTADOS[etapa];
+    if (estados?.length && !estados.includes(estadoActivo)) {
+      setEstadoActivo(TODOS_ESTADOS_ID);
+    }
   };
 
   const handleSelectAbastecimientoEstado = (estado) => {
@@ -850,7 +950,13 @@ export function PedidosTable({
   const esTabAbastecimiento = !soloAbastecimiento && estadoActivo === TAB_ABASTECIMIENTO_ID;
   const estaEnKanban = !soloAbastecimiento && vista === "kanban";
 
-  const envios = data.data || [];
+  const enviosBase = data.data || [];
+  const envios = etapaActiva === "recompra"
+    ? enviosBase.filter((e) => {
+        const recompra = seguimientoRecompra(e);
+        return recompra.active || e.recompra_conseguida || e.recompra_estado === "SIN_SEGUIMIENTO";
+      })
+    : enviosBase;
   // Viene del backend (agregado sobre TODOS los pedidos filtrados, sin
   // paginar y sin restringir a un solo estado) para que el numero sea el
   // mismo en Tabla y en Kanban -- antes se sumaba solo lo cargado en
@@ -866,7 +972,7 @@ export function PedidosTable({
   const montoCourierEntregado = Number(resumenEntregados?.costo_total_courier || 0);
   const saldoLiquidacionEntregados = Number(resumenEntregados?.saldo_liquidacion || 0);
   const montoPendienteRendicion = Math.abs(saldoLiquidacionEntregados);
-  const tableColSpan = soloAbastecimiento ? 9 : 10;
+  const tableColSpan = 9;
   const pagosAbastecimientoPendientes = envios.filter((e) => e.accion_siguiente?.tipo === "pagar_abastecimiento");
   const totalAbastecimientoPendiente = pagosAbastecimientoPendientes.reduce(
     (acc, e) => acc + (Number(e.abastecimiento_costo) || 0),
@@ -874,6 +980,16 @@ export function PedidosTable({
   );
   const abastecimientoModalKey = pagosAbastecimientoPendientes.map((e) => e.id).sort((a, b) => a - b).join("-");
   const primerPagoPendiente = pagosAbastecimientoPendientes[0] || null;
+  const resumenCiclo = {
+    pendientes: Number(conteos.Pendiente || 0) + Number(conteos.EnSeguimiento || 0),
+    confirmados: Number(conteos.Confirmado || 0),
+    logistica: LOGISTIC_STATUSES.reduce((acc, st) => acc + Number(conteos[st] || 0), 0),
+    entregados: Number(conteos.Entregado || 0),
+    recompra: Number(conteos.recompra_activa || 0),
+    incidencias: Number(conteos.Devuelto || 0) + Number(conteos.Perdido || 0) + Number(conteos.seguimiento_vencidos || 0),
+  };
+  const estadosEtapaActiva = STAGE_TO_ESTADOS[etapaActiva] || [];
+  const totalEstadosEtapaActiva = estadosEtapaActiva.reduce((acc, st) => acc + Number(conteos[st] || 0), 0);
 
   useEffect(() => {
     if (
@@ -958,7 +1074,7 @@ export function PedidosTable({
         <div className="pt-viewbar">
           <div className="pt-viewbar-copy">
             <strong>Pedidos</strong>
-            <span>{loading ? "Cargando..." : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}</span>
+            <span>Gestión comercial, logística y recompra · {loading ? "Cargando..." : `${totalPedidosVista.toLocaleString("es-PY")} pedido${totalPedidosVista === 1 ? "" : "s"}`}</span>
           </div>
 
           <div className="pt-view-switch" role="group" aria-label="Cambiar vista de pedidos">
@@ -980,6 +1096,17 @@ export function PedidosTable({
             </button>
           </div>
         </div>
+      )}
+
+      {!soloAbastecimiento && (
+        <section className="pt-cycle-summary" aria-label="Resumen del ciclo de pedidos">
+          <ResumenItem label="Pendientes" value={resumenCiclo.pendientes.toLocaleString("es-PY")} tone="warning" />
+          <ResumenItem label="Confirmados" value={resumenCiclo.confirmados.toLocaleString("es-PY")} tone="info" />
+          <ResumenItem label="En logística" value={resumenCiclo.logistica.toLocaleString("es-PY")} tone="money" />
+          <ResumenItem label="Entregados" value={resumenCiclo.entregados.toLocaleString("es-PY")} tone="success" />
+          <ResumenItem label="Recompra activa" value={resumenCiclo.recompra.toLocaleString("es-PY")} tone="default" />
+          <ResumenItem label="Incidencias" value={resumenCiclo.incidencias.toLocaleString("es-PY")} tone="danger" />
+        </section>
       )}
 
       {/* ── Pestañas por estado con contador ── */}
@@ -1008,59 +1135,60 @@ export function PedidosTable({
             })}
           </div>
         </div>
-      ) : estaEnKanban ? (
+      ) : (
+        <section className="pt-stage-shell" aria-label="Etapas del ciclo de venta">
+          <div className="pt-stage-tabs" role="tablist" aria-label="Filtrar por etapa">
+            {STAGE_FILTERS.map((stage) => (
+              <button
+                key={stage.id}
+                type="button"
+                className={etapaActiva === stage.id ? "active" : ""}
+                aria-selected={etapaActiva === stage.id}
+                onClick={() => handleSelectEtapa(stage.id)}
+              >
+                {stage.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!soloAbastecimiento && estaEnKanban ? (
         <div className="pt-kanban-context" role="note">
           <Columns3 size={16} />
           <div>
-            <strong>Estás viendo el flujo completo.</strong>
-            <span>Los estados viven en las columnas del tablero; los filtros de búsqueda, ciudad, fechas y courier siguen aplicando.</span>
+            <strong>Kanban por {etapaActiva === "todos" ? "Comercial" : STAGE_FILTERS.find((s) => s.id === etapaActiva)?.label}.</strong>
+            <span>Las columnas operativas no crean estados nuevos: muestran qué necesita cada pedido ahora.</span>
           </div>
         </div>
-      ) : (
-        <section className="pt-status-shell" aria-label="Bandejas por estado">
-          <div className="pt-status-tabs" role="tablist" aria-label="Estados del pedido">
-            {STATUS_ORDER.map((st) => {
+      ) : !soloAbastecimiento && etapaActiva !== "todos" ? (
+        <section className="pt-status-shell" aria-label={`Filtros secundarios de ${etapaActiva}`}>
+          <div className="pt-status-tabs pt-status-tabs--secondary" role="tablist">
+            <button
+              type="button"
+              onClick={() => handleSelectEstado(TODOS_ESTADOS_ID)}
+              className={`pt-status-chip ${estadoActivo === TODOS_ESTADOS_ID ? "active" : ""}`}
+              aria-selected={estadoActivo === TODOS_ESTADOS_ID}
+            >
+              <span className="pt-status-chip__label">Todos</span>
+              <strong className="pt-status-chip__count">{totalEstadosEtapaActiva}</strong>
+            </button>
+            {estadosEtapaActiva.map((st) => {
               const cfg = STATUS[st] || {};
               const active = estadoActivo === st;
-              const isEnSeguimiento = st === "EnSeguimiento";
-              const vencidosSeguimiento = Number(conteos?.seguimiento_vencidos) || 0;
-              const tieneAlertas = isEnSeguimiento && vencidosSeguimiento > 0;
               const label = STATUS_COMPACT_LABEL[st] || cfg.label || st;
-
               return [
                 <button
                   key={st}
                   type="button"
                   onClick={() => handleSelectEstado(st)}
-                  className={`pt-status-chip ${active ? "active" : ""} ${tieneAlertas ? "has-alert" : ""}`}
-                  title={cfg.label || st}
+                  className={`pt-status-chip ${active ? "active" : ""}`}
                   style={active ? { borderColor: cfg.chipText, background: cfg.chipBg, color: cfg.chipText } : undefined}
                 >
                   <span className="pt-status-chip__label">{label}</span>
                   <strong className="pt-status-chip__count">{conteos[st] ?? 0}</strong>
-                  {tieneAlertas && (
-                    <span
-                      title={`${vencidosSeguimiento} seguimiento(s) pendientes de contactar`}
-                      style={{
-                        background: "var(--color-danger)",
-                        color: "#ffffff",
-                        fontSize: "0.68rem",
-                        fontWeight: 800,
-                        padding: "1px 6px",
-                        borderRadius: "999px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "2px",
-                        boxShadow: "0 0 6px color-mix(in srgb, var(--color-danger) 60%, transparent)",
-                      }}
-                      className="vencido-pulse"
-                    >
-                      <Clock size={10} />
-                      {vencidosSeguimiento}
-                    </span>
-                  )}
                 </button>,
-                st === "Confirmado" && (
+                etapaActiva === "comercial" && st === "Confirmado" && (
                   <button
                     key="abastecimiento-seguimiento-tab"
                     type="button"
@@ -1076,7 +1204,7 @@ export function PedidosTable({
             })}
           </div>
         </section>
-      )}
+      ) : null}
 
       {!soloAbastecimiento && (
         <div className={`pt-ops-summary ${estadoActivo === "Entregado" && resumenEntregados ? "pt-ops-summary--story" : ""}`} aria-label="Resumen financiero de pedidos">
@@ -1421,6 +1549,7 @@ export function PedidosTable({
               onAbrirTimelineAbastecimiento={onAbrirTimelineAbastecimiento}
               onAccionSiguiente={handleAccionSiguiente}
               isAdmin={esAdmin}
+              context={etapaActiva === "todos" ? "comercial" : etapaActiva}
             />
           )}
         </div>
@@ -1439,14 +1568,18 @@ export function PedidosTable({
               ) : (
                 <>
                   <th className="pt-th">Cliente</th>
-                  <th className="pt-th">Teléfono</th>
-                  <th className="pt-th">Ciudad</th>
                 </>
               )}
               <th className="pt-th pt-th-product">Producto / Oferta</th>
               <th className="pt-th pt-th-num">Total</th>
-              {!soloAbastecimiento && <th className="pt-th pt-th-courier">Courier</th>}
-              <th className="pt-th pt-th-state">Estado</th>
+              {!soloAbastecimiento && (
+                <>
+                  <th className="pt-th">Estado comercial</th>
+                  <th className="pt-th">Estado logístico</th>
+                  <th className="pt-th">Estado de recompra</th>
+                </>
+              )}
+              {soloAbastecimiento && <th className="pt-th pt-th-state">Estado</th>}
               {soloAbastecimiento && <th className="pt-th">Abastecimiento</th>}
               <th className="pt-th pt-th-action">Acción</th>
             </tr>
@@ -1463,8 +1596,12 @@ export function PedidosTable({
                 <td colSpan={tableColSpan} className="pt-empty">
                   {soloAbastecimiento
                     ? "No hay pedidos de abastecimiento que coincidan con los filtros."
+                    : etapaActiva === "recompra"
+                    ? "No hay pedidos con seguimiento de recompra activo que coincidan con los filtros."
                     : estadoActivo === TAB_ABASTECIMIENTO_ID
                     ? "No hay pedidos con abastecimiento en seguimiento que coincidan con los filtros."
+                    : estadoActivo === TODOS_ESTADOS_ID
+                    ? "No hay pedidos que coincidan con los filtros."
                     : `No hay pedidos en "${estadoActivo}" que coincidan con los filtros.`}
                 </td>
               </tr>
@@ -1540,9 +1677,7 @@ export function PedidosTable({
                               e.cliente ||
                               "—"}
                           </span>
-                        </td>
-                        <td className="pt-td" data-label="Teléfono">
-                          <span className="pt-phone-cell" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                          <span className="pt-phone-cell" style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap", marginTop: 4 }}>
                             <span>{e.telefono || "—"}</span>
                             {e.recordatorio_vencido ? (
                               <span
@@ -1604,10 +1739,7 @@ export function PedidosTable({
                               </button>
                             )}
                           </span>
-                        </td>
-                        <td className="pt-td pt-td-ciudad" data-label="Ciudad">
-                          <span>{e.ciudad || "—"}</span>
-                          {e.departamento && <span className="pt-depto">{e.departamento}</span>}
+                          <span className="pt-depto">{[e.ciudad, e.departamento].filter(Boolean).join(" · ") || "Sin ciudad"}</span>
                         </td>
                       </>
                     )}
@@ -1625,25 +1757,31 @@ export function PedidosTable({
                       )}
                     </td>
                     {!soloAbastecimiento && (
-                    <td className="pt-td" data-label="Courier">
-                      {e.Courier ? (
-                        <span className="pt-courier">{e.Courier.nombre}</span>
-                      ) : (
-                        <span className="pt-sin-courier">—</span>
-                      )}
-                    </td>
+                      <>
+                        <td className="pt-td" data-label="Estado comercial">
+                          <ComercialCell envio={e} />
+                        </td>
+                        <td className="pt-td" data-label="Estado logístico">
+                          <LogisticaCell envio={e} />
+                          {e.abastecimiento_estado && e.abastecimiento_estado !== "no_requiere" && (
+                            <div style={{ marginTop: 4 }} onClick={(ev) => ev.stopPropagation()}>
+                              <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
+                            </div>
+                          )}
+                        </td>
+                        <td className="pt-td" data-label="Estado de recompra">
+                          <RecompraCell envio={e} />
+                        </td>
+                      </>
                     )}
-                    <td className="pt-td" data-label="Estado" onClick={(ev) => ev.stopPropagation()}>
-                      <EstadoBadgeDropdown
-                        estado={e.estado}
-                        onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
-                      />
-                      {!soloAbastecimiento && e.abastecimiento_estado && e.abastecimiento_estado !== "no_requiere" && (
-                        <div style={{ marginTop: 4 }} onClick={(ev) => ev.stopPropagation()}>
-                          <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />
-                        </div>
-                      )}
-                    </td>
+                    {soloAbastecimiento && (
+                      <td className="pt-td" data-label="Estado" onClick={(ev) => ev.stopPropagation()}>
+                        <EstadoBadgeDropdown
+                          estado={e.estado}
+                          onChange={(nuevoEstado) => handleItemEstadoChange(e, nuevoEstado)}
+                        />
+                      </td>
+                    )}
                     {soloAbastecimiento && (
                       <td className="pt-td" data-label="Abastecimiento">
                         <AbastecimientoBadge envio={e} onAbrirTimeline={onAbrirTimelineAbastecimiento} />

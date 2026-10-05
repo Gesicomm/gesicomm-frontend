@@ -11,6 +11,7 @@ vi.mock('../../services/vitrinaService', () => ({
     catalogo: vi.fn(),
     guardarPrecioProducto: vi.fn(),
     guardarPrecioCombo: vi.fn(),
+    categorizarProductos: vi.fn(),
   },
 }));
 
@@ -48,13 +49,18 @@ describe('VitrinaGrid Component', () => {
       totalPages: 1,
       total: 1,
     });
+    vitrinaService.categorizarProductos.mockResolvedValue({
+      actualizados: 1,
+      categoria: { id: 10, nombre: 'Suplementos' },
+      subcategoria: { id: 11, nombre: 'Energía' },
+    });
   });
 
   it('renderiza la cabecera con el botón de "Agregar Mis Productos" y la pestaña de "Mis productos"', async () => {
     renderWithRouter(<VitrinaGrid />);
 
     await waitFor(() => {
-      expect(screen.getByText('Mi catálogo')).toBeInTheDocument();
+      expect(screen.getByText('Catálogo de Productos')).toBeInTheDocument();
     });
 
     const btnAgregar = screen.getByText('Agregar Mis Productos');
@@ -138,5 +144,22 @@ describe('VitrinaGrid Component', () => {
     ]);
     sessionStorage.clear();
     window.history.replaceState({}, '', '/');
+  });
+
+  it('agrupa productos seleccionados en una categoría interna', async () => {
+    renderWithRouter(<VitrinaGrid />);
+    fireEvent.click(await screen.findByRole('checkbox', { name: 'Seleccionar Producto de Prueba' }));
+
+    fireEvent.click(screen.getByRole('button', { name: /Categorizar/i }));
+    fireEvent.change(screen.getByPlaceholderText('Ej: Suplementos A del fit'), { target: { value: 'Suplementos' } });
+    fireEvent.change(screen.getByPlaceholderText('Ej: Baja de peso, energía, proteína'), { target: { value: 'Energía' } });
+    fireEvent.click(screen.getByRole('button', { name: /Guardar categoría/i }));
+
+    await waitFor(() => expect(vitrinaService.categorizarProductos).toHaveBeenCalledWith({
+      categoria_nombre: 'Suplementos',
+      subcategoria_nombre: 'Energía',
+      producto_ids: [1],
+    }));
+    expect(await screen.findByText(/Se agruparon 1 producto en Suplementos \/ Energía/)).toBeInTheDocument();
   });
 });

@@ -740,8 +740,8 @@ export default function ConfigurarVentaCodigo({
   const vistaPrevia = <VistaPrevia {...propsVistaPrevia} onAmpliar={() => setPreviewAmpliada(true)} />;
 
   return (
-    <div className="h-full flex flex-col bg-canvas">
-      <div className="flex-1 min-h-0 flex">
+    <div className="h-full min-h-0 max-h-full w-full overflow-hidden flex flex-col bg-canvas">
+      <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración */}
         <div className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
