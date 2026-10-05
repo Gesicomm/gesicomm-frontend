@@ -6,11 +6,11 @@ export const ESTADOS_RAHA = { borrador: 'Borrador', en_revision: 'En revisión d
 export const GRUPOS_RAHA = [
   { titulo: 'Empresa y representante', campos: [['razon_social', 'Razón social'], ['ruc', 'RUC'], ['representante', 'Nombre del representante legal'], ['cedula', 'Cédula del representante legal']] },
   { titulo: 'Contacto y dirección', campos: [['email', 'Email', 'email'], ['telefono', 'Teléfono', 'tel'], ['direccion', 'Dirección'], ['ciudad', 'Ciudad'], ['departamento', 'Departamento']] },
-  { titulo: 'Actividad comercial', campos: [['actividad_economica', 'Actividad económica'], ['tipo_productos', 'Tipo de productos que vendés', 'textarea'], ['operaciones_mensuales', 'Volumen estimado de operaciones por mes', 'number']] },
+  { titulo: 'Actividad comercial', campos: [['actividad_economica', 'Actividad económica'], ['tipo_productos', 'Tipo de productos que vendés', 'textarea'], ['operaciones_mensuales', 'Volumen estimado de operaciones por mes(pedidos)', 'number']] },
   { titulo: 'Cuenta para liquidaciones', campos: [['banco', 'Banco'], ['titular_cuenta', 'Titular de la cuenta'], ['numero_cuenta', 'Número de cuenta'], ['moneda', 'Moneda', 'select']] },
 ];
 const LIMITES = { razon_social: 180, ruc: 30, representante: 180, cedula: 30, email: 150, telefono: 30, direccion: 300, ciudad: 100, departamento: 100, actividad_economica: 300, tipo_productos: 600, operaciones_mensuales: 10, banco: 100, titular_cuenta: 180, numero_cuenta: 80 };
-const TIPOS_DOC = [['ruc', 'Constancia de RUC', true], ['cedula', 'Cédula del representante legal', true], ['cuenta_bancaria', 'Respaldo de cuenta bancaria', false], ['productos', 'Imágenes de productos', false], ['adicional', 'Documentación adicional', false]];
+const TIPOS_DOC = [['ruc', 'Constancia de RUC', true], ['cedula', 'Cédula del representante legal', true]];
 export function RahaHistorial({ solicitud }) {
   return <section className="raha-section"><h3>Seguimiento</h3>
     {solicitud.historial?.length ? <ol className="raha-history">{solicitud.historial.map((entry, index) => <li key={index}>
@@ -80,7 +80,7 @@ export default function RahaConexion({ tienda }) {
         <RahaDocumentos documentos={solicitud.documentos} editable={editable} busy={busy} onUpload={subir} onDownload={doc => action(() => rahaService.documento(doc))} onDelete={doc => { if (window.confirm(`¿Quitar ${doc.nombre}?`)) action(() => rahaService.quitar(doc.id, solicitud.version), 'Archivo quitado.'); }} />
         {editable && <section className="raha-section">
           <p className="raha-muted">PDF, JPG, PNG o WebP. Hasta 8 MB por archivo y 12 adjuntos. Los documentos no se publican en tu tienda.</p>
-          <label className="raha-consent"><input type="checkbox" checked={consentimiento} disabled={busy} onChange={event => setConsentimiento(event.target.checked)} />Autorizo a Gesicom a revisar estos datos y documentos y enviarlos manualmente a Raha para evaluar mi registro.</label>
+          <label className="raha-consent"><input type="checkbox" checked={consentimiento} disabled={busy} onChange={event => setConsentimiento(event.target.checked)} />Autorizo a Raha a revisar estos datos y documentos y enviarlos manualmente a Raha para evaluar mi registro.</label>
           <div className="raha-actions"><button type="button" className="raha-button" disabled={busy} onClick={() => action(() => rahaService.guardar({ datos, version: solicitud.version }), 'Borrador guardado.')}><Save size={16} /> Guardar borrador</button>
             <button type="submit" className="raha-button raha-primary" disabled={busy || !consentimiento}>{busy ? <Loader size={16} className="raha-spin" /> : <Send size={16} />} Enviar solicitud</button></div>
         </section>}

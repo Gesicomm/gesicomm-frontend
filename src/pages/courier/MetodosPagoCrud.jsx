@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { CreditCard, Pencil, Plus, Trash2, X, Percent } from "lucide-react"
+import { CreditCard, Pencil, Plus, Trash2, X, Percent, ToggleLeft, ToggleRight } from "lucide-react"
 import ConfirmDialog from "../../components/ConfirmDialog"
 import { getMetodosPago, createMetodoPago, updateMetodoPago, deleteMetodoPago } from "../../services/courierApi"
 import "./courier.css"
@@ -12,7 +12,7 @@ const emptyForm = {
   comision_porcentaje: 0,
   es_anticipado: false,
   custodia_cobro: "negocio",
-  activo: true,
+  activo: false, // empieza inactivo — el usuario lo activa cuando está listo
 }
 
 export function MetodosPagoCrud() {
@@ -77,6 +77,15 @@ export function MetodosPagoCrud() {
     }
   }
 
+  async function toggleActivo(m) {
+    try {
+      const res = await updateMetodoPago(m.id, { ...m, activo: !m.activo })
+      setMetodos(prev => prev.map(x => x.id === m.id ? res : x))
+    } catch (err) {
+      alert(err.response?.data?.error || 'No se pudo cambiar el estado')
+    }
+  }
+
   async function confirmarBorrado() {
     try {
       await deleteMetodoPago(metodoABorrar.id)
@@ -109,53 +118,60 @@ export function MetodosPagoCrud() {
             <tr>
               <th>Método</th>
               <th style={{ textAlign: 'center' }}>Comisión</th>
-              <th style={{ textAlign: 'center' }}>Tipo</th>
-              <th style={{ textAlign: 'center' }}>Dinero queda en</th>
-              <th style={{ textAlign: 'center' }}>Estado</th>
+              <th style={{ textAlign: 'center' }}>El dinero queda en</th>
+              <th style={{ textAlign: 'center' }}>Activo</th>
               <th style={{ textAlign: 'right' }}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {!loading && metodos.map((m) => (
-              <tr key={m.id}>
+              <tr key={m.id} style={{ opacity: m.activo ? 1 : 0.6, transition: 'opacity 0.2s' }}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '50%', background: 'color-mix(in srgb, var(--color-success) 14%, transparent)', color: 'var(--color-success)' }}>
+                    <span style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '32px', height: '32px', borderRadius: '50%',
+                      background: m.activo ? 'color-mix(in srgb, var(--color-success) 14%, transparent)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
+                      color: m.activo ? 'var(--color-success)' : 'var(--color-fg-muted)'
+                    }}>
                       <CreditCard size={15} />
                     </span>
-                    <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{m.nombre}</span>
+                    <div>
+                      <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>{m.nombre}</span>
+                      {!m.activo && <div style={{ fontSize: '0.7rem', color: 'var(--color-fg-subtle)', marginTop: '1px' }}>Inactivo — no aparece al crear pedidos</div>}
+                    </div>
                   </div>
                 </td>
                 <td style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: 'var(--color-primary-text)' }}>
                   {Number(m.comision_porcentaje).toLocaleString('es-PY', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}%
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-fg-muted)' }}>
-                    {m.es_anticipado ? "Anticipado" : "Al recibir"}
+                  <span style={{ fontSize: '0.75rem', color: m.custodia_cobro === 'courier' ? 'var(--color-warning)' : 'var(--color-fg-muted)' }}>
+                    {m.custodia_cobro === 'courier' ? '🚚 Manos del courier' : '🏪 Cuenta del negocio'}
                   </span>
                 </td>
                 <td style={{ textAlign: 'center' }}>
-                  <span style={{ fontSize: '0.75rem', color: m.custodia_cobro === 'courier' ? 'var(--color-warning)' : 'var(--color-primary-text)' }}>
-                    {m.custodia_cobro === 'courier' ? "Manos del courier" : "Cuenta del negocio"}
-                  </span>
-                </td>
-                <td style={{ textAlign: 'center' }}>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700,
-                    background: m.activo ? 'color-mix(in srgb, var(--color-success) 15%, transparent)' : 'color-mix(in srgb, var(--color-fg) 6%, transparent)',
-                    color: m.activo ? 'var(--color-success)' : 'var(--color-fg-muted)',
-                    border: m.activo ? '1px solid color-mix(in srgb, var(--color-success) 30%, transparent)' : '1px solid color-mix(in srgb, var(--color-fg) 8%, transparent)'
-                  }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: m.activo ? 'var(--color-success)' : 'var(--color-fg-muted)' }} />
-                    {m.activo ? "Activo" : "Inactivo"}
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleActivo(m)}
+                    title={m.activo ? 'Clic para desactivar' : 'Clic para activar'}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.25rem',
+                      color: m.activo ? 'var(--color-success)' : 'var(--color-fg-subtle)',
+                      display: 'inline-flex', alignItems: 'center', transition: 'color 0.15s'
+                    }}
+                  >
+                    {m.activo
+                      ? <ToggleRight size={28} />
+                      : <ToggleLeft size={28} />}
+                  </button>
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                    <button type="button" className="btn-icon" onClick={() => openEdit(m)}>
+                    <button type="button" className="btn-icon" onClick={() => openEdit(m)} title="Editar">
                       <Pencil size={15} />
                     </button>
-                    <button type="button" className="btn-icon danger" onClick={() => setMetodoABorrar(m)}>
+                    <button type="button" className="btn-icon danger" onClick={() => setMetodoABorrar(m)} title="Eliminar">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -164,14 +180,14 @@ export function MetodosPagoCrud() {
             ))}
             {!loading && metodos.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
-                  No hay métodos de pago cargados todavía.
+                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
+                  No hay métodos de pago cargados todavía. Creá uno con el botón de arriba.
                 </td>
               </tr>
             )}
             {loading && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-fg-muted)', background: 'transparent' }}>
                   Cargando métodos de pago...
                 </td>
               </tr>
@@ -254,18 +270,6 @@ export function MetodosPagoCrud() {
                 <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.75rem', color: 'var(--color-fg-subtle)' }}>
                   Porcentaje que se descuenta por cobrar con este método. Se usa en los reportes de rentabilidad.
                 </p>
-              </div>
-
-              <div className="form-group full">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', background: 'color-mix(in srgb, var(--color-fg) 2%, transparent)', padding: '0.85rem 1rem', borderRadius: '0.6rem', border: '1px solid color-mix(in srgb, var(--color-fg) 6%, transparent)', color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>
-                  <input
-                    type="checkbox"
-                    style={{ accentColor: 'var(--color-primary)', width: '16px', height: '16px' }}
-                    checked={form.es_anticipado}
-                    onChange={(e) => setForm((f) => ({ ...f, es_anticipado: e.target.checked }))}
-                  />
-                  <span>Es pago anticipado (afecta qué tarifa de courier se busca)</span>
-                </label>
               </div>
 
               <div className="form-group full">

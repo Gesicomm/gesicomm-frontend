@@ -144,6 +144,7 @@ export default function ConfigurarTienda() {
   const [ok, setOk] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
   const [tab, setTab] = useState(TABS_VALIDAS.has(tabInicial) ? tabInicial : 'tienda');
+  const [subTabPasarelas, setSubTabPasarelas] = useState('metodos');
 
   const [disponibilidad, setDisponibilidad] = useState(null); // { valido, disponible, motivo } | null | 'cargando'
   const ultimaConsulta = useRef(0);
@@ -986,29 +987,90 @@ export default function ConfigurarTienda() {
               {/* ═════════════════════ TAB: PAGOS ═════════════════════════ */}
               {tab === 'pasarelas' && (
                 <div className="tn-tab-content" key="pasarelas">
-                  <section className="tn-group tn-group-plena">
-                    <div className="tn-group-head">
-                      <h3>Métodos de pago del negocio</h3>
-                      <p>Definí efectivo, transferencia, tarjetas y quién custodia el cobro. Pedidos usa esta lista para calcular rendición, comisiones y método final de entrega.</p>
-                    </div>
-                    <div className="tn-group-body">
-                      <div className="tn-embed tn-embed-metodos-pago">
-                        <MetodosPagoCrud />
-                      </div>
-                    </div>
-                  </section>
+                  <div style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    marginBottom: '1.5rem',
+                    borderBottom: '1px solid color-mix(in srgb, var(--vit-border) 70%, transparent)',
+                    paddingBottom: '0.75rem'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setSubTabPasarelas('metodos')}
+                      style={{
+                        padding: '0.55rem 1.1rem',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: subTabPasarelas === 'metodos' ? 'var(--vit-accent)' : 'color-mix(in srgb, var(--color-fg) 5%, transparent)',
+                        color: subTabPasarelas === 'metodos' ? '#fff' : 'var(--vit-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <CreditCard size={15} />
+                      Métodos de Pago
+                    </button>
 
-                  <section className="tn-group tn-group-plena">
-                    <div className="tn-group-head">
-                      <h3>Pasarelas disponibles</h3>
-                      <p>Activá una pasarela y cargá sus credenciales para que aparezca como opción de pago en el checkout de tus landings.</p>
-                    </div>
-                    <div className="tn-group-body">
-                      <div className="tn-embed tn-embed-pagopar">
-                        <PagoParConfig />
+                    <button
+                      type="button"
+                      onClick={() => setSubTabPasarelas('pagopar')}
+                      style={{
+                        padding: '0.55rem 1.1rem',
+                        borderRadius: '0.5rem',
+                        border: 'none',
+                        fontSize: '0.85rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: subTabPasarelas === 'pagopar' ? 'var(--vit-accent)' : 'color-mix(in srgb, var(--color-fg) 5%, transparent)',
+                        color: subTabPasarelas === 'pagopar' ? '#fff' : 'var(--vit-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <Globe size={15} />
+                      Integración Pagopar
+                    </button>
+                  </div>
+
+                  {subTabPasarelas === 'metodos' && (
+                    <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
+                      <div className="tn-group-head">
+                        <h3>Métodos de Pago del Negocio</h3>
+                        <p>
+                          Definí tus métodos de cobro disponibles (Efectivo al recibir, Transferencia Bancaria, Tarjeta de Crédito/Débito, etc.).
+                          Los nuevos métodos se crean <strong>inactivos</strong>; podés activarlos o desactivarlos en cualquier momento con el interruptor de la tabla.
+                        </p>
                       </div>
-                    </div>
-                  </section>
+                      <div className="tn-group-body">
+                        <div className="tn-embed tn-embed-metodos-pago">
+                          <MetodosPagoCrud />
+                        </div>
+                      </div>
+                    </section>
+                  )}
+
+                  {subTabPasarelas === 'pagopar' && (
+                    <section className="tn-group tn-group-plena" style={{ borderTop: 'none', paddingTop: 0 }}>
+                      <div className="tn-group-head">
+                        <h3>Integración con Pasarela Pagopar</h3>
+                        <p>
+                          Conectá tu cuenta de Pagopar cargando tu Token Público y Privado para recibir pagos automáticos con Tarjetas de Crédito/Débito, Billetera Zimple, Tigo Money y redes de cobranza desde el checkout de tus Landings.
+                        </p>
+                      </div>
+                      <div className="tn-group-body">
+                        <div className="tn-embed tn-embed-pagopar">
+                          <PagoParConfig />
+                        </div>
+                      </div>
+                    </section>
+                  )}
                 </div>
               )}
 

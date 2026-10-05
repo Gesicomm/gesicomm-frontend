@@ -111,7 +111,7 @@ function ofertasRuntime(item, venta) {
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const fuente = venta?.presentacion_productos?.[key] || item;
-  return Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria'].map(campo => [campo, String(fuente[campo] || '').trim()]));
+  return Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'urgencia_texto'].map(campo => [campo, String(fuente[campo] || '').trim()]));
 }
 
 export function imagenesParaLanding(item, venta = null) {

@@ -482,6 +482,16 @@ export function runtimeGesicomm() {
         var footer = contenido.querySelector('.product-footer');
         if (footer) footer.insertAdjacentElement('afterend', saving); else contenido.appendChild(saving);
       }
+      if (item.cta_texto) {
+        contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) { btn.textContent = item.cta_texto; });
+      }
+      if (item.urgencia_texto && !contenido.querySelector('.gc-product-urgency')) {
+        var urgencia = document.createElement('p');
+        urgencia.className = 'gc-product-urgency';
+        urgencia.textContent = item.urgencia_texto;
+        var ahorroEl = contenido.querySelector('.gc-commercial-saving');
+        if (ahorroEl) ahorroEl.insertAdjacentElement('afterend', urgencia); else contenido.appendChild(urgencia);
+      }
       if ((item.titulo_comercial || item.mensaje_comercial) && !contenido.querySelector('.gc-commercial-details')) {
         var detalles = document.createElement('button'); detalles.type = 'button'; detalles.className = 'gc-commercial-details';
         detalles.setAttribute('data-gesicomm-ver', item.id || ''); detalles.textContent = 'Ver producto →'; contenido.appendChild(detalles);

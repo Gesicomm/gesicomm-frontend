@@ -118,19 +118,29 @@ h1, h2, h3, p { margin-top: 0; }
 .badge-off { padding: 4px 9px; color: #fff; background: #d95b55; border-radius: 999px; font-size: .72rem; font-weight: 850; }
 
 .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-.product-card { position: relative; display: flex; flex-direction: column; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 22px; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
-.product-card:hover { border-color: color-mix(in srgb, var(--brand) 38%, transparent); box-shadow: var(--shadow-lg); transform: translateY(-5px); }
+.product-card { position: relative; display: flex; flex-direction: column; overflow: hidden; color: #f8fbfd; background: #18232a; border: 1px solid rgba(255,255,255,.1); border-radius: 22px; box-shadow: 0 18px 44px rgba(9, 16, 23, .18); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+.product-card:hover { border-color: rgba(255,255,255,.28); box-shadow: 0 24px 60px rgba(9, 16, 23, .28); transform: translateY(-5px); }
 .product-card[data-agotado] { opacity: .6; }
-.product-badge { position: absolute; z-index: 2; top: 15px; left: 15px; padding: 6px 10px; color: var(--brand-dark); background: var(--brand-soft); border-radius: 999px; font-size: .7rem; font-weight: 850; }
-.product-image { display: grid; height: 260px; padding: 20px; place-items: center; background: #f3f2ee; cursor: pointer; }
+.product-badge { position: absolute; z-index: 3; top: 15px; left: 15px; padding: 7px 10px; color: #fff; background: #b00f3f; border-radius: 8px; font-size: .7rem; font-weight: 900; }
+.gc-commercial-badges { position: absolute; z-index: 4; top: 14px; left: 14px; right: 14px; display: flex; flex-wrap: wrap; gap: 7px; pointer-events: none; }
+.gc-commercial-badges span { padding: 6px 9px; color: #fff; background: #b00f3f; border-radius: 8px; box-shadow: 0 10px 24px rgba(176,15,63,.28); font-size: .68rem; font-weight: 900; line-height: 1; }
+.gc-commercial-badges span:nth-child(2) { background: rgba(255,255,255,.92); color: #18232a; }
+.product-image { display: grid; height: 260px; padding: 20px; place-items: center; background: #fff; cursor: pointer; }
 .product-image img { width: 100%; height: 220px; object-fit: contain; mix-blend-mode: multiply; }
-.product-content { display: flex; flex: 1; flex-direction: column; padding: 23px; }
-.product-category { margin-bottom: 8px; color: var(--brand-dark); font-size: .72rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.product-content { display: flex; flex: 1; flex-direction: column; padding: 20px; }
+.product-category { margin-bottom: 8px; color: rgba(255,255,255,.68); font-size: .72rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
 .product-content h3 { margin-bottom: 10px; font-size: 1.17rem; line-height: 1.14; letter-spacing: -.035em; cursor: pointer; }
-.product-description { margin-bottom: 20px; color: var(--ink-soft); font-size: .88rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.product-footer { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-top: auto; }
+.product-description, .gc-commercial-copy { margin-bottom: 16px; color: rgba(255,255,255,.72); font-size: .88rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.product-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding: 14px; color: #fff; background: #b00f3f; border-radius: 10px; }
 .product-prices { display: grid; gap: 2px; }
-.product-card .button-primary { min-height: 42px; padding: 0 15px; font-size: .83rem; }
+.product-card .price { color: #fff; font-size: 1.45rem; }
+.product-card .price-old { color: rgba(255,255,255,.72); }
+.product-card .button-primary { min-height: 38px; padding: 0 14px; color: #0f1c22; background: #fff; border-color: #fff; font-size: .82rem; box-shadow: none; }
+.product-card .button-primary:hover { color: #0f1c22; background: #f3f7f9; border-color: #f3f7f9; transform: none; }
+.gc-commercial-saving, .gc-product-urgency, .gc-product-shipping { margin: 10px 0 0; color: #fff; font-size: .82rem; font-weight: 850; }
+.gc-product-urgency { color: #ffdbe5; font-variant-numeric: tabular-nums; }
+.gc-product-shipping { color: rgba(255,255,255,.72); }
+.gc-commercial-details { width: fit-content; margin-top: 10px; padding: 0; color: #fff; background: transparent; border: 0; font-size: .82rem; font-weight: 850; cursor: pointer; }
 
 .site-footer { padding: 28px 0; color: #94a3b1; background: #0a1520; font-size: .78rem; }
 .footer-row { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
@@ -343,7 +353,7 @@ h1 em { color: var(--ui-action); font-style: normal; }
 .spotlight-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 .product-grid { grid-template-columns: repeat(4, 1fr); }
 .product-card { border-radius: 18px; }
-.product-image { height: 220px; background: transparent; }
+.product-image { height: 220px; }
 .product-image img { height: 188px; mix-blend-mode: normal; }
 .product-content { padding: 20px; }
 .product-content h3 { font-size: 1.05rem; }
