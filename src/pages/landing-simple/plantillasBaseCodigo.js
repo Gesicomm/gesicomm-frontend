@@ -572,7 +572,11 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#categorias">Categorías</a>
         <p class="eyebrow">Más vendidos</p>
         <h2>Lo que conviene mostrar antes del catálogo.</h2>
       </div>
-      <div class="spotlight-grid" data-gesicomm-lista="productos" data-gesicomm-limite="4">
+      <!-- "Más vendidos" real no se puede calcular (no hay módulo de ventas
+           todavía): el comercio elige acá mismo, desde la pestaña
+           "Secciones" del editor, qué productos muestra. Sin elegir
+           ninguno, esta grilla queda vacía (ver renderizarLista). -->
+      <div class="spotlight-grid" data-gesicomm-lista="productos_manual">
         <template>
           <article class="product-card">
             <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>

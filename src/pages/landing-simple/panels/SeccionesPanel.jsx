@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronUp, ChevronDown, Eye, EyeOff, Loader, Pencil } from 'lucide-react';
+import { ChevronUp, ChevronDown, Eye, EyeOff, Loader, Pencil, Search, X } from 'lucide-react';
 import { categoriaService } from '../../../services/catalogoService';
+import { productService } from '../../../services/productService';
 import Campo from '../CampoTexto';
 import {
   leerHero, escribirHero, leerPromo, escribirPromo,
   leerCategoriasCuradas, escribirCategoriasCuradas,
   leerSecciones, moverSeccion, alternarVisibilidad,
   leerVitrina, escribirVitrina, FUENTES_VITRINA,
+  leerProductosCurados, escribirProductosCurados,
 } from '../plantillaInicioEditor';
 
 /** Catálogo de categorías de la tienda — lo usan tanto "Categorías" como el
@@ -132,12 +134,14 @@ function BloqueEstructura({ secciones, html, onCambiar, vitrinaAbierta, onEditar
 
 function BloqueVitrina({ indice, html, onCambiarHtml, categoriasCatalogo }) {
   const vitrina = useMemo(() => leerVitrina(html, indice), [html, indice]);
+  const productosCurados = useMemo(() => leerProductosCurados(html, indice), [html, indice]);
   if (!vitrina) return null;
 
   function set(campo, valor) {
     onCambiarHtml(escribirVitrina(html, indice, { [campo]: valor }));
   }
 
+  const esManual = vitrina.fuente === 'productos_manual';
   const fuenteInfo = FUENTES_VITRINA.find(f => f.id === vitrina.fuente);
 
   return (
@@ -157,31 +161,126 @@ function BloqueVitrina({ indice, html, onCambiarHtml, categoriasCatalogo }) {
         {fuenteInfo?.ayuda && <span className="block mt-1 text-[11px] text-fg/35">{fuenteInfo.ayuda}</span>}
       </label>
 
-      <label className="block">
-        <span className="block text-xs font-semibold text-fg/70 mb-1">Solo de esta categoría (opcional)</span>
-        <select
-          value={vitrina.categoria}
-          onChange={e => set('categoria', e.target.value)}
-          className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
-          disabled={categoriasCatalogo.cargando}
-        >
-          <option value="">Todas</option>
-          {(categoriasCatalogo.categorias || []).map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
-        </select>
-      </label>
-
-      <label className="block">
-        <span className="block text-xs font-semibold text-fg/70 mb-1">Cantidad a mostrar</span>
-        <input
-          type="number"
-          min={1}
-          max={12}
-          value={vitrina.cantidad}
-          onChange={e => set('cantidad', parseInt(e.target.value, 10) || 4)}
-          className="w-24 bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+      {esManual ? (
+        <SelectorProductosManual
+          elegidos={productosCurados}
+          onCambiar={nuevos => onCambiarHtml(escribirProductosCurados(html, indice, nuevos))}
         />
-      </label>
+      ) : (
+        <>
+          <label className="block">
+            <span className="block text-xs font-semibold text-fg/70 mb-1">Solo de esta categoría (opcional)</span>
+            <select
+              value={vitrina.categoria}
+              onChange={e => set('categoria', e.target.value)}
+              className="w-full bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+              disabled={categoriasCatalogo.cargando}
+            >
+              <option value="">Todas</option>
+              {(categoriasCatalogo.categorias || []).map(c => <option key={c.id} value={c.nombre}>{c.nombre}</option>)}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="block text-xs font-semibold text-fg/70 mb-1">Cantidad a mostrar</span>
+            <input
+              type="number"
+              min={1}
+              max={12}
+              value={vitrina.cantidad}
+              onChange={e => set('cantidad', parseInt(e.target.value, 10) || 4)}
+              className="w-24 bg-fg/5 border border-fg/10 rounded-lg px-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+            />
+          </label>
+        </>
+      )}
     </Seccion>
+  );
+}
+
+/** Buscador + lista reordenable para armar una vitrina "Elegidos a mano" (ej. Más vendidos). */
+function SelectorProductosManual({ elegidos, onCambiar }) {
+  const [busqueda, setBusqueda] = useState('');
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+
+  useEffect(() => {
+    let activo = true;
+    setBuscando(true);
+    const t = setTimeout(() => {
+      productService.buscar({ texto: busqueda, limit: 20, activo: true })
+        .then(res => { if (activo) setResultados(res?.productos || []); })
+        .catch(() => { if (activo) setResultados([]); })
+        .finally(() => { if (activo) setBuscando(false); });
+    }, 300);
+    return () => { activo = false; clearTimeout(t); };
+  }, [busqueda]);
+
+  const idsElegidos = new Set(elegidos.map(p => p.id));
+
+  function agregar(p) {
+    onCambiar([...elegidos, { id: `producto-${p.id}`, nombre: p.nombre }]);
+  }
+  function quitar(id) {
+    onCambiar(elegidos.filter(p => p.id !== id));
+  }
+  function mover(idx, delta) {
+    const destino = idx + delta;
+    if (destino < 0 || destino >= elegidos.length) return;
+    const copia = elegidos.slice();
+    [copia[idx], copia[destino]] = [copia[destino], copia[idx]];
+    onCambiar(copia);
+  }
+
+  return (
+    <div className="space-y-2">
+      <span className="block text-xs font-semibold text-fg/70">Productos elegidos</span>
+
+      {elegidos.length > 0 ? (
+        <ul className="space-y-1">
+          {elegidos.map((p, idx) => (
+            <li key={p.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-fg/[0.03] text-sm">
+              <span className="flex-1 truncate">{p.nombre}</span>
+              <button type="button" disabled={idx === 0} onClick={() => mover(idx, -1)} className="p-1 rounded hover:bg-fg/10 disabled:opacity-30"><ChevronUp size={13} /></button>
+              <button type="button" disabled={idx === elegidos.length - 1} onClick={() => mover(idx, 1)} className="p-1 rounded hover:bg-fg/10 disabled:opacity-30"><ChevronDown size={13} /></button>
+              <button type="button" onClick={() => quitar(p.id)} className="p-1 rounded hover:bg-danger/20 text-danger/80"><X size={13} /></button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[11px] text-fg/40">Todavía no elegiste ningún producto — esta vitrina no se va a mostrar hasta que agregues al menos uno.</p>
+      )}
+
+      <div className="relative">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-fg/30" />
+        <input
+          type="search"
+          value={busqueda}
+          onChange={e => setBusqueda(e.target.value)}
+          placeholder="Buscar producto por nombre…"
+          className="w-full bg-fg/5 border border-fg/10 rounded-lg pl-8 pr-3 py-2 text-sm text-fg outline-none focus:border-fg/30"
+        />
+      </div>
+
+      {buscando && <p className="text-xs text-fg/40 flex items-center gap-1.5"><Loader size={12} className="animate-spin" /> Buscando…</p>}
+
+      {!buscando && (
+        <ul className="space-y-1 max-h-48 overflow-y-auto">
+          {resultados.filter(p => !idsElegidos.has(`producto-${p.id}`)).map(p => (
+            <li key={p.id}>
+              <button
+                type="button"
+                onClick={() => agregar(p)}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg text-sm text-fg/70 hover:bg-fg/10 hover:text-fg"
+              >
+                {p.nombre}
+              </button>
+            </li>
+          ))}
+          {!resultados.length && busqueda && <p className="text-xs text-fg/40 px-1">Sin resultados.</p>}
+        </ul>
+      )}
+    </div>
   );
 }
 

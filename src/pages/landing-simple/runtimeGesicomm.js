@@ -19,13 +19,16 @@
  * reutilice para catálogos compartidos no puede ser un vector de XSS.
  *
  * Referencia rápida de atributos (el detalle vive en el prompt maestro):
- *   data-gesicomm-lista="catalogo|categorias|productos|productos_destacados|productos_ofertas|
- *                        productos_novedades|combos|recomendados|ofertas|variantes|imagenes"
+ *   data-gesicomm-lista="catalogo|categorias|productos|productos_destacados|productos_manual|
+ *                        productos_ofertas|productos_novedades|combos|recomendados|ofertas|
+ *                        variantes|imagenes"
  *     "productos_ofertas": productos con descuento activo (precio_antes > precio) — vitrina de
  *     "Ofertas" real, respaldada por datos. "productos_novedades": productos ordenados del más
- *     reciente al más antiguo (LandingItem.created_at). NO existe (todavía) ningún "más vendidos"
- *     real: el sistema no tiene módulo de Pedidos/Checkout que cuente ventas, así que esa lista
- *     NO está acá — una vitrina de "Más vendidos" solo puede ser curada a mano (productos_destacados).
+ *     reciente al más antiguo (LandingItem.created_at). "productos_manual": el comercio elige
+ *     EXACTAMENTE cuáles van (panel "Secciones" del editor), vía data-gesicomm-productos-curados
+ *     en el propio elemento de la lista. NO existe (todavía) ningún "más vendidos" calculado:
+ *     el sistema no tiene módulo de Pedidos/Checkout que cuente ventas — por eso esa vitrina en
+ *     la plantilla base usa "productos_manual": el comercio carga a mano lo que sabe que vende.
  *     "catalogo" es la grilla navegable: la afectan data-gesicomm-buscar,
  *     data-gesicomm-filtro="categoria|orden", data-gesicomm-pagina="anterior|siguiente",
  *     data-gesicomm-cargar-mas, data-gesicomm-paginacion y data-gesicomm-sin-resultados.
@@ -196,6 +199,27 @@ export function runtimeGesicomm() {
       if (item && item.mostrar_en_inicio !== false && salida.indexOf(item) === -1) salida.push(item);
     }
     return salida.length ? salida : visiblesInicio.slice(0, 4);
+  }
+
+  // Vitrina "elegida a mano" (panel "Secciones" del editor, ver
+  // plantillaInicioEditor.js): data-gesicomm-productos-curados en el propio
+  // elemento de la lista, JSON [{id, nombre}] — el runtime solo usa "id"
+  // (resuelve el producto REAL con buscar(), nunca confía en "nombre",
+  // que es apenas para que el editor muestre algo sin tener que re-pedir
+  // el catálogo). Sirve para que el comercio arme vitrinas como "Más
+  // vendidos" a mano: hoy no hay módulo de Pedidos que pueda calcularla sola.
+  function productosCuradosDe(el) {
+    var raw = el && el.getAttribute && el.getAttribute('data-gesicomm-productos-curados');
+    if (!raw) return [];
+    var curados;
+    try { curados = JSON.parse(raw); } catch (e) { return []; }
+    if (!Array.isArray(curados)) return [];
+    var salida = [];
+    for (var i = 0; i < curados.length; i++) {
+      var item = buscar(curados[i] && curados[i].id);
+      if (item && item.mostrar_en_inicio !== false && salida.indexOf(item) === -1) salida.push(item);
+    }
+    return salida;
   }
 
   // ─── Toast mínimo — el aviso de "agregado" / "elegí una opción" ─────────
@@ -608,6 +632,7 @@ export function runtimeGesicomm() {
       case 'categorias': base = categoriasCuradasDe(el) || categoriasDeProductos(); break;
       case 'productos': base = productos; break;
       case 'productos_destacados': base = productosDestacados(); break;
+      case 'productos_manual': return productosCuradosDe(el); // ya resuelto y filtrado: no pasa por el límite/categoría genéricos de abajo
       case 'productos_ofertas': base = productos.filter(function (p) { return Number(p.descuento_pct) > 0; }); break;
       case 'productos_novedades':
         base = productos.slice().sort(function (a, b) {

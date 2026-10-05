@@ -180,9 +180,11 @@ function seccionesDe(doc) {
 }
 
 // Fuentes de vitrina respaldadas por datos reales (ver runtimeGesicomm.js).
-// OJO: no existe "más vendidos" — el sistema no cuenta ventas todavía.
+// OJO: no existe "más vendidos" calculado — el sistema no cuenta ventas
+// todavía; para eso está "productos_manual" (el comercio elige a mano).
 export const FUENTES_VITRINA = [
   { id: 'productos_destacados', nombre: 'Destacados', ayuda: 'Los que el comercio marcó en Configurar venta.' },
+  { id: 'productos_manual', nombre: 'Elegidos a mano', ayuda: 'Vos elegís exactamente cuáles — por ejemplo, tus más vendidos.' },
   { id: 'productos_ofertas', nombre: 'Ofertas', ayuda: 'Solo productos con descuento activo.' },
   { id: 'productos_novedades', nombre: 'Novedades', ayuda: 'Los agregados más recientemente.' },
   { id: 'productos', nombre: 'Todos los productos', ayuda: 'En el orden del catálogo.' },
@@ -246,6 +248,37 @@ export function escribirVitrina(html, indiceSeccion, cambios) {
     else grid.removeAttribute('data-gesicomm-categoria');
   }
   if (cambios.cantidad !== undefined) grid.setAttribute('data-gesicomm-limite', String(cambios.cantidad || 4));
+  return serializar(doc);
+}
+
+// ─── Productos elegidos a mano (fuente "productos_manual") ─────────────
+
+export function leerProductosCurados(html, indiceSeccion) {
+  const doc = parsear(html);
+  const section = seccionesDe(doc)[indiceSeccion];
+  const grid = section && gridDeSeccion(section);
+  const raw = grid?.getAttribute('data-gesicomm-productos-curados');
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+export function escribirProductosCurados(html, indiceSeccion, productos) {
+  const doc = parsear(html);
+  const section = seccionesDe(doc)[indiceSeccion];
+  const grid = section && gridDeSeccion(section);
+  if (!grid) return html;
+  if (!productos || !productos.length) {
+    grid.removeAttribute('data-gesicomm-productos-curados');
+  } else {
+    grid.setAttribute('data-gesicomm-productos-curados', JSON.stringify(
+      productos.map(p => ({ id: p.id, nombre: p.nombre })),
+    ));
+  }
   return serializar(doc);
 }
 
