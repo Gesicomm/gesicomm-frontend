@@ -175,8 +175,12 @@ describe('runtime del lienzo en blanco — inicio', () => {
 
   it('un link #ancla scrollea adentro en vez de navegar la ventana de afuera', () => {
     const { window, click } = montar(PLANTILLA_INICIO, datos);
+    let scrollPedido = null;
+    window.scrollTo = (opts) => { scrollPedido = opts; };
     click('a[href="#productos"]');
-    expect(window.__scrolleado).toBe('productos');
+    // scrollIntoView se propaga al editor que contiene el iframe: no se usa.
+    expect(window.__scrolleado).toBeUndefined();
+    expect(scrollPedido).toEqual(expect.objectContaining({ behavior: 'smooth' }));
   });
 
   it('el texto del catálogo nunca se interpreta como HTML', () => {

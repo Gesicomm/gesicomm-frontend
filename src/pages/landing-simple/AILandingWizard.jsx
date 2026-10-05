@@ -1068,7 +1068,7 @@ function ProductosStep({
 function metaOfertaWizard(estrategia) {
   if (estrategia === 'normal') {
     return {
-      etiqueta: 'Paquete',
+      etiqueta: 'Oferta por cantidad',
       donde: 'Aparece en la ficha del producto',
       tono: 'bg-primary/10 text-primary-text ring-primary/15',
     };
@@ -1153,18 +1153,11 @@ function OfertasStep({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 className="text-sm font-bold text-fg">Ofertas por producto</h3>
-            <p className="mt-1 text-xs text-fg-muted">Así sabés exactamente qué oferta corresponde a cada producto elegido.</p>
+            <p className="mt-1 text-xs text-fg-muted">Solo aparecen los productos elegidos para esta landing.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={onReintentar} className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg">
               Reintentar
-            </button>
-            <button
-              type="button"
-              onClick={onCrearNuevaOferta}
-              className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-border bg-surface-2 px-3 text-xs font-bold text-fg transition hover:border-primary/50 hover:text-primary-text"
-            >
-              <Pencil size={13} /> Crear o editar
             </button>
           </div>
         </div>
@@ -1192,7 +1185,7 @@ function OfertasStep({
                       onClick={onCrearNuevaOferta}
                       className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-border bg-surface px-3 text-xs font-bold text-fg-muted transition hover:border-primary/50 hover:text-primary-text"
                     >
-                      <Pencil size={13} /> Editar
+                      <Pencil size={13} /> Editar ficha
                     </button>
                   </div>
 
@@ -1226,14 +1219,14 @@ function OfertasStep({
                   ) : (
                     <div className="mt-3 rounded-xl border border-dashed border-border bg-surface px-3 py-3">
                       <p className="text-xs text-fg-muted">
-                        Este producto no tiene ofertas todavía. Podés crear un paquete, order bump o upsell para este producto.
+                        Este producto no tiene ofertas todavía. Crealas desde la ficha de este producto.
                       </p>
                       <button
                         type="button"
                         onClick={onCrearNuevaOferta}
                         className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-bold text-primary-fg transition hover:bg-primary-hover"
                       >
-                        <Plus size={14} /> Crear oferta para este producto
+                        <Plus size={14} /> Abrir ficha de ofertas
                       </button>
                     </div>
                   )}
@@ -1247,21 +1240,6 @@ function OfertasStep({
             <p className="mt-1 text-xs text-fg-muted">Las ofertas se ordenan por el producto que las dispara.</p>
           </div>
         )}
-      </section>
-
-      <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
-        <h3 className="text-sm font-bold text-fg">Crear o editar ofertas</h3>
-        <p className="mt-1 text-xs leading-relaxed text-fg-muted">
-          Abrí el editor real de ofertas para cambiar precios, productos incluidos, paquetes, order bumps o upsells.
-          Después volvés a esta pantalla y marcás cuáles van en esta landing.
-        </p>
-        <button
-          type="button"
-          onClick={onCrearNuevaOferta}
-          className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-surface-2 px-4 text-sm font-bold text-fg transition hover:border-primary/50 hover:text-primary-text"
-        >
-          <Plus size={15} /> Crear o editar oferta
-        </button>
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

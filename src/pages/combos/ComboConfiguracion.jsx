@@ -124,7 +124,7 @@ export default function ComboConfiguracion({ asTab = false }) {
 
   const costoSets = {
     propios: {
-      titulo: 'Costos propios',
+      titulo: 'Operacion propia ',
       descripcion: 'Usalos para productos y pedidos que operás con tu propia estructura.',
       icono: PackageCheck,
       cpa,
@@ -137,7 +137,7 @@ export default function ComboConfiguracion({ asTab = false }) {
       setEmpaque,
     },
     raha: {
-      titulo: 'Costos Raha',
+      titulo: 'Operacion Gesicom-RAHA',
       descripcion: 'Usalos para medir rentabilidad cuando la operación logística/fulfillment pasa por Raha.',
       icono: Truck,
       cpa: rahaCpa,
@@ -204,6 +204,7 @@ export default function ComboConfiguracion({ asTab = false }) {
           <h3 className="combo-section-title">Costos operativos</h3>
         </div>
 
+        {/* Selector de tipo */}
         <div className="combo-cost-tabs" role="tablist" aria-label="Tipo de costos operativos">
           {Object.entries(costoSets).map(([id, item]) => {
             const Icono = item.icono;
@@ -214,11 +215,12 @@ export default function ComboConfiguracion({ asTab = false }) {
                 type="button"
                 role="tab"
                 aria-selected={activo}
+                data-tipo={id}
                 className={`combo-cost-tab ${activo ? 'active' : ''}`}
                 onClick={() => setCostosTab(id)}
               >
-                <Icono size={15} />
-                <span>
+                <span className="cct-icon"><Icono size={15} /></span>
+                <span className="cct-label">
                   <b>{item.titulo}</b>
                   <small>{item.descripcion}</small>
                 </span>
@@ -227,37 +229,99 @@ export default function ComboConfiguracion({ asTab = false }) {
           })}
         </div>
 
-        <div className="combo-cost-context">
-          <CostoIcono size={16} />
-          <span>{costoActual.descripcion}</span>
-        </div>
+        {/* Panel de campos */}
+        <div className="combo-cost-panel" data-tipo={costosTab}>
+          <div className="combo-cost-panel-header">
+            <span className={`combo-cost-panel-dot ${costosTab}`} />
+            <CostoIcono size={15} />
+            <p>{costoActual.descripcion}</p>
+          </div>
 
-        <div className="combo-editor-grid">
-          <div>
-            <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span>CPA proyectado (%)</span>
-              <Info
-                size={13}
-                style={{ cursor: 'help', color: 'var(--color-fg-subtle)' }}
-                title="El CPA proyectado se calcula sobre el ticket de venta."
-              />
+          {/* Servicios incluidos — solo visible en tab RAHA */}
+          {costosTab === 'raha' && (
+            <div className="raha-servicios-bloque">
+              <div className="raha-servicios-titulo">Servicios incluidos en la operación Gesicom‑RAHA</div>
+              <div className="raha-servicios-grid">
+                {[
+                  { ok: true,  label: 'Stockeo' },
+                  { ok: true,  label: 'Packing' },
+                  { ok: true,  label: 'Gestión y sistema' },
+                  { ok: true,  label: 'Entrega + cobranza COD' },
+                  { ok: true,  label: 'Tecnología' },
+                  { ok: true,  label: 'Procesamiento de devoluciones' },
+                  { ok: true,  label: 'Seguro de mercancía' },
+                  { ok: true,  label: 'Trazabilidad total' },
+                  { ok: true,  label: 'Catálogo' },
+                ].map(s => (
+                  <span key={s.label} className={`raha-svc-chip ${s.ok ? 'ok' : 'no'}`}>
+                    {s.ok ? '✓' : '✗'} {s.label}
+                  </span>
+                ))}
+              </div>
+              <div className="raha-servicios-extras">
+                <div className="raha-svc-extra">
+                  <strong>Seguro de mercancía</strong>
+                  <span>Mercadería asegurada. Ante pérdida o robo bajo nuestra custodia, reembolso según el valor declarado.</span>
+                </div>
+                <div className="raha-svc-extra">
+                  <strong>Trazabilidad total</strong>
+                  <span>Seguís cada pedido y cada guaraní, de la venta a la liquidación.</span>
+                </div>
+              </div>
             </div>
-            <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={costoActual.cpa} onChange={e => costoActual.setCpa(e.target.value)} />
-            <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
-              Costo por Adquisición como porcentaje proyectado sobre el ticket de venta. Ej: 20 = 20%.
+          )}
+
+          <div className="combo-editor-grid">
+            <div>
+              <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span>CPA proyectado (%)</span>
+                <Info
+                  size={13}
+                  style={{ cursor: 'help', color: 'var(--color-fg-subtle)' }}
+                  title="El CPA proyectado se calcula sobre el ticket de venta."
+                />
+              </div>
+              <input style={inputStyle} type="number" min="0" max="100" step="0.01" value={costoActual.cpa} onChange={e => costoActual.setCpa(e.target.value)} />
+              <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
+                Costo por Adquisición como % del ticket de venta. Ej: 20 = 20%.
+              </div>
             </div>
-          </div>
-          <div>
-            <div className="combo-section-label">Costo de envío promedio</div>
-            <CurrencyInput style={inputStyle} value={costoActual.envio} onChange={costoActual.setEnvio} />
-          </div>
-          <div>
-            <div className="combo-section-label">Costo de confirmación promedio</div>
-            <CurrencyInput style={inputStyle} value={costoActual.confirmacion} onChange={costoActual.setConfirmacion} />
-          </div>
-          <div>
-            <div className="combo-section-label">Costo de empaque promedio</div>
-            <CurrencyInput style={inputStyle} value={costoActual.empaque} onChange={costoActual.setEmpaque} />
+            <div>
+              <div className="combo-section-label">Costo de envío promedio</div>
+              <CurrencyInput style={inputStyle} value={costoActual.envio} onChange={costoActual.setEnvio} />
+            </div>
+            <div>
+              <div className="combo-section-label">Costo de confirmación promedio</div>
+              <CurrencyInput style={inputStyle} value={costoActual.confirmacion} onChange={costoActual.setConfirmacion} />
+            </div>
+            <div>
+              <div className="combo-section-label">Costo de empaque promedio</div>
+              <CurrencyInput style={inputStyle} value={costoActual.empaque} onChange={costoActual.setEmpaque} />
+            </div>
+
+            {/* COD fijo 2% — solo RAHA, intocable */}
+            {costosTab === 'raha' && (
+              <div className="raha-cod-field">
+                <div className="combo-section-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span>Costo COD — pago contra entrega</span>
+                  <span className="raha-cod-badge">Fijo Gesicom‑RAHA</span>
+                </div>
+                <div className="raha-cod-input-wrap">
+                  <input
+                    style={{ ...inputStyle, cursor: 'not-allowed', opacity: 0.65, background: 'color-mix(in srgb, #3b82f6 6%, var(--color-surface-2))' }}
+                    type="text"
+                    value="2% del ticket total"
+                    readOnly
+                    disabled
+                    aria-label="Costo COD fijo 2%"
+                  />
+                  <span className="raha-cod-lock">🔒</span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--color-fg-muted)', marginTop: '0.3rem' }}>
+                  Comisión fija por cobro contra entrega. Se calcula automáticamente sobre el ticket de venta y no es editable.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

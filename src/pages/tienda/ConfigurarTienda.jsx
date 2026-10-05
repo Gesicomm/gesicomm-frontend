@@ -96,8 +96,8 @@ const TABS = [
     titulo: 'Medios de cobro',
     desc: 'Conectá una pasarela para que tus clientes puedan pagar online.',
   },
-  { id: 'speedbox', label: 'Speedbox', icono: Link2, titulo: 'Speedbox', desc: '' },
   { id: 'raha', label: 'Conexión Raha', icono: ShieldCheck, titulo: 'Conexión Raha', desc: '' },
+  { id: 'speedbox', label: 'Validación RAHA', icono: Link2, titulo: 'Validación RAHA', desc: '' },
   {
     id: 'economica',
     label: 'Costos',
@@ -424,21 +424,27 @@ export default function ConfigurarTienda() {
       <div className="tn-shell">
         {/* ── Navegación ──────────────────────────────────────────────── */}
         <nav className="tn-tabs" role="tablist" aria-label="Secciones de configuración">
-          {TABS.map(t => {
+          {TABS.map((t, idx) => {
             const Icono = t.icono;
             const activo = tab === t.id;
             return (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={activo}
-                className={`tn-tab ${activo ? 'activo' : ''}`}
-                onClick={() => seleccionarTab(t.id)}
-              >
-                <span className="tn-tab-icon"><Icono size={15} /></span>
-                {t.label}
-              </button>
+              <React.Fragment key={t.id}>
+                {idx > 0 && (
+                  <span className="tn-tab-arrow" aria-hidden="true">
+                    <ArrowRight size={12} />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activo}
+                  className={`tn-tab ${activo ? 'activo' : ''}`}
+                  onClick={() => seleccionarTab(t.id)}
+                >
+                  <span className="tn-tab-icon"><Icono size={15} /></span>
+                  {t.label}
+                </button>
+              </React.Fragment>
             );
           })}
         </nav>

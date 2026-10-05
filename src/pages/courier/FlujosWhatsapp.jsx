@@ -279,50 +279,6 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
               </button>
             </div>
           </header>
-
-          <section className="gw-flow-config" aria-label="Configuración del flujo">
-            <div className="gw-flow-config__field">
-              <label className="gw-field-label">Tipo de flujo <span className="gw-req">*</span></label>
-              <select
-                className="gw-input"
-                value={editando.tipo || "CONFIRMACION_PEDIDO_WEB"}
-                onChange={(e) => setEditando((p) => ({ ...p, tipo: e.target.value }))}
-              >
-                {Object.entries(FLOW_TYPES).map(([value, meta]) => (
-                  <option key={value} value={value}>{meta.label}</option>
-                ))}
-              </select>
-              <p>{FLOW_TYPES[editando.tipo || "CONFIRMACION_PEDIDO_WEB"]?.hint}</p>
-            </div>
-
-            <div className="gw-flow-config__field">
-              <label className="gw-field-label">Activación</label>
-              <div className="gw-segmented" role="radiogroup" aria-label="Activación del flujo">
-                {[
-                  ["AUTOMATICA", "Automática"],
-                  ["MANUAL", "Manual"],
-                ].map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={(editando.activacion || "MANUAL") === value ? "active" : ""}
-                    onClick={() => setEditando((p) => ({ ...p, activacion: value }))}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <label className="gw-switch gw-switch--inline">
-              <input
-                type="checkbox"
-                checked={!!editando.predeterminado}
-                onChange={(e) => setEditando((p) => ({ ...p, predeterminado: e.target.checked }))}
-              />
-              <span>Usar como flujo predeterminado para este tipo</span>
-            </label>
-          </section>
           <ListaFlujos flujos={flujos} onEditar={abrirExistente} onEliminar={eliminar} />
         </>
       ) : (
@@ -381,6 +337,50 @@ export function FlujosWhatsapp({ onModoEdicion, servicio = seguimientoService })
               </button>
             </div>
           </header>
+
+          <section className="gw-flow-config" aria-label="Configuración del flujo">
+            <div className="gw-flow-config__field">
+              <label className="gw-field-label">Tipo de flujo <span className="gw-req">*</span></label>
+              <select
+                className="gw-input"
+                value={editando?.tipo || "CONFIRMACION_PEDIDO_WEB"}
+                onChange={(e) => setEditando((p) => ({ ...p, tipo: e.target.value }))}
+              >
+                {Object.entries(FLOW_TYPES).map(([value, meta]) => (
+                  <option key={value} value={value}>{meta.label}</option>
+                ))}
+              </select>
+              <p>{FLOW_TYPES[editando?.tipo || "CONFIRMACION_PEDIDO_WEB"]?.hint}</p>
+            </div>
+
+            <div className="gw-flow-config__field">
+              <label className="gw-field-label">Activación</label>
+              <div className="gw-segmented" role="radiogroup" aria-label="Activación del flujo">
+                {[
+                  ["AUTOMATICA", "Automática"],
+                  ["MANUAL", "Manual"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={(editando?.activacion || "MANUAL") === value ? "active" : ""}
+                    onClick={() => setEditando((p) => ({ ...p, activacion: value }))}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="gw-switch gw-switch--inline">
+              <input
+                type="checkbox"
+                checked={!!editando?.predeterminado}
+                onChange={(e) => setEditando((p) => ({ ...p, predeterminado: e.target.checked }))}
+              />
+              <span>Usar como flujo predeterminado para este tipo</span>
+            </label>
+          </section>
 
           {erroresValidacion.length > 0 && (
             <div className="gw-errors" role="alert">

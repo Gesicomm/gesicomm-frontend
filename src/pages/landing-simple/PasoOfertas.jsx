@@ -23,54 +23,6 @@ import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
  * Productos, y aparece igual en las dos pantallas.
  */
 
-// El orden importa: de la más fácil de entender a la más rara.
-const TIPOS = [
-  {
-    key: 'pack',
-    estrategia: 'normal',
-    titulo: 'Llevá más de lo mismo',
-    etiqueta: 'Paquete',
-    texto: 'Dos o tres unidades del mismo producto a mejor precio.',
-    donde: 'En la página del producto',
-    banda: 1,
-    color: 'text-primary-text',
-    fondo: 'bg-primary/12',
-  },
-  {
-    key: 'combo',
-    estrategia: null,
-    titulo: 'Productos distintos juntos',
-    etiqueta: 'Combo',
-    texto: 'Un kit armado con precio propio, como "shampoo + acondicionador".',
-    donde: 'En la página del producto y en la home',
-    banda: 1,
-    color: 'text-violet-400',
-    fondo: 'bg-violet-500/12',
-  },
-  {
-    key: 'order_bump',
-    estrategia: 'order_bump',
-    titulo: 'Sumar algo antes de pagar',
-    etiqueta: 'Order bump',
-    texto: 'Una casilla en el carrito: el cliente la marca y se agrega a su compra.',
-    donde: 'En el carrito, arriba del botón de comprar',
-    banda: 2,
-    color: 'text-warning',
-    fondo: 'bg-warning/12',
-  },
-  {
-    key: 'upsell',
-    estrategia: 'upsell',
-    titulo: 'Una última oferta',
-    etiqueta: 'Upsell',
-    texto: 'Aparece recién cuando ya completó sus datos, antes de terminar.',
-    donde: 'En el último paso del checkout',
-    banda: 3,
-    color: 'text-success',
-    fondo: 'bg-success/12',
-  },
-];
-
 const POR_ESTRATEGIA = {
   normal: { etiqueta: 'Paquete', color: 'text-primary-text', fondo: 'bg-primary/12' },
   order_bump: { etiqueta: 'Order bump', color: 'text-warning', fondo: 'bg-warning/12' },
@@ -84,27 +36,8 @@ function precioDeOferta(o) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/**
- * Mini-diagrama de una pantalla con la banda resaltada donde aparece la
- * oferta. Es el elemento que hace entender cada tipo sin leer un párrafo:
- * "ah, el order bump va en el carrito".
- */
-function MiniPantalla({ banda, fondo }) {
-  return (
-    <span aria-hidden className="flex h-11 w-9 shrink-0 flex-col gap-1 rounded-md border border-border bg-canvas p-1">
-      {[1, 2, 3].map(i => (
-        <span
-          key={i}
-          className={`block flex-1 rounded-[2px] ${i === banda ? fondo : 'bg-fg/10'}`}
-        />
-      ))}
-    </span>
-  );
-}
-
 export default function PasoOfertas({
   productosSeleccionados,
-  catalogo,
   ofertasElegidas,
   setOfertasElegidas,
   destacados,
@@ -175,8 +108,6 @@ export default function PasoOfertas({
     });
   };
 
-  const todosLosProductos = useMemo(() => (catalogo?.productos || []), [catalogo]);
-
   return (
     <div className="flex h-full min-h-0 flex-col bg-canvas text-fg">
       <header className="shrink-0 border-b border-border bg-surface px-5 py-4 md:px-7">
@@ -203,37 +134,6 @@ export default function PasoOfertas({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 md:px-7">
         <div className="mx-auto w-full max-w-5xl space-y-6">
-
-          {/* Qué es cada una y dónde la ve el cliente. Va arriba a propósito:
-              es lo primero que hay que entender para decidir cuál crear. */}
-          <section>
-            <h3 className="text-sm font-semibold">Qué podés crear</h3>
-            <p className="mt-1 text-[13px] text-fg-muted">Elegí una y te llevamos al formulario con los datos de tu producto.</p>
-            <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {TIPOS.map(tipo => (
-                <button
-                  key={tipo.key}
-                  type="button"
-                  onClick={() => (tipo.key === 'combo'
-                    ? setCombo({ principal: productos.length === 1 ? productos[0] : null })
-                    : setPanel({ producto: null, estrategia: tipo.key }))}
-                  className="group flex gap-3 rounded-xl border border-border bg-surface p-3.5 text-left transition hover:border-primary/60 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  <MiniPantalla banda={tipo.banda} fondo={tipo.fondo.replace('/12', '/70')} />
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold">{tipo.titulo}</span>
-                      <Plus size={15} className="shrink-0 text-fg-subtle transition group-hover:text-primary-text" />
-                    </span>
-                    <span className={`mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] ${tipo.color}`}>{tipo.etiqueta}</span>
-                    <span className="mt-1.5 block text-[12.5px] leading-5 text-fg-muted">{tipo.texto}</span>
-                    <span className="mt-1.5 block text-[11.5px] font-medium text-fg-subtle">{tipo.donde}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-
           {/* Tus productos y lo que ya tienen */}
           <section>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -399,7 +299,7 @@ export default function PasoOfertas({
 
       {combo && (
         <ArmarComboPanel
-          productos={todosLosProductos}
+          productos={productos}
           principalInicial={combo.principal}
           onCerrar={() => setCombo(null)}
           onCreado={async nuevo => {
@@ -417,7 +317,7 @@ export default function PasoOfertas({
         <PanelOfertas
           producto={panel.producto}
           estrategia={panel.estrategia}
-          productos={todosLosProductos}
+          productos={productos}
           enLanding={idsEnLanding}
           onElegir={producto => setPanel(p => ({ ...p, producto }))}
           onCambiarProducto={() => setPanel(p => ({ ...p, producto: null }))}

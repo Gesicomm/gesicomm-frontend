@@ -39,7 +39,7 @@ const ESTRATEGIAS_CHECKOUT = ['order_bump', 'upsell'];
 // Tipos visibles para el comercio. Internamente paquete y combo comparten
 // estrategia "normal", pero en UX son decisiones distintas.
 const OPCIONES_TIPO_OFERTA = [
-  { value: 'pack', titulo: 'Paquete', texto: 'Varias unidades del mismo producto.' },
+  { value: 'pack', titulo: 'Oferta por cantidad', texto: 'Varias unidades del mismo producto.' },
   { value: 'combo', titulo: 'Combo', texto: 'Productos diferentes vendidos juntos.' },
   { value: 'order_bump', titulo: 'Order bump', texto: 'Producto complementario antes de terminar la compra.' },
   { value: 'upsell', titulo: 'Upsell', texto: 'Oferta posterior cuando el producto ya está en el carrito.' },

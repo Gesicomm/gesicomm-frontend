@@ -168,6 +168,15 @@ export function conMarcaTienda(css) {
       (_, a) => `color-mix(in srgb, var(--line) ${Math.round(parseFloat(a) * 100)}%, transparent)`);
     s = s.replace(/rgba\(\s*255\s*,\s*255\s*,\s*255\s*,\s*(0?\.\d+)\s*\)/g,
       (_, a) => `color-mix(in srgb, var(--white) ${Math.round(parseFloat(a) * 100)}%, transparent)`);
+    s = s.replace(/linear-gradient\s*\(\s*135deg\s*,\s*#ffffff\s+0%\s*,\s*#eff6ff\s+55%\s*,\s*#fff7ed\s+100%\s*\)/gi,
+      'linear-gradient(135deg, var(--white) 0%, color-mix(in srgb, var(--brand, #16a36a) 6%, var(--white)) 55%, color-mix(in srgb, var(--accent, #ffb547) 8%, var(--white)) 100%)');
+    s = s.replace(/(background\s*:\s*)#fffaf0\b/gi, '$1color-mix(in srgb, var(--accent, #ffb547) 8%, var(--white))');
+    s = s.replace(/(background\s*:\s*)#f0fdf4\b/gi, '$1color-mix(in srgb, var(--brand, #16a36a) 8%, var(--white))');
+    s = s.replace(/#eff6ff\b/gi, 'color-mix(in srgb, var(--brand, #16a36a) 6%, var(--paper))');
+    s = s.replace(/#fff7ed\b/gi, 'color-mix(in srgb, var(--accent, #ffb547) 8%, var(--paper))');
+    s = s.replace(/(border-top-color\s*:\s*)#2563eb\b/gi, '$1var(--brand)');
+    s = s.replace(/(border-top-color\s*:\s*)#f59e0b\b/gi, '$1var(--accent)');
+    s = s.replace(/(border-top-color\s*:\s*)#10b981\b/gi, '$1var(--brand)');
     s = s.replace(/(background\s*:\s*)#f8fafc\b/gi, '$1var(--paper)');
     // Fondo claro del hero del inicio (en un degradé): con un fondo de marca
     // oscuro quedaba blanco y el texto, ya claro, no se leía.

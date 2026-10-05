@@ -63,30 +63,10 @@ function inputLocalAIso(valor) {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-// Antes había tres formatos (Catálogo, Producto estrella, Combos), cada uno
-// con su propia página de inicio. Pero todo lo que vende (ofertas, combos,
-// recomendados) vive en la ficha, así que se simplificó a una sola decisión:
-// dónde entra el cliente. `venta.tipo` se sigue guardando (derivado) para
-// las landings y los prompts de antes.
-const ENTRADAS = [
-  {
-    key: 'tienda',
-    diagrama: 'catalogo',
-    titulo: 'En tu tienda',
-    texto: 'Todos los productos con buscador y filtros. Cada uno tiene su ficha con ofertas, combos y recomendados.',
-  },
-  {
-    key: 'producto',
-    diagrama: 'producto_unico',
-    titulo: 'Directo en un producto',
-    texto: 'La landing abre en la ficha del producto principal. Ideal para anuncios: sin un clic de más.',
-  },
-];
-
 const TIPOS_OFERTA_RAPIDA = [
   {
     key: 'pack',
-    titulo: 'Paquete',
+    titulo: 'Oferta por cantidad',
     subtitulo: 'Varias unidades del mismo producto',
     texto: 'Ideal para x2, x3 o reposición. Se muestra en la ficha del producto.',
   },
@@ -201,8 +181,8 @@ export default function ConfigurarVentaCodigo({
     try { return await onSubirImagen(archivo); }
     finally { setSubidasPendientes(n => n - 1); }
   }
-  const [abrirEn, setAbrirEn] = useState(ventaInicial.abrir_en || (ventaInicial.tipo === 'producto_unico' ? 'producto' : 'tienda'));
-  const [combosPrimero, setCombosPrimero] = useState(ventaInicial.combos_primero ?? ventaInicial.tipo === 'combos');
+  const [abrirEn] = useState(ventaInicial.abrir_en || (ventaInicial.tipo === 'producto_unico' ? 'producto' : 'tienda'));
+  const [combosPrimero] = useState(ventaInicial.combos_primero ?? ventaInicial.tipo === 'combos');
   const tipo = abrirEn === 'producto' ? 'producto_unico' : (combosPrimero ? 'combos' : 'catalogo');
   const [modo, setModo] = useState(ventaInicial.seleccion || 'manual');
   const [categorias, setCategorias] = useState(() => new Set(ventaInicial.categorias || []));
@@ -244,10 +224,12 @@ export default function ConfigurarVentaCodigo({
     etiqueta: i.etiqueta || '', mostrar_en_inicio: i.mostrar_en_inicio !== false, envio_incluido: i.envio_incluido === true,
   }])), ...ventaInicial.presentacion_productos }));
   const [filtrosCatalogo, setFiltrosCatalogo] = useState(() => ventaInicial.catalogo_filtros || {});
+  const productosSoloDesdeProductos = true;
   function cambiarPresentacion(item, campo, valor) {
     setPresentacion(prev => ({ ...prev, [claveItem(item)]: { ...prev[claveItem(item)], [campo]: valor } }));
   }
   function moverProducto(item, direccion) {
+    if (productosSoloDesdeProductos) return;
     setManual(prev => {
       const siguiente = [...prev];
       const desde = siguiente.indexOf(claveItem(item));
@@ -424,22 +406,17 @@ export default function ConfigurarVentaCodigo({
   }), [ofertas, porClave]);
 
   // Ofertas agrupadas por el producto al que pertenecen (cada oferta se
-  // guarda EN un producto: Productos → ficha → Ofertas). Se separan las de
-  // productos de esta landing de las del resto de la tienda.
-  const [ofertasDeLanding, ofertasDeOtros] = useMemo(() => {
+  // guarda EN un producto: Productos → ficha → Ofertas). En este lienzo solo
+  // se muestran las de productos que ya forman parte de la landing.
+  const ofertasDeLanding = useMemo(() => {
     const grupos = new Map();
     ofertasConImagen.forEach(o => {
       const id = Number(o.producto_ancla_id);
       if (!grupos.has(id)) grupos.set(id, { producto: o.producto_ancla, ofertas: [] });
       grupos.get(id).ofertas.push(o);
     });
-    const todosGrupos = Array.from(grupos.entries());
-    return [
-      todosGrupos.filter(([id]) => idsProductoEnLanding.has(id)),
-      todosGrupos.filter(([id]) => !idsProductoEnLanding.has(id)),
-    ];
+    return Array.from(grupos.entries()).filter(([id]) => idsProductoEnLanding.has(id));
   }, [ofertasConImagen, idsProductoEnLanding]);
-  const [verOtrasOfertas, setVerOtrasOfertas] = useState(false);
 
   // La configuración tal como quedaría guardada — la usan el preview y el
   // guardado, así lo que se ve es lo que se vende.
@@ -479,11 +456,6 @@ export default function ConfigurarVentaCodigo({
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
   ]);
 
-  function sumarProducto(productoId) {
-    const k = `producto:${Number(productoId)}`;
-    if (porClave.has(k)) setManual(prev => (prev.includes(k) ? prev : [...prev, k]));
-  }
-
   function alternarOferta(oferta) {
     const elegida = ofertasElegidas.has(oferta.id);
     setOfertasElegidas(prev => {
@@ -491,11 +463,6 @@ export default function ConfigurarVentaCodigo({
       if (elegida) copia.delete(oferta.id); else copia.add(oferta.id);
       return copia;
     });
-    // Una oferta se muestra en la ficha y el carrito de SU producto: si ese
-    // producto no está en la landing, nunca aparecería. Uno por uno se suma
-    // solo; con una regla, esas ofertas quedan en "otros productos".
-    if (!elegida && !esRegla) sumarProducto(oferta.producto_ancla_id);
-    // Y se muestra en la vista previa, en la ficha de ese producto.
     if (!elegida) {
       const prod = porClave.get(`producto:${Number(oferta.producto_ancla_id)}`);
       if (prod) verOfertaEnFicha(oferta, prod);
@@ -511,12 +478,11 @@ export default function ConfigurarVentaCodigo({
     const antes = new Set((ofertas || []).map(o => Number(o.id)));
     setPanelOfertas(null);
     recargarOfertas().then(lista => {
-      const nuevas = (lista || []).filter(o => !antes.has(Number(o.id)));
+      const nuevas = (lista || []).filter(o => !antes.has(Number(o.id)) && idsProductoEnLanding.has(Number(o.producto_ancla_id)));
       if (!nuevas.length) return;
       setOfertasElegidas(prev => new Set([...prev, ...nuevas.map(o => o.id)]));
       setCrossActivo(true);
       const primera = nuevas[0];
-      if (!esRegla) sumarProducto(primera.producto_ancla_id);
       const prod = porClave.get(`producto:${Number(primera.producto_ancla_id)}`);
       if (prod) verOfertaEnFicha(primera, prod);
     });
@@ -527,10 +493,13 @@ export default function ConfigurarVentaCodigo({
     return o?.producto_ancla?.nombre || `Producto #${productoId}`;
   }
 
-  // Aunque haya un solo producto en la landing, se pregunta cuál querés
-  // editar: así no parece que el sistema eligió el producto por su cuenta.
   function abrirNuevaOferta(tipoOferta = null) {
-    setPanelOfertas({ producto: null, estrategia: tipoOferta });
+    const producto = seleccion.find(i => i.tipo === 'producto');
+    if (!producto) {
+      setError('Primero elegí al menos un producto para configurar sus ofertas.');
+      return;
+    }
+    setPanelOfertas({ producto, estrategia: tipoOferta });
   }
 
   function comboCreado(nuevo) {
@@ -562,12 +531,14 @@ export default function ConfigurarVentaCodigo({
   );
 
   function alternarManual(item) {
+    if (productosSoloDesdeProductos) return;
     const k = clave(item);
     setManual(prev => (prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k]));
     if (tipo === 'producto_unico' && !principal) setPrincipal(k);
   }
 
   function alternarCategoria(cat) {
+    if (productosSoloDesdeProductos) return;
     setCategorias(prev => {
       const copia = new Set(prev);
       if (copia.has(cat)) copia.delete(cat); else copia.add(cat);
@@ -582,6 +553,7 @@ export default function ConfigurarVentaCodigo({
   }, [todos, busqueda, filtroTipo, usuarioActual]);
 
   function elegirVisibles() {
+    if (productosSoloDesdeProductos) return;
     setManual(prev => {
       const set = new Set(prev);
       visiblesManual.forEach(i => set.add(clave(i)));
@@ -761,61 +733,15 @@ export default function ConfigurarVentaCodigo({
             </header>
 
             <div className="space-y-5">
-              {/* Dónde entra el cliente */}
-              <Bloque
-                titulo="¿Dónde entra el cliente?"
-                ayuda="La ficha de cada producto ya trae todo lo que vende: order bump, upsell, combos y recomendados."
-                verDonde={() => verDonde('inicio')}
-              >
-                <div role="radiogroup" aria-label="Dónde entra el cliente" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {ENTRADAS.map(f => {
-                    const activo = abrirEn === f.key;
-                    return (
-                      <button
-                        key={f.key}
-                        type="button"
-                        role="radio"
-                        aria-checked={activo}
-                        onClick={() => { setAbrirEn(f.key); verDonde('inicio'); }}
-                        className={`group text-left rounded-xl border p-3 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${activo ? 'border-accent bg-accent/[0.07]' : 'border-border hover:border-border-strong bg-surface'}`}
-                      >
-                        <Diagrama tipo={f.diagrama} activo={activo} />
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <span className="font-semibold text-fg">{f.titulo}</span>
-                          <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${activo ? 'border-accent bg-accent' : 'border-border-strong'}`}>
-                            {activo && <Check size={11} strokeWidth={3} className="text-accent-fg" />}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-[13px] leading-snug text-fg-muted">{f.texto}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-                {abrirEn === 'tienda' && (
-                  <label className="mt-3 flex items-start gap-2 text-sm text-fg cursor-pointer">
-                    <input type="checkbox" checked={combosPrimero} onChange={e => { setCombosPrimero(e.target.checked); verDonde('inicio', 'catalogo'); }} className="w-4 h-4 mt-0.5 accent-primary" />
-                    <span>
-                      Mostrar los combos primero
-                      <span className="block text-xs text-fg-muted">En el catálogo, tus combos aparecen antes que los productos sueltos.</span>
-                    </span>
-                  </label>
-                )}
-                {abrirEn === 'producto' && (
-                  <p className="mt-3 text-xs text-fg-muted">Elegí cuál es el producto principal abajo, en Productos. Los demás aparecen en su ficha como combos, ofertas o recomendados.</p>
-                )}
-                {!inicioEsBase && abrirEn === 'tienda' && (
-                  <p className="mt-3 text-xs text-fg-muted">
-                    Tu inicio ya tiene un diseño propio: esto cambia el orden de los productos, no tu HTML.
-                  </p>
-                )}
-              </Bloque>
-
               {/* Productos */}
               <Bloque
-                titulo="Productos"
+                titulo="Productos de esta landing"
                 ayuda={MODOS.find(m => m.key === modo)?.ayuda}
                 verDonde={() => (abreEnFicha ? verDonde('inicio') : verDonde('inicio', 'catalogo'))}
               >
+                <div className="mb-4 rounded-xl border border-border bg-surface-2/60 px-4 py-3 text-[13px] text-fg-muted">
+                  Este es el inventario base del lienzo. Las ofertas, paquetes, order bumps y upsells solo se pueden configurar sobre estos productos.
+                </div>
                 <div role="tablist" aria-label="Cómo elegir los productos" className="flex w-full sm:w-auto sm:inline-flex rounded-lg bg-surface-2 p-1 mb-4">
                   {MODOS.map(m => (
                     <button
@@ -823,8 +749,9 @@ export default function ConfigurarVentaCodigo({
                       type="button"
                       role="tab"
                       aria-selected={modo === m.key}
-                      onClick={() => setModo(m.key)}
-                      className={`flex-1 sm:flex-none px-3.5 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${modo === m.key ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                      onClick={() => { if (!productosSoloDesdeProductos) setModo(m.key); }}
+                      disabled={productosSoloDesdeProductos}
+                      className={`flex-1 sm:flex-none px-3.5 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60 ${modo === m.key ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
                     >
                       {m.label}
                     </button>
@@ -857,11 +784,11 @@ export default function ConfigurarVentaCodigo({
                     <div className="mt-3 flex items-center justify-between text-[13px]">
                       <span className="text-fg-muted"><span className="font-mono text-fg">{manual.length}</span> marcados</span>
                       <div className="flex gap-4">
-                        <button type="button" onClick={elegirVisibles} className="font-medium text-primary-text hover:underline">
+                        <button type="button" disabled={productosSoloDesdeProductos} onClick={elegirVisibles} className="font-medium text-primary-text hover:underline disabled:cursor-not-allowed disabled:opacity-50">
                           Marcar {busqueda ? 'estos' : 'todos'} ({visiblesManual.length})
                         </button>
                         {manual.length > 0 && (
-                          <button type="button" onClick={() => setManual([])} className="font-medium text-fg-muted hover:text-fg">Desmarcar todo</button>
+                          <button type="button" disabled={productosSoloDesdeProductos} onClick={() => setManual([])} className="font-medium text-fg-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-50">Desmarcar todo</button>
                         )}
                       </div>
                     </div>
@@ -875,7 +802,7 @@ export default function ConfigurarVentaCodigo({
                         return (
                           <li key={k}>
                             <label className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${elegido ? 'bg-accent/[0.06]' : 'hover:bg-surface-2'}`}>
-                              <input type="checkbox" checked={elegido} onChange={() => alternarManual(item)} className="w-4 h-4 accent-primary shrink-0" />
+                              <input type="checkbox" checked={elegido} disabled={productosSoloDesdeProductos} onChange={() => alternarManual(item)} className="w-4 h-4 accent-primary shrink-0 disabled:cursor-not-allowed" />
                               <Miniatura item={item} />
                               <span className="min-w-0 flex-1">
                                 <span className="block text-sm text-fg truncate">{item.nombre}</span>
@@ -898,8 +825,8 @@ export default function ConfigurarVentaCodigo({
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                       <Buscador valor={busquedaCategoria} onChange={setBusquedaCategoria} placeholder="Buscar categoría" etiqueta="Buscar categoría" />
                       <div className="flex gap-4 text-[13px] sm:ml-2 shrink-0">
-                        <button type="button" onClick={() => setCategorias(new Set(categoriasDisponibles.map(([c]) => c)))} className="font-medium text-primary-text hover:underline">Todas</button>
-                        <button type="button" onClick={() => setCategorias(new Set())} className="font-medium text-fg-muted hover:text-fg">Ninguna</button>
+                        <button type="button" disabled={productosSoloDesdeProductos} onClick={() => setCategorias(new Set(categoriasDisponibles.map(([c]) => c)))} className="font-medium text-primary-text hover:underline disabled:cursor-not-allowed disabled:opacity-50">Todas</button>
+                        <button type="button" disabled={productosSoloDesdeProductos} onClick={() => setCategorias(new Set())} className="font-medium text-fg-muted hover:text-fg disabled:cursor-not-allowed disabled:opacity-50">Ninguna</button>
                       </div>
                     </div>
                     {categoriasDisponibles.length === 0 ? (
@@ -909,7 +836,7 @@ export default function ConfigurarVentaCodigo({
                         {categoriasVisibles.map(([cat, n]) => (
                           <li key={cat}>
                             <label className="flex items-center gap-3 py-2 cursor-pointer text-sm">
-                              <input type="checkbox" checked={categorias.has(cat)} onChange={() => alternarCategoria(cat)} className="w-4 h-4 accent-primary shrink-0" />
+                              <input type="checkbox" checked={categorias.has(cat)} disabled={productosSoloDesdeProductos} onChange={() => alternarCategoria(cat)} className="w-4 h-4 accent-primary shrink-0 disabled:cursor-not-allowed" />
                               <span className={`flex-1 truncate ${categorias.has(cat) ? 'text-fg font-medium' : 'text-fg-muted'}`}>{cat}</span>
                               <span className="font-mono text-xs text-fg-muted tabular-nums">{n}</span>
                             </label>
@@ -928,7 +855,7 @@ export default function ConfigurarVentaCodigo({
                         Sin límite y siempre al día: si mañana cargás un producto {modo === 'categoria' ? 'en estas categorías' : 'nuevo'}, aparece solo.
                       </p>
                       <label className="flex items-start gap-2 text-sm text-fg shrink-0 cursor-pointer sm:max-w-[220px]">
-                        <input type="checkbox" checked={incluirCombos} onChange={e => setIncluirCombos(e.target.checked)} className="w-4 h-4 mt-0.5 accent-primary" />
+                        <input type="checkbox" checked={incluirCombos} disabled={productosSoloDesdeProductos} onChange={e => setIncluirCombos(e.target.checked)} className="w-4 h-4 mt-0.5 accent-primary disabled:cursor-not-allowed" />
                         <span>
                           Incluir combos
                           <span className="block text-xs text-fg-muted">Suma también tus combos{modo === 'categoria' ? ' de esas categorías' : ''}.</span>
@@ -954,8 +881,8 @@ export default function ConfigurarVentaCodigo({
                             </div>
                             {!esRegla && tipo === 'catalogo' && (
                               <div className="flex shrink-0 gap-1">
-                                <button type="button" aria-label={`Subir ${item.nombre}`} disabled={idx === 0} onClick={() => moverProducto(item, -1)} className="p-1 border border-border rounded disabled:opacity-30"><ChevronUp size={16} /></button>
-                                <button type="button" aria-label={`Bajar ${item.nombre}`} disabled={idx === seleccion.length - 1} onClick={() => moverProducto(item, 1)} className="p-1 border border-border rounded disabled:opacity-30"><ChevronDown size={16} /></button>
+                                <button type="button" aria-label={`Subir ${item.nombre}`} disabled={productosSoloDesdeProductos || idx === 0} onClick={() => moverProducto(item, -1)} className="p-1 border border-border rounded disabled:opacity-30"><ChevronUp size={16} /></button>
+                                <button type="button" aria-label={`Bajar ${item.nombre}`} disabled={productosSoloDesdeProductos || idx === seleccion.length - 1} onClick={() => moverProducto(item, 1)} className="p-1 border border-border rounded disabled:opacity-30"><ChevronDown size={16} /></button>
                               </div>
                             )}
                           </div>
@@ -1053,45 +980,16 @@ export default function ConfigurarVentaCodigo({
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-fg">Ofertas disponibles para esta landing</p>
+                        <p className="text-sm font-semibold text-fg">Ofertas por producto de esta landing</p>
                         <p className="mt-1 text-[13px] text-fg-muted">
-                          Activá las ofertas que querés mostrar. Para crear o editar, primero elegís el producto que las dispara.
+                          Activá o editá las ofertas desde la ficha del producto correspondiente. No se pueden usar productos que no estén en esta landing.
                         </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => abrirNuevaOferta()}
-                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold hover:bg-primary-hover shrink-0"
-                      >
-                        <Plus size={15} /> Nueva oferta
-                      </button>
-                    </div>
-
-                    <div>
-                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-fg-muted">Crear directo</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="group" aria-label="Crear oferta por tipo">
-                        {TIPOS_OFERTA_RAPIDA.map(tipoOferta => (
-                          <button
-                            key={tipoOferta.key}
-                            type="button"
-                            onClick={() => abrirNuevaOferta(tipoOferta.key)}
-                            className="group text-left rounded-xl border border-border bg-surface px-3.5 py-3 transition-colors hover:border-primary/70 hover:bg-surface-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                          >
-                            <span className="flex items-center justify-between gap-3">
-                              <span className="text-sm font-semibold text-fg">{tipoOferta.titulo}</span>
-                              <ArrowRight size={15} className="text-fg-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary-text" />
-                            </span>
-                            <span className="mt-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-warning">{tipoOferta.subtitulo}</span>
-                            <span className="mt-1 block text-[12px] leading-5 text-fg-muted">{tipoOferta.texto}</span>
-                          </button>
-                        ))}
                       </div>
                     </div>
 
                     <div className="rounded-lg border border-border bg-surface-2/60 px-3.5 py-2.5 text-[13px] text-fg-muted">
-                      <span className="font-semibold text-fg">¿De dónde salen?</span>{' '}
-                      Cada oferta se guarda en un producto (la ves también en Productos → ficha del producto → Ofertas).
-                      Si tus productos ya tenían ofertas, aparecen acá abajo. <span className="text-fg">En esta landing solo se muestran las que marques.</span>
+                      <span className="font-semibold text-fg">Regla de este lienzo:</span>{' '}
+                      cada oferta se guarda y se edita por producto. Si necesitás ofertar otro producto, primero agregalo desde Productos.
                     </div>
 
                     {errorOfertas && <p className="text-sm text-danger">{errorOfertas}</p>}
@@ -1103,7 +1001,7 @@ export default function ConfigurarVentaCodigo({
                           <div className="rounded-xl border border-dashed border-border-strong px-5 py-6 text-center">
                             <Tag size={20} className="mx-auto text-fg-muted" />
                             <p className="mt-2 text-sm font-medium text-fg">Ningún producto de esta landing tiene ofertas todavía</p>
-                            <p className="mt-1 text-[13px] text-fg-muted">Elegís el producto, qué le ofrecés y a qué precio.</p>
+                            <p className="mt-1 text-[13px] text-fg-muted">Abrí la ficha de un producto de esta landing y configurá sus paquetes, order bumps o upsells.</p>
                             <button
                               type="button"
                               onClick={() => abrirNuevaOferta()}
@@ -1116,13 +1014,6 @@ export default function ConfigurarVentaCodigo({
                           <>
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-sm font-medium text-fg">Productos de esta landing con ofertas</p>
-                              <button
-                                type="button"
-                                onClick={() => abrirNuevaOferta()}
-                                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border text-sm font-medium text-fg hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-                              >
-                                <Plus size={15} /> Nueva oferta
-                              </button>
                             </div>
                             {ofertasDeLanding.map(([productoId, grupo]) => (
                               <GrupoOfertas
@@ -1142,42 +1033,6 @@ export default function ConfigurarVentaCodigo({
                               />
                             ))}
                           </>
-                        )}
-
-                        {ofertasDeOtros.length > 0 && (
-                          <div className="rounded-xl border border-border">
-                            <button
-                              type="button"
-                              onClick={() => setVerOtrasOfertas(v => !v)}
-                              aria-expanded={verOtrasOfertas}
-                              className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left text-sm text-fg-muted hover:text-fg"
-                            >
-                              <span>
-                                Ofertas de otros productos de tu tienda <span className="font-mono">({ofertasDeOtros.reduce((n, [, g]) => n + g.ofertas.length, 0)})</span>
-                              </span>
-                              <span className="text-xs">{verOtrasOfertas ? 'Ocultar' : 'Ver'}</span>
-                            </button>
-                            {verOtrasOfertas && (
-                              <div className="px-3 pb-3 space-y-3">
-                                <p className="px-1 text-xs text-fg-muted">
-                                  Sus productos no están en esta landing, así que no se muestran.
-                                  {!esRegla && ' Si sumás el producto, podés usar sus ofertas.'}
-                                </p>
-                                {ofertasDeOtros.map(([productoId, grupo]) => (
-                                  <GrupoOfertas
-                                    key={productoId}
-                                    producto={porClave.get(`producto:${productoId}`) || grupo.producto}
-                                    nombre={grupo.producto?.nombre || `Producto #${productoId}`}
-                                    ofertas={grupo.ofertas}
-                                    elegidas={ofertasElegidas}
-                                    fuera
-                                    onSumar={!esRegla && porClave.has(`producto:${productoId}`) ? () => sumarProducto(productoId) : null}
-                                    onGestionar={() => abrirOfertasDe(productoId)}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </div>
                         )}
                       </>
                     )}
@@ -1426,7 +1281,7 @@ export default function ConfigurarVentaCodigo({
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-fg truncate">
-              {ENTRADAS.find(e => e.key === abrirEn)?.titulo} · <span className="font-mono font-normal">{resumenProductos}</span>
+              Inventario de la landing · <span className="font-mono font-normal">{resumenProductos}</span>
             </p>
             {errorGuardado ? (
               <div className="text-xs text-danger">
@@ -1492,7 +1347,7 @@ export default function ConfigurarVentaCodigo({
         <PanelOfertas
           producto={panelOfertas.producto}
           estrategia={panelOfertas.estrategia || null}
-          productos={todos.filter(i => i.tipo === 'producto')}
+          productos={seleccion.filter(i => i.tipo === 'producto')}
           enLanding={idsProductoEnLanding}
           onElegir={producto => setPanelOfertas(p => ({ ...p, producto }))}
           onCambiarProducto={() => setPanelOfertas(p => ({ ...p, producto: null }))}
@@ -1653,6 +1508,9 @@ function VistaPrevia({
               {tam.w > 0 && (
                 <div
                   style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
                     width: anchoLienzo,
                     height: tam.h / escala,
                     transform: `scale(${escala})`,
@@ -2051,7 +1909,7 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
 
   if (producto && (estrategia === 'combo' || armandoCombo)) {
     return <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-canvas" role="status">Abriendo el armador de combos…</div>}>
-      <ArmarComboPanel principalInicial={producto} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
+      <ArmarComboPanel productos={productos} principalInicial={producto} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
         if (onComboCreado) return onComboCreado(nuevo);
         else onCerrar();
       }} />
@@ -2202,37 +2060,3 @@ function Miniatura({ item }) {
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
 
-/**
- * Dibujo mínimo de cada formato: se entiende la diferencia entre
- * "catálogo", "producto estrella" y "combos" antes de leer el texto.
- */
-function Diagrama({ tipo, activo }) {
-  const bloque = activo ? 'bg-accent/70' : 'bg-border-strong';
-  const suave = activo ? 'bg-accent/30' : 'bg-border';
-  return (
-    <div className="h-16 rounded-lg bg-surface-2 p-2.5" aria-hidden="true">
-      {tipo === 'catalogo' && (
-        <div className="grid grid-cols-4 gap-1.5 h-full">
-          {Array.from({ length: 8 }).map((_, i) => <span key={i} className={`rounded-sm ${i < 3 ? bloque : suave}`} />)}
-        </div>
-      )}
-      {tipo === 'producto_unico' && (
-        <div className="flex gap-2 h-full">
-          <span className={`w-1/2 rounded-sm ${bloque}`} />
-          <span className="flex-1 flex flex-col gap-1.5 justify-center">
-            <span className={`h-1.5 w-full rounded-full ${suave}`} />
-            <span className={`h-1.5 w-3/4 rounded-full ${suave}`} />
-            <span className={`h-2.5 w-1/2 rounded-full ${bloque}`} />
-          </span>
-        </div>
-      )}
-      {tipo === 'combos' && (
-        <div className="relative h-full">
-          <span className={`absolute left-[18%] top-0 w-[38%] h-[80%] rounded-sm ${suave}`} />
-          <span className={`absolute left-[30%] top-[10%] w-[38%] h-[80%] rounded-sm ${suave} opacity-80`} />
-          <span className={`absolute left-[42%] top-[20%] w-[38%] h-[80%] rounded-sm ${bloque}`} />
-        </div>
-      )}
-    </div>
-  );
-}

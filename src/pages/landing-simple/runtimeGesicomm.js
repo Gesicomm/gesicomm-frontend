@@ -1102,6 +1102,20 @@ export function runtimeGesicomm() {
 
   // "Ver dónde aparece" del paso de venta: el contenedor pide resaltar una
   // lista (ofertas, recomendados, catálogo…) y acá se la lleva a la vista.
+  // scrollIntoView NO se usa en el runtime: el navegador propaga ese scroll
+  // a los documentos de afuera (el editor que contiene el iframe), moviendo
+  // incluso contenedores con overflow:hidden y la ventana entera. Esto solo
+  // desplaza la ventana del propio iframe.
+  function desplazarA(el, bloque, suave) {
+    if (!el || !el.getBoundingClientRect) return;
+    var r = el.getBoundingClientRect();
+    var alto = window.innerHeight || document.documentElement.clientHeight;
+    var y = window.pageYOffset + r.top;
+    if (bloque === 'center') y -= Math.max(0, (alto - r.height) / 2);
+    try { window.scrollTo({ top: Math.max(0, y), behavior: suave ? 'smooth' : 'auto' }); }
+    catch (err) { window.scrollTo(0, Math.max(0, y)); }
+  }
+
   var resaltadoTimer = null;
   function resaltar(lista) {
     if (!/^[a-z_]+$/.test(String(lista || ''))) return;
@@ -1114,7 +1128,7 @@ export function runtimeGesicomm() {
     var raiz = document.documentElement;
     var comportamiento = raiz.style.scrollBehavior;
     raiz.style.scrollBehavior = 'auto';
-    if (el.scrollIntoView) el.scrollIntoView({ block: 'center' });
+    desplazarA(el, 'center', false);
     raiz.style.scrollBehavior = comportamiento;
     var previo = el.style.outline;
     el.style.outline = '3px dashed #ffc107';
@@ -1191,7 +1205,7 @@ export function runtimeGesicomm() {
 
   function irAlCatalogo() {
     var lista = document.querySelector('[data-gesicomm-lista="catalogo"]');
-    if (lista && lista.scrollIntoView) lista.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (lista) desplazarA(lista, 'start', true);
   }
 
   function filtrarCategoriaVisual(categoria) {
@@ -1234,7 +1248,7 @@ export function runtimeGesicomm() {
       if (!productoActual || productoActual.id !== item.id) { verProducto(item); return; }
       toast('Elegí una opción antes de comprar.');
       var lista = document.querySelector('[data-gesicomm-lista="variantes"]');
-      if (lista && lista.scrollIntoView) lista.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (lista) desplazarA(lista, 'center', true);
       return;
     }
     // Order bumps marcados en esta ficha: van al carrito junto con el
@@ -1292,7 +1306,7 @@ export function runtimeGesicomm() {
       e.preventDefault();
       if (hash.length > 1) {
         var destino = document.getElementById(decodeURIComponent(hash.slice(1)));
-        if (destino) destino.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (destino) desplazarA(destino, 'start', true);
       } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }

@@ -50,10 +50,10 @@ async function completar() {
   await waitFor(() => expect(within(armador).getByRole('button', { name: /Vista del combo/ })).toBeEnabled());
   fireEvent.click(within(armador).getByRole('button', { name: /Vista del combo/ }));
   expect(within(armador).getByText('Fase 7 de 7 · Vista del combo')).toBeInTheDocument();
-  const vista = within(armador).getByRole('region', { name: 'Vista del combo en el HTML de la landing' });
+  const vista = within(armador).getByRole('region', { name: 'Vista propia del combo' });
   const datosCombo = JSON.parse(within(vista).getByTestId('datos-combo').textContent);
   expect(datosCombo.producto.combo_incluye.map(p => p.nombre)).toEqual(['Cacerola', 'Utensilios']);
-  expect(within(armador).queryByRole('region', { name: 'Vista pública del combo' })).toBeNull();
+  expect(within(armador).getByRole('button', { name: /Quiero mi combo/ })).toBeInTheDocument();
   return armador;
 }
 beforeEach(() => {

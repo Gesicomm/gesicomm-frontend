@@ -19,6 +19,7 @@ const productos = [
   { id: 1, nombre: 'Cacerola QA', precio_base: 100000, precio_costo: 40000, imagen: '/cacerola.png' },
   { id: 2, nombre: 'Utensilios QA', precio_base: 30000, precio_costo: 10000, imagen: '/utensilios.png' },
 ];
+const productoPaginaDos = { id: 3, nombre: 'Organizador QA', precio_base: 45000, precio_costo: 18000, imagen: '/organizador.png' };
 beforeEach(() => {
   comboAdminService.obtenerConfiguracion.mockResolvedValue({ cpa_porcentaje: 0, costo_envio: 0, costo_confirmacion: 0, costo_empaque: 0, margen_minimo: 15, umbral_excelente: 30 });
   verificarSesion.mockResolvedValue({ id: 1, rol: 'administrador' });
@@ -90,6 +91,25 @@ describe('Precios de venta durante el armado del combo', () => {
     fireEvent.click(within(preview).getByRole('button', { name: 'Mobile', exact: true }));
     expect(preview.querySelector('.product-preview-frame')).toHaveClass('mobile');
     expect(screen.getByRole('button', { name: 'Poner en venta' })).toBeEnabled();
+  });
+
+  it('pagina los productos disponibles al sumar complementarios', async () => {
+    productService.buscar.mockImplementation(async ({ page = 1 }) => ({
+      productos: page === 2 ? [productoPaginaDos] : productos,
+      total: 3,
+      pagina: page,
+      total_paginas: 2,
+    }));
+    await iniciar();
+    elegir('Cacerola QA');
+    fireEvent.click(screen.getByRole('button', { name: /Siguiente: complementarios/i }));
+    await screen.findByRole('textbox', { name: 'Precio de venta de Utensilios QA' });
+
+    fireEvent.click(screen.getByRole('button', { name: /^Siguiente$/i }));
+
+    await screen.findByRole('textbox', { name: 'Precio de venta de Organizador QA' });
+    await waitFor(() => expect(productService.buscar).toHaveBeenCalledWith(expect.objectContaining({ page: 2, limit: 12 })));
+    expect(screen.getByText(/Página/i)).toHaveTextContent('Página 2 de 2');
   });
 
   it('rechaza cero sin guardar el precio', async () => {

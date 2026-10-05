@@ -100,6 +100,16 @@
 .tn-tab .tn-tab-icon { display: flex; align-items: center; opacity: 0.65; }
 .tn-tab.activo .tn-tab-icon { opacity: 1; }
 
+.tn-tab-arrow {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  color: var(--vit-muted);
+  opacity: 0.35;
+  pointer-events: none;
+  margin-bottom: -1px; /* alinea con el borde inferior del nav */
+}
+
 /* ─── Panel ───────────────────────────────────────────────────────────── */
 .tn-panel { display: flex; flex-direction: column; }
 

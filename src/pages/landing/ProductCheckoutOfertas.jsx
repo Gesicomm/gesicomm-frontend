@@ -30,7 +30,7 @@ import './landing.css';
 const ESTRATEGIAS = [
   {
     value: 'normal',
-    label: 'Paquete — más unidades del mismo producto',
+    label: 'Oferta por cantidad — más unidades del mismo producto',
     ayuda: 'Se muestra en la ficha del producto como otra forma de comprarlo (ej. 2 unidades a precio especial).',
     esPaquete: true,
   },
