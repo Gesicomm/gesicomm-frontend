@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import React from 'react';
 import VitrinaGrid from './VitrinaGrid';
 import { vitrinaService } from '../../services/vitrinaService';
+import { landingService } from '../../services/landingService';
+import { landingSimpleService } from '../../services/landingSimpleService';
 import { BrowserRouter } from 'react-router-dom';
 
 vi.mock('../../services/vitrinaService', () => ({
@@ -17,7 +19,16 @@ vi.mock('../../services/vitrinaService', () => ({
 
 vi.mock('../../services/landingSimpleService', () => ({
   landingSimpleService: {
+    listar: vi.fn(),
+    obtener: vi.fn(),
     crearDesdeOnboarding: vi.fn(),
+  },
+}));
+
+vi.mock('../../services/landingService', () => ({
+  landingService: {
+    paginas: vi.fn(),
+    obtener: vi.fn(),
   },
 }));
 
@@ -54,9 +65,52 @@ describe('VitrinaGrid Component', () => {
       categoria: { id: 10, nombre: 'Suplementos' },
       subcategoria: { id: 11, nombre: 'Energía' },
     });
+    vitrinaService.catalogo.mockResolvedValue({
+      productos: [
+        {
+          id: 1,
+          tipo: 'producto',
+          nombre: 'Producto de Prueba',
+          precio_base: 50000,
+          precio_efectivo: 50000,
+          stock: 10,
+          creado_por: 42,
+          categoria: 'Electrónica',
+        },
+      ],
+      combos: [],
+    });
+    landingSimpleService.listar.mockResolvedValue([
+      { id: 10, activo: true, items: [{ id: 101 }] },
+    ]);
+    landingSimpleService.obtener.mockResolvedValue({
+      id: 10,
+      items: [
+        { tipo: 'producto', referencia_id: 1, orden: 0 },
+      ],
+    });
+    landingService.paginas.mockResolvedValue([
+      { id: 1, tipo_pagina: 'inicio', slug: 'sommix-inicio', es_home: true },
+      { id: 2, tipo_pagina: 'catalogo', slug: 'sommix-catalogo' },
+    ]);
+    landingService.obtener.mockResolvedValue({
+      id: 1,
+      items: [],
+      secciones: [
+        {
+          tipo: 'productos',
+          contenido: {
+            productos: [
+              { tipo: 'producto', referencia_id: 1 },
+              { tipo: 'producto', referencia_id: 999 },
+            ],
+          },
+        },
+      ],
+    });
   });
 
-  it('renderiza la cabecera con el botón de "Agregar Mis Productos" y la pestaña de "Mis productos"', async () => {
+  it('renderiza la cabecera con el botón de "Agregar Mis Productos", la pestaña de landing y la pestaña de "Mis productos"', async () => {
     renderWithRouter(<VitrinaGrid />);
 
     await waitFor(() => {
@@ -66,8 +120,62 @@ describe('VitrinaGrid Component', () => {
     const btnAgregar = screen.getByText('Agregar Mis Productos');
     expect(btnAgregar).toBeInTheDocument();
 
+    const btnEnLanding = screen.getByText('En mi landing');
+    expect(btnEnLanding).toBeInTheDocument();
+
     const btnMisProductos = screen.getByText('Mis productos');
     expect(btnMisProductos).toBeInTheDocument();
+  });
+
+  it('muestra solo los productos seleccionados para vender en la landing', async () => {
+    vitrinaService.catalogo.mockResolvedValue({
+      productos: [
+        { id: 1, tipo: 'producto', nombre: 'Producto en Landing', precio_base: 50000, precio_efectivo: 50000, stock: 10 },
+        { id: 2, tipo: 'producto', nombre: 'Producto fuera de Landing', precio_base: 60000, precio_efectivo: 60000, stock: 8 },
+      ],
+      combos: [
+        { id: 3, tipo: 'combo', nombre: 'Combo en Landing', precio_base: 90000, precio_efectivo: 90000 },
+      ],
+    });
+    landingService.obtener.mockResolvedValue({
+      id: 1,
+      items: [],
+      secciones: [
+        {
+          tipo: 'productos',
+          contenido: {
+            productos: [
+              { tipo: 'producto', referencia_id: 2 },
+            ],
+          },
+        },
+      ],
+    });
+    landingSimpleService.obtener.mockResolvedValue({
+      id: 10,
+      items: [
+        { tipo: 'combo', referencia_id: 3, orden: 0 },
+        { tipo: 'producto', referencia_id: 1, orden: 1 },
+      ],
+    });
+
+    renderWithRouter(<VitrinaGrid />);
+    await screen.findByText('Producto de Prueba');
+
+    fireEvent.click(screen.getByRole('button', { name: 'En mi landing', exact: true }));
+
+    expect(await screen.findByText('Producto en Landing')).toBeInTheDocument();
+    expect(await screen.findByText('Combo en Landing')).toBeInTheDocument();
+    expect(screen.queryByText('Producto fuera de Landing')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Seleccionar página/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Seleccionar todo/i })).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: /Seleccionar Producto en Landing/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole('article', { name: 'Producto en Landing' }));
+
+    expect(screen.queryByRole('region', { name: 'Productos seleccionados' })).toBeNull();
+    expect(landingSimpleService.obtener).toHaveBeenCalledWith(10);
+    expect(landingService.obtener).not.toHaveBeenCalled();
   });
 
   it('activa solamenteMios al presionar "Mis productos" y restablece al presionar "Todos"', async () => {

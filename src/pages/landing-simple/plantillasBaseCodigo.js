@@ -1819,146 +1819,331 @@ export const PLANTILLA_INICIO = { html: INICIO_HTML, css: ESTILOS_INICIO_CODIGO,
 export const PLANTILLA_ESTRELLA = { html: ESTRELLA_HTML, css: ESTRELLA_CSS, js: JS_COMUN };
 export const PLANTILLA_COMBOS = { html: COMBOS_HTML, css: INICIO_CSS_LEGACY, js: JS_COMUN };
 
-const CATEGORIA_HTML = `${ANNOUNCEMENT_HTML}
+const TIENDA_VISTA_CSS = `:root{
+  --gc-primario: var(--tienda-primario, #143f3a);
+  --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #ffffff);
+  --gc-fondo: var(--tienda-fondo, #f6f7f2);
+  --gc-texto: var(--tienda-texto, #10201d);
+  --lv-surface: var(--tienda-superficie, #ffffff);
+  --lv-line: var(--tienda-linea, #dfe5dc);
+  --lv-soft: color-mix(in srgb, var(--gc-primario) 8%, var(--gc-fondo));
+  --lv-muted: var(--tienda-texto-suave, #62706b);
+  --lv-radius: 8px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--gc-fondo);color:var(--gc-texto);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+.lv-shell{min-height:100vh;background:linear-gradient(180deg,var(--lv-soft),var(--gc-fondo) 320px)}
+.lv-topbar{background:var(--gc-primario);color:var(--gc-texto-sobre-primario);font-size:13px;font-weight:750}
+.lv-topbar-inner{max-width:1180px;margin:0 auto;padding:9px 18px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.lv-header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--gc-fondo) 88%,white);backdrop-filter:blur(12px);border-bottom:1px solid var(--lv-line)}
+.lv-header-inner{max-width:1180px;margin:0 auto;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px}
+.lv-brand{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:850;letter-spacing:0}
+.lv-brand img{width:38px;height:38px;object-fit:contain;border-radius:7px;background:var(--lv-surface);border:1px solid var(--lv-line)}
+.lv-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.lv-nav a,.lv-nav button{border:1px solid transparent;background:transparent;color:var(--gc-texto);border-radius:8px;padding:9px 11px;font-size:13px;font-weight:750}
+.lv-nav a:hover,.lv-nav button:hover{border-color:var(--lv-line);background:var(--lv-surface)}
+.lv-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:8px;background:var(--gc-primario);color:var(--gc-texto-sobre-primario);padding:12px 16px;font-weight:850;box-shadow:0 10px 22px color-mix(in srgb,var(--gc-primario) 22%,transparent);transition:transform .18s ease,box-shadow .18s ease}
+.lv-primary:hover{transform:translateY(-1px);box-shadow:0 14px 28px color-mix(in srgb,var(--gc-primario) 26%,transparent)}
+.lv-secondary{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--lv-line);border-radius:8px;background:var(--lv-surface);color:var(--gc-texto);padding:11px 14px;font-weight:800}
+.lv-page{max-width:1180px;margin:0 auto;padding:34px 18px 58px}
+.lv-kicker{margin:0 0 8px;color:var(--tienda-destacado,var(--gc-primario));font-size:12px;font-weight:900;text-transform:uppercase}
+.lv-title{margin:0;color:var(--gc-texto);font-size:clamp(30px,5vw,54px);line-height:1.02;letter-spacing:0}
+.lv-copy{margin:12px 0 0;color:var(--lv-muted);font-size:16px;line-height:1.7;max-width:680px}
+.lv-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:end;margin-bottom:24px}
+.lv-metrics{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:10px}
+.lv-metric{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);padding:14px;box-shadow:0 12px 30px rgba(16,32,29,.06)}
+.lv-metric strong{display:block;font-size:19px}.lv-metric span{display:block;margin-top:2px;color:var(--lv-muted);font-size:12px;font-weight:700}
+.lv-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px 180px;gap:10px;margin:20px 0 18px;background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);padding:12px;box-shadow:0 12px 30px rgba(16,32,29,.05)}
+.lv-field{display:grid;gap:6px}
+.lv-field span{color:var(--lv-muted);font-size:11px;font-weight:850;text-transform:uppercase}
+.lv-field input,.lv-field select,.lv-field textarea{width:100%;min-height:43px;border:1px solid var(--lv-line);border-radius:7px;background:#fff;color:var(--gc-texto);padding:10px 12px;outline:none}
+.lv-field input:focus,.lv-field select:focus,.lv-field textarea:focus{border-color:var(--gc-primario);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc-primario) 14%,transparent)}
+.lv-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.lv-card{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);overflow:hidden;box-shadow:0 10px 24px rgba(16,32,29,.05);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.lv-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--gc-primario) 34%,var(--lv-line));box-shadow:0 18px 34px rgba(16,32,29,.1)}
+.lv-card-media{aspect-ratio:1/1;background:var(--lv-soft);display:grid;place-items:center;cursor:pointer}
+.lv-card-media img{width:100%;height:100%;object-fit:cover}
+.lv-card-body{padding:13px;display:grid;gap:8px}
+.lv-card-category{color:var(--tienda-destacado,var(--gc-primario));font-size:11px;font-weight:900;text-transform:uppercase;min-height:14px}
+.lv-card-title{margin:0;color:var(--gc-texto);font-size:15px;line-height:1.25;min-height:38px;cursor:pointer}
+.lv-card-price{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.lv-card-price strong{font-size:17px}.lv-card-price button{padding:9px 10px;border-radius:7px;font-size:12px}
+.lv-empty,.lv-pages{margin-top:22px;text-align:center;color:var(--lv-muted)}
+.lv-empty{background:var(--lv-surface);border:1px dashed var(--lv-line);border-radius:var(--lv-radius);padding:28px}
+.lv-pages{display:flex;justify-content:center;align-items:center;gap:10px}
+.lv-pages button{border:1px solid var(--lv-line);background:var(--lv-surface);border-radius:7px;padding:10px 12px;font-weight:800}
+.lv-pages button:disabled{opacity:.45;cursor:not-allowed}
+.lv-checkout-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px}
+.lv-steps{display:flex;align-items:center;gap:8px;color:var(--lv-muted);font-size:12px;font-weight:800;white-space:nowrap}
+.lv-dot{width:8px;height:8px;border-radius:99px;background:var(--gc-primario)}
+.lv-checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:22px;align-items:start}
+.lv-panel{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);box-shadow:0 16px 38px rgba(16,32,29,.07)}
+.lv-form{padding:20px;display:grid;gap:16px}
+.lv-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lv-form .lv-wide{grid-column:1/-1}
+.lv-form textarea{min-height:86px;resize:vertical}
+.lv-message{min-height:18px;margin:0;color:var(--tienda-destacado,var(--gc-primario));font-size:13px;font-weight:750}
+.lv-summary{position:sticky;top:86px;padding:18px}
+.lv-summary h2{margin:0 0 12px;font-size:22px}
+.lv-items{display:grid;gap:10px}
+.lv-item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:11px;align-items:center;padding:11px 0;border-bottom:1px solid var(--lv-line)}
+.lv-item img{width:58px;height:58px;object-fit:cover;border-radius:7px;background:var(--lv-soft)}
+.lv-item strong{display:block;font-size:13px;line-height:1.25}
+.lv-item small,.lv-item span{display:block;color:var(--lv-muted);font-size:12px;margin-top:3px}
+.lv-item b{font-size:13px;white-space:nowrap}
+.lv-total{display:grid;gap:8px;margin-top:16px;padding-top:16px;border-top:1px solid var(--lv-line)}
+.lv-total-row{display:flex;align-items:center;justify-content:space-between;gap:14px;color:var(--lv-muted)}
+.lv-total-row strong{color:var(--gc-texto);font-size:22px}
+.lv-empty-checkout{max-width:620px;margin:42px auto;text-align:center;background:var(--lv-surface);border:1px dashed var(--lv-line);border-radius:var(--lv-radius);padding:34px;box-shadow:0 16px 38px rgba(16,32,29,.06)}
+.lv-empty-checkout h1{margin:0;color:var(--gc-texto);font-size:32px}.lv-empty-checkout p{color:var(--lv-muted);line-height:1.6}
+.lv-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted)}
+.lv-footer-inner{max-width:1180px;margin:0 auto;padding:24px 18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:13px}
+.lv-footer nav{display:flex;gap:12px;flex-wrap:wrap}.lv-footer a:hover{color:var(--gc-texto)}
+@media(max-width:920px){.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}}
+`;
 
-${HEADER_HTML.replace('__LINKS__', `<a href="/">Inicio</a>
-      <a href="/catalogo">Catálogo</a>
-      <a data-gesicomm-link="checkout" href="/checkout">Checkout</a>
-      <button class="nav-cta" type="button" data-gesicomm-carrito>Carrito</button>`)}
+const CATEGORIA_HTML = `<div class="lv-shell">
+  <div class="lv-topbar">
+    <div class="lv-topbar-inner">
+      <span>Pago seguro online o al recibir</span>
+      <span>Envio rapido a tu ciudad</span>
+      <span>Atencion por WhatsApp</span>
+    </div>
+  </div>
 
-<main class="storefront">
-  <section class="section">
-    <div class="container">
-      <div class="section-heading">
-        <p class="eyebrow">Categoría</p>
-        <h1 data-gesicomm-categoria="nombre">Categoría</h1>
-        <p><span data-gesicomm-total></span></p>
+  <header class="lv-header">
+    <div class="lv-header-inner">
+      <a class="lv-brand" href="/" data-gesicomm-inicio>
+        <img data-gesicomm-tienda="logo" alt="">
+        <span data-gesicomm-tienda="nombre">Tienda</span>
+      </a>
+      <nav class="lv-nav" aria-label="Navegacion">
+        <a href="/" data-gesicomm-inicio>Inicio</a>
+        <a href="/catalogo" data-gesicomm-link="catalogo">Catalogo</a>
+        <a href="/checkout" data-gesicomm-link="checkout">Checkout</a>
+        <button type="button" data-gesicomm-carrito>Carrito</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="lv-page">
+    <section class="lv-hero">
+      <div>
+        <p class="lv-kicker">Categoria</p>
+        <h1 class="lv-title" data-gesicomm-categoria="nombre">Categoria</h1>
+        <p class="lv-copy">Explora esta seleccion con filtros rapidos, orden por precio y acceso directo al detalle de cada producto.</p>
       </div>
+      <div class="lv-metrics" aria-label="Resumen de categoria">
+        <div class="lv-metric">
+          <strong data-gesicomm-total></strong>
+          <span>en esta vista</span>
+        </div>
+        <div class="lv-metric">
+          <strong>Entrega local</strong>
+          <span>coordinada por la tienda</span>
+        </div>
+      </div>
+    </section>
 
-      <div class="catalog-toolbar">
-        <input type="search" data-gesicomm-buscar placeholder="Buscar por nombre">
+    <section class="lv-toolbar" aria-label="Filtros de categoria">
+      <label class="lv-field">
+        <span>Buscar</span>
+        <input type="search" data-gesicomm-buscar placeholder="Producto, marca o palabra clave">
+      </label>
+      <label class="lv-field">
+        <span>Ordenar</span>
         <select data-gesicomm-filtro="orden">
           <option value="">Destacados</option>
           <option value="max-min">Mayor precio</option>
           <option value="min-max">Menor precio</option>
-          <option value="az">A → Z</option>
-          <option value="za">Z → A</option>
+          <option value="az">Nombre A-Z</option>
+          <option value="za">Nombre Z-A</option>
         </select>
+      </label>
+      <label class="lv-field">
+        <span>Stock</span>
         <select data-gesicomm-filtro="disponibilidad">
-          <option value="todos">Toda disponibilidad</option>
+          <option value="todos">Todos</option>
           <option value="en_stock">En stock</option>
           <option value="agotado">Agotados</option>
         </select>
-      </div>
+      </label>
+    </section>
 
-      <div class="product-grid" data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
-        <template>
-          <article class="product-card">
-            <div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div>
-            <div class="product-content">
-              <div class="product-category" data-gesicomm-bind="categoria"></div>
-              <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
-              <div class="product-footer">
-                <span class="price" data-gesicomm-bind="precio"></span>
-                <button class="button-primary" type="button" data-gesicomm-agregar>Agregar</button>
-              </div>
+    <section class="lv-grid" data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
+      <template>
+        <article class="lv-card">
+          <div class="lv-card-media" data-gesicomm-ver>
+            <img data-gesicomm-bind="imagen" alt="" loading="lazy">
+          </div>
+          <div class="lv-card-body">
+            <div class="lv-card-category" data-gesicomm-bind="categoria"></div>
+            <h3 class="lv-card-title" data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+            <div class="lv-card-price">
+              <strong data-gesicomm-bind="precio"></strong>
+              <button class="lv-primary" type="button" data-gesicomm-agregar>Agregar</button>
             </div>
-          </article>
-        </template>
-      </div>
+          </div>
+        </article>
+      </template>
+    </section>
 
-      <p data-gesicomm-sin-resultados>No encontramos productos para estos filtros.</p>
-      <div class="catalog-pages">
-        <button type="button" data-gesicomm-pagina="anterior">Anterior</button>
-        <span data-gesicomm-paginacion></span>
-        <button type="button" data-gesicomm-pagina="siguiente">Siguiente</button>
-      </div>
+    <p class="lv-empty" data-gesicomm-sin-resultados style="display:none">No encontramos productos para estos filtros.</p>
+    <div class="lv-pages">
+      <button type="button" data-gesicomm-pagina="anterior">Anterior</button>
+      <span data-gesicomm-paginacion></span>
+      <button type="button" data-gesicomm-pagina="siguiente">Siguiente</button>
     </div>
-  </section>
-</main>
+  </main>
 
-${FOOTER_HTML}`;
+  <footer class="lv-footer">
+    <div class="lv-footer-inner">
+      <strong data-gesicomm-tienda="nombre">Tienda</strong>
+      <nav aria-label="Links legales">
+        <a href="/contacto" data-gesicomm-link="contacto">Contacto</a>
+        <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">Privacidad</a>
+        <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">Terminos</a>
+        <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">Reembolsos</a>
+        <a href="/politica-envio" data-gesicomm-link="politica-envio">Envios</a>
+        <a href="/aviso-legal" data-gesicomm-link="aviso-legal">Aviso legal</a>
+      </nav>
+      <div data-gesicomm-redes></div>
+    </div>
+  </footer>
+</div>`;
 
-const CHECKOUT_HTML = `${ANNOUNCEMENT_HTML}
+const CHECKOUT_HTML = `<div class="lv-shell">
+  <div class="lv-topbar">
+    <div class="lv-topbar-inner">
+      <span>Pedido protegido por Gesicomm</span>
+      <span>Pago online o al recibir</span>
+      <span>Confirmacion por WhatsApp</span>
+    </div>
+  </div>
 
-${HEADER_HTML.replace('__LINKS__', `<a href="/">Inicio</a>
-      <a href="/catalogo">Seguir comprando</a>
-      <button class="nav-cta" type="button" data-gesicomm-carrito>Carrito</button>`)}
+  <header class="lv-header">
+    <div class="lv-header-inner">
+      <a class="lv-brand" href="/" data-gesicomm-inicio>
+        <img data-gesicomm-tienda="logo" alt="">
+        <span data-gesicomm-tienda="nombre">Tienda</span>
+      </a>
+      <nav class="lv-nav" aria-label="Navegacion">
+        <a href="/" data-gesicomm-inicio>Inicio</a>
+        <a href="/catalogo" data-gesicomm-link="catalogo">Seguir comprando</a>
+        <button type="button" data-gesicomm-carrito>Carrito</button>
+      </nav>
+    </div>
+  </header>
 
-<main class="checkout-page">
-  <section class="section">
-    <div class="container checkout-grid">
-      <div data-gesicomm-checkout-con-items>
-        <p class="eyebrow">Checkout</p>
-        <h1>Finalizá tu pedido</h1>
-        <form class="checkout-form" data-gesicomm-checkout-form>
-          <label>Nombre y apellido <input name="nombre_cliente" autocomplete="name" required></label>
-          <label>Celular <input name="telefono" autocomplete="tel" required></label>
-          <label>Ciudad <input name="ciudad" autocomplete="address-level2" required></label>
-          <label>Dirección <input name="direccion" autocomplete="street-address" required></label>
-          <label>Documento <input name="documento" autocomplete="off"></label>
-          <label>Método de pago
+  <main class="lv-page">
+    <section class="lv-checkout-head" data-gesicomm-checkout-con-items>
+      <div>
+        <p class="lv-kicker">Checkout</p>
+        <h1 class="lv-title">Finaliza tu pedido</h1>
+        <p class="lv-copy">Completa tus datos para coordinar entrega, metodo de pago y confirmacion del pedido.</p>
+      </div>
+      <div class="lv-steps" aria-label="Estado del pedido">
+        <span class="lv-dot"></span>
+        <span>Carrito</span>
+        <span class="lv-dot"></span>
+        <span>Datos</span>
+        <span class="lv-dot"></span>
+        <span>Confirmacion</span>
+      </div>
+    </section>
+
+    <section class="lv-checkout-grid" data-gesicomm-checkout-con-items>
+      <form class="lv-panel lv-form" data-gesicomm-checkout-form>
+        <div class="lv-form-grid">
+          <label class="lv-field">
+            <span>Nombre y apellido</span>
+            <input name="nombre_cliente" autocomplete="name" required>
+          </label>
+          <label class="lv-field">
+            <span>Celular</span>
+            <input name="telefono" autocomplete="tel" required>
+          </label>
+          <label class="lv-field">
+            <span>Ciudad</span>
+            <input name="ciudad" autocomplete="address-level2" required>
+          </label>
+          <label class="lv-field">
+            <span>Documento</span>
+            <input name="documento" autocomplete="off">
+          </label>
+          <label class="lv-field lv-wide">
+            <span>Direccion</span>
+            <input name="direccion" autocomplete="street-address" required>
+          </label>
+          <label class="lv-field lv-wide">
+            <span>Metodo de pago</span>
             <select name="payment_method">
               <option value="contra_entrega">Pago al recibir</option>
-              <option value="pagopar">Pago online</option>
+              <option value="pagopar">Pago online con PagoPar</option>
             </select>
           </label>
-          <label>Notas <textarea name="notas" rows="3"></textarea></label>
-          <button class="button-primary" type="submit">Confirmar pedido · <span data-gesicomm-checkout="total"></span></button>
-          <p data-gesicomm-checkout="mensaje"></p>
-        </form>
-      </div>
+          <label class="lv-field lv-wide">
+            <span>Notas para la tienda</span>
+            <textarea name="notas" rows="3" placeholder="Referencia de entrega, horario preferido u otra aclaracion"></textarea>
+          </label>
+        </div>
+        <button class="lv-primary" type="submit">Confirmar pedido - <span data-gesicomm-checkout="total"></span></button>
+        <p class="lv-message" data-gesicomm-checkout="mensaje"></p>
+      </form>
 
-      <aside class="checkout-summary">
+      <aside class="lv-panel lv-summary">
         <h2>Tu pedido</h2>
-        <div data-gesicomm-lista="checkout_items">
+        <div class="lv-items" data-gesicomm-lista="checkout_items">
           <template>
-            <article class="checkout-item">
+            <article class="lv-item">
               <img data-gesicomm-bind="imagen" alt="">
               <div>
                 <strong data-gesicomm-bind="nombre"></strong>
                 <small data-gesicomm-bind="variante"></small>
-                <span><span data-gesicomm-bind="precio_unitario"></span> × <span data-gesicomm-bind="cantidad"></span></span>
+                <span><span data-gesicomm-bind="precio_unitario"></span> x <span data-gesicomm-bind="cantidad"></span></span>
               </div>
               <b data-gesicomm-bind="subtotal"></b>
             </article>
           </template>
         </div>
-        <div class="checkout-total">
-          <span>Total</span>
-          <strong data-gesicomm-checkout="total"></strong>
+        <div class="lv-total">
+          <div class="lv-total-row"><span>Subtotal</span><b data-gesicomm-checkout="subtotal"></b></div>
+          <div class="lv-total-row"><span>Items</span><b data-gesicomm-checkout="cantidad"></b></div>
+          <div class="lv-total-row"><span>Total</span><strong data-gesicomm-checkout="total"></strong></div>
         </div>
       </aside>
+    </section>
 
-      <div data-gesicomm-checkout-vacio>
-        <h1>Tu carrito está vacío</h1>
-        <p>Agregá productos antes de finalizar el pedido.</p>
-        <a class="button-primary" href="/catalogo">Ver catálogo</a>
-      </div>
+    <section class="lv-empty-checkout" data-gesicomm-checkout-vacio>
+      <p class="lv-kicker">Carrito vacio</p>
+      <h1>Tu pedido todavia no tiene productos</h1>
+      <p>Volve al catalogo, elegi lo que queres comprar y despues finaliza el checkout desde esta vista.</p>
+      <a class="lv-primary" href="/catalogo" data-gesicomm-link="catalogo">Ver catalogo</a>
+    </section>
+  </main>
+
+  <footer class="lv-footer">
+    <div class="lv-footer-inner">
+      <strong data-gesicomm-tienda="nombre">Tienda</strong>
+      <nav aria-label="Links legales">
+        <a href="/contacto" data-gesicomm-link="contacto">Contacto</a>
+        <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">Privacidad</a>
+        <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">Terminos</a>
+        <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">Reembolsos</a>
+        <a href="/politica-envio" data-gesicomm-link="politica-envio">Envios</a>
+        <a href="/aviso-legal" data-gesicomm-link="aviso-legal">Aviso legal</a>
+      </nav>
+      <div data-gesicomm-redes></div>
     </div>
-  </section>
-</main>
+  </footer>
+</div>`;
 
-${FOOTER_HTML}`;
-
-const CHECKOUT_CSS = `${ESTILOS_INICIO_CODIGO}
-.checkout-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
-.checkout-form{display:grid;gap:14px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:20px}
-.checkout-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:var(--navy)}
-.checkout-form input,.checkout-form select,.checkout-form textarea,.catalog-toolbar input,.catalog-toolbar select{width:100%;border:1px solid var(--line);border-radius:6px;padding:11px 12px;color:var(--navy);background:#fff}
-.checkout-summary{background:#fff;border:1px solid var(--line);border-radius:9px;padding:18px;position:sticky;top:110px}
-.checkout-item{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
-.checkout-item img{width:58px;height:58px;object-fit:cover;border-radius:6px;background:#f4f8fb}
-.checkout-item strong,.checkout-item small,.checkout-item span{display:block}.checkout-item small{color:var(--muted)}
-.checkout-total{display:flex;justify-content:space-between;align-items:center;padding-top:16px;font-size:18px}
-.catalog-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px}.catalog-toolbar>*{max-width:220px}
-.catalog-pages{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:24px}
-.catalog-pages button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 12px}
-@media(max-width:760px){.checkout-grid{grid-template-columns:1fr}.checkout-summary{position:static}.catalog-toolbar>*{max-width:none}}
-`;
-
-export const PLANTILLA_CATEGORIA = { html: CATEGORIA_HTML, css: ESTILOS_INICIO_CODIGO, js: JS_COMUN };
-export const PLANTILLA_CHECKOUT = { html: CHECKOUT_HTML, css: CHECKOUT_CSS, js: JS_COMUN };
+export const PLANTILLA_CATEGORIA = { html: CATEGORIA_HTML, css: TIENDA_VISTA_CSS, js: JS_COMUN };
+export const PLANTILLA_CHECKOUT = { html: CHECKOUT_HTML, css: TIENDA_VISTA_CSS, js: JS_COMUN };
 
 /** La página de inicio base de cada formato de venta. */
 // Un solo inicio: la tienda. "Combos primero" es orden, no diseño, y

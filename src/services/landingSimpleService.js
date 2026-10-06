@@ -17,7 +17,7 @@ export const landingSimpleService = {
   // Vuelve a generar el HTML/CSS de una landing YA CREADA con un prompt
   // nuevo — misma fila, mismo id, mismos productos (los de "Configurar
   // venta"). A diferencia de crearDesdeIA, no crea otra landing.
-  // target: 'inicio' | 'producto' (ficha general) | 'producto_especifico'
+  // target: 'inicio' | 'producto' (ficha general) | 'producto_especifico' | 'categoria' | 'checkout'
   // (ficha propia — requiere contentId, el content_id público del producto).
   regenerarConIA: (id, prompt, target = 'inicio', contentId = null) =>
     API.post(`/mis-landings-simples/${id}/ai-regenerar`, { prompt, target, contentId }).then(r => r.data),

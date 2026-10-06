@@ -436,7 +436,12 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // SOLO esa ficha (nunca la general ni la de otro producto) — así cada
   // producto puede tener un diseño distinto ("este termo estilo outdoor",
   // "este auricular tech futurista").
-  const targetIA = esPropia ? 'producto_especifico' : vista === 'producto' ? 'producto' : 'inicio';
+  const targetIA = esPropia
+    ? 'producto_especifico'
+    : vista === 'producto' ? 'producto'
+      : vista === 'categoria' ? 'categoria'
+        : vista === 'checkout' ? 'checkout'
+          : 'inicio';
   const nombreTargetIA = esPropia
     ? `la ficha propia de "${nombreProductoFicha}"`
     : esLegal ? `la página legal "${nombrePaginaLegal}"`
@@ -1243,7 +1248,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
               ) : (
                 esLegal
                   ? <>Para páginas legales, editá directamente el HTML/CSS/JS. El asistente automático por ahora trabaja con Inicio y Ficha.</>
-                  : <>Pedile un ajuste puntual ("agregá una sección de beneficios", "hacela más minimalista") — edita <strong className="text-fg/75">{nombreTargetIA}</strong> conservando el resto. Para {vista === 'inicio' ? 'la ficha de producto' : 'el inicio'}, cambiá de vista arriba primero.</>
+                  : <>Pedile un ajuste puntual ("agregá una sección de beneficios", "hacela más minimalista") — edita <strong className="text-fg/75">{nombreTargetIA}</strong> conservando el resto. Para otra vista, cambiá de vista arriba primero.</>
               )}
             </p>
             {errorIA && <p className="text-xs text-danger">{errorIA}</p>}
@@ -1316,7 +1321,14 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
     setRespuesta('');
   }
 
-  const nombreVista = vista === 'producto' ? 'la ficha de producto' : 'el inicio';
+  const vistasPrompt = {
+    inicio: { nombre: 'el inicio', corto: 'del inicio', titulo: 'Prompt del inicio' },
+    producto: { nombre: 'la ficha de producto', corto: 'de la ficha', titulo: 'Prompt de la ficha' },
+    categoria: { nombre: 'la vista de categoría', corto: 'de categoría', titulo: 'Prompt de categoría' },
+    checkout: { nombre: 'el checkout', corto: 'del checkout', titulo: 'Prompt del checkout' },
+  };
+  const infoVista = vistasPrompt[vista] || vistasPrompt.inicio;
+  const nombreVista = infoVista.nombre;
 
   const modoSeleccion = venta?.seleccion === 'todos'
     ? 'Todo el catálogo'
@@ -1360,7 +1372,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
         <ol className="mt-2 text-sm text-fg/65 space-y-1 list-decimal pl-4">
           <li>Copiá el prompt de {nombreVista} y pegalo en ChatGPT, Claude o Gemini.</li>
           <li>Pegá la respuesta abajo y tocá “Aplicar”.</li>
-          <li>Revisá el preview y guardá. Repetí con la otra vista (arriba: Inicio / Ficha).</li>
+          <li>Revisá el preview y guardá. Podés repetirlo en cada vista: Inicio, Ficha, Categoría o Checkout.</li>
         </ol>
       </div>
 
@@ -1385,7 +1397,7 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
             maestro suelto), pero sin la tienda, sus colores, el logo ni los
             productos la IA no sabía qué armar: el completo ya trae esas reglas. */}
         <div className="rounded-xl border border-fg/25 bg-fg/5 p-3 flex flex-col mb-3">
-          <p className="text-sm font-semibold text-fg">Prompt {vista === 'producto' ? 'de la ficha' : 'del inicio'}</p>
+          <p className="text-sm font-semibold text-fg">{infoVista.titulo}</p>
           <p className="text-xs text-fg/60 mt-1">
             Todo en uno: reglas de Gesicomm + tu tienda (nombre, colores, logo) + tus {seleccion.length} producto{seleccion.length === 1 ? '' : 's'} + lo que tiene que tener {nombreVista}{incluirBase ? ' + una referencia compacta del código base' : ''}. Pegalo en un chat nuevo y la IA ya sabe qué armar sin perderse entre bloques enormes.
           </p>
@@ -1394,11 +1406,11 @@ function PanelPrompts({ vista, fichaDe = null, tienda, venta, seleccion, onAplic
             onClick={() => copiar(prompt, 'vista')}
             className="mt-2.5 self-start inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-fg text-canvas hover:bg-fg-muted"
           >
-            {copiado === 'vista' ? <Check size={13} /> : <Copy size={13} />} {copiado === 'vista' ? 'Copiado' : `Copiar prompt ${vista === 'producto' ? 'de la ficha' : 'del inicio'}`}
+            {copiado === 'vista' ? <Check size={13} /> : <Copy size={13} />} {copiado === 'vista' ? 'Copiado' : `Copiar prompt ${infoVista.corto}`}
           </button>
         </div>
         <span className="block text-xs font-semibold text-fg/70 mb-2">
-          Así queda el prompt completo {vista === 'producto' ? 'de la ficha' : 'del inicio'}
+          Así queda el prompt completo {infoVista.corto}
         </span>
         <textarea
           value={prompt}

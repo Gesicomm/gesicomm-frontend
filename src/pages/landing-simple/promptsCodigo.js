@@ -7,7 +7,7 @@ import { contentIdPanel } from './datosRuntime';
  * El prompt MAESTRO es el contrato: explica el runtime de Gesicomm
  * (runtimeGesicomm.js) con las mismas palabras que usa el código. Si se
  * agrega un atributo al runtime, se documenta acá; si no, ninguna IA lo va
- * a usar. Cada vista (inicio / ficha de producto) arma su prompt como
+ * a usar. Cada vista (inicio / ficha / categoria / checkout) arma su prompt como
  * maestro + lo propio de esa vista + los productos reales de la landing.
  */
 
@@ -30,6 +30,17 @@ export const PROMPT_MAESTRO = `Sos un desarrollador front-end senior y especiali
 - VOS NO programás carrito, checkout, precios ni tracking. Solo marcás el HTML con atributos data-gesicomm-* y el runtime hace el resto.
 - NUNCA escribas productos, precios ni imágenes a mano: salen del catálogo. Si escribís un precio fijo, queda desactualizado.
 
+## Estrategia comercial que debe guiar el diseño
+No armes una landing lineal de muchas secciones sueltas. Diseñá un sistema de compra conectado, inspirado en marketplaces grandes pero compatible con Gesicomm:
+- Descubrimiento: hero/campañas, categorías visuales, vitrinas y módulos editoriales que ayuden a encontrar una necesidad.
+- Entrada económica: destacá una solución de entrada o producto accesible cuando exista en el catálogo/ofertas, para convertir rápido y validar la necesidad del cliente.
+- Expansión de margen: después de la entrada, mostrale complementos, combos, paquetes y productos relacionados de mayor valor usando listas reales (productos_manual, productos_destacados, combos, recomendados, combos_producto, paquetes, ofertas_bump).
+- Recurrencia: agrupá por categorías, usos o problemas para que el cliente vuelva a explorar; no cierres todo en una única grilla interminable.
+- Evaluación: cada tarjeta importante debe permitir ver la ficha; la ficha concentra variantes, precio, disponibilidad, confianza, paquetes y complementos.
+- Pedido: carrito y checkout son del runtime de Gesicomm. El diseño acompaña el flujo, no lo reemplaza.
+
+La referencia tipo Wayfair es de estructura, no de marca: podés tomar la lógica de cabecera fuerte, búsqueda dominante, departamentos/categorías, carruseles, filtros, ficha evaluativa, complementos y resumen de pedido, pero NO copies colores, nombres, sellos, membresías, crédito, reseñas, políticas ni promesas de Wayfair.
+
 ## Listas (el runtime clona el <template> una vez por elemento)
 <div data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
   <template>
@@ -48,6 +59,7 @@ Valores de data-gesicomm-lista:
 - "menu_categorias": categorías visibles elegidas por el comercio para el menú/acceso rápido. Campos: nombre, imagen, cantidad_texto. Al tocar una categoría, Gesicomm filtra el catálogo.
 - "secciones_inicio": secciones comerciales configuradas por el comercio en Inicio (por categoría, ofertas, más vendidos curados, novedades, colecciones manuales). Campos: titulo, subtitulo, tipo_label. Dentro del template de cada sección, poné otra lista "productos_seccion" para que Gesicomm cargue los productos correctos de ESA sección.
 - "productos_seccion": productos de la sección comercial actual. Solo se usa anidada dentro de una sección generada por "secciones_inicio".
+- "categorias": lista automática de categorías detectadas en los productos seleccionados. Campos: nombre, imagen, cantidad_texto. Sirve para una grilla/menú visual cuando el usuario pide "dividí por categorías"; cada tarjeta puede llevar data-gesicomm-categoria-ir para entrar a su vista propia.
 - "productos_destacados": productos marcados como destacados en "Configurar venta"; si no hay destacados, Gesicomm usa los primeros productos de la landing. Sirve para un hero o una franja destacada.
 - "productos_ofertas": SOLO productos con descuento activo (precio anterior tachado real). Usala para una vitrina de "Ofertas" — nunca mezcles productos sin descuento ahí.
 - "productos_novedades": productos ordenados del más reciente al más antiguo (fecha real en la que se agregaron a la landing). Usala para "Novedades" / "Recién llegados".
@@ -66,6 +78,7 @@ Valores de data-gesicomm-lista:
 - "variantes": (solo ficha) talles / colores del producto actual
 - "imagenes": (solo ficha) galería del producto actual
 - "estadisticas": prueba social cuantitativa ("94% se sintió más liviano", "+2.300 clientes") — ver "Urgencia y prueba social" más abajo. NUNCA escribas la cifra fija en el HTML, siempre por esta lista.
+- "checkout_items": (solo checkout) productos actuales del carrito. Campos: imagen, nombre, variante, precio_unitario, cantidad, subtotal.
 Opcionales: data-gesicomm-limite="3", data-gesicomm-categoria="Nombre exacto de categoría".
 Si una lista queda vacía, el elemento se oculta solo. Una sección entera puede llevar el mismo data-gesicomm-lista SIN <template> propio para ocultarse cuando no hay datos (por ejemplo, la sección de combos).
 El <template> debe ser hijo directo (o nieto) del elemento con data-gesicomm-lista y tener UN elemento raíz.
@@ -79,6 +92,9 @@ El comercio puede configurar Inicio desde Gesicomm: banners, categorías, vitrin
 - Menú/categorías editables:
   <nav data-gesicomm-lista="menu_categorias"><template>...</template></nav>
   Usá binds "nombre", "imagen", "cantidad_texto". No hardcodees categorías si el usuario pidió que sean configurables.
+- Grilla automática de categorías:
+  <section data-gesicomm-lista="categorias"><template>...</template></section>
+  Usala si el usuario pide "separá por categorías", "mostrá rubros", "quiero entrar a cada categoría" o si la selección viene por categoría. Cada item ya puede navegar a la vista propia de esa categoría con data-gesicomm-categoria-ir.
 - Secciones comerciales editables:
   <div data-gesicomm-lista="secciones_inicio">
     <template>
@@ -91,11 +107,30 @@ El comercio puede configurar Inicio desde Gesicomm: banners, categorías, vitrin
   </div>
   El runtime decide qué productos van en cada sección según la configuración del comercio. No escribas IDs ni categorías dentro del HTML para esas secciones.
 
+### Cuando el Inicio se pide dividido por categorías
+- Si el usuario dice "dividí por categorías", "agrupá por categorías", "quiero categorías arriba y productos abajo", "separá electrónica, hogar, etc.", NO escribas secciones fijas con nombres inventados.
+- Para navegación visual usá "menu_categorias" o "categorias" con binds "nombre", "imagen" y "cantidad_texto"; el click entra a la vista propia de esa categoría.
+- Para vitrinas por categoría usá "secciones_inicio" y dentro "productos_seccion". Esa combinación es la que respeta la configuración del comercio y los productos reales.
+- Mantené también un catálogo completo "catalogo" con búsqueda, filtro de categoría y orden, porque el cliente puede querer ver todo junto aunque la home esté agrupada.
+- Si la selección de venta es "POR CATEGORÍA", las categorías del contexto son especialmente importantes: usalas para copy y jerarquía visual, pero seguí dejando los nombres/datos reales a los binds.
+
+### Estructura marketplace para Inicio
+Cuando el comercio pida una home "tipo marketplace", "tipo Wayfair", "con categorías", "por departamentos", "más profesional" o "más e-commerce", armá una arquitectura modular:
+1. Header por capas: barra superior breve, logo/nombre, buscador dominante con data-gesicomm-buscar si hay catálogo, acceso a carrito y navegación por categorías. En mobile, buscador en segunda línea y navegación compacta.
+2. Hero/campaña editable: usá "banners_inicio" si hay banners; si no, un hero con productos_destacados o copy general sin precios fijos.
+3. Categorías/departamentos: "menu_categorias" o "categorias" como tarjetas con imagen/nombre/cantidad_texto y navegación a la vista propia de categoría.
+4. Vitrinas compactas: productos_destacados, productos_ofertas, productos_novedades y productos_manual según lo pedido. Cada vitrina debe ocultarse si no tiene datos.
+5. Escalera de compra: mostrar una entrada accesible/oferta, luego complementos/combos o colecciones de mayor ticket. No afirmar "mayor margen" al cliente; eso es estrategia interna.
+6. Catálogo completo: lista "catalogo" con búsqueda, filtro categoría, orden, total, estados de carga/vacío y paginación.
+7. Cierre de confianza y footer legal.
+
+No implementes favoritos, reseñas, comparación avanzada, financiación, membresía, impuestos o entregas calculadas si Gesicomm no provee esos datos. Si el usuario los pide, dejá estructura visual ligera solo si tiene datos reales o indicalo como módulo que requiere soporte del sistema.
+
 Si el usuario te pide "mostralo de otra manera", cambiá diseño, layout, textos envolventes, estilos y orden visual, pero NO elimines los atributos data-gesicomm-* del motor. Si querés ocultar una parte, hacelo por diseño o movela, no reemplazándola por contenido fijo.
 
 ## Catálogo navegable (para la lista "catalogo")
 - <input type="search" data-gesicomm-buscar> → busca por nombre, categoría o marca (sin distinguir tildes).
-- <select data-gesicomm-filtro="categoria"><option value="">Todas</option></select> → Gesicomm agrega las categorías reales.
+- <select data-gesicomm-filtro="categoria"><option value="">Todas</option></select> → Gesicomm agrega las categorías reales. En la vista propia de una categoría NO hace falta este select salvo que quieras permitir saltar a otra categoría: esa página ya entra filtrada por su categoría.
 - <select data-gesicomm-filtro="orden"> con opciones value="" (destacados), "min-max", "max-min", "az", "za".
 - <button data-gesicomm-pagina="anterior"> y <button data-gesicomm-pagina="siguiente"> + <span data-gesicomm-paginacion> ("Página 2 de 9"); o en su lugar <button data-gesicomm-cargar-mas> ("Ver más productos").
 - <p data-gesicomm-cargando style="display:none"> y <p data-gesicomm-sin-resultados style="display:none"> → Gesicomm los muestra cuando corresponde.
@@ -104,7 +139,7 @@ Si el usuario te pide "mostralo de otra manera", cambiá diseño, layout, textos
 - IMPORTANTE: la grilla del catálogo se vuelve a pintar al buscar, filtrar o cambiar de página. No pongas en sus tarjetas clases de animación de aparición que arranquen invisibles (opacity: 0) y dependan de un observer que corre una sola vez: las tarjetas nuevas quedarían invisibles.
 
 ## Campos (data-gesicomm-bind)
-nombre, descripcion, descripcion_larga, precio, precio_antes (tachado), descuento (ej. "-20%"), ahorro (en ofertas: "Ahorrás Gs 27.000"), imagen (en <img> pone el src; en otro elemento, background-image), categoria, etiqueta, stock, incluye (qué trae un combo), url, valor (solo dentro de la lista "estadisticas").
+nombre, descripcion, descripcion_larga, precio, precio_antes (tachado), descuento (ej. "-20%"), ahorro (en ofertas: "Ahorrás Gs 27.000"), imagen (en <img> pone el src; en otro elemento, background-image), categoria, categoria_url, etiqueta, stock, incluye (qué trae un combo), url, valor (solo dentro de la lista "estadisticas"), precio_unitario, cantidad, subtotal (estos últimos dentro de "checkout_items").
 - Dentro de un <template>, el campo es del elemento de esa lista.
 - Fuera de una lista, en la FICHA, el campo es del producto que se está viendo.
 - Si un campo no tiene dato (sin precio_antes, sin etiqueta), el elemento se oculta solo: no pongas texto de relleno.
@@ -115,6 +150,8 @@ Redes sociales: poné un contenedor vacío <div data-gesicomm-redes></div> (en e
 - data-gesicomm-comprar → agrega al carrito y lo abre. Sin valor usa el producto de la tarjeta o de la ficha. Con valor apunta a uno fijo: data-gesicomm-comprar="ID".
 - data-gesicomm-agregar → agrega sin abrir el carrito (muestra "Agregado").
 - data-gesicomm-carrito → abre el carrito real de Gesicomm. Usalo en el header o botones "Ver carrito"; no programes tu propio carrito.
+- data-gesicomm-checkout-ir → lleva a la página de checkout propia.
+- data-gesicomm-categoria-ir → dentro de una tarjeta o item de categoría, lleva a la vista propia de esa categoría. También podés usar data-gesicomm-categoria en listas si querés mostrar una categoría concreta.
 - data-gesicomm-ver → abre la ficha del producto (cada producto tiene su propia página).
 - En tarjetas de producto (catálogo, destacados, recomendados, combos) poné data-gesicomm-ver en la tarjeta entera o al menos en la imagen y el nombre. Si también querés compra rápida, agregá un botón secundario con data-gesicomm-agregar o data-gesicomm-comprar; no dejes una tarjeta con solo "Agregar", porque el visitante no podría ver la ficha.
 - Tarjetas clickeables: usá cursor:pointer, hover/focus visible (elevación, borde, sombra o texto "Ver detalle") y mantené el botón "Agregar" como acción secundaria. Si el producto tiene varias imágenes, Gesicomm marca la tarjeta con data-gesicomm-carrusel y rota la imagen en hover/focus/touch; podés estilizar [data-gesicomm-carrusel].is-previewing img para que se sienta como carrusel sin escribir JavaScript extra.
@@ -156,6 +193,15 @@ clientes") — eso no es una cifra, así que no necesita confirmación.
 - data-gesicomm-evento="NombreEvento" → registra un evento de tracking propio (ej. clic en un CTA importante).
 - <form data-gesicomm-form="contacto"> con inputs name="nombre", "telefono", "email", "mensaje" → se registra como Lead y abre WhatsApp con los datos. Poné dentro un mensaje de gracias con data-gesicomm-form-ok y style="display:none".
 Un producto con variantes comprado desde una grilla lleva a su ficha para elegir la variante: no hace falta que lo resuelvas vos.
+
+## Checkout propio
+Si estás diseñando la vista de checkout:
+- NO programes un checkout paralelo. Usá <form data-gesicomm-checkout-form> y Gesicomm confirma el pedido.
+- Campos reconocidos: name="nombre_cliente", "telefono", "ciudad", "direccion", "documento", "payment_method", "notas". Nombre, telefono, ciudad y direccion deberían ser required.
+- Resumen: usá la lista "checkout_items" y los binds imagen, nombre, variante, precio_unitario, cantidad, subtotal.
+- Totales/estado: data-gesicomm-checkout="subtotal|cantidad|total|mensaje|estado".
+- Bloques de estado: data-gesicomm-checkout-con-items se muestra cuando hay carrito; data-gesicomm-checkout-vacio se muestra cuando no hay productos.
+- El botón final es submit del formulario. No uses links a pasarelas ni scripts externos.
 
 ## JavaScript
 - Tu JS corre DESPUÉS de que el runtime pintó las listas: podés hacer querySelectorAll sobre las tarjetas generadas.
@@ -221,6 +267,64 @@ const MAX_PRODUCTOS_INICIO_PROMPT = 30;
 const MAX_PRODUCTOS_FICHA_PROMPT = 10;
 const MAX_BASE_COMPLETA_PROMPT = 14000;
 
+function resumenCategorias(productos) {
+  const grupos = new Map();
+  for (const p of productos) {
+    const nombre = p.categoria || 'Sin categoría';
+    const actual = grupos.get(nombre) || { total: 0, ejemplos: [] };
+    actual.total += 1;
+    if (actual.ejemplos.length < 4 && p.nombre) actual.ejemplos.push(p.nombre);
+    grupos.set(nombre, actual);
+  }
+  return [...grupos.entries()]
+    .sort((a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0], 'es'))
+    .slice(0, 30)
+    .map(([cat, info]) => `- ${cat}: ${info.total} producto${info.total === 1 ? '' : 's'}${info.ejemplos.length ? ` (ej.: ${info.ejemplos.join(', ')})` : ''}`)
+    .join('\n');
+}
+
+function resumenSeleccionVenta(venta, productos) {
+  const modo = venta?.seleccion || 'manual';
+  const categoriasElegidas = Array.isArray(venta?.categorias) ? venta.categorias.filter(Boolean) : [];
+  const inicio = venta?.inicio || {};
+  const categoriasMenu = Array.isArray(inicio.categorias) ? inicio.categorias.filter(Boolean) : [];
+  const secciones = Array.isArray(inicio.secciones) ? inicio.secciones.filter(s => s?.activo !== false && s?.titulo) : [];
+  const partes = [];
+  if (modo === 'todos') partes.push('Selección de venta: TODOS los productos del catálogo de esta landing.');
+  else if (modo === 'categoria') partes.push(`Selección de venta: POR CATEGORÍA${categoriasElegidas.length ? ` (${categoriasElegidas.join(', ')})` : ''}.`);
+  else partes.push('Selección de venta: productos elegidos manualmente.');
+  if (productos.some(p => p.categoria)) {
+    partes.push(`Categorías detectadas y ejemplos:\n${resumenCategorias(productos)}`);
+  }
+  if (inicio.menu_categorias !== false) {
+    partes.push(categoriasMenu.length
+      ? `Menú visual de categorías configurado: ${categoriasMenu.join(', ')}.`
+      : 'Menú visual de categorías activo: Gesicomm puede armarlo automáticamente con las categorías de los productos seleccionados.');
+  } else {
+    partes.push('Menú visual de categorías desactivado por el comercio.');
+  }
+  if (secciones.length) {
+    partes.push(`Secciones de Inicio configuradas: ${secciones.map(s => `${s.titulo}${s.tipo === 'categoria' && s.categoria ? ` (${s.categoria})` : ''}`).join(' · ')}.`);
+  } else {
+    partes.push('No hay secciones comerciales manuales configuradas todavía; si el usuario pide dividir por categorías, usá secciones dinámicas por categoría con las primitivas del runtime.');
+  }
+  return partes.join('\n');
+}
+
+function estrategiaMarketplace(venta, productos) {
+  const tieneCategorias = productos.some(p => p.categoria);
+  const tieneCombos = productos.some(p => p.tipo === 'combo');
+  const tieneOfertas = productos.some(p => Number(p.precio_antes || p.precio_tachado || 0) > Number(p.precio_efectivo || p.precio_usuario || p.precio_base || p.precio || 0));
+  const partes = [
+    'Arquitectura recomendada: descubrimiento visual → navegación por categorías → solución de entrada/oferta → complementos/combos → catálogo completo → ficha evaluativa → carrito/checkout real.',
+  ];
+  if (tieneCategorias) partes.push('Hay categorías reales: conviene usarlas como departamentos, accesos visuales y secciones de exploración.');
+  if (tieneOfertas) partes.push('Hay productos con precio anterior/oferta: pueden funcionar como entrada económica sin escribir precios a mano.');
+  if (tieneCombos) partes.push('Hay combos: úsalos para aumentar ticket promedio y mostrar valor agrupado.');
+  if (venta?.tipo === 'producto_unico') partes.push('La venta abre en producto principal: el inicio debe acompañar con complementos y recomendados, no competir con la ficha.');
+  return partes.join('\n');
+}
+
 function contexto({ tienda, venta, productos, maxProductos = MAX_PRODUCTOS_INICIO_PROMPT }) {
   const tipo = venta?.tipo || 'catalogo';
   const nombre = tienda?.nombre || 'la tienda';
@@ -255,6 +359,12 @@ ${extras.join('\n')}
 ## Productos de la landing (${productos.length})${lineaCategorias}
 Usalos para entender QUÉ se vende y escribir los textos (titulares, beneficios, preguntas frecuentes). En el HTML no los escribas: van por las listas y los binds. Si necesitás apuntar a uno fijo, usá su ID.
 
+## Selección y categorías
+${resumenSeleccionVenta(venta, productos)}
+
+## Estrategia marketplace / escalera comercial
+${estrategiaMarketplace(venta, productos)}
+
 ${lista}`;
 }
 
@@ -262,19 +372,20 @@ const VISTA_INICIO = {
   catalogo: `## Qué tenés que construir: la página de INICIO (catálogo)
 Secciones, en este orden:
 1. Barra de anuncio corta (envío / pago seguro).
-2. Header con el nombre o logo de la tienda (data-gesicomm-tienda), buscador/links a secciones y menú hamburguesa en mobile.
+2. Header tipo e-commerce: nombre o logo de la tienda (data-gesicomm-tienda), buscador dominante cuando haya catálogo, acceso visible al carrito, navegación por categorías/departamentos y versión compacta en mobile.
 3. Motor comercial de Inicio:
    - banners editables con "banners_inicio";
-   - menú visual con "menu_categorias";
+   - menú visual con "menu_categorias" o grilla automática "categorias";
    - secciones comerciales con "secciones_inicio" y, adentro, "productos_seccion".
-   Podés mostrarlo como carrusel, filas, grid editorial o una home tipo marketplace, pero no lo reemplaces por contenido fijo.
-4. Hero con un titular fuerte orientado al beneficio y productos destacados (lista "productos_destacados" o banners editables si el brief pide campaña).
-5. Franja de confianza: pago seguro con PagoPar, envío, atención por WhatsApp.
-6. Oferta por tiempo limitado si aplica: data-gesicomm-countdown + textos data-gesicomm-venta.
-7. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la tarjeta o al menos la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total.
-8. Sección de combos (lista "combos", que se oculta si no hay).
-9. Beneficios, preguntas frecuentes y contacto.
-10. Footer con los links legales.`,
+   Si el usuario pidió dividir por categorías, hacé de este bloque la estructura principal: categorías arriba para entrar a cada vista, y debajo vitrinas/secciones por categoría. Podés mostrarlo como carrusel, filas, grid editorial o una home tipo marketplace, pero no lo reemplaces por contenido fijo.
+4. Hero con un titular fuerte orientado al beneficio y productos destacados (lista "productos_destacados" o banners editables si el brief pide campaña). Si el comercio busca una estrategia de entrada económica, el hero o la primera vitrina debe llevar a una solución accesible sin escribir precios fijos.
+5. Vitrinas compactas de descubrimiento: ofertas reales, novedades, destacados y colecciones manuales. Alterná producto recortado, escena/imagen editorial y grillas compactas si hay imágenes. Nada de módulos vacíos.
+6. Escalera comercial: primero entrada/oferta accesible, después categorías, combos, complementos o colecciones de mayor ticket. Usá "combos", "productos_manual", "secciones_inicio" y "productos_seccion"; no inventes márgenes, membresías ni beneficios no cargados.
+7. Franja de confianza: pago seguro con PagoPar, envío, atención por WhatsApp y cambios/devoluciones con links reales si aplican.
+8. Oferta por tiempo limitado si aplica: data-gesicomm-countdown + textos data-gesicomm-venta. No inventes urgencia.
+9. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la tarjeta o al menos la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total. Aunque la home esté dividida por categorías, dejá este catálogo completo como exploración final.
+10. Beneficios, preguntas frecuentes y contacto.
+11. Footer con los links legales.`,
   producto_unico: `## Qué tenés que construir: la PÁGINA DE VENTA del producto principal
 Página larga tipo "sales page". TODOS los botones de compra usan data-gesicomm-comprar="ID_DEL_PRINCIPAL" (el ID está en la lista de productos).
 1. Barra de anuncio.
@@ -300,6 +411,42 @@ Poné un CTA fijo abajo en mobile (position: sticky/fixed) que compre el princip
 8. Preguntas frecuentes.
 9. Contacto (WhatsApp + formulario data-gesicomm-form="contacto") y footer con links legales.`,
 };
+
+const VISTA_CATEGORIA = `## Qué tenés que construir: la VISTA PROPIA DE CATEGORÍA
+Es una página independiente para UNA categoría elegida desde el menú de categorías. No es el inicio y no es una sección genérica: el visitante ya entró a una categoría concreta.
+
+Estructura recomendada:
+1. Header limpio con logo/nombre de tienda, link a Inicio, link a Catálogo completo, link a Checkout y botón de carrito real (data-gesicomm-carrito).
+2. Encabezado de categoría con <h1 data-gesicomm-categoria="nombre"> y un texto breve que explique que está viendo esa selección. Mostrá data-gesicomm-total cerca del título.
+3. Barra de filtros visible y cómoda:
+   - <input type="search" data-gesicomm-buscar> para buscar dentro de la categoría.
+   - <select data-gesicomm-filtro="orden"> con value="" / "max-min" / "min-max" / "az" / "za".
+   - Opcional: disponibilidad si la base lo trae. No metas un filtro de categoría como control principal: esta vista ya es de una categoría.
+4. Grilla "catalogo" con tarjetas cuidadas: imagen, categoría, nombre, precio, botón secundario data-gesicomm-agregar y el nombre/imagen con data-gesicomm-ver para entrar a la ficha.
+5. Estado sin resultados (data-gesicomm-sin-resultados), paginación o "Ver más", y footer legal.
+
+No hardcodees el nombre de la categoría, productos, precios ni imágenes. Todo sale del runtime. Diseñala como una página de navegación rápida, no como una landing larga con hero enorme.`;
+
+const VISTA_CHECKOUT = `## Qué tenés que construir: la VISTA PROPIA DE CHECKOUT
+Es una página aparte para finalizar la compra. Tiene que sentirse segura, clara y rápida. No es una ficha ni un catálogo.
+
+Estructura recomendada:
+1. Header sobrio con logo/nombre de tienda, link a Inicio, "Seguir comprando" y botón de carrito real.
+2. Título "Finalizá tu pedido" o similar, con una frase corta de confianza. Evitá banners comerciales repetidos y claims inventados.
+3. Bloque visible solo cuando hay productos: data-gesicomm-checkout-con-items.
+4. Formulario principal con <form data-gesicomm-checkout-form>. Inputs:
+   - name="nombre_cliente" required
+   - name="telefono" required
+   - name="ciudad" required
+   - name="direccion" required
+   - name="documento" opcional
+   - select name="payment_method" con "contra_entrega" y "pagopar"
+   - textarea name="notas" opcional
+5. Resumen lateral o superior del pedido con data-gesicomm-lista="checkout_items": imagen, nombre, variante, precio_unitario, cantidad y subtotal.
+6. Totales con data-gesicomm-checkout="subtotal", "cantidad" y "total"; mensaje/estado con data-gesicomm-checkout="mensaje".
+7. Estado vacío data-gesicomm-checkout-vacio con CTA a catálogo/inicio.
+
+No programes pagos, cálculos ni envío del pedido en JS. El submit del formulario lo toma Gesicomm. El diseño debe priorizar legibilidad, campos amplios, resumen claro y una sola acción principal.`;
 
 // Estructura de la ficha que más vende, con los datos que la sostienen:
 // - Baymard (usabilidad de fichas, 30.000+ puntuaciones): el 56% de los
@@ -328,12 +475,12 @@ Estructura (en este orden; es la que más vende según la investigación de usab
    - Pegado al botón: envío ("el costo lo ves antes de pagar"), pago (PagoPar o al recibir) y cambios (link data-gesicomm-link="reembolsos"); debajo la lista "confianza" (bind "texto": garantías que cargó la tienda).
    - NO uses "ofertas_pack" (los paquetes van en "paquetes") ni "ofertas_upsell" en la ficha. No escribas textos de oferta vagos ("descuento imperdible"): los números concretos ya los dan los binds.
 3. DEBAJO DEL PLIEGUE:
-   - "Llevalo en combo y ahorrá": lista "combos_producto".
+   - Complementos para aumentar ticket: "Llevalo en combo y ahorrá" con lista "combos_producto" y/o "recomendados" como accesorios reales. Complementos NO son lo mismo que alternativas: los complementos completan el uso del producto.
    - Beneficios completos: lista "beneficios" con binds "titulo" y "texto".
    - Si es un combo: sección <section data-gesicomm-si="combo_incluye"> con la lista "combo_incluye" (foto, nombre, "cantidad", precio suelto con bind "precio") y el total "Por separado vs En combo". Cada producto incluido puede tener un botón data-gesicomm-ver para ver su ficha; no pongas data-gesicomm-comprar dentro de "combo_incluye" salvo que explícitamente quieras vender ese producto suelto.
    - Descripción: binds "sobre" y "descripcion_larga" (white-space: pre-line).
    - Preguntas frecuentes: lista "preguntas" con <details><summary data-gesicomm-bind="pregunta"></summary><p data-gesicomm-bind="respuesta"></p></details>. Responden las dudas que frenan la compra.
-   - Recomendados (lista "recomendados"): tarjeta/imagen/nombre con data-gesicomm-ver para ver la ficha, y si hay compra rápida un botón secundario con data-gesicomm-agregar.
+   - Alternativas o productos similares: si usás "recomendados" como alternativa, titulalo claro ("También podés comparar con") y hacé que la ficha se abra con data-gesicomm-ver. Si son accesorios, titulalo como complemento. No mezcles ambos mensajes en un solo bloque.
    - Cierre: nombre, precio y otro botón "Comprar ahora".
 4. Footer con los links legales.
 5. En mobile, una barra fija abajo con precio y "Comprar ahora" (data-gesicomm-comprar), y padding-bottom en el body para que no tape contenido.
@@ -425,31 +572,40 @@ ${base.js}
 \`\`\``;
 }
 
+function promptEspecificoVista(vista, fichaDe) {
+  if (vista === 'producto') {
+    return fichaDe ? `${VISTA_PRODUCTO}
+
+${fichaPropia(fichaDe)}` : VISTA_PRODUCTO;
+  }
+  if (vista === 'categoria') return VISTA_CATEGORIA;
+  if (vista === 'checkout') return VISTA_CHECKOUT;
+  // Un solo inicio: la tienda (los formatos viejos de inicio ya no se ofrecen).
+  return VISTA_INICIO.catalogo;
+}
+
 /**
- * @param {'inicio'|'producto'} vista
+ * @param {'inicio'|'producto'|'categoria'|'checkout'} vista
  * @param {{tienda, venta, productos, estilo?: string, base?: {html, css, js}}} datos
  *   productos: items del catálogo del panel, en el orden de la landing.
  *   estilo: indicaciones libres de diseño que escribe el comercio.
  *   base: si viene, el prompt incluye el código base de esa vista.
  */
 export function armarPromptVista(vista, { tienda, venta, productos = [], fichaDe = null, estilo = '', base = null }) {
-  const especifico = vista === 'producto'
-    ? (fichaDe ? `${VISTA_PRODUCTO}
-
-${fichaPropia(fichaDe)}` : VISTA_PRODUCTO)
-    // Un solo inicio: la tienda (los formatos viejos de inicio ya no se ofrecen).
-    : VISTA_INICIO.catalogo;
+  const especifico = promptEspecificoVista(vista, fichaDe);
   const estiloTexto = estilo.trim()
     ? `\n\n## Estilo visual pedido\n${estilo.trim()}`
     : '\n\n## Estilo visual\nModerno, limpio y confiable, con los colores de la marca de la tienda. Tipografía legible, bordes redondeados y buen espacio.';
+  const esFicha = vista === 'producto';
+  const esCheckout = vista === 'checkout';
   return `${PROMPT_MAESTRO}
 
 ${contexto({
     tienda,
     venta,
     productos,
-    maxProductos: vista === 'producto' ? MAX_PRODUCTOS_FICHA_PROMPT : MAX_PRODUCTOS_INICIO_PROMPT,
+    maxProductos: esFicha || esCheckout ? MAX_PRODUCTOS_FICHA_PROMPT : MAX_PRODUCTOS_INICIO_PROMPT,
   })}
 
-${especifico}${estiloTexto}${bloqueCodigoBase(base, { compacto: vista === 'producto' })}`;
+${especifico}${estiloTexto}${bloqueCodigoBase(base, { compacto: esFicha || esCheckout })}`;
 }

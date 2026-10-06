@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
-  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid
+  ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid,
+  Store
 } from 'lucide-react';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
+import { landingService } from '../../services/landingService';
 import CuponesModal from './CuponesModal';
 import CurrencyInput from '../../components/CurrencyInput';
 import SensibilidadPanel from './SensibilidadPanel';
@@ -21,6 +23,7 @@ const FILTROS = [
   { valor: 'mios',     label: 'Mis productos' },
   { valor: 'combo',    label: 'Combos Gesicom' },
   { valor: 'mis-combos', label: 'Mis combos' },
+  { valor: 'landing', label: 'En mi landing' },
   { valor: 'todos',    label: 'Todos' },
 ];
 
@@ -47,6 +50,40 @@ function getBadgeConfig(item) {
 
 function getItemKey(item) {
   return `${item.tipo}:${item.id}`;
+}
+
+function extraerSeleccionLanding(landing) {
+  return Array.isArray(landing?.items)
+    ? landing.items
+      .slice()
+      .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0))
+      .map(item => ({
+        tipo: item.tipo,
+        id: item.referencia_id ?? item.id,
+      }))
+      .filter(item => item.tipo && item.id != null)
+    : [];
+}
+
+function filtrarYOrdenarItemsLanding(items, { busqueda, filtroCategoria, filtroProveedor, orden }) {
+  const q = busqueda.trim().toLowerCase();
+  const filtrados = items.filter(item => {
+    const coincideBusqueda = !q
+      || item.nombre?.toLowerCase().includes(q)
+      || item.descripcion?.toLowerCase().includes(q)
+      || item.categoria?.toLowerCase().includes(q)
+      || item.marca?.toLowerCase().includes(q);
+    const coincideCategoria = !filtroCategoria || item.categoria === filtroCategoria;
+    const coincideProveedor = !filtroProveedor || item.proveedor === filtroProveedor;
+    return coincideBusqueda && coincideCategoria && coincideProveedor;
+  });
+
+  return filtrados.slice().sort((a, b) => {
+    if (orden === 'precio-asc') return Number(a.precio_efectivo || 0) - Number(b.precio_efectivo || 0);
+    if (orden === 'precio-desc') return Number(b.precio_efectivo || 0) - Number(a.precio_efectivo || 0);
+    if (orden === 'recientes') return new Date(b.creado_en || 0) - new Date(a.creado_en || 0);
+    return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es');
+  });
 }
 
 /* ─── Componente: editor de precio ───────────────────────────────────── */
@@ -228,7 +265,7 @@ function CategoriaSeleccionModal({ abierto, productos, categorias, onClose, onGu
 }
 
 /* ─── Componente: card ────────────────────────────────────────────────── */
-function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, onAbastecer, filtro }) {
+function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, onToggleSeleccion, usuarioActual, onEditarProducto, onAbastecer, filtro, seleccionable = true }) {
   const esCombo = item.tipo === 'combo';
   const badge   = getBadgeConfig(item);
   const sinStock = item.stock === 0 && !esCombo;
@@ -238,11 +275,11 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
 
   return (
     <div
-      className={`vit-card ${seleccionado ? 'is-selected' : ''}`}
-      onClick={() => onToggleSeleccion(item)}
-      role="checkbox"
-      aria-checked={seleccionado}
-      aria-label={`Seleccionar ${item.nombre}`}
+      className={`vit-card ${seleccionable && seleccionado ? 'is-selected' : ''}`}
+      onClick={seleccionable ? () => onToggleSeleccion(item) : undefined}
+      role={seleccionable ? 'checkbox' : 'article'}
+      aria-checked={seleccionable ? seleccionado : undefined}
+      aria-label={seleccionable ? `Seleccionar ${item.nombre}` : item.nombre}
     >
       {/* ── Media ── */}
       <div className="vit-card-media">
@@ -266,13 +303,15 @@ function VitrinaCard({ item, onGuardarPrecio, onVerSensibilidad, seleccionado, o
         />
 
         {/* Checkbox de selección */}
-        <span
-          className="vit-card-check"
-          onClick={(e) => { e.stopPropagation(); onToggleSeleccion(item); }}
-          aria-hidden="true"
-        >
-          <Check size={14} strokeWidth={3} />
-        </span>
+        {seleccionable && (
+          <span
+            className="vit-card-check"
+            onClick={(e) => { e.stopPropagation(); onToggleSeleccion(item); }}
+            aria-hidden="true"
+          >
+            <Check size={14} strokeWidth={3} />
+          </span>
+        )}
       </div>
 
       {/* ── Body ── */}
@@ -391,6 +430,7 @@ export default function VitrinaGrid() {
   const [searchParams] = useSearchParams();
   const enOnboarding = searchParams.get('onboarding') === 'productos';
   const [filtro, setFiltro] = useState(() => searchParams.get('filtro') === 'mios' ? 'mios' : 'todos');
+  const esVistaLanding = filtro === 'landing';
   
   const [page, setPage] = useState(1);
   const [seleccionados, setSeleccionados] = useState(new Set());
@@ -404,6 +444,7 @@ export default function VitrinaGrid() {
   }, []);
   
   const toggleSeleccion = (item) => {
+    if (esVistaLanding) return;
     setSeleccionados(prev => {
       const next = new Set(prev);
       const key = getItemKey(item);
@@ -431,6 +472,7 @@ export default function VitrinaGrid() {
     let tipoQuery = filtro;
     if (filtro === 'mios') tipoQuery = 'producto';
     if (filtro === 'mis-combos') tipoQuery = 'combo';
+    if (filtro === 'landing') tipoQuery = 'todos';
 
     return {
       page,
@@ -480,6 +522,7 @@ export default function VitrinaGrid() {
   const totalFiltradoSeleccionado = seleccionTotalKeys.size > 0 && Array.from(seleccionTotalKeys).every(key => seleccionados.has(key));
 
   function seleccionarPagina() {
+    if (esVistaLanding) return;
     if (paginaSeleccionada) {
       quitarKeysDeSeleccion(keysPagina);
       return;
@@ -488,6 +531,7 @@ export default function VitrinaGrid() {
   }
 
   async function seleccionarTodoFiltrado() {
+    if (esVistaLanding) return;
     if (!totalItems || seleccionandoTodos) return;
     if (totalFiltradoSeleccionado) {
       quitarKeysDeSeleccion(Array.from(seleccionTotalKeys));
@@ -617,6 +661,37 @@ export default function VitrinaGrid() {
     setCargando(true);
     setError(null);
     try {
+      if (filtro === 'landing') {
+        const [landingsSimples, catalogo] = await Promise.all([
+          landingSimpleService.listar().catch(() => []),
+          vitrinaService.catalogo(),
+        ]);
+        let landing = null;
+        if (landingsSimples.length > 0) {
+          landing = await landingSimpleService.obtener(landingsSimples[0].id);
+        } else {
+          const paginas = await landingService.paginas();
+          const paginaInicio = paginas.find(p => p.tipo_pagina === 'inicio') || paginas.find(p => p.tipo_pagina === 'catalogo');
+          landing = paginaInicio ? await landingService.obtener(paginaInicio.id) : null;
+        }
+        const seleccionLanding = extraerSeleccionLanding(landing);
+        const catalogoCompletoItems = [...(catalogo.productos || []), ...(catalogo.combos || [])];
+        const catalogoPorClave = new Map(catalogoCompletoItems.map(item => [getItemKey(item), item]));
+        const ordenados = seleccionLanding
+          .map(sel => catalogoPorClave.get(`${sel.tipo}:${sel.id}`))
+          .filter(Boolean);
+        const filtrados = filtrarYOrdenarItemsLanding(ordenados, { busqueda, filtroCategoria, filtroProveedor, orden });
+        const inicio = (page - 1) * 10;
+        const itemsPagina = filtrados.slice(inicio, inicio + 10);
+
+        setItems(itemsPagina);
+        setCategoriasUnicas([...new Set(ordenados.map(i => i.categoria).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')));
+        setProveedoresUnicos([...new Set(ordenados.map(i => i.proveedor).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es')));
+        setTotalPages(Math.max(1, Math.ceil(filtrados.length / 10)));
+        setTotalItems(filtrados.length);
+        return;
+      }
+
       const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo());
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
@@ -628,13 +703,14 @@ export default function VitrinaGrid() {
     } finally {
       setCargando(false);
     }
-  }, [getFiltrosCatalogo]);
+  }, [filtro, page, busqueda, filtroCategoria, filtroProveedor, orden, getFiltrosCatalogo]);
 
   // Si cambia un filtro (excepto la pagina), volver a pagina 1
   useEffect(() => {
     setPage(1);
     setSeleccionTotalKeys(new Set());
-  }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
+    if (esVistaLanding) limpiarSeleccion();
+  }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro, esVistaLanding, limpiarSeleccion]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -795,36 +871,39 @@ export default function VitrinaGrid() {
               {f.valor === 'mios' && <UserCheck size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.valor === 'combo' && <Box size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.valor === 'mis-combos' && <Layers size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+              {f.valor === 'landing' && <Store size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.valor === 'todos' && <Grid size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {f.label}
             </button>
           ))}
         </div>
 
-        <div className="vit-bulk-select">
-          <button
-            type="button"
-            className={`vit-bulk-select-btn ${paginaSeleccionada ? 'active' : ''}`}
-            onClick={seleccionarPagina}
-            disabled={itemsFiltrados.length === 0}
-            aria-pressed={paginaSeleccionada}
-          >
-            <Check size={14} />
-            {paginaSeleccionada ? 'Quitar página' : 'Seleccionar página'}
-            <span>{itemsFiltrados.length}</span>
-          </button>
-          <button
-            type="button"
-            className={`vit-bulk-select-btn ${totalFiltradoSeleccionado ? 'active' : ''}`}
-            onClick={seleccionarTodoFiltrado}
-            disabled={!totalItems || seleccionandoTodos}
-            aria-pressed={totalFiltradoSeleccionado}
-          >
-            {seleccionandoTodos ? <Loader size={14} className="spin-icon" /> : <Check size={14} />}
-            {totalFiltradoSeleccionado ? 'Quitar todo' : 'Seleccionar todo'}
-            <span>{totalItems}</span>
-          </button>
-        </div>
+        {!esVistaLanding && (
+          <div className="vit-bulk-select">
+            <button
+              type="button"
+              className={`vit-bulk-select-btn ${paginaSeleccionada ? 'active' : ''}`}
+              onClick={seleccionarPagina}
+              disabled={itemsFiltrados.length === 0}
+              aria-pressed={paginaSeleccionada}
+            >
+              <Check size={14} />
+              {paginaSeleccionada ? 'Quitar página' : 'Seleccionar página'}
+              <span>{itemsFiltrados.length}</span>
+            </button>
+            <button
+              type="button"
+              className={`vit-bulk-select-btn ${totalFiltradoSeleccionado ? 'active' : ''}`}
+              onClick={seleccionarTodoFiltrado}
+              disabled={!totalItems || seleccionandoTodos}
+              aria-pressed={totalFiltradoSeleccionado}
+            >
+              {seleccionandoTodos ? <Loader size={14} className="spin-icon" /> : <Check size={14} />}
+              {totalFiltradoSeleccionado ? 'Quitar todo' : 'Seleccionar todo'}
+              <span>{totalItems}</span>
+            </button>
+          </div>
+        )}
 
         {/* Filtro de categoría */}
         {categoriasUnicas.length > 0 && (
@@ -889,6 +968,8 @@ export default function VitrinaGrid() {
               ? `Sin resultados para "${busqueda}"`
               : filtro === 'mios'
                 ? 'No tenés productos cargados por tu cuenta.'
+              : filtro === 'landing'
+                ? 'Todavía no tenés productos seleccionados para vender en tu landing.'
               : filtro === 'mis-combos'
                 ? 'Todavía no armaste ningún combo.'
                 : filtro === 'combo'
@@ -912,6 +993,7 @@ export default function VitrinaGrid() {
               onEditarProducto={(id) => navigate(`/products/${id}/editar`)}
               onAbastecer={(prod) => setProductoAbastecer(prod)}
               filtro={filtro}
+              seleccionable={!esVistaLanding}
             />
           ))}
         </div>
