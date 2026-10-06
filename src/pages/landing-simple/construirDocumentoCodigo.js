@@ -123,7 +123,7 @@ const SYSTEM_CSS = `
 /* Contrato de marca: las landings IA usan --gc-* y Mi Tienda inyecta
    --tienda-*. Esta capa se aplica al final para que la marca configurada
    gane aunque el CSS generado haya dejado defaults fijos. */
-:root {
+:where(:root) {
   --gc-primario: var(--tienda-primario, #18a66b);
   --gc-secundario: var(--tienda-secundario, #ffb547);
   --gc-fondo: var(--tienda-fondo, #ffffff);
@@ -170,12 +170,43 @@ main > section[hidden] {
 }
 /* Las fotos reales del catálogo no son banners decorativos: si el CSS de IA
    las fuerza a cover se cortan botellas, pulseras, cajas y combos. */
-img[data-gesicomm-bind="imagen"],
-[data-gesicomm-lista] img[data-gesicomm-bind="imagen"] {
+img[data-gesicomm-bind="imagen"]:not(:where([data-gesicomm-lista="banners_inicio"] *, .hero-banner *, .promo-banner *)),
+[data-gesicomm-lista] img[data-gesicomm-bind="imagen"]:not(:where([data-gesicomm-lista="banners_inicio"] *, .hero-banner *, .promo-banner *)) {
   max-width: 100% !important;
   object-fit: contain !important;
   object-position: center !important;
   background: #fff !important;
+}
+/* Un banner usa el area completa; su CSS puede elegir otro ajuste o fondo. */
+:where([data-gesicomm-lista="banners_inicio"], .hero-banner, .promo-banner) img[data-gesicomm-bind="imagen"] {
+  object-fit: cover;
+  background: transparent;
+}
+/* En Inicio, el banner configurado ocupa todo el area y su copy sale del panel
+   de venta. Tambien neutraliza bases viejas guardadas con fondo azul fijo. */
+main[data-gesicomm-base="catalogo"] :where(.hero-shell) {
+  background: transparent !important;
+}
+main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"] .hero-banner) {
+  background: transparent !important;
+  color: #fff !important;
+}
+main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"] .hero-banner::after, [data-gesicomm-lista="banners_inicio"] .hero-banner.is-media-only::before) {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+}
+main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"] .hero-text) {
+  position: relative;
+  z-index: 2;
+}
+main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"] .hero-banner > img, [data-gesicomm-lista="banners_inicio"] .hero-banner > video) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  background: transparent !important;
 }
 /* El contenido del combo comparte espacio con la foto, no con una imagen
    del ancho de toda la tarjeta. Mantiene legibles nombres y precios largos. */
@@ -196,11 +227,11 @@ img[data-gesicomm-bind="imagen"],
 .gc-commercial-copy { margin:8px 0 14px; font:400 14px/1.6 system-ui,sans-serif; color:inherit; opacity:.85; }
 .gc-commercial-saving { margin:12px 0 0; font:700 14px/1.5 system-ui,sans-serif; color:inherit; }
 .gc-commercial-details { display:inline-flex; margin:14px 0 0; padding:0; border:0; background:transparent; color:inherit; font:700 14px/1.5 system-ui,sans-serif; cursor:pointer; }
-[data-gesicomm-lista] :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
+[data-gesicomm-lista]:not([data-gesicomm-lista="banners_inicio"]) :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
   overflow: hidden !important;
   background: #fff !important;
 }
-[data-gesicomm-lista] :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) img[data-gesicomm-bind="imagen"] {
+[data-gesicomm-lista]:not([data-gesicomm-lista="banners_inicio"]) :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) img[data-gesicomm-bind="imagen"] {
   height: 100% !important;
 }
 /* El carrusel cambia entre fotos horizontales y verticales. La foto queda
@@ -302,6 +333,26 @@ img[data-gesicomm-bind="imagen"],
   max-width: 160px !important;
   max-height: 52px !important;
   object-fit: contain !important;
+}
+[data-gesicomm-tienda="logo"]:not([src]),
+[data-gesicomm-tienda="logo"][src=""] {
+  display: none !important;
+}
+.commerce-header .brand,
+.commerce-header .brand-mark,
+.brand,
+.brand-mark,
+[data-gesicomm-tienda="nombre"] {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.commerce-header .brand::before,
+.commerce-header .brand-mark::before,
+.brand::before,
+.brand-mark::before {
+  display: none !important;
+  content: none !important;
 }
 
 /* Los upsells no viven dentro de la ficha: son una etapa del checkout. */

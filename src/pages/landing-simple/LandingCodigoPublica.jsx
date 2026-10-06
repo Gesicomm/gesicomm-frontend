@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
-import { PLANTILLA_PRODUCTO } from './plantillasBaseCodigo';
+import { PLANTILLA_PRODUCTO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
 import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
@@ -109,7 +109,7 @@ function resolverItemCheckout(items, pedido) {
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
 }
 
-export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null, modoLegal = false }) {
+export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null, modoLegal = false, vistaCodigo = null, categorySlug = null }) {
   const navigate = useNavigate();
   // Ficha de producto: una sola plantilla (content.vistas.producto) que el
   // runtime llena con el producto de la URL. Si el comercio todavía no la
@@ -126,12 +126,21 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   })();
   const productoPublico = productId ? (data?.producto || null) : principalDeLanding;
   const esFicha = !!productoPublico;
+  const vistaActual = vistaCodigo || (esFicha ? 'producto' : 'inicio');
   // Ficha propia de ESTE producto (si el comercio le armó una) → la general
   // → la base.
   const fichaPropia = esFicha ? data?.content?.vistas?.productos?.[productoPublico.content_id] : null;
+  const fichaGeneral = data?.content?.vistas?.producto;
+  const codigoCategoria = data?.content?.vistas?.categoria;
+  const codigoCheckout = data?.content?.vistas?.checkout;
+  const codigoFicha = fichaPropia?.html && !esFichaProductoBase(fichaPropia.html)
+    ? fichaPropia
+    : (fichaGeneral?.html && !esFichaProductoBase(fichaGeneral.html) ? fichaGeneral : PLANTILLA_PRODUCTO);
   const codigo = esFicha
-    ? (fichaPropia?.html ? fichaPropia : (data?.content?.vistas?.producto?.html ? data.content.vistas.producto : PLANTILLA_PRODUCTO))
-    : codigoInicio;
+    ? codigoFicha
+    : vistaActual === 'checkout' ? (codigoCheckout?.html ? codigoCheckout : PLANTILLA_CHECKOUT)
+      : vistaActual === 'categoria' ? (codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA)
+        : codigoInicio;
 
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);
@@ -147,9 +156,15 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     return [...base, ...extras.filter(i => !ids.has(i.content_id))];
   }, [data, extras]);
   const cartState = useStoreCart(slug, data, productos);
+  const [checkoutEstado, setCheckoutEstado] = useState(null);
   const datosRuntime = useMemo(
-    () => (data ? datosRuntimePublico(data, slug, productoPublico) : null),
-    [data, slug, productoPublico],
+    () => (data ? datosRuntimePublico(data, slug, productoPublico, {
+      vista: vistaActual,
+      categorySlug,
+      carrito: Array.from(cartState.carrito.values()),
+      checkoutEstado,
+    }) : null),
+    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado],
   );
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
@@ -239,6 +254,21 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
   }
 
+  async function confirmarCheckoutIframe(pedido) {
+    setCheckoutEstado({ estado: 'enviando', mensaje: 'Enviando pedido...' });
+    try {
+      const res = await cartState.confirmarPedido(pedido?.campos || {});
+      setCheckoutEstado({
+        estado: 'confirmado',
+        mensaje: `Pedido ${res?.numero_pedido || res?.pedido_id || ''} confirmado.`,
+        pedido_id: res?.pedido_id,
+        numero_pedido: res?.numero_pedido,
+      });
+    } catch (err) {
+      setCheckoutEstado({ estado: 'error', mensaje: err?.message || 'No se pudo enviar el pedido. Probá de nuevo.' });
+    }
+  }
+
   // Una página del catálogo, pedida por el runtime del iframe.
   const pedirCatalogo = useCallback(async (pedido) => {
     const res = await obtenerCatalogoLandingPublica(slug, {
@@ -278,8 +308,16 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       navigate(urlProducto(slug, pedido.producto));
     } else if (pedido?.destino === 'inicio') {
       navigate(slug ? `/l/${slug}` : '/');
+    } else if (pedido?.destino === 'pagina' && pedido.pagina === 'checkout') {
+      navigate(slug ? `/l/${slug}/checkout` : '/checkout');
     } else if (pedido?.destino === 'pagina' && PAGINAS_TIENDA[pedido.pagina]) {
       navigate(urlPaginaTienda(slug, pedido.pagina));
+    } else if (pedido?.destino === 'categoria' && pedido.categoria) {
+      const categoria = String(pedido.categoria || '');
+      const normalizada = categoria.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      navigate(slug ? `/l/${slug}/categoria/${normalizada}` : `/categoria/${normalizada}`);
+    } else if (pedido?.destino === 'checkout') {
+      navigate(slug ? `/l/${slug}/checkout` : '/checkout');
     }
   }
 
@@ -327,6 +365,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
         datos={datosRuntime}
         extras={seccionesSistema}
         onCheckout={abrirCheckout}
+        onConfirmarCheckout={confirmarCheckoutIframe}
+        onCarrito={() => cartState.setCarritoAbierto(true)}
         onNavegar={navegar}
         onEvento={registrarEvento}
         onCatalogo={pedirCatalogo}

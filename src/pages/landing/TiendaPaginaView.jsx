@@ -115,7 +115,7 @@ const FacebookIcon = ({ size = 24, color = "currentColor" }) => (
   </svg>
 );
 
-export default function TiendaPaginaView({ data, slug, productId }) {
+export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = null, categorySlug = null }) {
     const navigate = useNavigate();
     
   const [filtroCategoria, setFiltroCategoria] = useState('');
@@ -672,6 +672,8 @@ export default function TiendaPaginaView({ data, slug, productId }) {
         data={data}
         slug={slug}
         productId={productId}
+        vistaCodigo={vistaCodigo}
+        categorySlug={categorySlug}
       />
     );
   }

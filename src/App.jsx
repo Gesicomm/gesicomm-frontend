@@ -190,6 +190,14 @@ function ContactoSegunHostname() {
   return esHostnameDeTienda() ? <ContactoPublico /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
 
+function CategoriaSegunHostname() {
+  return esHostnameDeTienda() ? <LandingPublica vistaCodigo="categoria" /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
+function CheckoutTiendaSegunHostname() {
+  return esHostnameDeTienda() ? <LandingPublica vistaCodigo="checkout" /> : <PaginaPublica><NotFound /></PaginaPublica>;
+}
+
 function PoliticaPrivacidadSegunHostname() {
   return esHostnameDeTienda() ? <LegalPagePublica tipoPagina="politica_privacidad" /> : <PaginaPublica><NotFound /></PaginaPublica>;
 }
@@ -512,6 +520,8 @@ function App() {
         
         {/* Catálogo y Contacto públicos de la tienda */}
         <Route path="/catalogo" element={<CatalogoSegunHostname />} />
+        <Route path="/categoria/:categorySlug" element={<CategoriaSegunHostname />} />
+        <Route path="/checkout" element={<CheckoutTiendaSegunHostname />} />
         <Route path="/contacto" element={<ContactoSegunHostname />} />
         <Route path="/politica-privacidad" element={<PoliticaPrivacidadSegunHostname />} />
         <Route path="/politica-reembolso" element={<PoliticaReembolsoSegunHostname />} />
@@ -521,6 +531,8 @@ function App() {
         <Route path="/pagopar/resultado/:hash" element={<ResultadoPagoTienda />} />
         {/* Alias para pruebas locales o previsualización. En producción se usará el hostname. */}
         <Route path="/l/:slug/catalogo" element={<CatalogoPublico />} />
+        <Route path="/l/:slug/categoria/:categorySlug" element={<LandingPublica vistaCodigo="categoria" />} />
+        <Route path="/l/:slug/checkout" element={<LandingPublica vistaCodigo="checkout" />} />
         <Route path="/l/:slug/contacto" element={<ContactoPublico />} />
         <Route path="/l/:slug/politica-privacidad" element={<LegalPagePublica tipoPagina="politica_privacidad" />} />
         <Route path="/l/:slug/politica-reembolso" element={<LegalPagePublica tipoPagina="politica_reembolso" />} />

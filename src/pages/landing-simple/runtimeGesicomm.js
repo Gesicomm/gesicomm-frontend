@@ -79,7 +79,7 @@ export function runtimeGesicomm() {
   var metaCatalogo = datos.catalogo || {};
   var paginado = !!metaCatalogo.paginado;
   var porPagina = metaCatalogo.por_pagina || 24;
-  var filtros = { busqueda: '', categoria: '', marca: '', etiqueta: '', precioMin: '', precioMax: '', disponibilidad: 'todos', orden: '', pagina: 1 };
+  var filtros = { busqueda: '', categoria: datos.categoria && datos.categoria.nombre ? datos.categoria.nombre : '', marca: '', etiqueta: '', precioMin: '', precioMax: '', disponibilidad: 'todos', orden: '', pagina: 1 };
   var catalogoVista = {
     items: productos.slice(),
     pagina: 1,
@@ -113,9 +113,9 @@ export function runtimeGesicomm() {
   // dónde se ve la landing (subdominio de la tienda o /l/:slug), así que la
   // manda el contenedor en datos.paginas y acá se reescriben los href: un
   // "/politica-privacidad" escrito a mano daba 404 fuera del subdominio.
-  var PAGINAS_TIENDA = ['contacto', 'catalogo', 'politica-privacidad', 'politica-reembolso', 'terminos-servicio', 'politica-envio', 'aviso-legal'];
+  var PAGINAS_TIENDA = ['contacto', 'catalogo', 'checkout', 'politica-privacidad', 'politica-reembolso', 'terminos-servicio', 'politica-envio', 'aviso-legal'];
   // Solo rutas internas: un link a otro dominio que termine en /contacto es de ese sitio.
-  var RUTA_PAGINA = /^\/?(?:l\/[^/?#]+\/)?(contacto|catalogo|politica-privacidad|politica-reembolso|terminos-servicio|politica-envio|aviso-legal)\/?(?:[?#].*)?$/i;
+  var RUTA_PAGINA = /^\/?(?:l\/[^/?#]+\/)?(contacto|catalogo|checkout|politica-privacidad|politica-reembolso|terminos-servicio|politica-envio|aviso-legal)\/?(?:[?#].*)?$/i;
   var paginasTienda = datos.paginas || {};
 
   function paginaDeEnlace(a) {
@@ -201,6 +201,22 @@ export function runtimeGesicomm() {
     return salida.length ? salida : visiblesInicio.slice(0, 4);
   }
 
+  function productosOfertaLimitada() {
+    var base = productos.filter(function (p) {
+      return p.mostrar_en_inicio !== false && Number(p.descuento_pct) > 0;
+    });
+    var ids = datos.venta && datos.venta.urgencia && Array.isArray(datos.venta.urgencia.productos)
+      ? datos.venta.urgencia.productos
+      : [];
+    if (!ids.length) return base;
+    var salida = [];
+    for (var i = 0; i < ids.length; i++) {
+      var item = buscar(ids[i]);
+      if (item && item.mostrar_en_inicio !== false && Number(item.descuento_pct) > 0 && salida.indexOf(item) === -1) salida.push(item);
+    }
+    return salida;
+  }
+
   // Vitrina "elegida a mano" (panel "Secciones" del editor, ver
   // plantillaInicioEditor.js): data-gesicomm-productos-curados en el propio
   // elemento de la lista, JSON [{id, nombre}] — el runtime solo usa "id"
@@ -243,7 +259,7 @@ export function runtimeGesicomm() {
   // ─── Binding ──────────────────────────────────────────────────────────
   function urlSegura(u) {
     var s = String(u || '');
-    return /^(https?:)?\/\//i.test(s) || s.charAt(0) === '/' ? s : '';
+    return /^(https?:)?\/\//i.test(s) || s.charAt(0) === '/' || s.charAt(0) === '#' ? s : '';
   }
 
   function precioDe(item, variante) {
@@ -383,6 +399,8 @@ export function runtimeGesicomm() {
     var variante = extra && extra.variante;
     switch (campo) {
       case 'precio': valor = formatoPrecio(item.precio_efectivo !== undefined ? item.precio_efectivo : precioDe(item, variante)); break;
+      case 'precio_unitario': valor = formatoPrecio(item.precio_unitario); break;
+      case 'subtotal': valor = formatoPrecio(item.subtotal); break;
       case 'precio_antes': valor = formatoPrecio(item.precio_antes || item.precio_normal); break;
       case 'precio_separado': valor = formatoPrecio(item.precio_separado); break;
       case 'por_unidad': valor = Number(item.por_unidad) > 0 ? formatoPrecio(item.por_unidad) + ' c/u' : ''; break;
@@ -399,7 +417,10 @@ export function runtimeGesicomm() {
       case 'stock': valor = item.stock === null || item.stock === undefined ? '' : String(item.stock); break;
       case 'incluye': valor = Array.isArray(item.productos_incluidos) ? item.productos_incluidos.join(', ') : ''; break;
       case 'imagen': valor = item.imagen || item.url_imagen || ''; break;
+      case 'video': valor = item.video || item.video_url || (item.tipo_medio === 'video' ? item.imagen : ''); break;
       case 'url': valor = item.url || ''; break;
+      case 'categoria_url': valor = item.categoria_url || ''; break;
+      case 'enlace': valor = item.enlace || item.url || ''; break;
       default: valor = item[campo];
     }
     var vacio = valor === null || valor === undefined || valor === '';
@@ -407,6 +428,7 @@ export function runtimeGesicomm() {
     if (campo === 'imagen') {
       var src = urlSegura(valor);
       if (el.tagName === 'IMG') {
+        if (item.tipo_medio === 'video') { el.style.display = 'none'; return; }
         if (src) { el.src = src; if (!el.alt) el.alt = item.nombre || ''; }
         else el.style.display = 'none';
       } else if (src) {
@@ -414,9 +436,26 @@ export function runtimeGesicomm() {
       }
       return;
     }
-    if (campo === 'url') {
+    if (campo === 'video') {
+      var videoSrc = urlSegura(valor);
+      if (el.tagName === 'VIDEO') {
+        if (videoSrc && item.tipo_medio === 'video') {
+          el.src = videoSrc;
+          el.style.display = '';
+          el.muted = true;
+          el.setAttribute('muted', '');
+          el.setAttribute('playsinline', '');
+          var p = el.play && el.play();
+          if (p && p.catch) p.catch(function () {});
+        } else {
+          el.style.display = 'none';
+        }
+      }
+      return;
+    }
+    if (campo === 'url' || campo === 'enlace' || campo === 'categoria_url') {
       if (el.tagName === 'A' && urlSegura(valor)) el.setAttribute('href', valor);
-      if (!el.hasAttribute('data-gesicomm-ver')) el.setAttribute('data-gesicomm-ver', item.id || '');
+      if (campo === 'url' && !el.hasAttribute('data-gesicomm-ver')) el.setAttribute('data-gesicomm-ver', item.id || '');
       return;
     }
     // Campos opcionales: si no hay dato, el elemento desaparece en vez de
@@ -453,7 +492,10 @@ export function runtimeGesicomm() {
 
   function prepararTarjetaProducto(raiz, item) {
     if (!raiz || !item) return;
-    var contenido = raiz.querySelector('.product-content, .hero-card-copy');
+    var contenido = raiz.querySelector('.product-content, .limited-offer-copy, .hero-card-copy');
+    if (item.titulo_comercial || item.mensaje_comercial || item.insignia_principal || item.insignia_secundaria || item.cta_texto) {
+      raiz.classList.add('has-commercial-presentation');
+    }
     raiz.querySelectorAll('[data-gesicomm-bind="etiqueta"], .product-category').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
     if (item.titulo_comercial) raiz.querySelectorAll('[data-gesicomm-bind="nombre"]').forEach(function (el) { el.textContent = item.titulo_comercial; });
     if (contenido) {
@@ -466,10 +508,11 @@ export function runtimeGesicomm() {
       }
       var antes = Number(item.precio_antes), precio = Number(item.precio);
       var ahorro = antes > precio && precio > 0 ? antes - precio : 0;
-      var insignias = [item.insignia_principal, item.insignia_secundaria].filter(function (valor, idx, lista) {
-        return valor && lista.indexOf(valor) === idx && (valor !== 'Oferta' || ahorro > 0) && (valor !== 'Envío gratis' || item.envio_incluido);
+      var insignias = [item.insignia_principal || item.insignia_secundaria].filter(function (valor) {
+        return valor && (valor !== 'Oferta' || ahorro > 0) && (valor !== 'Envío gratis' || item.envio_incluido);
       });
       if (insignias.length && !raiz.querySelector('.gc-commercial-badges')) {
+        raiz.querySelectorAll('.product-badge').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
         var badges = document.createElement('div'); badges.className = 'gc-commercial-badges';
         insignias.forEach(function (valor) {
           var badge = document.createElement('span'); badge.textContent = valor === 'Oferta' ? 'Oferta · ' + Math.round(ahorro / antes * 100) + '% OFF' : valor;
@@ -479,18 +522,11 @@ export function runtimeGesicomm() {
       }
       if (ahorro && !contenido.querySelector('.gc-commercial-saving')) {
         var saving = document.createElement('p'); saving.className = 'gc-commercial-saving'; saving.textContent = 'Ahorrás ' + formatoPrecio(ahorro);
-        var footer = contenido.querySelector('.product-footer');
-        if (footer) footer.insertAdjacentElement('afterend', saving); else contenido.appendChild(saving);
+        var footer = contenido.querySelector('.product-footer, .limited-offer-prices');
+        if (footer) footer.appendChild(saving); else contenido.appendChild(saving);
       }
       if (item.cta_texto) {
         contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) { btn.textContent = item.cta_texto; });
-      }
-      if (item.urgencia_texto && !contenido.querySelector('.gc-product-urgency')) {
-        var urgencia = document.createElement('p');
-        urgencia.className = 'gc-product-urgency';
-        urgencia.textContent = item.urgencia_texto;
-        var ahorroEl = contenido.querySelector('.gc-commercial-saving');
-        if (ahorroEl) ahorroEl.insertAdjacentElement('afterend', urgencia); else contenido.appendChild(urgencia);
       }
       if ((item.titulo_comercial || item.mensaje_comercial) && !contenido.querySelector('.gc-commercial-details')) {
         var detalles = document.createElement('button'); detalles.type = 'button'; detalles.className = 'gc-commercial-details';
@@ -563,7 +599,9 @@ export function runtimeGesicomm() {
     }
     if (!pintar()) return;
     el.style.display = '';
+    if (el.__gesicommCountdownTimer) clearInterval(el.__gesicommCountdownTimer);
     var timer = setInterval(function () { if (!pintar()) clearInterval(timer); }, 1000);
+    el.__gesicommCountdownTimer = timer;
   }
 
   function finCountdown(urgencia) {
@@ -585,6 +623,105 @@ export function runtimeGesicomm() {
     }
   }
 
+  function prepararHeroBanners() {
+    // Quita ejemplos incluidos en bases anteriores guardadas: no son datos del comercio.
+    var franjas = document.querySelectorAll('main[data-gesicomm-base="catalogo"] .store-benefits');
+    Array.prototype.forEach.call(franjas, function (franja) {
+      var texto = franja.textContent || '';
+      if (texto.indexOf('Checkout simple') !== -1 || texto.indexOf('Procesado por PagoPar') !== -1 || texto.indexOf('Pago seguro') !== -1) franja.remove();
+    });
+    var shells = document.querySelectorAll('.hero-shell');
+    Array.prototype.forEach.call(shells, function (shell) {
+      var slides = shell.querySelectorAll('.hero-banners .hero-banner');
+      if (shell.__gesicommHeroTimer) clearInterval(shell.__gesicommHeroTimer);
+      shell.classList.toggle('has-banner', slides.length > 0);
+      var hero = shell.closest('section.hero');
+      Array.prototype.forEach.call(shell.querySelectorAll('.hero-fallback'), function (fallback) { fallback.remove(); });
+      if (hero) hero.hidden = slides.length === 0;
+      var controls = shell.querySelector('.hero-dots[data-gesicomm-slider]');
+      if (controls) {
+        controls.innerHTML = '';
+        for (var n = 0; n < slides.length; n++) {
+          var dot = document.createElement('button');
+          dot.type = 'button';
+          dot.setAttribute('aria-label', 'Ir al banner ' + (n + 1));
+          controls.appendChild(dot);
+        }
+        controls.hidden = slides.length < 2;
+      }
+      var anterior = shell.querySelector('[data-gesicomm-banner-anterior]');
+      var siguiente = shell.querySelector('[data-gesicomm-banner-siguiente]');
+      if (anterior) anterior.hidden = slides.length < 2;
+      if (siguiente) siguiente.hidden = slides.length < 2;
+      if (!slides.length) return;
+      var dots = shell.querySelectorAll('.hero-dots button, .hero-dots span');
+      var actual = 0;
+      var pintar = function (n) {
+        actual = (n + slides.length) % slides.length;
+        for (var i = 0; i < slides.length; i++) slides[i].classList.toggle('is-active', i === actual);
+        for (var d = 0; d < dots.length; d++) {
+          dots[d].classList.toggle('is-active', d === actual);
+          dots[d].setAttribute('aria-pressed', String(d === actual));
+        }
+      };
+      Array.prototype.forEach.call(dots, function (dot, indice) { dot.onclick = function () { pintar(indice); }; });
+      if (anterior) anterior.onclick = function () { pintar(actual - 1); };
+      if (siguiente) siguiente.onclick = function () { pintar(actual + 1); };
+      Array.prototype.forEach.call(slides, function (slide) {
+        var medio = slide.querySelector('img[src], video[src]');
+        var texto = slide.querySelector('.hero-text');
+        var tieneTexto = Array.prototype.some.call(slide.querySelectorAll('[data-gesicomm-bind="titulo"], [data-gesicomm-bind="subtitulo"], [data-gesicomm-bind="etiqueta"], [data-gesicomm-bind="cta_texto"]'), function (el) { return el.textContent.trim(); });
+        var soloMedio = !!medio && !tieneTexto;
+        slide.classList.toggle('has-media', !!medio);
+        slide.classList.toggle('is-media-only', soloMedio);
+        if (texto) texto.hidden = soloMedio;
+        var cta = slide.querySelector('a[data-gesicomm-bind="enlace"]');
+        var label = cta && cta.querySelector('[data-gesicomm-bind="cta_texto"]');
+        if (cta && label) cta.hidden = soloMedio || !label.textContent.trim();
+        if (medio && soloMedio && !slide.querySelector('.hero-media-link')) {
+          var enlace = slide.querySelector('a[data-gesicomm-bind="enlace"]');
+          if (enlace && enlace.getAttribute('href')) {
+            var link = document.createElement('a');
+            link.className = 'hero-media-link';
+            link.href = enlace.getAttribute('href');
+            link.setAttribute('aria-label', 'Ver promocion');
+            slide.appendChild(link);
+          }
+        }
+        if (!soloMedio) Array.prototype.forEach.call(slide.querySelectorAll('.hero-media-link'), function (link) { link.remove(); });
+      });
+      if (slides.length > 1) shell.__gesicommHeroTimer = setInterval(function () { pintar((actual + 1) % slides.length); }, 5000);
+      pintar(0);
+    });
+  }
+
+  function textoVenta(campo) {
+    var venta = datos.venta || {};
+    var urg = venta.urgencia || {};
+    switch (campo) {
+      case 'recomendados_titulo': return venta.recomendados_titulo || 'Te puede gustar';
+      case 'urgencia_titulo': return urg.titulo || 'Ofertas que terminan pronto';
+      case 'urgencia_texto': return urg.texto || 'Aprovechá antes de que se agoten';
+      case 'urgencia_cta': return urg.cta_texto || 'Ver todos';
+      default: return '';
+    }
+  }
+
+  function pintarVenta() {
+    var configuradas = document.querySelectorAll('[data-gesicomm-venta-configurada]');
+    Array.prototype.forEach.call(configuradas, function (seccion) {
+      var config = datos.venta && datos.venta[seccion.getAttribute('data-gesicomm-venta-configurada')];
+      seccion.hidden = !config || config.activo !== true;
+    });
+    var els = document.querySelectorAll('[data-gesicomm-venta]');
+    for (var i = 0; i < els.length; i++) {
+      var valor = textoVenta(els[i].getAttribute('data-gesicomm-venta'));
+      if (!valor) { els[i].style.display = 'none'; continue; }
+      els[i].style.display = '';
+      els[i].textContent = valor;
+    }
+  }
+
   function datoAplicaAlProducto(config) {
     if (!config || !config.activo || !productoActual) return false;
     var id = config.producto_id || config.content_id;
@@ -593,8 +730,12 @@ export function runtimeGesicomm() {
   }
 
   // ─── Listas ───────────────────────────────────────────────────────────
-  var LISTAS_DE_DATOS = { categorias: 1, beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1 };
+  var LISTAS_DE_DATOS = { categorias: 1, menu_categorias: 1, banners_inicio: 1, banners_intermedios: 1, secciones_inicio: 1, beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1 };
   var LISTA_PAQUETES = 'paquetes';
+
+  function inicioConfig() {
+    return (datos.venta && datos.venta.inicio) || {};
+  }
 
   function categoriasDeProductos() {
     var porNombre = {};
@@ -635,15 +776,124 @@ export function runtimeGesicomm() {
     });
   }
 
+  function categoriasMenu() {
+    var inicio = inicioConfig();
+    if (inicio.menu_categorias === false) return [];
+    var auto = categoriasDeProductos();
+    var elegidas = Array.isArray(inicio.categorias) ? inicio.categorias : [];
+    if (!elegidas.length) return auto.slice(0, 8);
+    var porNombre = {};
+    auto.forEach(function (c) { porNombre[c.nombre] = c; });
+    return elegidas.map(function (nombre) { return porNombre[nombre]; }).filter(Boolean);
+  }
+
+  function bannersInicio() {
+    var banners = inicioConfig().banners || [];
+    if (!Array.isArray(banners)) return [];
+    return banners.filter(function (b) {
+      return b && b.activo !== false && (b.titulo || b.subtitulo || b.imagen);
+    }).map(function (b) {
+      return {
+        id: b.id || b.titulo,
+        titulo: b.titulo || '',
+        subtitulo: b.subtitulo || '',
+        etiqueta: b.etiqueta || '',
+        cta_texto: b.cta_texto || '',
+        enlace: b.enlace || '#productos',
+        imagen: b.imagen || '',
+        tipo_medio: b.tipo_medio || (/(\.mp4|\.webm|\.ogg|\.mov|\.m4v)(\?|$)/i.test(b.imagen || '') ? 'video' : 'imagen'),
+      };
+    });
+  }
+
+  function bannersIntermedios() {
+    var banners = inicioConfig().banners_intermedios || [];
+    if (!Array.isArray(banners)) return [];
+    return banners.filter(function (b) {
+      return b && b.activo !== false && (b.titulo || b.subtitulo || b.imagen);
+    }).map(function (b) {
+      return {
+        id: b.id || b.titulo,
+        titulo: b.titulo || '',
+        subtitulo: b.subtitulo || '',
+        etiqueta: b.etiqueta || '',
+        cta_texto: b.cta_texto || 'Ver ofertas',
+        enlace: b.enlace || '#ofertas',
+        imagen: b.imagen || '',
+        tipo_medio: b.tipo_medio || (/(\.mp4|\.webm|\.ogg|\.mov|\.m4v)(\?|$)/i.test(b.imagen || '') ? 'video' : 'imagen'),
+      };
+    });
+  }
+
+  function seccionesInicio() {
+    var secciones = inicioConfig().secciones || [];
+    if (!Array.isArray(secciones)) return [];
+    return secciones.filter(function (s) { return s && s.activo !== false && s.titulo; }).map(function (s) {
+      return {
+        id: s.id || s.titulo,
+        tipo: s.tipo || 'categoria',
+        tipo_label: ({ categoria: 'Categoría', ofertas: 'Ofertas', mas_vendidos: 'Más vendidos', novedades: 'Nuevos ingresos', manual: 'Colección' }[s.tipo || 'categoria']) || 'Sección',
+        titulo: s.titulo || '',
+        subtitulo: s.subtitulo || '',
+        categoria: s.categoria || '',
+        productos: Array.isArray(s.productos) ? s.productos : [],
+        limite: Number(s.limite) > 0 ? Number(s.limite) : 4,
+      };
+    });
+  }
+
+  function seccionDeElemento(el) {
+    var cont = el && el.closest && el.closest('[data-gesicomm-seccion-id]');
+    var id = cont && cont.getAttribute('data-gesicomm-seccion-id');
+    var secciones = seccionesInicio();
+    for (var i = 0; i < secciones.length; i++) if (String(secciones[i].id) === String(id)) return secciones[i];
+    return null;
+  }
+
+  function productosDeSeccion(el) {
+    var seccion = seccionDeElemento(el);
+    if (!seccion) return [];
+    var visibles = productos.filter(function (p) { return p.mostrar_en_inicio !== false; });
+    var base = [];
+    if (seccion.tipo === 'categoria') {
+      base = visibles.filter(function (p) { return String(p.categoria || '') === String(seccion.categoria || ''); });
+    } else if (seccion.tipo === 'ofertas') {
+      base = visibles.filter(function (p) { return Number(p.descuento_pct) > 0; });
+    } else if (seccion.tipo === 'novedades') {
+      base = visibles.slice().sort(function (a, b) {
+        var ta = a.creado ? new Date(a.creado).getTime() : 0;
+        var tb = b.creado ? new Date(b.creado).getTime() : 0;
+        return tb - ta;
+      });
+    } else if (seccion.tipo === 'manual' || seccion.tipo === 'mas_vendidos') {
+      var ids = seccion.productos || [];
+      if (ids.length) {
+        for (var i = 0; i < ids.length; i++) {
+          var item = buscar(ids[i]);
+          if (item && item.mostrar_en_inicio !== false && base.indexOf(item) === -1) base.push(item);
+        }
+      } else {
+        base = productosDestacados();
+      }
+    }
+    return base.slice(0, seccion.limite || 4);
+  }
+
   function fuenteDeLista(nombre, el) {
     var base;
     switch (nombre) {
       case 'catalogo': return catalogoVista.items;
+      case 'checkout_items': base = (datos.carrito && datos.carrito.items) || []; break;
       case 'categorias': base = categoriasCuradasDe(el) || categoriasDeProductos(); break;
+      case 'menu_categorias': base = categoriasMenu(); break;
+      case 'banners_inicio': base = bannersInicio(); break;
+      case 'banners_intermedios': base = bannersIntermedios(); break;
+      case 'secciones_inicio': base = seccionesInicio(); break;
+      case 'productos_seccion': return productosDeSeccion(el);
       case 'productos': base = productos; break;
       case 'productos_destacados': base = productosDestacados(); break;
       case 'productos_manual': return productosCuradosDe(el); // ya resuelto y filtrado: no pasa por el límite/categoría genéricos de abajo
-      case 'productos_ofertas': base = productos.filter(function (p) { return Number(p.descuento_pct) > 0; }); break;
+      case 'productos_ofertas': base = productosOfertaLimitada(); break;
       case 'productos_novedades':
         base = productos.slice().sort(function (a, b) {
           var ta = a.creado ? new Date(a.creado).getTime() : 0;
@@ -689,7 +939,7 @@ export function runtimeGesicomm() {
         break;
       default: base = [];
     }
-    if (datos.vista !== 'producto' && ['productos', 'combos', 'solo_productos', 'productos_ofertas', 'productos_novedades'].indexOf(nombre) !== -1) {
+    if (datos.vista !== 'producto' && ['productos', 'combos', 'solo_productos', 'productos_ofertas', 'productos_novedades', 'productos_seccion'].indexOf(nombre) !== -1) {
       base = base.filter(function (p) { return p.mostrar_en_inicio !== false; });
     }
     var categoria = el.getAttribute('data-gesicomm-categoria');
@@ -724,10 +974,18 @@ export function runtimeGesicomm() {
 
     var elementos = fuenteDeLista(nombre, el);
     if (!elementos.length) {
+      if (nombre === 'productos_seccion') {
+        var secVacia = el.closest('[data-gesicomm-seccion-id]');
+        if (secVacia) secVacia.style.display = 'none';
+      }
       if (el.getAttribute('data-gesicomm-si-vacio') !== 'mostrar') el.style.display = 'none';
       return;
     }
     el.style.display = '';
+    if (nombre === 'productos_seccion') {
+      var secLlena = el.closest('[data-gesicomm-seccion-id]');
+      if (secLlena) secLlena.style.display = '';
+    }
 
     var frag = document.createDocumentFragment();
     elementos.forEach(function (elemento, idx) {
@@ -767,6 +1025,8 @@ export function runtimeGesicomm() {
           // del combo que esté en la landing, que abre su ficha).
           if (elemento.content_id) h.setAttribute('data-gesicomm-item', elemento.content_id);
           if (nombre === 'categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
+          if (nombre === 'menu_categorias') h.setAttribute('data-gesicomm-categoria-ir', elemento.nombre);
+          if (nombre === 'secciones_inicio') h.setAttribute('data-gesicomm-seccion-id', elemento.id);
           bindDentro(h, elemento);
         } else if (nombre === 'imagenes') {
           bindDentro(h, { imagen: elemento, nombre: (productoActual && productoActual.nombre) || '' });
@@ -787,6 +1047,8 @@ export function runtimeGesicomm() {
       frag.appendChild(clon);
     });
     tpl.parentNode.insertBefore(frag, tpl);
+    var anidadas = el.querySelectorAll('[data-gesicomm-generado] [data-gesicomm-lista]');
+    for (var n = 0; n < anidadas.length; n++) renderizarLista(anidadas[n]);
   }
 
   // Una lista vacía se oculta sola, pero su título vive AFUERA del elemento
@@ -865,6 +1127,7 @@ export function runtimeGesicomm() {
       }
     }
     pintarControlesCatalogo();
+    pintarCheckout();
     pintarTotal();
     var marcas = document.querySelectorAll('[data-gesicomm-tienda]');
     for (var k = 0; k < marcas.length; k++) {
@@ -872,14 +1135,68 @@ export function runtimeGesicomm() {
       var val = datos.tienda ? datos.tienda[campo] : '';
       if (campo === 'logo') {
         var src = urlSegura(val);
-        if (src && marcas[k].tagName === 'IMG') marcas[k].src = src; else if (!src) marcas[k].style.display = 'none';
+        if (src && marcas[k].tagName === 'IMG') {
+          marcas[k].src = src;
+          marcas[k].style.display = '';
+        } else {
+          marcas[k].removeAttribute('src');
+          marcas[k].style.display = 'none';
+        }
       } else if (val) {
         marcas[k].textContent = String(val);
       } else {
         marcas[k].style.display = 'none';
       }
     }
+    var categoriaEls = document.querySelectorAll('[data-gesicomm-categoria]');
+    for (var ce = 0; ce < categoriaEls.length; ce++) {
+      var campoCat = categoriaEls[ce].getAttribute('data-gesicomm-categoria');
+      var valCat = datos.categoria ? datos.categoria[campoCat] : '';
+      categoriaEls[ce].textContent = valCat || '';
+      categoriaEls[ce].style.display = valCat ? '' : 'none';
+    }
     pintarRedes();
+  }
+
+  function actualizarDatos(nuevosDatos) {
+    if (!nuevosDatos || typeof nuevosDatos !== 'object') return;
+    datos = nuevosDatos;
+    productos = Array.isArray(datos.productos) ? datos.productos : [];
+    productoActual = datos.producto || null;
+    metaCatalogo = datos.catalogo || {};
+    paginado = !!metaCatalogo.paginado;
+    porPagina = metaCatalogo.por_pagina || 24;
+    filtros.categoria = datos.categoria && datos.categoria.nombre ? datos.categoria.nombre : filtros.categoria;
+    paginasTienda = datos.paginas || {};
+    catalogoVista = {
+      items: productos.slice(),
+      pagina: 1,
+      totalPaginas: 1,
+      total: metaCatalogo.total || productos.length,
+      categorias: [],
+      marcas: [],
+      etiquetas: [],
+      cargando: false,
+    };
+    conocidos = productos.slice();
+    if (!paginado) aplicarLocal();
+    renderizar();
+    prepararCountdowns();
+    prepararHeroBanners();
+    pintarVenta();
+    prepararEnlacesTienda();
+    if (paginado && document.querySelector('[data-gesicomm-lista="catalogo"]')) pedirPagina('reemplazar');
+    if (datos.resaltar) setTimeout(function () { resaltar(datos.resaltar); }, 80);
+    if (window.Gesicomm) {
+      window.Gesicomm.datos = datos;
+      window.Gesicomm.vista = datos.vista || 'inicio';
+      window.Gesicomm.tienda = datos.tienda || {};
+      window.Gesicomm.productos = productos;
+      window.Gesicomm.catalogo = catalogoVista;
+      window.Gesicomm.carrito = datos.carrito || { items: [], cantidad: 0, subtotal: 0, total: 0 };
+      window.Gesicomm.producto = productoActual;
+      window.Gesicomm.recomendados = datos.recomendados || [];
+    }
   }
 
   // ─── Redes de la tienda (data-gesicomm-redes) ─────────────────────────
@@ -1110,6 +1427,32 @@ export function runtimeGesicomm() {
     }
   }
 
+  function pintarCheckout() {
+    var resumen = datos.carrito || { cantidad: 0, subtotal: 0, total: 0, items: [] };
+    var estado = datos.checkout_estado || null;
+    var campos = document.querySelectorAll('[data-gesicomm-checkout]');
+    var i;
+    for (i = 0; i < campos.length; i++) {
+      var campo = campos[i].getAttribute('data-gesicomm-checkout');
+      var valor = '';
+      if (campo === 'cantidad') valor = String(resumen.cantidad || 0);
+      else if (campo === 'subtotal' || campo === 'total') valor = formatoPrecio(resumen[campo]);
+      else if (campo === 'estado') valor = estado ? estado.estado || '' : '';
+      else if (campo === 'mensaje') valor = estado ? estado.mensaje || '' : '';
+      campos[i].textContent = valor;
+      campos[i].style.display = valor ? '' : 'none';
+    }
+    var vacios = document.querySelectorAll('[data-gesicomm-checkout-vacio]');
+    for (i = 0; i < vacios.length; i++) vacios[i].style.display = resumen.items && resumen.items.length ? 'none' : '';
+    var llenos = document.querySelectorAll('[data-gesicomm-checkout-con-items]');
+    for (i = 0; i < llenos.length; i++) llenos[i].style.display = resumen.items && resumen.items.length ? '' : 'none';
+    var forms = document.querySelectorAll('form[data-gesicomm-checkout-form]');
+    for (i = 0; i < forms.length; i++) {
+      var botones = forms[i].querySelectorAll('button, input[type="submit"]');
+      for (var b = 0; b < botones.length; b++) botones[b].disabled = !!(estado && estado.estado === 'enviando') || !(resumen.items && resumen.items.length);
+    }
+  }
+
   // "Ver dónde aparece" del paso de venta: el contenedor pide resaltar una
   // lista (ofertas, recomendados, catálogo…) y acá se la lleva a la vista.
   // scrollIntoView NO se usa en el runtime: el navegador propaga ese scroll
@@ -1152,6 +1495,7 @@ export function runtimeGesicomm() {
     if (e.source !== parent) return;
     var d = e.data || {};
     if (d.tipo === 'gesicomm:resaltar') { resaltar(d.lista); return; }
+    if (d.tipo === 'gesicomm:datos') { actualizarDatos(d.datos); return; }
     if (d.tipo !== 'gesicomm:catalogo-respuesta' || d.id !== pedidoCatalogo) return;
     catalogoVista.cargando = false;
     if (d.error) {
@@ -1307,6 +1651,17 @@ export function runtimeGesicomm() {
     if (!t) return;
     var el;
 
+    if ((el = t.closest('[data-gesicomm-carrito]'))) {
+      e.preventDefault();
+      enviar({ tipo: 'gesicomm:carrito' });
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-checkout-ir]'))) {
+      e.preventDefault();
+      enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' });
+      return;
+    }
+
     // El documento tiene <base target="_top"> (para que un link externo no
     // meta la web dentro de sí misma), así que un href="#productos" navegaría
     // la ventana de afuera en vez de scrollear acá adentro.
@@ -1335,7 +1690,7 @@ export function runtimeGesicomm() {
     }
     if ((el = t.closest('[data-gesicomm-categoria-ir]'))) {
       e.preventDefault();
-      filtrarCategoriaVisual(el.getAttribute('data-gesicomm-categoria-ir'));
+      enviar({ tipo: 'gesicomm:navegar', destino: 'categoria', categoria: el.getAttribute('data-gesicomm-categoria-ir') });
       return;
     }
     if ((el = t.closest('[data-gesicomm-pagina]'))) {
@@ -1444,6 +1799,19 @@ export function runtimeGesicomm() {
       e.preventDefault();
       return;
     }
+    var checkoutForm = e.target && e.target.closest ? e.target.closest('form[data-gesicomm-checkout-form]') : null;
+    if (checkoutForm) {
+      e.preventDefault();
+      var camposCheckout = {};
+      var controles = checkoutForm.querySelectorAll('input[name], textarea[name], select[name]');
+      for (var ci = 0; ci < controles.length; ci++) {
+        var control = controles[ci];
+        if ((control.type === 'checkbox' || control.type === 'radio') && !control.checked) continue;
+        camposCheckout[control.name] = control.type === 'checkbox' ? control.checked : String(control.value || '').slice(0, 500);
+      }
+      enviar({ tipo: 'gesicomm:confirmar-checkout', campos: camposCheckout });
+      return;
+    }
     var form = e.target && e.target.closest ? e.target.closest('form[data-gesicomm-form]') : null;
     if (!form) return;
     e.preventDefault();
@@ -1469,6 +1837,7 @@ export function runtimeGesicomm() {
     tienda: datos.tienda || {},
     productos: productos,
     catalogo: catalogoVista,
+    carrito: datos.carrito || { items: [], cantidad: 0, subtotal: 0, total: 0 },
     producto: productoActual,
     recomendados: datos.recomendados || [],
     formatoPrecio: formatoPrecio,
@@ -1477,6 +1846,8 @@ export function runtimeGesicomm() {
     agregar: function (id, opciones) { var o = opciones || {}; o.abrir = false; comprar(typeof id === 'object' ? id : buscar(id), o); },
     verProducto: function (id) { verProducto(typeof id === 'object' ? id : buscar(id)); },
     irInicio: function () { enviar({ tipo: 'gesicomm:navegar', destino: 'inicio' }); },
+    irCheckout: function () { enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' }); },
+    irCategoria: function (categoria) { enviar({ tipo: 'gesicomm:navegar', destino: 'categoria', categoria: categoria }); },
     elegirVariante: elegirVariante,
     whatsapp: whatsapp,
     evento: function (nombre, extra) { enviar({ tipo: 'gesicomm:evento', nombre: String(nombre || ''), datos: extra || {} }); },
@@ -1488,6 +1859,8 @@ export function runtimeGesicomm() {
   if (!paginado) aplicarLocal();
   renderizar();
   prepararCountdowns();
+  prepararHeroBanners();
+  pintarVenta();
   prepararEnlacesTienda();
   // Catálogo grande: se pide la página 1 con el formato del servidor para
   // tener el total, las páginas y las categorías de TODO el catálogo (la

@@ -30,7 +30,7 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     expect(cssMarcaTienda(null)).toBe('');
   });
 
-  it('la base usa el color de la tienda y muestra su logo y nombre', () => {
+  it('el inicio conserva la paleta de referencia y muestra el logo y nombre de la tienda', () => {
     const datos = datosRuntimePublico({
       tienda: { nombre: 'sommix', logo_imagen: 'https://cdn.test/logo.png', colores: { primario: '#7c3aed', secundario: null, fondo: null } },
       catalogo_items: [],
@@ -39,10 +39,29 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     const dom = new JSDOM(html, { runScripts: 'dangerously', beforeParse(w) { w.postMessage = () => {}; w.scrollTo = () => {}; } });
     const { document } = dom.window;
     expect(html).toContain('--tienda-primario: #7c3aed;');
-    // El --brand de la base sale de la tienda (y el verde queda de respaldo).
-    expect(html).toMatch(/--brand: var\(--tienda-primario, #16a36a\)/);
+    expect(html).toContain('--navy: #082947;');
+    expect(html).toContain('--gc-fondo: var(--home-fondo);');
+    expect(html).toContain('--gc-superficie: var(--home-superficie);');
     expect(document.querySelector('img[data-gesicomm-tienda="logo"]').getAttribute('src')).toBe('https://cdn.test/logo.png');
     expect(document.querySelector('[data-gesicomm-tienda="nombre"]').textContent).toBe('sommix');
+    dom.window.close();
+  });
+
+  it('sin logo no agrega ningun logo inventado y el nombre no tiene fondo', () => {
+    const datos = datosRuntimePublico({
+      tienda: { nombre: 'sommix', logo_imagen: null, colores: { primario: '#7c3aed', secundario: null, fondo: null } },
+      catalogo_items: [],
+    }, 'promo', null);
+    const html = construirDocumentoCodigo(PLANTILLA_INICIO, { datos });
+    const dom = new JSDOM(html, { runScripts: 'dangerously', beforeParse(w) { w.postMessage = () => {}; w.scrollTo = () => {}; } });
+    const { document } = dom.window;
+    const logoImg = document.querySelector('img[data-gesicomm-tienda="logo"]');
+    expect(logoImg.style.display).toBe('none');
+    expect(logoImg.hasAttribute('src')).toBe(false);
+    expect(document.querySelector('[data-gesicomm-tienda="nombre"]').textContent).toBe('sommix');
+    expect(html).not.toMatch(/content:\s*['"]G['"]/);
+    expect(html).toContain('background: transparent !important;');
+    dom.window.close();
   });
 
   it('el preview del editor usa los colores de la tienda del panel', () => {

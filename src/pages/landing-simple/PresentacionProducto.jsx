@@ -49,32 +49,22 @@ export default function PresentacionProducto({
   const insignia = item.insignia_principal || (descuento ? 'Sale' : 'Nuevo');
   const secundaria = item.insignia_secundaria || (descuento ? `-${descuento}% OFF` : 'Oferta especial');
   const cta = item.cta_texto || (item.tipo === 'combo' ? 'Quiero el combo' : 'Comprar');
-  const urgencia = item.urgencia_texto || 'Termina en 00:42:01';
+  const insigniasListId = `insignias-comerciales-${claveItem(item).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 
   const porcentaje = useMemo(() => descuento || '', [descuento]);
 
   const selectorInsignia = (nombre, valor, campoDestino) => (
     <label className="block text-xs text-fg-muted">
       {nombre}
-      <select
-        aria-label={nombre}
+      <input
+        aria-label={nombre === 'Badge principal' ? 'Insignia principal' : nombre === 'Badge de oferta' ? 'Insignia de oferta' : nombre}
         className={campo}
-        value={INSIGNIAS_COMERCIALES.includes(valor) ? valor : valor ? 'Personalizada' : ''}
-        onChange={e => onCambiar(campoDestino, e.target.value === 'Personalizada' ? 'Tu insignia' : e.target.value)}
-      >
-        <option value="">Sin insignia</option>
-        {INSIGNIAS_COMERCIALES.map(i => <option key={i}>{i}</option>)}
-        <option>Personalizada</option>
-      </select>
-      {valor && !INSIGNIAS_COMERCIALES.includes(valor) && (
-        <input
-          aria-label={`${nombre} personalizada`}
-          className={campo}
-          value={valor}
-          maxLength={40}
-          onChange={e => onCambiar(campoDestino, e.target.value)}
-        />
-      )}
+        value={valor}
+        list={insigniasListId}
+        maxLength={40}
+        placeholder="Escribí cualquier badge"
+        onChange={e => onCambiar(campoDestino, e.target.value)}
+      />
     </label>
   );
 
@@ -82,6 +72,9 @@ export default function PresentacionProducto({
     <details open={abierto} onToggle={e => setAbierto(e.currentTarget.open)} className="mt-3 rounded-xl border border-border bg-surface-2/30">
       <summary className="px-3 py-2 text-sm font-semibold text-primary-text cursor-pointer">Presentación comercial</summary>
       <div className="p-3 space-y-4">
+        <datalist id={insigniasListId}>
+          {INSIGNIAS_COMERCIALES.map(i => <option key={i} value={i} />)}
+        </datalist>
         <ImagenesProductoLanding item={item} onCambiar={onCambiar} onSubirImagen={onSubirImagen} />
 
         <fieldset className="space-y-3">
@@ -100,6 +93,7 @@ export default function PresentacionProducto({
               Precio anterior
               <CurrencyInput
                 id={`ancla-${claveItem(item)}`}
+                aria-label="Precio ancla"
                 inputMode="numeric"
                 value={ancla ?? ''}
                 onChange={v => onAncla(v == null ? '' : String(v))}
@@ -124,16 +118,10 @@ export default function PresentacionProducto({
             {selectorInsignia('Badge de oferta', item.insignia_secundaria || '', 'insignia_secundaria')}
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">
-              CTA
-              <input className={campo} value={item.cta_texto || ''} maxLength={32} placeholder={item.tipo === 'combo' ? 'Quiero el combo' : 'Comprar'} onChange={e => onCambiar('cta_texto', e.target.value)} />
-            </label>
-            <label className="block text-xs text-fg-muted">
-              Urgencia
-              <input className={campo} value={item.urgencia_texto || ''} maxLength={40} placeholder="Termina en 00:42:01" onChange={e => onCambiar('urgencia_texto', e.target.value)} />
-            </label>
-          </div>
+          <label className="block text-xs text-fg-muted">
+            CTA
+            <input className={campo} value={item.cta_texto || ''} maxLength={32} placeholder={item.tipo === 'combo' ? 'Quiero el combo' : 'Comprar'} onChange={e => onCambiar('cta_texto', e.target.value)} />
+          </label>
         </fieldset>
 
         <fieldset>
@@ -150,39 +138,41 @@ export default function PresentacionProducto({
           <p className="text-xs text-fg-muted">{item.categoria || 'Sin categoría'}{item.sku ? ` · SKU ${item.sku}` : ''}. Conserva el nombre técnico del producto.</p>
           <label className="mt-2 block text-xs text-fg-muted">
             Etiquetas para filtrar
-            <input className={campo} value={item.etiqueta || ''} maxLength={100} placeholder="Ej: Cocina, Ceraflame" onChange={e => onCambiar('etiqueta', e.target.value)} />
+            <input aria-label="Etiquetas para filtrar (separadas por coma)" className={campo} value={item.etiqueta || ''} maxLength={100} placeholder="Ej: Cocina, Ceraflame" onChange={e => onCambiar('etiqueta', e.target.value)} />
           </label>
         </fieldset>
 
         <div>
           <p className="text-sm font-semibold text-fg mb-2">Así se venderá en la landing</p>
-          <article className="overflow-hidden rounded-2xl border border-[#33414a] bg-[#202a31] shadow-xl">
-            <div className="flex items-center gap-2 bg-[#27323a] px-3 py-2">
-              <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-[#b0123d]">{insignia}</span>
-              <span className="rounded-full border border-white/65 px-2.5 py-1 text-[11px] font-black text-white">{secundaria}</span>
-            </div>
-            <div className="flex h-44 items-center justify-center bg-white">
+          <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="relative flex h-44 items-center justify-center bg-slate-50">
               {src ? <img src={src} alt="" className="h-full w-full object-contain" loading="lazy" /> : <span className="text-sm text-slate-400">Sin imagen</span>}
+              {(insignia || secundaria) && (
+                <span className="absolute left-3 top-3 rounded-md bg-[#a90f3d] px-2 py-1 text-[11px] font-black text-white shadow-sm">
+                  {insignia || secundaria}
+                </span>
+              )}
             </div>
-            <div className="space-y-3 p-4 text-white">
+            <div className="space-y-3 p-4 text-slate-950">
               <div>
                 <h3 className="text-[17px] font-black leading-tight">{titulo}</h3>
-                <p className="mt-2 text-[13px] leading-5 text-white/72">{mensaje}</p>
+                <p className="mt-2 text-[13px] leading-5 text-slate-600">{mensaje}</p>
               </div>
-              <div className="rounded-xl bg-[#ad0d3d] px-3 py-3 text-white">
-                <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="rounded-lg bg-[#a90f3d] px-3 py-3 text-white">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    {precioAntes > precio && <p className="text-xs text-white/75 line-through">{gs(precioAntes)}</p>}
-                    <p className="text-2xl font-black tracking-normal">{gs(precio)}</p>
-                    {ahorro > 0 && <p className="mt-1 text-sm font-bold">Ahorrás {gs(ahorro)}</p>}
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="text-2xl font-black tracking-normal">{gs(precio)}</p>
+                      {precioAntes > precio && <p className="text-sm font-bold text-white/75 line-through">{gs(precioAntes)}</p>}
+                    </div>
+                    {ahorro > 0 && <p className="mt-1 text-sm font-bold">{descuento}% Off · Ahorrás {gs(ahorro)}</p>}
                   </div>
-                  <button type="button" className="rounded-full bg-white px-4 py-2 text-xs font-black text-[#ad0d3d] shadow-lg">
+                  <button type="button" className="rounded-full bg-white px-4 py-2 text-xs font-black text-[#a90f3d] shadow-sm">
                     {cta}
                   </button>
                 </div>
-                <p className="mt-2 text-sm font-black">{urgencia}</p>
               </div>
-              <div className="flex items-center justify-between gap-3 text-xs font-bold text-white/78">
+              <div className="flex items-center justify-between gap-3 text-xs font-bold text-slate-600">
                 <span>Ver producto →</span>
                 {item.envio_incluido === true && <span>Envío gratis</span>}
               </div>

@@ -23,7 +23,7 @@ import { construirDocumentoCodigo, SANDBOX_CODIGO } from './construirDocumentoCo
  * (contacto/footer, order bump de la landing — ver seccionesSistemaCodigo.js
  * y el order bump del runtime); `onTema` recibe los colores reales del carrito.
  */
-export default function CodigoPreview({ codigo, titulo, datos, extras = null, onError, onCheckout, onNavegar, onEvento, onCatalogo, onTema, resaltar, className = '', style }) {
+export default function CodigoPreview({ codigo, titulo, datos, extras = null, onError, onCheckout, onConfirmarCheckout, onNavegar, onEvento, onCatalogo, onTema, onCarrito, resaltar, className = '', style }) {
   const ref = useRef(null);
 
   // resaltar = { lista, n }: pide al runtime que muestre y marque una zona.
@@ -46,13 +46,22 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, on
     () => construirDocumentoCodigo(codigo, { titulo, reportarErrores: !!onError, datos: JSON.parse(datosJson), extras }),
     // Si cambia el generador durante una actualización de estilos/runtime,
     // no conservar un srcDoc anterior con fotos que invaden el contenido.
-    [construirDocumentoCodigo, codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, datosJson, extras?.html, extras?.css, extras?.script],
+    // `datos` viaja por postMessage para no reiniciar el iframe y perder scroll
+    // mientras el comercio escribe títulos, badges o CTAs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [construirDocumentoCodigo, codigo?.html, codigo?.css, codigo?.js, titulo, !!onError, extras?.html, extras?.css, extras?.script],
   );
+
+  function enviarDatos() {
+    if (!ref.current?.contentWindow) return;
+    ref.current.contentWindow.postMessage({ tipo: 'gesicomm:datos', datos: JSON.parse(datosJson) }, '*');
+  }
+  useEffect(() => { enviarDatos(); }, [datosJson]);
 
   // Refs para los handlers: se registran una sola vez y siempre llaman a
   // la versión más nueva, sin re-suscribir el listener en cada render.
   const handlers = useRef({});
-  handlers.current = { onError, onCheckout, onNavegar, onEvento, onCatalogo, onTema };
+  handlers.current = { onError, onCheckout, onConfirmarCheckout, onNavegar, onEvento, onCatalogo, onTema, onCarrito };
 
   useEffect(() => {
     function alMensaje(e) {
@@ -64,6 +73,8 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, on
       const tipo = e.data?.tipo;
       if (tipo === 'gesicomm:error-codigo') h.onError?.(e.data.mensaje);
       if (tipo === 'gesicomm:checkout') h.onCheckout?.(e.data);
+      if (tipo === 'gesicomm:confirmar-checkout') h.onConfirmarCheckout?.(e.data);
+      if (tipo === 'gesicomm:carrito') h.onCarrito?.(e.data);
       if (tipo === 'gesicomm:navegar') h.onNavegar?.(e.data);
       if (tipo === 'gesicomm:evento') h.onEvento?.(e.data);
       // Colores reales de la landing para el carrito (ver el puente de tema
@@ -90,7 +101,10 @@ export default function CodigoPreview({ codigo, titulo, datos, extras = null, on
   return (
     <iframe
       ref={ref}
-      onLoad={() => setTimeout(enviarResaltado, 150)}
+      onLoad={() => {
+        setTimeout(enviarDatos, 80);
+        setTimeout(enviarResaltado, 150);
+      }}
       title={titulo || 'Vista previa de la landing'}
       srcDoc={doc}
       sandbox={SANDBOX_CODIGO}

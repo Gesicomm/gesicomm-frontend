@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone,
   PanelLeftClose, PanelLeftOpen, AlertTriangle, RefreshCw, Copy, Settings2, Home, ShoppingBag,
-  FileCode2, Wand2, Check, Bot, X, Send, Loader2, FileText,
+  FileCode2, Wand2, Check, Bot, X, Send, Loader2, FileText, Tags, CreditCard,
 } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
@@ -16,7 +16,7 @@ import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
-import { PLANTILLA_PRODUCTO, plantillaInicioPara, formatoDeBase } from './plantillasBaseCodigo';
+import { PLANTILLA_PRODUCTO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, formatoDeBase, esFichaProductoBase } from './plantillasBaseCodigo';
 import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { armarPromptVista } from './promptsCodigo';
 import {
@@ -60,6 +60,8 @@ const TABS = [
 const VISTAS = [
   { key: 'inicio', label: 'Inicio', icono: Home },
   { key: 'producto', label: 'Ficha de producto', icono: ShoppingBag },
+  { key: 'categoria', label: 'Categoría', icono: Tags },
+  { key: 'checkout', label: 'Checkout', icono: CreditCard },
 ];
 
 const CODIGO_VACIO = { html: '', css: '', js: '' };
@@ -86,7 +88,9 @@ function codigosDesdeContent(content, fichaGeneralRespaldo = PLANTILLA_PRODUCTO,
   }));
   return {
     inicio: { ...CODIGO_VACIO, ...(content?.codigo || {}) },
-    producto: vistas.producto?.html ? vistas.producto : fichaGeneralRespaldo,
+    producto: vistas.producto?.html && !esFichaProductoBase(vistas.producto.html) ? vistas.producto : fichaGeneralRespaldo,
+    categoria: vistas.categoria?.html ? { ...CODIGO_VACIO, ...vistas.categoria } : PLANTILLA_CATEGORIA,
+    checkout: vistas.checkout?.html ? { ...CODIGO_VACIO, ...vistas.checkout } : PLANTILLA_CHECKOUT,
     ...propias,
     ...legales,
   };
@@ -95,6 +99,8 @@ function codigosDesdeContent(content, fichaGeneralRespaldo = PLANTILLA_PRODUCTO,
 // estrella, combos); la ficha es una sola.
 const baseDe = (vista, tipo, legalTipo = 'politica_privacidad', tienda = null) => {
   if (vista === 'producto') return PLANTILLA_PRODUCTO;
+  if (vista === 'categoria') return PLANTILLA_CATEGORIA;
+  if (vista === 'checkout') return PLANTILLA_CHECKOUT;
   if (vista === 'legal') return plantillaLegalPara(legalTipo, tienda);
   return plantillaInicioPara(tipo);
 };
@@ -383,6 +389,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         codigo: codigosAGuardar.inicio,
         vistas: {
           producto: codigosAGuardar.producto,
+          categoria: codigosAGuardar.categoria,
+          checkout: codigosAGuardar.checkout,
           legales: legalesAGuardar,
           productos: {
             ...Object.fromEntries([...propiasBorradas].map(cid => [cid, null])),
@@ -431,7 +439,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const targetIA = esPropia ? 'producto_especifico' : vista === 'producto' ? 'producto' : 'inicio';
   const nombreTargetIA = esPropia
     ? `la ficha propia de "${nombreProductoFicha}"`
-    : esLegal ? `la página legal "${nombrePaginaLegal}"` : targetIA === 'producto' ? 'la ficha de producto (general)' : 'el "Inicio"';
+    : esLegal ? `la página legal "${nombrePaginaLegal}"`
+      : targetIA === 'producto' ? 'la ficha de producto (general)'
+        : targetIA === 'categoria' ? 'la vista de categoría'
+          : targetIA === 'checkout' ? 'la vista de checkout'
+            : 'el "Inicio"';
 
   // Le pide a la IA que edite la vista actual de esta landing (mismo id,
   // mismo slug, mismos productos configurados) con un prompt nuevo. El RAG
@@ -490,21 +502,24 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     // retoques del comercio.
     const baseActual = formatoDeBase(codigos.inicio.html);
     const codigoInicialIntacto = !codigos.inicio.html.trim() || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL);
-    // Hay un solo inicio base (la tienda). Uno de los formatos viejos
-    // (Producto estrella / Combos) se ofrece cambiar, preguntando. Si la
-    // landing abre directo en un producto, el inicio no se muestra: no se toca.
-    const cambiaFormatoBase = !!baseActual && baseActual !== 'catalogo' && nuevaVenta.abrir_en !== 'producto'
-      && window.confirm('Tu inicio tiene el diseño de un formato anterior. ¿Reemplazarlo por la tienda? Se pierden los cambios que le hayas hecho al HTML de inicio.');
-    const usarBase = codigoInicialIntacto || cambiaFormatoBase;
-    const nuevosCodigos = usarBase ? { ...codigos, inicio: plantillaInicioPara(nuevaVenta.tipo) } : codigos;
+    // La vista previa de Configurar tienda reemplaza cualquier base Gesicomm
+    // por la base actual. Al confirmar, guardamos esa misma base para no volver
+    // al HTML/CSS viejo que podía seguir persistido en el editor libre.
+    const usarBase = (codigoInicialIntacto || !!baseActual) && nuevaVenta.abrir_en !== 'producto';
+    const usarFichaBase = esFichaProductoBase(codigos.producto?.html);
+    const nuevosCodigos = {
+      ...codigos,
+      ...(usarBase ? { inicio: plantillaInicioPara(nuevaVenta.tipo) } : {}),
+      ...(usarFichaBase ? { producto: PLANTILLA_PRODUCTO } : {}),
+    };
     setSeleccion(nuevaSeleccion);
     setVenta(nuevaVenta);
     setCodigos(nuevosCodigos);
     const ok = await guardar({ venta: nuevaVenta, items: nuevosItems, codigos: nuevosCodigos, confirmaciones });
     if (ok) {
       setPaso('codigo');
-      setTab(usarBase ? 'prompts' : 'html');
-      if (usarBase) setAviso('Listo: cargamos la página base del formato. Copiá el prompt o editala directo.');
+      setTab((usarBase || usarFichaBase) ? 'prompts' : 'html');
+      if (usarBase || usarFichaBase) setAviso('Listo: actualizamos la base de inicio/ficha para que el diseño guardado coincida con la vista previa.');
     }
   }
 
@@ -694,14 +709,26 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     const nombre = nombrePorId.get(p?.producto) || 'el producto';
     setAviso(`Preview: en la landing publicada esto ${p?.abrir === false ? 'agrega' : 'agrega y abre el carrito con'} "${nombre}".`);
   }, [nombrePorId]);
+  const alCarritoPreview = useCallback(() => {
+    setAviso('Preview: en la landing publicada esto abre el carrito.');
+  }, []);
   const alNavegarPreview = useCallback((p) => {
     if (p?.destino === 'pagina') {
+      if (p.pagina === 'checkout') {
+        setVista('checkout');
+        return;
+      }
       setAviso(`Preview: en la landing publicada este link abre «${PAGINAS_TIENDA[p.pagina] || p.pagina}».`);
       return;
     }
     if (p?.destino === 'producto') {
       setVista('producto');
       setProductoPreviewId(p.producto);
+    } else if (p?.destino === 'categoria') {
+      setVista('categoria');
+      setAviso(`Preview: vista de categoría "${p.categoria}".`);
+    } else if (p?.destino === 'checkout') {
+      setVista('checkout');
     } else {
       setVista('inicio');
     }
@@ -921,7 +948,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                 </button>
               ))}
               <span className="ml-auto pr-1 text-[11px] text-fg/40">
-                Editando: <strong className="text-fg/70">{esPropia ? `Ficha de ${nombreProductoFicha}` : esLegal ? nombrePaginaLegal : vista === 'producto' ? 'Ficha general' : 'Inicio'}</strong>
+                Editando: <strong className="text-fg/70">{esPropia ? `Ficha de ${nombreProductoFicha}` : esLegal ? nombrePaginaLegal : vista === 'producto' ? 'Ficha general' : vista === 'categoria' ? 'Categoría' : vista === 'checkout' ? 'Checkout' : 'Inicio'}</strong>
               </span>
             </div>
 
@@ -1125,6 +1152,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   datos={datosPreview}
                   onError={alErrorRuntime}
                   onCheckout={alCheckoutPreview}
+                  onCarrito={alCarritoPreview}
                   onNavegar={alNavegarPreview}
                   onEvento={alEventoPreview}
                 />
@@ -1138,6 +1166,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   datos={datosPreview}
                   onError={alErrorRuntime}
                   onCheckout={alCheckoutPreview}
+                  onCarrito={alCarritoPreview}
                   onNavegar={alNavegarPreview}
                   onEvento={alEventoPreview}
                 />

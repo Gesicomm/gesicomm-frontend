@@ -2,15 +2,16 @@ import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useStat
 import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
   Eye, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
+  Upload, Film, PackagePlus,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { comboAdminService } from '../../services/comboAdminService';
-import { claveItem, precioDeVenta } from './PrecioAnclaItem';
+import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import PresentacionProducto from './PresentacionProducto';
 import { contentIdPanel, datosRuntimePreview } from './datosRuntime';
 import { getMediaUrl } from '../../services/api';
 import CodigoPreview from './CodigoPreview';
-import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO } from './plantillasBaseCodigo';
+import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO, esFichaProductoBase } from './plantillasBaseCodigo';
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
 
@@ -62,6 +63,10 @@ function inputLocalAIso(valor) {
   const d = new Date(valor);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+function inputLocalEnHoras(horas) {
+  const d = new Date(Date.now() + horas * 60 * 60 * 1000);
+  return isoParaInputLocal(d.toISOString());
+}
 
 const TIPOS_OFERTA_RAPIDA = [
   {
@@ -69,12 +74,6 @@ const TIPOS_OFERTA_RAPIDA = [
     titulo: 'Oferta por cantidad',
     subtitulo: 'Varias unidades del mismo producto',
     texto: 'Ideal para x2, x3 o reposición. Se muestra en la ficha del producto.',
-  },
-  {
-    key: 'combo',
-    titulo: 'Combo',
-    subtitulo: 'Productos diferentes juntos',
-    texto: 'Para vender un kit armado con precio propio y margen calculado.',
   },
   {
     key: 'order_bump',
@@ -109,6 +108,36 @@ const FILTROS_CATALOGO = [
   ['precio', 'Rango de precios'], ['disponibilidad', 'Disponibilidad'], ['orden', 'Ordenar productos'],
 ];
 const MARCA_CODIGO_INICIAL = 'Escribí acá el HTML de tu landing';
+const TIPOS_SECCION_INICIO = [
+  ['categoria', 'Por categoría'],
+  ['ofertas', 'Productos con descuento'],
+  ['mas_vendidos', 'Más vendidos'],
+  ['novedades', 'Nuevos ingresos'],
+  ['manual', 'Selección manual'],
+];
+const TITULOS_SECCION_INICIO = {
+  categoria: 'Comprar por categoría',
+  ofertas: 'Productos con descuento',
+  mas_vendidos: 'Más vendidos',
+  novedades: 'Nuevos ingresos',
+  manual: 'Colección comercial',
+};
+const AYUDAS_SECCION_INICIO = {
+  categoria: 'Muestra productos de una categoría específica. Elegís la categoría en el selector de abajo.',
+  ofertas: 'Muestra automáticamente productos con precio anterior mayor al precio actual. No es el countdown.',
+  mas_vendidos: 'Como todavía no usamos estadísticas reales acá, elegís a mano qué productos mostrar.',
+  novedades: 'Ordena automáticamente por fecha de creación y muestra los ingresos más recientes.',
+  manual: 'Elegís producto por producto exactamente qué aparece en esta vitrina.',
+};
+const ENLACES_BANNER_INICIO = [
+  ['#inicio', 'Inicio'],
+  ['#ofertas', 'Ofertas'],
+  ['#mas-vendidos', 'Más vendidos'],
+  ['#novedades', 'Novedades'],
+  ['#colecciones', 'Colecciones'],
+  ['#productos', 'Catálogo'],
+  ['#categorias', 'Categorías'],
+];
 
 const clave = item => `${item.tipo}:${item.id}`;
 
@@ -120,10 +149,122 @@ function formatearGs(n) {
 
 const precioPanel = item => item?.precio_efectivo ?? item?.precio_usuario ?? item?.precio_base ?? item?.precio ?? null;
 
+function imagenPanel(item) {
+  const directa = item?.imagen || item?.imagen_url || item?.url_imagen;
+  const lista = Array.isArray(item?.imagenes) ? item.imagenes : [];
+  const primera = lista.find(img => img?.es_principal) || lista[0];
+  return getMediaUrl(directa || primera?.url || primera || '');
+}
+
 const normalizarTexto = valor => String(valor || '')
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
   .toLowerCase();
+
+const uidComercial = prefijo => `${prefijo}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+
+function crearBannerInicio() {
+  return {
+    id: uidComercial('banner'),
+    activo: true,
+    titulo: 'Nueva campaña promocional',
+    subtitulo: 'Mostrá una oferta, colección o beneficio importante.',
+    etiqueta: 'Promo',
+    cta_texto: 'Ver productos',
+    enlace: '#productos',
+    imagen: '',
+    tipo_medio: 'imagen',
+  };
+}
+function crearBannerIntermedio() {
+  return {
+    ...crearBannerInicio(),
+    id: uidComercial('banner-medio'),
+    titulo: 'Renová tu cocina',
+    subtitulo: 'Productos seleccionados con precios especiales.',
+    etiqueta: 'Campaña',
+    cta_texto: 'Ver ofertas',
+    enlace: '#ofertas',
+  };
+}
+
+function crearSeccionInicio(tipo = 'categoria', categoria = '') {
+  return {
+    id: uidComercial('seccion'),
+    activo: true,
+    tipo,
+    titulo: TITULOS_SECCION_INICIO[tipo] || 'Sección comercial',
+    subtitulo: tipo === 'categoria' && categoria ? `Productos de ${categoria}` : '',
+    categoria: tipo === 'categoria' ? categoria : '',
+    productos: [],
+    limite: 4,
+  };
+}
+
+function normalizarInicioComercial(inicio = {}, categorias = []) {
+  const primeraCategoria = categorias[0]?.[0] || '';
+  const banners = Array.isArray(inicio.banners)
+    ? inicio.banners.map((b, idx) => ({
+      id: b.id || `banner-${idx + 1}`,
+      activo: b.activo !== false,
+      titulo: b.titulo || '',
+      subtitulo: b.subtitulo || '',
+      etiqueta: b.etiqueta || '',
+      cta_texto: b.cta_texto || 'Ver productos',
+      enlace: b.enlace || '#productos',
+      imagen: b.imagen || '',
+      tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
+    }))
+    : [];
+  const bannersIntermedios = Array.isArray(inicio.banners_intermedios)
+    ? inicio.banners_intermedios.map((b, idx) => ({
+      id: b.id || `banner-medio-${idx + 1}`,
+      activo: b.activo !== false,
+      titulo: b.titulo || '',
+      subtitulo: b.subtitulo || '',
+      etiqueta: b.etiqueta || '',
+      cta_texto: b.cta_texto || 'Ver ofertas',
+      enlace: b.enlace || '#ofertas',
+      imagen: b.imagen || '',
+      tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
+    }))
+    : [];
+  const secciones = Array.isArray(inicio.secciones)
+    ? inicio.secciones.map((s, idx) => ({
+      id: s.id || `seccion-${idx + 1}`,
+      activo: s.activo !== false,
+      tipo: s.tipo || 'categoria',
+      titulo: s.titulo || TITULOS_SECCION_INICIO[s.tipo] || 'Sección comercial',
+      subtitulo: s.subtitulo || '',
+      categoria: s.categoria || '',
+      productos: Array.isArray(s.productos) ? s.productos : [],
+      limite: Number(s.limite) > 0 ? Number(s.limite) : 4,
+    }))
+    : [];
+  return {
+    menu_categorias: inicio.menu_categorias !== false,
+    categorias: Array.isArray(inicio.categorias) ? inicio.categorias : [],
+    banners,
+    banners_intermedios: bannersIntermedios,
+    secciones: secciones.length ? secciones : [
+      crearSeccionInicio('categoria', primeraCategoria),
+    ],
+  };
+}
+
+function inferirTipoMedio(valor = '') {
+  const limpio = String(valor || '').split('?')[0].toLowerCase();
+  if (/\.(mp4|webm|ogg|mov|m4v)$/.test(limpio)) return 'video';
+  if (/\.gif$/.test(limpio)) return 'gif';
+  return 'imagen';
+}
+
+function tipoMedioDeArchivo(archivo) {
+  if (!archivo) return 'imagen';
+  if (archivo.type?.startsWith('video/')) return 'video';
+  if (archivo.type === 'image/gif' || /\.gif$/i.test(archivo.name || '')) return 'gif';
+  return 'imagen';
+}
 
 const nombreProveedorItem = item => (typeof item?.proveedor === 'string' ? item.proveedor : item?.proveedor?.nombre) || '';
 
@@ -253,6 +394,13 @@ export default function ConfigurarVentaCodigo({
   const [urgenciaFinAt, setUrgenciaFinAt] = useState(() => isoParaInputLocal(ventaInicial.urgencia?.fin_at));
   const [urgenciaProductoId, setUrgenciaProductoId] = useState(ventaInicial.urgencia?.producto_id || '');
   const [urgenciaConfirmar, setUrgenciaConfirmar] = useState(ventaInicial.urgencia?.estado === 'confirmado');
+  const [urgenciaTitulo, setUrgenciaTitulo] = useState(ventaInicial.urgencia?.titulo || 'Ofertas que terminan pronto');
+  const [urgenciaTexto, setUrgenciaTexto] = useState(ventaInicial.urgencia?.texto || 'Aprovechá antes de que se agoten');
+  const [urgenciaCta, setUrgenciaCta] = useState(ventaInicial.urgencia?.cta_texto || 'Ver todos');
+  const [urgenciaProductos, setUrgenciaProductos] = useState(() => (
+    Array.isArray(ventaInicial.urgencia?.productos) ? ventaInicial.urgencia.productos : []
+  ));
+  const [productoOfertaEditandoId, setProductoOfertaEditandoId] = useState('');
   function cambiarUrgenciaFinAt(valor) {
     setUrgenciaFinAt(valor);
     setUrgenciaConfirmar(false); // editar la fecha vuelve a pedir confirmación
@@ -286,6 +434,9 @@ export default function ConfigurarVentaCodigo({
   const [dispositivo, setDispositivo] = useState('escritorio'); // 'movil' | 'escritorio'
   const [verDetalleError, setVerDetalleError] = useState(false);
   const [previewAmpliada, setPreviewAmpliada] = useState(false);
+  const [seccionConfig, setSeccionConfig] = useState('inicio'); // 'inicio' | 'fichas' | 'ofertas'
+  const [productoEditando, setProductoEditando] = useState(null); // content_id
+  const [inicioComercial, setInicioComercial] = useState(() => normalizarInicioComercial(ventaInicial.inicio_comercial || ventaInicial.inicio || {}));
 
   // Todas las order bump / upsell activas de la tienda, de entrada: antes se
   // buscaban solo en los productos ya elegidos, así que con la selección
@@ -353,6 +504,34 @@ export default function ConfigurarVentaCodigo({
   }, [esRegla, catalogoActual, modo, categorias, incluirCombos, tipo, manual, porClave, principal, presentacion, anclas]);
 
   const excedeManual = !esRegla && seleccion.length > MAX_PRODUCTOS_MANUAL;
+  const categoriasInicioDisponibles = useMemo(() => {
+    const conteo = new Map();
+    seleccion.forEach(i => {
+      if (i.mostrar_en_inicio === false || !i.categoria) return;
+      conteo.set(i.categoria, (conteo.get(i.categoria) || 0) + 1);
+    });
+    return Array.from(conteo.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  }, [seleccion]);
+
+  useEffect(() => {
+    const primera = categoriasInicioDisponibles[0]?.[0] || '';
+    const permitidas = new Set(categoriasInicioDisponibles.map(([cat]) => cat));
+    setInicioComercial(prev => {
+      let cambio = false;
+      const categoriasActuales = prev.categorias || [];
+      const categoriasValidas = categoriasActuales.filter(cat => permitidas.has(cat));
+      if (categoriasValidas.length !== categoriasActuales.length) cambio = true;
+      const secciones = prev.secciones.map(s => {
+        if (s.tipo !== 'categoria') return s;
+        if (s.categoria && permitidas.has(s.categoria)) return s;
+        if (!primera) return s;
+        cambio = true;
+        return { ...s, categoria: primera, subtitulo: s.subtitulo || `Productos de ${primera}` };
+      });
+      return cambio ? { ...prev, categorias: categoriasValidas, secciones } : prev;
+    });
+  }, [categoriasInicioDisponibles]);
+
   const idsProductoEnLanding = useMemo(
     () => new Set(seleccion.filter(i => i.tipo === 'producto').map(i => Number(i.id))),
     [seleccion],
@@ -374,6 +553,18 @@ export default function ConfigurarVentaCodigo({
     const base = productos.length ? productos : seleccion;
     return base.slice(0, 300).map(i => ({ ...i, content_id: contentIdPanel(i) }));
   }, [seleccion]);
+  const productoConfigActual = useMemo(
+    () => candidatosDatosProducto.find(i => i.content_id === productoEditando) || null,
+    [candidatosDatosProducto, productoEditando],
+  );
+  const seleccionarProductoConfig = useCallback((contentId) => {
+    setProductoEditando(contentId);
+    setSeccionConfig('fichas');
+    setVistaPreview('producto');
+    setProductoPreview(contentId);
+    setAvisoPreview('');
+    setResaltado(null);
+  }, []);
   const idsDatosProducto = useMemo(
     () => new Set(candidatosDatosProducto.map(i => i.content_id)),
     [candidatosDatosProducto],
@@ -390,6 +581,101 @@ export default function ConfigurarVentaCodigo({
       if (ya) return prev.filter(id => id !== contentId);
       return [...prev, contentId].slice(0, MAX_DESTACADOS);
     });
+  }
+
+  function cambiarInicio(campo, valor) {
+    setInicioComercial(prev => ({ ...prev, [campo]: valor }));
+  }
+  function cambiarBanner(id, cambio) {
+    setInicioComercial(prev => ({
+      ...prev,
+      banners: prev.banners.map(b => (b.id === id ? { ...b, ...cambio } : b)),
+    }));
+  }
+  function agregarBanner() {
+    setInicioComercial(prev => ({ ...prev, banners: [...prev.banners, crearBannerInicio()] }));
+    verDonde('inicio', 'banners_inicio');
+  }
+  function quitarBanner(id) {
+    setInicioComercial(prev => ({ ...prev, banners: prev.banners.filter(b => b.id !== id) }));
+  }
+  function moverBanner(id, dir) {
+    setInicioComercial(prev => {
+      const banners = [...prev.banners];
+      const idx = banners.findIndex(b => b.id === id);
+      const next = idx + dir;
+      if (idx < 0 || next < 0 || next >= banners.length) return prev;
+      [banners[idx], banners[next]] = [banners[next], banners[idx]];
+      return { ...prev, banners };
+    });
+  }
+  function cambiarBannerIntermedio(id, cambio) {
+    setInicioComercial(prev => ({
+      ...prev,
+      banners_intermedios: (prev.banners_intermedios || []).map(b => (b.id === id ? { ...b, ...cambio } : b)),
+    }));
+  }
+  function agregarBannerIntermedio() {
+    setInicioComercial(prev => ({
+      ...prev,
+      banners_intermedios: [...(prev.banners_intermedios || []), crearBannerIntermedio()],
+    }));
+    verDonde('inicio', 'banners_intermedios');
+  }
+  function quitarBannerIntermedio(id) {
+    setInicioComercial(prev => ({
+      ...prev,
+      banners_intermedios: (prev.banners_intermedios || []).filter(b => b.id !== id),
+    }));
+  }
+  function moverBannerIntermedio(id, dir) {
+    setInicioComercial(prev => {
+      const banners = [...(prev.banners_intermedios || [])];
+      const idx = banners.findIndex(b => b.id === id);
+      const next = idx + dir;
+      if (idx < 0 || next < 0 || next >= banners.length) return prev;
+      [banners[idx], banners[next]] = [banners[next], banners[idx]];
+      return { ...prev, banners_intermedios: banners };
+    });
+  }
+  function cambiarSeccionInicio(id, cambio) {
+    setInicioComercial(prev => ({
+      ...prev,
+      secciones: prev.secciones.map(s => (s.id === id ? { ...s, ...cambio } : s)),
+    }));
+  }
+  function agregarSeccionInicio(tipo = 'categoria') {
+    const categoria = tipo === 'categoria' ? (categoriasInicioDisponibles[0]?.[0] || '') : '';
+    setInicioComercial(prev => ({ ...prev, secciones: [...prev.secciones, crearSeccionInicio(tipo, categoria)] }));
+    verDonde('inicio', 'secciones_inicio');
+  }
+  function quitarSeccionInicio(id) {
+    setInicioComercial(prev => ({ ...prev, secciones: prev.secciones.filter(s => s.id !== id) }));
+  }
+  function moverSeccionInicio(id, dir) {
+    setInicioComercial(prev => {
+      const secciones = [...prev.secciones];
+      const idx = secciones.findIndex(s => s.id === id);
+      const next = idx + dir;
+      if (idx < 0 || next < 0 || next >= secciones.length) return prev;
+      [secciones[idx], secciones[next]] = [secciones[next], secciones[idx]];
+      return { ...prev, secciones };
+    });
+  }
+  function alternarProductoSeccion(id, contentId) {
+    setInicioComercial(prev => ({
+      ...prev,
+      secciones: prev.secciones.map(s => {
+        if (s.id !== id) return s;
+        const productosSeccion = s.productos || [];
+        return {
+          ...s,
+          productos: productosSeccion.includes(contentId)
+            ? productosSeccion.filter(p => p !== contentId)
+            : [...productosSeccion, contentId].slice(0, 12),
+        };
+      }),
+    }));
   }
 
   // Oferta sin foto propia → la del producto que ofrece (o la del mismo
@@ -418,6 +704,55 @@ export default function ConfigurarVentaCodigo({
     return Array.from(grupos.entries()).filter(([id]) => idsProductoEnLanding.has(id));
   }, [ofertasConImagen, idsProductoEnLanding]);
 
+  const candidatosReco = useMemo(
+    () => seleccion.slice(0, 300).map(i => ({ ...i, content_id: contentIdPanel(i) })),
+    [seleccion],
+  );
+  const idsCandidatosReco = useMemo(
+    () => new Set(candidatosReco.map(i => i.content_id)),
+    [candidatosReco],
+  );
+  const recoItemsValidos = useMemo(
+    () => recoItems.filter(id => idsCandidatosReco.has(id)).slice(0, 12),
+    [recoItems, idsCandidatosReco],
+  );
+  useEffect(() => {
+    if (recoItemsValidos.length !== recoItems.length) setRecoItems(recoItemsValidos);
+  }, [recoItems, recoItemsValidos]);
+  const candidatosOfertaLimitada = useMemo(
+    () => candidatosReco.filter(i => i.mostrar_en_inicio !== false),
+    [candidatosReco],
+  );
+  const idsCandidatosOfertaLimitada = useMemo(
+    () => new Set(candidatosOfertaLimitada.map(i => i.content_id)),
+    [candidatosOfertaLimitada],
+  );
+  const urgenciaProductosValidos = useMemo(
+    () => urgenciaProductos.filter(id => idsCandidatosOfertaLimitada.has(id)),
+    [urgenciaProductos, idsCandidatosOfertaLimitada],
+  );
+  useEffect(() => {
+    if (urgenciaProductosValidos.length !== urgenciaProductos.length) setUrgenciaProductos(urgenciaProductosValidos);
+  }, [urgenciaProductos, urgenciaProductosValidos]);
+  const productoOfertaEditando = useMemo(
+    () => candidatosOfertaLimitada.find(i => i.content_id === productoOfertaEditandoId)
+      || candidatosOfertaLimitada.find(i => urgenciaProductosValidos.includes(i.content_id))
+      || candidatosOfertaLimitada[0]
+      || null,
+    [candidatosOfertaLimitada, productoOfertaEditandoId, urgenciaProductosValidos],
+  );
+
+  function alternarProductoUrgencia(contentId) {
+    setUrgenciaProductos(prev => {
+      const ya = prev.includes(contentId);
+      if (ya) return prev.filter(id => id !== contentId);
+      setProductoOfertaEditandoId(contentId);
+      return [...prev, contentId].slice(0, 12);
+    });
+    setUrgenciaProductoId(prev => prev || contentId);
+    verDonde('inicio', 'productos_ofertas');
+  }
+
   // La configuración tal como quedaría guardada — la usan el preview y el
   // guardado, así lo que se ve es lo que se vende.
   const ventaActual = useMemo(() => ({
@@ -429,6 +764,12 @@ export default function ConfigurarVentaCodigo({
     abrir_en: abrirEn,
     combos_primero: abrirEn === 'tienda' && combosPrimero,
     destacados: destacadosValidos,
+    inicio: {
+      ...inicioComercial,
+      banners: inicioComercial.banners.filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
+      banners_intermedios: (inicioComercial.banners_intermedios || []).filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
+      secciones: inicioComercial.secciones.filter(s => s.activo !== false && s.titulo),
+    },
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
@@ -444,16 +785,24 @@ export default function ConfigurarVentaCodigo({
     recomendados: {
       activo: recoActivo,
       modo: recoModo,
-      items: recoItems,
+      items: recoItemsValidos,
       max: recoMax,
       titulo: recoTitulo,
     },
-    urgencia: { activo: urgenciaActiva, fin_at: inputLocalAIso(urgenciaFinAt), producto_id: urgenciaProductoValido || null },
+    urgencia: {
+      activo: urgenciaActiva,
+      fin_at: inputLocalAIso(urgenciaFinAt),
+      producto_id: urgenciaProductoValido || null,
+      productos: urgenciaProductosValidos,
+      titulo: urgenciaTitulo,
+      texto: urgenciaTexto,
+      cta_texto: urgenciaCta,
+    },
     prueba_social: { activo: pruebaSocialActiva, producto_id: pruebaSocialProductoValido || null, items: pruebaSocialItems },
   }), [
-    tipo, abrirEn, combosPrimero, destacadosValidos, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
-    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItems, recoMax, recoTitulo,
-    urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
+    tipo, abrirEn, combosPrimero, destacadosValidos, inicioComercial, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
+    crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo,
+    urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
   ]);
 
   function alternarOferta(oferta) {
@@ -502,6 +851,15 @@ export default function ConfigurarVentaCodigo({
     setPanelOfertas({ producto, estrategia: tipoOferta });
   }
 
+  function abrirNuevoCombo() {
+    const producto = seleccion.find(i => i.tipo === 'producto');
+    if (!producto) {
+      setError('Primero elegí al menos un producto principal para armar un combo.');
+      return;
+    }
+    setPanelOfertas({ producto, estrategia: 'combo', modo: 'combo' });
+  }
+
   function comboCreado(nuevo) {
     setPanelOfertas(null);
     // Los borradores quedan en Mis combos, fuera de la venta de la landing.
@@ -524,11 +882,6 @@ export default function ConfigurarVentaCodigo({
       || { id: Number(productoId), tipo: 'producto', nombre: nombreProductoOferta(productoId) };
     setPanelOfertas({ producto });
   }
-
-  const candidatosReco = useMemo(
-    () => seleccion.slice(0, 300).map(i => ({ ...i, content_id: contentIdPanel(i) })),
-    [seleccion],
-  );
 
   function alternarManual(item) {
     if (productosSoloDesdeProductos) return;
@@ -570,7 +923,7 @@ export default function ConfigurarVentaCodigo({
     || !!formatoDeBase(codigos.inicio.html);
   const abreEnFicha = abrirEn === 'producto';
   const codigoInicioPreview = inicioEsBase ? plantillaInicioPara(tipo) : codigos.inicio;
-  const codigoFichaPreview = codigos?.producto?.html ? codigos.producto : PLANTILLA_PRODUCTO;
+  const codigoFichaPreview = esFichaProductoBase(codigos?.producto?.html) ? PLANTILLA_PRODUCTO : codigos.producto;
 
   const productosPreview = useMemo(() => seleccion.slice(0, MAX_PRODUCTOS_PREVIEW), [seleccion]);
   const productoFicha = useMemo(() => {
@@ -632,6 +985,9 @@ export default function ConfigurarVentaCodigo({
     setAvisoPreview(p?.oferta
       ? 'En la landing publicada, esto agrega la oferta al carrito.'
       : 'En la landing publicada, esto agrega el producto y abre el carrito.');
+  }, []);
+  const alCarritoPreview = useCallback(() => {
+    setAvisoPreview('En la landing publicada, esto abre el carrito.');
   }, []);
 
   // Lo que impide guardar, dicho como qué falta hacer.
@@ -704,128 +1060,323 @@ export default function ConfigurarVentaCodigo({
     disenoPendienteIA,
     onNavegar: alNavegarPreview,
     onComprar: alComprarPreview,
+    onCarrito: alCarritoPreview,
     dispositivo,
     onDispositivo: setDispositivo,
   };
   const vistaPrevia = <VistaPrevia {...propsVistaPrevia} onAmpliar={() => setPreviewAmpliada(true)} />;
 
   return (
-    <div className="h-full min-h-0 max-h-full w-full overflow-hidden flex flex-col bg-canvas">
+    <div className="h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas">
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración */}
-        <div className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto">
+        <div className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <header className="mb-7">
               <button
                 type="button"
                 onClick={onVolver}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-fg-muted hover:text-fg rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
               >
                 <ArrowLeft size={15} /> Volver
               </button>
               <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML · paso 1 de 2</p>
-              <h1 className="mt-2 text-[28px] md:text-[32px] leading-tight font-bold tracking-tight text-fg">Presentación y ofertas</h1>
+              <h1 className="mt-2 text-[28px] md:text-[32px] leading-tight font-bold tracking-tight text-fg">Configurar tienda</h1>
               <p className="mt-2 text-[15px] text-fg-muted">
-                Los productos vienen desde Productos. Acá solo afinás cómo se muestran y qué ofertas reales tiene cada ficha.
+                Ajustá qué se ve en el inicio, cómo se presentan las fichas y qué ofertas reales tendrá la tienda.
               </p>
+              <div role="tablist" aria-label="Área de configuración" className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-1 rounded-xl border border-border bg-surface-2 p-1">
+                {[
+                  ['inicio', 'Inicio', Home],
+                  ['fichas', 'Fichas de producto', ShoppingBag],
+                  ['ofertas', 'Ofertas', Tag],
+                  ['combos', 'Combos', PackagePlus],
+                ].map(([key, label, Icono]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={seccionConfig === key}
+                    onClick={() => {
+                      setSeccionConfig(key);
+                      if (key === 'inicio') verDonde('inicio', null);
+                      if (key === 'fichas') { setVistaPreview('inicio'); setAvisoPreview('Elegí un producto para configurar su ficha.'); setResaltado(null); }
+                      if (key === 'ofertas') verOfertas();
+                      if (key === 'combos') { setVistaPreview('inicio'); setAvisoPreview('Los combos aparecen como packs o vitrinas cuando están activos y sumados a la landing.'); setResaltado(null); }
+                    }}
+                    className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold transition-colors ${seccionConfig === key ? 'bg-surface text-fg shadow-sm' : 'text-fg-muted hover:text-fg'}`}
+                  >
+                    <Icono size={15} /> <span className="truncate">{label}</span>
+                  </button>
+                ))}
+              </div>
             </header>
 
             <div className="space-y-5">
-              {/* Presentación comercial */}
-              <Bloque
-                titulo="Presentación comercial"
-                ayuda="Ajustá cómo se ve cada producto en la landing. Los productos se agregan desde Productos; acá solo se mejora la oferta."
-                verDonde={() => verDonde('inicio', 'productos_destacados')}
-              >
-                {seleccion.length === 0 ? (
-                  <p className="text-sm text-fg-muted">Agregá productos desde Productos para poder armar la presentación de esta landing.</p>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {seleccion.map((item, idx) => (
-                      <li key={claveItem(item)} className="py-4 pr-2" aria-label={`Presentación de ${item.nombre}`}>
-                        <div className="flex items-start gap-3">
-                          <Miniatura item={item} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-fg break-words">{item.nombre}</p>
-                            <p className="text-xs text-fg-muted tabular-nums">Precio de venta: {formatearGs(precioDeVenta(item))}</p>
-                          </div>
+              {seccionConfig === 'fichas' && (
+                <>
+                  <Bloque
+                    titulo="Fichas de producto"
+                    ayuda="Elegí un producto y configurá solo esa ficha. La lista evita tener diez formularios abiertos a la vez."
+                  >
+                    {candidatosDatosProducto.length === 0 ? (
+                      <p className="text-sm text-fg-muted">Agregá productos desde Productos para configurar sus fichas.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar producto..." etiqueta="Buscar producto para configurar" />
+                        <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1">
+                          {candidatosDatosProducto
+                            .filter(item => !busqueda.trim() || normalizarTexto(item.nombre).includes(normalizarTexto(busqueda)))
+                            .map(item => {
+                              const activo = productoConfigActual?.content_id === item.content_id;
+                              return (
+                                <button
+                                  key={item.content_id}
+                                  type="button"
+                                  onClick={() => seleccionarProductoConfig(item.content_id)}
+                                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${activo ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
+                                >
+                                  <Miniatura item={item} />
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-semibold text-fg">{item.nombre}</span>
+                                    <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item)) || 'Sin precio'}</span>
+                                  </span>
+                                  <span className="text-xs font-semibold text-primary-text">Editar →</span>
+                                </button>
+                              );
+                            })}
                         </div>
-                        <PresentacionProducto item={item} ancla={anclas[claveItem(item)] ?? ''}
-                          onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
-                          onCambiar={(campo, valor) => cambiarPresentacion(item, campo, valor)}
-                          destacado={destacadosValidos.includes(contentIdPanel(item))} onDestacar={() => alternarDestacado(contentIdPanel(item))}
-                          tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} inicialmenteAbierto={idx === 0} />
-                      </li>
-                    ))}
-                  </ul>
+                      </div>
+                    )}
+                  </Bloque>
+
+                  {productoConfigActual ? (
+                    <Bloque
+                      titulo={productoConfigActual.nombre}
+                      ayuda="Presentación comercial, precio ancla, badges, imágenes y visibilidad de esta ficha."
+                      verDonde={() => seleccionarProductoConfig(productoConfigActual.content_id)}
+                    >
+                      <PresentacionProducto item={productoConfigActual} ancla={anclas[claveItem(productoConfigActual)] ?? ''}
+                        onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
+                        onCambiar={(campo, valor) => cambiarPresentacion(productoConfigActual, campo, valor)}
+                        destacado={destacadosValidos.includes(productoConfigActual.content_id)} onDestacar={() => alternarDestacado(productoConfigActual.content_id)}
+                        tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} inicialmenteAbierto />
+                    </Bloque>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-border-strong bg-surface px-5 py-6 text-center">
+                      <p className="text-sm font-semibold text-fg">Elegí un producto para editar su ficha.</p>
+                      <p className="mt-1 text-sm text-fg-muted">Hasta que elijas uno, esta área solo lista los productos disponibles.</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {seccionConfig === 'inicio' && (
+                <>
+              <Bloque
+                titulo="Inicio"
+                ayuda="Configurá solo lo que afecta al homepage de esta tienda."
+                verDonde={() => verDonde('inicio', null)}
+              >
+                <div className="mb-3 rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
+                  <p className="text-xs font-semibold text-fg">Orden real de la homepage</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">
+                    Banner principal → Categorías → Productos destacados → Banner intermedio → Vitrinas opcionales → Más vendidos → Ofertas con countdown → Colecciones → Novedades → Combos → Catálogo.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => verDonde('inicio', 'productos_destacados')}
+                    className="rounded-xl border border-border bg-surface-2/60 px-4 py-3 text-left hover:border-border-strong"
+                  >
+                    <span className="block text-sm font-semibold text-fg">Productos destacados</span>
+                    <span className="mt-1 block text-xs text-fg-muted">{destacadosValidos.length || Math.min(4, seleccion.length)} producto{(destacadosValidos.length || Math.min(4, seleccion.length)) === 1 ? '' : 's'} en portada.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSeccionConfig('fichas')}
+                    className="rounded-xl border border-border bg-surface-2/60 px-4 py-3 text-left hover:border-border-strong"
+                  >
+                    <span className="block text-sm font-semibold text-fg">Presentación de productos</span>
+                    <span className="mt-1 block text-xs text-fg-muted">Editá título, badge, CTA o imágenes desde la ficha de cada producto.</span>
+                  </button>
+                </div>
+              </Bloque>
+
+              <Bloque
+                titulo="Banners promocionales"
+                ayuda="Son los banners grandes del carrusel principal, arriba de categorías."
+                verDonde={() => verDonde('inicio', 'banners_inicio')}
+              >
+                <EditorBannersInicio
+                  banners={inicioComercial.banners}
+                  onAgregar={agregarBanner}
+                  onCambiar={cambiarBanner}
+                  onQuitar={quitarBanner}
+                  onMover={moverBanner}
+                  onSubir={onSubirImagen ? subirImagenLanding : null}
+                />
+              </Bloque>
+
+              <Bloque
+                titulo="Categorías visuales"
+                ayuda="Aparecen debajo del banner principal como accesos rápidos por categoría. El catálogo sigue usando las categorías reales de Productos."
+                interruptor={{ activo: inicioComercial.menu_categorias, onChange: v => cambiarInicio('menu_categorias', v), etiqueta: 'Mostrar categorías visuales en inicio' }}
+                verDonde={() => verDonde('inicio', 'menu_categorias')}
+              >
+                {inicioComercial.menu_categorias && (
+                  <EditorCategoriasInicio
+                    categorias={categoriasInicioDisponibles}
+                    seleccionadas={inicioComercial.categorias}
+                    onCambiar={cats => cambiarInicio('categorias', cats)}
+                  />
                 )}
               </Bloque>
 
-              {/* Destacados */}
               <Bloque
                 titulo="Productos destacados"
-                ayuda="Los productos que pasan por el hero del inicio. Si no marcás ninguno, Gesicomm usa los primeros de la selección."
+                ayuda="Aparecen después de categorías. Si no marcás ninguno, Gesicomm usa los primeros productos de la selección."
                 verDonde={() => verDonde('inicio', 'productos_destacados')}
               >
-                {candidatosDestacados.length === 0 ? (
-                  <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
+                <EditorProductosDestacados
+                  candidatosDestacados={candidatosDestacados}
+                  destacadosValidos={destacadosValidos}
+                  seleccionLength={seleccion.length}
+                  onAlternar={alternarDestacado}
+                  onVer={() => verDonde('inicio', 'productos_destacados')}
+                />
+              </Bloque>
+
+              <Bloque
+                titulo="Banner intermedio"
+                ayuda="Aparece debajo de Productos destacados. Sirve para una campaña, colección o promoción puntual sin tocar el carrusel principal."
+                verDonde={() => verDonde('inicio', 'banners_intermedios')}
+              >
+                <EditorBannersInicio
+                  banners={inicioComercial.banners_intermedios || []}
+                  onAgregar={agregarBannerIntermedio}
+                  onCambiar={cambiarBannerIntermedio}
+                  onQuitar={quitarBannerIntermedio}
+                  onMover={moverBannerIntermedio}
+                  onSubir={onSubirImagen ? subirImagenLanding : null}
+                />
+              </Bloque>
+
+              <Bloque
+                titulo="Vitrinas opcionales del inicio"
+                ayuda="Son filas extra de productos en la homepage, antes del catálogo completo. Podés crear una por categoría, por selección manual o por productos con descuento."
+                verDonde={() => verDonde('inicio', 'secciones_inicio')}
+              >
+                <EditorSeccionesInicio
+                  secciones={inicioComercial.secciones}
+                  categorias={categoriasInicioDisponibles}
+                  productos={candidatosReco}
+                  onAgregar={agregarSeccionInicio}
+                  onCambiar={cambiarSeccionInicio}
+                  onQuitar={quitarSeccionInicio}
+                  onMover={moverSeccionInicio}
+                  onAlternarProducto={alternarProductoSeccion}
+                />
+              </Bloque>
+
+              <Bloque
+                titulo="Oferta por tiempo limitado"
+                ayuda="Bloque global de urgencia para Inicio y fichas. La fecha de fin es editable y viaja al contador del lienzo."
+                interruptor={{ activo: urgenciaActiva, onChange: setUrgenciaActiva, etiqueta: 'Mostrar oferta por tiempo limitado' }}
+                verDonde={() => verDonde('inicio', 'urgencia')}
+              >
+                {urgenciaActiva && (
+                  <>
+                    <EditorUrgenciaInicio
+                      titulo={urgenciaTitulo}
+                      texto={urgenciaTexto}
+                      cta={urgenciaCta}
+                      finAt={urgenciaFinAt}
+                      confirmar={urgenciaConfirmar}
+                      onTitulo={setUrgenciaTitulo}
+                      onTexto={setUrgenciaTexto}
+                      onCta={setUrgenciaCta}
+                      onFinAt={cambiarUrgenciaFinAt}
+                      onConfirmar={setUrgenciaConfirmar}
+                    />
+                    <EditorProductosOfertaLimitada
+                      productos={candidatosOfertaLimitada}
+                      seleccionados={urgenciaProductosValidos}
+                      productoEditando={productoOfertaEditando}
+                      onAlternar={alternarProductoUrgencia}
+                      onEditar={setProductoOfertaEditandoId}
+                      renderPresentacion={item => (
+                        <PresentacionProducto
+                          key={item.content_id}
+                          item={item}
+                          ancla={anclas[claveItem(item)] ?? ''}
+                          onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
+                          onCambiar={(campo, valor) => cambiarPresentacion(item, campo, valor)}
+                          destacado={destacadosValidos.includes(item.content_id)}
+                          onDestacar={() => alternarDestacado(item.content_id)}
+                          tienda={tienda}
+                          onSubirImagen={onSubirImagen ? subirImagenLanding : null}
+                          inicialmenteAbierto
+                        />
+                      )}
+                    />
+                  </>
+                )}
+              </Bloque>
+
+              <Bloque
+                titulo="Presentación de productos en inicio"
+                ayuda="Resumen rápido. Si necesitás editar un producto, abrís su ficha dedicada."
+              >
+                {seleccion.length === 0 ? (
+                  <p className="text-sm text-fg-muted">Agregá productos desde Productos para verlos acá.</p>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2 rounded-lg border border-border bg-surface-2/60 px-3.5 py-2.5 text-[13px] text-fg-muted">
-                      <Check size={15} className="mt-0.5 shrink-0 text-accent-text" />
-                      <p>
-                        Marcá hasta {MAX_DESTACADOS}. El inicio los muestra uno tras otro; el catálogo sigue mostrando todos los productos elegidos.
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
-                      {candidatosDestacados.map(i => {
-                        const elegido = destacadosValidos.includes(i.content_id);
-                        const imagen = getMediaUrl(i.imagen);
-                        return (
-                          <button
-                            key={i.content_id}
-                            type="button"
-                            aria-pressed={elegido}
-                            onClick={() => {
-                              alternarDestacado(i.content_id);
-                              verDonde('inicio', 'productos_destacados');
-                            }}
-                            className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
-                          >
-                            <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
-                              {imagen ? <img src={imagen} alt="" className="h-full w-full object-contain" /> : <ShoppingBag size={16} className="text-fg-muted" />}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
-                              <span className="block truncate text-xs text-fg-muted">{i.categoria || 'Sin categoría'}</span>
-                            </span>
-                            <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
-                              {elegido && <Check size={13} />}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+                    {seleccion.slice(0, 10).map(item => (
+                      <div key={claveItem(item)} className="flex items-center gap-3 bg-surface-2/40 px-3 py-2.5">
+                        <Miniatura item={item} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-fg">{item.titulo_comercial || item.nombre}</p>
+                          <p className="text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item)) || 'Sin precio'}{item.insignia_principal ? ` · ${item.insignia_principal}` : ''}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => seleccionarProductoConfig(contentIdPanel(item))}
+                          className="shrink-0 text-xs font-semibold text-primary-text hover:underline"
+                        >
+                          Editar →
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </Bloque>
+                </>
+              )}
 
-              {/* Ofertas */}
+              {seccionConfig === 'ofertas' && (
+                <>
               <Bloque
-                titulo="Ofertas en la compra"
-                ayuda="Cuando alguien compra un producto de esta landing, le ofrecés algo más."
-                interruptor={{ activo: crossActivo, onChange: setCrossActivo, etiqueta: 'Mostrar ofertas en la compra' }}
-                verDonde={crossActivo ? verOfertas : null}
+                titulo="Ofertas"
+                ayuda="Vista general de las ofertas configuradas. Cada oferta se edita en su propio panel, sin dejar todos los controles abiertos."
+                verDonde={verOfertas}
               >
-                {crossActivo && (
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-fg">Ofertas por producto de esta landing</p>
+                        <p className="text-sm font-semibold text-fg">{ofertasElegidas.size} oferta{ofertasElegidas.size === 1 ? '' : 's'} activa{ofertasElegidas.size === 1 ? '' : 's'}</p>
                         <p className="mt-1 text-[13px] text-fg-muted">
-                          Activá o editá las ofertas desde la ficha del producto correspondiente. No se pueden usar productos que no estén en esta landing.
+                          Las ofertas se guardan por producto. Si una oferta está activa, aparece en la landing; si no existe ninguna, esta zona queda apagada de facto.
                         </p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => abrirNuevaOferta()}
+                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold hover:bg-primary-hover"
+                      >
+                        <Plus size={15} /> Crear oferta
+                      </button>
                     </div>
 
                     <div className="rounded-lg border border-border bg-surface-2/60 px-3.5 py-2.5 text-[13px] text-fg-muted">
@@ -853,9 +1404,6 @@ export default function ConfigurarVentaCodigo({
                           </div>
                         ) : (
                           <>
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-medium text-fg">Ofertas configuradas</p>
-                            </div>
                             {ofertasDeLanding.map(([productoId, grupo]) => (
                               <GrupoOfertas
                                 key={productoId}
@@ -878,9 +1426,68 @@ export default function ConfigurarVentaCodigo({
                       </>
                     )}
                   </div>
-                )}
               </Bloque>
+                </>
+              )}
 
+              {seccionConfig === 'combos' && (
+                <>
+              <Bloque
+                titulo="Combos"
+                ayuda="Los combos son packs comerciales, no descuentos sueltos. Elegís un producto principal y armás el conjunto con precio propio."
+              >
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-fg">Crear combo desde un producto principal</p>
+                        <p className="mt-1 text-[13px] text-fg-muted">
+                          El combo queda como pack/vista propia. Después lo activás y lo sumás a la landing como cualquier producto vendible.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={abrirNuevoCombo}
+                        className="inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold hover:bg-primary-hover"
+                      >
+                        <PackagePlus size={15} /> Crear combo
+                      </button>
+                    </div>
+
+                    {seleccion.filter(i => i.tipo === 'combo').length > 0 ? (
+                      <div className="rounded-xl border border-border bg-surface divide-y divide-border overflow-hidden">
+                        {seleccion.filter(i => i.tipo === 'combo').map(combo => (
+                          <div key={contentIdPanel(combo)} className="flex items-center gap-3 px-3 py-2.5">
+                            <Miniatura item={combo} />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium text-fg truncate">{combo.nombre}</span>
+                              <span className="block text-xs text-fg-muted">Combo activo en esta landing</span>
+                            </span>
+                            <span className="font-mono text-xs text-fg tabular-nums">{formatearGs(precioPanel(combo))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-border-strong px-5 py-6 text-center">
+                        <PackagePlus size={20} className="mx-auto text-fg-muted" />
+                        <p className="mt-2 text-sm font-medium text-fg">Todavía no hay combos en esta landing</p>
+                        <p className="mt-1 text-[13px] text-fg-muted">Creá uno desde un producto principal o activá un combo existente.</p>
+                      </div>
+                    )}
+
+                    <CombosSinPublicar
+                      idsVisibles={idsCombosCatalogo}
+                      formatoCombos
+                      onActivado={async () => {
+                        await onRecargarCatalogo?.();
+                      }}
+                    />
+                  </div>
+              </Bloque>
+                </>
+              )}
+
+              {seccionConfig === 'fichas' && (
+                <>
               {/* Recomendados */}
               <Bloque
                 titulo="Productos recomendados"
@@ -913,24 +1520,72 @@ export default function ConfigurarVentaCodigo({
                       candidatosReco.length === 0 ? (
                         <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
                       ) : (
-                        <div>
-                          <p className="text-xs text-fg-muted mb-2">Tocá los que querés recomendar ({recoItems.length} de hasta 12):</p>
-                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs text-fg-muted">Tocá los productos que querés recomendar ({recoItemsValidos.length} de hasta 12).</p>
+                            {recoItemsValidos.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => { setRecoItems([]); verRecomendados(); }}
+                                className="shrink-0 text-xs font-medium text-fg-muted hover:text-fg"
+                              >
+                                Limpiar selección
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid max-h-[440px] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:grid-cols-2">
                             {candidatosReco.map(i => {
                               const elegido = recoItems.includes(i.content_id);
+                              const precio = Number(precioDeVenta(i)) || Number(precioPanel(i)) || 0;
+                              const anclaKey = claveItem(i);
+                              const img = imagenPanel(i);
                               return (
-                                <button
+                                <div
                                   key={i.content_id}
-                                  type="button"
-                                  aria-pressed={elegido}
-                                  onClick={() => {
-                                    setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
-                                    verRecomendados();
-                                  }}
-                                  className={`px-3 py-1.5 rounded-full border text-[13px] transition-colors ${elegido ? 'border-accent bg-accent text-accent-fg font-medium' : 'border-border text-fg-muted hover:text-fg hover:border-border-strong'}`}
+                                  className={`rounded-xl border p-2.5 transition-colors ${elegido ? 'border-accent bg-accent/[0.07] shadow-sm' : 'border-border bg-surface hover:border-border-strong'}`}
                                 >
-                                  {i.nombre}
-                                </button>
+                                  <button
+                                    type="button"
+                                    aria-pressed={elegido}
+                                    onClick={() => {
+                                      setRecoItems(prev => (elegido ? prev.filter(x => x !== i.content_id) : [...prev, i.content_id].slice(0, 12)));
+                                      setVistaPreview('producto');
+                                      setProductoPreview(i.content_id);
+                                      setAvisoPreview('');
+                                      setResaltado({ lista: 'recomendados', n: 0 });
+                                    }}
+                                    className="flex w-full items-start gap-3 text-left"
+                                  >
+                                    <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
+                                      {img
+                                        ? <img src={img} alt="" className="h-full w-full object-contain" loading="lazy" />
+                                        : <ShoppingBag size={20} className="text-fg-subtle" />}
+                                      <span className={`absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full border text-[11px] ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border bg-surface text-fg-subtle'}`}>
+                                        {elegido ? <Check size={13} /> : null}
+                                      </span>
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="line-clamp-2 text-sm font-semibold leading-snug text-fg">{i.titulo_comercial || i.nombre}</span>
+                                      <span className="mt-1 flex flex-wrap items-center gap-2 text-[12px]">
+                                        <span className="font-mono font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
+                                        {Number(i.precio_ancla) > precio && <span className="font-mono text-fg-muted line-through">{formatearGs(i.precio_ancla)}</span>}
+                                      </span>
+                                      <span className="mt-1 block truncate text-[11px] text-fg-muted">{i.tipo === 'combo' ? 'Combo' : (i.categoria || 'Producto')}</span>
+                                    </span>
+                                  </button>
+                                  <PrecioAncla
+                                    venta={precio}
+                                    valor={anclas[anclaKey] ?? ''}
+                                    onCambiar={v => {
+                                      setAnclas(prev => ({ ...prev, [anclaKey]: v }));
+                                      setVistaPreview('producto');
+                                      setProductoPreview(i.content_id);
+                                      setAvisoPreview('');
+                                      setResaltado({ lista: 'recomendados', n: 0 });
+                                    }}
+                                    id={`reco-ancla-${i.content_id}`}
+                                  />
+                                </div>
                               );
                             })}
                           </div>
@@ -1098,14 +1753,7 @@ export default function ConfigurarVentaCodigo({
                   </div>
                 )}
               </Bloque>
-
-              {onCambiarModo && (
-                <p className="text-[13px] text-fg-muted px-1">
-                  ¿Preferís no escribir código?{' '}
-                  <button type="button" onClick={onCambiarModo} className="font-medium text-primary-text hover:underline">
-                    Usar una plantilla en su lugar
-                  </button>
-                </p>
+                </>
               )}
             </div>
           </div>
@@ -1194,6 +1842,7 @@ export default function ConfigurarVentaCodigo({
           onCambiarProducto={() => setPanelOfertas(p => ({ ...p, producto: null }))}
           onCerrar={cerrarPanelOfertas}
           onComboCreado={comboCreado}
+          permitirCombo={panelOfertas.modo === 'combo'}
           landingPreview={{ codigos, tienda, venta: ventaActual, productos: seleccion, ofertas: ofertasConImagen }}
         />
       )}
@@ -1241,7 +1890,7 @@ function useTamano() {
  * en el lugar disponible (como se ve en una notebook, en miniatura).
  */
 function VistaPrevia({
-  vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar,
+  vista, onVista, productos, productoFicha, onProducto, codigo, datos, resaltado, aviso, inicioEsBase, onNavegar, onComprar, onCarrito,
   dispositivo, onDispositivo, onAmpliar, ampliada, onCerrar, disenoPendienteIA = false,
 }) {
   const productosFicha = productos.filter(p => p.tipo === 'producto' || p.tipo === 'combo');
@@ -1259,6 +1908,7 @@ function VistaPrevia({
       resaltar={resaltado}
       onNavegar={onNavegar}
       onCheckout={onComprar}
+      onCarrito={onCarrito}
     />
   );
 
@@ -1411,6 +2061,520 @@ export function motivoOfertaOculta(oferta, hoy = new Date().toLocaleDateString('
   if (!(final > 0)) return 'No tiene precio: cargá el precio con la oferta.';
   if (normal > 0 && final > normal) return 'El precio con la oferta es mayor que el normal: bajalo para que se muestre.';
   return null;
+}
+
+function CampoTexto({ label, value, onChange, placeholder, maxLength = 120 }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-medium text-fg-muted mb-1">{label}</span>
+      <input
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        maxLength={maxLength}
+        className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+      />
+    </label>
+  );
+}
+
+function BotonesOrden({ primero, ultimo, onSubir, onBajar, onQuitar, labelQuitar = 'Quitar' }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button type="button" onClick={onSubir} disabled={primero} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Subir">
+        <ChevronUp size={15} className="mx-auto" />
+      </button>
+      <button type="button" onClick={onBajar} disabled={ultimo} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Bajar">
+        <ChevronDown size={15} className="mx-auto" />
+      </button>
+      <button type="button" onClick={onQuitar} className="h-8 px-2.5 rounded-lg border border-border text-xs font-medium text-danger hover:bg-danger/[0.06]">
+        {labelQuitar}
+      </button>
+    </div>
+  );
+}
+
+function EditorMedioBanner({ banner, onCambiar, onSubir }) {
+  const inputRef = useRef(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState('');
+  const medio = banner.imagen || '';
+  const tipo = banner.tipo_medio || inferirTipoMedio(medio);
+  const esVideo = tipo === 'video';
+  const esGif = tipo === 'gif';
+  const accept = esVideo ? 'video/mp4,video/webm,video/ogg' : esGif ? 'image/gif' : 'image/jpeg,image/png,image/webp';
+  const ayudaMedio = esVideo
+    ? 'Subí un MP4/WEBM liviano o pegá una URL directa al video.'
+    : esGif
+      ? 'Subí un GIF optimizado o pegá una URL pública.'
+      : 'Subí JPG, PNG o WEBP, o pegá una URL pública.';
+  const uploadLabel = subiendo ? 'Subiendo...' : esVideo ? 'Subir video' : esGif ? 'Subir GIF' : 'Subir imagen';
+
+  async function alElegir(event) {
+    const archivo = event.target.files?.[0];
+    event.target.value = '';
+    if (!archivo || !onSubir) return;
+    setError('');
+    setSubiendo(true);
+    try {
+      const url = await onSubir(archivo);
+      onCambiar({ imagen: url, tipo_medio: tipoMedioDeArchivo(archivo) });
+    } catch {
+      setError('No se pudo subir el archivo. Probá con JPG, PNG, WEBP, GIF, MP4 o WEBM.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  return (
+    <div className="sm:col-span-2 rounded-xl border border-border bg-surface p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-fg">Medio del banner</p>
+          <p className="text-[11px] text-fg-muted">{ayudaMedio}</p>
+        </div>
+        <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-fg hover:border-border-strong">
+          {subiendo ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
+          {uploadLabel}
+          <input
+            ref={inputRef}
+            type="file"
+            accept={accept}
+            className="hidden"
+            disabled={!onSubir || subiendo}
+            onChange={alElegir}
+          />
+        </label>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[150px_1fr]">
+        <label className="block">
+          <span className="block text-xs font-medium text-fg-muted mb-1">Tipo</span>
+          <select
+            value={tipo}
+            onChange={e => onCambiar({ tipo_medio: e.target.value })}
+            className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+          >
+            <option value="imagen">Imagen</option>
+            <option value="gif">GIF</option>
+            <option value="video">Video</option>
+          </select>
+        </label>
+        <CampoTexto
+          label="URL del medio"
+          value={medio}
+          onChange={v => onCambiar({ imagen: v, tipo_medio: inferirTipoMedio(v) || tipo })}
+          placeholder={tipo === 'video' ? 'https://.../banner.mp4 o https://.../banner.webm' : 'https://... o /uploads/banner.gif'}
+          maxLength={320}
+        />
+      </div>
+      <div className="mt-3 rounded-lg bg-primary/[0.06] px-3 py-2 text-[11px] leading-relaxed text-fg-muted">
+        Tamaño recomendado: <strong className="text-fg">1660 × 720 px</strong>. Mantené el texto importante centrado y evitá ponerlo muy cerca de los bordes, porque en móvil puede recortarse.
+      </div>
+      {medio && (
+        <div className="mt-3 overflow-hidden rounded-lg border border-border bg-surface-2">
+          {tipo === 'video'
+            ? <video src={getMediaUrl(medio)} className="h-28 w-full object-cover" muted playsInline loop controls />
+            : <img src={getMediaUrl(medio)} alt="" className="h-28 w-full object-cover" />}
+        </div>
+      )}
+      {!onSubir && <p className="mt-2 text-[11px] text-fg-muted">La subida directa no está disponible en esta vista; pegá una URL pública.</p>}
+      {error && <p className="mt-2 text-[11px] font-medium text-danger">{error}</p>}
+    </div>
+  );
+}
+
+function SelectorEnlaceBanner({ value, onChange }) {
+  const esAtajo = ENLACES_BANNER_INICIO.some(([href]) => href === value);
+  return (
+    <div className="sm:col-span-2 rounded-xl border border-border bg-surface p-3">
+      <p className="mb-2 text-xs font-semibold text-fg">Destino del botón</p>
+      <div className="flex flex-wrap gap-2">
+        {ENLACES_BANNER_INICIO.map(([href, label]) => (
+          <button
+            key={href}
+            type="button"
+            onClick={() => onChange(href)}
+            className={`h-8 rounded-lg border px-3 text-xs font-semibold ${value === href ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:text-fg'}`}
+          >
+            {label}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => { if (esAtajo) onChange(''); }}
+          className={`h-8 rounded-lg border px-3 text-xs font-semibold ${!esAtajo ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:text-fg'}`}
+        >
+          Personalizado
+        </button>
+      </div>
+      <input
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder="Ej: #ofertas, #productos, /catalogo o https://..."
+        className="mt-2 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+      />
+      <p className="mt-1 text-[11px] text-fg-muted">Los destinos con # llevan a una sección de esta misma landing.</p>
+    </div>
+  );
+}
+
+function EditorBannersInicio({ banners, onAgregar, onCambiar, onQuitar, onMover, onSubir }) {
+  const [colapsados, setColapsados] = useState({});
+  function alternar(id) {
+    setColapsados(prev => ({ ...prev, [id]: !prev[id] }));
+  }
+  return (
+    <div className="space-y-3">
+      {banners.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border-strong px-4 py-5 text-center">
+          <p className="text-sm font-semibold text-fg">Todavía no hay banners promocionales.</p>
+          <p className="mt-1 text-sm text-fg-muted">Agregá uno para campañas, descuentos, envío gratis o colecciones.</p>
+        </div>
+      ) : banners.map((banner, idx) => {
+        const colapsado = !!colapsados[banner.id];
+        const tituloResumen = banner.titulo || banner.etiqueta || `Banner ${idx + 1}`;
+        const medioResumen = banner.tipo_medio === 'video' ? 'Video' : banner.tipo_medio === 'gif' ? 'GIF' : 'Imagen';
+        return (
+        <div key={banner.id} className="rounded-xl border border-border bg-surface-2/40 p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <label className="flex items-center gap-2 text-sm font-semibold text-fg">
+                <input type="checkbox" checked={banner.activo !== false} onChange={e => onCambiar(banner.id, { activo: e.target.checked })} className="accent-primary" />
+                Banner {idx + 1}
+              </label>
+              {colapsado && (
+                <p className="mt-1 truncate text-xs text-fg-muted">
+                  {tituloResumen} · {medioResumen}{banner.cta_texto ? ` · ${banner.cta_texto}` : ''}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => alternar(banner.id)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-semibold text-fg-muted hover:text-fg"
+                aria-expanded={!colapsado}
+              >
+                {colapsado ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                {colapsado ? 'Agrandar' : 'Minimizar'}
+              </button>
+              <BotonesOrden
+                primero={idx === 0}
+                ultimo={idx === banners.length - 1}
+                onSubir={() => onMover(banner.id, -1)}
+                onBajar={() => onMover(banner.id, 1)}
+                onQuitar={() => onQuitar(banner.id)}
+              />
+            </div>
+          </div>
+          {!colapsado && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <CampoTexto label="Etiqueta" value={banner.etiqueta} onChange={v => onCambiar(banner.id, { etiqueta: v })} placeholder="Semana de cocina" maxLength={40} />
+              <CampoTexto label="CTA" value={banner.cta_texto} onChange={v => onCambiar(banner.id, { cta_texto: v })} placeholder="Ver ofertas" maxLength={40} />
+              <div className="sm:col-span-2"><CampoTexto label="Título" value={banner.titulo} onChange={v => onCambiar(banner.id, { titulo: v })} placeholder="Renová tu cocina" maxLength={90} /></div>
+              <div className="sm:col-span-2"><CampoTexto label="Subtítulo" value={banner.subtitulo} onChange={v => onCambiar(banner.id, { subtitulo: v })} placeholder="Productos seleccionados con precios especiales" maxLength={160} /></div>
+              <SelectorEnlaceBanner value={banner.enlace} onChange={v => onCambiar(banner.id, { enlace: v })} />
+              <EditorMedioBanner banner={banner} onCambiar={cambio => onCambiar(banner.id, cambio)} onSubir={onSubir} />
+            </div>
+          )}
+        </div>
+        );
+      })}
+      <button type="button" onClick={onAgregar} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-primary text-primary-fg text-sm font-semibold hover:bg-primary-hover">
+        <Plus size={15} /> Agregar banner
+      </button>
+    </div>
+  );
+}
+
+function EditorCategoriasInicio({ categorias, seleccionadas, onCambiar }) {
+  const seleccion = new Set(seleccionadas || []);
+  function alternar(cat) {
+    const siguiente = new Set(seleccion);
+    if (siguiente.has(cat)) siguiente.delete(cat); else siguiente.add(cat);
+    onCambiar(Array.from(siguiente));
+  }
+  if (!categorias.length) return <p className="text-sm text-fg-muted">No hay categorías en los productos seleccionados.</p>;
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-fg-muted">Si no marcás ninguna, se muestran las primeras categorías detectadas automáticamente.</p>
+      <div className="flex flex-wrap gap-2">
+        {categorias.map(([cat, count]) => (
+          <button
+            key={cat}
+            type="button"
+            aria-pressed={seleccion.has(cat)}
+            onClick={() => alternar(cat)}
+            className={`h-8 rounded-full border px-3 text-xs font-medium ${seleccion.has(cat) ? 'border-primary bg-primary text-primary-fg' : 'border-border text-fg-muted hover:text-fg'}`}
+          >
+            {cat} · {count}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EditorProductosDestacados({ candidatosDestacados, destacadosValidos, seleccionLength, onAlternar, onVer }) {
+  if (candidatosDestacados.length === 0) {
+    return <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>;
+  }
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-surface-2/60 px-3.5 py-2.5 text-[13px] text-fg-muted">
+        <Check size={15} className="mt-0.5 shrink-0 text-accent-text" />
+        <p>
+          Marcá hasta {MAX_DESTACADOS}. Ahora hay {destacadosValidos.length || Math.min(4, seleccionLength)} producto{(destacadosValidos.length || Math.min(4, seleccionLength)) === 1 ? '' : 's'} en portada.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+        {candidatosDestacados.map(i => {
+          const elegido = destacadosValidos.includes(i.content_id);
+          const imagen = getMediaUrl(i.imagen);
+          return (
+            <button
+              key={i.content_id}
+              type="button"
+              aria-pressed={elegido}
+              onClick={() => {
+                onAlternar(i.content_id);
+                onVer();
+              }}
+              className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${elegido ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
+            >
+              <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-surface-2">
+                {imagen ? <img src={imagen} alt="" className="h-full w-full object-contain" /> : <ShoppingBag size={16} className="text-fg-muted" />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-fg">{i.nombre}</span>
+                <span className="block truncate text-xs text-fg-muted">{i.categoria || 'Sin categoría'}</span>
+              </span>
+              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border ${elegido ? 'border-accent bg-accent text-accent-fg' : 'border-border'}`}>
+                {elegido && <Check size={13} />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EditorSeccionesInicio({ secciones, categorias, productos, onAgregar, onCambiar, onQuitar, onMover, onAlternarProducto }) {
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3 text-xs text-fg-muted">
+        <p className="font-semibold text-fg">Dónde aparecen</p>
+        <p className="mt-1">Estas vitrinas se muestran debajo de categorías y destacados, antes de “Más vendidos” y del catálogo completo. Si querés elegir productos exactos, usá “Selección manual”.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {TIPOS_SECCION_INICIO.map(([tipo, label]) => (
+          <button key={tipo} type="button" onClick={() => onAgregar(tipo)} className="inline-flex items-center gap-1 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg hover:border-border-strong">
+            <Plus size={13} /> {label}
+          </button>
+        ))}
+      </div>
+      {secciones.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border-strong px-4 py-5 text-center text-sm text-fg-muted">Agregá una sección comercial para ordenar la home.</p>
+      ) : secciones.map((seccion, idx) => (
+        <div key={seccion.id} className="rounded-xl border border-border bg-surface-2/40 p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-sm font-semibold text-fg">
+              <input type="checkbox" checked={seccion.activo !== false} onChange={e => onCambiar(seccion.id, { activo: e.target.checked })} className="accent-primary" />
+              Sección {idx + 1}
+            </label>
+            <BotonesOrden
+              primero={idx === 0}
+              ultimo={idx === secciones.length - 1}
+              onSubir={() => onMover(seccion.id, -1)}
+              onBajar={() => onMover(seccion.id, 1)}
+              onQuitar={() => onQuitar(seccion.id)}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className="block">
+              <span className="block text-xs font-medium text-fg-muted mb-1">Tipo</span>
+              <select
+                value={seccion.tipo}
+                onChange={e => onCambiar(seccion.id, {
+                  tipo: e.target.value,
+                  titulo: TITULOS_SECCION_INICIO[e.target.value] || seccion.titulo,
+                  subtitulo: e.target.value === 'categoria' && seccion.categoria ? `Productos de ${seccion.categoria}` : seccion.subtitulo,
+                })}
+                className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+              >
+                {TIPOS_SECCION_INICIO.map(([tipo, label]) => <option key={tipo} value={tipo}>{label}</option>)}
+              </select>
+            </label>
+            <label className="block">
+              <span className="block text-xs font-medium text-fg-muted mb-1">Cantidad</span>
+              <input
+                type="number"
+                min="1"
+                max="12"
+                value={seccion.limite || 4}
+                onChange={e => onCambiar(seccion.id, { limite: Math.max(1, Math.min(12, Number(e.target.value) || 4)) })}
+                className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+              />
+            </label>
+            <CampoTexto label="Título" value={seccion.titulo} onChange={v => onCambiar(seccion.id, { titulo: v })} placeholder="Más vendidos" maxLength={80} />
+            <CampoTexto label="Subtítulo" value={seccion.subtitulo} onChange={v => onCambiar(seccion.id, { subtitulo: v })} placeholder="Una frase corta para orientar" maxLength={140} />
+            <p className="sm:col-span-2 rounded-lg bg-surface px-3 py-2 text-[11px] leading-relaxed text-fg-muted">
+              {AYUDAS_SECCION_INICIO[seccion.tipo] || 'Esta vitrina agrega una fila extra de productos en la homepage.'}
+            </p>
+            {seccion.tipo === 'categoria' && (
+              <label className="block sm:col-span-2">
+                <span className="block text-xs font-medium text-fg-muted mb-1">Categoría</span>
+                <select
+                  value={seccion.categoria || ''}
+                  onChange={e => onCambiar(seccion.id, {
+                    categoria: e.target.value,
+                    subtitulo: e.target.value ? `Productos de ${e.target.value}` : seccion.subtitulo,
+                  })}
+                  className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+                >
+                  <option value="">Elegí una categoría</option>
+                  {categorias.map(([cat, count]) => <option key={cat} value={cat}>{cat} ({count})</option>)}
+                </select>
+              </label>
+            )}
+          </div>
+          {seccion.tipo === 'manual' || seccion.tipo === 'mas_vendidos' ? (
+            <div className="mt-3">
+              <p className="mb-2 text-xs text-fg-muted">
+                {seccion.tipo === 'mas_vendidos'
+                  ? 'Sin estadísticas de ventas, esta vitrina se cura a mano para no inventar datos.'
+                  : 'Elegí exactamente qué productos aparecen en esta colección.'}
+              </p>
+              <div className="max-h-44 overflow-y-auto rounded-lg border border-border bg-surface p-2">
+                {productos.map(p => {
+                  const elegido = (seccion.productos || []).includes(p.content_id);
+                  return (
+                    <label key={p.content_id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-surface-2">
+                      <input type="checkbox" checked={elegido} onChange={() => onAlternarProducto(seccion.id, p.content_id)} className="accent-primary" />
+                      <Miniatura item={p} />
+                      <span className="min-w-0 flex-1 truncate text-fg">{p.nombre}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EditorProductosOfertaLimitada({ productos, seleccionados, productoEditando, onAlternar, onEditar, renderPresentacion }) {
+  const elegidos = new Set(seleccionados || []);
+  return (
+    <div className="sm:col-span-2 mt-3 space-y-3 rounded-xl border border-border bg-surface-2/40 p-3">
+      <div>
+        <p className="text-xs font-semibold text-fg">Productos de esta oferta</p>
+        <p className="mt-0.5 text-[11px] leading-relaxed text-fg-muted">
+          Marcá qué productos van al bloque con countdown. Para que aparezcan, deben tener precio anterior mayor al precio actual.
+        </p>
+      </div>
+      {productos.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border-strong px-3 py-3 text-sm text-fg-muted">
+          Primero agregá productos a la landing.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-1">
+          {productos.map(item => {
+            const contentId = item.content_id || contentIdPanel(item);
+            const elegido = elegidos.has(contentId);
+            const precio = Number(precioDeVenta(item)) || 0;
+            const antes = Number(item.precio_ancla ?? item.precio_tachado) || 0;
+            const descuento = antes > precio && precio > 0 ? Math.round((1 - precio / antes) * 100) : 0;
+            const estaEditando = productoEditando?.content_id === contentId;
+            return (
+              <div key={contentId} className={`rounded-xl border bg-surface px-3 py-2.5 ${estaEditando ? 'border-accent' : 'border-border'}`}>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={elegido}
+                    onChange={() => onAlternar(contentId)}
+                    aria-label={`Mostrar ${item.nombre} en ofertas que terminan pronto`}
+                    className="accent-primary"
+                  />
+                  <Miniatura item={item} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-fg">{item.titulo_comercial || item.nombre}</p>
+                    <p className="text-xs text-fg-muted tabular-nums">
+                      {formatearGs(precio) || 'Sin precio'}
+                      {antes > 0 ? ` · antes ${formatearGs(antes)}` : ' · sin precio anterior'}
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${descuento > 0 ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}`}>
+                    {descuento > 0 ? `-${descuento}%` : 'Falta descuento'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onEditar(contentId)}
+                    className="shrink-0 text-xs font-semibold text-primary-text hover:underline"
+                  >
+                    Editar
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {productoEditando && renderPresentacion(productoEditando)}
+    </div>
+  );
+}
+
+function EditorUrgenciaInicio({ titulo, texto, cta, finAt, confirmar, onTitulo, onTexto, onCta, onFinAt, onConfirmar }) {
+  function fijarHoras(horas) {
+    onFinAt(inputLocalEnHoras(horas));
+  }
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <CampoTexto label="Título del bloque" value={titulo} onChange={onTitulo} placeholder="Ofertas que terminan pronto" maxLength={80} />
+      <CampoTexto label="Texto del CTA" value={cta} onChange={onCta} placeholder="Ver todos" maxLength={40} />
+      <div className="sm:col-span-2"><CampoTexto label="Mensaje" value={texto} onChange={onTexto} placeholder="Aprovechá antes de que se agoten" maxLength={160} /></div>
+      <label className="block sm:col-span-2">
+        <span className="block text-xs font-medium text-fg-muted mb-1">Fecha fin</span>
+        <input
+          type="datetime-local"
+          value={finAt}
+          onChange={e => onFinAt(e.target.value)}
+          className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+        />
+      </label>
+      <div className="sm:col-span-2 rounded-xl border border-border bg-surface-2/60 p-3">
+        <p className="text-xs font-semibold text-fg">Duración rápida</p>
+        <p className="mt-0.5 text-[11px] text-fg-muted">Podés cargar una fecha exacta arriba o fijar el contador desde ahora.</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {[
+            [2, '2 horas'],
+            [7, '7 horas'],
+            [24, '24 horas'],
+          ].map(([horas, label]) => (
+            <button
+              key={horas}
+              type="button"
+              onClick={() => fijarHoras(horas)}
+              className="h-8 rounded-lg border border-border bg-surface px-3 text-xs font-semibold text-fg hover:border-border-strong"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="sm:col-span-2 flex items-center gap-2 text-sm text-fg">
+        <input type="checkbox" checked={confirmar} disabled={!finAt} onChange={e => onConfirmar(e.target.checked)} className="accent-primary" />
+        Fecha real confirmada
+      </label>
+      <p className="sm:col-span-2 text-[11px] leading-relaxed text-fg-muted">
+        Esta sección muestra solo productos con oferta real, es decir, con precio anterior mayor al precio actual. Si no hay ofertas, no se publica vacía.
+      </p>
+    </div>
+  );
 }
 
 function consejoPrecioBump(oferta, precioProducto) {
@@ -1728,7 +2892,7 @@ function ProductosIncluidos({ lista, vacio }) {
 // Lo usa también el paso de ofertas del wizard de IA (PasoOfertas): es el
 // mismo editor real de la ficha de producto, así una oferta creada desde la
 // IA es idéntica a una creada desde Productos.
-export function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar, onComboCreado, landingPreview = null }) {
+export function PanelOfertas({ producto, estrategia = null, productos, enLanding, onElegir, onCambiarProducto, onCerrar, onComboCreado, landingPreview = null, permitirCombo = false }) {
   const [busqueda, setBusqueda] = useState('');
   const [armandoCombo, setArmandoCombo] = useState(false);
   const tipoElegido = LABEL_TIPO_OFERTA_RAPIDA[estrategia] || null;
@@ -1792,7 +2956,7 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
                 <OfertasProductoTab
                   key={`${producto.id}-${estrategia || ''}`}
                   crearAlAbrir={estrategia}
-                  onCrearCombo={() => setArmandoCombo(true)}
+                  onCrearCombo={permitirCombo ? () => setArmandoCombo(true) : null}
                   productoId={producto.id}
                   productoNombre={producto.nombre}
                   productoAnclaPrecioBase={Number(precioPanel(producto)) || 0}

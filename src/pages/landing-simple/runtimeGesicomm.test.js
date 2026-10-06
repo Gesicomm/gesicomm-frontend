@@ -53,6 +53,35 @@ function montar(plantilla, datos) {
 describe('runtime del lienzo en blanco — inicio', () => {
   const datos = { vista: 'inicio', tienda: { nombre: 'Mi Tienda', whatsapp: '0981 123' }, productos: [airFryer, remera, malicioso], producto: null, recomendados: [] };
 
+  it('pinta banners configurados con video y permite enlaces internos a secciones', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        inicio: {
+          banners: [{
+            id: 'promo-video',
+            activo: true,
+            titulo: 'Promo con video',
+            subtitulo: 'Campaña editable',
+            etiqueta: 'Oferta',
+            cta_texto: 'Ver ofertas',
+            enlace: '#ofertas',
+            imagen: '/uploads/banner.mp4',
+            tipo_medio: 'video',
+          }],
+        },
+      },
+    });
+
+    const banner = document.querySelector('.hero-banner');
+    expect(banner).toBeTruthy();
+    expect(document.querySelector('.hero-shell').classList.contains('has-banner')).toBe(true);
+    expect(banner.querySelector('video').getAttribute('src')).toBe('/uploads/banner.mp4');
+    expect(banner.querySelector('video').style.display).not.toBe('none');
+    expect(banner.querySelector('img').style.display).toBe('none');
+    expect(banner.querySelector('a').getAttribute('href')).toBe('#ofertas');
+  });
+
   it('filtra por cada etiqueta, marca, precio y disponibilidad sin perder las opciones del catálogo', () => {
     const { window, document, dom } = montar(PLANTILLA_INICIO, { ...datos, productos: [
       { ...airFryer, etiqueta: 'Cocina, Oferta', marca: 'Marca A' }, { ...remera, marca: 'Marca B', etiqueta: 'Oferta', stock: 0 },
@@ -85,13 +114,13 @@ describe('runtime del lienzo en blanco — inicio', () => {
     dom.window.close();
   });
 
-  it('respeta los filtros desactivados y los productos ocultos del inicio, también en el hero', () => {
+  it('respeta los filtros desactivados y los productos ocultos del inicio, también en destacados', () => {
     const { document, dom } = montar(PLANTILLA_INICIO, { ...datos,
       venta: { catalogo_filtros: { marca: false, buscador: false, precio: false } },
       productos: [{ ...airFryer, mostrar_en_inicio: false }, remera],
     });
     expect(document.querySelectorAll('#productos [data-gesicomm-item]')).toHaveLength(1);
-    expect(document.querySelector('.hero-card [data-gesicomm-bind="nombre"]').textContent).toBe('Remera');
+    expect(document.querySelector('#destacados .product-card [data-gesicomm-bind="nombre"]').textContent).toBe('Remera');
     expect(document.querySelector('[data-gesicomm-filtro="marca"]').style.display).toBe('none');
     expect(document.querySelector('[data-gesicomm-buscar]').style.display).toBe('none');
     expect(document.querySelector('[data-gesicomm-filtro="precioMin"]').style.display).toBe('none');
@@ -114,17 +143,17 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tarjetas).toHaveLength(3);
     expect(tarjetas[0].querySelector('[data-gesicomm-bind="nombre"]').textContent).toBe('Air Fryer 2.6L');
     expect(tarjetas[0].querySelector('[data-gesicomm-bind="precio"]').textContent).toMatch(/^Gs 145\.735$/);
-    expect(document.querySelectorAll('.featured-carousel .hero-card')).toHaveLength(3);
+    expect(document.querySelectorAll('#destacados .product-card')).toHaveLength(3);
     expect(document.querySelector('[data-gesicomm-total]').textContent).toBe('3 productos disponibles');
     expect(document.querySelector('.brand [data-gesicomm-tienda="nombre"]').textContent).toBe('Mi Tienda');
   });
 
-  it('usa solo los productos destacados configurados en el hero', () => {
+  it('usa solo los productos destacados configurados en la vitrina', () => {
     const { document } = montar(PLANTILLA_INICIO, {
       ...datos,
       venta: { destacados: ['remera', 'air-fryer-26l'] },
     });
-    const destacados = [...document.querySelectorAll('.featured-carousel .hero-card [data-gesicomm-bind="nombre"]')]
+    const destacados = [...document.querySelectorAll('#destacados .product-card [data-gesicomm-bind="nombre"]')]
       .map(el => el.textContent);
     expect(destacados).toEqual(['Remera', 'Air Fryer 2.6L']);
   });

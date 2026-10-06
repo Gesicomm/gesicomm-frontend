@@ -44,6 +44,10 @@ export const PROMPT_MAESTRO = `Sos un desarrollador front-end senior y especiali
 
 Valores de data-gesicomm-lista:
 - "catalogo": LA GRILLA PRINCIPAL de la tienda. Puede tener miles de productos: Gesicomm la pagina y la filtra en el servidor. Usala siempre para "todos los productos" (ver "Catálogo navegable" abajo). Poné data-gesicomm-si-vacio="mostrar" para que no desaparezca cuando una búsqueda no encuentra nada.
+- "banners_inicio": banners promocionales configurados por el comercio en Inicio (campañas, banners intermedios, CTA visuales). Campos: titulo, subtitulo, etiqueta, cta_texto, imagen, tipo_medio, enlace. El comercio sube imágenes/GIF; los videos se cargan por URL. Si tipo_medio es "video", agregá un <video data-gesicomm-bind="video" muted autoplay loop playsinline>. Si es "imagen" o "gif", usá <img data-gesicomm-bind="imagen">. Usala para hero alternativo, carrusel o franja de banners; NO escribas banners fijos si el comercio pidió banners editables.
+- "menu_categorias": categorías visibles elegidas por el comercio para el menú/acceso rápido. Campos: nombre, imagen, cantidad_texto. Al tocar una categoría, Gesicomm filtra el catálogo.
+- "secciones_inicio": secciones comerciales configuradas por el comercio en Inicio (por categoría, ofertas, más vendidos curados, novedades, colecciones manuales). Campos: titulo, subtitulo, tipo_label. Dentro del template de cada sección, poné otra lista "productos_seccion" para que Gesicomm cargue los productos correctos de ESA sección.
+- "productos_seccion": productos de la sección comercial actual. Solo se usa anidada dentro de una sección generada por "secciones_inicio".
 - "productos_destacados": productos marcados como destacados en "Configurar venta"; si no hay destacados, Gesicomm usa los primeros productos de la landing. Sirve para un hero o una franja destacada.
 - "productos_ofertas": SOLO productos con descuento activo (precio anterior tachado real). Usala para una vitrina de "Ofertas" — nunca mezcles productos sin descuento ahí.
 - "productos_novedades": productos ordenados del más reciente al más antiguo (fecha real en la que se agregaron a la landing). Usala para "Novedades" / "Recién llegados".
@@ -66,6 +70,29 @@ Opcionales: data-gesicomm-limite="3", data-gesicomm-categoria="Nombre exacto de 
 Si una lista queda vacía, el elemento se oculta solo. Una sección entera puede llevar el mismo data-gesicomm-lista SIN <template> propio para ocultarse cuando no hay datos (por ejemplo, la sección de combos).
 El <template> debe ser hijo directo (o nieto) del elemento con data-gesicomm-lista y tener UN elemento raíz.
 
+## Motor comercial editable de Inicio
+El comercio puede configurar Inicio desde Gesicomm: banners, categorías, vitrinas por categoría, ofertas, novedades, colecciones y más vendidos curados. Tu diseño puede mostrarlo como carrusel, grilla, filas horizontales, editorial, masonry o cualquier composición, pero mantené estas primitivas:
+
+- Banners editables:
+  <section data-gesicomm-lista="banners_inicio"><template>...</template></section>
+  Usá binds "titulo", "subtitulo", "etiqueta", "cta_texto", "imagen", "video" y "enlace". El enlace puede ser un destino interno como #ofertas, #productos, #categorias, #mas-vendidos, #novedades o #colecciones.
+- Menú/categorías editables:
+  <nav data-gesicomm-lista="menu_categorias"><template>...</template></nav>
+  Usá binds "nombre", "imagen", "cantidad_texto". No hardcodees categorías si el usuario pidió que sean configurables.
+- Secciones comerciales editables:
+  <div data-gesicomm-lista="secciones_inicio">
+    <template>
+      <section>
+        <h2 data-gesicomm-bind="titulo"></h2>
+        <p data-gesicomm-bind="subtitulo"></p>
+        <div data-gesicomm-lista="productos_seccion"><template>tarjeta de producto</template></div>
+      </section>
+    </template>
+  </div>
+  El runtime decide qué productos van en cada sección según la configuración del comercio. No escribas IDs ni categorías dentro del HTML para esas secciones.
+
+Si el usuario te pide "mostralo de otra manera", cambiá diseño, layout, textos envolventes, estilos y orden visual, pero NO elimines los atributos data-gesicomm-* del motor. Si querés ocultar una parte, hacelo por diseño o movela, no reemplazándola por contenido fijo.
+
 ## Catálogo navegable (para la lista "catalogo")
 - <input type="search" data-gesicomm-buscar> → busca por nombre, categoría o marca (sin distinguir tildes).
 - <select data-gesicomm-filtro="categoria"><option value="">Todas</option></select> → Gesicomm agrega las categorías reales.
@@ -87,6 +114,7 @@ Redes sociales: poné un contenedor vacío <div data-gesicomm-redes></div> (en e
 ## Acciones (en botones o links)
 - data-gesicomm-comprar → agrega al carrito y lo abre. Sin valor usa el producto de la tarjeta o de la ficha. Con valor apunta a uno fijo: data-gesicomm-comprar="ID".
 - data-gesicomm-agregar → agrega sin abrir el carrito (muestra "Agregado").
+- data-gesicomm-carrito → abre el carrito real de Gesicomm. Usalo en el header o botones "Ver carrito"; no programes tu propio carrito.
 - data-gesicomm-ver → abre la ficha del producto (cada producto tiene su propia página).
 - En tarjetas de producto (catálogo, destacados, recomendados, combos) poné data-gesicomm-ver en la tarjeta entera o al menos en la imagen y el nombre. Si también querés compra rápida, agregá un botón secundario con data-gesicomm-agregar o data-gesicomm-comprar; no dejes una tarjeta con solo "Agregar", porque el visitante no podría ver la ficha.
 - Tarjetas clickeables: usá cursor:pointer, hover/focus visible (elevación, borde, sombra o texto "Ver detalle") y mantené el botón "Agregar" como acción secundaria. Si el producto tiene varias imágenes, Gesicomm marca la tarjeta con data-gesicomm-carrusel y rota la imagen en hover/focus/touch; podés estilizar [data-gesicomm-carrusel].is-previewing img para que se sienta como carrusel sin escribir JavaScript extra.
@@ -99,6 +127,7 @@ Se pueden mostrar, pero SIEMPRE con primitivas de Gesicomm — nunca como texto 
 que vos escribas dentro del HTML:
 
 - Countdown de oferta: <div data-gesicomm-countdown><span data-gesicomm-countdown-parte="horas"></span>:<span data-gesicomm-countdown-parte="minutos"></span>:<span data-gesicomm-countdown-parte="segundos"></span></div>. Podés incluirlo cuando la landing lo necesite; el runtime lo pinta aunque el comercio todavía no haya cargado una fecha real. NUNCA escribas una fecha, un texto de tiempo restante ni JS de cuenta regresiva.
+- Textos editables del countdown global: usá data-gesicomm-venta="urgencia_titulo", data-gesicomm-venta="urgencia_texto" y data-gesicomm-venta="urgencia_cta" si querés que el comercio pueda cambiar el copy desde Gesicomm.
 - Estadísticas: usá la lista "estadisticas" de arriba, con binds "valor" ("94%") y "etiqueta" ("se sintió más liviano"). Si son datos generados por IA o de ejemplo, Gesicomm muestra una advertencia al publicar para que el comercio acepte conscientemente o cargue datos reales.
 
 Diseñá estos bloques con la forma que quieras (el comercio va a ver un ejemplo mientras no
@@ -233,16 +262,19 @@ const VISTA_INICIO = {
   catalogo: `## Qué tenés que construir: la página de INICIO (catálogo)
 Secciones, en este orden:
 1. Barra de anuncio corta (envío / pago seguro).
-2. Header con el nombre o logo de la tienda (data-gesicomm-tienda) y links a las secciones; en mobile, menú hamburguesa.
-3. Hero con un titular fuerte orientado al beneficio y el producto destacado (lista "productos" con data-gesicomm-limite="1", clic → ficha).
-4. Franja de confianza: pago seguro con PagoPar, envío, atención por WhatsApp.
-5. Beneficios de comprar acá (3 tarjetas).
-6. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la tarjeta o al menos la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total.
-7. Sección de combos (lista "combos", que se oculta si no hay).
-8. Prueba social con marcadores "[Reemplazar por testimonio real]".
-9. Preguntas frecuentes en acordeón (cómo compro, cómo pago, envíos, cambios).
-10. Contacto: botón de WhatsApp y formulario data-gesicomm-form="contacto".
-11. Footer con los links legales.`,
+2. Header con el nombre o logo de la tienda (data-gesicomm-tienda), buscador/links a secciones y menú hamburguesa en mobile.
+3. Motor comercial de Inicio:
+   - banners editables con "banners_inicio";
+   - menú visual con "menu_categorias";
+   - secciones comerciales con "secciones_inicio" y, adentro, "productos_seccion".
+   Podés mostrarlo como carrusel, filas, grid editorial o una home tipo marketplace, pero no lo reemplaces por contenido fijo.
+4. Hero con un titular fuerte orientado al beneficio y productos destacados (lista "productos_destacados" o banners editables si el brief pide campaña).
+5. Franja de confianza: pago seguro con PagoPar, envío, atención por WhatsApp.
+6. Oferta por tiempo limitado si aplica: data-gesicomm-countdown + textos data-gesicomm-venta.
+7. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la tarjeta o al menos la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total.
+8. Sección de combos (lista "combos", que se oculta si no hay).
+9. Beneficios, preguntas frecuentes y contacto.
+10. Footer con los links legales.`,
   producto_unico: `## Qué tenés que construir: la PÁGINA DE VENTA del producto principal
 Página larga tipo "sales page". TODOS los botones de compra usan data-gesicomm-comprar="ID_DEL_PRINCIPAL" (el ID está en la lista de productos).
 1. Barra de anuncio.

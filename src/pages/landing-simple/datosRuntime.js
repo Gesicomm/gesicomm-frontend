@@ -17,6 +17,25 @@ export function urlProducto(slug, contentId) {
   return slug ? `/l/${slug}/${contentId}` : `/${contentId}`;
 }
 
+export function slugCategoria(nombre) {
+  return String(nombre || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function urlCategoria(slug, categoria) {
+  const s = slugCategoria(categoria);
+  return slug ? `/l/${slug}/categoria/${s}` : `/categoria/${s}`;
+}
+
+export function urlCheckout(slug) {
+  return slug ? `/l/${slug}/checkout` : '/checkout';
+}
+
 export const PAGINAS_TIENDA = {
   contacto: 'Contacto',
   catalogo: 'Catálogo',
@@ -39,7 +58,10 @@ export function urlPaginaTienda(slug, pagina) {
 }
 
 function paginasDeTienda(slug) {
-  return Object.fromEntries(Object.keys(PAGINAS_TIENDA).map(p => [p, urlPaginaTienda(slug, p)]));
+  return {
+    ...Object.fromEntries(Object.keys(PAGINAS_TIENDA).map(p => [p, urlPaginaTienda(slug, p)])),
+    checkout: urlCheckout(slug),
+  };
 }
 
 function media(url) {
@@ -139,6 +161,7 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     imagen: imagenes[0] || null,
     imagenes_url: imagenes,
     categoria: item.categoria || null,
+    categoria_url: item.categoria ? urlCategoria(slug, item.categoria) : '',
     marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
     etiqueta: item.etiqueta || null,
     mostrar_en_inicio: item.mostrar_en_inicio !== false,
@@ -269,6 +292,7 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     imagen: imagenes[0] || null,
     imagenes_url: imagenes,
     categoria: item.categoria || null,
+    categoria_url: item.categoria ? urlCategoria(null, item.categoria) : '',
     marca: typeof item.marca === 'object' ? item.marca?.nombre || null : item.marca || null,
     etiqueta: item.etiqueta || null,
     mostrar_en_inicio: item.mostrar_en_inicio !== false,
@@ -351,6 +375,11 @@ function primerProductoId(catalogo = []) {
 
 function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
   if (!venta) return null;
+  const inicio = venta.inicio || venta.inicio_comercial || {};
+  const normalizarBanner = banner => ({
+    ...banner,
+    imagen: media(banner.imagen) || '',
+  });
   const productoId = productoPreferido?.id || primerProductoId(catalogo);
   const urgencia = venta.urgencia
     ? {
@@ -367,6 +396,11 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
   return {
     tipo: venta.tipo,
     destacados: venta.destacados || [],
+    inicio: {
+      ...inicio,
+      banners: (Array.isArray(inicio.banners) ? inicio.banners : []).filter(Boolean).map(normalizarBanner),
+      banners_intermedios: (Array.isArray(inicio.banners_intermedios) ? inicio.banners_intermedios : []).filter(Boolean).map(normalizarBanner),
+    },
     recomendados_titulo: venta.recomendados?.titulo || '',
     paquetes: venta.paquetes || {},
     catalogo_filtros: venta.catalogo_filtros || {},
@@ -376,15 +410,41 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
 }
 
 /** Datos del runtime para la landing publicada (inicio o ficha). */
-export function datosRuntimePublico(data, slug, productoPublico) {
+function categoriaPorSlug(catalogo, categorySlug) {
+  if (!categorySlug) return null;
+  return catalogo.map(i => i.categoria).filter(Boolean).find(c => slugCategoria(c) === categorySlug) || null;
+}
+
+function resumenCarritoRuntime(carrito = []) {
+  const items = Array.isArray(carrito) ? carrito : [];
+  const subtotal = items.reduce((s, it) => s + (Number(it.precio) || 0) * (Number(it.cantidad) || 0), 0);
+  return {
+    items: items.map(it => ({
+      ...it,
+      id: it.clave,
+      nombre: it.ofertaNombre || it.nombre,
+      variante: it.componenteVarianteNombre || it.varianteNombre || '',
+      precio_unitario: it.precio,
+      subtotal: (Number(it.precio) || 0) * (Number(it.cantidad) || 0),
+      imagen: it.imagen || '',
+    })),
+    cantidad: items.reduce((s, it) => s + (Number(it.cantidad) || 0), 0),
+    subtotal,
+    total: subtotal,
+  };
+}
+
+export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) {
   const venta = data?.content?.venta || null;
   const catalogo = (data?.catalogo_items || data?.items || []).map(i => itemPublicoARuntime(i, slug, venta));
   const producto = productoPublico
     ? (catalogo.find(i => i.id === productoPublico.content_id) || itemPublicoARuntime(productoPublico, slug, venta))
     : null;
+  const categoriaActual = opciones.categoria || categoriaPorSlug(catalogo, opciones.categorySlug);
   const meta = data?.content?.catalogo || {};
   return {
-    vista: producto ? 'producto' : 'inicio',
+    vista: opciones.vista || (producto ? 'producto' : (categoriaActual ? 'categoria' : 'inicio')),
+    categoria: categoriaActual ? { nombre: categoriaActual, slug: slugCategoria(categoriaActual), url: urlCategoria(slug, categoriaActual) } : null,
     tienda: tiendaRuntime(data),
     venta: ventaRuntime(venta, catalogo, producto),
     // paginado: la respuesta trae solo la primera página; el resto lo pide
@@ -397,6 +457,8 @@ export function datosRuntimePublico(data, slug, productoPublico) {
     paginas: paginasDeTienda(slug),
     productos: catalogo,
     producto,
+    carrito: resumenCarritoRuntime(opciones.carrito || []),
+    checkout_estado: opciones.checkoutEstado || null,
     recomendados: recomendadosVista(catalogo, producto, venta),
   };
 }
@@ -419,7 +481,8 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     ? (catalogo.find(i => i.id === productoId) || catalogo[0] || null)
     : null;
   return {
-    vista: producto ? 'producto' : 'inicio',
+    vista: producto ? 'producto' : vista || 'inicio',
+    categoria: vista === 'categoria' ? { nombre: catalogo.find(i => i.categoria)?.categoria || 'Categoría', slug: 'categoria', url: '#' } : null,
     tienda: {
       nombre: tienda?.nombre || '',
       logo: media(tienda?.logo_imagen),
@@ -443,8 +506,19 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     // En el editor está toda la selección en memoria: filtra y ordena el
     // propio runtime, sin servidor.
     catalogo: { total: catalogo.length, por_pagina: 24, paginado: false },
+    paginas: { checkout: '#' },
     productos: catalogo,
     producto,
+    carrito: resumenCarritoRuntime(catalogo[0] ? [{
+      clave: 'preview',
+      tipo: catalogo[0].tipo,
+      contentId: catalogo[0].id,
+      nombre: catalogo[0].nombre,
+      precio: catalogo[0].precio,
+      cantidad: 1,
+      imagen: catalogo[0].imagen,
+    }] : []),
+    checkout_estado: null,
     recomendados: recomendadosVista(catalogo, producto, venta),
   };
 }

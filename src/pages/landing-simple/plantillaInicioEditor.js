@@ -38,6 +38,7 @@ export function leerHero(html) {
   const hero = doc.querySelector('section#inicio');
   if (!hero) return null;
   const h1 = hero.querySelector('h1');
+  if (!h1) return null;
   const em = h1?.querySelector('em');
   const tituloPrincipal = em
     ? (h1.textContent || '').replace(em.textContent || '', '').trim()

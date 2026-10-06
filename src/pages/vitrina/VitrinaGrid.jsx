@@ -45,6 +45,10 @@ function getBadgeConfig(item) {
   return                           { cls: 'producto',  label: 'Producto' };
 }
 
+function getItemKey(item) {
+  return `${item.tipo}:${item.id}`;
+}
+
 /* ─── Componente: editor de precio ───────────────────────────────────── */
 function PrecioEditable({ item, onGuardar }) {
   const [valor, setValor]       = useState(item.precio_efectivo ?? '');
@@ -390,6 +394,9 @@ export default function VitrinaGrid() {
   
   const [page, setPage] = useState(1);
   const [seleccionados, setSeleccionados] = useState(new Set());
+  const [seleccionadosData, setSeleccionadosData] = useState(new Map());
+  const [seleccionTotalKeys, setSeleccionTotalKeys] = useState(new Set());
+  const [seleccionandoTodos, setSeleccionandoTodos] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -399,19 +406,117 @@ export default function VitrinaGrid() {
   const toggleSeleccion = (item) => {
     setSeleccionados(prev => {
       const next = new Set(prev);
-      const key = `${item.tipo}:${item.id}`;
+      const key = getItemKey(item);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
+    setSeleccionadosData(prev => {
+      const next = new Map(prev);
+      const key = getItemKey(item);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, item);
+      return next;
+    });
   };
+
+  const limpiarSeleccion = useCallback(() => {
+    setSeleccionados(new Set());
+    setSeleccionadosData(new Map());
+    setSeleccionTotalKeys(new Set());
+  }, []);
+
+  const getFiltrosCatalogo = useCallback((overrides = {}) => {
+    const solamenteMios = filtro === 'mios' || filtro === 'mis-combos';
+    let tipoQuery = filtro;
+    if (filtro === 'mios') tipoQuery = 'producto';
+    if (filtro === 'mis-combos') tipoQuery = 'combo';
+
+    return {
+      page,
+      limit: 10,
+      busqueda,
+      filtroCategoria,
+      filtroProveedor,
+      orden,
+      tipo: tipoQuery,
+      solamenteMios,
+      origenCatalogo: filtro === 'producto' || filtro === 'combo' ? 'GESICOMM' : null,
+      ...overrides,
+    };
+  }, [page, busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
+
+  /* Items ya filtrados por el backend */
+  const itemsFiltrados = items;
+
+  function agregarItemsASeleccion(itemsASeleccionar = []) {
+    setSeleccionados(prev => {
+      const next = new Set(prev);
+      itemsASeleccionar.forEach(item => next.add(getItemKey(item)));
+      return next;
+    });
+    setSeleccionadosData(prev => {
+      const next = new Map(prev);
+      itemsASeleccionar.forEach(item => next.set(getItemKey(item), item));
+      return next;
+    });
+  }
+
+  function quitarKeysDeSeleccion(keysAQuitar = []) {
+    setSeleccionados(prev => {
+      const next = new Set(prev);
+      keysAQuitar.forEach(key => next.delete(key));
+      return next;
+    });
+    setSeleccionadosData(prev => {
+      const next = new Map(prev);
+      keysAQuitar.forEach(key => next.delete(key));
+      return next;
+    });
+  }
+
+  const keysPagina = useMemo(() => itemsFiltrados.map(getItemKey), [itemsFiltrados]);
+  const paginaSeleccionada = keysPagina.length > 0 && keysPagina.every(key => seleccionados.has(key));
+  const totalFiltradoSeleccionado = seleccionTotalKeys.size > 0 && Array.from(seleccionTotalKeys).every(key => seleccionados.has(key));
+
+  function seleccionarPagina() {
+    if (paginaSeleccionada) {
+      quitarKeysDeSeleccion(keysPagina);
+      return;
+    }
+    agregarItemsASeleccion(itemsFiltrados);
+  }
+
+  async function seleccionarTodoFiltrado() {
+    if (!totalItems || seleccionandoTodos) return;
+    if (totalFiltradoSeleccionado) {
+      quitarKeysDeSeleccion(Array.from(seleccionTotalKeys));
+      setSeleccionTotalKeys(new Set());
+      return;
+    }
+    setSeleccionandoTodos(true);
+    setErrorGenerarLanding(null);
+    try {
+      const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo({
+        page: 1,
+        limit: Math.max(totalItems, itemsFiltrados.length, 1),
+      }));
+      const itemsSeleccionTotal = data.items || [];
+      agregarItemsASeleccion(itemsSeleccionTotal);
+      setSeleccionTotalKeys(new Set(itemsSeleccionTotal.map(getItemKey)));
+    } catch (err) {
+      setErrorGenerarLanding(err.response?.data?.message || err.message || 'No se pudo seleccionar todo el catálogo filtrado.');
+    } finally {
+      setSeleccionandoTodos(false);
+    }
+  }
   
   const generarLanding = async () => {
     if (seleccionados.size === 0) return;
     setErrorGenerarLanding(null);
     const arrayItems = Array.from(seleccionados).map(k => {
       const [tipo, id] = k.split(':');
-      const item = items.find(i => i.tipo === tipo && Number(i.id) === Number(id));
+      const item = seleccionadosData.get(k) || items.find(i => i.tipo === tipo && Number(i.id) === Number(id));
       return {
         tipo,
         referencia_id: parseInt(id),
@@ -445,10 +550,7 @@ export default function VitrinaGrid() {
     navigate('/landing');
   };
 
-  const itemsSeleccionados = useMemo(() => Array.from(seleccionados).map(k => {
-    const [tipo, id] = k.split(':');
-    return items.find(i => i.tipo === tipo && Number(i.id) === Number(id));
-  }).filter(Boolean), [seleccionados, items]);
+  const itemsSeleccionados = useMemo(() => Array.from(seleccionados).map(k => seleccionadosData.get(k)).filter(Boolean), [seleccionados, seleccionadosData]);
 
   const productosSeleccionados = useMemo(
     () => itemsSeleccionados.filter(item => item.tipo === 'producto'),
@@ -463,7 +565,7 @@ export default function VitrinaGrid() {
         ? `Se agruparon ${resultado.actualizados} producto${resultado.actualizados === 1 ? '' : 's'} en ${resultado.categoria.nombre} / ${resultado.subcategoria.nombre}.`
         : `Se agruparon ${resultado.actualizados} producto${resultado.actualizados === 1 ? '' : 's'} en ${resultado.categoria.nombre}.`
     );
-    setSeleccionados(new Set());
+    limpiarSeleccion();
     await cargar();
   }
 
@@ -515,15 +617,7 @@ export default function VitrinaGrid() {
     setCargando(true);
     setError(null);
     try {
-      const solamenteMios = filtro === 'mios' || filtro === 'mis-combos';
-      let tipoQuery = filtro;
-      if (filtro === 'mios') tipoQuery = 'producto';
-      if (filtro === 'mis-combos') tipoQuery = 'combo';
-
-      const data = await vitrinaService.catalogoPaginado({
-        page, limit: 10, busqueda, filtroCategoria, filtroProveedor, orden, tipo: tipoQuery, solamenteMios,
-        origenCatalogo: filtro === 'producto' || filtro === 'combo' ? 'GESICOMM' : null,
-      });
+      const data = await vitrinaService.catalogoPaginado(getFiltrosCatalogo());
       setItems(data.items || []);
       setCategoriasUnicas(data.categorias || []);
       setProveedoresUnicos(data.proveedores || []);
@@ -534,11 +628,12 @@ export default function VitrinaGrid() {
     } finally {
       setCargando(false);
     }
-  }, [page, busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
+  }, [getFiltrosCatalogo]);
 
   // Si cambia un filtro (excepto la pagina), volver a pagina 1
   useEffect(() => {
     setPage(1);
+    setSeleccionTotalKeys(new Set());
   }, [busqueda, filtroCategoria, filtroProveedor, orden, filtro]);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -549,16 +644,27 @@ export default function VitrinaGrid() {
       setItems(prev => prev.map(c =>
         c.id === item.id && c.tipo === 'combo' ? { ...c, precio_usuario: precio, precio_efectivo: precio } : c
       ));
+      setSeleccionadosData(prev => {
+        const key = getItemKey(item);
+        if (!prev.has(key)) return prev;
+        const next = new Map(prev);
+        next.set(key, { ...prev.get(key), precio_usuario: precio, precio_efectivo: precio });
+        return next;
+      });
     } else {
       await vitrinaService.guardarPrecioProducto(item.id, precio);
       setItems(prev => prev.map(p =>
         p.id === item.id && p.tipo === 'producto' ? { ...p, precio_usuario: precio, precio_efectivo: precio } : p
       ));
+      setSeleccionadosData(prev => {
+        const key = getItemKey(item);
+        if (!prev.has(key)) return prev;
+        const next = new Map(prev);
+        next.set(key, { ...prev.get(key), precio_usuario: precio, precio_efectivo: precio });
+        return next;
+      });
     }
   }
-
-  /* Items ya filtrados por el backend */
-  const itemsFiltrados = items;
 
   return (
     <div className="vit-page">
@@ -620,7 +726,7 @@ export default function VitrinaGrid() {
             {seleccionados.size === 1 ? 'producto seleccionado' : 'productos seleccionados'}
           </p>
           <div className="vit-seleccion-acciones">
-            <button type="button" className="vit-seleccion-cancelar" onClick={() => setSeleccionados(new Set())}>
+            <button type="button" className="vit-seleccion-cancelar" onClick={limpiarSeleccion}>
               Quitar selección
             </button>
             <button
@@ -693,6 +799,31 @@ export default function VitrinaGrid() {
               {f.label}
             </button>
           ))}
+        </div>
+
+        <div className="vit-bulk-select">
+          <button
+            type="button"
+            className={`vit-bulk-select-btn ${paginaSeleccionada ? 'active' : ''}`}
+            onClick={seleccionarPagina}
+            disabled={itemsFiltrados.length === 0}
+            aria-pressed={paginaSeleccionada}
+          >
+            <Check size={14} />
+            {paginaSeleccionada ? 'Quitar página' : 'Seleccionar página'}
+            <span>{itemsFiltrados.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`vit-bulk-select-btn ${totalFiltradoSeleccionado ? 'active' : ''}`}
+            onClick={seleccionarTodoFiltrado}
+            disabled={!totalItems || seleccionandoTodos}
+            aria-pressed={totalFiltradoSeleccionado}
+          >
+            {seleccionandoTodos ? <Loader size={14} className="spin-icon" /> : <Check size={14} />}
+            {totalFiltradoSeleccionado ? 'Quitar todo' : 'Seleccionar todo'}
+            <span>{totalItems}</span>
+          </button>
         </div>
 
         {/* Filtro de categoría */}
@@ -772,7 +903,7 @@ export default function VitrinaGrid() {
           {itemsFiltrados.map(item => (
             <VitrinaCard
               key={`${item.tipo}-${item.id}`}
-              seleccionado={seleccionados.has(`${item.tipo}:${item.id}`)}
+              seleccionado={seleccionados.has(getItemKey(item))}
               onToggleSeleccion={toggleSeleccion}
               item={item}
               onGuardarPrecio={handleGuardarPrecio}

@@ -11,8 +11,9 @@ import TiendaPaginaView from './TiendaPaginaView';
 import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
 import './landingPublica.css';
 
-export default function LandingPublica() {
-  const { slug, productId } = useParams();
+export default function LandingPublica({ vistaCodigo = null, categorySlug = null }) {
+  const { slug, productId, categorySlug: categorySlugParam } = useParams();
+  const categoriaVista = categorySlug || categorySlugParam || null;
   const navigate = useNavigate();
   const [estado, setEstado] = useState('cargando'); // 'cargando' | 'no-encontrada' | 'no-disponible' | 'ok'
   const [data, setData] = useState(null);
@@ -107,5 +108,5 @@ export default function LandingPublica() {
     return <FunnelView data={data} slug={slug} productId={productId} />;
   }
 
-  return <TiendaPaginaView data={data} slug={slug} productId={productId} />;
+  return <TiendaPaginaView data={data} slug={slug} productId={productId} vistaCodigo={vistaCodigo} categorySlug={categoriaVista} />;
 }
