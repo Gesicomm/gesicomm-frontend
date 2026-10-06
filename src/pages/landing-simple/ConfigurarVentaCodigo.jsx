@@ -135,7 +135,7 @@ const ENLACES_BANNER_INICIO = [
   ['#mas-vendidos', 'Más vendidos'],
   ['#novedades', 'Novedades'],
   ['#colecciones', 'Colecciones'],
-  ['#productos', 'Catálogo'],
+  ['/catalogo', 'Catálogo completo'],
   ['#categorias', 'Categorías'],
 ];
 
@@ -171,7 +171,7 @@ function crearBannerInicio() {
     subtitulo: 'Mostrá una oferta, colección o beneficio importante.',
     etiqueta: 'Promo',
     cta_texto: 'Ver productos',
-    enlace: '#productos',
+    enlace: '/catalogo',
     imagen: '',
     tipo_medio: 'imagen',
   };
@@ -201,6 +201,19 @@ function crearSeccionInicio(tipo = 'categoria', categoria = '') {
   };
 }
 
+function inicioComercialDesdeVenta(venta = {}) {
+  const legado = venta.inicio_comercial && typeof venta.inicio_comercial === 'object' ? venta.inicio_comercial : {};
+  const actual = venta.inicio && typeof venta.inicio === 'object' ? venta.inicio : {};
+  return {
+    ...legado,
+    ...actual,
+    categorias: Array.isArray(actual.categorias) ? actual.categorias : legado.categorias,
+    banners: Array.isArray(actual.banners) ? actual.banners : legado.banners,
+    banners_intermedios: Array.isArray(actual.banners_intermedios) ? actual.banners_intermedios : legado.banners_intermedios,
+    secciones: Array.isArray(actual.secciones) ? actual.secciones : legado.secciones,
+  };
+}
+
 function normalizarInicioComercial(inicio = {}, categorias = []) {
   const primeraCategoria = categorias[0]?.[0] || '';
   const banners = Array.isArray(inicio.banners)
@@ -211,7 +224,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       subtitulo: b.subtitulo || '',
       etiqueta: b.etiqueta || '',
       cta_texto: b.cta_texto || 'Ver productos',
-      enlace: b.enlace || '#productos',
+      enlace: b.enlace || '/catalogo',
       imagen: b.imagen || '',
       tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
     }))
@@ -436,7 +449,7 @@ export default function ConfigurarVentaCodigo({
   const [previewAmpliada, setPreviewAmpliada] = useState(false);
   const [seccionConfig, setSeccionConfig] = useState('inicio'); // 'inicio' | 'fichas' | 'ofertas'
   const [productoEditando, setProductoEditando] = useState(null); // content_id
-  const [inicioComercial, setInicioComercial] = useState(() => normalizarInicioComercial(ventaInicial.inicio_comercial || ventaInicial.inicio || {}));
+  const [inicioComercial, setInicioComercial] = useState(() => normalizarInicioComercial(inicioComercialDesdeVenta(ventaInicial)));
 
   // Todas las order bump / upsell activas de la tienda, de entrada: antes se
   // buscaban solo en los productos ya elegidos, así que con la selección
@@ -755,6 +768,13 @@ export default function ConfigurarVentaCodigo({
 
   // La configuración tal como quedaría guardada — la usan el preview y el
   // guardado, así lo que se ve es lo que se vende.
+  const inicioActual = useMemo(() => ({
+    ...inicioComercial,
+    banners: inicioComercial.banners.filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
+    banners_intermedios: (inicioComercial.banners_intermedios || []).filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
+    secciones: inicioComercial.secciones.filter(s => s.activo !== false && s.titulo),
+  }), [inicioComercial]);
+
   const ventaActual = useMemo(() => ({
     configurado: true,
     tipo,
@@ -764,12 +784,8 @@ export default function ConfigurarVentaCodigo({
     abrir_en: abrirEn,
     combos_primero: abrirEn === 'tienda' && combosPrimero,
     destacados: destacadosValidos,
-    inicio: {
-      ...inicioComercial,
-      banners: inicioComercial.banners.filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
-      banners_intermedios: (inicioComercial.banners_intermedios || []).filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
-      secciones: inicioComercial.secciones.filter(s => s.activo !== false && s.titulo),
-    },
+    inicio: inicioActual,
+    inicio_comercial: inicioActual,
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
@@ -800,7 +816,7 @@ export default function ConfigurarVentaCodigo({
     },
     prueba_social: { activo: pruebaSocialActiva, producto_id: pruebaSocialProductoValido || null, items: pruebaSocialItems },
   }), [
-    tipo, abrirEn, combosPrimero, destacadosValidos, inicioComercial, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
+    tipo, abrirEn, combosPrimero, destacadosValidos, inicioActual, confPaquetes, filtrosCatalogo, presentacion, principal, seleccion, modo, categorias, incluirCombos,
     crossActivo, ofertasElegidas, recoActivo, recoModo, recoItemsValidos, recoMax, recoTitulo,
     urgenciaActiva, urgenciaFinAt, urgenciaProductoValido, urgenciaProductosValidos, urgenciaTitulo, urgenciaTexto, urgenciaCta, pruebaSocialActiva, pruebaSocialProductoValido, pruebaSocialItems,
   ]);
@@ -1181,7 +1197,7 @@ export default function ConfigurarVentaCodigo({
                 <div className="mb-3 rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
                   <p className="text-xs font-semibold text-fg">Orden real de la homepage</p>
                   <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">
-                    Banner principal → Categorías → Productos destacados → Banner intermedio → Vitrinas opcionales → Más vendidos → Ofertas con countdown → Colecciones → Novedades → Combos → Catálogo.
+                    Banner principal → Categorías → Productos destacados → Banner intermedio → Vitrinas opcionales → Más vendidos → Ofertas con countdown → Colecciones → Novedades → Combos → acceso al Catálogo completo.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2210,7 +2226,7 @@ function SelectorEnlaceBanner({ value, onChange }) {
       <input
         value={value || ''}
         onChange={e => onChange(e.target.value)}
-        placeholder="Ej: #ofertas, #productos, /catalogo o https://..."
+        placeholder="Ej: #ofertas, /catalogo o https://..."
         className="mt-2 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
       />
       <p className="mt-1 text-[11px] text-fg-muted">Los destinos con # llevan a una sección de esta misma landing.</p>

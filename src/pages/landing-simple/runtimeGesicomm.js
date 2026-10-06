@@ -734,13 +734,13 @@ export function runtimeGesicomm() {
   var LISTA_PAQUETES = 'paquetes';
 
   function inicioConfig() {
-    return (datos.venta && datos.venta.inicio) || {};
+    return (datos.venta && (datos.venta.inicio || datos.venta.inicio_comercial)) || {};
   }
 
   function categoriasDeProductos() {
     var porNombre = {};
     productos.forEach(function (p) {
-      if (datos.vista !== 'producto' && p.mostrar_en_inicio === false) return;
+      if (datos.vista === 'inicio' && p.mostrar_en_inicio === false) return;
       var nombre = String(p.categoria || '').trim();
       if (!nombre) return;
       if (!porNombre[nombre]) porNombre[nombre] = { nombre: nombre, categoria: nombre, cantidad: 0, imagen: '', etiqueta: 'Categoria' };
@@ -1324,7 +1324,7 @@ export function runtimeGesicomm() {
   function aplicarLocal() {
     var q = normalizar(filtros.busqueda.trim());
     var lista = productos.filter(function (p) {
-      if (datos.vista !== 'producto' && p.mostrar_en_inicio === false) return false;
+      if (datos.vista === 'inicio' && p.mostrar_en_inicio === false) return false;
       if (filtros.categoria && p.categoria !== filtros.categoria) return false;
       if (filtros.marca && p.marca !== filtros.marca) return false;
       if (filtros.etiqueta && etiquetasDe(p).indexOf(filtros.etiqueta) === -1) return false;
@@ -1364,7 +1364,7 @@ export function runtimeGesicomm() {
       precioMin: filtros.precioMin,
       precioMax: filtros.precioMax,
       disponibilidad: filtros.disponibilidad,
-      soloInicio: datos.vista !== 'producto',
+      soloInicio: datos.vista === 'inicio',
       orden: filtros.orden,
       busqueda: filtros.busqueda.trim(),
     });

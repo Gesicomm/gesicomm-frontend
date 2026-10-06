@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
-import { PLANTILLA_PRODUCTO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
+import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
 import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
@@ -131,6 +131,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   // → la base.
   const fichaPropia = esFicha ? data?.content?.vistas?.productos?.[productoPublico.content_id] : null;
   const fichaGeneral = data?.content?.vistas?.producto;
+  const codigoCatalogo = data?.content?.vistas?.catalogo;
   const codigoCategoria = data?.content?.vistas?.categoria;
   const codigoCheckout = data?.content?.vistas?.checkout;
   const codigoFicha = fichaPropia?.html && !esFichaProductoBase(fichaPropia.html)
@@ -139,8 +140,9 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const codigo = esFicha
     ? codigoFicha
     : vistaActual === 'checkout' ? (codigoCheckout?.html ? codigoCheckout : PLANTILLA_CHECKOUT)
-      : vistaActual === 'categoria' ? (codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA)
-        : codigoInicio;
+      : vistaActual === 'catalogo' ? (codigoCatalogo?.html ? codigoCatalogo : PLANTILLA_CATALOGO)
+        : vistaActual === 'categoria' ? (codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA)
+          : codigoInicio;
 
   const tema = useMemo(() => temaDesdeData(data), [data]);
   const contacto = useMemo(() => contactoDesdeData(data), [data]);

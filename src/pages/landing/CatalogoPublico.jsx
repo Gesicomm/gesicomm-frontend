@@ -13,6 +13,7 @@ import StoreHeader from '../landing-simple/templates/StoreHeader';
 import CatalogoView from '../landing-simple/templates/CatalogoView';
 import CartDrawer from './CartDrawer';
 import { useStoreCart } from './useStoreCart';
+import LandingCodigoPublica from '../landing-simple/LandingCodigoPublica';
 
 /**
  * Catálogo completo de la landing (todos los items seleccionados en el
@@ -108,6 +109,19 @@ export default function CatalogoPublico() {
   if (estadoCarga === 'no-disponible') return <div className="min-h-screen flex items-center justify-center bg-canvas text-white">Esta tienda no está disponible actualmente.</div>;
 
   const { nombreComercio, logo, contacto, tema: temaData } = datosTemplate;
+
+  if (data?.template?.kind === 'codigo') {
+    return (
+      <LandingCodigoPublica
+        codigo={data.content?.codigo}
+        titulo={data.seo?.titulo || data.titulo || data.tienda?.nombre}
+        data={data}
+        slug={slug}
+        vistaCodigo="catalogo"
+      />
+    );
+  }
+
   // `productos_titulo` (panel "Productos" del editor) es el título de la
   // sección "Productos destacados" del home — en esta página de catálogo
   // completo se usa solo si el comercio lo personalizó explícitamente,

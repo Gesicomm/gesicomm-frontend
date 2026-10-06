@@ -30,6 +30,18 @@ describe('banners configurados del inicio', () => {
     expect(venta.inicio.banners[0].imagen).toBe('/uploads/banner.webp');
   });
 
+  it('tambien conserva banners si la venta viene con inicio_comercial', () => {
+    const venta = { inicio_comercial: { banners: [
+      { id: 'foto', titulo: 'Banner guardado', imagen: '/uploads/banner.webp', activo: true },
+    ] } };
+    const runtime = datosRuntimePublico({ content: { venta }, catalogo_items: [] }, 'tienda').venta;
+    const dom = montar([], PLANTILLA_INICIO, { venta: runtime });
+    const doc = dom.window.document;
+    expect(runtime.inicio.banners[0].titulo).toBe('Banner guardado');
+    expect(doc.querySelector('.hero-banner h2').textContent).toBe('Banner guardado');
+    dom.window.close();
+  });
+
   it('no inventa campanas, beneficios ni una oferta sin configurar', () => {
     const dom = montar();
     const doc = dom.window.document;
@@ -42,6 +54,22 @@ describe('banners configurados del inicio', () => {
     dom.window.close();
   });
 
+  it('no renderiza el catalogo completo dentro de la homepage', () => {
+    const dom = montar([], PLANTILLA_INICIO, {
+      productos: Array.from({ length: 20 }, (_, idx) => ({
+        id: `p${idx}`,
+        content_id: `p${idx}`,
+        nombre: `Producto ${idx}`,
+        precio: 1000 + idx,
+        imagen: `https://cdn.test/${idx}.png`,
+      })),
+    });
+    const doc = dom.window.document;
+    expect(doc.querySelector('[data-gesicomm-lista="catalogo"]')).toBeNull();
+    expect(doc.querySelector('#catalogo-completo a[data-gesicomm-link="catalogo"]').getAttribute('href')).toBe('/catalogo');
+    expect(doc.querySelector('main').textContent).not.toContain('Producto 19');
+    dom.window.close();
+  });
   it('muestra ofertas que terminan pronto con countdown y solo productos con descuento', () => {
     const dom = montar([], PLANTILLA_INICIO, {
       venta: {

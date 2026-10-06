@@ -89,7 +89,7 @@ El comercio puede configurar Inicio desde Gesicomm: banners, categorías, vitrin
 
 - Banners editables:
   <section data-gesicomm-lista="banners_inicio"><template>...</template></section>
-  Usá binds "titulo", "subtitulo", "etiqueta", "cta_texto", "imagen", "video" y "enlace". El enlace puede ser un destino interno como #ofertas, #productos, #categorias, #mas-vendidos, #novedades o #colecciones.
+  Usá binds "titulo", "subtitulo", "etiqueta", "cta_texto", "imagen", "video" y "enlace". El enlace puede ser un destino interno como #ofertas, #categorias, #mas-vendidos, #novedades o #colecciones, o la página separada /catalogo para ver todos los productos.
 - Menú/categorías editables:
   <nav data-gesicomm-lista="menu_categorias"><template>...</template></nav>
   Usá binds "nombre", "imagen", "cantidad_texto". No hardcodees categorías si el usuario pidió que sean configurables.
@@ -112,7 +112,7 @@ El comercio puede configurar Inicio desde Gesicomm: banners, categorías, vitrin
 - Si el usuario dice "dividí por categorías", "agrupá por categorías", "quiero categorías arriba y productos abajo", "separá electrónica, hogar, etc.", NO escribas secciones fijas con nombres inventados.
 - Para navegación visual usá "menu_categorias" o "categorias" con binds "nombre", "imagen" y "cantidad_texto"; el click entra a la vista propia de esa categoría.
 - Para vitrinas por categoría usá "secciones_inicio" y dentro "productos_seccion". Esa combinación es la que respeta la configuración del comercio y los productos reales.
-- Mantené también un catálogo completo "catalogo" con búsqueda, filtro de categoría y orden, porque el cliente puede querer ver todo junto aunque la home esté agrupada.
+- En Inicio NO pongas la lista "catalogo" ni una grilla de todos los productos: el catálogo completo vive en la página /catalogo. En la home dejá solo vitrinas comerciales y enlaces a /catalogo.
 - Si la selección de venta es "POR CATEGORÍA", las categorías del contexto son especialmente importantes: usalas para copy y jerarquía visual, pero seguí dejando los nombres/datos reales a los binds.
 
 ### Estructura marketplace para Inicio
@@ -122,7 +122,7 @@ Cuando el comercio pida una home "tipo marketplace", "tipo Wayfair", "con catego
 3. Categorías/departamentos: "menu_categorias" o "categorias" como tarjetas con imagen/nombre/cantidad_texto y navegación a la vista propia de categoría.
 4. Vitrinas compactas: productos_destacados, productos_ofertas, productos_novedades y productos_manual según lo pedido. Cada vitrina debe ocultarse si no tiene datos.
 5. Escalera de compra: mostrar una entrada accesible/oferta, luego complementos/combos o colecciones de mayor ticket. No afirmar "mayor margen" al cliente; eso es estrategia interna.
-6. Catálogo completo: lista "catalogo" con búsqueda, filtro categoría, orden, total, estados de carga/vacío y paginación.
+6. Acceso al catálogo completo: una llamada visual hacia /catalogo, sin renderizar todos los productos en Inicio.
 7. Cierre de confianza y footer legal.
 
 No implementes favoritos, reseñas, comparación avanzada, financiación, membresía, impuestos o entregas calculadas si Gesicomm no provee esos datos. Si el usuario los pide, dejá estructura visual ligera solo si tiene datos reales o indicalo como módulo que requiere soporte del sistema.
@@ -384,7 +384,7 @@ Secciones, en este orden:
 6. Escalera comercial: primero entrada/oferta accesible, después categorías, combos, complementos o colecciones de mayor ticket. Usá "combos", "productos_manual", "secciones_inicio" y "productos_seccion"; no inventes márgenes, membresías ni beneficios no cargados.
 7. Franja de confianza: pago seguro con PagoPar, envío, atención por WhatsApp y cambios/devoluciones con links reales si aplican.
 8. Oferta por tiempo limitado si aplica: data-gesicomm-countdown + textos data-gesicomm-venta. No inventes urgencia.
-9. Catálogo (lista "catalogo") con buscador, filtro de categoría, orden y paginación (ver "Catálogo navegable"). Cada tarjeta: imagen, categoría, nombre, descripción corta, precio y precio tachado; la tarjeta o al menos la imagen y el nombre abren la ficha (data-gesicomm-ver) y el botón compra (data-gesicomm-comprar). Mostrá el total con data-gesicomm-total. Aunque la home esté dividida por categorías, dejá este catálogo completo como exploración final.
+9. Acceso al catálogo completo: una franja o CTA hacia /catalogo con data-gesicomm-link="catalogo". No uses data-gesicomm-lista="catalogo" en Inicio; esa grilla completa va en su propia página paginada.
 10. Beneficios, preguntas frecuentes y contacto.
 11. Footer con los links legales.`,
   producto_unico: `## Qué tenés que construir: la PÁGINA DE VENTA del producto principal
@@ -406,7 +406,7 @@ Poné un CTA fijo abajo en mobile (position: sticky/fixed) que compre el princip
 2. Header con logo y links.
 3. Hero con el combo más fuerte (lista "combos" con data-gesicomm-limite="1"): nombre, qué incluye (bind "incluye"), precio, precio tachado y descuento.
 4. Grilla de combos (lista "combos") mostrando "Incluye: …" y el ahorro (precio_antes + descuento).
-5. "¿Preferís armarlo vos?": el catálogo completo (lista "catalogo") con buscador, categorías y paginación.
+5. "¿Preferís armarlo vos?": CTA hacia /catalogo con data-gesicomm-link="catalogo"; no renderices la lista "catalogo" dentro de esta home.
 6. Por qué conviene el combo (3 beneficios).
 7. Prueba social con marcadores "[Reemplazar por testimonio real]".
 8. Preguntas frecuentes.

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Loader, Save, Trash2, ExternalLink, Eye, EyeOff, Monitor, Tablet, Smartphone,
   PanelLeftClose, PanelLeftOpen, AlertTriangle, RefreshCw, Copy, Settings2, Home, ShoppingBag,
-  FileCode2, Wand2, Check, Bot, X, Send, Loader2, FileText, Tags, CreditCard,
+  FileCode2, Wand2, Check, FileText, Tags, CreditCard, ChevronRight,
 } from 'lucide-react';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { tiendaService } from '../../services/tiendaService';
@@ -16,7 +16,7 @@ import PhonePreviewShell from './PhonePreviewShell';
 import ConfigurarVentaCodigo, { aplicarReglaVenta } from './ConfigurarVentaCodigo';
 import { urlPublicaLanding } from './urlPublicaLanding';
 import { datosRuntimePreview, contentIdPanel, PAGINAS_TIENDA } from './datosRuntime';
-import { PLANTILLA_PRODUCTO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, formatoDeBase, esFichaProductoBase } from './plantillasBaseCodigo';
+import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, plantillaInicioPara, formatoDeBase, esFichaProductoBase } from './plantillasBaseCodigo';
 import { leerItemsPrefill, limpiarItemsPrefill, unirItemsPrefill } from './prefilledLandingItems';
 import { armarPromptVista } from './promptsCodigo';
 import {
@@ -57,11 +57,13 @@ const TABS = [
   { key: 'ajustes', label: 'Ajustes', lenguaje: null },
 ];
 
-const VISTAS = [
-  { key: 'inicio', label: 'Inicio', icono: Home },
-  { key: 'producto', label: 'Ficha de producto', icono: ShoppingBag },
-  { key: 'categoria', label: 'Categoría', icono: Tags },
-  { key: 'checkout', label: 'Checkout', icono: CreditCard },
+const EDITORES_LIBRES = [
+  { key: 'inicio', vista: 'inicio', label: 'Inicio', alias: 'Homepage', icono: Home },
+  { key: 'catalogo', vista: 'catalogo', label: 'Catálogo', icono: Tags },
+  { key: 'categoria', vista: 'categoria', label: 'Categoría', icono: Tags },
+  { key: 'producto', vista: 'producto', label: 'Ficha producto', icono: ShoppingBag },
+  { key: 'checkout', vista: 'checkout', label: 'Checkout', icono: CreditCard },
+  { key: 'legal', vista: 'legal', label: 'Footer', icono: FileText },
 ];
 
 const CODIGO_VACIO = { html: '', css: '', js: '' };
@@ -88,6 +90,7 @@ function codigosDesdeContent(content, fichaGeneralRespaldo = PLANTILLA_PRODUCTO,
   }));
   return {
     inicio: { ...CODIGO_VACIO, ...(content?.codigo || {}) },
+    catalogo: vistas.catalogo?.html ? { ...CODIGO_VACIO, ...vistas.catalogo } : PLANTILLA_CATALOGO,
     producto: vistas.producto?.html && !esFichaProductoBase(vistas.producto.html) ? vistas.producto : fichaGeneralRespaldo,
     categoria: vistas.categoria?.html ? { ...CODIGO_VACIO, ...vistas.categoria } : PLANTILLA_CATEGORIA,
     checkout: vistas.checkout?.html ? { ...CODIGO_VACIO, ...vistas.checkout } : PLANTILLA_CHECKOUT,
@@ -99,6 +102,7 @@ function codigosDesdeContent(content, fichaGeneralRespaldo = PLANTILLA_PRODUCTO,
 // estrella, combos); la ficha es una sola.
 const baseDe = (vista, tipo, legalTipo = 'politica_privacidad', tienda = null) => {
   if (vista === 'producto') return PLANTILLA_PRODUCTO;
+  if (vista === 'catalogo') return PLANTILLA_CATALOGO;
   if (vista === 'categoria') return PLANTILLA_CATEGORIA;
   if (vista === 'checkout') return PLANTILLA_CHECKOUT;
   if (vista === 'legal') return plantillaLegalPara(legalTipo, tienda);
@@ -228,7 +232,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [paso, setPaso] = useState(landingInicial?.content?.venta?.configurado ? 'codigo' : 'venta');
   const [venta, setVenta] = useState(landingInicial?.content?.venta || null);
   const [seleccion, setSeleccion] = useState([]);
-  const [vista, setVista] = useState('inicio');
+  const [vista, setVistaBase] = useState('inicio');
+  const [editorActivo, setEditorActivo] = useState('inicio');
   const [paginaLegal, setPaginaLegal] = useState(PAGINAS_LEGALES_CODIGO[0].key);
   const [codigos, setCodigos] = useState(() => codigosDesdeContent(landingInicial?.content));
   // Fichas propias que se volvieron a la general (se mandan como null al guardar).
@@ -250,15 +255,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // Order bumps / upsells de la tienda: sin esto la ficha del preview nunca
   // mostraba ofertas, aunque estuvieran creadas y marcadas en la venta.
   const [ofertasTienda, setOfertasTienda] = useState([]);
-
-  // Asistente IA del editor: sigue la conversación que arrancó el wizard
-  // (ver AILandingWizard), pero SOBRE esta misma landing — "hacela más
-  // minimalista", "cambiá los colores" — en vez de tener que volver a
-  // /landing y perder esta landing para armar una nueva desde cero.
-  const [asistenteAbierto, setAsistenteAbierto] = useState(() => creationSourceDe(landingInicial) === 'ai');
-  const [promptIA, setPromptIA] = useState('');
-  const [regenerando, setRegenerando] = useState(false);
-  const [errorIA, setErrorIA] = useState('');
 
   // El preview se repinta con un borrador aparte y con retardo: recargar
   // el iframe en cada tecla hace que la landing parpadee sin parar y
@@ -299,7 +295,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       if (prefilled.length) setSinGuardar(true);
       setCodigos(inicial);
       setCodigosPreview(inicial);
-      if (creationSourceDe(l) === 'ai') setAsistenteAbierto(true);
       setAjustes({
         titulo: l.titulo || '',
         seo_titulo: l.seo_titulo || '',
@@ -326,6 +321,16 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     if (vista === 'legal' && tab === 'prompts') setTab('html');
   }, [vista, tab]);
 
+  const setVista = useCallback((siguiente) => {
+    setVistaBase(siguiente);
+    setEditorActivo(siguiente === 'legal' ? 'legal' : siguiente);
+  }, []);
+
+  const seleccionarEditorLibre = useCallback((editor) => {
+    setVistaBase(editor.vista);
+    setEditorActivo(editor.key);
+  }, []);
+
   // Qué se edita: el inicio, la ficha general o la ficha propia del producto
   // elegido en la ficha (si tiene). Todo lo de abajo trabaja sobre esta clave.
   const productoFichaId = vista === 'producto' ? (productoPreviewId || (seleccion[0] ? contentIdPanel(seleccion[0]) : null)) : null;
@@ -336,6 +341,16 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const esLegal = vista === 'legal';
   const nombrePaginaLegal = LABEL_LEGAL_CODIGO[paginaLegal] || 'Página legal';
   const nombreProductoFicha = seleccion.find(p => contentIdPanel(p) === productoFichaId)?.nombre || '';
+  const editorActual = EDITORES_LIBRES.find(e => e.key === editorActivo) || EDITORES_LIBRES[1];
+  const nombreEditorActual = esLegal ? nombrePaginaLegal : `${editorActual.label}${editorActual.alias ? ` / ${editorActual.alias}` : ''}`;
+  const nombreEdicion = esPropia
+    ? `Ficha de ${nombreProductoFicha}`
+    : esLegal ? nombrePaginaLegal
+      : editorActivo === 'producto' ? 'Ficha producto'
+        : editorActivo === 'catalogo' ? 'Catálogo'
+          : editorActivo === 'categoria' ? 'Categoría'
+            : editorActivo === 'checkout' ? 'Checkout'
+              : nombreEditorActual;
 
   function crearFichaPropia() {
     if (!productoFichaId) return;
@@ -388,6 +403,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         seo_descripcion: ajustes.seo_descripcion,
         codigo: codigosAGuardar.inicio,
         vistas: {
+          catalogo: codigosAGuardar.catalogo,
           producto: codigosAGuardar.producto,
           categoria: codigosAGuardar.categoria,
           checkout: codigosAGuardar.checkout,
@@ -428,89 +444,24 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     }
   }
 
-  // A qué vista le habla el Asistente IA: la que está abierta en el editor
-  // ahora mismo. Antes esto SIEMPRE tocaba "Inicio" sin importar qué
-  // pidiera el comercio — pedir "agregame la vista por productos" mientras
-  // se miraba Inicio terminaba reescribiendo Inicio, porque no había forma
-  // de apuntar a la ficha. Con una ficha PROPIA abierta, el asistente edita
-  // SOLO esa ficha (nunca la general ni la de otro producto) — así cada
-  // producto puede tener un diseño distinto ("este termo estilo outdoor",
-  // "este auricular tech futurista").
-  const targetIA = esPropia
-    ? 'producto_especifico'
-    : vista === 'producto' ? 'producto'
-      : vista === 'categoria' ? 'categoria'
-        : vista === 'checkout' ? 'checkout'
-          : 'inicio';
-  const nombreTargetIA = esPropia
-    ? `la ficha propia de "${nombreProductoFicha}"`
-    : esLegal ? `la página legal "${nombrePaginaLegal}"`
-      : targetIA === 'producto' ? 'la ficha de producto (general)'
-        : targetIA === 'categoria' ? 'la vista de categoría'
-          : targetIA === 'checkout' ? 'la vista de checkout'
-            : 'el "Inicio"';
-
-  // Le pide a la IA que edite la vista actual de esta landing (mismo id,
-  // mismo slug, mismos productos configurados) con un prompt nuevo. El RAG
-  // recibe el código actual y edita sobre eso — si el resultado pierde
-  // demasiado (menos atributos data-gesicomm-*, sin botón de compra, mucho
-  // más corto) el backend lo rechaza (con un intento de corrección
-  // automática antes de mostrar el error).
-  async function regenerarConIA() {
-    if (esLegal) {
-      setErrorIA('El asistente automático todavía edita Inicio y Ficha. Para páginas legales usá las pestañas HTML, CSS y JavaScript.');
-      return;
-    }
-    const texto = promptIA.trim();
-    if (texto.length < 5) {
-      setErrorIA('Escribí una descripción de al menos 5 caracteres.');
-      return;
-    }
-    const codigoActual = codigos[claveVista];
-    if (
-      codigoActual?.html?.trim()
-      && !window.confirm(`La IA va a editar ${nombreTargetIA} de esta landing con tu pedido, conservando lo que no tenga que ver con él. ¿Seguir?`)
-    ) {
-      return;
-    }
-    setRegenerando(true);
-    setErrorIA('');
-    try {
-      const actualizada = await landingSimpleService.regenerarConIA(id, texto, targetIA, esPropia ? productoFichaId : null);
-      const guardados = codigosDesdeContent(actualizada.content, codigos.producto, tienda);
-      setLanding(actualizada);
-      setCodigos(guardados);
-      setCodigosPreview(guardados);
-      setAjustes(a => ({
-        titulo: actualizada.titulo || a.titulo,
-        seo_titulo: actualizada.seo_titulo || a.seo_titulo,
-        seo_descripcion: actualizada.seo_descripcion || a.seo_descripcion,
-      }));
-      setAdvertencias(actualizada.codigo_advertencias || []);
-      setAviso(`La IA editó ${nombreTargetIA} de tu landing — ya está guardado. Revisá el preview.`);
-      setSinGuardar(false);
-      setPromptIA('');
-      setTab('html');
-    } catch (err) {
-      const data = err?.response?.data;
-      const detalle = Array.isArray(data?.errores) && data.errores.length ? ` ${data.errores.join(' ')}` : '';
-      setErrorIA((data?.message || (err?.response ? `el servidor respondió ${err.response.status}` : 'no hay conexión con el servidor.')) + detalle);
-    } finally {
-      setRegenerando(false);
-    }
-  }
-
   async function confirmarVenta({ venta: nuevaVenta, seleccion: nuevaSeleccion, items: nuevosItems, confirmaciones }) {
     // Con el código de arranque intacto, el inicio pasa a ser la página base
     // del formato elegido (la misma que mostró la vista previa). Si ya era la
     // base de OTRO formato, se cambia también, pero preguntando: puede tener
     // retoques del comercio.
-    const baseActual = formatoDeBase(codigos.inicio.html);
-    const codigoInicialIntacto = !codigos.inicio.html.trim() || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL);
+    const htmlInicioActual = codigos.inicio?.html || '';
+    const baseActual = formatoDeBase(htmlInicioActual);
+    const codigoInicialIntacto = !htmlInicioActual.trim() || htmlInicioActual.includes(MARCA_CODIGO_INICIAL);
+    const inicioConfigurado = nuevaVenta.inicio || nuevaVenta.inicio_comercial || {};
+    const faltanSlotsBanners =
+      (Array.isArray(inicioConfigurado.banners) && inicioConfigurado.banners.length > 0
+        && !/data-gesicomm-lista=["']banners_inicio["']/.test(htmlInicioActual)) ||
+      (Array.isArray(inicioConfigurado.banners_intermedios) && inicioConfigurado.banners_intermedios.length > 0
+        && !/data-gesicomm-lista=["']banners_intermedios["']/.test(htmlInicioActual));
     // La vista previa de Configurar tienda reemplaza cualquier base Gesicomm
     // por la base actual. Al confirmar, guardamos esa misma base para no volver
     // al HTML/CSS viejo que podía seguir persistido en el editor libre.
-    const usarBase = (codigoInicialIntacto || !!baseActual) && nuevaVenta.abrir_en !== 'producto';
+    const usarBase = (codigoInicialIntacto || !!baseActual || faltanSlotsBanners) && nuevaVenta.abrir_en !== 'producto';
     const usarFichaBase = esFichaProductoBase(codigos.producto?.html);
     const nuevosCodigos = {
       ...codigos,
@@ -669,8 +620,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const creationSource = creationSourceDe(landing);
   const esGeneradaIA = creationSource === 'ai' || creationSource === 'ai_detected';
   const etiquetaEditor = creationSource === 'ai_detected' ? 'Con IA' : esGeneradaIA ? 'Generada con IA' : 'Editor libre';
-  const accionIA = esGeneradaIA ? 'Modificar con IA' : 'Asistente IA';
-  const accionVenta = venta?.configurado ? 'Revisar venta' : 'Configurar venta';
+  const accionVenta = venta?.configurado ? 'Configuración de venta' : 'Configurar venta';
 
   // Se piden al entrar al paso de código (también al volver de "Configurar
   // venta", donde se pueden crear o editar ofertas).
@@ -723,6 +673,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         setVista('checkout');
         return;
       }
+      if (p.pagina === 'catalogo') {
+        setVista('catalogo');
+        return;
+      }
       setAviso(`Preview: en la landing publicada este link abre «${PAGINAS_TIENDA[p.pagina] || p.pagina}».`);
       return;
     }
@@ -734,6 +688,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       setAviso(`Preview: vista de categoría "${p.categoria}".`);
     } else if (p?.destino === 'checkout') {
       setVista('checkout');
+    } else if (p?.destino === 'catalogo') {
+      setVista('catalogo');
     } else {
       setVista('inicio');
     }
@@ -795,8 +751,8 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="h-14 border-b border-fg/10 shrink-0 flex items-center justify-between px-5 gap-3">
-        <div className="flex items-center gap-4 min-w-0">
+      <div className="min-h-14 border-b border-fg/10 shrink-0 flex items-center justify-between px-5 py-2 gap-3">
+        <div className="flex items-center gap-3 min-w-0 overflow-x-auto">
           <button
             type="button"
             onClick={() => setSidebarVisible(!sidebarVisible)}
@@ -806,15 +762,39 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             {sidebarVisible ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
             <span className="hidden sm:inline">{sidebarVisible ? 'Ocultar código' : 'Mostrar código'}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setAsistenteAbierto(v => !v)}
-            className={`flex items-center gap-1.5 p-2 text-xs font-semibold rounded-lg px-3 transition-colors ${asistenteAbierto ? 'bg-primary text-white' : 'bg-fg/5 text-fg/50 hover:text-fg'}`}
-            title="Seguir hablando con la IA sobre esta landing"
-          >
-            <Bot size={16} />
-            <span className="hidden sm:inline">{accionIA}</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-fg/10 bg-fg/[0.04] p-1 shadow-sm">
+            {EDITORES_LIBRES.map((v, index) => {
+              const Icono = v.icono;
+              const activo = editorActivo === v.key;
+              return (
+                <React.Fragment key={v.key}>
+                  {index > 0 && (
+                    <ChevronRight size={13} className="shrink-0 text-fg/25" aria-hidden="true" />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => seleccionarEditorLibre(v)}
+                    className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors ${activo ? 'bg-fg text-canvas shadow-sm' : 'text-fg/55 hover:bg-fg/10 hover:text-fg'}`}
+                    title={v.vista === 'inicio' && v.key !== 'inicio' ? `${v.label} usa el editor de Inicio` : `Editar ${v.label}${v.alias ? ` (${v.alias})` : ''}`}
+                  >
+                    <Icono size={13} />
+                    <span>{v.label}</span>
+                    {v.alias && <span className={`hidden text-[10px] font-semibold xl:inline ${activo ? 'text-canvas/65' : 'text-fg/35'}`}>/{v.alias}</span>}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+            {vista === 'legal' && (
+              <select
+                value={paginaLegal}
+                onChange={e => setPaginaLegal(e.target.value)}
+                className="ml-1 max-w-[170px] rounded-lg border border-fg/10 bg-surface px-2 py-1.5 text-xs text-fg"
+                title="Seleccionar página del footer"
+              >
+                {PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+            )}
+          </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <h1 className="text-sm font-bold truncate">{landing?.titulo || (esGeneradaIA ? 'Landing generada con IA' : 'Lienzo en blanco')}</h1>
@@ -832,42 +812,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-fg/5 rounded-lg p-0.5 border border-fg/10">
-            {VISTAS.map(v => {
-              const Icono = v.icono;
-              return (
-                <button
-                  key={v.key}
-                  type="button"
-                  onClick={() => setVista(v.key)}
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors ${vista === v.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
-                >
-                  <Icono size={13} /> <span className="hidden lg:inline">{v.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className={`flex items-center gap-1 rounded-lg p-0.5 border border-fg/10 ${vista === 'legal' ? 'bg-fg/10' : 'bg-fg/5'}`}>
-            <button
-              type="button"
-              onClick={() => setVista('legal')}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-semibold transition-colors ${vista === 'legal' ? 'bg-fg text-canvas' : 'text-fg/50 hover:text-fg'}`}
-              title="Editar páginas del footer"
-            >
-              <FileText size={13} /> <span className="hidden lg:inline">Páginas del footer</span>
-            </button>
-            {vista === 'legal' && (
-              <select
-                value={paginaLegal}
-                onChange={e => setPaginaLegal(e.target.value)}
-                className="max-w-[190px] bg-surface border border-fg/10 rounded px-2 py-1.5 text-xs text-fg"
-                title="Seleccionar página del footer"
-              >
-                {PAGINAS_LEGALES_CODIGO.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
-              </select>
-            )}
-          </div>
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setPaso('venta')}
@@ -940,20 +885,20 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
       <div className="flex flex-1 min-h-0">
         {sidebarVisible && (
-          <div className="w-[46%] max-w-[720px] min-w-[320px] shrink-0 border-r border-fg/10 flex flex-col min-h-0">
-            <div className="flex items-center gap-1 p-2 border-b border-fg/10">
+          <div className="w-[360px] max-w-[42vw] min-w-[300px] shrink-0 border-r border-fg/10 flex flex-col min-h-0">
+            <div className="flex items-center gap-1 p-2 border-b border-fg/10 overflow-x-auto">
               {tabsVisibles.map(t => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setTab(t.key)}
-                  className={`px-3 py-2 rounded-lg text-[11px] font-semibold transition-colors ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10'}`}
+                  className={`shrink-0 rounded-md font-semibold transition-colors ${t.lenguaje ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1.5 text-[10.5px]'} ${tab === t.key ? 'bg-fg text-canvas' : 'text-fg/50 hover:bg-fg/10'}`}
                 >
                   {t.label}
                 </button>
               ))}
-              <span className="ml-auto pr-1 text-[11px] text-fg/40">
-                Editando: <strong className="text-fg/70">{esPropia ? `Ficha de ${nombreProductoFicha}` : esLegal ? nombrePaginaLegal : vista === 'producto' ? 'Ficha general' : vista === 'categoria' ? 'Categoría' : vista === 'checkout' ? 'Checkout' : 'Inicio'}</strong>
+              <span className="ml-auto shrink-0 pr-1 text-[10.5px] text-fg/40">
+                Editando: <strong className="text-fg/70">{nombreEdicion}</strong>
               </span>
             </div>
 
@@ -995,7 +940,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
             )}
 
             {tabActiva?.lenguaje ? (
-              <div className="flex-1 min-h-0 flex flex-col">
+              <div className="shrink-0 border-b border-fg/10 bg-black/20">
                 <textarea
                   key={`${claveVista}-${tab}`}
                   value={codigoVista[tabActiva.lenguaje] || ''}
@@ -1005,11 +950,11 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
                   autoCapitalize="off"
                   autoCorrect="off"
                   placeholder={PLACEHOLDERS[tabActiva.lenguaje]}
-                  className="flex-1 min-h-0 w-full resize-none bg-black/40 text-fg/90 font-mono text-[12.5px] leading-[1.6] p-4 outline-none placeholder:text-fg/25"
+                  className="h-[230px] max-h-[34vh] min-h-[150px] w-full resize-y overflow-y-auto bg-black/40 text-fg/90 font-mono text-[12px] leading-[1.55] p-3 outline-none placeholder:text-fg/25"
                 />
-                <div className="px-4 py-2 border-t border-fg/10 flex items-center justify-between gap-3">
-                  <p className="text-[11px] text-fg/35">{AYUDAS[tabActiva.lenguaje]}</p>
-                  <div className="flex shrink-0 items-center gap-2">
+                <div className="px-3 py-2 border-t border-fg/10 flex flex-col gap-2">
+                  <p className="text-[10.5px] text-fg/35 leading-snug">{AYUDAS[tabActiva.lenguaje]}</p>
+                  <div className="flex flex-wrap items-center gap-2">
                     {(vista === 'producto' || esPropia) && (
                       <button
                         type="button"
@@ -1085,7 +1030,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         <div className="flex-1 min-w-0 flex flex-col bg-neutral-900/40">
           <div className="h-9 shrink-0 border-b border-fg/10 flex items-center justify-between px-3 gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[11px] text-fg/35 shrink-0">Vista previa · {esLegal ? nombrePaginaLegal : vista === 'producto' ? 'Ficha' : 'Inicio'}</span>
+              <span className="text-[11px] text-fg/35 shrink-0">Vista previa · {nombreEditorActual}</span>
               {vista === 'producto' && seleccion.length > 0 && (
                 <select
                   value={datosPreview.producto?.id || ''}
@@ -1225,60 +1170,6 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         </div>
       )}
 
-      {asistenteAbierto && (
-        <div className="absolute bottom-4 right-4 z-20 w-[380px] max-w-[calc(100vw-2rem)] bg-surface border border-fg/15 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-          <div className="p-3 border-b border-fg/10 bg-fg/5 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-8 h-8 shrink-0 rounded-full bg-primary/20 text-primary flex items-center justify-center">
-                <Bot size={16} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-fg truncate">Asistente IA</p>
-                <p className="text-[11px] text-fg/50 truncate">Le pide cambios a {nombreTargetIA}</p>
-              </div>
-            </div>
-            <button type="button" onClick={() => setAsistenteAbierto(false)} className="p-1.5 rounded-lg hover:bg-fg/10 text-fg/40 hover:text-fg shrink-0" title="Cerrar">
-              <X size={15} />
-            </button>
-          </div>
-          <div className="p-3 space-y-2.5">
-            <p className="text-xs text-fg/55 leading-relaxed">
-              {esPropia ? (
-                <>Edita <strong className="text-fg/75">solo la ficha de "{nombreProductoFicha}"</strong> — los demás productos no se tocan. Ej: "estilo outdoor premium", "look tech futurista".</>
-              ) : (
-                esLegal
-                  ? <>Para páginas legales, editá directamente el HTML/CSS/JS. El asistente automático por ahora trabaja con Inicio y Ficha.</>
-                  : <>Pedile un ajuste puntual ("agregá una sección de beneficios", "hacela más minimalista") — edita <strong className="text-fg/75">{nombreTargetIA}</strong> conservando el resto. Para otra vista, cambiá de vista arriba primero.</>
-              )}
-            </p>
-            {errorIA && <p className="text-xs text-danger">{errorIA}</p>}
-            <form
-              onSubmit={e => { e.preventDefault(); regenerarConIA(); }}
-              className="relative flex items-end gap-2"
-            >
-              <textarea
-                value={promptIA}
-                onChange={e => setPromptIA(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); regenerarConIA(); }
-                }}
-                rows={2}
-                disabled={regenerando}
-                placeholder={esPropia ? 'Ej: estilo outdoor premium, tonos tierra...' : 'Ej: agregá una sección de beneficios...'}
-                className="flex-1 resize-none bg-fg/5 border border-fg/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-fg disabled:opacity-60"
-              />
-              <button
-                type="submit"
-                disabled={regenerando || promptIA.trim().length < 5}
-                className="shrink-0 p-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                title={`Editar ${nombreTargetIA} con este prompt`}
-              >
-                {regenerando ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

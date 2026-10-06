@@ -31,6 +31,35 @@ const malicioso = {
   agotado: false, variantes: [], ofertas: [], url: '/malo',
 };
 
+const PLANTILLA_CATALOGO_TEST = {
+  html: `<section id="productos">
+    <input type="search" data-gesicomm-buscar>
+    <select data-gesicomm-filtro="categoria"><option value="">Todas</option></select>
+    <select data-gesicomm-filtro="marca"><option value="">Todas</option></select>
+    <select data-gesicomm-filtro="etiqueta"><option value="">Todas</option></select>
+    <select data-gesicomm-filtro="disponibilidad"><option value="todos">Todos</option><option value="en_stock">En stock</option><option value="agotado">Agotados</option></select>
+    <select data-gesicomm-filtro="orden"><option value="">Destacados</option><option value="max-min">Mayor precio</option><option value="min-max">Menor precio</option><option value="az">A-Z</option></select>
+    <input data-gesicomm-filtro="precioMin">
+    <input data-gesicomm-filtro="precioMax">
+    <div data-gesicomm-total></div>
+    <div data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
+      <template>
+        <article>
+          <img data-gesicomm-bind="imagen" alt="">
+          <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+          <span data-gesicomm-bind="precio"></span>
+          <button type="button" data-gesicomm-comprar>Comprar</button>
+        </article>
+      </template>
+    </div>
+    <button type="button" data-gesicomm-pagina="anterior">Anterior</button>
+    <span data-gesicomm-paginacion></span>
+    <button type="button" data-gesicomm-pagina="siguiente">Siguiente</button>
+  </section>`,
+  css: '',
+  js: '',
+};
+
 function montar(plantilla, datos) {
   const html = construirDocumentoCodigo(plantilla, { datos });
   const mensajes = [];
@@ -83,7 +112,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   it('filtra por cada etiqueta, marca, precio y disponibilidad sin perder las opciones del catálogo', () => {
-    const { window, document, dom } = montar(PLANTILLA_INICIO, { ...datos, productos: [
+    const { window, document, dom } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo', productos: [
       { ...airFryer, etiqueta: 'Cocina, Oferta', marca: 'Marca A' }, { ...remera, marca: 'Marca B', etiqueta: 'Oferta', stock: 0 },
     ] });
     const ids = () => [...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'));
@@ -105,7 +134,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   it('aplica el rango de precios mientras se escribe sin necesitar salir del campo', async () => {
-    const { window, document, dom } = montar(PLANTILLA_INICIO, datos);
+    const { window, document, dom } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
     const campo = document.querySelector('[data-gesicomm-filtro="precioMax"]');
     campo.value = '60000';
     campo.dispatchEvent(new window.Event('input', { bubbles: true }));
@@ -114,38 +143,32 @@ describe('runtime del lienzo en blanco — inicio', () => {
     dom.window.close();
   });
 
-  it('respeta los filtros desactivados y los productos ocultos del inicio, también en destacados', () => {
+  it('respeta los productos ocultos del inicio en destacados sin renderizar catálogo completo', () => {
     const { document, dom } = montar(PLANTILLA_INICIO, { ...datos,
-      venta: { catalogo_filtros: { marca: false, buscador: false, precio: false } },
       productos: [{ ...airFryer, mostrar_en_inicio: false }, remera],
     });
-    expect(document.querySelectorAll('#productos [data-gesicomm-item]')).toHaveLength(1);
+    expect(document.querySelector('[data-gesicomm-lista="catalogo"]')).toBeNull();
     expect(document.querySelector('#destacados .product-card [data-gesicomm-bind="nombre"]').textContent).toBe('Remera');
-    expect(document.querySelector('[data-gesicomm-filtro="marca"]').style.display).toBe('none');
-    expect(document.querySelector('[data-gesicomm-buscar]').style.display).toBe('none');
-    expect(document.querySelector('[data-gesicomm-filtro="precioMin"]').style.display).toBe('none');
     dom.window.close();
   });
 
   it('manda los filtros al servidor cuando el catálogo está paginado', () => {
-    const { window, document, mensajes, dom } = montar(PLANTILLA_INICIO, { ...datos, catalogo: { paginado: true, total: 80 }, productos: [{ ...airFryer, marca: 'Marca A', etiqueta: 'Oferta' }] });
+    const { window, document, mensajes, dom } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo', catalogo: { paginado: true, total: 80 }, productos: [{ ...airFryer, marca: 'Marca A', etiqueta: 'Oferta' }] });
     const pedido = mensajes.find(m => m.tipo === 'gesicomm:catalogo');
     window.dispatchEvent(new window.MessageEvent('message', { source: window, data: { tipo: 'gesicomm:catalogo-respuesta', id: pedido.id, productos: [airFryer], marcas: ['Marca A'], etiquetas: ['Oferta'], total: 80 } }));
     const el = document.querySelector('[data-gesicomm-filtro="etiqueta"]');
     el.value = 'Oferta'; el.dispatchEvent(new window.Event('change', { bubbles: true }));
-    expect(mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ etiqueta: 'Oferta', soloInicio: true, pagina: 1 });
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:catalogo').at(-1)).toMatchObject({ etiqueta: 'Oferta', soloInicio: false, pagina: 1 });
     dom.window.close();
   });
 
   it('pinta una tarjeta por producto, los destacados y el contador', () => {
-    const { document } = montar(PLANTILLA_INICIO, datos);
+    const { document } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
     const tarjetas = document.querySelectorAll('#productos [data-gesicomm-item]');
     expect(tarjetas).toHaveLength(3);
     expect(tarjetas[0].querySelector('[data-gesicomm-bind="nombre"]').textContent).toBe('Air Fryer 2.6L');
     expect(tarjetas[0].querySelector('[data-gesicomm-bind="precio"]').textContent).toMatch(/^Gs 145\.735$/);
-    expect(document.querySelectorAll('#destacados .product-card')).toHaveLength(3);
     expect(document.querySelector('[data-gesicomm-total]').textContent).toBe('3 productos disponibles');
-    expect(document.querySelector('.brand [data-gesicomm-tienda="nombre"]').textContent).toBe('Mi Tienda');
   });
 
   it('usa solo los productos destacados configurados en la vitrina', () => {
@@ -160,7 +183,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
 
   it('marca productos clickeables y rota la galería de la tarjeta al pasar el mouse', async () => {
     const espera = ms => new Promise(r => setTimeout(r, ms));
-    const { window, document } = montar(PLANTILLA_INICIO, datos);
+    const { window, document } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
     const tarjeta = document.querySelector('#productos [data-gesicomm-item="air-fryer-26l"]');
     const img = tarjeta.querySelector('img[data-gesicomm-bind="imagen"]');
 
@@ -190,13 +213,13 @@ describe('runtime del lienzo en blanco — inicio', () => {
   });
 
   it('"Comprar ahora" manda el producto de la tarjeta al carrito', () => {
-    const { mensajes, click } = montar(PLANTILLA_INICIO, datos);
+    const { mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
     click('#productos [data-gesicomm-item="air-fryer-26l"] [data-gesicomm-comprar]');
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:checkout', producto: 'air-fryer-26l', cantidad: 1, abrir: true }));
   });
 
   it('un producto con variantes comprado desde la grilla lleva a su ficha', () => {
-    const { mensajes, click } = montar(PLANTILLA_INICIO, datos);
+    const { mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
     click('#productos [data-gesicomm-item="remera"] [data-gesicomm-comprar]');
     expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'remera' });
     expect(mensajes.some(m => m.tipo === 'gesicomm:checkout')).toBe(false);
@@ -206,14 +229,14 @@ describe('runtime del lienzo en blanco — inicio', () => {
     const { window, click } = montar(PLANTILLA_INICIO, datos);
     let scrollPedido = null;
     window.scrollTo = (opts) => { scrollPedido = opts; };
-    click('a[href="#productos"]');
+    click('a[href="#ofertas"]');
     // scrollIntoView se propaga al editor que contiene el iframe: no se usa.
     expect(window.__scrolleado).toBeUndefined();
     expect(scrollPedido).toEqual(expect.objectContaining({ behavior: 'smooth' }));
   });
 
   it('el texto del catálogo nunca se interpreta como HTML', () => {
-    const { window, document } = montar(PLANTILLA_INICIO, datos);
+    const { window, document } = montar(PLANTILLA_CATALOGO_TEST, { ...datos, vista: 'catalogo' });
     const nombre = document.querySelector('[data-gesicomm-item="malo"] [data-gesicomm-bind="nombre"]');
     expect(nombre.textContent).toContain('<img src=x');
     expect(nombre.querySelector('img, b')).toBeNull();
@@ -356,7 +379,7 @@ describe('runtime — compatibilidad', () => {
 
 describe('runtime — catálogo navegable', () => {
   const espera = ms => new Promise(r => setTimeout(r, ms));
-  const base = { vista: 'inicio', tienda: {}, producto: null, recomendados: [] };
+  const base = { vista: 'catalogo', tienda: {}, producto: null, recomendados: [] };
 
   it('catálogo chico: busca sin tildes, filtra por categoría y ordena sin ir al servidor', async () => {
     const productos = [
@@ -364,7 +387,7 @@ describe('runtime — catálogo navegable', () => {
       { ...airFryer, id: 'b', nombre: 'Mancuerna', categoria: 'Fitness', precio: 90000 },
       { ...airFryer, id: 'c', nombre: 'Cafetera', categoria: 'Cocina', precio: 120000 },
     ];
-    const { window, document, mensajes } = montar(PLANTILLA_INICIO, { ...base, productos });
+    const { window, document, mensajes } = montar(PLANTILLA_CATALOGO_TEST, { ...base, productos });
     const ids = () => Array.from(document.querySelectorAll('#productos [data-gesicomm-item]')).map(e => e.getAttribute('data-gesicomm-item'));
 
     const buscador = document.querySelector('[data-gesicomm-buscar]');
@@ -390,7 +413,7 @@ describe('runtime — catálogo navegable', () => {
 
   it('catálogo grande: pide cada página al contenedor y se puede comprar desde cualquier página', () => {
     const datos = { ...base, productos: [airFryer], catalogo: { total: 60, por_pagina: 24, paginado: true } };
-    const { window, document, mensajes, click } = montar(PLANTILLA_INICIO, datos);
+    const { window, document, mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, datos);
     const responder = extra => {
       const pedido = [...mensajes].reverse().find(m => m.tipo === 'gesicomm:catalogo');
       window.dispatchEvent(new window.MessageEvent('message', {
@@ -422,7 +445,7 @@ describe('runtime — catálogo navegable', () => {
 
   it('descarta respuestas viejas cuando el visitante ya pidió otra cosa', () => {
     const datos = { ...base, productos: [airFryer], catalogo: { total: 60, por_pagina: 24, paginado: true } };
-    const { window, document, mensajes } = montar(PLANTILLA_INICIO, datos);
+    const { window, document, mensajes } = montar(PLANTILLA_CATALOGO_TEST, datos);
     const viejo = mensajes.find(m => m.tipo === 'gesicomm:catalogo');
     const cat = document.querySelector('select[data-gesicomm-filtro="orden"]');
     cat.value = 'az';
