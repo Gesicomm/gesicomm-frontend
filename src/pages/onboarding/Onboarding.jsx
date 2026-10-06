@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import CreatableSelect from 'react-select/creatable';
 import { Check, X, Loader, ArrowLeft, Store, ImagePlus, Palette } from 'lucide-react';
 import { tiendaService } from '../../services/tiendaService';
@@ -100,6 +100,11 @@ const selectStyles = {
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Entrada normal: crear la primera tienda. Entrada forzada (botón "nueva
+  // tienda" desde una cuenta que ya tiene alguna): no redirigir a
+  // /seleccionar-tienda al verificar, se vino a propósito a crear otra.
+  const esTiendaAdicional = Boolean(location.state?.nueva);
   const [verificando, setVerificando] = useState(true);
   const [paso, setPaso] = useState(1);
   const [nombre, setNombre] = useState('');
@@ -153,9 +158,17 @@ export default function Onboarding() {
           setWhatsapp(prev => prev || datosSuscripcion.telefono);
         }
 
-        const tienda = await tiendaService.obtener();
+        if (esTiendaAdicional) {
+          if (!inicioTrackeado.current) {
+            inicioTrackeado.current = true;
+            onboardingTrackingService.registrarInicio({ paso: 'datos_tienda' }).catch(() => null);
+          }
+          return;
+        }
+
+        const tiendas = await tiendaService.mias();
         if (!activo) return;
-        if (tienda) navigate('/mi-dashboard', { replace: true });
+        if (tiendas.length > 0) navigate('/seleccionar-tienda', { replace: true });
         else if (!inicioTrackeado.current) {
           inicioTrackeado.current = true;
           onboardingTrackingService.registrarInicio({ paso: 'datos_tienda' }).catch(() => null);
@@ -169,7 +182,7 @@ export default function Onboarding() {
 
     verificarEntrada();
     return () => { activo = false; };
-  }, [navigate]);
+  }, [navigate, esTiendaAdicional]);
 
   useEffect(() => {
     let activo = true;
@@ -321,7 +334,7 @@ export default function Onboarding() {
       sessionStorage.removeItem('gesicomm:onboardingTemplateSlug');
       sessionStorage.removeItem('gesicomm:prefilledLandingItems');
 
-      await tiendaService.crear({
+      const tiendaCreada = await tiendaService.crear({
         nombre: nombre.trim(),
         documento: documento.trim(),
         deposito_departamento: zonaDepartamento.trim(),
@@ -339,6 +352,10 @@ export default function Onboarding() {
         onboarding_ficha: null,
         onboarding_accion: 'crear_tienda',
       });
+      // La tienda recién creada todavía no es la "activa" del JWT (el login
+      // la emitió sin ninguna, o con otra si ya tenía más): sin esto, el
+      // siguiente POST /mi-tienda/logo respondería 409.
+      await tiendaService.seleccionar(tiendaCreada.id);
       if (logoArchivo) {
         const formData = new FormData();
         formData.append('imagen', logoArchivo);

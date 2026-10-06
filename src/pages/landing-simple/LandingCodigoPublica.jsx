@@ -275,7 +275,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const pedirCatalogo = useCallback(async (pedido) => {
     const res = await obtenerCatalogoLandingPublica(slug, {
       pagina: pedido?.pagina,
-      porPagina: pedido?.porPagina,
+      porPagina: pedido?.porPagina || 20,
       orden: pedido?.orden === 'min-max' || pedido?.orden === 'max-min' || pedido?.orden === 'az' || pedido?.orden === 'za'
         ? pedido.orden
         : 'destacados',

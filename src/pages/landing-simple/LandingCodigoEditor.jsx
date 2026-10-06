@@ -431,6 +431,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       setAdvertencias(actualizada.codigo_advertencias || []);
       setAviso('Cambios guardados.');
       setSinGuardar(false);
+      setSidebarVisible(false);
       return true;
     } catch (err) {
       const data = err?.response?.data;
@@ -724,6 +725,17 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}
         codigos={codigos}
+        onCambiarCodigo={(vistaCodigo, parte, valor) => {
+          const valorSeguro = parte === 'html' ? limpiarAvisosIaHtml(valor) : valor;
+          setCodigos(prev => ({ ...prev, [vistaCodigo]: { ...CODIGO_VACIO, ...(prev[vistaCodigo] || {}), [parte]: valorSeguro } }));
+          setSinGuardar(true);
+          setAviso('Código actualizado desde Configurar tienda. Guardá para publicarlo.');
+        }}
+        onRestaurarCodigo={(vistaCodigo) => {
+          setCodigos(prev => ({ ...prev, [vistaCodigo]: baseDe(vistaCodigo, venta?.tipo, paginaLegal, tienda) }));
+          setSinGuardar(true);
+          setAviso('Vista restaurada a la base. Guardá para publicarlo.');
+        }}
         onSubirImagen={async archivo => {
           const form = new FormData();
           form.append('imagen', archivo);
@@ -1345,3 +1357,4 @@ const AYUDAS = {
   css: 'Se inyecta en un <style> propio. @import no está permitido: la IA declara Google Fonts como recurso y Gesicomm las carga en el <head>.',
   js: 'Corre después del runtime de Gesicomm (window.Gesicomm). Sin fetch, localStorage ni acceso a la ventana contenedora.',
 };
+

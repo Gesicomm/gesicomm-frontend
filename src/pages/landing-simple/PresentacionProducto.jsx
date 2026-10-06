@@ -5,6 +5,7 @@ import { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import ImagenesProductoLanding from './ImagenesProductoLanding';
 
 export const INSIGNIAS_COMERCIALES = ['Sale', 'Oferta', 'Flash Deal', 'Más vendido', 'Nuevo', 'Envío gratis', 'Últimas unidades', 'Combo'];
+export const ETIQUETAS_COMERCIALES = ['Oferta', 'Novedades', 'Más vendidos'];
 const campo = 'mt-1 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg';
 
 const gs = n => `Gs ${Math.round(Number(n) || 0).toLocaleString('es-PY')}`;
@@ -27,6 +28,19 @@ function imagenPrincipal(item) {
   return getMediaUrl(propia || item.imagen || item.imagen_url || null);
 }
 
+function etiquetasDe(valor) {
+  return String(valor || '').split(',').map(t => t.trim()).filter(Boolean);
+}
+
+function alternarEtiqueta(valor, etiqueta) {
+  const actuales = etiquetasDe(valor);
+  const normal = etiqueta.toLowerCase();
+  const existe = actuales.some(t => t.toLowerCase() === normal);
+  return existe
+    ? actuales.filter(t => t.toLowerCase() !== normal).join(', ')
+    : [...actuales, etiqueta].join(', ');
+}
+
 export default function PresentacionProducto({
   item,
   ancla,
@@ -36,6 +50,10 @@ export default function PresentacionProducto({
   onDestacar,
   tienda,
   onSubirImagen,
+  ofertaActiva = false,
+  onAlternarOferta = null,
+  ofertaFinAt = '',
+  onOfertaFinAt = null,
   inicialmenteAbierto = false,
 }) {
   const [abierto, setAbierto] = useState(inicialmenteAbierto);
@@ -52,6 +70,20 @@ export default function PresentacionProducto({
   const insigniasListId = `insignias-comerciales-${claveItem(item).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 
   const porcentaje = useMemo(() => descuento || '', [descuento]);
+  const etiquetasActuales = etiquetasDe(item.etiqueta);
+  const tieneEtiqueta = etiqueta => etiquetasActuales.some(t => t.toLowerCase() === etiqueta.toLowerCase());
+
+  function cambiarEtiquetaComercial(etiqueta) {
+    const siguiente = alternarEtiqueta(item.etiqueta, etiqueta);
+    onCambiar('etiqueta', siguiente);
+    if (etiqueta === 'Oferta') {
+      const quedaActiva = etiquetasDe(siguiente).some(t => t.toLowerCase() === 'oferta');
+      if (onAlternarOferta && quedaActiva !== ofertaActiva) onAlternarOferta();
+      if (quedaActiva && !item.insignia_principal) onCambiar('insignia_principal', 'Oferta');
+    }
+    if (etiqueta === 'Novedades' && !item.insignia_principal) onCambiar('insignia_principal', 'Nuevo');
+    if (etiqueta === 'Más vendidos' && !item.insignia_principal) onCambiar('insignia_principal', 'Más vendido');
+  }
 
   const selectorInsignia = (nombre, valor, campoDestino) => (
     <label className="block text-xs text-fg-muted">
@@ -136,10 +168,52 @@ export default function PresentacionProducto({
         <fieldset>
           <legend className="mb-2 text-sm font-semibold text-fg">Filtros</legend>
           <p className="text-xs text-fg-muted">{item.categoria || 'Sin categoría'}{item.sku ? ` · SKU ${item.sku}` : ''}. Conserva el nombre técnico del producto.</p>
+          <div className="mt-3">
+            <p className="mb-2 text-xs font-medium text-fg-muted">Etiquetas comerciales</p>
+            <div className="flex flex-wrap gap-2">
+              {ETIQUETAS_COMERCIALES.map(etiqueta => {
+                const activa = tieneEtiqueta(etiqueta);
+                return (
+                  <button
+                    key={etiqueta}
+                    type="button"
+                    aria-pressed={activa}
+                    onClick={() => cambiarEtiquetaComercial(etiqueta)}
+                    className={`h-8 rounded-full border px-3 text-xs font-semibold transition-colors ${activa ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface text-fg-muted hover:text-fg hover:border-border-strong'}`}
+                  >
+                    {etiqueta}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-fg-muted">
+              Estos chips alimentan los filtros rápidos de la página de productos.
+            </p>
+          </div>
           <label className="mt-2 block text-xs text-fg-muted">
             Etiquetas para filtrar
             <input aria-label="Etiquetas para filtrar (separadas por coma)" className={campo} value={item.etiqueta || ''} maxLength={100} placeholder="Ej: Cocina, Ceraflame" onChange={e => onCambiar('etiqueta', e.target.value)} />
           </label>
+          {onAlternarOferta && (
+            <div className="mt-3 space-y-2 rounded-lg border border-border bg-surface px-3 py-2">
+              <label className="flex items-center gap-2 text-xs text-fg">
+                <input type="checkbox" checked={ofertaActiva} onChange={onAlternarOferta} className="accent-primary" />
+                Usar fecha fin de oferta para este producto
+              </label>
+              {ofertaActiva && onOfertaFinAt && (
+                <label className="block text-xs text-fg-muted">
+                  Fecha fin de oferta
+                  <input
+                    type="datetime-local"
+                    aria-label="Fecha fin de oferta"
+                    className={campo}
+                    value={ofertaFinAt || ''}
+                    onChange={e => onOfertaFinAt(e.target.value)}
+                  />
+                </label>
+              )}
+            </div>
+          )}
         </fieldset>
 
         <div>

@@ -236,11 +236,28 @@ const HEADER_HTML = `<header class="commerce-header">
       <img class="brand-logo" data-gesicomm-tienda="logo" alt="">
       <span data-gesicomm-tienda="nombre">Tu tienda</span>
     </a>
-    <form class="search-box" role="search">
-      <input type="search" placeholder="Buscá productos, marcas y más..." aria-label="Buscar productos" data-gesicomm-buscar>
-      <button type="submit" aria-label="Buscar">⌕</button>
-    </form>
+
+    <nav class="header-nav" aria-label="Navegación comercial">
+      <div class="category-menu-wrap">
+        <button class="category-menu" type="button" data-gesicomm-categorias-toggle aria-expanded="false" aria-controls="gesicomm-menu-categorias">☰ Todas las categorías</button>
+        <div id="gesicomm-menu-categorias" class="category-menu-panel" data-gesicomm-menu-categorias hidden>
+          <p class="category-menu-title">Categorías</p>
+          <div class="category-menu-list"></div>
+        </div>
+      </div>
+      <div id="nav-links" class="nav-links">
+        __LINKS__
+      </div>
+    </nav>
+
     <div class="header-actions">
+      <div class="search-wrap">
+        <button class="search-toggle" type="button" data-gesicomm-search-toggle aria-expanded="false" aria-controls="gesicomm-search-panel" aria-label="Buscar">⌕</button>
+        <form id="gesicomm-search-panel" class="search-box" role="search" hidden>
+          <input type="search" placeholder="Buscá productos, marcas y más..." aria-label="Buscar productos" data-gesicomm-buscar>
+          <button type="submit" aria-label="Buscar">⌕</button>
+        </form>
+      </div>
       <button class="cart-button" type="button" data-gesicomm-carrito aria-label="Abrir carrito">
         <span aria-hidden="true">🛒</span>
         <strong>Carrito</strong>
@@ -248,12 +265,6 @@ const HEADER_HTML = `<header class="commerce-header">
       <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-links">☰</button>
     </div>
   </div>
-  <nav class="container main-nav" aria-label="Navegación comercial">
-    <a class="category-menu" href="#categorias">☰ Todas las categorías</a>
-    <div id="nav-links" class="nav-links">
-      __LINKS__
-    </div>
-  </nav>
 </header>`;
 
 const ANNOUNCEMENT_HTML = `<div class="announcement" aria-label="Beneficios de compra">
@@ -269,7 +280,7 @@ const ANNOUNCEMENT_HTML = `<div class="announcement" aria-label="Beneficios de c
   </div>
 </div>`;
 
-const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-gesicomm-lista="productos_ofertas" data-gesicomm-countdown data-gesicomm-venta-configurada="urgencia">
+const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-gesicomm-bloque="ofertas_urgencia" data-gesicomm-lista="productos_ofertas" data-gesicomm-countdown data-gesicomm-venta-configurada="urgencia">
   <div class="limited-offer-card">
     <div class="limited-offer-summary">
       <h2><span aria-hidden="true">⏰</span> <span data-gesicomm-venta="urgencia_titulo">Ofertas que terminan pronto</span></h2>
@@ -319,14 +330,35 @@ const FOOTER_HTML = `<footer class="site-footer">
 </footer>`;
 
 const JS_COMUN = `(() => {
+  // Mobile: el hamburguesa abre/cierra TODO el bloque de navegación
+  // (categorías + links), que en escritorio va centrado en la misma fila
+  // que el logo y el carrito — ver HEADER_HTML.
   const menuToggle = document.querySelector('.menu-toggle');
-  const navLinks = document.querySelector('#nav-links');
+  const headerNav = document.querySelector('.header-nav');
   menuToggle?.addEventListener('click', () => {
-    const abierto = navLinks.classList.toggle('is-open');
+    const abierto = headerNav.classList.toggle('is-open');
     menuToggle.setAttribute('aria-expanded', String(abierto));
   });
-  navLinks?.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => navLinks.classList.remove('is-open'));
+  headerNav?.querySelectorAll('#nav-links a').forEach((link) => {
+    link.addEventListener('click', () => headerNav.classList.remove('is-open'));
+  });
+
+  // Buscador del header: ícono que despliega el formulario (ver
+  // search-toggle en HEADER_HTML) en vez de ocupar lugar siempre.
+  const searchToggle = document.querySelector('[data-gesicomm-search-toggle]');
+  const searchBox = document.querySelector('#gesicomm-search-panel');
+  searchToggle?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const abrir = searchBox.hidden;
+    searchBox.hidden = !abrir;
+    searchToggle.setAttribute('aria-expanded', String(abrir));
+    if (abrir) searchBox.querySelector('input')?.focus();
+  });
+  document.addEventListener('click', (e) => {
+    if (searchBox && !searchBox.hidden && !e.target.closest('.search-wrap')) {
+      searchBox.hidden = true;
+      searchToggle?.setAttribute('aria-expanded', 'false');
+    }
   });
 
   document.querySelectorAll('.featured-carousel').forEach((carousel) => {
@@ -386,24 +418,40 @@ const JS_COMUN = `(() => {
 const INICIO_CSS_LEGACY = `${TOKENS_CSS}
 
 .commerce-header { position: sticky; top: 0; z-index: 20; background: var(--white); border-bottom: 1px solid var(--line); box-shadow: 0 8px 22px rgba(8, 41, 71, .05); }
-.commerce-header .header-main { min-height: 76px; display: flex; align-items: center; gap: 28px; }
+.commerce-header .header-main { position: relative; min-height: 76px; display: flex; align-items: center; gap: 28px; }
 .commerce-header .brand-mark { display: inline-flex; align-items: center; gap: 9px; min-width: max-content; color: var(--ink); font-size: 1.16rem; font-weight: 900; text-decoration: none; letter-spacing: -.03em; background: transparent; border: none; box-shadow: none; }
 .commerce-header .brand-logo { width: 32px; height: 32px; object-fit: contain; }
 .commerce-header .brand-logo[src=""], .commerce-header .brand-logo:not([src]) { display: none; }
 .commerce-header .brand-mark::before { display: none !important; }
 .commerce-header .brand-mark:has(.brand-logo[src]:not([src=""]))::before { display: none; }
-.search-box { flex: 1 1 360px; max-width: 620px; display: flex; min-height: 42px; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 10px; }
+/* Fila única: logo a la izquierda, nav (categorías + links) centrado en TODO
+   el header (no en el espacio libre, que varía según el ancho de cada lado),
+   buscador/carrito a la derecha — por eso posición absoluta en vez de
+   flex-grow para centrar .header-nav. */
+.commerce-header .header-nav { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 22px; }
+.header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.search-wrap { position: relative; display: inline-flex; }
+.search-toggle { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 10px; font-size: 1.05rem; }
+.search-toggle:hover, .search-toggle[aria-expanded="true"] { color: var(--brand-dark); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 22%, var(--line)); }
+.search-box { position: absolute; top: calc(100% + 10px); right: 0; z-index: 70; width: min(320px, calc(100vw - 36px)); display: flex; min-height: 42px; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 18px 45px rgba(8,41,71,.16); }
+.search-box[hidden] { display: none !important; }
 .search-box input { min-width: 0; flex: 1; padding: 0 14px; color: var(--ink); background: transparent; border: 0; outline: 0; font-size: .86rem; }
 .search-box button { width: 50px; color: var(--gc-texto-sobre-primario); background: var(--brand); border: 0; font-size: 1.1rem; font-weight: 900; }
-.header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .cart-button { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 12px; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 10px; font-size: .84rem; }
 .cart-button:hover { color: var(--brand-dark); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 22%, var(--line)); }
 .commerce-header .menu-toggle { display: none; width: 40px; height: 40px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
-.main-nav { min-height: 44px; display: flex; align-items: center; gap: 26px; border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
-.main-nav a { color: var(--ink-soft); text-decoration: none; font-size: .78rem; font-weight: 850; white-space: nowrap; }
-.main-nav a:hover, .main-nav a.active { color: var(--brand-dark); }
-.category-menu { display: inline-flex; align-items: center; gap: 7px; color: var(--ink) !important; }
-.commerce-header .nav-links { position: static; display: flex; flex-direction: row; gap: 28px; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.category-menu-wrap { position: relative; display: inline-flex; align-items: center; }
+.category-menu { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0; border: 0; background: transparent; color: var(--ink) !important; font-size: .78rem; font-weight: 850; white-space: nowrap; }
+.category-menu-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 70; width: min(280px, calc(100vw - 36px)); padding: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 18px 45px rgba(8,41,71,.16); }
+.category-menu-panel[hidden] { display: none !important; }
+.category-menu-title { margin: 2px 8px 8px; color: var(--ink-soft); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.category-menu-list { display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.category-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 38px; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 800; text-align: left; }
+.category-menu-item:hover { background: var(--brand-soft); color: var(--brand-dark); }
+.category-menu-item small { color: var(--ink-soft); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.commerce-header .nav-links { display: flex; flex-direction: row; align-items: center; gap: 22px; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.commerce-header .nav-links a { color: var(--ink-soft); text-decoration: none; font-size: .78rem; font-weight: 850; white-space: nowrap; }
+.commerce-header .nav-links a:hover, .commerce-header .nav-links a.active { color: var(--brand-dark); }
 .storefront { background: #f6fafc; color: var(--ink); }
 .storefront .page-content { max-width: 1240px; margin: 0 auto; padding: 18px 28px 42px; }
 .storefront .hero { height: 298px; padding: 0; background: transparent; }
@@ -723,23 +771,69 @@ h1 em { color: var(--ui-action); font-style: normal; }
 .storefront .offers-catalog-section .product-card.has-commercial-presentation .button-primary:hover { color: #b80f45; background: #fff; border-color: #fff; filter: brightness(.98); }
 .storefront .offers-catalog-section .product-card.has-commercial-presentation .gc-commercial-saving { flex: 1 0 100%; margin: -4px 0 0; color: #fff; font-size: 14px; font-weight: 900; }
 .storefront .offers-catalog-section .product-card.has-commercial-presentation .gc-commercial-details { margin-top: 12px; padding: 0; color: #243978; background: transparent; border: 0; font-size: 12px; font-weight: 800; }
-.storefront .limited-offer-product.has-commercial-presentation { grid-template-columns: 64px minmax(0, 1fr); border-radius: 10px; box-shadow: 0 8px 18px rgba(8,41,71,.08); }
-.storefront .limited-offer-product.has-commercial-presentation .limited-offer-copy { gap: 6px; }
-.storefront .limited-offer-product.has-commercial-presentation .limited-offer-copy h3 { font-size: 10px; }
-.storefront .limited-offer-product.has-commercial-presentation .limited-offer-prices { display: flex; flex-flow: row wrap; align-items: center; justify-content: space-between; gap: 5px 8px; margin-top: auto; padding: 7px 8px; color: #fff; background: #b80f45; border-radius: 8px; }
-.storefront .limited-offer-product.has-commercial-presentation .limited-offer-prices span { color: #fff; font-size: 11px; font-weight: 900; }
-.storefront .limited-offer-product.has-commercial-presentation .limited-offer-prices s { color: rgba(255,255,255,.72); font-size: 8px; }
-.storefront .limited-offer-product.has-commercial-presentation .gc-commercial-saving { flex: 1 0 100%; margin: -2px 0 0; color: #fff; font-size: 9px; font-weight: 900; }
-.storefront .limited-offer-product.has-commercial-presentation .button-primary { min-height: 24px; padding: 5px 10px; color: #b80f45; background: #fff; border-color: #fff; border-radius: 999px; font-size: 8px; font-weight: 900; }
-.storefront .limited-offer-card { box-shadow: 0 8px 20px rgba(8, 41, 71, .08); }
+.storefront .limited-offer-card {
+  display: grid; grid-template-columns: minmax(210px, .72fr) minmax(0, 1.8fr) auto; align-items: stretch; gap: 18px;
+  padding: 18px; border-radius: 12px; box-shadow: 0 8px 20px rgba(8, 41, 71, .08);
+}
+.storefront .limited-offer-summary {
+  display: flex; flex-direction: column; justify-content: center; min-width: 0;
+}
+.storefront .limited-offer-summary h2 {
+  margin: 0; color: #082947; font-size: clamp(18px, 1.8vw, 26px); line-height: 1.05; letter-spacing: -.03em;
+}
+.storefront .limited-offer-summary p { margin: 6px 0 14px; color: #526779; font-size: 13px; }
+.storefront .limited-offer-summary .countdown { width: 100%; margin-left: 0; gap: 8px; }
+.storefront .limited-offer-summary .countdown-separator { align-self: center; color: #f15d3d; font-weight: 900; }
+.storefront .limited-offer-summary .countdown-box {
+  display: grid; min-width: 46px; min-height: 52px; place-items: center; padding: 7px 8px;
+  color: #fff; background: #ff3f54; border-radius: 8px;
+}
+.storefront .limited-offer-summary .countdown-box b { font-size: 18px; line-height: 1; }
+.storefront .limited-offer-summary .countdown-box small { margin-top: 2px; color: rgba(255,255,255,.9); font-size: 8px; line-height: 1; }
+.storefront .limited-offer-products {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; min-width: 0;
+}
+.storefront .limited-offer-product,
+.storefront .limited-offer-product.has-commercial-presentation {
+  position: relative; display: grid; grid-template-columns: 88px minmax(0, 1fr); min-width: 0; min-height: 132px; gap: 12px;
+  padding: 12px; overflow: hidden; color: #082947; background: #fff; border: 1px solid #dbe8ef; border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(8,41,71,.08);
+}
+.storefront .limited-offer-image { align-self: stretch; min-height: 108px; overflow: hidden; background: #f7fafc; border-radius: 9px; }
+.storefront .limited-offer-image img { width: 100%; height: 100%; object-fit: contain; padding: 8px; mix-blend-mode: multiply; }
+.storefront .limited-offer-badge { position: absolute; top: 8px; left: 8px; z-index: 3; padding: 4px 7px; color: #fff; background: #ff3f54; border-radius: 999px; font-size: 9px; font-weight: 900; }
+.storefront .limited-offer-product.has-commercial-presentation .limited-offer-copy,
+.storefront .limited-offer-copy { display: flex; flex-direction: column; min-width: 0; gap: 7px; }
+.storefront .limited-offer-product.has-commercial-presentation .limited-offer-copy h3,
+.storefront .limited-offer-copy h3 {
+  margin: 0; color: #082947; font-size: 13px; line-height: 1.15; font-weight: 900;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.storefront .limited-offer-product.has-commercial-presentation .limited-offer-prices,
+.storefront .limited-offer-prices {
+  display: flex; flex-flow: row wrap; align-items: baseline; gap: 4px 8px; margin-top: auto; padding: 8px 9px;
+  color: #fff; background: #b80f45; border-radius: 9px;
+}
+.storefront .limited-offer-product.has-commercial-presentation .limited-offer-prices span,
+.storefront .limited-offer-prices span { color: #fff; font-size: 13px; font-weight: 900; line-height: 1.05; }
+.storefront .limited-offer-product.has-commercial-presentation .limited-offer-prices s,
+.storefront .limited-offer-prices s { color: rgba(255,255,255,.72); font-size: 9px; font-weight: 800; line-height: 1.05; }
+.storefront .limited-offer-product.has-commercial-presentation .gc-commercial-saving { flex: 1 0 100%; margin: -2px 0 0; color: #fff; font-size: 10px; font-weight: 900; }
+.storefront .limited-offer-product.has-commercial-presentation .button-primary,
+.storefront .limited-offer-product .button-primary { min-height: 30px; padding: 6px 11px; color: #b80f45; background: #fff; border-color: #fff; border-radius: 999px; font-size: 10px; font-weight: 900; }
+.storefront .limited-offer-see-all {
+  align-self: start; justify-self: end; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  padding: 9px 13px; color: #0965a8; background: #f4faff; border-radius: 999px; font-size: 12px; font-weight: 900;
+}
 
 @media (max-width: 760px) {
-  .commerce-header .header-main { min-height: auto; padding: 14px 16px; gap: 12px; flex-wrap: wrap; }
-  .commerce-header .search-box { order: 3; flex-basis: 100%; max-width: none; }
+  .commerce-header .header-main { min-height: auto; padding: 14px 16px; gap: 12px; }
   .commerce-header .menu-toggle { display: grid; place-items: center; }
-  .commerce-header .main-nav { overflow-x: auto; padding: 0 16px; gap: 20px; }
-  .commerce-header .nav-links { display: none; position: absolute; top: 100%; right: 12px; left: 12px; flex-direction: column; gap: 0; padding: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); }
-  .commerce-header .nav-links.is-open { display: flex; }
+  .commerce-header .search-box { left: auto; right: 0; width: min(280px, calc(100vw - 32px)); }
+  .commerce-header .header-nav { display: none; position: absolute; top: 100%; right: 12px; left: 12px; transform: none; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; background: var(--white); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); }
+  .commerce-header .header-nav.is-open { display: flex; }
+  .commerce-header .nav-links { flex-direction: column; align-items: stretch; gap: 0; }
+  .commerce-header .nav-links a { padding: 10px 4px; }
   .storefront .page-content { padding: 12px 14px 36px; }
   .storefront .hero { height: 270px; }
   .store-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -754,22 +848,22 @@ h1 em { color: var(--ui-action); font-style: normal; }
   .storefront .news-grid .product-card:first-of-type .product-image img { height: 118px; }
   .storefront .product-image { height: 138px; }
   .storefront .product-image img { height: 118px; }
+  .storefront .limited-offer-card { grid-template-columns: 1fr; gap: 14px; }
+  .storefront .limited-offer-products { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .storefront .limited-offer-see-all { justify-self: stretch; justify-content: center; }
 }
 @media (max-width: 430px) {
   .store-benefits { grid-template-columns: 1fr; }
   .storefront .spotlight-grid, .storefront .product-grid, .storefront .news-grid, .storefront .collection-grid { grid-template-columns: 1fr; }
+  .storefront .limited-offer-products { grid-template-columns: 1fr; }
+  .storefront .limited-offer-product, .storefront .limited-offer-product.has-commercial-presentation { grid-template-columns: 82px minmax(0, 1fr); }
 }`;
 
-const INICIO_HTML = `<div class="trust-bar" aria-label="Beneficios de compra">
-  <div class="trust-track">
-    <div class="trust-item"><span class="trust-icon">✦</span><div><strong>Envío a todo Paraguay</strong><span>Recibí tus compras donde estés</span></div></div>
-    <div class="trust-item"><span class="trust-icon">✓</span><div><strong>Pago seguro</strong><span>Comprá con total confianza</span></div></div>
-    <div class="trust-item"><span class="trust-icon">◉</span><div><strong>Atención personalizada</strong><span>Estamos para ayudarte</span></div></div>
-    <div class="trust-item"><span class="trust-icon">↺</span><div><strong>Cambios y devoluciones</strong><span>Tu compra siempre respaldada</span></div></div>
-    <div class="trust-item"><span class="trust-icon">✦</span><div><strong>Envío a todo Paraguay</strong><span>Recibí tus compras donde estés</span></div></div>
-    <div class="trust-item"><span class="trust-icon">✓</span><div><strong>Pago seguro</strong><span>Comprá con total confianza</span></div></div>
-    <div class="trust-item"><span class="trust-icon">◉</span><div><strong>Atención personalizada</strong><span>Estamos para ayudarte</span></div></div>
-    <div class="trust-item"><span class="trust-icon">↺</span><div><strong>Cambios y devoluciones</strong><span>Tu compra siempre respaldada</span></div></div>
+const INICIO_HTML = `<div class="trust-bar" aria-label="Beneficios de compra" data-gesicomm-bloque="anuncios">
+  <div class="trust-track" data-gesicomm-lista="anuncios">
+    <template>
+      <div class="trust-item"><span class="trust-icon" data-gesicomm-bind="icono"></span><strong data-gesicomm-bind="texto"></strong></div>
+    </template>
   </div>
 </div>
 
@@ -782,18 +876,24 @@ ${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
 
 <main class="storefront" data-gesicomm-base="catalogo">
   <div class="page-content">
-    <section id="inicio" class="hero">
+    <section id="inicio" class="hero" data-gesicomm-bloque="banner">
       <div class="hero-shell">
         <div class="hero-banners" data-gesicomm-lista="banners_inicio"><template><article class="hero-banner"><img data-gesicomm-bind="imagen" alt="" loading="lazy"><video data-gesicomm-bind="video" muted autoplay loop playsinline preload="metadata"></video><div class="hero-text"><p class="eyebrow" data-gesicomm-bind="etiqueta"></p><h2 data-gesicomm-bind="titulo"></h2><p data-gesicomm-bind="subtitulo"></p><a class="button-primary" data-gesicomm-bind="enlace"><span data-gesicomm-bind="cta_texto"></span> <span aria-hidden="true">→</span></a></div></article></template></div>
         <button class="slider-arrow left" type="button" data-gesicomm-banner-anterior aria-label="Banner anterior">‹</button><button class="slider-arrow right" type="button" data-gesicomm-banner-siguiente aria-label="Banner siguiente">›</button><div class="hero-dots" data-gesicomm-slider aria-label="Elegir banner"></div>
       </div>
     </section>
 
-    <section id="categorias" class="category-strip" data-gesicomm-lista="menu_categorias"><div class="container"><div class="section-heading"><h2>Categorías</h2></div><div class="category-grid" data-gesicomm-lista="menu_categorias" data-gesicomm-limite="8"><template><button class="category-card" type="button"><span class="category-media"><img data-gesicomm-bind="imagen" alt="" loading="lazy"></span><strong data-gesicomm-bind="nombre"></strong><small data-gesicomm-bind="cantidad_texto"></small></button></template></div></div></section>
+    <section id="productos-categoria" class="section pc-section" data-gesicomm-bloque="productos_categoria"><div class="section-heading"><div><p class="eyebrow" data-gesicomm-venta="productos_categoria_kicker"></p><h2 data-gesicomm-venta="productos_categoria_titulo"></h2><p data-gesicomm-venta="productos_categoria_subtitulo"></p></div></div><div class="pc-tabs" data-gesicomm-pc-tabs></div><div class="spotlight-grid" data-gesicomm-lista="productos_categoria"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div></section>
 
-    <section id="destacados" class="section"><div class="section-heading"><div><h2>✦ Productos destacados</h2><p>Los favoritos de nuestros clientes</p></div><a href="/catalogo" data-gesicomm-link="catalogo">Ver catálogo →</a></div><div class="spotlight-grid" data-gesicomm-lista="productos_destacados" data-gesicomm-limite="4"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div></section>
+    <section id="confianza" class="section trust-section" data-gesicomm-bloque="confianza"><div class="trust-grid" data-gesicomm-lista="confianza_inicio"><template><div class="trust-card"><span class="trust-card-icon" data-gesicomm-bind="icono"></span><div><h3 data-gesicomm-bind="titulo"></h3><p data-gesicomm-bind="texto"></p></div></div></template></div></section>
 
-    <section id="banner-promocional" class="mid-banner-section" data-gesicomm-lista="banners_intermedios">
+    <section id="marca" class="section brand-section" data-gesicomm-bloque="marca" data-gesicomm-venta-configurada="marca" hidden><div class="brand-layout"><div class="brand-media" data-gesicomm-lista="marca_medios"><template><div class="brand-medio"><img data-gesicomm-bind="imagen" alt="" loading="lazy"><video data-gesicomm-bind="video" muted autoplay loop playsinline preload="metadata"></video></div></template></div><div class="brand-copy"><p class="eyebrow" data-gesicomm-venta="marca_kicker"></p><h2 data-gesicomm-venta="marca_titulo"></h2><p data-gesicomm-venta="marca_texto"></p><div class="brand-badges" data-gesicomm-lista="marca_badges"><template><span class="brand-badge" data-gesicomm-bind="texto"></span></template></div></div></div></section>
+
+    <section id="categorias" class="category-strip" data-gesicomm-bloque="categorias" data-gesicomm-lista="menu_categorias"><div class="container"><div class="section-heading"><h2>Categorías</h2></div><div class="category-grid" data-gesicomm-lista="menu_categorias" data-gesicomm-limite="8"><template><button class="category-card" type="button"><span class="category-media"><img data-gesicomm-bind="imagen" alt="" loading="lazy"></span><strong data-gesicomm-bind="nombre"></strong><small data-gesicomm-bind="cantidad_texto"></small></button></template></div></div></section>
+
+    <section id="destacados" class="section" data-gesicomm-bloque="destacados"><div class="section-heading"><div><h2>✦ Productos destacados</h2><p>Los favoritos de nuestros clientes</p></div><a href="/catalogo" data-gesicomm-link="catalogo">Ver catálogo →</a></div><div class="spotlight-grid" data-gesicomm-lista="productos_destacados" data-gesicomm-limite="4"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div></section>
+
+    <section id="banner-promocional" class="mid-banner-section" data-gesicomm-bloque="banner_intermedio" data-gesicomm-lista="banners_intermedios">
       <template>
         <article class="mid-banner">
           <img data-gesicomm-bind="imagen" alt="" loading="lazy">
@@ -808,23 +908,23 @@ ${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
       </template>
     </section>
 
-    <div class="dynamic-sections" data-gesicomm-lista="secciones_inicio"><template><section class="section dynamic-section"><div class="dynamic-head"><div><p class="eyebrow" data-gesicomm-bind="tipo_label"></p><h2 data-gesicomm-bind="titulo"></h2><p data-gesicomm-bind="subtitulo"></p></div><a href="/catalogo" data-gesicomm-link="catalogo">Ver catálogo →</a></div><div class="spotlight-grid" data-gesicomm-lista="productos_seccion"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button></div></div></article></template></div></section></template></div>
+    <div class="dynamic-sections" data-gesicomm-bloque="secciones_inicio" data-gesicomm-lista="secciones_inicio"><template><section class="section dynamic-section"><div class="dynamic-head"><div><p class="eyebrow" data-gesicomm-bind="tipo_label"></p><h2 data-gesicomm-bind="titulo"></h2><p data-gesicomm-bind="subtitulo"></p></div><a href="/catalogo" data-gesicomm-link="catalogo">Ver catálogo →</a></div><div class="spotlight-grid" data-gesicomm-lista="productos_seccion"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button></div></div></article></template></div></section></template></div>
 
-    <section id="mas-vendidos" class="section"><div class="section-heading"><div><h2>🔥 Más vendidos</h2><p>Los productos que más eligen nuestros clientes</p></div></div><div class="compact-grid" data-gesicomm-lista="productos_manual"><template><article class="product-card"><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button></div></div></article></template></div></section>
+    <section id="mas-vendidos" class="section" data-gesicomm-bloque="mas_vendidos"><div class="section-heading"><div><h2>🔥 Más vendidos</h2><p>Los productos que más eligen nuestros clientes</p></div></div><div class="compact-grid" data-gesicomm-lista="productos_manual"><template><article class="product-card"><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button></div></div></article></template></div></section>
 
     ${LIMITED_OFFER_HTML}
 
-    <section id="ofertas-catalogo" class="section offers-catalog-section" data-gesicomm-lista="productos_ofertas"><div class="section-heading"><div><h2>Ofertas disponibles</h2><p>Productos seleccionados con precio especial</p></div><a href="/catalogo" data-gesicomm-link="catalogo">Ver catálogo →</a></div><div class="product-grid" data-gesicomm-lista="productos_ofertas"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="descuento"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div></section>
+    <section id="ofertas-catalogo" class="section offers-catalog-section" data-gesicomm-bloque="ofertas_catalogo" data-gesicomm-lista="productos_ofertas"><div class="section-heading"><div><h2>Ofertas disponibles</h2><p>Productos seleccionados con precio especial</p></div><a href="/catalogo" data-gesicomm-link="catalogo">Ver catálogo →</a></div><div class="product-grid" data-gesicomm-lista="productos_ofertas"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="descuento"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div></section>
 
-    <section id="colecciones" class="section"><div class="section-heading"><div><h2>✧ Colecciones</h2><p>Elegí tu estilo, encontrá tus favoritos</p></div></div><div class="collection-grid" data-gesicomm-lista="categorias" data-gesicomm-limite="4"><template><a class="collection-card" href="/catalogo" data-gesicomm-link="catalogo" data-gesicomm-bind="imagen"><h3 data-gesicomm-bind="nombre"></h3><p>Explorar →</p></a></template></div></section>
+    <section id="colecciones" class="section" data-gesicomm-bloque="colecciones"><div class="section-heading"><div><h2>✧ Colecciones</h2><p>Elegí tu estilo, encontrá tus favoritos</p></div></div><div class="collection-grid" data-gesicomm-lista="categorias" data-gesicomm-limite="4"><template><a class="collection-card" href="/catalogo" data-gesicomm-link="catalogo" data-gesicomm-bind="imagen"><h3 data-gesicomm-bind="nombre"></h3><p>Explorar →</p></a></template></div></section>
 
-    <section id="novedades" class="section"><div class="section-heading"><div><h2>Novedades</h2><p>Los últimos productos en llegar</p></div></div><div class="product-grid" data-gesicomm-lista="productos_novedades" data-gesicomm-limite="4"><template><article class="product-card"><div class="product-badge">Nuevo</div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button></div></div></article></template></div></section>
+    <section id="novedades" class="section" data-gesicomm-bloque="novedades"><div class="section-heading"><div><h2>Novedades</h2><p>Los últimos productos en llegar</p></div></div><div class="product-grid" data-gesicomm-lista="productos_novedades" data-gesicomm-limite="4"><template><article class="product-card"><div class="product-badge">Nuevo</div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar</button></div></div></article></template></div></section>
 
-    <section id="combos" class="section combos-section" data-gesicomm-lista="combos"><div class="section-heading"><div><h2>▣ Combos y packs</h2><p>Más ahorro cuando comprás en conjunto</p></div></div><div class="product-grid" data-gesicomm-lista="combos"><template><article class="product-card"><div class="product-badge">Ahorrá más</div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description">Incluye: <span data-gesicomm-bind="incluye"></span></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar combo</button></div></div></article></template></div></section>
+    <section id="combos" class="section combos-section" data-gesicomm-bloque="combos" data-gesicomm-lista="combos"><div class="section-heading"><div><h2>▣ Combos y packs</h2><p>Más ahorro cuando comprás en conjunto</p></div></div><div class="product-grid" data-gesicomm-lista="combos"><template><article class="product-card"><div class="product-badge">Ahorrá más</div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description">Incluye: <span data-gesicomm-bind="incluye"></span></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Comprar combo</button></div></div></article></template></div></section>
 
-    <section id="preguntas" class="section faq-section"><div class="section-heading"><div><h2>Preguntas frecuentes</h2><p>Resolvemos tus dudas más comunes</p></div></div><div class="faq-list"><div class="faq-item is-open"><button class="faq-question" type="button" aria-expanded="true"><span>¿Cuánto tarda en llegar mi pedido?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Los envíos se realizan según la cobertura de la tienda. Vas a ver las condiciones antes de confirmar.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Qué medios de pago aceptan?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Podés pagar con los medios habilitados por la tienda y consultar disponibilidad de pago al recibir.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Qué hago si recibo un producto con problemas?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Escribinos por WhatsApp para recibir asistencia sobre cambios o devoluciones.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Los productos tienen garantía?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Consultá las condiciones del producto o escribinos antes de comprar.</p></div></div></div></div></section>
+    <section id="preguntas" class="section faq-section" data-gesicomm-bloque="preguntas"><div class="section-heading"><div><h2>Preguntas frecuentes</h2><p>Resolvemos tus dudas más comunes</p></div></div><div class="faq-list"><div class="faq-item is-open"><button class="faq-question" type="button" aria-expanded="true"><span>¿Cuánto tarda en llegar mi pedido?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Los envíos se realizan según la cobertura de la tienda. Vas a ver las condiciones antes de confirmar.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Qué medios de pago aceptan?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Podés pagar con los medios habilitados por la tienda y consultar disponibilidad de pago al recibir.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Qué hago si recibo un producto con problemas?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Escribinos por WhatsApp para recibir asistencia sobre cambios o devoluciones.</p></div></div></div><div class="faq-item"><button class="faq-question" type="button" aria-expanded="false"><span>¿Los productos tienen garantía?</span><span class="faq-plus">›</span></button><div class="faq-answer"><div><p>Consultá las condiciones del producto o escribinos antes de comprar.</p></div></div></div></div></section>
 
-    <section id="contacto" class="section contact-section"><div class="contact-layout"><div><h2>¿Querés ayuda para elegir?</h2><p>Escribinos por WhatsApp o dejá tu consulta.</p><div class="contact-list"><button class="contact-link" type="button" data-gesicomm-whatsapp="Hola! Tengo una consulta">Escribinos por WhatsApp</button><span>Email: <span data-gesicomm-tienda="email"></span></span><span>Dirección: <span data-gesicomm-tienda="direccion"></span></span></div></div><form class="contact-form" data-gesicomm-form="contacto"><div class="form-grid"><div class="field"><label for="nombre">Nombre</label><input id="nombre" name="nombre" type="text" required></div><div class="field"><label for="telefono">Celular</label><input id="telefono" name="telefono" type="tel" required></div><div class="field full"><label for="mensaje">Consulta</label><textarea id="mensaje" name="mensaje" required></textarea></div></div><button class="button-primary" type="submit">Enviar consulta →</button><div class="form-feedback" data-gesicomm-form-ok style="display:none">Gracias. Te abrimos WhatsApp para que nos mandes la consulta.</div></form></div></section>
+    <section id="contacto" class="section contact-section" data-gesicomm-bloque="contacto"><div class="contact-layout"><div><h2>¿Querés ayuda para elegir?</h2><p>Escribinos por WhatsApp o dejá tu consulta.</p><div class="contact-list"><button class="contact-link" type="button" data-gesicomm-whatsapp="Hola! Tengo una consulta">Escribinos por WhatsApp</button><span>Email: <span data-gesicomm-tienda="email"></span></span><span>Dirección: <span data-gesicomm-tienda="direccion"></span></span></div></div><form class="contact-form" data-gesicomm-form="contacto"><div class="form-grid"><div class="field"><label for="nombre">Nombre</label><input id="nombre" name="nombre" type="text" required></div><div class="field"><label for="telefono">Celular</label><input id="telefono" name="telefono" type="tel" required></div><div class="field full"><label for="mensaje">Consulta</label><textarea id="mensaje" name="mensaje" required></textarea></div></div><button class="button-primary" type="submit">Enviar consulta →</button><div class="form-feedback" data-gesicomm-form-ok style="display:none">Gracias. Te abrimos WhatsApp para que nos mandes la consulta.</div></form></div></section>
   </div>
 </main>
 
@@ -835,24 +935,36 @@ ${FOOTER_HTML}`;
 const PRODUCTO_CSS = `${TOKENS_CSS}
 
 .commerce-header { position: sticky; top: 0; z-index: 50; background: var(--white); border-bottom: 1px solid var(--line); box-shadow: 0 8px 22px rgba(8, 41, 71, .05); }
-.commerce-header .header-main { min-height: 76px; display: flex; align-items: center; gap: 28px; }
+.commerce-header .header-main { position: relative; min-height: 76px; display: flex; align-items: center; gap: 28px; }
 .commerce-header .brand, .commerce-header .brand.brand-mark { display: inline-flex; align-items: center; gap: 9px; min-width: max-content; color: var(--ink); font-size: 1.16rem; font-weight: 900; text-decoration: none; letter-spacing: -.03em; background: transparent !important; border: none !important; box-shadow: none !important; }
 .commerce-header .brand-logo { width: 32px; height: 32px; object-fit: contain; }
 .commerce-header .brand-logo[src=""], .commerce-header .brand-logo:not([src]) { display: none; }
 .commerce-header .brand.brand-mark::before, .commerce-header .brand::before { display: none !important; }
 .commerce-header .brand.brand-mark:has(.brand-logo[src]:not([src=""]))::before { display: none; }
-.commerce-header .search-box { flex: 1 1 360px; max-width: 620px; display: flex; min-height: 42px; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 10px; }
+.commerce-header .header-nav { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 22px; }
+.commerce-header .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.commerce-header .search-wrap { position: relative; display: inline-flex; }
+.commerce-header .search-toggle { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 10px; font-size: 1.05rem; }
+.commerce-header .search-toggle:hover, .commerce-header .search-toggle[aria-expanded="true"] { color: var(--brand-dark); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 22%, var(--line)); }
+.commerce-header .search-box { position: absolute; top: calc(100% + 10px); right: 0; z-index: 70; width: min(320px, calc(100vw - 36px)); display: flex; min-height: 42px; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 18px 45px rgba(8,41,71,.16); }
+.commerce-header .search-box[hidden] { display: none !important; }
 .commerce-header .search-box input { min-width: 0; flex: 1; padding: 0 14px; color: var(--ink); background: transparent; border: 0; outline: 0; font-size: .86rem; }
 .commerce-header .search-box button { width: 50px; color: var(--gc-texto-sobre-primario); background: var(--brand); border: 0; font-size: 1.1rem; font-weight: 900; }
-.commerce-header .header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .commerce-header .cart-button { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 12px; color: var(--ink); background: transparent; border: 1px solid transparent; border-radius: 10px; font-size: .84rem; }
 .commerce-header .cart-button:hover { color: var(--brand-dark); background: var(--brand-soft); border-color: color-mix(in srgb, var(--brand) 22%, var(--line)); }
 .commerce-header .menu-toggle { display: none; width: 40px; height: 40px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
-.commerce-header .main-nav { min-height: 44px; display: flex; align-items: center; gap: 26px; border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
-.commerce-header .main-nav a { color: var(--ink-soft); text-decoration: none; font-size: .78rem; font-weight: 850; white-space: nowrap; }
-.commerce-header .main-nav a:hover, .commerce-header .main-nav a.active { color: var(--brand-dark); }
-.commerce-header .category-menu { display: inline-flex; align-items: center; gap: 7px; color: var(--ink) !important; }
-.commerce-header .nav-links { position: static; display: flex; flex-direction: row; gap: 28px; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.commerce-header .category-menu-wrap { position: relative; display: inline-flex; align-items: center; }
+.commerce-header .category-menu { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0; border: 0; background: transparent; color: var(--ink) !important; font-size: .78rem; font-weight: 850; white-space: nowrap; }
+.commerce-header .category-menu-panel { position: absolute; top: calc(100% + 8px); left: 0; z-index: 70; width: min(280px, calc(100vw - 36px)); padding: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 18px 45px rgba(8,41,71,.16); }
+.commerce-header .category-menu-panel[hidden] { display: none !important; }
+.commerce-header .category-menu-title { margin: 2px 8px 8px; color: var(--ink-soft); font-size: 11px; font-weight: 900; text-transform: uppercase; }
+.commerce-header .category-menu-list { display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.commerce-header .category-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 38px; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 800; text-align: left; }
+.commerce-header .category-menu-item:hover { background: var(--brand-soft); color: var(--brand-dark); }
+.commerce-header .category-menu-item small { color: var(--ink-soft); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.commerce-header .nav-links { display: flex; flex-direction: row; align-items: center; gap: 22px; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.commerce-header .nav-links a { color: var(--ink-soft); text-decoration: none; font-size: .78rem; font-weight: 850; white-space: nowrap; }
+.commerce-header .nav-links a:hover, .commerce-header .nav-links a.active { color: var(--brand-dark); }
 
 .breadcrumb { display: flex; flex-wrap: wrap; gap: 8px; padding: 22px 0 0; color: var(--ink-soft); font-size: .82rem; }
 .breadcrumb a { color: var(--brand-dark); font-weight: 700; cursor: pointer; }
@@ -1130,12 +1242,12 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
   .result-grid img, .proof > img { max-width: 260px; justify-self: center; }
 }
 @media (max-width: 720px) {
-  .commerce-header .header-main { min-height: auto; padding-top: 14px; padding-bottom: 14px; gap: 12px; flex-wrap: wrap; }
-  .commerce-header .search-box { order: 3; flex-basis: 100%; max-width: none; }
+  .commerce-header .header-main { min-height: auto; padding-top: 14px; padding-bottom: 14px; gap: 12px; }
   .commerce-header .menu-toggle { display: grid; place-items: center; }
-  .commerce-header .main-nav { overflow-x: auto; gap: 20px; }
-  .commerce-header .nav-links { display: none; position: absolute; top: 100%; right: 12px; left: 12px; flex-direction: column; gap: 0; padding: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); }
-  .commerce-header .nav-links.is-open { display: flex; }
+  .commerce-header .search-box { left: auto; right: 0; width: min(280px, calc(100vw - 32px)); }
+  .commerce-header .header-nav { display: none; position: absolute; top: 100%; right: 12px; left: 12px; transform: none; flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; background: var(--white); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-lg); }
+  .commerce-header .header-nav.is-open { display: flex; }
+  .commerce-header .nav-links { flex-direction: column; align-items: stretch; gap: 0; }
   .commerce-header .nav-links a, .commerce-header .nav-links .nav-cta { justify-content: flex-start; padding: 12px; }
   .sticky-compra {
     position: fixed; right: 0; bottom: 0; left: 0; z-index: 60; display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -1833,6 +1945,7 @@ body{margin:0;background:var(--gc-fondo);color:var(--gc-texto);font-family:Inter
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 a{color:inherit;text-decoration:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .lv-shell{min-height:100vh;background:linear-gradient(180deg,var(--lv-soft),var(--gc-fondo) 320px)}
 .lv-topbar{background:var(--gc-primario);color:var(--gc-texto-sobre-primario);font-size:13px;font-weight:750}
 .lv-topbar-inner{max-width:1180px;margin:0 auto;padding:9px 18px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -1900,8 +2013,63 @@ a{color:inherit;text-decoration:none}
 .lv-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted)}
 .lv-footer-inner{max-width:1180px;margin:0 auto;padding:24px 18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:13px}
 .lv-footer nav{display:flex;gap:12px;flex-wrap:wrap}.lv-footer a:hover{color:var(--gc-texto)}
-@media(max-width:920px){.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}}
-@media(max-width:560px){.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}}
+.lv-shell:has(.lv-shop-page){background:#fff}
+.lv-shop-page{--shop-text:#10201d;--shop-muted:#62706b;--shop-soft:#f6f8f4;--shop-surface:#ffffff;--shop-line:#dfe5dc;--shop-accent:var(--gc-primario,#143f3a);background:#fff;color:var(--shop-text)}
+.lv-shop-page,.lv-shop-page *{letter-spacing:0}
+.lv-shop-page .lv-kicker{color:color-mix(in srgb,var(--shop-accent) 72%,#c56b23)}
+.lv-shop-page .lv-title{color:var(--shop-text)}
+.lv-shop-page .lv-copy{color:var(--shop-muted)}
+.lv-shop-breadcrumb{margin:0 0 28px;color:var(--shop-muted);font-size:12px}
+.lv-shop-hero{margin-bottom:26px}
+.lv-shop-hero .lv-title{max-width:760px;font-size:clamp(34px,4.8vw,58px);font-weight:650;line-height:1.02}
+.lv-shop-hero .lv-copy{max-width:680px;font-size:15px}
+.lv-shop-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:28px;align-items:start}
+.lv-filters{position:sticky;top:92px;border:1px solid var(--shop-line);border-radius:10px;background:var(--shop-surface);color:var(--shop-text);padding:20px;box-shadow:0 12px 28px rgba(16,32,29,.04)}
+.lv-filters h2{margin:0 0 18px;color:var(--shop-text);font-size:20px;font-weight:650}
+.lv-filter-group{padding:16px 0;border-top:1px solid var(--shop-line)}
+.lv-filter-group:first-of-type{border-top:0;padding-top:0}
+.lv-filter-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;color:var(--shop-text);font-size:13px;font-weight:850}
+.lv-filter-field{display:grid;gap:6px;margin-top:10px;color:var(--shop-muted);font-size:11px}
+.lv-filter-field select,.lv-filter-field input{width:100%;min-height:38px;border:1px solid var(--shop-line);border-radius:7px;background:#fff;color:var(--shop-text);padding:8px 10px;outline:none}
+.lv-filter-field select:disabled{background:var(--shop-soft);color:var(--shop-text);cursor:not-allowed;opacity:1}
+.lv-filter-field select::placeholder,.lv-filter-field input::placeholder,.lv-search input::placeholder{color:color-mix(in srgb,var(--shop-muted) 62%,#fff)}
+.lv-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lv-check{display:flex;align-items:center;gap:8px;margin-top:9px;color:var(--shop-text);font-size:13px}
+.lv-check input{width:16px;height:16px;accent-color:var(--shop-accent)}
+.lv-clear{display:inline-flex;margin-top:14px;color:var(--shop-text);font-size:12px;text-decoration:underline}
+.lv-results-head{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;align-items:center;margin-bottom:14px}
+.lv-search{position:relative}
+.lv-search input{width:100%;min-height:48px;border:1px solid var(--shop-line);border-radius:9px;background:#fff;color:var(--shop-text);padding:0 16px 0 44px;outline:none}
+.lv-search:before{content:"⌕";position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--shop-muted);font-size:18px}
+.lv-sort select{width:100%;min-height:48px;border:1px solid var(--shop-line);border-radius:9px;background:#fff;color:var(--shop-text);padding:0 12px;font-weight:750;outline:none}
+.gc-select-ui{position:relative;width:100%;z-index:20}
+.gc-select-ui-button{width:100%;min-height:48px;border:1px solid var(--shop-line);border-radius:9px;background:#fff;color:var(--shop-text);padding:0 34px 0 12px;font:inherit;font-weight:750;text-align:left;cursor:pointer;position:relative}
+.gc-select-ui-button:after{content:"⌄";position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--shop-muted);font-size:14px}
+.gc-select-ui-button[aria-expanded="true"]{border-color:var(--shop-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-accent) 14%,transparent)}
+.gc-select-ui-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:80;max-height:240px;overflow:auto;border:1px solid var(--shop-line);border-radius:9px;background:#fff;box-shadow:0 14px 30px rgba(15,23,42,.14);padding:4px}
+.gc-select-ui-option{display:block;width:100%;border:0;background:transparent;color:var(--shop-text);padding:10px 12px;border-radius:7px;text-align:left;font:inherit;cursor:pointer}
+.gc-select-ui-option:hover,.gc-select-ui-option[aria-selected="true"]{background:color-mix(in srgb,var(--shop-accent) 12%,#fff);color:var(--shop-accent)}
+.lv-search input:focus,.lv-sort select:focus,.lv-filter-field select:focus,.lv-filter-field input:focus{border-color:var(--shop-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--shop-accent) 14%,transparent)}
+.lv-results-meta{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 22px;color:var(--shop-muted);font-size:12px}
+.lv-quick-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.lv-quick-filters a,.lv-quick-filters button{border:1px solid var(--shop-line);border-radius:999px;background:#fff;padding:8px 12px;color:var(--shop-text);font-size:12px;font-weight:750;cursor:pointer}
+.lv-quick-filters a:hover,.lv-quick-filters button:hover,.lv-quick-filters .is-active{border-color:var(--shop-accent);color:var(--shop-accent);background:color-mix(in srgb,var(--shop-accent) 8%,#fff)}
+.lv-shop-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px 22px}
+.lv-shop-card{position:relative;min-width:0;background:#fff;border:0;border-radius:0;overflow:visible;box-shadow:none;color:var(--shop-text)}
+.lv-shop-media{position:relative;display:grid;place-items:center;aspect-ratio:1/1;background:var(--shop-soft);border-radius:10px;overflow:hidden;cursor:pointer}
+.lv-shop-media img{width:100%;height:100%;object-fit:contain;padding:18px}
+.lv-shop-badge{position:absolute;left:12px;top:12px;z-index:2;border-radius:5px;background:color-mix(in srgb,var(--shop-accent) 72%,#b9ff38);color:#fff;padding:5px 9px;font-size:11px;font-weight:900}
+.lv-shop-card-body{padding-top:13px;display:grid;gap:7px}
+.lv-shop-category{min-height:14px;color:var(--shop-muted);font-size:11px;font-weight:850;text-transform:uppercase}
+.lv-shop-title{margin:0;color:var(--shop-text);font-size:15px;line-height:1.35;font-weight:750;cursor:pointer}
+.lv-shop-description{margin:0;color:var(--shop-muted);font-size:12px;line-height:1.45;min-height:17px}
+.lv-shop-prices{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.lv-shop-price{color:var(--shop-text);font-size:20px;font-weight:900}
+.lv-shop-old{color:var(--shop-muted);font-size:12px;text-decoration:line-through}
+.lv-shop-card .lv-primary{width:100%;min-height:46px;margin-top:8px;border-radius:8px;background:var(--shop-accent);color:#fff;box-shadow:none}
+.lv-stock-note{color:var(--shop-muted);font-size:11px}
+@media(max-width:920px){.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}.lv-shop-layout{grid-template-columns:1fr}.lv-filters{position:static}.lv-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid,.lv-shop-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}.lv-results-head{grid-template-columns:1fr}.lv-filter-row{grid-template-columns:1fr}}
 `;
 
 const CATEGORIA_HTML = `<div class="lv-shell">
@@ -1928,74 +2096,106 @@ const CATEGORIA_HTML = `<div class="lv-shell">
     </div>
   </header>
 
-  <main class="lv-page">
-    <section class="lv-hero">
-      <div>
-        <p class="lv-kicker">Categoria</p>
-        <h1 class="lv-title" data-gesicomm-categoria="nombre">Categoria</h1>
-        <p class="lv-copy">Explora esta seleccion con filtros rapidos, orden por precio y acceso directo al detalle de cada producto.</p>
-      </div>
-      <div class="lv-metrics" aria-label="Resumen de categoria">
-        <div class="lv-metric">
-          <strong data-gesicomm-total></strong>
-          <span>en esta vista</span>
+  <main class="lv-page lv-shop-page">
+    <p class="lv-shop-breadcrumb"><a href="/" data-gesicomm-inicio>Inicio</a> / Productos</p>
+    <section class="lv-shop-hero">
+      <p class="lv-kicker">Encontrá tu próximo favorito</p>
+      <h1 class="lv-title" data-gesicomm-categoria="nombre">Todos los productos</h1>
+      <p class="lv-copy">Encontrá lo que necesitás para hacer tu día a día más fácil.</p>
+    </section>
+
+    <section class="lv-shop-layout" aria-label="Catálogo de productos">
+      <aside class="lv-filters" aria-label="Filtros">
+        <h2>Filtros</h2>
+        <div class="lv-filter-group" data-gesicomm-control="categoria">
+          <div class="lv-filter-head"><span>Categorías</span><span aria-hidden="true">-</span></div>
+          <label class="lv-filter-field">
+            <span>Categoría</span>
+            <select data-gesicomm-filtro="categoria">
+              <option value="">Todas las categorías</option>
+            </select>
+          </label>
         </div>
-        <div class="lv-metric">
-          <strong>Entrega local</strong>
-          <span>coordinada por la tienda</span>
+        <div class="lv-filter-group" data-gesicomm-control="precio">
+          <div class="lv-filter-head"><span>Precio en guaraníes</span><span aria-hidden="true">-</span></div>
+          <div class="lv-filter-row">
+            <label class="lv-filter-field">
+              <span>Desde</span>
+              <input inputmode="numeric" data-gesicomm-filtro="precioMin" placeholder="Sin mínimo">
+            </label>
+            <label class="lv-filter-field">
+              <span>Hasta</span>
+              <input inputmode="numeric" data-gesicomm-filtro="precioMax" placeholder="Sin máximo">
+            </label>
+          </div>
+        </div>
+        <div class="lv-filter-group" data-gesicomm-control="disponibilidad">
+          <div class="lv-filter-head"><span>Disponibilidad</span><span aria-hidden="true">-</span></div>
+          <label class="lv-check"><input type="radio" name="lv-stock" data-gesicomm-filtro="disponibilidad" value="en_stock"> Disponible</label>
+          <label class="lv-check"><input type="radio" name="lv-stock" data-gesicomm-filtro="disponibilidad" value="agotado"> Agotado</label>
+        </div>
+        <div class="lv-filter-group" data-gesicomm-control="promociones">
+          <div class="lv-filter-head"><span>Promociones</span><span aria-hidden="true">-</span></div>
+          <label class="lv-check"><input type="checkbox" data-gesicomm-filtro="soloDescuento" value="true"> Solo con descuento</label>
+          <a class="lv-clear" href="/catalogo" data-gesicomm-link="catalogo">Limpiar filtros</a>
+        </div>
+      </aside>
+
+      <div class="lv-results">
+        <div class="lv-results-head">
+          <label class="lv-search" data-gesicomm-control="buscador">
+            <span class="sr-only">Buscar productos</span>
+            <input type="search" data-gesicomm-buscar placeholder="¿Qué estás buscando?">
+          </label>
+          <label class="lv-sort" data-gesicomm-control="orden">
+            <span class="sr-only">Ordenar</span>
+            <select data-gesicomm-filtro="orden">
+              <option value="">Orden recomendado</option>
+              <option value="max-min">Mayor precio</option>
+              <option value="min-max">Menor precio</option>
+              <option value="az">Nombre A-Z</option>
+              <option value="za">Nombre Z-A</option>
+            </select>
+          </label>
+        </div>
+        <div class="lv-results-meta">
+          <span data-gesicomm-total></span>
+          <a href="/catalogo" data-gesicomm-link="catalogo">Limpiar filtros</a>
+        </div>
+        <div class="lv-quick-filters" aria-label="Filtros rápidos">
+          <button type="button" data-gesicomm-filtro-etiqueta="Oferta">Ofertas</button>
+          <button type="button" data-gesicomm-filtro-etiqueta="Novedades">Novedades</button>
+          <button type="button" data-gesicomm-filtro-etiqueta="Más vendidos">Más vendidos</button>
+        </div>
+        <section class="lv-shop-grid" data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
+          <template>
+            <article class="lv-shop-card">
+              <div class="lv-shop-media" data-gesicomm-ver>
+                <span class="lv-shop-badge" data-gesicomm-bind="descuento"></span>
+                <img data-gesicomm-bind="imagen" alt="" loading="lazy">
+              </div>
+              <div class="lv-shop-card-body">
+                <div class="lv-shop-category" data-gesicomm-bind="categoria"></div>
+                <h3 class="lv-shop-title" data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
+                <p class="lv-shop-description" data-gesicomm-bind="descripcion"></p>
+                <div class="lv-shop-prices">
+                  <strong class="lv-shop-price" data-gesicomm-bind="precio"></strong>
+                  <span class="lv-shop-old" data-gesicomm-bind="precio_antes"></span>
+                </div>
+                <button class="lv-primary" type="button" data-gesicomm-agregar>Agregar al carrito</button>
+                <span class="lv-stock-note">Disponible</span>
+              </div>
+            </article>
+          </template>
+        </section>
+        <p class="lv-empty" data-gesicomm-sin-resultados style="display:none">No encontramos productos para estos filtros.</p>
+        <div class="lv-pages">
+          <button type="button" data-gesicomm-pagina="anterior">Anterior</button>
+          <span data-gesicomm-paginacion></span>
+          <button type="button" data-gesicomm-pagina="siguiente">Siguiente</button>
         </div>
       </div>
     </section>
-
-    <section class="lv-toolbar" aria-label="Filtros de categoria">
-      <label class="lv-field">
-        <span>Buscar</span>
-        <input type="search" data-gesicomm-buscar placeholder="Producto, marca o palabra clave">
-      </label>
-      <label class="lv-field">
-        <span>Ordenar</span>
-        <select data-gesicomm-filtro="orden">
-          <option value="">Destacados</option>
-          <option value="max-min">Mayor precio</option>
-          <option value="min-max">Menor precio</option>
-          <option value="az">Nombre A-Z</option>
-          <option value="za">Nombre Z-A</option>
-        </select>
-      </label>
-      <label class="lv-field">
-        <span>Stock</span>
-        <select data-gesicomm-filtro="disponibilidad">
-          <option value="todos">Todos</option>
-          <option value="en_stock">En stock</option>
-          <option value="agotado">Agotados</option>
-        </select>
-      </label>
-    </section>
-
-    <section class="lv-grid" data-gesicomm-lista="catalogo" data-gesicomm-si-vacio="mostrar">
-      <template>
-        <article class="lv-card">
-          <div class="lv-card-media" data-gesicomm-ver>
-            <img data-gesicomm-bind="imagen" alt="" loading="lazy">
-          </div>
-          <div class="lv-card-body">
-            <div class="lv-card-category" data-gesicomm-bind="categoria"></div>
-            <h3 class="lv-card-title" data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
-            <div class="lv-card-price">
-              <strong data-gesicomm-bind="precio"></strong>
-              <button class="lv-primary" type="button" data-gesicomm-agregar>Agregar</button>
-            </div>
-          </div>
-        </article>
-      </template>
-    </section>
-
-    <p class="lv-empty" data-gesicomm-sin-resultados style="display:none">No encontramos productos para estos filtros.</p>
-    <div class="lv-pages">
-      <button type="button" data-gesicomm-pagina="anterior">Anterior</button>
-      <span data-gesicomm-paginacion></span>
-      <button type="button" data-gesicomm-pagina="siguiente">Siguiente</button>
-    </div>
   </main>
 
   <footer class="lv-footer">
@@ -2015,9 +2215,7 @@ const CATEGORIA_HTML = `<div class="lv-shell">
 </div>`;
 
 const CATALOGO_HTML = CATEGORIA_HTML
-  .replace('<p class="lv-kicker">Categoria</p>', '<p class="lv-kicker">Catalogo</p>')
-  .replace('<h1 class="lv-title" data-gesicomm-categoria="nombre">Categoria</h1>', '<h1 class="lv-title">Catalogo completo</h1>')
-  .replace('Explora esta seleccion con filtros rapidos, orden por precio y acceso directo al detalle de cada producto.', 'Explora todos los productos disponibles, filtra por busqueda y ordena la tienda como prefieras.')
+  .replace('<h1 class="lv-title" data-gesicomm-categoria="nombre">Todos los productos</h1>', '<h1 class="lv-title">Todos los productos</h1>')
   .replace('Resumen de categoria', 'Resumen del catalogo')
   .replace('<span>en esta vista</span>', '<span>en el catalogo</span>')
   .replace('Filtros de categoria', 'Filtros del catalogo');

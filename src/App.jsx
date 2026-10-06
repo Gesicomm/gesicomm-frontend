@@ -49,6 +49,7 @@ const MiAfiliado = lazy(() => import('./pages/afiliados/MiAfiliado'));
 const AuthTracking = lazy(() => import('./pages/admin/AuthTracking'));
 const SeleccionModulo = lazy(() => import('./pages/auth/SeleccionModulo'));
 const Onboarding = lazy(() => import('./pages/onboarding/Onboarding'));
+const SeleccionarTienda = lazy(() => import('./pages/onboarding/SeleccionarTienda'));
 const ControlCourier = lazy(() => import('./pages/courier/control-courier').then(m => ({ default: m.ControlCourier })));
 const AbastecimientoAdmin = lazy(() => import('./pages/abastecimiento/AbastecimientoAdmin'));
 const SolicitudAbastecimientoDetalle = lazy(() => import('./pages/abastecimiento/SolicitudAbastecimientoDetalle'));
@@ -413,6 +414,10 @@ function App() {
         {/* Onboarding — primer paso de una cuenta nueva del rol 'usuario' */}
         <Route path="/onboarding" element={
           <ProtectedRoute><Onboarding /></ProtectedRoute>
+        } />
+        {/* Varias tiendas y ninguna activa: elegir con cuál trabajar */}
+        <Route path="/seleccionar-tienda" element={
+          <ProtectedRoute><SeleccionarTienda /></ProtectedRoute>
         } />
 
         {/* Rutas protegidas — vitrina, academia y pedidos del rol 'usuario' */}

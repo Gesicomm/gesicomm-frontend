@@ -25,4 +25,8 @@ export const tiendaService = {
     API.patch('/mi-tienda/dominio-propio/habilitado', { habilitado }).then(r => r.data),
   eliminarDominioPropio: () => API.delete('/mi-tienda/dominio-propio').then(r => r.data),
   consultarWhois: (domain) => API.post('/mi-tienda/dominio/whois', { domain }).then(r => r.data),
+
+  // Varias tiendas por cuenta: listado + cambio de tienda activa.
+  mias: () => API.get('/tiendas/mias').then(r => r.data),
+  seleccionar: (tiendaId) => API.post('/auth/seleccionar-tienda', { tienda_id: tiendaId }).then(r => r.data),
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import useSesion from '../hooks/useSesion';
 import {
   PantallaErrorConexion,
@@ -11,19 +11,21 @@ import { planesService } from '../services/planesService';
 
 /**
  * Igual que ProtectedRoute, pero además exige que el usuario (rol
- * 'usuario') ya haya completado el onboarding (tiene una tienda creada).
- * Si no la tiene, lo manda a /onboarding antes de dejarlo entrar a
- * cualquier sección del panel de usuario (catálogo, landings, pedidos...).
+ * 'usuario') tenga una tienda ACTIVA. Una cuenta puede tener varias
+ * tiendas — si no tiene ninguna la manda a /onboarding (crear la primera),
+ * si tiene alguna pero ninguna está seleccionada la manda a
+ * /seleccionar-tienda (elegir con cuál trabajar).
  *
  * A un usuario con otro rol (ej. 'administrador') no se le exige tienda —
  * este guard es específico del área de usuario final.
  *
  * ⚠️ Igual que los otros guards: es UX, no seguridad real. El backend ya
- *    devuelve 409 en las rutas que dependen de una tienda si no existe.
+ *    devuelve 409 en las rutas que dependen de una tienda si no hay una activa.
  */
 export default function RequireTienda({ children }) {
   const { estado, usuario, reintentar } = useSesion();
-  // 'pendiente' | 'ok' | 'sin-plan' | 'sin-tienda'
+  const location = useLocation();
+  // 'pendiente' | 'ok' | 'sin-plan' | 'sin-tienda' | 'sin-tienda-activa'
   const [acceso, setAcceso] = useState('pendiente');
 
   useEffect(() => {
@@ -40,11 +42,16 @@ export default function RequireTienda({ children }) {
           setAcceso('sin-plan');
           return null;
         }
-        return tiendaService.obtener().then(tienda => ({ tienda }));
+        if (usuario.tiendaId) return { activa: true };
+        // Sin tienda activa resuelta: puede ser que no tenga ninguna
+        // todavía (onboarding) o que tenga varias y no haya elegido
+        // (selector) — hace falta el listado para distinguir los dos casos.
+        return tiendaService.mias().then(tiendas => ({ activa: false, tiendas }));
       })
       .then((resultado) => {
         if (!vigente || resultado === null) return;
-        setAcceso(resultado.tienda ? 'ok' : 'sin-tienda');
+        if (resultado.activa) { setAcceso('ok'); return; }
+        setAcceso(resultado.tiendas.length === 0 ? 'sin-tienda' : 'sin-tienda-activa');
       })
       .catch(() => { if (vigente) setAcceso('sin-tienda'); });
 
@@ -58,6 +65,7 @@ export default function RequireTienda({ children }) {
   if (acceso === 'pendiente') return <PantallaVerificandoSesion onReintentar={reintentar} />;
   if (acceso === 'sin-plan') return <Navigate to="/planes" replace />;
   if (acceso === 'sin-tienda') return <Navigate to="/onboarding" replace />;
+  if (acceso === 'sin-tienda-activa') return <Navigate to="/seleccionar-tienda" state={{ desde: location.pathname }} replace />;
 
   return children;
 }

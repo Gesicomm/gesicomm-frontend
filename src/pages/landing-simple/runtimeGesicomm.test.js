@@ -123,12 +123,42 @@ describe('runtime del lienzo en blanco — inicio', () => {
     }
     filtrar('etiqueta', 'Cocina');
     expect(ids()).toEqual(['air-fryer-26l']);
-    expect([...document.querySelector('[data-gesicomm-filtro="etiqueta"]').options].map(o => o.value)).toEqual(['', 'Cocina', 'Oferta']);
+    expect([...document.querySelector('[data-gesicomm-filtro="etiqueta"]').options].map(o => o.value)).toEqual(['', 'Oferta', 'Cocina']);
     filtrar('etiqueta', 'Oferta'); filtrar('marca', 'Marca B');
     expect(ids()).toEqual(['remera']);
     filtrar('marca', ''); filtrar('precioMin', '100000');
     expect(ids()).toEqual(['air-fryer-26l']);
     filtrar('precioMin', ''); filtrar('disponibilidad', 'agotado');
+    expect(ids()).toEqual(['remera']);
+    dom.window.close();
+  });
+
+  it('permite cambiar la categoría y actualiza el título de la página', () => {
+    const plantillaCategoria = {
+      ...PLANTILLA_CATALOGO_TEST,
+      html: PLANTILLA_CATALOGO_TEST.html.replace(
+        '<div data-gesicomm-total></div>',
+        '<h1 data-gesicomm-categoria="nombre">Todos los productos</h1><div data-gesicomm-total></div>',
+      ),
+    };
+    const { window, document, dom } = montar(plantillaCategoria, {
+      ...datos,
+      vista: 'categoria',
+      categoria: { nombre: 'Cocina', slug: 'cocina', url: '#' },
+    });
+    const ids = () => [...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'));
+    const select = document.querySelector('[data-gesicomm-filtro="categoria"]');
+
+    expect(select.disabled).toBe(false);
+    expect(select.value).toBe('Cocina');
+    expect(document.querySelector('[data-gesicomm-categoria="nombre"]').textContent).toBe('Cocina');
+    expect(ids()).toEqual(['air-fryer-26l', 'malo']);
+
+    select.value = 'Ropa';
+    select.dispatchEvent(new window.Event('change', { bubbles: true }));
+
+    expect(select.value).toBe('Ropa');
+    expect(document.querySelector('[data-gesicomm-categoria="nombre"]').textContent).toBe('Ropa');
     expect(ids()).toEqual(['remera']);
     dom.window.close();
   });
@@ -149,6 +179,37 @@ describe('runtime del lienzo en blanco — inicio', () => {
     });
     expect(document.querySelector('[data-gesicomm-lista="catalogo"]')).toBeNull();
     expect(document.querySelector('#destacados .product-card [data-gesicomm-bind="nombre"]').textContent).toBe('Remera');
+    dom.window.close();
+  });
+
+  it('filtra el catálogo con botones rápidos por etiquetas comerciales', () => {
+    const plantilla = {
+      ...PLANTILLA_CATALOGO_TEST,
+      html: PLANTILLA_CATALOGO_TEST.html.replace(
+        '<div data-gesicomm-total></div>',
+        '<div class="lv-quick-filters" aria-label="Filtros rápidos"></div><div data-gesicomm-total></div>',
+      ),
+    };
+    const { document, click, dom } = montar(plantilla, {
+      ...datos,
+      vista: 'catalogo',
+      productos: [
+        { ...airFryer, etiqueta: 'Novedades, Outlet' },
+        { ...remera, etiqueta: 'Más vendidos' },
+        { ...malicioso, etiqueta: 'Oferta' },
+      ],
+    });
+    const ids = () => [...document.querySelectorAll('#productos [data-gesicomm-item]')].map(el => el.getAttribute('data-gesicomm-item'));
+
+    click('[data-gesicomm-filtro-etiqueta="Novedades"]');
+    expect(ids()).toEqual(['air-fryer-26l']);
+    expect(document.querySelector('[data-gesicomm-filtro-etiqueta="Novedades"]').getAttribute('aria-pressed')).toBe('true');
+
+    click('[data-gesicomm-filtro-etiqueta="Novedades"]');
+    expect(ids()).toEqual(['air-fryer-26l', 'remera', 'malo']);
+
+    click('[data-gesicomm-filtro-etiqueta="Outlet"]');
+    expect(ids()).toEqual(['air-fryer-26l']);
     dom.window.close();
   });
 
@@ -255,6 +316,140 @@ describe('runtime del lienzo en blanco — inicio', () => {
     document.querySelector('#mensaje').value = 'Hola';
     document.querySelector('[data-gesicomm-form]').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
     expect(mensajes).toContainEqual(expect.objectContaining({ tipo: 'gesicomm:evento', nombre: 'Lead' }));
+  });
+
+  it('usa la fecha real del countdown global en Inicio', () => {
+    const finAt = new Date(Date.now() + (7 * 60 + 10) * 60 * 1000).toISOString();
+    const { document } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        urgencia: {
+          activo: true,
+          fin_at: finAt,
+          titulo: 'Ofertas que terminan pronto',
+          texto: 'Aprovechá antes de que se agoten',
+          cta_texto: 'Ver todos',
+        },
+      },
+    });
+
+    expect(document.querySelector('[data-gesicomm-countdown-parte="horas"]').textContent).toBe('07');
+  });
+
+  it('anuncios y zona de confianza traen contenido de ejemplo sin configurar nada', () => {
+    const { document } = montar(PLANTILLA_INICIO, datos);
+    const anuncios = [...document.querySelectorAll('.trust-bar .trust-item strong')].map(el => el.textContent);
+    expect(anuncios).toEqual(['Envío a todo Paraguay', 'Pago seguro', 'Atención personalizada', 'Cambios y devoluciones',
+      'Envío a todo Paraguay', 'Pago seguro', 'Atención personalizada', 'Cambios y devoluciones']);
+    const confianza = [...document.querySelectorAll('.trust-card h3')].map(el => el.textContent);
+    expect(confianza).toEqual(['Opciones de pago', 'Cambios y devoluciones', 'Envíos a tu zona']);
+  });
+
+  it('anuncios y confianza configurados reemplazan el contenido de ejemplo', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        inicio: {
+          anuncios: ['Hecho en Paraguay'],
+          confianza: [{ icono: 'truck', titulo: 'Envío rápido', texto: 'A todo el país' }],
+        },
+      },
+    });
+    expect([...document.querySelectorAll('.trust-bar .trust-item strong')].map(el => el.textContent)).toEqual(['Hecho en Paraguay', 'Hecho en Paraguay']);
+    const tarjetas = document.querySelectorAll('.trust-card');
+    expect(tarjetas).toHaveLength(1);
+    expect(tarjetas[0].querySelector('h3').textContent).toBe('Envío rápido');
+    expect(tarjetas[0].querySelector('.trust-card-icon').textContent).toBe('🚚');
+  });
+
+  it('"Nuestra marca" queda oculta sin configurar, y se pinta completa cuando está activa', () => {
+    const sinMarca = montar(PLANTILLA_INICIO, datos);
+    expect(sinMarca.document.querySelector('#marca').hidden).toBe(true);
+
+    const conMarca = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        inicio: {
+          marca: {
+            activo: true, kicker: 'Conocé', titulo: 'Lo cotidiano puede ser más simple.', texto: 'Hola',
+            badges: ['Utilidad', 'Simplicidad'],
+            medios: [{ tipo: 'imagen', url: 'https://cdn.test/marca.jpg' }],
+          },
+        },
+      },
+    });
+    const { document } = conMarca;
+    expect(document.querySelector('#marca').hidden).toBe(false);
+    expect(document.querySelector('[data-gesicomm-venta="marca_titulo"]').textContent).toBe('Lo cotidiano puede ser más simple.');
+    expect([...document.querySelectorAll('.brand-badge')].map(el => el.textContent)).toEqual(['Utilidad', 'Simplicidad']);
+    expect(document.querySelector('.brand-medio img').getAttribute('src')).toBe('https://cdn.test/marca.jpg');
+  });
+
+  it('productos por categoría: oculto sin items, filtra por tab y respeta el límite', () => {
+    const sinItems = montar(PLANTILLA_INICIO, datos);
+    expect(sinItems.document.querySelector('#productos-categoria').hidden).toBe(true);
+
+    const { document, click } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      productos: [airFryer, remera, malicioso],
+      venta: { inicio: { productos_categoria: { activo: true, items: ['air-fryer-26l', 'remera', 'malo'], limite: 1 } } },
+    });
+    expect(document.querySelector('#productos-categoria').hidden).toBe(false);
+    // Límite 1: solo el primero de la lista configurada se pinta...
+    expect([...document.querySelectorAll('#productos-categoria [data-gesicomm-bind="nombre"]')].map(el => el.textContent)).toEqual(['Air Fryer 2.6L']);
+    // ...pero las tabs salen de TODA la selección curada, no de lo limitado:
+    // así se puede navegar a una categoría que el límite dejó afuera.
+    const tabs = [...document.querySelectorAll('[data-gesicomm-pc-categoria]')].map(el => el.textContent);
+    expect(tabs).toEqual(['Todos', 'Cocina', 'Ropa']);
+  });
+
+  it('productos por categoría: la tab de una categoría filtra sin tocar el estado del catálogo completo', () => {
+    const { document, click } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      productos: [airFryer, remera],
+      venta: { inicio: { productos_categoria: { activo: true, items: ['air-fryer-26l', 'remera'], limite: 8 } } },
+    });
+    const nombres = () => [...document.querySelectorAll('#productos-categoria [data-gesicomm-bind="nombre"]')].map(el => el.textContent);
+    expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera']);
+    expect([...document.querySelectorAll('[data-gesicomm-pc-categoria]')].map(el => el.textContent)).toEqual(['Todos', 'Cocina', 'Ropa']);
+
+    click('[data-gesicomm-pc-categoria="Ropa"]');
+    expect(nombres()).toEqual(['Remera']);
+    expect(document.querySelector('[data-gesicomm-pc-categoria="Ropa"]').classList.contains('is-active')).toBe(true);
+
+    click('[data-gesicomm-pc-categoria=""]');
+    expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera']);
+  });
+
+  it('bloques: reordena y oculta secciones del body sin lista guardada (compatibilidad total)', () => {
+    const { document } = montar(PLANTILLA_INICIO, datos);
+    // Sin venta.inicio.bloques, el orden original del HTML queda intacto.
+    const orden = [...document.querySelectorAll('.page-content > [data-gesicomm-bloque]')].map(el => el.getAttribute('data-gesicomm-bloque'));
+    expect(orden[0]).toBe('banner');
+    expect(orden.indexOf('destacados')).toBeGreaterThan(orden.indexOf('categorias'));
+
+    const { document: reordenado } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        inicio: {
+          bloques: [
+            { tipo: 'destacados', visible: true },
+            { tipo: 'banner', visible: true },
+            { tipo: 'categorias', visible: false },
+          ],
+        },
+      },
+    });
+    // Los bloques movidos van al final del contenedor, en el orden dado —
+    // los que la config no menciona quedan donde ya estaban (no es una
+    // lista parcial real: el editor siempre guarda los 17 completos).
+    const ordenNuevo = [...reordenado.querySelectorAll('.page-content > [data-gesicomm-bloque]')].map(el => el.getAttribute('data-gesicomm-bloque'));
+    const pos = tipo => ordenNuevo.indexOf(tipo);
+    expect(pos('destacados')).toBeLessThan(pos('banner'));
+    expect(pos('banner')).toBeLessThan(pos('categorias'));
+    expect(reordenado.querySelector('#categorias').hidden).toBe(true);
+    // "destacados" no estaba apagado y la vitrina tenía producto: igual se ve.
+    expect(reordenado.querySelector('#destacados').hidden).toBe(false);
   });
 });
 
@@ -412,7 +607,7 @@ describe('runtime — catálogo navegable', () => {
   });
 
   it('catálogo grande: pide cada página al contenedor y se puede comprar desde cualquier página', () => {
-    const datos = { ...base, productos: [airFryer], catalogo: { total: 60, por_pagina: 24, paginado: true } };
+    const datos = { ...base, productos: [airFryer], catalogo: { total: 60, por_pagina: 20, paginado: true } };
     const { window, document, mensajes, click } = montar(PLANTILLA_CATALOGO_TEST, datos);
     const responder = extra => {
       const pedido = [...mensajes].reverse().find(m => m.tipo === 'gesicomm:catalogo');
@@ -424,7 +619,7 @@ describe('runtime — catálogo navegable', () => {
     };
 
     const inicial = responder({ productos: [airFryer], pagina: 1, totalPaginas: 3, total: 60, categorias: ['Cocina', 'Ropa'] });
-    expect(inicial).toEqual(expect.objectContaining({ pagina: 1, porPagina: 24 }));
+    expect(inicial).toEqual(expect.objectContaining({ pagina: 1, porPagina: 20 }));
     expect(document.querySelector('[data-gesicomm-paginacion]').textContent).toBe('Página 1 de 3');
     expect(document.querySelector('[data-gesicomm-total]').textContent).toBe('60 productos disponibles');
     expect(document.querySelector('[data-gesicomm-pagina="anterior"]').disabled).toBe(true);
@@ -444,7 +639,7 @@ describe('runtime — catálogo navegable', () => {
   });
 
   it('descarta respuestas viejas cuando el visitante ya pidió otra cosa', () => {
-    const datos = { ...base, productos: [airFryer], catalogo: { total: 60, por_pagina: 24, paginado: true } };
+    const datos = { ...base, productos: [airFryer], catalogo: { total: 60, por_pagina: 20, paginado: true } };
     const { window, document, mensajes } = montar(PLANTILLA_CATALOGO_TEST, datos);
     const viejo = mensajes.find(m => m.tipo === 'gesicomm:catalogo');
     const cat = document.querySelector('select[data-gesicomm-filtro="orden"]');
@@ -1003,6 +1198,16 @@ describe('ficha: etiquetas y paquete destacado (Configurar venta)', () => {
 
 
 describe('presentacion comercial del lienzo', () => {
+  it('activa catálogo paginado con 20 productos desde la metadata pública del backend', () => {
+    const publico = datosRuntimePublico({
+      content: { venta: { configurado: true } },
+      catalogo_items: [airFryer],
+      paginacion: { pagina: 1, porPagina: 20, total: 57, totalPaginas: 3 },
+    });
+
+    expect(publico.catalogo).toMatchObject({ total: 57, por_pagina: 20, paginado: true });
+  });
+
   it('usa el mismo copy guardado en el panel y en la landing publica', () => {
     const venta = { presentacion_productos: { 'producto:10': { titulo_comercial: 'Cocina facil', mensaje_comercial: 'Para compartir', insignia_principal: 'Oferta', insignia_secundaria: 'Exclusivo online' } } };
     const panel = datosRuntimePreview({ productos: [{ ...airFryer, id: 10, slug: airFryer.id, precio_efectivo: airFryer.precio }], venta });

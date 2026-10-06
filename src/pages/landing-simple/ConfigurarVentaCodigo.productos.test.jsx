@@ -43,6 +43,39 @@ describe('Presentación de los productos del lienzo', () => {
     expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: 1200000, etiqueta: 'Cocina, Oferta especial' });
   });
 
+  it('marca etiquetas comerciales, badge y fecha de oferta desde la ficha', () => {
+    const confirmar = montar();
+    abrirFichaProducto('Cacerola');
+    fireEvent.click(screen.getByRole('button', { name: 'Oferta' }));
+    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1200000' } });
+    fireEvent.change(screen.getByLabelText('Fecha fin de oferta'), { target: { value: '2026-10-20T14:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+
+    const payload = confirmar.mock.calls[0][0];
+    expect(payload.items[0]).toMatchObject({ precio_ancla: 1200000, etiqueta: 'Oferta' });
+    expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Oferta' });
+    expect(payload.venta.urgencia).toMatchObject({ activo: true, productos: ['cacerola'], producto_id: 'cacerola' });
+    expect(payload.venta.urgencia.fin_at).toBe(new Date('2026-10-20T14:30').toISOString());
+  });
+
+  it('abre la edición completa de promo desde la sección de productos', () => {
+    const confirmar = montar();
+    fireEvent.click(screen.getAllByRole('tab', { name: 'Productos' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Editar precio, descuento y badges' })[0]);
+
+    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1200000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Oferta' }));
+    fireEvent.change(screen.getByLabelText('Fecha fin de oferta'), { target: { value: '2026-10-21T09:00' } });
+    fireEvent.change(screen.getByLabelText('Insignia principal'), { target: { value: 'Hot sale' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+
+    const payload = confirmar.mock.calls[0][0];
+    expect(payload.items[0]).toMatchObject({ precio_ancla: 1200000, etiqueta: 'Oferta' });
+    expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Hot sale' });
+    expect(payload.venta.urgencia.productos).toContain('cacerola');
+    expect(payload.venta.urgencia.fin_at).toBe(new Date('2026-10-21T09:00').toISOString());
+  });
+
   it('permite quitar el ancla guardada y ocultar del inicio desde la ficha', () => {
     const confirmar = montar({ seleccion: [{ ...catalogo.productos[0], precio_ancla: 1200000, etiqueta: 'Oferta' }, catalogo.productos[1]] });
     abrirFichaProducto('Cacerola');

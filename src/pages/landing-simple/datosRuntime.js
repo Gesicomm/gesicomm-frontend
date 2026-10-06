@@ -384,7 +384,7 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
   const urgencia = venta.urgencia
     ? {
       ...venta.urgencia,
-      producto_id: venta.urgencia.producto_id || venta.urgencia.content_id || productoId || null,
+      producto_id: venta.urgencia.producto_id || venta.urgencia.content_id || null,
     }
     : null;
   const pruebaSocial = venta.prueba_social
@@ -442,6 +442,10 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     : null;
   const categoriaActual = opciones.categoria || categoriaPorSlug(catalogo, opciones.categorySlug);
   const meta = data?.content?.catalogo || {};
+  const paginacion = data?.paginacion || {};
+  const totalCatalogo = paginacion.total ?? meta.total ?? catalogo.length;
+  const porPaginaCatalogo = paginacion.porPagina ?? paginacion.por_pagina ?? meta.porPagina ?? meta.por_pagina ?? 20;
+  const totalPaginasCatalogo = paginacion.totalPaginas ?? paginacion.total_paginas ?? meta.totalPaginas ?? meta.total_paginas ?? 1;
   return {
     vista: opciones.vista || (producto ? 'producto' : (categoriaActual ? 'categoria' : 'inicio')),
     categoria: categoriaActual ? { nombre: categoriaActual, slug: slugCategoria(categoriaActual), url: urlCategoria(slug, categoriaActual) } : null,
@@ -450,9 +454,9 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     // paginado: la respuesta trae solo la primera página; el resto lo pide
     // el runtime (ver onCatalogo en LandingCodigoPublica).
     catalogo: {
-      total: meta.total ?? catalogo.length,
-      por_pagina: meta.por_pagina || 24,
-      paginado: !!meta.paginado,
+      total: totalCatalogo,
+      por_pagina: porPaginaCatalogo,
+      paginado: !!(meta.paginado || paginacion.total != null || totalPaginasCatalogo > 1 || totalCatalogo > porPaginaCatalogo),
     },
     paginas: paginasDeTienda(slug),
     productos: catalogo,
@@ -464,7 +468,7 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
 }
 
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], tienda, venta, vista, productoId, ofertas = [] }) {
+export function datosRuntimePreview({ productos = [], tienda, venta, vista, productoId, categoria = null, ofertas = [] }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -482,7 +486,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     : null;
   return {
     vista: producto ? 'producto' : vista || 'inicio',
-    categoria: vista === 'categoria' ? { nombre: catalogo.find(i => i.categoria)?.categoria || 'Categoría', slug: 'categoria', url: '#' } : null,
+    categoria: vista === 'categoria' ? { nombre: categoria || catalogo.find(i => i.categoria)?.categoria || 'Categoría', slug: slugCategoria(categoria || catalogo.find(i => i.categoria)?.categoria || 'categoria'), url: '#' } : null,
     tienda: {
       nombre: tienda?.nombre || '',
       logo: media(tienda?.logo_imagen),
@@ -505,7 +509,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     venta: ventaRuntime(venta, catalogo, producto),
     // En el editor está toda la selección en memoria: filtra y ordena el
     // propio runtime, sin servidor.
-    catalogo: { total: catalogo.length, por_pagina: 24, paginado: false },
+    catalogo: { total: catalogo.length, por_pagina: 20, paginado: false },
     paginas: { checkout: '#' },
     productos: catalogo,
     producto,
@@ -522,3 +526,4 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     recomendados: recomendadosVista(catalogo, producto, venta),
   };
 }
+

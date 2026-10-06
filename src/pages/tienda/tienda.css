@@ -20,6 +20,14 @@
   gap: 1.5rem;
 }
 
+.tn-page-head-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .tn-page-head h1 {
   margin: 0;
   font-size: 1.6rem;
@@ -36,6 +44,22 @@
   color: var(--vit-muted);
   max-width: 68ch;
 }
+
+.tn-btn-tiendas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--vit-text);
+  background: var(--color-canvas);
+  border: 1px solid var(--vit-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tn-btn-tiendas:hover { border-color: var(--vit-accent); color: var(--vit-accent); }
 
 .tn-loading {
   display: flex;

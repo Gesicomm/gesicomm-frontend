@@ -418,8 +418,20 @@ export default function ConfigurarTienda() {
   return (
     <div className="tn-page">
       <header className="tn-page-head">
-        <h1>Configuración de tu tienda</h1>
-        <p>Todo lo que define tu negocio online: identidad, contacto, cobros, costos y medición. Se aplica a tu catálogo y a todas tus landings.</p>
+        <div className="tn-page-head-top">
+          <div>
+            <h1>Configuración de tu tienda</h1>
+            <p>Todo lo que define tu negocio online: identidad, contacto, cobros, costos y medición. Se aplica a tu catálogo y a todas tus landings.</p>
+          </div>
+          <button
+            type="button"
+            className="tn-btn-tiendas"
+            onClick={() => navigate('/seleccionar-tienda', { state: { desde: '/mi-tienda' } })}
+            title="Cambiar de tienda o crear una nueva"
+          >
+            <Store size={14} /> Mis tiendas
+          </button>
+        </div>
       </header>
 
       <div className="tn-shell">

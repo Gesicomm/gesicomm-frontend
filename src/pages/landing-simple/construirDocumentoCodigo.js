@@ -144,6 +144,7 @@ body {
 }
 body {
   overflow-x: hidden;
+  overflow-anchor: none;
   background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
   color: var(--gc-texto, var(--tienda-texto, #10202f));
 }
@@ -214,6 +215,10 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
 :where(.incluye-card > img, .trae-lista img) { flex-shrink: 0; }
 :where(.incluye-card > div) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 :where(.description-body) { line-height: 1.7; overflow-wrap: anywhere; }
+[data-gesicomm-lista],
+[data-gesicomm-generado] {
+  overflow-anchor: none;
+}
 .gc-catalog-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
 .gc-catalog-controls > :where(input, select) {
   flex: 1 1 210px; min-width: min(210px, 100%); max-width: 100%; min-height: 44px; padding: 10px 12px;

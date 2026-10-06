@@ -66,7 +66,8 @@ describe('banners configurados del inicio', () => {
     });
     const doc = dom.window.document;
     expect(doc.querySelector('[data-gesicomm-lista="catalogo"]')).toBeNull();
-    expect(doc.querySelector('#catalogo-completo a[data-gesicomm-link="catalogo"]').getAttribute('href')).toBe('/catalogo');
+    expect(doc.querySelector('#catalogo-completo')).toBeNull();
+    expect(doc.querySelector('#ofertas a[data-gesicomm-link="catalogo"], #ofertas-catalogo a[data-gesicomm-link="catalogo"]')).not.toBeNull();
     expect(doc.querySelector('main').textContent).not.toContain('Producto 19');
     dom.window.close();
   });
@@ -204,3 +205,4 @@ describe('banners configurados del inicio', () => {
     dom.window.close();
   });
 });
+

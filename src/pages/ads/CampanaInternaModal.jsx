@@ -239,10 +239,7 @@ export default function CampanaInternaModal({ open, onClose, onCreated, tiendas 
                         onChange={(e) => setBusquedaProducto(e.target.value)}
                       />
                     </div>
-                    <select className="filter-input" style={{ maxWidth: '200px' }} value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}>
-                      <option value="ALL">Todas las categorías</option>
-                      {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                    </select>
+                    
                   </div>
 
                   {cargandoOpciones ? (
