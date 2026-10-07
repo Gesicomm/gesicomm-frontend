@@ -190,6 +190,30 @@ body {
 :where(.pc-search input::placeholder, .storefront input[type="search"]::placeholder) {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
 }
+:where(.trust-section, .benefit-strip, .category-strip, .countdown-section) {
+  background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
+  border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.trust-card h3, .benefit-strip strong, .category-card, .countdown-copy h2) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.trust-card p, .benefit-strip span, .countdown-copy p) {
+  color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+}
+:where(.trust-card-icon, .benefit-strip svg, .countdown-copy > svg) {
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
+:where(.hero-text .button-primary, .mid-banner .button-secondary, .promo-banner-home a, .promo-banner button, .light-button) {
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  border-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  text-shadow: none !important;
+}
+:where(.hero-text .button-primary:hover, .mid-banner .button-secondary:hover, .promo-banner-home a:hover, .promo-banner button:hover, .light-button:hover) {
+  filter: brightness(1.08);
+}
 
 :where(.trust-bar, .announcement, .site-footer, footer) {
   background: var(--tienda-banda, var(--gc-primario, var(--tienda-primario, #062b4f))) !important;
@@ -250,6 +274,9 @@ img[data-gesicomm-bind="imagen"]:not(:where([data-gesicomm-lista="banners_inicio
 main[data-gesicomm-base="catalogo"] :where(.hero-shell) {
   background: transparent !important;
 }
+main[data-gesicomm-base="catalogo"] :where(.hero:has([data-gesicomm-lista="banners_inicio"]:empty), .hero-shell:has([data-gesicomm-lista="banners_inicio"]:empty)) {
+  display: none !important;
+}
 main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"] .hero-banner) {
   background: transparent !important;
   color: #fff !important;
@@ -287,6 +314,49 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
   color: inherit; background: var(--gc-superficie); border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 12px;
 }
 .gc-catalog-controls > [data-gesicomm-buscar] { flex-basis: 100%; }
+:where(.lv-shell:has(.lv-shop-page), .lv-shop-page) {
+  background: var(--gc-fondo, var(--tienda-fondo, #ffffff)) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.lv-shop-page) {
+  --shop-text: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  --shop-muted: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+  --shop-soft: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 8%, var(--gc-fondo, var(--tienda-fondo, #ffffff))) !important;
+  --shop-surface: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
+  --shop-line: var(--tienda-linea, var(--line, #d7e6ef)) !important;
+  --shop-accent: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
+:where(.lv-shop-page .lv-kicker) {
+  color: var(--tienda-destacado, var(--gc-primario, #075da0)) !important;
+}
+:where(.lv-shop-page .lv-title, .lv-shop-page .lv-shop-title, .lv-shop-page .lv-filters h2, .lv-shop-page .lv-filter-head, .lv-shop-page .lv-check, .lv-shop-page .lv-shop-price, .lv-shop-page .lv-clear, .lv-shop-page .lv-results-meta a) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.lv-shop-page .lv-copy, .lv-shop-page .lv-shop-breadcrumb, .lv-shop-page .lv-filter-field, .lv-shop-page .lv-results-meta, .lv-shop-page .lv-shop-category, .lv-shop-page .lv-shop-description, .lv-shop-page .lv-shop-old, .lv-shop-page .lv-stock-note) {
+  color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+}
+:where(.lv-shop-page .lv-filters, .lv-shop-page .lv-shop-media, .lv-shop-page .lv-empty, .lv-shop-page .lv-filter-field input, .lv-shop-page .lv-filter-field select, .lv-shop-page .lv-search input, .lv-shop-page .lv-sort select, .lv-shop-page .gc-select-ui-button, .lv-shop-page .gc-select-ui-menu, .lv-shop-page .lv-quick-filters a, .lv-shop-page .lv-quick-filters button, .lv-shop-page .lv-pages button) {
+  background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
+  border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.lv-shop-page .lv-shop-card) {
+  background: transparent !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.lv-shop-page .gc-select-ui-option) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+  background: transparent !important;
+}
+:where(.lv-shop-page .gc-select-ui-option:hover, .lv-shop-page .gc-select-ui-option[aria-selected="true"], .lv-shop-page .lv-quick-filters a:hover, .lv-shop-page .lv-quick-filters button:hover, .lv-shop-page .lv-quick-filters .is-active) {
+  color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 12%, var(--gc-superficie, #ffffff)) !important;
+  border-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
+:where(.lv-shop-page .lv-primary, .lv-shop-card .lv-primary) {
+  color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
+  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+}
 :where(.gc-product-shipping) { margin: 8px 0 0; font-size: .8rem; font-weight: 500; color: inherit; opacity: .85; }
 .gc-commercial-badges { display:flex; flex-wrap:wrap; gap:6px; padding:12px 14px; position:relative; z-index:1; }
 .gc-commercial-badges span { background:var(--gc-primario,#155e63); color:white; border-radius:999px; padding:6px 10px; font:700 12px/1.3 system-ui,sans-serif; }

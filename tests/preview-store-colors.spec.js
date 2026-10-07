@@ -266,3 +266,169 @@ test('el fondo oscuro de la tienda cubre la seccion de productos seleccionados',
   expect(contraste(estilos.activeColor, estilos.activeBackground)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(estilos.inputColor, estilos.inputBackground)).toBeGreaterThanOrEqual(4.5);
 });
+
+test('confianza y botones promocionales respetan los colores de la tienda', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <main class="storefront" data-gesicomm-base="catalogo">
+        <div class="page-content">
+          <section class="trust-section">
+            <div class="trust-grid">
+              <article class="trust-card">
+                <span class="trust-card-icon">💳</span>
+                <div>
+                  <h3>Opciones de pago</h3>
+                  <p>Consultá los medios de pago disponibles para tu compra.</p>
+                </div>
+              </article>
+            </div>
+          </section>
+          <section id="banner-promocional" class="mid-banner-section">
+            <article class="mid-banner">
+              <div class="mid-banner-copy">
+                <p class="eyebrow">Promo</p>
+                <h2>Nueva campaña promocional</h2>
+                <p>Mostrá una oferta, colección o beneficio importante.</p>
+                <a class="button-secondary" href="/catalogo">Ver productos →</a>
+              </div>
+            </article>
+          </section>
+        </div>
+      </main>
+    `,
+    css: `
+      .storefront { min-height: 100vh; background: #f6fafc; color: var(--navy); }
+      .trust-section { background: var(--home-superficie); border: 1px solid var(--line); border-radius: 9px; padding: 24px; }
+      .trust-card-icon { background: var(--sky); color: var(--blue); }
+      .trust-card h3 { color: var(--navy); }
+      .trust-card p { color: var(--muted); }
+      .mid-banner { color: #fff; background: #082947; padding: 24px 38px; }
+      .mid-banner .button-secondary { color: var(--navy); background: #fff; border: 0; }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('.trust-card h3')).toHaveText('Opciones de pago');
+  await expect(page.locator('.mid-banner .button-secondary')).toHaveText('Ver productos →');
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const trust = document.querySelector('.trust-section');
+    const trustTitle = document.querySelector('.trust-card h3');
+    const trustText = document.querySelector('.trust-card p');
+    const icon = document.querySelector('.trust-card-icon');
+    const button = document.querySelector('.mid-banner .button-secondary');
+    return {
+      trustBackground: c(trust).backgroundColor,
+      trustTitle: c(trustTitle).color,
+      trustText: c(trustText).color,
+      iconBackground: c(icon).backgroundColor,
+      iconColor: c(icon).color,
+      buttonBackground: c(button).backgroundColor,
+      buttonColor: c(button).color,
+    };
+  });
+
+  expect(estilos.trustBackground).not.toBe('rgb(255, 255, 255)');
+  expect(contraste(estilos.trustTitle, estilos.trustBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.trustText, estilos.trustBackground)).toBeGreaterThanOrEqual(3);
+  expect(contraste(estilos.iconColor, estilos.iconBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(estilos.buttonBackground).toBe('rgb(21, 94, 99)');
+  expect(contraste(estilos.buttonColor, estilos.buttonBackground)).toBeGreaterThanOrEqual(4.5);
+});
+
+test('vista de categoria usa fondo y superficies de Mi tienda', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <main class="storefront" data-gesicomm-base="catalogo">
+        <section class="hero">
+          <div class="hero-shell">
+            <div class="hero-banners" data-gesicomm-lista="banners_inicio"></div>
+          </div>
+        </section>
+      </main>
+      <div class="lv-shell">
+        <main class="lv-page lv-shop-page">
+          <section class="lv-shop-hero">
+            <p class="lv-kicker">Encontrá tu próximo favorito</p>
+            <h1 class="lv-title">Automotor y movilidad</h1>
+            <p class="lv-copy">Encontrá lo que necesitás para hacer tu día a día más fácil.</p>
+          </section>
+          <section class="lv-shop-layout">
+            <aside class="lv-filters">
+              <h2>Filtros</h2>
+              <label class="lv-filter-field">
+                <span>Categoría</span>
+                <select><option>Automotor y movilidad</option></select>
+              </label>
+            </aside>
+            <div class="lv-results">
+              <label class="lv-search"><input placeholder="¿Qué estás buscando?"></label>
+              <article class="lv-shop-card">
+                <div class="lv-shop-media"><img src="${producto.imagen}" alt=""></div>
+                <div class="lv-shop-card-body">
+                  <div class="lv-shop-category">Automotor y movilidad</div>
+                  <h3 class="lv-shop-title">Autoradio Multimedia</h3>
+                  <p class="lv-shop-description">Pantalla para el auto.</p>
+                  <strong class="lv-shop-price">Gs 275.854</strong>
+                  <button class="lv-primary" type="button">Agregar al carrito</button>
+                </div>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+    `,
+    css: `
+      .hero-shell { min-height: 520px; background: #091820; }
+      .lv-shell:has(.lv-shop-page) { background: #fff; }
+      .lv-shop-page { --shop-text:#10201d; --shop-muted:#62706b; --shop-surface:#ffffff; --shop-line:#dfe5dc; background:#fff; color:var(--shop-text); }
+      .lv-filters, .lv-shop-media, .lv-search input { background:#fff; color:var(--shop-text); border:1px solid var(--shop-line); }
+      .lv-title, .lv-shop-title, .lv-filter-head, .lv-shop-price { color:var(--shop-text); }
+      .lv-copy, .lv-shop-category, .lv-shop-description, .lv-filter-field { color:var(--shop-muted); }
+      .lv-shop-card .lv-primary { background:var(--shop-accent, #143f3a); color:#fff; }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('.lv-title')).toHaveText('Automotor y movilidad');
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const hero = document.querySelector('.hero');
+    const page = document.querySelector('.lv-shop-page');
+    const filters = document.querySelector('.lv-filters');
+    const title = document.querySelector('.lv-title');
+    const copy = document.querySelector('.lv-copy');
+    const productTitle = document.querySelector('.lv-shop-title');
+    const category = document.querySelector('.lv-shop-category');
+    const input = document.querySelector('.lv-search input');
+    const button = document.querySelector('.lv-primary');
+    return {
+      heroDisplay: c(hero).display,
+      pageBackground: c(page).backgroundColor,
+      filtersBackground: c(filters).backgroundColor,
+      titleColor: c(title).color,
+      copyColor: c(copy).color,
+      productTitle: c(productTitle).color,
+      categoryColor: c(category).color,
+      inputBackground: c(input).backgroundColor,
+      inputColor: c(input).color,
+      buttonBackground: c(button).backgroundColor,
+      buttonColor: c(button).color,
+    };
+  });
+
+  expect(estilos.heroDisplay).toBe('none');
+  expect(estilos.pageBackground).toBe('rgb(16, 26, 33)');
+  expect(estilos.filtersBackground).not.toBe('rgb(255, 255, 255)');
+  expect(contraste(estilos.titleColor, estilos.pageBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.copyColor, estilos.pageBackground)).toBeGreaterThanOrEqual(3);
+  expect(contraste(estilos.productTitle, estilos.pageBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.categoryColor, estilos.pageBackground)).toBeGreaterThanOrEqual(3);
+  expect(contraste(estilos.inputColor, estilos.inputBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(estilos.buttonBackground).toBe('rgb(21, 94, 99)');
+  expect(contraste(estilos.buttonColor, estilos.buttonBackground)).toBeGreaterThanOrEqual(4.5);
+});
