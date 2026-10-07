@@ -799,16 +799,26 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   overflow: hidden !important;
   background: var(--gc-superficie, var(--tienda-superficie, #ffffff)) !important;
   border-color: var(--tienda-linea, var(--line, #d7e6ef)) !important;
-  box-shadow: 0 18px 42px color-mix(in srgb, var(--gc-fondo, #0f172a) 72%, transparent) !important;
+  box-shadow: 0 18px 42px color-mix(in srgb, var(--gc-fondo, #0f172a) 64%, transparent) !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease !important;
+}
+:where([data-gesicomm-lista] .product-card:hover) {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 42%, var(--tienda-linea, var(--line, #d7e6ef))) !important;
+  box-shadow: 0 24px 56px color-mix(in srgb, var(--gc-fondo, #0f172a) 56%, transparent) !important;
 }
 :where([data-gesicomm-lista] .product-card > .product-image) {
+  display: grid !important;
+  place-items: center !important;
   border-bottom: 1px solid color-mix(in srgb, var(--tienda-linea, var(--line, #d7e6ef)) 72%, transparent) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  gap: 10px;
   min-width: 0;
+  padding: 14px !important;
   overflow-wrap: anywhere;
   position: relative;
   isolation: isolate;
@@ -816,11 +826,16 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content h3 {
+  min-height: 2.7em;
+  margin: 0 !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   line-height: 1.35;
+  font-weight: 850;
 }
 :where([data-gesicomm-lista] .product-card .product-category, [data-gesicomm-lista] .product-card .product-description, [data-gesicomm-lista] .product-card .gc-commercial-copy) {
+  margin: 0 !important;
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
+  line-height: 1.45;
 }
 [data-gesicomm-lista] .product-card .product-footer {
   flex-wrap: wrap;
@@ -834,37 +849,51 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 :where([data-gesicomm-lista] .product-card .product-footer) {
   margin-top: auto !important;
   padding: 0 !important;
-  gap: 10px !important;
+  gap: 12px !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   background: transparent !important;
+}
+:where([data-gesicomm-lista] .product-card .product-prices) {
+  display: flex !important;
+  width: 100% !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .price) {
   display: inline-flex !important;
   width: fit-content !important;
   max-width: 100% !important;
-  min-height: 30px !important;
+  min-height: 34px !important;
   align-items: center !important;
-  padding: 5px 10px !important;
-  border-radius: 8px !important;
+  padding: 6px 11px !important;
+  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 24%, transparent) !important;
+  border-radius: 10px !important;
   color: var(--tienda-destacado, var(--gc-primario, #075da0)) !important;
   background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 14%, var(--gc-superficie, #ffffff)) !important;
+  font-size: 15px !important;
   font-weight: 900 !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .price-old) {
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary) {
-  min-height: 40px !important;
-  border-radius: 8px !important;
+  width: 100% !important;
+  min-height: 42px !important;
+  border-radius: 10px !important;
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
   background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
   border-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  font-weight: 900 !important;
   box-shadow: 0 10px 24px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 22%, transparent) !important;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary:hover) {
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
   background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 84%, #ffffff) !important;
   border-color: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 84%, #ffffff) !important;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 28%, transparent) !important;
   transform: translateY(-1px);
 }
 /* Un solo combo relacionado aprovecha el ancho de la ficha. Con varios
