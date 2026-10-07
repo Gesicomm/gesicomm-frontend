@@ -17,6 +17,8 @@ import { plantillaInicioPara, formatoDeBase, PLANTILLA_PRODUCTO, PLANTILLA_CATAL
 import { verificarSesion } from '../../utils/auth';
 import PhonePreviewShell from './PhonePreviewShell';
 import { conGlobalesHeredados } from './globalesCodigo';
+import { extraerFragmentoHtml, reemplazarFragmentoHtml, extraerSeccionCss, reemplazarSeccionCss, bindsDeTiendaPerdidos } from './seccionesCodigo';
+import { armarPromptSeccionInicio } from './promptsSeccionInicio';
 
 // El MISMO editor de ofertas de la ficha de producto (precios, componentes,
 // margen, imagen): acá se abre en un panel lateral para crear o editar sin
@@ -149,7 +151,14 @@ const ENCABEZADO_INICIO_DEFAULT = {
   logo_tamano: 46,
   logo_rotacion: 0,
   logo_posicion: 'izquierda',
+  variante: 'normal',
+  variante_mobile: null,
 };
+// 'normal': encabezado en su propio contenedor, separado del banner.
+// 'embebido': encabezado transparente superpuesto al banner (sin separación
+// visual) — comparte este campo con la barra de anuncios y el banner porque
+// los tres se componen juntos, no se elige por separado.
+const VARIANTES_ENCABEZADO = ['normal', 'embebido'];
 const DESTINOS_MENU_PRINCIPAL = [
   ['#inicio', 'Inicio'],
   ['/catalogo', 'Productos'],
@@ -355,6 +364,10 @@ function normalizarEncabezadoInicio(encabezado = {}) {
     logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 96, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
     logo_rotacion: limitarNumero(encabezado.logo_rotacion, -180, 180, ENCABEZADO_INICIO_DEFAULT.logo_rotacion),
     logo_posicion: encabezado.logo_posicion === 'centro' ? 'centro' : ENCABEZADO_INICIO_DEFAULT.logo_posicion,
+    variante: VARIANTES_ENCABEZADO.includes(encabezado.variante) ? encabezado.variante : ENCABEZADO_INICIO_DEFAULT.variante,
+    // null = hereda la variante de escritorio; no es un tercer valor del
+    // selector, es la ausencia de override (ver EditorMenuPrincipal).
+    variante_mobile: VARIANTES_ENCABEZADO.includes(encabezado.variante_mobile) ? encabezado.variante_mobile : null,
   };
 }
 
@@ -430,6 +443,10 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       enlace: b.enlace || '/catalogo',
       imagen: b.imagen || '',
       tipo_medio: b.tipo_medio || inferirTipoMedio(b.imagen || ''),
+      // Override de responsive (RF-GEN-02): vacío/true = usa la imagen y la
+      // visibilidad de escritorio, no se duplica el resto del contenido.
+      imagen_mobile: b.imagen_mobile || '',
+      activo_mobile: b.activo_mobile !== false,
     }))
     : [];
   // Landing nueva sin banners guardados: arranca con uno de ejemplo en vez
@@ -463,7 +480,8 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
   const productosCategoria = inicio.productos_categoria && typeof inicio.productos_categoria === 'object' ? inicio.productos_categoria : {};
   const marca = inicio.marca && typeof inicio.marca === 'object' ? inicio.marca : {};
   const testimoniosConfig = inicio.testimonios && typeof inicio.testimonios === 'object' ? inicio.testimonios : {};
-  const anuncios = Array.isArray(inicio.anuncios)
+  const tieneAnunciosGuardados = Array.isArray(inicio.anuncios);
+  const anuncios = tieneAnunciosGuardados
     ? inicio.anuncios.map(it => (typeof it === 'string' ? { texto: it, icono: '' } : { texto: it?.texto || '', icono: it?.icono || '' }))
     : [];
   const anunciosConTexto = anuncios.filter(it => String(it.texto || '').trim());
@@ -494,7 +512,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     bloques: normalizarBloquesInicio(inicio.bloques),
     // Acepta el string suelto que guardaban las landings de antes del
     // selector de ícono (ver limpiarAnuncioInicio, backend).
-    anuncios: anunciosConTexto.length ? anunciosConTexto : ANUNCIOS_INICIO_DEFAULT,
+    anuncios: tieneAnunciosGuardados ? anunciosConTexto : ANUNCIOS_INICIO_DEFAULT,
     confianza: confianzaConTexto.length ? confianzaConTexto : CONFIANZA_INICIO_DEFAULT,
     productos_categoria: {
       activo: productosCategoria.activo === true,
@@ -1345,7 +1363,12 @@ export default function ConfigurarVentaCodigo({
     marca: { ...inicioComercial.marca, activo: !!(inicioComercial.marca.titulo || inicioComercial.marca.texto || inicioComercial.marca.medios?.length) },
     testimonios: {
       ...inicioComercial.testimonios,
-      activo: (inicioComercial.testimonios?.items || []).some(it => it && (it.nombre || it.comentario || it.foto)),
+      activo: !!(
+        (inicioComercial.testimonios?.kicker || '').trim() && inicioComercial.testimonios?.kicker !== TESTIMONIOS_INICIO_DEFAULT.kicker
+        || (inicioComercial.testimonios?.titulo || '').trim() && inicioComercial.testimonios?.titulo !== TESTIMONIOS_INICIO_DEFAULT.titulo
+        || (inicioComercial.testimonios?.subtitulo || '').trim()
+        || (inicioComercial.testimonios?.items || []).some(it => it && (it.nombre || it.comentario || it.foto))
+      ),
       items: (inicioComercial.testimonios?.items || [])
         .filter(it => it && (it.nombre || it.comentario || it.foto))
         .slice(0, 8),
@@ -1909,12 +1932,18 @@ export default function ConfigurarVentaCodigo({
                   bloques={inicioComercial.bloques}
                   onMover={moverBloqueInicio}
                   onAlternar={alternarBloqueInicio}
+                  codigoInicio={codigoInicioPreview}
+                  onCambiarCodigo={onCambiarCodigo}
+                  tienda={tienda}
+                  venta={ventaActual}
+                  productos={seleccion}
                   menuPanel={(
                     <EditorMenuPrincipal
                       encabezado={inicioComercial.encabezado}
                       items={inicioComercial.menu_links || []}
                       categorias={categoriasInicioDisponibles}
                       tienda={tienda}
+                      dispositivo={dispositivo}
                       onCambiarEncabezado={cambiarEncabezado}
                       onAgregar={agregarMenuPrincipal}
                       onCambiar={cambiarMenuPrincipal}
@@ -1926,6 +1955,7 @@ export default function ConfigurarVentaCodigo({
                     anuncios: (
                       <EditorAnuncios
                         anuncios={inicioComercial.anuncios}
+                        variante={normalizarEncabezadoInicio(inicioComercial.encabezado).variante}
                         onCambiar={cambiarAnuncio}
                         onAgregar={agregarAnuncio}
                         onQuitar={quitarAnuncio}
@@ -1935,6 +1965,8 @@ export default function ConfigurarVentaCodigo({
                       <EditorBannersInicio
                         banners={inicioComercial.banners}
                         categorias={categoriasInicioDisponibles}
+                        variante={normalizarEncabezadoInicio(inicioComercial.encabezado).variante}
+                        dispositivo={dispositivo}
                         onAgregar={agregarBanner}
                         onCambiar={cambiarBanner}
                         onQuitar={quitarBanner}
@@ -3319,13 +3351,17 @@ function SelectorEnlaceBanner({ value, onChange, categorias = [] }) {
   );
 }
 
-function EditorBannersInicio({ banners, categorias = [], onAgregar, onCambiar, onQuitar, onMover, onSubir }) {
+function EditorBannersInicio({ banners, categorias = [], variante, dispositivo = 'escritorio', onAgregar, onCambiar, onQuitar, onMover, onSubir }) {
   const [colapsados, setColapsados] = useState({});
+  const esMovil = dispositivo === 'movil';
   function alternar(id) {
     setColapsados(prev => ({ ...prev, [id]: !prev[id] }));
   }
   return (
     <div className="space-y-3">
+      {variante === 'embebido' && (
+        <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
+      )}
       {banners.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border-strong px-4 py-5 text-center">
           <p className="text-sm font-semibold text-fg">Todavía no hay banners promocionales.</p>
@@ -3376,6 +3412,30 @@ function EditorBannersInicio({ banners, categorias = [], onAgregar, onCambiar, o
               <div className="sm:col-span-2"><CampoTexto label="Subtítulo" value={banner.subtitulo} onChange={v => onCambiar(banner.id, { subtitulo: v })} placeholder="Productos seleccionados con precios especiales" maxLength={160} /></div>
               <SelectorEnlaceBanner value={banner.enlace} categorias={categorias} onChange={v => onCambiar(banner.id, { enlace: v })} />
               <EditorMedioBanner banner={banner} onCambiar={cambio => onCambiar(banner.id, cambio)} onSubir={onSubir} />
+              {esMovil && (
+                <div className="sm:col-span-2 rounded-xl border border-dashed border-border-strong bg-surface p-3 space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-fg">Imagen para celular (opcional)</p>
+                    <p className="text-[11px] text-fg-muted">El texto, el link y el CTA son los mismos que en escritorio — acá solo se puede cambiar la foto (recorte distinto) u ocultar el banner en celular.</p>
+                  </div>
+                  <CampoTexto
+                    label="URL de la imagen en celular"
+                    value={banner.imagen_mobile}
+                    onChange={v => onCambiar(banner.id, { imagen_mobile: v })}
+                    placeholder="Vacío = usa la misma imagen que escritorio"
+                    maxLength={320}
+                  />
+                  <label className="flex items-center gap-2 text-xs font-medium text-fg">
+                    <input
+                      type="checkbox"
+                      checked={banner.activo_mobile !== false}
+                      onChange={e => onCambiar(banner.id, { activo_mobile: e.target.checked })}
+                      className="accent-primary"
+                    />
+                    Mostrar este banner en celular
+                  </label>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -3444,7 +3504,7 @@ function FilaBloqueInicio({ numero, etiqueta, visible, primero, ultimo, onMover,
 // duplicado en paneles sueltos más abajo. El Menú entra como bloque 2, fijo
 // (vive en el header: no se reordena ni se oculta), el resto sale de
 // `bloques` (venta.inicio.bloques) con su orden y su "Mostrar".
-function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuPanel }) {
+function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuPanel, codigoInicio, onCambiarCodigo, tienda, venta, productos }) {
   const [abierto, setAbierto] = useState(null);
   const filas = [bloques[0], { tipo: '__menu__' }, ...bloques.slice(1)];
   return (
@@ -3452,6 +3512,20 @@ function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuP
       {filas.map((b, idx) => {
         const esMenu = b.tipo === '__menu__';
         const idxReal = esMenu ? -1 : (idx === 0 ? 0 : idx - 1);
+        const tipoSeccion = esMenu ? 'encabezado' : b.tipo;
+        const panelCompleto = codigoInicio ? (
+          <div className="space-y-3">
+            {esMenu ? menuPanel : paneles[b.tipo]}
+            <EditorCodigoSeccion
+              tipo={tipoSeccion}
+              codigoInicio={codigoInicio}
+              onCambiarCodigo={onCambiarCodigo}
+              tienda={tienda}
+              venta={venta}
+              productos={productos}
+            />
+          </div>
+        ) : (esMenu ? menuPanel : paneles[b.tipo]);
         return (
           <FilaBloqueInicio
             key={b.tipo}
@@ -3462,7 +3536,7 @@ function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuP
             ultimo={idxReal === bloques.length - 1}
             onMover={esMenu ? null : dir => onMover(b.tipo, dir)}
             onAlternar={esMenu ? null : () => onAlternar(b.tipo)}
-            panel={esMenu ? menuPanel : paneles[b.tipo]}
+            panel={panelCompleto}
             abierto={abierto === idx + 1}
             onAbrir={setAbierto}
           />
@@ -3472,10 +3546,150 @@ function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuP
   );
 }
 
-function EditorAnuncios({ anuncios, onCambiar, onAgregar, onQuitar }) {
+// Mini-editor de código (HTML/CSS) de UNA sola sección de Inicio, con el
+// mismo flujo de copiar/pegar que "Código avanzado" (CodigoAvanzadoModal)
+// pero scoped a esta sección nomás — ver seccionesCodigo.js y
+// promptsSeccionInicio.js. No depende de ninguna IA conectada: arma un
+// prompt de texto para copiar y pegar en ChatGPT/Claude/Gemini, igual que
+// ya hace promptsCodigo.js para la página completa.
+function EditorCodigoSeccion({ tipo, codigoInicio, onCambiarCodigo, tienda, venta, productos }) {
+  const [abierto, setAbierto] = useState(false);
+  const fragmentoHtml = useMemo(() => extraerFragmentoHtml(codigoInicio.html, tipo), [codigoInicio.html, tipo]);
+  const seccionCss = useMemo(() => extraerSeccionCss(codigoInicio.css, tipo), [codigoInicio.css, tipo]);
+  const [htmlDraft, setHtmlDraft] = useState(fragmentoHtml);
+  const [cssDraft, setCssDraft] = useState(seccionCss);
+  const [pegado, setPegado] = useState('');
+  const [error, setError] = useState('');
+  const [copiado, setCopiado] = useState(false);
+
+  useEffect(() => { setHtmlDraft(fragmentoHtml); }, [fragmentoHtml]);
+  useEffect(() => { setCssDraft(seccionCss); }, [seccionCss]);
+
+  function aplicar(nuevoHtmlFrag, nuevoCssFrag) {
+    const perdidos = bindsDeTiendaPerdidos(fragmentoHtml, nuevoHtmlFrag);
+    if (perdidos.length) {
+      setError(`Esto borra datos de tu tienda que no se pueden perder (${perdidos.join(', ')}). Pedile a la IA que los mantenga y volvé a pegar.`);
+      return false;
+    }
+    if (!fragmentoHtml) {
+      setError(`No se encontró el bloque "${tipo}" en el código actual — no se puede reemplazar.`);
+      return false;
+    }
+    setError('');
+    onCambiarCodigo?.('inicio', 'html', reemplazarFragmentoHtml(codigoInicio.html, tipo, nuevoHtmlFrag));
+    onCambiarCodigo?.('inicio', 'css', reemplazarSeccionCss(codigoInicio.css, tipo, nuevoCssFrag));
+    return true;
+  }
+
+  function copiarPrompt() {
+    const prompt = armarPromptSeccionInicio(tipo, {
+      tienda, venta, productos,
+      base: { html: fragmentoHtml, css: seccionCss, js: '' },
+    });
+    navigator.clipboard?.writeText(prompt).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    }).catch(() => {});
+  }
+
+  function aplicarPegado() {
+    const dividido = dividirCodigoPegado(pegado);
+    const nuevoHtml = dividido.html ?? htmlDraft;
+    const nuevoCss = dividido.css ?? cssDraft;
+    const ok = aplicar(nuevoHtml, nuevoCss);
+    if (ok) {
+      setHtmlDraft(nuevoHtml);
+      setCssDraft(nuevoCss);
+      setPegado('');
+    }
+  }
+
+  if (!abierto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAbierto(true)}
+        className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-border text-xs font-semibold text-fg-muted hover:text-fg"
+      >
+        <FileCode2 size={13} /> Diseño (código) de esta sección
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-surface-2/50 p-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-fg"><FileCode2 size={13} /> Diseño (código) de esta sección</p>
+        <button type="button" onClick={() => setAbierto(false)} className="text-xs text-fg-muted hover:text-fg">Cerrar</button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={copiarPrompt}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-surface border border-border text-xs font-semibold text-fg hover:border-border-strong"
+        >
+          {copiado ? <Check size={13} /> : <FileCode2 size={13} />} {copiado ? 'Prompt copiado' : 'Copiar prompt para IA'}
+        </button>
+        <span className="text-[11px] text-fg-muted">Pegalo en ChatGPT, Claude o Gemini, pedile el rediseño y traé la respuesta acá abajo.</span>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="block text-[11px] font-semibold text-fg-muted">Pegar respuesta de la IA (o editar HTML/CSS a mano abajo)</label>
+        <textarea
+          value={pegado}
+          onChange={e => setPegado(e.target.value)}
+          rows={4}
+          placeholder="Pegá acá los bloques ```html ``` ```css ``` que te devolvió la IA"
+          className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-xs font-mono text-fg outline-none focus:border-primary"
+        />
+        <button
+          type="button"
+          onClick={aplicarPegado}
+          disabled={!pegado.trim()}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-primary-fg text-xs font-semibold disabled:opacity-45"
+        >
+          Aplicar a esta sección
+        </button>
+      </div>
+
+      {error && <p className="text-xs text-danger">{error}</p>}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <label className="block text-[11px] font-semibold text-fg-muted">HTML de la sección</label>
+          <textarea
+            value={htmlDraft}
+            onChange={e => setHtmlDraft(e.target.value)}
+            onBlur={() => aplicar(htmlDraft, cssDraft)}
+            rows={8}
+            spellCheck={false}
+            className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-xs font-mono text-fg outline-none focus:border-primary"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="block text-[11px] font-semibold text-fg-muted">CSS de la sección</label>
+          <textarea
+            value={cssDraft}
+            onChange={e => setCssDraft(e.target.value)}
+            onBlur={() => aplicar(htmlDraft, cssDraft)}
+            rows={8}
+            spellCheck={false}
+            className="w-full rounded-lg border border-border bg-surface px-2.5 py-2 text-xs font-mono text-fg outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditorAnuncios({ anuncios, variante, onCambiar, onAgregar, onQuitar }) {
   return (
     <div className="space-y-2">
       <p className="text-xs text-fg-muted">La franja que se mueve arriba del todo. Si no agregás ninguno, se muestran unos de ejemplo. Sin elegir ícono, se van ciclando unos genéricos.</p>
+      {variante === 'embebido' && (
+        <p className="text-xs text-fg-muted">Estilo: <strong>Encabezado embebido</strong> — se cambia en el panel de Encabezado.</p>
+      )}
       {(anuncios || []).map((it, idx) => (
         <div key={idx} className="flex items-center gap-2">
           <select
@@ -3734,8 +3948,9 @@ function EditorCategoriasInicio({ categorias, seleccionadas, onCambiar }) {
   );
 }
 
-function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, onCambiarEncabezado, onAgregar, onCambiar, onQuitar, onMover }) {
+function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, dispositivo = 'escritorio', onCambiarEncabezado, onAgregar, onCambiar, onQuitar, onMover }) {
   const cfg = normalizarEncabezadoInicio(encabezado);
+  const esMovil = dispositivo === 'movil';
   const logo = getMediaUrl(tienda?.logo || tienda?.logo_imagen || tienda?.logo_url || '');
   const nombre = tienda?.nombre || 'Tu tienda';
   const categoriasLista = categorias.map(([cat]) => cat).filter(Boolean);
@@ -3750,8 +3965,51 @@ function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, onCam
     }
     onCambiar(item.id, { destino });
   };
+  // En escritorio se edita "variante"; en móvil se edita "variante_mobile",
+  // que es un override opcional (null = hereda la de escritorio) — por eso
+  // acá sí hay una tercera opción ("Igual que escritorio") y en el selector
+  // de escritorio no.
+  const variante = esMovil ? (cfg.variante_mobile || cfg.variante) : cfg.variante;
+  const heredaDeEscritorio = esMovil && !cfg.variante_mobile;
+  const cambiarVariante = valor => onCambiarEncabezado(esMovil ? { variante_mobile: valor } : { variante: valor });
   return (
     <div className="space-y-3">
+      <div className="rounded-xl border border-border bg-surface-2/50 p-3">
+        <p className="text-sm font-semibold text-fg">Estilo del encabezado{esMovil ? ' (celular)' : ''}</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+          {esMovil
+            ? 'Por defecto usa el mismo estilo que escritorio. Elegí uno acá solo si en celular querés que se vea distinto.'
+            : 'Define cómo se componen juntos el encabezado, la barra de anuncios y el banner principal.'}
+        </p>
+        <div className={`mt-3 grid grid-cols-1 gap-2 ${esMovil ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+          {esMovil && (
+            <button
+              type="button"
+              onClick={() => onCambiarEncabezado({ variante_mobile: null })}
+              aria-pressed={heredaDeEscritorio}
+              className={`rounded-lg border p-3 text-left transition-colors ${heredaDeEscritorio ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface hover:border-border-strong'}`}
+            >
+              <span className="block text-sm font-semibold text-fg">Igual que escritorio</span>
+              <span className="mt-0.5 block text-xs text-fg-muted">Hereda la variante de arriba, sin override propio.</span>
+            </button>
+          )}
+          {[
+            { valor: 'normal', titulo: 'Encabezado separado', texto: 'El menú va en su propio contenedor, arriba del banner.' },
+            { valor: 'embebido', titulo: 'Encabezado embebido', texto: 'El menú se superpone, transparente, sobre la foto del banner.' },
+          ].map(opcion => (
+            <button
+              key={opcion.valor}
+              type="button"
+              onClick={() => cambiarVariante(opcion.valor)}
+              aria-pressed={!heredaDeEscritorio && variante === opcion.valor}
+              className={`rounded-lg border p-3 text-left transition-colors ${!heredaDeEscritorio && variante === opcion.valor ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface hover:border-border-strong'}`}
+            >
+              <span className="block text-sm font-semibold text-fg">{opcion.titulo}</span>
+              <span className="mt-0.5 block text-xs text-fg-muted">{opcion.texto}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="rounded-xl border border-border bg-surface-2/50 p-3">
         <div className="flex items-start justify-between gap-3">
           <div>

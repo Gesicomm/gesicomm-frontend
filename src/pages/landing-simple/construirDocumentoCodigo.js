@@ -150,8 +150,11 @@ body {
   min-width: 100% !important;
   max-width: none !important;
 }
+html,
 body {
   overflow-x: hidden;
+}
+body {
   overflow-anchor: none;
   background: var(--gc-fondo, var(--tienda-fondo, #ffffff));
   color: var(--gc-texto, var(--tienda-texto, #10202f));
@@ -225,11 +228,21 @@ body {
 :where(.trust-item strong, .announcement strong, .trust-icon, .trust-item svg) {
   color: var(--tienda-secundario, var(--gc-secundario, #93c5fd)) !important;
 }
-:where(.site-header, .commerce-header) {
+:where(.site-header, .commerce-header:not([data-variante="embebido"])) {
   background: color-mix(in srgb, var(--gc-superficie, var(--tienda-superficie, #fff)) 92%, transparent) !important;
   border-color: var(--tienda-linea, var(--gc-primario, #d7e6ef)) !important;
 }
-:where(.commerce-header .brand, .commerce-header .brand-mark, .commerce-header [data-gesicomm-tienda="nombre"], .commerce-header .cart-button, .commerce-header .cart-button strong, .commerce-header .menu-toggle) {
+/* Variante "embebido" (ver estilosInicioCodigo.js): el header va transparente
+   y superpuesto a la foto del banner, así que acá NO se fuerza el fondo/texto
+   de marca de arriba — se fuerza blanco, que es lo que se lee sobre una foto. */
+:where(.commerce-header[data-variante="embebido"]) {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+:where(.commerce-header[data-variante="embebido"] .brand, .commerce-header[data-variante="embebido"] .brand-mark, .commerce-header[data-variante="embebido"] [data-gesicomm-tienda="nombre"], .commerce-header[data-variante="embebido"] .cart-button, .commerce-header[data-variante="embebido"] .cart-button strong, .commerce-header[data-variante="embebido"] .menu-toggle) {
+  color: #fff !important;
+}
+:where(.commerce-header:not([data-variante="embebido"]) .brand, .commerce-header:not([data-variante="embebido"]) .brand-mark, .commerce-header:not([data-variante="embebido"]) [data-gesicomm-tienda="nombre"], .commerce-header:not([data-variante="embebido"]) .cart-button, .commerce-header:not([data-variante="embebido"]) .cart-button strong, .commerce-header:not([data-variante="embebido"]) .menu-toggle) {
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 :where(.commerce-header .brand, .commerce-header .brand-mark) {
@@ -258,35 +271,51 @@ body {
   font-weight: 900 !important;
   line-height: 1 !important;
 }
-:where(.commerce-header .nav-links, .commerce-header .nav-links a, .commerce-header .main-nav a, .commerce-header .header-nav a) {
+:where(.commerce-header:not([data-variante="embebido"]) .nav-links, .commerce-header:not([data-variante="embebido"]) .nav-links a, .commerce-header:not([data-variante="embebido"]) .main-nav a, .commerce-header:not([data-variante="embebido"]) .header-nav a) {
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
-:where(.commerce-header .nav-links a:hover, .commerce-header .nav-links a.active, .commerce-header .nav-links a[aria-current="page"], .commerce-header .main-nav a:hover, .commerce-header .main-nav a.active, .commerce-header .main-nav a[aria-current="page"], .commerce-header .header-nav a:hover, .commerce-header .header-nav a.active, .commerce-header .header-nav a[aria-current="page"]) {
+:where(.commerce-header:not([data-variante="embebido"]) .nav-links a:hover, .commerce-header:not([data-variante="embebido"]) .nav-links a.active, .commerce-header:not([data-variante="embebido"]) .nav-links a[aria-current="page"], .commerce-header:not([data-variante="embebido"]) .main-nav a:hover, .commerce-header:not([data-variante="embebido"]) .main-nav a.active, .commerce-header:not([data-variante="embebido"]) .main-nav a[aria-current="page"], .commerce-header:not([data-variante="embebido"]) .header-nav a:hover, .commerce-header:not([data-variante="embebido"]) .header-nav a.active, .commerce-header:not([data-variante="embebido"]) .header-nav a[aria-current="page"]) {
   color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, #93c5fd))) !important;
   border-color: currentColor !important;
   text-decoration-color: currentColor !important;
 }
-.commerce-header .nav-links,
-.commerce-header .nav-links a,
-.commerce-header .main-nav a,
-.commerce-header .header-nav a {
+.commerce-header:not([data-variante="embebido"]) .nav-links,
+.commerce-header:not([data-variante="embebido"]) .nav-links a,
+.commerce-header:not([data-variante="embebido"]) .main-nav a,
+.commerce-header:not([data-variante="embebido"]) .header-nav a {
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
-.commerce-header .nav-links a:hover,
-.commerce-header .nav-links a.active,
-.commerce-header .nav-links a[aria-current="page"],
-.commerce-header .main-nav a:hover,
-.commerce-header .main-nav a.active,
-.commerce-header .main-nav a[aria-current="page"],
-.commerce-header .header-nav a:hover,
-.commerce-header .header-nav a.active,
-.commerce-header .header-nav a[aria-current="page"] {
+.commerce-header:not([data-variante="embebido"]) .nav-links a:hover,
+.commerce-header:not([data-variante="embebido"]) .nav-links a.active,
+.commerce-header:not([data-variante="embebido"]) .nav-links a[aria-current="page"],
+.commerce-header:not([data-variante="embebido"]) .main-nav a:hover,
+.commerce-header:not([data-variante="embebido"]) .main-nav a.active,
+.commerce-header:not([data-variante="embebido"]) .main-nav a[aria-current="page"],
+.commerce-header:not([data-variante="embebido"]) .header-nav a:hover,
+.commerce-header:not([data-variante="embebido"]) .header-nav a.active,
+.commerce-header:not([data-variante="embebido"]) .header-nav a[aria-current="page"] {
   color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, #93c5fd))) !important;
   border-color: currentColor !important;
   text-decoration-color: currentColor !important;
 }
-:where(.commerce-header .cart-button svg, .commerce-header .cart-button i) {
+.commerce-header[data-variante="embebido"] .nav-links,
+.commerce-header[data-variante="embebido"] .nav-links a,
+.commerce-header[data-variante="embebido"] .main-nav a,
+.commerce-header[data-variante="embebido"] .header-nav a {
+  color: #fff !important;
+}
+.commerce-header[data-variante="embebido"] .nav-links a:hover,
+.commerce-header[data-variante="embebido"] .nav-links a.active,
+.commerce-header[data-variante="embebido"] .nav-links a[aria-current="page"] {
+  color: #fff !important;
+  border-color: currentColor !important;
+  text-decoration-color: currentColor !important;
+}
+:where(.commerce-header:not([data-variante="embebido"]) .cart-button svg, .commerce-header:not([data-variante="embebido"]) .cart-button i) {
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.commerce-header[data-variante="embebido"] .cart-button svg, .commerce-header[data-variante="embebido"] .cart-button i) {
+  color: #fff !important;
 }
 body > :where(header, main, footer, section, article, aside, nav, div):not(.container) {
   min-width: 100% !important;
@@ -417,6 +446,29 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
   background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
 }
 :where(.gc-product-shipping) { margin: 8px 0 0; font-size: .8rem; font-weight: 500; color: inherit; opacity: .85; }
+.gc-card-media-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: calc(100% - 20px);
+  pointer-events: none;
+}
+.gc-card-media-badges span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 5px 9px;
+  color: var(--gc-texto-sobre-primario, #fff);
+  background: var(--gc-primario, var(--tienda-primario, #075da0));
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(8, 41, 71, .16);
+  font: 900 11px/1 system-ui, sans-serif;
+  text-transform: uppercase;
+}
 .gc-commercial-badges { display:flex; flex-wrap:wrap; gap:6px; padding:12px 14px; position:relative; z-index:1; }
 .gc-commercial-badges span { background:var(--gc-primario,#155e63); color:white; border-radius:999px; padding:6px 10px; font:700 12px/1.3 system-ui,sans-serif; }
 .gc-commercial-badges span + span { background:transparent; color:inherit; border:1px solid currentColor; }
@@ -868,6 +920,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   box-shadow: 0 24px 56px color-mix(in srgb, var(--gc-fondo, #0f172a) 56%, transparent) !important;
 }
 :where([data-gesicomm-lista] .product-card > .product-image) {
+  position: relative !important;
   display: grid !important;
   place-items: center !important;
   min-height: 190px !important;
@@ -878,7 +931,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 9px;
+  gap: 10px;
   min-width: 0;
   padding: 16px !important;
   overflow-wrap: anywhere;
@@ -888,16 +941,26 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content h3 {
-  min-height: 2.65em;
+  min-height: 2.55em;
   margin: 0 !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
-  line-height: 1.35;
+  font-size: clamp(15px, 1.2vw, 17px);
+  line-height: 1.28;
   font-weight: 850;
 }
 :where([data-gesicomm-lista] .product-card .product-category, [data-gesicomm-lista] .product-card .product-description, [data-gesicomm-lista] .product-card .gc-commercial-copy) {
   margin: 0 !important;
   color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
   line-height: 1.45;
+  font-weight: 500 !important;
+}
+:where([data-gesicomm-lista] .product-card .product-description, [data-gesicomm-lista] .product-card .gc-commercial-copy) {
+  display: -webkit-box;
+  min-height: 2.8em;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 13px !important;
 }
 :where([data-gesicomm-lista] .product-card .gc-product-availability) {
   display: inline-flex !important;
@@ -925,14 +988,18 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 /* Tarjetas de producto en Inicio/Ficha: el precio y la CTA siguen Mi Tienda,
    pero sin bandas duras que rompan la superficie de la card. */
 :where([data-gesicomm-lista] .product-card .product-footer) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: end !important;
   margin-top: auto !important;
   padding: 0 !important;
-  gap: 13px !important;
+  gap: 11px !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   background: transparent !important;
 }
 :where([data-gesicomm-lista] .product-card .product-prices) {
   display: flex !important;
+  order: 1 !important;
   width: 100% !important;
   flex-direction: row !important;
   flex-wrap: wrap !important;
@@ -951,7 +1018,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   border-radius: 0 !important;
   color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   background: transparent !important;
-  font-size: clamp(18px, 1.45vw, 24px) !important;
+  font-size: clamp(19px, 1.55vw, 25px) !important;
   line-height: 1 !important;
   font-weight: 900 !important;
 }
@@ -961,14 +1028,31 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   order: -1 !important;
   flex-basis: 100% !important;
 }
-:where([data-gesicomm-lista] .product-card .product-footer .button-primary) {
+:where([data-gesicomm-lista] .product-card .product-footer .gc-commercial-saving) {
+  order: 2 !important;
+  flex: 1 0 100% !important;
+  margin: -4px 0 0 !important;
+  color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+}
+:where([data-gesicomm-lista] .product-card .product-footer .button-primary, [data-gesicomm-lista] .product-card .product-footer [data-gesicomm-comprar]) {
+  display: flex !important;
+  order: 3 !important;
   width: 100% !important;
-  min-height: 44px !important;
+  min-height: 42px !important;
+  max-height: none !important;
+  align-items: center !important;
+  justify-content: center !important;
   border-radius: 10px !important;
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
-  background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 82%, #0b2447), var(--gc-primario, var(--tienda-primario, #075da0))) !important;
   border-color: var(--gc-primario, var(--tienda-primario, #075da0)) !important;
-  font-weight: 900 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
   box-shadow: 0 10px 24px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 22%, transparent) !important;
   transition: transform .18s ease, background .18s ease, box-shadow .18s ease !important;
 }
@@ -1106,14 +1190,17 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   background: var(--gc-primario, var(--tienda-primario, currentColor)) !important;
   border-color: var(--gc-primario, var(--tienda-primario, currentColor)) !important;
 }
-:where(.commerce-header .search-box[hidden], .commerce-header form.search-box[hidden]) {
+/* Oculto por defecto sin depender del atributo [hidden] del HTML guardado:
+   landings ya publicadas antes de este cambio pueden no tenerlo, y eso
+   pintaba el buscador superpuesto al header hasta que corria el JS. */
+:where(.commerce-header .search-box, .commerce-header form.search-box) {
   display: none !important;
 }
-:where(.commerce-header .search-box:not([hidden]), .commerce-header form.search-box:not([hidden])) {
+:where(.commerce-header .search-wrap.is-open .search-box, .commerce-header .search-wrap.is-open form.search-box) {
   position: absolute !important;
-  top: 50% !important;
+  top: calc(100% + 10px) !important;
   right: 0 !important;
-  transform: translateY(-50%) !important;
+  transform: none !important;
   z-index: 70 !important;
   width: min(360px, calc(100vw - 40px)) !important;
   min-height: 42px !important;
@@ -1144,7 +1231,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 }
 :where(.commerce-header [data-gesicomm-search-results]) {
   position: absolute !important;
-  top: calc(50% + 31px) !important;
+  top: calc(100% + 60px) !important;
   right: 0 !important;
   z-index: 69 !important;
   width: min(360px, calc(100vw - 40px)) !important;
@@ -1157,6 +1244,9 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   box-shadow: 0 18px 45px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #082947)) 20%, transparent) !important;
 }
 :where(.commerce-header [data-gesicomm-search-results][hidden]) {
+  display: none !important;
+}
+:where(.commerce-header [data-gesicomm-search-results]:empty) {
   display: none !important;
 }
 :where(.commerce-header .search-result-item) {

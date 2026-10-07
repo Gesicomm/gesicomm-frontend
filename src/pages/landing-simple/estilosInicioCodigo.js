@@ -1,5 +1,14 @@
 // Homepage del lienzo: la paleta y las proporciones del diseno de referencia.
-export const ESTILOS_INICIO_CODIGO = `:root {
+//
+// Los comentarios /* @gc-seccion:X */ marcan de qué bloque de "Bloques del
+// Inicio" es cada tramo de CSS (ver seccionesCodigo.js). Una regla que se
+// usa en más de un bloque (tarjetas de producto, botones, section-heading)
+// queda en __global para no duplicarla ni romper el bloque que no la "dueña".
+// No todos los bloques tienen CSS propio todavía (testimonios, por ejemplo,
+// hoy reusa reglas de __global) — eso es normal, el editor de esa sección
+// arranca con CSS vacío hasta que el comercio la personaliza.
+export const ESTILOS_INICIO_CODIGO = `/* @gc-seccion:__global */
+:root {
   color-scheme: light;
   --navy: #082947; --blue: #0965a8; --sky: #eaf5fb; --line: #dbe8ef;
   --muted: #668097; --orange: #f15d3d;
@@ -17,6 +26,7 @@ img { display: block; max-width: 100%; }
 h1, h2, h3, p { margin-top: 0; }
 [hidden] { display: none !important; }
 .container { width: 100%; margin: auto; }
+/* @gc-seccion:anuncios */
 .trust-bar { min-height: 38px; overflow: hidden; background: #111827; color: #fff; }
 .trust-track { display: flex; width: max-content; min-width: 100%; animation: trust-scroll 28s linear infinite; }
 .trust-item { flex: 0 0 auto; min-width: 245px; display: flex; align-items: center; gap: 9px; padding: 9px 26px; border-right: 1px solid rgba(255,255,255,.13); white-space: nowrap; }
@@ -25,6 +35,7 @@ h1, h2, h3, p { margin-top: 0; }
 .trust-item strong { color: #fff; font-size: 11px; line-height: 1; }
 .trust-item span:not(.trust-icon) { color: #b9cfdd; font-size: 10px; line-height: 1; }
 @keyframes trust-scroll { to { transform: translateX(-50%); } }
+/* @gc-seccion:encabezado */
 .commerce-header { background: #fff; border-bottom: 1px solid var(--line); }
 .commerce-header .container, .site-footer .container { max-width: 1240px; padding: 0 28px; }
 /* Fila única: logo a la izquierda, nav (categorías + links) centrado en TODO
@@ -59,10 +70,31 @@ h1, h2, h3, p { margin-top: 0; }
 .category-menu-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 38px; padding: 8px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--navy); font-size: 12px; font-weight: 800; text-align: left; }
 .category-menu-item:hover { background: #eef7fc; color: var(--blue); }
 .category-menu-item small { color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
+/* Variante "embebido" (RF-GEN-01, Variante B): el encabezado se vuelve
+   transparente y se superpone al banner. El header sigue siendo hermano de
+   <main> en el DOM (no hijo del hero), así que el solapamiento se logra con
+   margin-bottom negativo + z-index, sin tocar la estructura. El alto (96px)
+   tiene que coincidir con header-main (min-height) + brand-column (padding). */
+.commerce-header[data-variante="embebido"] { position: relative; z-index: 20; margin-bottom: -96px; background: transparent; border-bottom: 0; }
+.commerce-header[data-variante="embebido"] .brand,
+.commerce-header[data-variante="embebido"] .nav-links a,
+.commerce-header[data-variante="embebido"] .cart-button,
+.commerce-header[data-variante="embebido"] .search-toggle,
+.commerce-header[data-variante="embebido"] .category-menu { color: #fff; }
+.commerce-header[data-variante="embebido"] .nav-links a.active { color: #fff; border-bottom-color: #fff; }
+.commerce-header[data-variante="embebido"] .search-box button { background: var(--navy); }
+/* @gc-seccion:__global */
 .storefront { min-height: 100vh; background: #f6fafc; color: var(--navy); }
 .page-content { max-width: 1240px; margin: auto; padding: 20px 28px 50px; }
 .storefront section { margin-top: 30px; }
 .storefront .hero { margin-top: 0; padding: 0; }
+/* @gc-seccion:banner */
+/* El encabezado embebido (@gc-seccion:encabezado) ya se superpone con
+   margin-bottom negativo; acá sacamos el padding superior de page-content
+   para que la foto arranque pegada a la barra de anuncios, sin el hueco de
+   20px normal, y perdemos el borde redondeado para que sea foto a sangre. */
+.storefront:has(.commerce-header[data-variante="embebido"]) .page-content { padding-top: 0; }
+.hero[data-variante="embebido"] .hero-shell { border-radius: 0; }
 .hero-shell { position: relative; min-height: 310px; overflow: hidden; border-radius: 8px; background: transparent; color: var(--navy); }
 .hero-banners { display: grid; }
 .hero-banner { position: relative; grid-area: 1 / 1; min-height: 310px; display: flex; visibility: hidden; align-items: center; padding: 40px 70px; background: transparent; }
@@ -92,6 +124,7 @@ h1, h2, h3, p { margin-top: 0; }
 .category-media { width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); overflow: hidden; background: #fff; }
 .category-media img { width: 100%; height: 100%; object-fit: contain; }
 .category-card small { display: none; }
+/* @gc-seccion:__global */
 .section-heading { margin-bottom: 13px; }
 .section-heading h2, .dynamic-head h2 { margin: 0; color: var(--navy); font-size: 20px; line-height: 1.25; }
 .section-heading p, .dynamic-head p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
@@ -140,10 +173,12 @@ h1, h2, h3, p { margin-top: 0; }
 .mid-banner h2 { margin: 0 0 5px; color: #fff; font-size: 25px; line-height: 1.02; }
 .mid-banner p:not(.eyebrow) { margin: 0 0 12px; color: rgba(255,255,255,.92); font-size: 12px; }
 .mid-banner .button-secondary { min-height: 30px; color: var(--navy); background: #fff; border: 0; border-radius: 5px; font-size: 10px; }
+/* @gc-seccion:colecciones */
 .collection-card { position: relative; isolation: isolate; min-height: 150px; padding: 18px; display: flex; flex-direction: column; justify-content: end; border-radius: 7px; background-color: var(--navy); background-size: cover; background-position: center; color: #fff; overflow: hidden; }
 .collection-card::before { content: ''; position: absolute; inset: 0; z-index: -1; }
 .collection-card h3 { margin: 0 0 6px; font-size: 14px; }
 .collection-card p { margin: 0; font-size: 10px; }
+/* @gc-seccion:ofertas_urgencia */
 .limited-offer { margin-top: 28px; }
 .limited-offer-card { position: relative; display: grid; grid-template-columns: minmax(190px, 240px) minmax(240px, 1fr) auto; gap: 18px; align-items: center; width: 100%; max-width: 100%; padding: 20px; background: #fff; border: 1px solid #dbe8ef; border-radius: 10px; box-shadow: 0 10px 26px rgba(8, 41, 71, .08); }
 .limited-offer-summary { min-width: 0; align-self: center; }
@@ -175,6 +210,7 @@ h1, h2, h3, p { margin-top: 0; }
 .limited-offer-product.has-commercial-presentation .gc-commercial-saving { flex: 1 0 100%; margin: -2px 0 0; color: #fff; font-size: 9px; font-weight: 900; }
 .limited-offer-product.has-commercial-presentation .button-primary { min-height: 24px; padding: 5px 10px; color: #b80f45; background: #fff; border-radius: 999px; font-size: 8px; font-weight: 900; }
 .limited-offer-see-all { display: inline-flex; align-items: center; justify-content: center; align-self: start; min-height: 32px; padding: 7px 12px; color: var(--blue); background: #f3f9fd; border: 1px solid #dbe8ef; border-radius: 999px; font-size: 10px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+/* @gc-seccion:__global */
 .offers-catalog-section { scroll-margin-top: 110px; }
 .product-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .product-count { color: var(--muted); font-size: 11px; }
@@ -200,6 +236,7 @@ h1, h2, h3, p { margin-top: 0; }
 .field textarea { min-height: 90px; resize: vertical; }
 .form-feedback { margin-top: 10px; font-size: 12px; }
 /* ─── Productos por categoría (bloque nuevo) ─── */
+/* @gc-seccion:productos_categoria */
 .pc-section { padding: 6px 0 2px; }
 .pc-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; }
 .pc-search { flex: 0 1 300px; display: grid; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
@@ -210,13 +247,33 @@ h1, h2, h3, p { margin-top: 0; }
 .pc-tab.is-active { background: var(--blue); border-color: var(--blue); color: #fff; }
 .pc-empty { margin: 18px 0 0; padding: 18px; border: 1px dashed var(--line); border-radius: 8px; background: #fff; color: var(--muted); font-size: 12px; text-align: center; }
 /* ─── Zona de confianza (bloque nuevo) ─── */
+/* @gc-seccion:confianza */
 .trust-section { background: var(--home-superficie); border: 1px solid var(--line); border-radius: 9px; padding: 24px; }
 .trust-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 .trust-card { display: flex; align-items: flex-start; gap: 12px; }
 .trust-card-icon { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--sky); font-size: 18px; }
 .trust-card h3 { margin: 0 0 4px; color: var(--navy); font-size: 13px; }
 .trust-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+/* ─── Testimonios ─── */
+/* @gc-seccion:testimonios */
+.testimonials-section { width: auto; margin-inline: calc(50% - 50vw); padding: clamp(52px, 7vw, 78px) max(28px, calc((100vw - 1240px) / 2 + 28px)); background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 8%, var(--gc-fondo, var(--tienda-fondo, #ffffff))); }
+.testimonials-section .section-heading { display: grid; justify-items: center; gap: 8px; margin: 0 auto 28px; text-align: center; }
+.testimonials-section .section-heading .eyebrow { margin: 0; color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, var(--gc-primario, #075da0)))); font-size: 12px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.testimonials-section .section-heading h2 { max-width: 760px; color: var(--gc-texto, var(--tienda-texto, #10202f)); font-size: clamp(28px, 3.1vw, 40px); line-height: 1.12; font-weight: 650; letter-spacing: 0; }
+.testimonials-section .section-heading p { max-width: 660px; margin: 0; color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)); font-size: 14px; line-height: 1.55; }
+.testimonials-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.testimonial-card { display: flex; min-width: 0; min-height: 196px; flex-direction: column; gap: 16px; padding: 24px; color: var(--gc-texto, var(--tienda-texto, #10202f)); background: var(--gc-superficie, var(--tienda-superficie, #ffffff)); border: 1px solid color-mix(in srgb, var(--tienda-linea, var(--line, #d7e6ef)) 80%, var(--gc-primario, var(--tienda-primario, #075da0))); border-radius: 7px; box-shadow: 0 10px 24px color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 12%, transparent); }
+.testimonial-stars { order: 0; color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, #f59e0b))); font-size: 15px; letter-spacing: .05em; line-height: 1; }
+.testimonial-quote { order: 1; margin: 0; color: var(--gc-texto, var(--tienda-texto, #10202f)); font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+.testimonial-person { order: 2; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 11px; align-items: center; margin-top: auto; }
+.testimonial-avatar { display: grid; place-items: center; width: 40px; height: 40px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 22%, var(--tienda-linea, var(--line, #d7e6ef))); border-radius: 999px; background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, #075da0)) 10%, var(--gc-superficie, var(--tienda-superficie, #ffffff))); color: var(--gc-primario, var(--tienda-primario, #075da0)); }
+.testimonial-avatar img,
+.testimonials-section img[data-gesicomm-bind="imagen"] { display: block !important; width: 40px !important; height: 40px !important; min-width: 40px !important; max-width: 40px !important; min-height: 40px !important; max-height: 40px !important; padding: 0 !important; object-fit: cover !important; border-radius: 999px !important; }
+.testimonial-avatar:empty::before { display: grid; place-items: center; width: 100%; height: 100%; content: "★"; font-size: 13px; font-weight: 900; }
+.testimonial-name { display: block; color: var(--gc-texto, var(--tienda-texto, #10202f)); font-size: 14px; font-weight: 900; line-height: 1.2; overflow-wrap: anywhere; }
+.testimonial-detail { display: block; margin-top: 3px; color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)); font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
 /* ─── Nuestra marca (bloque nuevo) ─── */
+/* @gc-seccion:marca */
 .brand-section { padding: clamp(76px, 9vw, 112px) 0 clamp(70px, 8vw, 100px); background: #fff; border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
 .brand-section .brand-layout { width: min(100%, 1120px); margin: 0 auto; padding: 0 clamp(28px, 4vw, 42px); display: grid; grid-template-columns: minmax(320px, .98fr) minmax(0, 1fr); gap: clamp(44px, 6vw, 84px); align-items: center; }
 .brand-media { border-radius: 18px; overflow: hidden; background: color-mix(in srgb, var(--tienda-destacado, var(--blue)) 12%, #f2f0e9); min-height: 370px; aspect-ratio: 1.46 / 1; }
@@ -228,6 +285,7 @@ h1, h2, h3, p { margin-top: 0; }
 .brand-copy > p:not(.eyebrow) { margin: 0 0 28px; color: var(--navy); font-size: 18px; line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
 .brand-badges { display: flex; flex-wrap: wrap; gap: 12px; }
 .brand-badge { border: 1px solid var(--line); border-radius: 999px; padding: 10px 17px; background: #fff; font-size: 14px; font-weight: 800; color: var(--navy); }
+/* @gc-seccion:__global (footer es fijo, no es un bloque editable de Inicio; los @media de abajo tocan varios bloques a la vez y quedan acá) */
 .site-footer { background: #fff; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
 .site-footer .footer-top { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 28px; align-items: start; padding-top: 32px; padding-bottom: 28px; }
 .site-footer .footer-brand { display: flex; flex-direction: column; gap: 14px; }
@@ -257,7 +315,7 @@ h1, h2, h3, p { margin-top: 0; }
   .nav-links { gap: 16px; }
   .hero-banner { padding: 35px 50px; }
   .hero-text h1, .hero-text h2 { font-size: 34px; }
-  .spotlight-grid, .product-grid, .collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .spotlight-grid, .product-grid, .collection-grid, .testimonials-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .trust-grid { grid-template-columns: 1fr; gap: 16px; }
   .brand-section { padding: 48px 0; }
   .brand-section .brand-layout { grid-template-columns: 1fr; gap: 28px; }
@@ -294,6 +352,8 @@ h1, h2, h3, p { margin-top: 0; }
   .product-toolbar { align-items: start; flex-direction: column; }
   .pc-head { align-items: stretch; flex-direction: column; }
   .pc-search { flex-basis: auto; width: 100%; }
+  .testimonials-section { padding: 42px 16px; }
+  .testimonials-grid { grid-template-columns: 1fr; }
   .brand-section .brand-layout { padding: 0 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -302,6 +362,6 @@ h1, h2, h3, p { margin-top: 0; }
 @media (max-width: 360px) {
   .hero-banner { padding: 22px 36px; }
   .hero-text h1, .hero-text h2 { font-size: 24px; }
-  .spotlight-grid, .product-grid, .collection-grid { grid-template-columns: 1fr; }
+  .spotlight-grid, .product-grid, .collection-grid, .testimonials-grid { grid-template-columns: 1fr; }
 }
 `;

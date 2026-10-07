@@ -326,7 +326,7 @@ function estrategiaMarketplace(venta, productos) {
   return partes.join('\n');
 }
 
-function contexto({ tienda, venta, productos, maxProductos = MAX_PRODUCTOS_INICIO_PROMPT }) {
+export function contexto({ tienda, venta, productos, maxProductos = MAX_PRODUCTOS_INICIO_PROMPT }) {
   const tipo = venta?.tipo || 'catalogo';
   const nombre = tienda?.nombre || 'la tienda';
   const muestra = productos.slice(0, maxProductos);
@@ -551,7 +551,7 @@ ${lineaValores('Atributos Gesicomm presentes', atributos, 34)}
 No copies productos, precios ni links a mano: usá esos atributos data-gesicomm-* y devolvé igual los tres bloques html/css/js.`;
 }
 
-function bloqueCodigoBase(base, { compacto = false } = {}) {
+export function bloqueCodigoBase(base, { compacto = false } = {}) {
   if (!base) return '';
   const total = (base.html || '').length + (base.css || '').length + (base.js || '').length;
   if (compacto || total > MAX_BASE_COMPLETA_PROMPT) return resumenCodigoBase(base);

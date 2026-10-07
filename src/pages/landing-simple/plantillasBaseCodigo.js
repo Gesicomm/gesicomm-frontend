@@ -245,7 +245,7 @@ h1, h2, h3, p { margin-top: 0; }
   .reveal { opacity: 1; transform: none; }
 }`;
 
-const HEADER_HTML = `<header class="commerce-header">
+const HEADER_HTML = `<header class="commerce-header" data-gesicomm-bloque="encabezado">
   <div class="container header-main">
     <div class="brand-column">
       <a class="brand brand-mark" href="#" data-gesicomm-inicio aria-label="Volver al inicio">
@@ -372,21 +372,25 @@ const JS_COMUN = `(() => {
   // search-toggle en HEADER_HTML) en vez de ocupar lugar siempre.
   const searchToggle = document.querySelector('[data-gesicomm-search-toggle]');
   const searchBox = document.querySelector('#gesicomm-search-panel');
+  const searchWrap = searchToggle?.closest('.search-wrap');
   if (searchToggle && searchBox && searchToggle.getAttribute('data-gesicomm-search-ready') !== 'true') {
     searchToggle.setAttribute('data-gesicomm-search-ready', 'true');
     searchBox.hidden = true;
+    searchWrap?.classList.remove('is-open');
     searchToggle.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation?.();
       const abrir = searchBox.hidden;
       searchBox.hidden = !abrir;
+      searchWrap?.classList.toggle('is-open', abrir);
       searchToggle.setAttribute('aria-expanded', String(abrir));
       if (abrir) searchBox.querySelector('input')?.focus();
     });
     document.addEventListener('click', (e) => {
       if (searchBox && !searchBox.hidden && !e.target.closest('.search-wrap')) {
         searchBox.hidden = true;
+        searchWrap?.classList.remove('is-open');
         searchToggle?.setAttribute('aria-expanded', 'false');
       }
     });
@@ -543,17 +547,19 @@ const INICIO_CSS_LEGACY = `${TOKENS_CSS}
 .storefront .dynamic-section { padding: 30px 0 0; border: 0; }
 .storefront .dynamic-head { margin-bottom: 14px; }
 .storefront .dynamic-head h2 { font-size: 1.34rem; }
-.storefront .testimonials-section { padding-top: 34px; }
+.storefront .testimonials-section { padding: 42px 0; }
+.storefront .testimonials-section .section-heading { margin-bottom: 20px; }
 .storefront .testimonials-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.storefront .testimonial-card { display: grid; gap: 14px; min-height: 220px; padding: 20px; color: var(--gc-texto); background: color-mix(in srgb, var(--gc-superficie, var(--white)) 94%, var(--gc-primario) 6%); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px rgba(8,41,71,.08); }
-.storefront .testimonial-stars { color: var(--tienda-destacado, var(--accent)); font-size: 1rem; letter-spacing: .08em; }
-.storefront .testimonial-quote { margin: 0; color: var(--gc-texto); font-size: .95rem; line-height: 1.55; }
-.storefront .testimonial-person { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: center; margin-top: auto; }
-.storefront .testimonial-avatar { width: 48px; height: 48px; overflow: hidden; background: color-mix(in srgb, var(--gc-primario) 12%, var(--white)); border: 1px solid var(--line); border-radius: 999px; }
-.storefront .testimonial-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.storefront .testimonial-card { display: flex; min-width: 0; min-height: 220px; flex-direction: column; gap: 14px; padding: 22px; color: var(--gc-texto); background: color-mix(in srgb, var(--gc-superficie, var(--white)) 94%, var(--gc-primario) 6%); border: 1px solid color-mix(in srgb, var(--line) 82%, transparent); border-radius: 14px; box-shadow: 0 14px 34px rgba(8,41,71,.08); }
+.storefront .testimonial-stars { color: var(--tienda-destacado, var(--accent)); font-size: 1rem; letter-spacing: .08em; line-height: 1; }
+.storefront .testimonial-quote { margin: 0; color: var(--gc-texto); font-size: .95rem; line-height: 1.55; overflow-wrap: anywhere; }
+.storefront .testimonial-person { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; margin-top: auto; }
+.storefront .testimonial-avatar { display: grid; place-items: center; width: 52px; height: 52px; overflow: hidden; background: color-mix(in srgb, var(--gc-primario) 12%, var(--white)); border: 1px solid var(--line); border-radius: 999px; flex: none; }
+.storefront .testimonial-avatar img,
+.storefront .testimonials-section img[data-gesicomm-bind="imagen"] { display: block !important; width: 52px !important; height: 52px !important; max-width: 52px !important; min-width: 52px !important; object-fit: cover !important; border-radius: 999px !important; }
 .storefront .testimonial-avatar:empty::before { display: grid; width: 100%; height: 100%; place-items: center; color: var(--gc-primario); content: "★"; font-size: 1.1rem; font-weight: 900; }
-.storefront .testimonial-name { display: block; color: var(--gc-texto); font-size: .9rem; font-weight: 900; line-height: 1.2; }
-.storefront .testimonial-detail { display: block; margin-top: 3px; color: var(--muted); font-size: .75rem; font-weight: 700; }
+.storefront .testimonial-name { display: block; color: var(--gc-texto); font-size: .9rem; font-weight: 900; line-height: 1.2; overflow-wrap: anywhere; }
+.storefront .testimonial-detail { display: block; margin-top: 3px; color: var(--muted); font-size: .75rem; font-weight: 700; overflow-wrap: anywhere; }
 .storefront .limited-offer { margin-top: 30px; }
 .storefront .limited-offer-card { border-radius: 10px; }
 .storefront .collection-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -1011,45 +1017,45 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .breadcrumb { display: flex; flex-wrap: wrap; gap: 8px; padding: 22px 0 0; color: var(--ink-soft); font-size: .82rem; }
 .breadcrumb a { color: var(--brand-dark); font-weight: 700; cursor: pointer; }
 
-.pdp { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; padding: 32px 0 80px; align-items: start; }
-.gallery { position: sticky; top: 100px; display: grid; gap: 14px; }
-.gallery-main { display: grid; place-items: center; aspect-ratio: 1; padding: 28px; background: transparent; border-radius: var(--radius-lg); }
+.pdp { display: grid; grid-template-columns: 1.05fr .95fr; gap: 44px; padding: 24px 0 54px; align-items: start; }
+.gallery { position: sticky; top: 92px; display: grid; gap: 12px; }
+.gallery-main { display: grid; place-items: center; aspect-ratio: 1; padding: 22px; background: transparent; border-radius: var(--radius-lg); }
 .gallery-main img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
 .thumbs { display: flex; gap: 10px; overflow-x: auto; }
 .thumb { flex: 0 0 76px; height: 76px; padding: 6px; background: transparent; border: 2px solid transparent; border-radius: 14px; cursor: pointer; }
 .thumb:hover { border-color: var(--brand); }
 .thumb img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
 
-.pdp-info h1 { margin-bottom: 14px; font-size: clamp(2rem, 3.4vw, 3rem); line-height: 1.02; letter-spacing: -.06em; }
-.pdp-reviews { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: -4px 0 18px; color: var(--ink-soft); font-size: .9rem; }
+.pdp-info h1 { margin-bottom: 10px; font-size: clamp(1.9rem, 3.2vw, 2.85rem); line-height: 1.02; letter-spacing: -.06em; }
+.pdp-reviews { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: -2px 0 12px; color: var(--ink-soft); font-size: .9rem; }
 .pdp-reviews .stars { color: #b7791f; letter-spacing: .08em; }
 .pdp-reviews a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
-.pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+.pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
 .pdp-prices .price { font-size: 2rem; }
-.pdp-lead { margin-bottom: 26px; color: var(--ink-soft); font-size: 1.02rem; }
+.pdp-lead { margin-bottom: 18px; color: var(--ink-soft); font-size: 1.02rem; }
 
 .block-title { margin-bottom: 10px; font-size: .8rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
-.variants { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.variants { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 .variant { min-height: 44px; padding: 0 16px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 12px; font-weight: 700; }
 .variant.is-selected { color: var(--brand-dark); background: var(--brand-soft); border-color: var(--brand); }
 .variant[data-agotado] { opacity: .45; text-decoration: line-through; }
 
-.buy-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.buy-row { display: flex; gap: 12px; margin-bottom: 10px; }
 .qty { width: 92px; color: color: var(--gc-texto) !important; min-height: 52px; padding: 0 12px; text-align: center; background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; font-weight: 800; }
 .buy-row .button-primary { flex: 1; min-height: 52px; font-size: 1rem; }
-.contact-actions, .payment-actions { display: grid; gap: 10px; margin: 12px 0; }
+.contact-actions, .payment-actions { display: grid; gap: 8px; margin: 8px 0; }
 .contact-action, .payment-action { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 16px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; text-decoration: none; font-weight: 850; }
 .contact-action:hover, .payment-action:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-soft); }
-.payment-methods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.payment-methods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .payment-methods span { padding: 8px 12px; color: var(--ink); background: var(--white); border: 1px solid var(--line); border-radius: 999px; font-size: .78rem; font-weight: 800; }
-.order-includes { margin: 26px 0; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; }
+.order-includes { margin: 18px 0; padding: 18px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; }
 .order-includes h2 { margin: 0 0 14px; font-size: 1.25rem; letter-spacing: -.02em; }
 .order-includes ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .order-includes li { position: relative; padding-left: 28px; color: var(--ink); font-weight: 650; line-height: 1.35; }
 .order-includes li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--brand-dark); font-weight: 950; }
 .opiniones-section { background: var(--paper); }
 .opiniones-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.opinion-card { padding: 24px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
+.opinion-card { padding: 20px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
 .opinion-head { display: flex; align-items: center; gap: 12px; }
 .opinion-avatar { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 999px; object-fit: cover; background: var(--brand-soft); border: 1px solid var(--line); }
 .opinion-stars { color: #b7791f; letter-spacing: .08em; font-size: .88rem; }
@@ -1130,10 +1136,10 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .mini-trust div { padding: 12px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; font-size: .78rem; color: var(--ink-soft); }
 .mini-trust strong { display: block; color: var(--ink); font-size: .84rem; }
 
-.description { padding: 70px 0; background: var(--white); }
+.description { padding: 48px 0; background: var(--white); }
 .description-body { max-width: 760px; color: var(--ink-soft); font-size: 1.02rem; line-height: 1.7; white-space: pre-line; overflow-wrap: anywhere; }
 
-.related { padding: 80px 0; }
+.related { padding: 56px 0; }
 
 /* ─── Paquetes por cantidad ─────────────────────────────────────────── */
 .paquetes { margin: 26px 0 20px; }
@@ -1186,9 +1192,9 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 }
 
 /* ─── Ficha que vende (estructura de docs/investigación en promptsCodigo) ── */
-.pdp-promesa { margin: -4px 0 14px; color: var(--ink); font-size: 1.08rem; font-weight: 650; line-height: 1.45; }
-.pdp-separado { margin: -10px 0 16px; color: var(--ink-soft); font-size: .88rem; }
-.highlights { display: grid; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; }
+.pdp-promesa { margin: -2px 0 10px; color: var(--ink); font-size: 1.08rem; font-weight: 650; line-height: 1.45; }
+.pdp-separado { margin: -8px 0 12px; color: var(--ink-soft); font-size: .88rem; }
+.highlights { display: grid; gap: 7px; margin: 0 0 14px; padding: 0; list-style: none; }
 .highlights li { position: relative; padding-left: 28px; color: var(--ink); font-weight: 650; line-height: 1.35; }
 .highlights li::before {
   content: "✓"; position: absolute; left: 0; top: 1px; display: grid; place-items: center; width: 20px; height: 20px;
@@ -1200,22 +1206,25 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .trae-lista img { width: 44px; height: 44px; object-fit: contain; background: #f3f2ee; border-radius: 10px; }
 .trae-lista em { color: var(--ink-soft); font-style: normal; font-weight: 800; }
 .mini-trust a { color: var(--brand-dark); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
-.payment-brands { display: grid; gap: 10px; margin-top: 14px; padding: 14px 16px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
+.payment-brands { display: grid; gap: 8px; margin-top: 10px; padding: 12px 14px; background: var(--white); border: 1px solid var(--line); border-radius: 14px; }
 .payment-brands-title { margin: 0; color: var(--ink-soft); font-size: .82rem; line-height: 1.4; }
 .payment-brands-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .payment-brands-label { color: var(--ink); font-size: .78rem; font-weight: 750; }
 .payment-brands-logos { height: 24px; width: auto; max-width: 100%; object-fit: contain; }
-.garantias { display: grid; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; }
+.garantias { display: grid; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
 .garantias li { padding-left: 22px; position: relative; color: var(--ink-soft); font-size: .88rem; }
 .garantias li::before { content: "🛡"; position: absolute; left: 0; font-size: .8rem; }
 
-.beneficios-section { padding: 72px 0; }
+main[data-gesicomm-base="producto"] ~ .section { padding: 56px 0; }
+main[data-gesicomm-base="producto"] ~ .faq-section { padding: 50px 0; }
+
+.beneficios-section { padding: 52px 0; }
 .beneficios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
 .beneficio { padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-sm); }
 .beneficio h3 { margin: 0 0 6px; font-size: 1.05rem; }
 .beneficio p { margin: 0; color: var(--ink-soft); font-size: .92rem; }
 
-.incluye-section { padding: 72px 0; }
+.incluye-section { padding: 52px 0; }
 .incluye-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
 .incluye-card { display: flex; min-width: 0; gap: 14px; align-items: center; padding: 14px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; }
 .incluye-card img { flex-shrink: 0; width: 72px; height: 72px; object-fit: contain; background: #f3f2ee; border-radius: 12px; }
@@ -2154,9 +2163,28 @@ a{color:inherit;text-decoration:none}
 .lv-total-row strong{color:var(--gc-texto);font-size:22px}
 .lv-empty-checkout{max-width:620px;margin:42px auto;text-align:center;background:var(--lv-surface);border:1px dashed var(--lv-line);border-radius:var(--lv-radius);padding:34px;box-shadow:0 16px 38px rgba(16,32,29,.06)}
 .lv-empty-checkout h1{margin:0;color:var(--gc-texto);font-size:32px}.lv-empty-checkout p{color:var(--lv-muted);line-height:1.6}
-.lv-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted)}
-.lv-footer-inner{max-width:1180px;margin:0 auto;padding:24px 18px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:13px}
-.lv-footer nav{display:flex;gap:12px;flex-wrap:wrap}.lv-footer a:hover{color:var(--gc-texto)}
+.site-footer{border-top:1px solid var(--lv-line);background:var(--lv-surface);color:var(--lv-muted);font-size:13px}
+.site-footer .container{max-width:1180px;margin:0 auto;padding:0 18px}
+.footer-top{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:28px;align-items:start;padding:32px 0 28px}
+.footer-brand{display:flex;flex-direction:column;gap:14px}
+.footer-brand-name{color:var(--gc-texto);font-size:clamp(20px,2.4vw,26px);font-weight:800;line-height:1.1}
+.footer-col{display:flex;flex-direction:column;gap:12px}
+.footer-col>strong{color:var(--gc-texto);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.footer-links{display:flex;flex-direction:column;gap:8px}
+.footer-links a:hover,.footer-datos a:hover{color:var(--gc-texto)}
+.footer-datos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.footer-datos li[data-gesicomm-tienda]{display:none}
+.footer-datos li[data-gesicomm-tienda]:not(:empty){display:block}
+.footer-dato-nombre::before{content:"Atiende: ";font-weight:800;color:var(--gc-texto)}
+.footer-dato-whatsapp::before{content:"WhatsApp: ";font-weight:800;color:var(--gc-texto)}
+.footer-dato-tel::before{content:"Tel: ";font-weight:800;color:var(--gc-texto)}
+.footer-dato-email::before{content:"Email: ";font-weight:800;color:var(--gc-texto)}
+.footer-dato-direccion::before{content:"Dirección: ";font-weight:800;color:var(--gc-texto)}
+.footer-dato-horario::before{content:"Horario: ";font-weight:800;color:var(--gc-texto)}
+.footer-redes{display:flex;flex-wrap:wrap;gap:8px}
+.footer-bottom{border-top:1px solid var(--lv-line);padding:14px 0 20px;text-align:center}
+.footer-bottom a{color:var(--gc-texto);font-weight:800}
+@media(max-width:760px){.footer-top{grid-template-columns:1fr;gap:22px}}
 .lv-shell:has(.lv-shop-page){background:#fff}
 .lv-shop-page{--shop-text:#10201d;--shop-muted:#62706b;--shop-soft:#f6f8f4;--shop-surface:#ffffff;--shop-line:#dfe5dc;--shop-accent:var(--gc-primario,#143f3a);background:#fff;color:var(--shop-text)}
 .lv-shop-page,.lv-shop-page *{letter-spacing:0}
@@ -2328,24 +2356,10 @@ const CATEGORIA_HTML = `<div class="lv-shell">
     </section>
   </main>
 
-  <footer class="lv-footer">
-    <div class="lv-footer-inner">
-      <strong data-gesicomm-tienda="nombre">Tienda</strong>
-      <nav aria-label="Links legales">
-        <a href="/contacto" data-gesicomm-link="contacto">Contacto</a>
-        <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">Privacidad</a>
-        <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">Terminos</a>
-        <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">Reembolsos</a>
-        <a href="/politica-envio" data-gesicomm-link="politica-envio">Envios</a>
-        <a href="/aviso-legal" data-gesicomm-link="aviso-legal">Aviso legal</a>
-      </nav>
-      <div data-gesicomm-redes></div>
-    </div>
-  </footer>
+  ${FOOTER_HTML}
 </div>`;
 
 const CATALOGO_HTML = CATEGORIA_HTML
-  .replace('<h1 class="lv-title" data-gesicomm-categoria="nombre">Todos los productos</h1>', '<h1 class="lv-title">Todos los productos</h1>')
   .replace('Resumen de categoria', 'Resumen del catalogo')
   .replace('<span>en esta vista</span>', '<span>en el catalogo</span>')
   .replace('Filtros de categoria', 'Filtros del catalogo');
@@ -2460,20 +2474,7 @@ const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
     </section>
   </main>
 
-  <footer class="lv-footer">
-    <div class="lv-footer-inner">
-      <strong data-gesicomm-tienda="nombre">Tienda</strong>
-      <nav aria-label="Links legales">
-        <a href="/contacto" data-gesicomm-link="contacto">Contacto</a>
-        <a href="/politica-privacidad" data-gesicomm-link="politica-privacidad">Privacidad</a>
-        <a href="/terminos-servicio" data-gesicomm-link="terminos-servicio">Terminos</a>
-        <a href="/politica-reembolso" data-gesicomm-link="politica-reembolso">Reembolsos</a>
-        <a href="/politica-envio" data-gesicomm-link="politica-envio">Envios</a>
-        <a href="/aviso-legal" data-gesicomm-link="aviso-legal">Aviso legal</a>
-      </nav>
-      <div data-gesicomm-redes></div>
-    </div>
-  </footer>
+  ${FOOTER_HTML}
 </div>`;
 
 export const PLANTILLA_CATALOGO = { html: CATALOGO_HTML, css: TIENDA_VISTA_CSS, js: JS_COMUN };

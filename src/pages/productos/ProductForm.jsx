@@ -448,8 +448,26 @@ export default function ProductForm() {
       const raw = e.target.value;
       if (!raw.trim()) return;
       const data = JSON.parse(raw);
-      const p = data.product;
-      if (!p) return;
+      const p = data.product || (data.identity || data.pricing || data.inventory || data.landing_blocks ? data : {});
+      const productPage = data.product_page || p.product_page || p.landing_blocks?.product_page || null;
+      const publication = data.publication || p.publication || null;
+      if (!Object.keys(p).length && !productPage && !publication) return;
+      const limpiar = valor => String(valor ?? '').trim();
+      const asignarTexto = (campo, valor) => {
+        const texto = limpiar(valor);
+        if (texto) setValue(campo, texto, { shouldDirty: true });
+      };
+      const normalizarFaq = faq => ({
+        pregunta: limpiar(faq?.pregunta || faq?.question),
+        respuesta: limpiar(faq?.respuesta || faq?.answer),
+      });
+      const normalizarOpinion = opinion => ({
+        nombre: limpiar(opinion?.nombre || opinion?.name || opinion?.author) || 'Cliente verificado',
+        calificacion: Number(opinion?.calificacion || opinion?.rating || opinion?.stars) || 5,
+        comentario: limpiar(opinion?.comentario || opinion?.comment || opinion?.text || opinion?.review),
+        detalle: limpiar(opinion?.detalle || opinion?.source || opinion?.subtitle),
+        foto: limpiar(opinion?.foto || opinion?.photo || opinion?.image || opinion?.avatar),
+      });
 
       // ── Identidad ─────────────────────────────────────────────
       if (p.identity?.name)  setValue('nombre', p.identity.name, { shouldDirty: true });
@@ -478,10 +496,10 @@ export default function ProductForm() {
       }
 
       // ── Publicación ────────────────────────────────────────────
-      if (p.publication) {
-        if (p.publication.sale_status)           setValue('estado_venta', p.publication.sale_status, { shouldDirty: true });
-        if (p.publication.active     !== undefined) setValue('activo',    p.publication.active,    { shouldDirty: true });
-        if (p.publication.featured   !== undefined) setValue('destacado', p.publication.featured,  { shouldDirty: true });
+      if (publication) {
+        if (publication.sale_status)           setValue('estado_venta', publication.sale_status, { shouldDirty: true });
+        if (publication.active     !== undefined) setValue('activo',    publication.active,    { shouldDirty: true });
+        if (publication.featured   !== undefined) setValue('destacado', publication.featured,  { shouldDirty: true });
       }
 
       // ── Lienzo en Blanco — ProductShowcaseBlock ────────────────
@@ -505,10 +523,7 @@ export default function ProductForm() {
 
       // ── FAQs ───────────────────────────────────────────────────
       if (Array.isArray(p.landing_blocks?.faqs) && p.landing_blocks.faqs.length) {
-        setFaq(p.landing_blocks.faqs.map(f => ({
-          pregunta: f.question || '',
-          respuesta: f.answer  || '',
-        })));
+        setFaq(p.landing_blocks.faqs.map(normalizarFaq).filter(f => f.pregunta && f.respuesta));
       }
 
       // ── Testimonios ────────────────────────────────────────────
@@ -517,13 +532,73 @@ export default function ProductForm() {
         const fichaActual2 = getValues('ficha_datos') || {};
         setValue('ficha_datos', {
           ...fichaActual2,
-          fitness_opiniones: testimonios.map(t => ({
-            nombre:       t.name    || '',
-            calificacion: t.rating  || 5,
-            comentario:   t.comment || '',
-            foto:         t.photo   || '',
-          })),
+          fitness_opiniones: testimonios.map(normalizarOpinion),
+          product_page_opiniones: testimonios.map(normalizarOpinion),
         }, { shouldDirty: true });
+      }
+
+      // ── Ficha generica generada por IA ─────────────────────────
+      if (productPage) {
+        asignarTexto('propuesta_valor', productPage.value_proposition);
+        asignarTexto('sobre_este_producto', productPage.about);
+        asignarTexto('descripcion_larga', productPage.about);
+        asignarTexto('faq_titulo', productPage.faq_section_title);
+
+        const fichaActual = getValues('ficha_datos') || {};
+        const fichaPatch = { ...fichaActual };
+        if (productPage.primary_cta) fichaPatch.cta_principal_texto = limpiar(productPage.primary_cta);
+        if (productPage.description?.headline) fichaPatch.basico_descripcion_encabezado = limpiar(productPage.description.headline);
+        if (Array.isArray(productPage.description?.highlights)) {
+          fichaPatch.basico_descripcion_destacados = productPage.description.highlights
+            .map(h => limpiar(h?.title || h?.titulo || h?.description || h))
+            .filter(Boolean);
+        }
+        if (Array.isArray(productPage.uses)) {
+          fichaPatch.basico_usos = [...productPage.uses]
+            .sort((a, b) => (Number(a?.order) || 0) - (Number(b?.order) || 0))
+            .map((uso, idx) => ({
+              paso: limpiar(uso?.order) || String(idx + 1),
+              titulo: limpiar(uso?.title || uso?.titulo),
+              texto: limpiar(uso?.description || uso?.text || uso?.descripcion),
+            }))
+            .filter(uso => uso.titulo || uso.texto);
+        }
+        if (productPage.comparison?.enabled) fichaPatch.basico_comparacion = productPage.comparison;
+
+        const opinionesIA = [
+          ...(Array.isArray(productPage.opinions) ? productPage.opinions : []),
+          ...(Array.isArray(productPage.reviews) ? productPage.reviews : []),
+          ...(Array.isArray(productPage.testimonials) ? productPage.testimonials : []),
+        ].map(normalizarOpinion).filter(o => o.comentario);
+        if (opinionesIA.length) fichaPatch.product_page_opiniones = opinionesIA;
+
+        if (Object.keys(fichaPatch).length) setValue('ficha_datos', fichaPatch, { shouldDirty: true });
+
+        if (Array.isArray(productPage.quick_benefits) && productPage.quick_benefits.length) {
+          const beneficios = productPage.quick_benefits
+            .map(b => ({
+              titulo: limpiar(b?.title || b?.titulo),
+              texto: limpiar(b?.text || b?.description || b?.descripcion),
+              icono: b?.icono || 'check',
+            }))
+            .filter(b => b.titulo || b.texto);
+          if (beneficios.length) setValue('beneficios', beneficios, { shouldDirty: true });
+        }
+
+        if (Array.isArray(productPage.trust_items) && productPage.trust_items.length) {
+          const confianza = productPage.trust_items
+            .map(item => ({
+              texto: limpiar(item?.text || item?.description || item?.title || item?.titulo),
+              icono: item?.icono || 'shield',
+            }))
+            .filter(item => item.texto);
+          if (confianza.length) setValue('confianza', confianza, { shouldDirty: true });
+        }
+
+        if (Array.isArray(productPage.faqs) && productPage.faqs.length) {
+          const faqs = productPage.faqs.map(normalizarFaq).filter(f => f.pregunta && f.respuesta);
+          if (faqs.length) setFaq(faqs);
+        }
       }
 
       setAviso('JSON importado. Revisá los campos, distribuí el stock por ubicación y guardá.');

@@ -155,6 +155,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const codigoFicha = fichaPropia?.html && !esFichaProductoBase(fichaPropia.html)
     ? fichaPropia
     : (fichaGeneral?.html && !esFichaProductoBase(fichaGeneral.html) ? fichaGeneral : PLANTILLA_PRODUCTO);
+  const codigoFichaConGlobales = conGlobalesHeredados(codigoFicha, codigoInicioHeredable);
   const codigoCatalogoConGlobales = conGlobalesHeredados(codigoCatalogo?.html ? codigoCatalogo : PLANTILLA_CATALOGO, codigoInicioHeredable);
   const codigoCategoriaConGlobales = conGlobalesHeredados(codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA, codigoInicioHeredable);
   const codigoCheckoutConGlobales = conGlobalesHeredados(
@@ -162,7 +163,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     codigoInicioHeredable,
   );
   const codigo = esFicha
-    ? codigoFicha
+    ? codigoFichaConGlobales
     : vistaActual === 'checkout' ? codigoCheckoutConGlobales
       : vistaActual === 'catalogo' ? codigoCatalogoConGlobales
         : vistaActual === 'categoria' ? codigoCategoriaConGlobales
@@ -328,6 +329,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       disponibilidad: pedido?.disponibilidad || undefined,
       precioMin: pedido?.precioMin,
       precioMax: pedido?.precioMax,
+      soloDescuento: pedido?.soloDescuento === true,
       soloInicio: pedido?.soloInicio === true,
       busqueda: pedido?.busqueda || undefined,
     });

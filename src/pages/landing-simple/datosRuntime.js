@@ -138,7 +138,7 @@ function normalizarOrdenMobileFicha(orden) {
 }
 
 const PRESENTACION_PRODUCTO_DEFAULT = {
-  resenas_texto: '4.9 · 5 estrellas · +1.000 reseñas verificadas',
+  resenas_texto: '',
   insignia_principal: '',
   cta_texto: 'Comprar con pago anticipado',
   agregar_carrito_texto: 'Agregar al carrito',
@@ -153,7 +153,7 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
   urgencia_segundos: 58,
   opiniones_kicker: 'Opiniones',
   opiniones_titulo: 'Personas que ya lo probaron.',
-  opiniones_subtitulo: 'Reemplazá estos ejemplos por comentarios reales de tus clientes.',
+  opiniones_subtitulo: '',
   preguntas_kicker: 'Resolvemos tus dudas',
   preguntas_titulo: 'Preguntas frecuentes',
   preguntas_subtitulo: '',
@@ -221,21 +221,77 @@ function ofertasRuntime(item, venta) {
     });
 }
 
+function textoLimpio(valor) {
+  return String(valor ?? '').trim();
+}
+
+function primeraListaConDatos(...opciones) {
+  return opciones.find(opcion => Array.isArray(opcion) && opcion.length) || [];
+}
+
+function normalizarBeneficio(b) {
+  if (typeof b === 'string') return { titulo: textoLimpio(b), texto: '', icono: null };
+  return {
+    titulo: textoLimpio(b?.titulo || b?.title || b?.texto || b?.text),
+    texto: textoLimpio(b?.texto || b?.text || b?.descripcion || b?.description),
+    icono: b?.icono || b?.icon || null,
+  };
+}
+
+function normalizarPregunta(f) {
+  return {
+    pregunta: textoLimpio(f?.pregunta || f?.question),
+    respuesta: textoLimpio(f?.respuesta || f?.answer),
+  };
+}
+
+function normalizarOpinion(o) {
+  return {
+    nombre: textoLimpio(o?.nombre || o?.name || o?.author) || 'Cliente verificado',
+    comentario: textoLimpio(o?.comentario || o?.comment || o?.text || o?.review),
+    detalle: textoLimpio(o?.detalle || o?.source || o?.subtitle),
+    calificacion: Number(o?.calificacion || o?.rating || o?.stars) || 5,
+    foto: media(o?.foto || o?.photo || o?.image || o?.avatar),
+  };
+}
+
+function opinionesDeFichaDatos(fichaDatos = {}) {
+  return primeraListaConDatos(
+    fichaDatos.product_page_opiniones,
+    fichaDatos.opiniones,
+    fichaDatos.reviews,
+    fichaDatos.testimonials,
+    fichaDatos.fitness_opiniones,
+  );
+}
+
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const fuente = venta?.presentacion_productos?.[key] || item;
+  const fichaDatos = { ...(item.ficha_datos || {}), ...(fuente.ficha_datos || {}) };
   const texto = campo => String(fuente[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
   const lista = (campo) => (Array.isArray(fuente[campo]) && fuente[campo].length ? fuente[campo] : PRESENTACION_PRODUCTO_DEFAULT[campo]);
-  const beneficios = lista('beneficios').map(b => (
-    typeof b === 'string'
-      ? { titulo: b, texto: '' }
-      : { titulo: String(b?.titulo || b?.texto || '').trim(), texto: String(b?.texto || '').trim(), icono: b?.icono || null }
-  )).filter(b => b.titulo || b.texto);
-  const preguntasFuente = Array.isArray(fuente.preguntas) && fuente.preguntas.length
-    ? fuente.preguntas
-    : (Array.isArray(fuente.preguntas_frecuentes) && fuente.preguntas_frecuentes.length
-      ? fuente.preguntas_frecuentes
-      : PRESENTACION_PRODUCTO_DEFAULT.preguntas);
+  const beneficiosFuente = primeraListaConDatos(fuente.beneficios, item.beneficios, fichaDatos.beneficios_rapidos) || PRESENTACION_PRODUCTO_DEFAULT.beneficios;
+  const beneficios = (beneficiosFuente.length ? beneficiosFuente : PRESENTACION_PRODUCTO_DEFAULT.beneficios)
+    .map(normalizarBeneficio)
+    .filter(b => b.titulo || b.texto);
+  const preguntasFuente = primeraListaConDatos(
+    fuente.preguntas,
+    fuente.faq,
+    fuente.faqs,
+    fuente.preguntas_frecuentes,
+    item.preguntas,
+    item.faq,
+    item.faqs,
+    item.preguntas_frecuentes,
+  );
+  const preguntas = (preguntasFuente.length ? preguntasFuente : PRESENTACION_PRODUCTO_DEFAULT.preguntas)
+    .map(normalizarPregunta)
+    .filter(f => f.pregunta && f.respuesta);
+  const opinionesFuente = Array.isArray(fuente.opiniones)
+    ? fuente.opiniones
+    : primeraListaConDatos(item.opiniones, opinionesDeFichaDatos(fichaDatos));
+  const opiniones = opinionesFuente.map(normalizarOpinion).filter(o => o.comentario);
   // Logos de medios de pago (Tarjetas / Bocas de cobranza / Billetera
   // electrónica) de la ficha genérica: el comercio elige cuáles mostrar
   // desde Configurar venta → Checkout (nunca por producto, es de la tienda
@@ -269,8 +325,8 @@ export function presentacionComercial(item, venta) {
     metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
     incluye_pedido: lista('incluye_pedido'),
     botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : PRESENTACION_PRODUCTO_DEFAULT.botones_contacto,
-    opiniones: lista('opiniones'),
-    preguntas: preguntasFuente,
+    opiniones,
+    preguntas,
     pago_logo_tarjetas: pagoLogoTarjetas,
     pago_logo_bocas: pagoLogoBocas,
     pago_logo_billetera: pagoLogoBilletera,
@@ -377,15 +433,17 @@ function ofertaPanelARuntime(o, imagenDeProducto = () => null) {
  * del ahorro).
  */
 export function contenidoFicha(item) {
-  const beneficios = (Array.isArray(item.beneficios) ? item.beneficios : [])
-    .filter(b => String(b?.titulo || '').trim())
-    .map(b => ({ titulo: String(b.titulo).trim(), texto: String(b.texto || '').trim() || null, icono: b.icono || null }));
+  const fichaDatos = item.ficha_datos || {};
+  const beneficios = primeraListaConDatos(item.beneficios, fichaDatos.beneficios_rapidos)
+    .map(normalizarBeneficio)
+    .filter(b => b.titulo || b.texto);
   const confianza = (Array.isArray(item.confianza) ? item.confianza : [])
     .map(c => ({ texto: String(c?.texto || c?.titulo || '').trim(), icono: c?.icono || null }))
     .filter(c => c.texto);
-  const preguntas = (Array.isArray(item.preguntas_frecuentes) ? item.preguntas_frecuentes : [])
-    .filter(f => String(f?.pregunta || '').trim() && String(f?.respuesta || '').trim())
-    .map(f => ({ pregunta: String(f.pregunta).trim(), respuesta: String(f.respuesta).trim() }));
+  const preguntas = primeraListaConDatos(item.preguntas, item.faq, item.faqs, item.preguntas_frecuentes)
+    .map(normalizarPregunta)
+    .filter(f => f.pregunta && f.respuesta);
+  const opiniones = opinionesDeFichaDatos(fichaDatos).map(normalizarOpinion).filter(o => o.comentario);
   const comboIncluye = item.tipo === 'combo'
     ? (item.productos_combo || []).map(p => ({
       id: Number(p.id),
@@ -405,6 +463,7 @@ export function contenidoFicha(item) {
     beneficios,
     confianza,
     preguntas,
+    opiniones,
     combo_incluye: comboIncluye,
     precio_separado: item.tipo === 'combo' && separado > precio ? separado : null,
     // Ahorro del producto o combo: lo usan los binds "ahorro" y "ahorro_texto".

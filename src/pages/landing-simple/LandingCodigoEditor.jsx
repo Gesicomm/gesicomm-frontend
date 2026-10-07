@@ -654,7 +654,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   }), [seleccion, tienda, venta, vista, productoPreviewId, ofertasTienda]);
   const codigoPreviewCrudo = codigosPreview[claveVista] || codigosPreview[vista];
   const codigoInicioPreview = codigosPreview.inicio?.html ? codigosPreview.inicio : plantillaInicioPara(venta?.tipo);
-  const codigoPreviewHeredado = ['catalogo', 'categoria', 'checkout'].includes(vista)
+  const codigoPreviewHeredado = ['catalogo', 'categoria', 'checkout', 'producto'].includes(vista)
     ? conGlobalesHeredados(codigoPreviewCrudo, codigoInicioPreview)
     : codigoPreviewCrudo;
 

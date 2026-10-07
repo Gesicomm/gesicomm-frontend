@@ -29,15 +29,23 @@ export function extraerGlobalesTienda(html = '') {
 
   let inicio = header.index;
   const antes = html.slice(0, header.index);
-  // Únicamente la marca explícita del sistema (data-gesicomm-bloque=
-  // "anuncios", la que arma el propio Inicio para su barra de beneficios)
-  // cuenta como "global de tienda" para arrastrar antes del header. Un
-  // regex de clase libre (class contiene "promo", "anuncio", "shipping"...)
-  // también matcheaba el hero/banner de venta que la IA escribe con esos
-  // mismos nombres, duplicando ese bloque — grande, sin su CSS, roto —
+  // Cuenta como "global de tienda" para arrastrar antes del header:
+  //   - la marca explícita del sistema (data-gesicomm-bloque="anuncios",
+  //     la que arma el propio Inicio para su barra de beneficios), y
+  //   - la clase "announcement" (palabra completa) — el otro nombre que
+  //     usa el mismo patrón de barra superior en el contrato de Gesicom
+  //     (ver SYSTEM_CSS en construirDocumentoCodigo.js), que una IA puede
+  //     haber escrito a mano con texto fijo en vez del bloque dinámico.
+  //     Sin este caso, una vista con su propia ".announcement" estática se
+  //     queda con ESA barra Y la de Inicio superpuesta — duplicada.
+  // Un regex de clase libre (class contiene "promo", "anuncio", "shipping"...)
+  // en cambio también matcheaba el hero/banner de venta que la IA escribe con
+  // esos mismos nombres, duplicando ese bloque — grande, sin su CSS, roto —
   // arriba de categoría/catálogo/checkout (ver memoria gesicomm_lienzo_html_runtime).
+  // Por eso acá se exige la palabra completa "announcement", no una subcadena.
   const barras = [...antes.matchAll(/<(?:div|section|aside)\b[^>]*>/gi)]
-    .filter(match => /data-gesicomm-bloque=(["'])anuncios\1/i.test(match[0]));
+    .filter(match => /data-gesicomm-bloque=(["'])anuncios\1/i.test(match[0])
+      || /class=(["'])(?:[^"']*\s)?announcement(?:\s[^"']*)?\1/i.test(match[0]));
   const barra = barras[barras.length - 1];
   if (barra) inicio = barra.index;
 
@@ -56,11 +64,16 @@ export function extraerGlobalesTienda(html = '') {
 export function conGlobalesHeredados(codigoVista, codigoInicio) {
   if (!codigoVista?.html || !codigoInicio?.html || codigoVista === codigoInicio) return codigoVista;
   const globalInicio = extraerGlobalesTienda(codigoInicio.html);
-  const globalVista = extraerGlobalesTienda(codigoVista.html);
   if (!globalInicio) return codigoVista;
-  const html = globalVista
-    ? `${codigoVista.html.slice(0, globalVista.inicio)}${globalInicio.html}${codigoVista.html.slice(globalVista.fin)}`
-    : `${globalInicio.html}\n${codigoVista.html}`;
+  const globalVista = extraerGlobalesTienda(codigoVista.html);
+  // Si no se puede ubicar con seguridad el header/anuncios propio de esta
+  // vista (header con hero de fondo, demasiado grande, etc.) no hay forma
+  // segura de reemplazarlo — y pegar el global ARRIBA sin sacar el suyo
+  // duplica la barra de anuncios y el header (uno roto, sin su lugar en el
+  // documento, y el propio de la vista debajo). Mejor dejar la vista con lo
+  // que ya tiene antes que duplicar.
+  if (!globalVista) return codigoVista;
+  const html = `${codigoVista.html.slice(0, globalVista.inicio)}${globalInicio.html}${codigoVista.html.slice(globalVista.fin)}`;
   return {
     ...codigoVista,
     html,

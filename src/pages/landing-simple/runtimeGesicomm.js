@@ -583,15 +583,45 @@ export function runtimeGesicomm() {
     raiz.querySelectorAll('[data-gesicomm-bind="etiqueta"], .product-category').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
     if (item.titulo_comercial) raiz.querySelectorAll('[data-gesicomm-bind="nombre"]').forEach(function (el) { el.textContent = item.titulo_comercial; });
     if (contenido) {
-      if (item.mensaje_comercial && !contenido.querySelector('.gc-commercial-copy')) {
-        contenido.querySelectorAll('[data-gesicomm-bind="descripcion"]').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
+      var tituloCard = contenido.querySelector('[data-gesicomm-bind="nombre"]');
+      if (!contenido.querySelector('.gc-product-availability')) {
+        var disponibilidadCard = document.createElement('p');
+        disponibilidadCard.className = 'gc-product-availability';
+        disponibilidadCard.textContent = item.stock !== null && item.stock !== undefined && Number(item.stock) <= 0 ? 'Sin stock por ahora' : 'Disponible';
+        if (tituloCard) tituloCard.insertAdjacentElement('afterend', disponibilidadCard);
+        else contenido.prepend(disponibilidadCard);
+      }
+      var tieneDescripcionPropia = !!contenido.querySelector('[data-gesicomm-bind="descripcion"], .product-description');
+      var textoComercial = item.mensaje_comercial || item.propuesta_valor || (!tieneDescripcionPropia ? item.descripcion : '');
+      if (textoComercial && !contenido.querySelector('.gc-commercial-copy')) {
+        if (item.mensaje_comercial) {
+          contenido.querySelectorAll('[data-gesicomm-bind="descripcion"]').forEach(function (el) { el.style.setProperty('display', 'none', 'important'); });
+        }
         var mensaje = document.createElement('p');
-        mensaje.className = 'gc-commercial-copy'; mensaje.textContent = item.mensaje_comercial;
-        var titulo = contenido.querySelector('[data-gesicomm-bind="nombre"]');
-        if (titulo) titulo.insertAdjacentElement('afterend', mensaje); else contenido.prepend(mensaje);
+        mensaje.className = 'gc-commercial-copy'; mensaje.textContent = textoComercial;
+        var disponibilidadExistente = contenido.querySelector('.gc-product-availability');
+        if (disponibilidadExistente) disponibilidadExistente.insertAdjacentElement('afterend', mensaje);
+        else if (tituloCard) tituloCard.insertAdjacentElement('afterend', mensaje);
+        else contenido.prepend(mensaje);
       }
       var antes = Number(item.precio_antes), precio = Number(item.precio);
       var ahorro = antes > precio && precio > 0 ? antes - precio : 0;
+      if (ahorro) raiz.classList.add('has-card-offer');
+      var media = raiz.querySelector('.product-image, .product-media, .product__media, .card__media, .catalog-card__media, .media, .thumb, .image');
+      if (media && !media.querySelector('.gc-card-media-badges')) {
+        var textoBadge = '';
+        if (ahorro) textoBadge = '-' + Math.round(ahorro / antes * 100) + '%';
+        else if (item.etiqueta) textoBadge = String(item.etiqueta).split(',')[0].trim();
+        else if (item.insignia_principal && item.insignia_principal !== 'Oferta') textoBadge = item.insignia_principal;
+        if (textoBadge) {
+          var mediaBadges = document.createElement('div');
+          mediaBadges.className = 'gc-card-media-badges';
+          var mediaBadge = document.createElement('span');
+          mediaBadge.textContent = textoBadge;
+          mediaBadges.appendChild(mediaBadge);
+          media.appendChild(mediaBadges);
+        }
+      }
       var insignias = [item.insignia_principal || item.insignia_secundaria].filter(function (valor) {
         return valor && (valor !== 'Oferta' || ahorro > 0) && (valor !== 'Envío gratis' || item.envio_incluido);
       });
@@ -607,7 +637,10 @@ export function runtimeGesicomm() {
       if (ahorro && !contenido.querySelector('.gc-commercial-saving')) {
         var saving = document.createElement('p'); saving.className = 'gc-commercial-saving'; saving.textContent = 'Ahorrás ' + formatoPrecio(ahorro);
         var footer = contenido.querySelector('.product-footer, .limited-offer-prices');
-        if (footer) footer.appendChild(saving); else contenido.appendChild(saving);
+        var ctaFooter = footer && footer.querySelector('[data-gesicomm-comprar], [data-gesicomm-agregar], .button-primary');
+        if (footer && ctaFooter) footer.insertBefore(saving, ctaFooter);
+        else if (footer) footer.appendChild(saving);
+        else contenido.appendChild(saving);
       }
       var urgencia = datos.venta && datos.venta.urgencia;
       if (productoAplicaUrgencia(item, urgencia) && urgencia.fin_at && !contenido.querySelector('.gc-card-countdown')) {
@@ -633,8 +666,9 @@ export function runtimeGesicomm() {
       if (raiz.classList && raiz.classList.contains('product-card')) {
         contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) {
           if (!btn.hasAttribute('data-gesicomm-metodo-pago')) {
-            btn.textContent = 'Comprar';
+            btn.textContent = 'Comprar ahora';
             btn.setAttribute('data-gesicomm-comprar-ver', '');
+            raiz.classList.add('has-card-cta');
           }
         });
       }
@@ -648,14 +682,6 @@ export function runtimeGesicomm() {
       envio.className = 'gc-product-shipping';
       envio.textContent = 'Envío gratis';
       contenido.appendChild(envio);
-    }
-    if (contenido && !contenido.querySelector('.gc-product-availability')) {
-      var disponibilidad = document.createElement('p');
-      disponibilidad.className = 'gc-product-availability';
-      disponibilidad.textContent = item.stock !== null && item.stock !== undefined && Number(item.stock) <= 0 ? 'Sin stock por ahora' : 'Disponible';
-      var footerDisponibilidad = contenido.querySelector('.product-footer');
-      if (footerDisponibilidad) footerDisponibilidad.insertAdjacentElement('beforebegin', disponibilidad);
-      else contenido.appendChild(disponibilidad);
     }
     if (raiz.hasAttribute('data-gesicomm-ver')) raiz.style.cursor = 'pointer';
     var imgs = imagenesDeProducto(item);
@@ -927,17 +953,35 @@ export function runtimeGesicomm() {
     return (datos.venta && (datos.venta.inicio || datos.venta.inicio_comercial)) || {};
   }
 
+  // Mismo criterio que aplicarOrdenMobileFicha: el ancho real de la ventana
+  // manda. En el editor esto ya alcanza porque el preview "Celular" renderiza
+  // el iframe angosto de verdad (PhonePreviewShell en ConfigurarVentaCodigo),
+  // no hace falta un flag forzado aparte.
+  function esMobile() {
+    try { return !!(window.matchMedia && window.matchMedia('(max-width: 760px)').matches); }
+    catch (err) { return window.innerWidth <= 760; }
+  }
+
   function encabezadoConfig() {
     var e = inicioConfig().encabezado || {};
     var tamano = Number(e.logo_tamano);
     var rotacion = Number(e.logo_rotacion);
+    // variante_mobile es un override opcional (RF-GEN-02): sin elegir nada
+    // ahí, el mobile hereda la misma variante que escritorio.
+    var variante = e.variante === 'embebido' ? 'embebido' : 'normal';
+    var varianteMobile = esMobile() && (e.variante_mobile === 'embebido' || e.variante_mobile === 'normal') ? e.variante_mobile : variante;
     return {
       logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(96, tamano)) : 46,
       logo_rotacion: isFinite(rotacion) ? Math.max(-180, Math.min(180, rotacion)) : 0,
       logo_posicion: e.logo_posicion === 'centro' ? 'centro' : 'izquierda',
+      variante: varianteMobile,
     };
   }
 
+  // La variante se aplica a los tres bloques a la vez (encabezado, barra de
+  // anuncios y banner) porque en "embebido" se componen como una sola pieza
+  // visual (header transparente superpuesto al banner) — no son estilos
+  // independientes, por eso comparten el mismo dato (encabezadoConfig().variante).
   function aplicarEncabezadoInicio() {
     var cfg = encabezadoConfig();
     var headers = document.querySelectorAll('.commerce-header');
@@ -946,6 +990,11 @@ export function runtimeGesicomm() {
       headers[i].style.setProperty('--gc-logo-escala', String(cfg.logo_tamano / 46));
       headers[i].style.setProperty('--gc-logo-rotacion', cfg.logo_rotacion + 'deg');
       headers[i].classList.toggle('logo-centrado', cfg.logo_posicion === 'centro');
+      headers[i].setAttribute('data-variante', cfg.variante);
+    }
+    var otrosBloques = document.querySelectorAll('.trust-bar, .hero');
+    for (var j = 0; j < otrosBloques.length; j++) {
+      otrosBloques[j].setAttribute('data-variante', cfg.variante);
     }
   }
 
@@ -968,16 +1017,15 @@ export function runtimeGesicomm() {
     leaf: '🌿', headphones: '🎧', package: '📦', clock: '⏱️', gift: '🎁', star: '⭐',
     lock: '🔒', whatsapp: '💬', mail: '✉️', location: '📍', cash: '💵',
   };
-  // El runtime nunca deja la barra ni la zona de confianza vacías: sin
-  // configurar todavía, se ven con este contenido de ejemplo (igual criterio
-  // que textoVenta/urgencia). El comercio lo reemplaza desde el editor.
+  // Sin configurar todavía, la barra arranca con contenido de ejemplo. Una
+  // lista vacía guardada, en cambio, significa "la saqué a propósito".
   // Ícono por defecto cuando el anuncio todavía no tiene uno elegido (texto
   // suelto guardado antes de que existiera el selector, o nunca tocado) —
   // cicla estos 4 en vez de repetir siempre el mismo.
   var ICONOS_ANUNCIOS_DEFAULT = ['✦', '✓', '◉', '↺'];
   function anunciosInicio() {
     var lista = inicioConfig().anuncios;
-    var fuente = Array.isArray(lista) && lista.length ? lista : ANUNCIOS_DEFAULT;
+    var fuente = Array.isArray(lista) ? lista : ANUNCIOS_DEFAULT;
     var items = fuente.map(function (it, i) {
       var esObjeto = it && typeof it === 'object';
       var texto = esObjeto ? (it.texto || '') : (it || '');
@@ -1010,11 +1058,15 @@ export function runtimeGesicomm() {
   function testimoniosInicioConfig() {
     var cfg = inicioConfig().testimonios || null;
     if (!cfg) return null;
-    if (cfg.activo !== true && Array.isArray(cfg.items) && cfg.items.length) {
-      var tieneContenido = cfg.items.some(function (o) {
+    if (cfg.activo !== true) {
+      var tieneContenido = Array.isArray(cfg.items) && cfg.items.some(function (o) {
         return o && String(o.nombre || o.comentario || o.texto || o.foto || o.imagen || '').trim();
       });
+      var tieneEncabezado = (String(cfg.kicker || '').trim() && cfg.kicker !== 'Opiniones')
+        || (String(cfg.titulo || '').trim() && cfg.titulo !== 'Clientes que ya compraron.')
+        || String(cfg.subtitulo || '').trim();
       cfg = Object.assign({}, cfg, { activo: tieneContenido });
+      if (tieneEncabezado) cfg.activo = true;
     }
     return cfg;
   }
@@ -1199,6 +1251,7 @@ export function runtimeGesicomm() {
       if (contenedor && contenedor.contains(el)) contenedor.appendChild(el); // reinserta al final, en el orden de `bloques`
     }
     for (var tipo in mapa) {
+      if (tipo === 'encabezado') continue;
       if (Object.prototype.hasOwnProperty.call(mapa, tipo) && !configurados[tipo]) mapa[tipo].hidden = true;
     }
   }
@@ -1419,9 +1472,14 @@ export function runtimeGesicomm() {
   function bannersInicio() {
     var banners = inicioConfig().banners || [];
     if (!Array.isArray(banners)) return [];
+    var mobile = esMobile();
     return banners.filter(function (b) {
+      if (mobile && b && b.activo_mobile === false) return false;
       return b && b.activo !== false && (b.titulo || b.subtitulo || b.imagen);
     }).map(function (b) {
+      // imagen_mobile es un override opcional (RF-GEN-02): el resto del
+      // contenido del banner (texto, enlace, CTA) es el mismo en los dos anchos.
+      var imagen = (mobile && b.imagen_mobile) || b.imagen || '';
       return {
         id: b.id || b.titulo,
         titulo: b.titulo || '',
@@ -1429,8 +1487,8 @@ export function runtimeGesicomm() {
         etiqueta: b.etiqueta || '',
         cta_texto: b.cta_texto || '',
         enlace: b.enlace || '#productos',
-        imagen: b.imagen || '',
-        tipo_medio: b.tipo_medio || (/(\.mp4|\.webm|\.ogg|\.mov|\.m4v)(\?|$)/i.test(b.imagen || '') ? 'video' : 'imagen'),
+        imagen: imagen,
+        tipo_medio: b.tipo_medio || (/(\.mp4|\.webm|\.ogg|\.mov|\.m4v)(\?|$)/i.test(imagen) ? 'video' : 'imagen'),
       };
     });
   }
@@ -1608,6 +1666,25 @@ export function runtimeGesicomm() {
 
   function renderizarLista(el) {
     var nombre = el.getAttribute('data-gesicomm-lista');
+    function limpiarHardcodeAnuncios() {
+      if (nombre !== 'anuncios') return;
+      var bloque = el.closest('[data-gesicomm-bloque="anuncios"]');
+      if (bloque) {
+        var hijosBloque = Array.prototype.slice.call(bloque.childNodes);
+        hijosBloque.forEach(function (nodo) {
+          if (nodo === el || (nodo.contains && nodo.contains(el))) return;
+          if (nodo.nodeType === 3 && !String(nodo.textContent || '').trim()) return;
+          nodo.parentNode.removeChild(nodo);
+        });
+      }
+      var hijosLista = Array.prototype.slice.call(el.childNodes);
+      hijosLista.forEach(function (nodo) {
+        if (nodo.nodeType === 1 && nodo.tagName === 'TEMPLATE') return;
+        if (nodo.nodeType === 1 && nodo.hasAttribute('data-gesicomm-generado')) return;
+        if (nodo.nodeType === 3 && !String(nodo.textContent || '').trim()) return;
+        nodo.parentNode.removeChild(nodo);
+      });
+    }
     // El <template> de ESTA lista, no el de una lista anidada: una sección
     // puede envolver a la grilla con el mismo data-gesicomm-lista solo para
     // ocultarse entera cuando no hay datos.
@@ -1617,12 +1694,16 @@ export function runtimeGesicomm() {
       if (candidatos[c0].parentNode && candidatos[c0].parentNode.closest('[data-gesicomm-lista]') === el) { tpl = candidatos[c0]; break; }
     }
     if (!tpl) {
+      limpiarHardcodeAnuncios();
       // Envoltorio: sin molde propio, solo se muestra u oculta.
       var hay = fuenteDeLista(nombre, el).length > 0;
       el.style.display = hay || el.getAttribute('data-gesicomm-si-vacio') === 'mostrar' ? '' : 'none';
       return;
     }
-    // Re-render: se borra lo que generó la pasada anterior, nunca lo escrito a mano.
+    limpiarHardcodeAnuncios();
+    // Re-render: se borra lo que generó la pasada anterior. En anuncios,
+    // también se limpia texto estático para que una barra vieja hardcodeada
+    // no reaparezca por encima de la configuración real.
     var viejos = el.querySelectorAll('[data-gesicomm-generado]');
     for (var v = 0; v < viejos.length; v++) viejos[v].parentNode.removeChild(viejos[v]);
 
@@ -1800,9 +1881,7 @@ export function runtimeGesicomm() {
   function aplicarOrdenMobileFicha() {
     if (!productoActual) return;
     var orden = Array.isArray(productoActual.ficha_orden_mobile) ? productoActual.ficha_orden_mobile : [];
-    var esMobile = false;
-    try { esMobile = window.matchMedia && window.matchMedia('(max-width: 760px)').matches; } catch (err) { esMobile = window.innerWidth <= 760; }
-    if (!esMobile || !orden.length) {
+    if (!esMobile() || !orden.length) {
       restaurarOrdenOriginalFicha();
       return;
     }
@@ -2246,8 +2325,10 @@ export function runtimeGesicomm() {
     var panel = wrap && (wrap.querySelector('#gesicomm-search-panel') || wrap.querySelector('.search-box'));
     if (!toggle || !panel || toggle.getAttribute('data-gesicomm-search-ready') === 'true') return;
     toggle.setAttribute('data-gesicomm-search-ready', 'true');
-    panelResultadosHeader(wrap);
+    var resultadosIniciales = panelResultadosHeader(wrap);
+    if (wrap) wrap.classList.remove('is-open');
     panel.hidden = true;
+    if (resultadosIniciales) resultadosIniciales.hidden = true;
     toggle.setAttribute('aria-expanded', 'false');
     toggle.addEventListener('click', function (e) {
       e.preventDefault();
@@ -3111,7 +3192,15 @@ export function runtimeGesicomm() {
   var resizeFichaTimer = null;
   window.addEventListener('resize', function () {
     if (resizeFichaTimer) clearTimeout(resizeFichaTimer);
-    resizeFichaTimer = setTimeout(aplicarOrdenMobileFicha, 120);
+    resizeFichaTimer = setTimeout(function () {
+      aplicarOrdenMobileFicha();
+      // Re-aplica los overrides de mobile (variante del encabezado, imagen
+      // del banner) si alguien cruza el breakpoint de 760px sin recargar
+      // (rotar el celular, achicar la ventana) — mismo criterio que la ficha.
+      aplicarEncabezadoInicio();
+      var listasBanner = document.querySelectorAll('[data-gesicomm-lista="banners_inicio"]');
+      for (var i = 0; i < listasBanner.length; i++) renderizarLista(listasBanner[i]);
+    }, 120);
   });
 
   window.Gesicomm = {
