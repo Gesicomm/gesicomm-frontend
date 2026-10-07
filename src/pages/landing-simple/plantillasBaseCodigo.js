@@ -263,19 +263,6 @@ const HEADER_HTML = `<header class="commerce-header">
   </div>
 </header>`;
 
-const ANNOUNCEMENT_HTML = `<div class="announcement" aria-label="Beneficios de compra">
-  <div class="announcement-track">
-    <span><strong>Oferta por tiempo limitado</strong> aprovechá antes de que termine</span>
-    <span><strong>Pago seguro</strong> online o al recibir</span>
-    <span><strong>Envío rápido</strong> a tu ciudad</span>
-    <span><strong>Atención por WhatsApp</strong> te ayudamos a elegir</span>
-    <span><strong>Oferta por tiempo limitado</strong> aprovechá antes de que termine</span>
-    <span><strong>Pago seguro</strong> online o al recibir</span>
-    <span><strong>Envío rápido</strong> a tu ciudad</span>
-    <span><strong>Atención por WhatsApp</strong> te ayudamos a elegir</span>
-  </div>
-</div>`;
-
 const LIMITED_OFFER_HTML = `<section id="ofertas" class="limited-offer" data-gesicomm-bloque="ofertas_urgencia" data-gesicomm-lista="productos_ofertas" data-gesicomm-countdown data-gesicomm-venta-configurada="urgencia">
   <div class="limited-offer-card">
     <div class="limited-offer-summary">
