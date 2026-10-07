@@ -847,6 +847,21 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(document.activeElement).toBe(input);
   });
+
+  it('el buscador del header lista coincidencias parciales y navega al producto', () => {
+    const { window, document, mensajes, click } = montar(PLANTILLA_INICIO, datos);
+    click('[data-gesicomm-search-toggle]');
+    const input = document.querySelector('#gesicomm-search-panel [data-gesicomm-buscar]');
+    input.value = 'fry';
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    const resultados = [...document.querySelectorAll('[data-gesicomm-search-result]')];
+    expect(resultados.map(el => el.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Air Fryer 2.6L')]));
+    expect(resultados[0].querySelector('img').getAttribute('src')).toBe('https://cdn.test/air.jpg');
+
+    resultados[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'producto', producto: 'air-fryer-26l' });
+  });
 });
 
 describe('ficha: imágenes y descripciones legibles', () => {

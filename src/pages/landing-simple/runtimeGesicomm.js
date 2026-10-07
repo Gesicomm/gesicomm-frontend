@@ -2018,18 +2018,88 @@ export function runtimeGesicomm() {
   }
 
   function cerrarBuscadorHeader() {
+    var wrap = document.querySelector('.commerce-header .search-wrap');
     var panel = document.querySelector('#gesicomm-search-panel, .commerce-header .search-box');
     var toggle = document.querySelector('[data-gesicomm-search-toggle]');
+    var resultados = document.querySelector('[data-gesicomm-search-results]');
+    if (wrap) wrap.classList.remove('is-open');
     if (!panel) return;
     panel.hidden = true;
+    if (resultados) resultados.hidden = true;
     if (toggle) toggle.setAttribute('aria-expanded', 'false');
   }
 
+  function panelResultadosHeader(wrap) {
+    var panel = wrap && wrap.querySelector('[data-gesicomm-search-results]');
+    if (!panel && wrap) {
+      panel = document.createElement('div');
+      panel.className = 'search-results';
+      panel.setAttribute('data-gesicomm-search-results', '');
+      panel.hidden = true;
+      wrap.appendChild(panel);
+    }
+    return panel;
+  }
+
+  function resultadosBusquedaHeader(q) {
+    var termino = normalizar(q).trim();
+    if (termino.length < 2) return [];
+    var vistos = {};
+    var base = conocidos.concat(productos);
+    var salida = [];
+    for (var i = 0; i < base.length; i++) {
+      var p = base[i];
+      if (!p || !p.id || vistos[p.id]) continue;
+      vistos[p.id] = true;
+      var texto = normalizar((p.nombre || '') + ' ' + (p.categoria || '') + ' ' + (p.marca || '') + ' ' + (p.etiqueta || ''));
+      if (texto.indexOf(termino) === -1) continue;
+      salida.push(p);
+      if (salida.length >= 6) break;
+    }
+    return salida;
+  }
+
+  function pintarResultadosHeader(input) {
+    var wrap = input && input.closest ? input.closest('.commerce-header .search-wrap') : null;
+    var panel = panelResultadosHeader(wrap);
+    if (!panel) return;
+    var items = resultadosBusquedaHeader(input.value || '');
+    panel.textContent = '';
+    if (!items.length) { panel.hidden = true; return; }
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'search-result-item';
+      btn.setAttribute('data-gesicomm-search-result', item.id);
+      var img = document.createElement('img');
+      img.className = 'search-result-thumb';
+      img.alt = '';
+      var src = urlSegura(item.imagen || item.url_imagen || '');
+      if (src) img.src = src;
+      var copy = document.createElement('span');
+      var nombre = document.createElement('strong');
+      nombre.className = 'search-result-name';
+      nombre.textContent = item.nombre || 'Producto';
+      var meta = document.createElement('span');
+      meta.className = 'search-result-meta';
+      meta.textContent = [formatoPrecio(precioDe(item, null)), item.categoria || ''].filter(Boolean).join(' · ');
+      copy.appendChild(nombre);
+      copy.appendChild(meta);
+      btn.appendChild(img);
+      btn.appendChild(copy);
+      panel.appendChild(btn);
+    }
+    panel.hidden = false;
+  }
+
   function prepararBuscadorHeader() {
-    var toggle = document.querySelector('[data-gesicomm-search-toggle]');
-    var panel = document.querySelector('#gesicomm-search-panel, .commerce-header .search-box');
+    var wrap = document.querySelector('.commerce-header .search-wrap');
+    var toggle = wrap && wrap.querySelector('[data-gesicomm-search-toggle]');
+    var panel = wrap && (wrap.querySelector('#gesicomm-search-panel') || wrap.querySelector('.search-box'));
     if (!toggle || !panel || toggle.getAttribute('data-gesicomm-search-ready') === 'true') return;
     toggle.setAttribute('data-gesicomm-search-ready', 'true');
+    panelResultadosHeader(wrap);
     panel.hidden = true;
     toggle.setAttribute('aria-expanded', 'false');
     toggle.addEventListener('click', function (e) {
@@ -2038,10 +2108,15 @@ export function runtimeGesicomm() {
       if (e.stopImmediatePropagation) e.stopImmediatePropagation();
       var abrir = panel.hidden === true;
       panel.hidden = !abrir;
+      if (wrap) wrap.classList.toggle('is-open', abrir);
       toggle.setAttribute('aria-expanded', abrir ? 'true' : 'false');
       if (abrir) {
         var input = panel.querySelector('[data-gesicomm-buscar], input[type="search"]');
         if (input && input.focus) input.focus();
+        if (input) pintarResultadosHeader(input);
+      } else {
+        var resultados = panelResultadosHeader(wrap);
+        if (resultados) resultados.hidden = true;
       }
     }, true);
   }
@@ -2430,6 +2505,10 @@ export function runtimeGesicomm() {
     if (!campo) return;
     var clave = campo.hasAttribute('data-gesicomm-buscar') ? 'busqueda' : campo.getAttribute('data-gesicomm-filtro');
     filtros[clave] = String(campo.value || '').slice(0, 80);
+    if (campo.closest && campo.closest('.commerce-header .search-wrap')) {
+      pintarResultadosHeader(campo);
+      return;
+    }
     clearTimeout(temporizadorBusqueda);
     temporizadorBusqueda = setTimeout(function () {
       filtros.pagina = 1;
@@ -2584,6 +2663,12 @@ export function runtimeGesicomm() {
       var abierto = panelCategorias.hidden === true;
       panelCategorias.hidden = !abierto;
       el.setAttribute('aria-expanded', abierto ? 'true' : 'false');
+      return;
+    }
+    if ((el = t.closest('[data-gesicomm-search-result]'))) {
+      e.preventDefault();
+      verProducto(buscar(el.getAttribute('data-gesicomm-search-result')));
+      cerrarBuscadorHeader();
       return;
     }
     if ((el = t.closest('[data-gesicomm-pc-categoria]'))) {

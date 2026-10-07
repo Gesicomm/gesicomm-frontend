@@ -252,6 +252,7 @@ const HEADER_HTML = `<header class="commerce-header">
           <input type="search" placeholder="Buscá productos, marcas y más..." aria-label="Buscar productos" data-gesicomm-buscar>
           <button type="submit" aria-label="Buscar">⌕</button>
         </form>
+        <div class="search-results" data-gesicomm-search-results hidden></div>
       </div>
       <button class="cart-button" type="button" data-gesicomm-carrito aria-label="Abrir carrito">
         <span aria-hidden="true">🛒</span>
