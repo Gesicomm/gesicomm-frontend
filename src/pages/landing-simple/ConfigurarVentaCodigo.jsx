@@ -1153,6 +1153,10 @@ export default function ConfigurarVentaCodigo({
     () => seleccion.map(i => ({ ...i, content_id: contentIdPanel(i) })),
     [seleccion],
   );
+  const recomendadosElegidos = useMemo(() => {
+    const porId = new Map(candidatosReco.map(i => [i.content_id, i]));
+    return recoItems.map(id => porId.get(id)).filter(Boolean);
+  }, [candidatosReco, recoItems]);
   const categoriasRecoDisponibles = useMemo(() => (
     [...new Set(candidatosReco.map(i => i.categoria).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b, 'es'))
@@ -2318,7 +2322,7 @@ export default function ConfigurarVentaCodigo({
                           type="button"
                           role="radio"
                           aria-checked={recoModo === k}
-                          onClick={() => { setRecoModo(k); verRecomendados(); }}
+                          onClick={() => setRecoModo(k)}
                           className={`text-left rounded-lg border px-3.5 py-2.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${recoModo === k ? 'border-accent bg-accent/[0.07]' : 'border-border hover:border-border-strong'}`}
                         >
                           <span className="block text-sm font-medium text-fg">{titulo}</span>
@@ -2444,6 +2448,33 @@ export default function ConfigurarVentaCodigo({
                               );
                             })}
                           </div>
+                          {recomendadosElegidos.length > 0 && (
+                            <div className="mt-4 rounded-xl border border-border bg-surface">
+                              <div className="px-3 py-2.5 border-b border-border">
+                                <p className="text-sm font-semibold text-fg">Precio tachado de recomendados</p>
+                                <p className="mt-0.5 text-xs text-fg-muted">Opcional. Se guarda para ese producto en esta landing.</p>
+                              </div>
+                              <ul className="divide-y divide-border">
+                                {recomendadosElegidos.map(item => (
+                                  <li key={item.content_id} className="flex flex-wrap items-center justify-between gap-3 px-3 py-2.5">
+                                    <span className="flex min-w-0 items-center gap-2.5">
+                                      <Miniatura item={item} />
+                                      <span className="min-w-0">
+                                        <span className="block truncate text-sm text-fg">{item.nombre}</span>
+                                        <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item))}</span>
+                                      </span>
+                                    </span>
+                                    <PrecioAncla
+                                      id={`ancla-reco-${claveItem(item)}`}
+                                      venta={precioDeVenta(item)}
+                                      valor={anclas[claveItem(item)] ?? ''}
+                                      onCambiar={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
+                                    />
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )
                     )}

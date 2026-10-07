@@ -12,3 +12,10 @@
   outline-offset: 4px;
   border-radius: 2px;
 }
+
+.gesicomm-editor-section-selected {
+  outline: 3px solid #facc15 !important;
+  outline-offset: -3px;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, .26) !important;
+  scroll-margin-top: 84px;
+}

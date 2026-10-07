@@ -1,6 +1,7 @@
 import React from 'react';
 import { RotateCcw } from 'lucide-react';
 import { resolverTemaPorSlug } from '../templates/themeUtils';
+import { coloresDeTienda } from '../mapLandingToTemplateData';
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -20,6 +21,7 @@ const CAMPOS = [
  * por defecto (ver templates/*.jsx).
  */
 export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
+  const coloresTienda = coloresDeTienda(tienda);
   // Paleta que la landing está usando de verdad: lo que el comercio pisó,
   // y donde no pisó nada, el default del template activo. Sin esto el panel
   // arrancaba con los tres selectores en negro y los campos de texto
@@ -31,9 +33,9 @@ export default function ColoresPanel({ draft, onCampo, templateSlug, tienda }) {
   // texto con el color de Branding.
   const temaActual = resolverTemaPorSlug(
     {
-      fondo: draft.color_fondo || tienda?.color_fondo,
-      texto: draft.color_texto || tienda?.color_secundario,
-      acento: draft.color_primario || tienda?.color_primario,
+      fondo: draft.color_fondo || coloresTienda.fondo,
+      texto: draft.color_texto || coloresTienda.texto,
+      acento: draft.color_primario || coloresTienda.acento,
     },
     templateSlug,
   );

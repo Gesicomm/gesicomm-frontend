@@ -719,6 +719,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
 
   if (paso === 'venta') {
     return (
+      <div className="relative h-full">
       <ConfigurarVentaCodigo
         catalogo={catalogo}
         onRecargarCatalogo={() => vitrinaService.catalogo().then(setCatalogo)}
@@ -762,6 +763,14 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
           return url;
         }}
       />
+      {confirmacionPublicacionIA && (
+        <ConfirmacionPublicacionIAModal
+          pendientes={confirmacionPublicacionIA.pendientes}
+          onCancelar={irAConfigurarDatosReales}
+          onAceptar={() => cambiarEstado(true, { aceptarContenidoIA: true })}
+        />
+      )}
+      </div>
     );
   }
 
@@ -1157,49 +1166,66 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       </div>
 
       {confirmacionPublicacionIA && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-fg/15 bg-surface shadow-2xl">
-            <div className="flex items-start gap-3 border-b border-fg/10 p-4">
-              <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500/15 text-amber-300">
-                <AlertTriangle size={18} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-base font-bold text-fg">Contenido generado con IA</p>
-                <p className="mt-1 text-sm leading-relaxed text-fg/65">
-                  Esta landing usa {confirmacionPublicacionIA.pendientes.includes('urgencia') && confirmacionPublicacionIA.pendientes.includes('prueba_social')
-                    ? 'countdown y estadísticas'
-                    : confirmacionPublicacionIA.pendientes.includes('urgencia') ? 'countdown' : 'estadísticas'} sin confirmar como datos reales.
-                </p>
-              </div>
-            </div>
-            <div className="space-y-3 p-4 text-sm leading-relaxed text-fg/70">
-              <p>
-                Revisá que esa información sea verdadera antes de usarla en anuncios o en la página pública. Publicar datos falsos o no comprobados puede traerte problemas con políticas de anuncios y normas de defensa del consumidor.
-              </p>
-              <p className="font-semibold text-fg">
-                Podés publicar igual si aceptás que estás al tanto de lo que implica.
-              </p>
-            </div>
-            <div className="flex flex-col-reverse gap-2 border-t border-fg/10 p-4 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={irAConfigurarDatosReales}
-                className="inline-flex justify-center rounded-xl border border-fg/15 px-4 py-2 text-sm font-semibold text-fg/75 hover:bg-fg/10"
-              >
-                Cancelar y cargar datos reales
-              </button>
-              <button
-                type="button"
-                onClick={() => cambiarEstado(true, { aceptarContenidoIA: true })}
-                className="inline-flex justify-center rounded-xl bg-fg px-4 py-2 text-sm font-semibold text-canvas hover:bg-fg-muted"
-              >
-                Aceptar, estoy al tanto
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmacionPublicacionIAModal
+          pendientes={confirmacionPublicacionIA.pendientes}
+          onCancelar={irAConfigurarDatosReales}
+          onAceptar={() => cambiarEstado(true, { aceptarContenidoIA: true })}
+        />
       )}
 
+    </div>
+  );
+}
+
+/**
+ * Aviso antes de publicar una landing que todavía tiene countdown o
+ * estadísticas generados por la IA sin confirmar como datos reales (ver
+ * advertenciasDePublicacionIA). Vive aparte para poder mostrarse tanto desde
+ * el editor de código como desde el paso "venta" (Configurar venta /
+ * Categorías), que renderiza una vista completamente distinta.
+ */
+function ConfirmacionPublicacionIAModal({ pendientes, onCancelar, onAceptar }) {
+  return (
+    <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/55 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-fg/15 bg-surface shadow-2xl">
+        <div className="flex items-start gap-3 border-b border-fg/10 p-4">
+          <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-500/15 text-amber-300">
+            <AlertTriangle size={18} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-base font-bold text-fg">Contenido generado con IA</p>
+            <p className="mt-1 text-sm leading-relaxed text-fg/65">
+              Esta landing usa {pendientes.includes('urgencia') && pendientes.includes('prueba_social')
+                ? 'countdown y estadísticas'
+                : pendientes.includes('urgencia') ? 'countdown' : 'estadísticas'} sin confirmar como datos reales.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3 p-4 text-sm leading-relaxed text-fg/70">
+          <p>
+            Revisá que esa información sea verdadera antes de usarla en anuncios o en la página pública. Publicar datos falsos o no comprobados puede traerte problemas con políticas de anuncios y normas de defensa del consumidor.
+          </p>
+          <p className="font-semibold text-fg">
+            Podés publicar igual si aceptás que estás al tanto de lo que implica.
+          </p>
+        </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-fg/10 p-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="inline-flex justify-center rounded-xl border border-fg/15 px-4 py-2 text-sm font-semibold text-fg/75 hover:bg-fg/10"
+          >
+            Cancelar y cargar datos reales
+          </button>
+          <button
+            type="button"
+            onClick={onAceptar}
+            className="inline-flex justify-center rounded-xl bg-fg px-4 py-2 text-sm font-semibold text-canvas hover:bg-fg-muted"
+          >
+            Aceptar, estoy al tanto
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

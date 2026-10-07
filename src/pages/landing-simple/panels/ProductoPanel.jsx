@@ -52,6 +52,7 @@ export default function ProductoPanel({
   faq, onFaqChange,
   relacionadosTitulo, onRelacionadosTitulo,
   relacionados, relacionadosAutomatico, onAgregarRelacionado, onQuitarRelacionado, catalogo,
+  onRelacionadoPrecioAncla = null,
   guardando, onGuardar, aviso, error,
   config, onChange,
   onOfertasChange,
@@ -141,8 +142,8 @@ export default function ProductoPanel({
       nombre: r.nombre,
       imagen: r.imagen,
       precio_efectivo: r.precio_efectivo,
+      precio_ancla: r.precio_ancla ?? '',
       etiqueta: '',
-      precio_ancla: '',
     }));
   }, [relacionados]);
 
@@ -444,10 +445,13 @@ export default function ProductoPanel({
                 itemsOrdenados={itemsOrdenados}
                 onToggle={handleToggleRelacionado}
                 onEtiqueta={() => {}}
-                onPrecioAncla={() => {}}
+                onPrecioAncla={onRelacionadoPrecioAncla}
                 onReordenar={() => {}}
                 max={12}
-                mostrarInputs={false}
+                mostrarInputs={!!onRelacionadoPrecioAncla}
+                mostrarEtiquetas={false}
+                triggerLabel="Agregar recomendados"
+                modalTitle="Elegir productos recomendados"
               />
             </div>
             </div>

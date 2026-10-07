@@ -8,7 +8,7 @@ import { vitrinaService } from '../../services/vitrinaService';
 import { tiendaService } from '../../services/tiendaService';
 import { getComponenteTemplate } from './templates';
 import { urlPublicaLanding } from './urlPublicaLanding';
-import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
+import { coloresDeTienda, mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 import ProductoPreview from './templates/ProductoPreview';
 import FitnessProductPage from './templates/fitness/FitnessProductPage';
 import TechProductPage from './templates/tech/TechProductPage';
@@ -656,6 +656,29 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   }, [paginaPreview, viewportMode, desktopEscalado, cargando]);
 
   useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return undefined;
+    const limpiar = () => {
+      root.querySelectorAll('.gesicomm-editor-section-selected').forEach(el => {
+        el.classList.remove('gesicomm-editor-section-selected');
+      });
+    };
+
+    const seccionId = !productoPreview && !vistaCatalogo && !vistaContacto ? TAB_SECCIONES[tab] : null;
+    limpiar();
+    if (!seccionId) return limpiar;
+
+    const frame = requestAnimationFrame(() => {
+      limpiar();
+      root.querySelector(`#${seccionId}`)?.classList.add('gesicomm-editor-section-selected');
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      limpiar();
+    };
+  }, [tab, productoPreview, vistaCatalogo, vistaContacto, viewportMode, desktopScale]);
+
+  useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
@@ -981,6 +1004,22 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
     setProductoAviso('');
   }
 
+  function cambiarPrecioAnclaRelacionado(item, valor) {
+    const limpio = valor === '' || valor === null || valor === undefined ? null : Number(valor);
+    const precioAncla = Number.isFinite(limpio) ? limpio : null;
+    setItems(prev => prev.map(i => (
+      Number(i.referencia_id) === Number(item.id) && i.tipo === (item.tipo || 'producto')
+        ? { ...i, precio_ancla: precioAncla }
+        : i
+    )));
+    setProductoRelacionados(prev => prev.map(r => (
+      Number(r.id) === Number(item.id)
+        ? { ...r, precio_ancla: precioAncla }
+        : r
+    )));
+    setProductoAviso('');
+  }
+
   function cambiarEnvioIncluido(valor) {
     if (!productoPreview) return;
     setItems(prev => prev.map(i => (
@@ -1170,7 +1209,15 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
   const algunaFichaActiva = fichaActiva || fichaTechActiva || fichaBeautyActiva || fichaBazarActiva || fichaModaActiva || fichaBasicoActiva;
   const draftParaPreview = { ...draft, items, faq, beneficios };
   const datosPreview = mapEditorDraftToTemplateData(draftParaPreview, catalogo, tienda);
-  datosPreview.tienda = { subdominio: tienda?.subdominio };
+  const coloresTienda = coloresDeTienda(tienda);
+  datosPreview.tienda = {
+    subdominio: tienda?.subdominio,
+    colores: {
+      primario: coloresTienda.acento,
+      secundario: coloresTienda.texto,
+      fondo: coloresTienda.fondo,
+    },
+  };
   datosPreview.slug = landing?.slug || draft?.slug;
   // Mismo criterio de id (slug si existe, si no `tipo:referencia_id`) que
   // mapEditorDraftToTemplateData usa para datosPreview.productos[].id — acá
@@ -1368,6 +1415,7 @@ export default function LandingSimpleEditor({ landingInicial, onEliminada }) {
               relacionadosAutomatico={productoRelacionadosAutomatico}
               onAgregarRelacionado={agregarRelacionado}
               onQuitarRelacionado={quitarRelacionado}
+              onRelacionadoPrecioAncla={cambiarPrecioAnclaRelacionado}
               catalogo={catalogoFiltradoParaRelacionados}
               guardando={productoGuardando}
               onGuardar={guardarProducto}

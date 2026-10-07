@@ -4,6 +4,7 @@ import { construirDocumentoCodigo, cssMarcaTienda } from './construirDocumentoCo
 import { PLANTILLA_INICIO } from './plantillasBaseCodigo';
 import { datosRuntimePublico, datosRuntimePreview } from './datosRuntime';
 import { armarPromptVista } from './promptsCodigo';
+import { mapEditorDraftToTemplateData } from './mapLandingToTemplateData';
 
 /**
  * La landing HTML arranca con el Branding de Mi Tienda (colores, logo,
@@ -67,6 +68,15 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
   it('el preview del editor usa los colores de la tienda del panel', () => {
     const datos = datosRuntimePreview({ productos: [], tienda: { nombre: 'x', color_primario: '#0f5132', color_secundario: '#ffc107', color_fondo: '#ffffff' } });
     expect(datos.tienda.colores).toEqual({ primario: '#0f5132', secundario: '#ffc107', fondo: '#ffffff' });
+  });
+
+  it('el inicio rígido hereda los colores guardados en tienda.colores', () => {
+    const datos = mapEditorDraftToTemplateData(
+      { titulo: 'Mi tienda', items: [] },
+      { productos: [], combos: [] },
+      { colores: { primario: '#155E63', secundario: '#D8A862', fondo: '#101A21' } },
+    );
+    expect(datos.tema).toEqual({ fondo: '#101A21', texto: '#D8A862', acento: '#155E63' });
   });
 
   it('el prompt le pasa a la IA los colores y le pide usar las variables de la tienda', () => {

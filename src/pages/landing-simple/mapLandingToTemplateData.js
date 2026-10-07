@@ -1,5 +1,14 @@
 import { getMediaUrl } from '../../services/api';
 
+export function coloresDeTienda(tienda) {
+  const colores = tienda?.colores || {};
+  return {
+    fondo: tienda?.color_fondo || colores.fondo || null,
+    texto: tienda?.color_texto || tienda?.color_secundario || colores.texto || colores.secundario || null,
+    acento: tienda?.color_primario || colores.primario || null,
+  };
+}
+
 /**
  * Galería de una tarjeta de producto, ya resuelta a URLs absolutas y con la
  * principal primero. Cae a `imagen` sola cuando el origen no manda galería
@@ -60,6 +69,7 @@ function imagenesHeroDesdeDto(dto) {
  * de donde sale la plantilla del mensaje de WhatsApp.
  */
 export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
+  const coloresTienda = coloresDeTienda(tienda);
   const porClave = new Map();
   (catalogo?.productos || []).forEach(p => porClave.set(`producto:${p.id}`, p));
   (catalogo?.combos || []).forEach(c => porClave.set(`combo:${c.id}`, c));
@@ -148,15 +158,16 @@ export function mapEditorDraftToTemplateData(draft, catalogo, tienda) {
       texto: draft?.contenido_texto || '',
     },
     tema: {
-      fondo: draft?.color_fondo || tienda?.color_fondo || null,
-      texto: draft?.color_texto || tienda?.color_secundario || null,
-      acento: draft?.color_primario || tienda?.color_primario || null,
+      fondo: draft?.color_fondo || coloresTienda.fondo,
+      texto: draft?.color_texto || coloresTienda.texto,
+      acento: draft?.color_primario || coloresTienda.acento,
     },
   };
 }
 
 /** Desde el DTO público (GET /api/l/:slug, LandingService.obtenerPublica). */
 export function mapPublicDtoToTemplateData(dto) {
+  const coloresTienda = coloresDeTienda(dto?.tienda);
   return {
     slug: dto?.slug,
     // Solo lo configurado EN ESTA LANDING (panel Marca). Antes caía a
@@ -232,9 +243,9 @@ export function mapPublicDtoToTemplateData(dto) {
       texto: dto?.contenido_texto || '',
     },
     tema: {
-      fondo: dto?.tema?.fondo || dto?.tienda?.colores?.fondo || null,
-      texto: dto?.tema?.texto || dto?.tienda?.colores?.secundario || null,
-      acento: dto?.tema?.primario || dto?.tienda?.colores?.primario || null,
+      fondo: dto?.tema?.fondo || coloresTienda.fondo,
+      texto: dto?.tema?.texto || coloresTienda.texto,
+      acento: dto?.tema?.primario || coloresTienda.acento,
     },
   };
 }

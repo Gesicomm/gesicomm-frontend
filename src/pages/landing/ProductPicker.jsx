@@ -249,7 +249,7 @@ function TarjetaProducto({ item, seleccionado, deshabilitado, onToggle, onEditar
 }
 
 /* ─── Lista ordenable de seleccionados ────────────────────────────────── */
-function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuitar, onReordenar, mostrarInputs = true }) {
+function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuitar, onReordenar, mostrarInputs = true, mostrarEtiquetas = true }) {
   const [arrastrando, setArrastrando] = useState(null);
   const [encima, setEncima] = useState(null);
   // Una fila con inputs no puede ser draggable siempre: el navegador
@@ -320,13 +320,15 @@ function ListaOrden({ items, onEtiqueta, onPrecioAncla, onMostrarInicio, onQuita
               entran junto al nombre/miniatura sin cortarse. */}
           {mostrarInputs && (
             <div className="lb-orden-inputs">
-              <input
-                className="lb-orden-etiqueta"
-                placeholder="Etiquetas (separadas por coma)"
-                maxLength={50}
-                value={item.etiqueta || ''}
-                onChange={(e) => onEtiqueta(item, e.target.value)}
-              />
+              {mostrarEtiquetas && (
+                <input
+                  className="lb-orden-etiqueta"
+                  placeholder="Etiquetas (separadas por coma)"
+                  maxLength={50}
+                  value={item.etiqueta || ''}
+                  onChange={(e) => onEtiqueta(item, e.target.value)}
+                />
+              )}
               {onPrecioAncla && (
                 <CurrencyInput
                   className="lb-orden-etiqueta"
@@ -373,6 +375,7 @@ export default function ProductPicker({
   modalTitle = 'Seleccionar productos',
   refrescarCatalogoAlAbrir = false,
   permitirCombos = true,
+  mostrarEtiquetas = true,
 }) {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [catalogoFresco, setCatalogoFresco] = useState(null);
@@ -755,8 +758,9 @@ export default function ProductPicker({
         <>
           {mostrarInputs && (
             <p className="lb-hint">
-              Arrastrá desde la manija para definir en qué orden aparecen en tu tienda.
-              La etiqueta agrupa productos dentro de esta landing (ej: “Ofertas”) y funciona como filtro para el visitante.
+              {mostrarEtiquetas
+                ? 'Arrastrá desde la manija para definir en qué orden aparecen en tu tienda. La etiqueta agrupa productos dentro de esta landing (ej: “Ofertas”) y funciona como filtro para el visitante.'
+                : 'El precio ancla es opcional y se muestra tachado junto al precio actual de ese producto en esta landing.'}
             </p>
           )}
           <ListaOrden
@@ -767,6 +771,7 @@ export default function ProductPicker({
             onQuitar={onToggle}
             onReordenar={onReordenar}
             mostrarInputs={mostrarInputs}
+            mostrarEtiquetas={mostrarEtiquetas}
           />
         </>
       )}
