@@ -996,16 +996,10 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .buy-row { display: flex; gap: 12px; margin-bottom: 14px; }
 .qty { width: 92px; color: color: var(--gc-texto) !important; min-height: 52px; padding: 0 12px; text-align: center; background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; font-weight: 800; }
 .buy-row .button-primary { flex: 1; min-height: 52px; font-size: 1rem; }
-.buy-secondary { display: flex; gap: 10px; margin-bottom: 26px; }
-.buy-secondary .button-secondary { flex: 1; }
-/* Caminos secundarios más livianos: el primario es "Comprar ahora" con el
-   total, y el bump no tiene que competir con tres botones iguales. */
-.pdp .buy-secondary .button-secondary { min-height: 40px; background: transparent; border-color: transparent; color: var(--ink-soft); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
-.pdp .buy-secondary .button-secondary:hover { color: var(--ink); }
-.contact-actions, .payment-actions { display: grid; gap: 10px; margin: -10px 0 16px; }
+.contact-actions, .payment-actions { display: grid; gap: 10px; margin: 12px 0; }
 .contact-action, .payment-action { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 16px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; text-decoration: none; font-weight: 850; }
 .contact-action:hover, .payment-action:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-soft); }
-.payment-methods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+.payment-methods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
 .payment-methods span { padding: 8px 12px; color: var(--ink); background: var(--white); border: 1px solid var(--line); border-radius: 999px; font-size: .78rem; font-weight: 800; }
 .order-includes { margin: 26px 0; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; }
 .order-includes h2 { margin: 0 0 14px; font-size: 1.25rem; letter-spacing: -.02em; }
@@ -1320,7 +1314,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
   </nav>
 
   <section class="pdp">
-    <div class="gallery" data-gesicomm-ficha-bloque="portada">
+    <div class="gallery" data-gesicomm-ficha-bloque="galeria">
       <div class="gallery-main"><img data-gesicomm-bind="imagen" data-gesicomm-imagen-principal alt=""></div>
       <!-- Miniaturas: al tocarlas cambian la imagen principal. -->
       <div class="thumbs" data-gesicomm-lista="imagenes">
@@ -1329,21 +1323,22 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
     </div>
 
     <div class="pdp-info">
-      <p class="eyebrow" data-gesicomm-bind="insignia_principal" data-gesicomm-ficha-bloque="textos"></p>
-      <h1 data-gesicomm-bind="nombre" data-gesicomm-ficha-bloque="textos"></h1>
-      <div class="pdp-reviews" data-gesicomm-ficha-bloque="textos"><span class="stars">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
+      <p class="eyebrow" data-gesicomm-bind="insignia_principal" data-gesicomm-ficha-bloque="encabezado"></p>
+      <h1 data-gesicomm-bind="nombre" data-gesicomm-ficha-bloque="encabezado"></h1>
+      <div class="pdp-reviews" data-gesicomm-ficha-bloque="encabezado"><span class="stars">★★★★★</span><span data-gesicomm-bind="resenas_texto"></span></div>
       <!-- Propuesta de valor: el porqué en una frase (Productos → Vista del producto). -->
-      <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="textos"></p>
-      <div class="pdp-prices" data-gesicomm-ficha-bloque="textos">
+      <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor" data-gesicomm-ficha-bloque="descripcion"></p>
+      <div class="pdp-prices" data-gesicomm-ficha-bloque="precio">
         <span class="price" data-gesicomm-bind="precio"></span>
         <span class="price-old" data-gesicomm-bind="precio_antes"></span>
         <!-- % en productos baratos, Gs en caros ("regla del 100"). -->
         <span class="badge-off" data-gesicomm-bind="ahorro_texto"></span>
       </div>
+      <p class="pdp-lead" data-gesicomm-bind="descripcion" data-gesicomm-ficha-bloque="descripcion"></p>
       <!-- Combo: el ancla del ahorro, cuánto costaría por separado. -->
       <p class="pdp-separado" data-gesicomm-si="precio_separado">Por separado: <s data-gesicomm-bind="precio_separado"></s></p>
 
-      <div class="limited-offer pdp-limited-offer" data-gesicomm-countdown data-gesicomm-ficha-bloque="urgencia">
+      <div class="limited-offer pdp-limited-offer" data-gesicomm-countdown data-gesicomm-ficha-bloque="precio">
         <div class="limited-offer-card">
           <div>
             <p class="limited-offer-kicker" data-gesicomm-bind="urgencia_kicker">Oferta por tiempo limitado</p>
@@ -1357,12 +1352,6 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
           </div>
         </div>
       </div>
-
-      <!-- Highlights arriba del pliegue: 3–4 motivos, se escanean de un vistazo. -->
-      <ul class="highlights" data-gesicomm-lista="beneficios" data-gesicomm-limite="4" data-gesicomm-ficha-bloque="beneficios">
-        <template><li data-gesicomm-bind="titulo"></li></template>
-      </ul>
-      <p class="pdp-lead" data-gesicomm-bind="descripcion"></p>
 
       <!-- Combo: qué trae, con foto. -->
       <div class="trae" data-gesicomm-lista="combo_incluye">
@@ -1444,42 +1433,30 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
         </div>
       </div>
 
+      <!-- Beneficios de decisión: van antes de comprar, como checks rápidos. -->
+      <ul class="highlights" data-gesicomm-lista="beneficios" data-gesicomm-limite="4" data-gesicomm-ficha-bloque="beneficios">
+        <template><li data-gesicomm-bind="titulo"></li></template>
+      </ul>
+
       <div class="buy-row" data-gesicomm-ficha-bloque="compra">
         <!-- Con paquetes, la cantidad la da el paquete elegido. -->
         <input class="qty" type="number" min="1" max="99" value="1" aria-label="Cantidad" data-gesicomm-cantidad-input data-gesicomm-sin="tiene_paquetes">
-        <button class="button-primary" type="button" data-gesicomm-comprar><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar ahora</span> · <span data-gesicomm-total></span></button>
+        <button class="button-primary" type="button" data-gesicomm-comprar data-gesicomm-metodo-pago="pagopar"><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar con pago anticipado</span> · <span data-gesicomm-total></span></button>
       </div>
-      <div class="buy-secondary" data-gesicomm-ficha-bloque="compra">
-        <button class="button-secondary" type="button" data-gesicomm-agregar><span data-gesicomm-bind="agregar_carrito_texto">Agregar al carrito</span></button>
-        <button class="button-secondary" type="button" data-gesicomm-whatsapp>Consultar por WhatsApp</button>
+      <div class="payment-actions" data-gesicomm-lista="botones_pago_producto" data-gesicomm-ficha-bloque="contacto_pago">
+        <template><button class="payment-action" type="button"><span data-gesicomm-bind="label"></span></button></template>
       </div>
-      <div class="payment-actions" data-gesicomm-lista="botones_pago_producto" data-gesicomm-ficha-bloque="compra">
-        <template><a class="payment-action" data-gesicomm-bind="url" target="_blank" rel="noopener"><span data-gesicomm-bind="label"></span></a></template>
-      </div>
-      <div class="payment-methods" data-gesicomm-lista="metodos_pago_producto" data-gesicomm-ficha-bloque="compra">
+      <div class="payment-methods" data-gesicomm-lista="metodos_pago_producto" data-gesicomm-ficha-bloque="promociones_pago">
         <template><span data-gesicomm-bind="texto"></span></template>
       </div>
-      <div class="contact-actions" data-gesicomm-lista="botones_contacto_producto" data-gesicomm-ficha-bloque="compra">
-        <template><a class="contact-action" data-gesicomm-bind="url" target="_blank" rel="noopener"><span data-gesicomm-bind="label"></span></a></template>
-      </div>
-      <div class="order-includes" data-gesicomm-lista="incluye_pedido_producto" data-gesicomm-ficha-bloque="incluye">
-        <h2>¿Qué incluye tu pedido?</h2>
-        <ul><template><li data-gesicomm-bind="texto"></li></template></ul>
-      </div>
-
-      <!-- Junto al botón, lo que se busca antes de comprar: envío, pago y
-           cambios (Baymard: 64% busca el envío y 60% la política de
-           devolución en la ficha). -->
-      <div class="mini-trust" data-gesicomm-ficha-bloque="compra">
-        <div><strong>Envío</strong>El costo lo ves antes de pagar</div>
-        <div><strong>Pago seguro</strong>PagoPar o al recibir</div>
-        <div><strong>Cambios</strong><a href="#" data-gesicomm-link="reembolsos">Ver la política</a></div>
+      <div class="contact-actions" data-gesicomm-lista="botones_contacto_producto" data-gesicomm-ficha-bloque="contacto_pago">
+        <template><button class="contact-action" type="button"><span data-gesicomm-bind="label"></span></button></template>
       </div>
       <!-- Medios de pago reales que acepta PagoPar: siempre visible, no
            depende de lo que cargue el comercio (a diferencia de
            "metodos_pago_producto", que es texto libre). Homebanking queda
            afuera a pedido explícito. -->
-      <div class="payment-brands" data-gesicomm-ficha-bloque="compra" data-gesicomm-si="pago_logos_activo">
+      <div class="payment-brands" data-gesicomm-ficha-bloque="promociones_pago" data-gesicomm-si="pago_logos_activo">
         <p class="payment-brands-title">Consultá disponibilidad, cobertura y medios de pago antes de confirmar.</p>
         <div class="payment-brands-row" data-gesicomm-si="pago_logo_tarjetas">
           <span class="payment-brands-label">Tarjetas de crédito</span>
@@ -1493,6 +1470,10 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
           <span class="payment-brands-label">Billetera electrónica</span>
           <img class="payment-brands-logos" src="${LOGOS_PAGO.billetera}" alt="Tigo Money, Billetera Personal" loading="lazy">
         </div>
+      </div>
+      <div class="order-includes" data-gesicomm-lista="incluye_pedido_producto" data-gesicomm-ficha-bloque="incluye">
+        <h2>¿Qué incluye tu pedido?</h2>
+        <ul><template><li data-gesicomm-bind="texto"></li></template></ul>
       </div>
       <!-- Garantías que cargó el comercio (solo datos reales). -->
       <ul class="garantias" data-gesicomm-lista="confianza">
@@ -1522,21 +1503,6 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
               <button class="button-primary" type="button" data-gesicomm-comprar>Quiero el combo</button>
             </div>
           </div>
-        </article>
-      </template>
-    </div>
-  </div>
-</section>
-
-<!-- Beneficios completos: cada motivo con su explicación. -->
-<section id="beneficios" class="section beneficios-section" data-gesicomm-lista="beneficios" data-gesicomm-ficha-bloque="beneficios">
-  <div class="container">
-    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="beneficios_kicker">Por qué elegirlo</p><h2 data-gesicomm-bind="beneficios_titulo">Lo que vas a notar.</h2><p data-gesicomm-bind="beneficios_subtitulo"></p></div>
-    <div class="beneficios-grid" data-gesicomm-lista="beneficios">
-      <template>
-        <article class="beneficio">
-          <h3 data-gesicomm-bind="titulo"></h3>
-          <p data-gesicomm-bind="texto"></p>
         </article>
       </template>
     </div>
@@ -2102,7 +2068,8 @@ a{color:inherit;text-decoration:none}
 .lv-toolbar{display:grid;grid-template-columns:minmax(220px,1fr) 180px 180px;gap:10px;margin:20px 0 18px;background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);padding:12px;box-shadow:0 12px 30px rgba(16,32,29,.05)}
 .lv-field{display:grid;gap:6px}
 .lv-field span{color:var(--lv-muted);font-size:11px;font-weight:850;text-transform:uppercase}
-.lv-field input,.lv-field select,.lv-field textarea{width:100%;min-height:43px;border:1px solid var(--lv-line);border-radius:7px;background:#fff;color:var(--gc-texto);padding:10px 12px;outline:none}
+.lv-field input,.lv-field select,.lv-field textarea{width:100%;min-height:43px;border:1px solid var(--lv-line);border-radius:7px;background:var(--lv-surface);color:var(--gc-texto);padding:10px 12px;outline:none}
+.lv-field select option{color:var(--gc-texto);background:var(--lv-surface)}
 .lv-field input:focus,.lv-field select:focus,.lv-field textarea:focus{border-color:var(--gc-primario);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc-primario) 14%,transparent)}
 .lv-pay-options{display:grid;gap:10px}
 .lv-pay-option{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1.5px solid var(--lv-line);border-radius:var(--lv-radius);cursor:pointer;background:var(--lv-surface);transition:border-color .15s ease,box-shadow .15s ease}
@@ -2348,7 +2315,7 @@ const CATALOGO_HTML = CATEGORIA_HTML
   .replace('<span>en esta vista</span>', '<span>en el catalogo</span>')
   .replace('Filtros de categoria', 'Filtros del catalogo');
 
-const CHECKOUT_HTML = `<div class="lv-shell">
+const CHECKOUT_HTML = `<div class="lv-shell" data-gesicomm-base="checkout">
   ${VISTA_TIENDA_HEADER}
 
   <main class="lv-page">
@@ -2380,8 +2347,16 @@ const CHECKOUT_HTML = `<div class="lv-shell">
             <input name="telefono" autocomplete="tel" required>
           </label>
           <label class="lv-field">
+            <span>Departamento</span>
+            <select name="departamento" data-gesicomm-geografia="departamento" autocomplete="address-level1">
+              <option value="">Departamento</option>
+            </select>
+          </label>
+          <label class="lv-field">
             <span>Ciudad</span>
-            <input name="ciudad" autocomplete="address-level2" required>
+            <select name="ciudad" data-gesicomm-geografia="ciudad" autocomplete="address-level2" required>
+              <option value="">Ciudad</option>
+            </select>
           </label>
           <label class="lv-field">
             <span>Documento</span>
@@ -2500,6 +2475,24 @@ export function esFichaProductoBase(html) {
       && texto.includes('data-gesicomm-bind="nombre"')
       && texto.includes('data-gesicomm-comprar')
     );
+}
+
+/**
+ * Detecta la vista de checkout base de Gesicomm — con la marca
+ * data-gesicomm-base="checkout" (guardados después de agregarla) o por su
+ * estructura (guardados antes). Sin esto, una landing que nunca tocó su
+ * checkout a mano quedaba congelada en la versión que tenía guardada el día
+ * que se le pintó por primera vez, y una mejora a la plantilla base (un
+ * color, un campo nuevo) nunca le llegaba — exactamente lo mismo que ya se
+ * resuelve para la ficha con esFichaProductoBase.
+ */
+export function esCheckoutBase(html) {
+  const texto = String(html || '');
+  if (!texto.trim()) return true;
+  if (formatoDeBase(texto) === 'checkout') return true;
+  return texto.includes('data-gesicomm-checkout-form')
+    && texto.includes('data-gesicomm-lista="checkout_items"')
+    && texto.includes('data-gesicomm-checkout-con-items');
 }
 
 // La estructura larga de bienestar es una referencia para suplementos, no una

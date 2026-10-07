@@ -820,6 +820,20 @@ export default function ConfigurarVentaCodigo({
     () => candidatosDatosProducto.filter(i => i.categoria === categoriaPreviewValida),
     [candidatosDatosProducto, categoriaPreviewValida],
   );
+  const resolverContentIdProducto = useCallback((id) => {
+    const buscado = String(id || '');
+    if (!buscado) return '';
+    const encontrado = candidatosDatosProducto.find(i => {
+      const contentId = String(i.content_id || contentIdPanel(i));
+      return contentId === buscado
+        || String(i.id) === buscado
+        || String(i.slug || '') === buscado
+        || `${i.tipo}:${i.id}` === buscado
+        || `${i.tipo}:${i.referencia_id}` === buscado
+        || `${i.tipo}-${i.referencia_id}` === buscado;
+    });
+    return encontrado ? (encontrado.content_id || contentIdPanel(encontrado)) : buscado;
+  }, [candidatosDatosProducto]);
   const productoCategoriaEditando = useMemo(
     () => productosCategoriaActual.find(i => i.content_id === productoEditando) || null,
     [productosCategoriaActual, productoEditando],
@@ -1348,12 +1362,7 @@ export default function ConfigurarVentaCodigo({
   }
 
   function abrirNuevoCombo() {
-    const producto = seleccion.find(i => i.tipo === 'producto');
-    if (!producto) {
-      setError('Primero elegí al menos un producto principal para armar un combo.');
-      return;
-    }
-    setPanelOfertas({ producto, estrategia: 'combo', modo: 'combo' });
+    setPanelOfertas({ producto: null, estrategia: 'combo', modo: 'combo' });
   }
 
   function comboCreado(nuevo) {
@@ -1436,8 +1445,9 @@ export default function ConfigurarVentaCodigo({
   const productosPreview = useMemo(() => seleccion.slice(0, MAX_PRODUCTOS_PREVIEW), [seleccion]);
   const productoFicha = useMemo(() => {
     const productosSolos = productosPreview.filter(p => p.tipo === 'producto');
-    return productosPreview.find(p => contentIdPanel(p) === productoPreview) || productosSolos[0] || productosPreview[0] || null;
-  }, [productosPreview, productoPreview]);
+    const contentId = resolverContentIdProducto(productoPreview);
+    return productosPreview.find(p => contentIdPanel(p) === contentId) || productosSolos[0] || productosPreview[0] || null;
+  }, [productosPreview, productoPreview, resolverContentIdProducto]);
 
   const datosPreview = useMemo(() => datosRuntimePreview({
     productos: productosPreview,
@@ -1487,7 +1497,14 @@ export default function ConfigurarVentaCodigo({
   }
 
   const alNavegarPreview = useCallback((p) => {
-    if (p?.destino === 'producto') { setVistaPreview('producto'); setSeccionConfig('fichas'); setProductoPreview(p.producto); setResaltado(null); }
+    if (p?.destino === 'producto') {
+      const contentId = resolverContentIdProducto(p.producto);
+      setVistaPreview('producto');
+      setSeccionConfig('fichas');
+      setProductoEditando(contentId);
+      setProductoPreview(contentId);
+      setResaltado(null);
+    }
     else if (p?.destino === 'inicio') { setVistaPreview('inicio'); setSeccionConfig('inicio'); setResaltado(null); }
     else if (p?.destino === 'categoria') { setVistaPreview('categoria'); setSeccionConfig('categorias'); if (p.categoria) setCategoriaPreview(p.categoria); setResaltado(null); }
     else if (p?.destino === 'catalogo') { setVistaPreview('categoria'); setSeccionConfig('categorias'); setResaltado(null); }
@@ -1500,7 +1517,7 @@ export default function ConfigurarVentaCodigo({
     }
     else if (p?.destino === 'pagina' && p.pagina === 'checkout') { setVistaPreview('checkout'); setSeccionConfig('checkout'); setResaltado(null); }
     else if (p?.destino === 'pagina') setAvisoPreview('Ese link abre una página de la tienda (legales o contacto).');
-  }, []);
+  }, [resolverContentIdProducto]);
   const alComprarPreview = useCallback((p) => {
     setAvisoPreview(p?.oferta
       ? 'En la landing publicada, esto agrega la oferta al carrito.'
@@ -1675,7 +1692,9 @@ export default function ConfigurarVentaCodigo({
                         return;
                       }
                       if (key === 'ofertas') {
-                        verOfertas();
+                        setVistaPreview('checkout');
+                        setAvisoPreview('Las ofertas se configuran acá: podés crear order bumps, upsells o paquetes por cantidad.');
+                        setResaltado(null);
                         return;
                       }
                       if (key === 'combos') {
@@ -3296,7 +3315,7 @@ function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuP
           <FilaBloqueInicio
             key={b.tipo}
             numero={idx + 1}
-            etiqueta={esMenu ? 'Menú principal' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
+            etiqueta={esMenu ? 'Encabezado' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
             visible={esMenu ? undefined : b.visible}
             primero={idxReal === 0}
             ultimo={idxReal === bloques.length - 1}
@@ -4520,11 +4539,11 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
     return [...lista].sort((a, b) => Number(enLanding.has(Number(b.id))) - Number(enLanding.has(Number(a.id))));
   }, [productos, busqueda, enLanding]);
 
-  if (producto && (estrategia === 'combo' || armandoCombo)) {
+  if ((producto && (estrategia === 'combo' || armandoCombo)) || (!producto && estrategia === 'combo' && permitirCombo)) {
     return (
-      <PanelLazyErrorBoundary resetKey={`combo-${producto.id}-${armandoCombo}-${estrategia || ''}`}>
+      <PanelLazyErrorBoundary resetKey={`combo-${producto?.id || 'nuevo'}-${armandoCombo}-${estrategia || ''}`}>
         <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-canvas" role="status">Abriendo el armador de combos…</div>}>
-          <ArmarComboPanel productos={productos} principalInicial={producto} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
+          <ArmarComboPanel productos={productos} principalInicial={producto || null} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
             if (onComboCreado) return onComboCreado(nuevo);
             else onCerrar();
           }} />
@@ -4678,10 +4697,6 @@ function Miniatura({ item }) {
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
-
-
-
-
 
 
 

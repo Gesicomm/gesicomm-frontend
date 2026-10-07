@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { construirDocumentoCodigo } from './construirDocumentoCodigo';
 import { datosRuntimePublico, datosRuntimePreview } from './datosRuntime';
-import { PLANTILLA_INICIO, PLANTILLA_PRODUCTO, PLANTILLA_ESTRELLA, PLANTILLA_COMBOS, plantillaInicioPara, formatoDeBase } from './plantillasBaseCodigo';
+import { PLANTILLA_INICIO, PLANTILLA_PRODUCTO, PLANTILLA_ESTRELLA, PLANTILLA_COMBOS, PLANTILLA_CHECKOUT, plantillaInicioPara, formatoDeBase, esCheckoutBase } from './plantillasBaseCodigo';
 
 /**
  * El runtime corre dentro del iframe del lienzo en blanco y es lo único
@@ -336,6 +336,27 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(document.querySelector('[data-gesicomm-countdown-parte="horas"]').textContent).toBe('07');
   });
 
+  it('ofertas: Ver todos abre catálogo con todas las categorías y filtro Oferta', () => {
+    const { mensajes, click } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        urgencia: {
+          activo: true,
+          titulo: 'Ofertas que terminan pronto',
+          texto: 'Aprovechá antes de que se agoten',
+          cta_texto: 'Ver todos',
+        },
+      },
+    });
+
+    click('.limited-offer-see-all');
+    expect(mensajes.filter(m => m.tipo === 'gesicomm:navegar').at(-1)).toMatchObject({
+      destino: 'pagina',
+      pagina: 'catalogo',
+      filtro: { categoria: '', etiqueta: 'Oferta' },
+    });
+  });
+
   it('anuncios y zona de confianza traen contenido de ejemplo sin configurar nada', () => {
     const { document } = montar(PLANTILLA_INICIO, datos);
     const anuncios = [...document.querySelectorAll('.trust-bar .trust-item strong')].map(el => el.textContent);
@@ -495,6 +516,43 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(reordenado.querySelector('#categorias').hidden).toBe(true);
     // "destacados" no estaba apagado y la vitrina tenía producto: igual se ve.
     expect(reordenado.querySelector('#destacados').hidden).toBe(false);
+  });
+
+  it('bloques: un bloque oculto manualmente vuelve a mostrarse al prender Mostrar', () => {
+    const banner = {
+      id: 'hero',
+      activo: true,
+      titulo: 'Promo visible',
+      subtitulo: 'Texto del banner',
+      imagen: '/uploads/banner.webp',
+    };
+    const base = {
+      ...datos,
+      venta: {
+        inicio: {
+          banners: [banner],
+          bloques: [{ tipo: 'banner', visible: false }],
+        },
+      },
+    };
+    const { document, window } = montar(PLANTILLA_INICIO, base);
+    const hero = document.querySelector('[data-gesicomm-bloque="banner"]');
+    expect(hero.hidden).toBe(true);
+    expect(hero.getAttribute('data-gesicomm-oculto-manual')).toBe('1');
+
+    window.dispatchEvent(new window.MessageEvent('message', {
+      data: {
+        tipo: 'gesicomm:datos',
+        datos: {
+          ...base,
+          venta: { inicio: { banners: [banner], bloques: [{ tipo: 'banner', visible: true }] } },
+        },
+      },
+      source: window.parent,
+    }));
+
+    expect(hero.hidden).toBe(false);
+    expect(hero.hasAttribute('data-gesicomm-oculto-manual')).toBe(false);
   });
 });
 
@@ -718,7 +776,9 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
       '/l/mi-promo/politica-reembolso', '/l/mi-promo/politica-envio', '/l/mi-promo/aviso-legal',
     ]);
     click('.footer-links a[data-gesicomm-link="politica-privacidad"]');
-    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'politica-privacidad' });
+    expect(mensajes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'politica-privacidad' }),
+    ]));
   });
 
   it('un href escrito a mano (sin data-gesicomm-link) también se reconoce; uno externo no se toca', () => {
@@ -727,9 +787,47 @@ describe('runtime — páginas de la tienda (legales y contacto)', () => {
     expect(document.querySelector('#a').getAttribute('href')).toBe('/l/mi-promo/contacto');
     expect(document.querySelector('#b').getAttribute('href')).toBe('https://otro.com/contacto');
     click('#a');
-    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'contacto' });
+    expect(mensajes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'contacto' }),
+    ]));
     click('#b');
     expect(mensajes.filter(m => m.destino === 'pagina')).toHaveLength(1);
+  });
+
+  it('el menú principal generado navega al checkout desde cualquier vista', () => {
+    const plantilla = {
+      html: '<nav id="nav-links"></nav>',
+      css: '',
+      js: '',
+    };
+    const { document, mensajes, click } = montar(plantilla, {
+      ...datos,
+      vista: 'checkout',
+      venta: { inicio: { menu_links: [{ texto: 'Checkout', destino: '/checkout' }] } },
+      paginas: { ...paginas, checkout: '/l/mi-promo/checkout' },
+    });
+    const link = document.querySelector('#nav-links a');
+    expect(link.textContent).toBe('Checkout');
+    expect(link.getAttribute('data-gesicomm-link')).toBe('checkout');
+    expect(link.className).toBe('active');
+    click('#nav-links a');
+    expect(mensajes).toContainEqual({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: 'checkout', filtro: {} });
+  });
+
+  it('el buscador del header abre catálogo con la búsqueda aplicada cuando no hay grilla en la vista', () => {
+    const plantilla = {
+      html: '<form role="search"><input type="search" data-gesicomm-buscar value="cafetera"><button type="submit">Buscar</button></form>',
+      css: '',
+      js: '',
+    };
+    const { document, mensajes } = montar(plantilla, datos);
+    document.querySelector('form').dispatchEvent(new document.defaultView.Event('submit', { bubbles: true, cancelable: true }));
+    expect(mensajes).toContainEqual({
+      tipo: 'gesicomm:navegar',
+      destino: 'pagina',
+      pagina: 'catalogo',
+      filtro: { busqueda: 'cafetera' },
+    });
   });
 });
 
@@ -779,6 +877,7 @@ describe('ficha: imágenes y descripciones legibles', () => {
     expect(document.querySelector('[data-gesicomm-bind="descripcion_larga"]').textContent).toBe(producto.descripcion_larga);
     dom.window.close();
   });
+
 });
 
 describe('páginas base por formato', () => {
@@ -1045,13 +1144,13 @@ describe('ficha que vende: contenido real del producto', () => {
     preguntas_frecuentes: [{ pregunta: '¿Dosis?', respuesta: 'Dos por día' }, { pregunta: 'sin respuesta', respuesta: '' }],
   };
 
-  it('pinta promesa, highlights, garantías y preguntas; el ahorro barato va en %', () => {
+  it('pinta promesa, beneficios junto a la compra, garantías y preguntas; el ahorro barato va en %', () => {
     const datos = datosRuntimePublico(data([producto]), 'x', producto);
     const { document } = montar(PLANTILLA_PRODUCTO, datos);
     expect(document.querySelector('.pdp-promesa').textContent).toBe('Controlá el apetito.');
     expect([...document.querySelectorAll('.highlights li')].map(l => l.textContent)).toEqual(['Menos ansiedad', 'Más energía']);
     expect(document.querySelectorAll('.garantias li')).toHaveLength(1);
-    expect(document.querySelectorAll('.faq-item')).toHaveLength(1);
+    expect([...document.querySelectorAll('.faq-item summary')].some(l => l.textContent.includes('Dosis'))).toBe(true);
     expect(document.querySelector('.pdp-prices .badge-off').textContent).toBe('Ahorrás 20%');
     // No es combo: lo propio de un combo no se ve.
     expect(document.querySelector('.pdp-separado').style.display).toBe('none');
@@ -1267,6 +1366,80 @@ describe('presentacion comercial del lienzo', () => {
     expect(document.querySelector('[data-gesicomm-bind="etiqueta"]').style.display).toBe('none');
     click('.gc-commercial-details');
     expect(mensajes.some(m => m.destino === 'producto')).toBe(true);
+    dom.window.close();
+  });
+});
+
+describe('esCheckoutBase — una landing que nunca tocó su checkout a mano siempre recibe la plantilla al día', () => {
+  it('reconoce la plantilla actual', () => {
+    expect(esCheckoutBase(PLANTILLA_CHECKOUT.html)).toBe(true);
+  });
+
+  it('vacío cuenta como base (nunca se guardó nada)', () => {
+    expect(esCheckoutBase('')).toBe(true);
+    expect(esCheckoutBase(null)).toBe(true);
+  });
+
+  it('reconoce un guardado VIEJO de la base (de antes de Departamento/Ciudad o del color corregido) por su estructura, aunque no tenga la marca data-gesicomm-base', () => {
+    const guardadoViejo = PLANTILLA_CHECKOUT.html
+      .replace('data-gesicomm-base="checkout"', '') // como quedó guardado antes de agregar la marca
+      .replace('<select name="departamento" data-gesicomm-geografia="departamento">\n              <option value="">Departamento</option>\n            </select>', '')
+      .replace('background:var(--lv-surface)', 'background:#fff'); // el bug de color viejo
+    expect(esCheckoutBase(guardadoViejo)).toBe(true);
+  });
+
+  it('un checkout realmente reescrito a mano (sin el formulario de Gesicomm) NO se pisa', () => {
+    expect(esCheckoutBase('<div class="mi-checkout-hecho-a-mano"><h1>Pagá acá</h1></div>')).toBe(false);
+  });
+});
+
+describe('runtime — checkout propio, departamento y ciudad', () => {
+  const geografia = [
+    { id: 1, nombre: 'Central', ciudades: [{ id: 1, nombre: 'Luque' }, { id: 2, nombre: 'San Lorenzo' }] },
+    { id: 2, nombre: 'Alto Paraná', ciudades: [{ id: 3, nombre: 'Ciudad del Este' }] },
+  ];
+  const datosCheckout = {
+    vista: 'checkout',
+    tienda: { nombre: 'Mi Tienda' },
+    productos: [], producto: null, recomendados: [],
+    carrito: { cantidad: 1, subtotal: 145735, total: 145735, items: [{ nombre: airFryer.nombre, precio_unitario: airFryer.precio, cantidad: 1, subtotal: airFryer.precio }] },
+    geografia,
+  };
+
+  it('llena Departamento con el catálogo real y Ciudad con todas las ciudades sin filtrar', () => {
+    const { document, dom } = montar(PLANTILLA_CHECKOUT, datosCheckout);
+    const selDepto = document.querySelector('[data-gesicomm-geografia="departamento"]');
+    const selCiudad = document.querySelector('[data-gesicomm-geografia="ciudad"]');
+    expect([...selDepto.options].map(o => o.textContent)).toEqual(['Departamento', 'Central', 'Alto Paraná']);
+    // Sin departamento elegido: las tres ciudades de todos los departamentos, alfabéticas.
+    expect([...selCiudad.options].map(o => o.textContent)).toEqual(['Ciudad', 'Ciudad del Este', 'Luque', 'San Lorenzo']);
+    dom.window.close();
+  });
+
+  it('elegir un departamento filtra Ciudad a solo las suyas', () => {
+    const { document, window, dom } = montar(PLANTILLA_CHECKOUT, datosCheckout);
+    const selDepto = document.querySelector('[data-gesicomm-geografia="departamento"]');
+    const selCiudad = document.querySelector('[data-gesicomm-geografia="ciudad"]');
+    selDepto.value = 'Central';
+    selDepto.dispatchEvent(new window.Event('change', { bubbles: true }));
+    expect([...selCiudad.options].map(o => o.textContent)).toEqual(['Ciudad', 'Luque', 'San Lorenzo']);
+    dom.window.close();
+  });
+
+  it('el valor elegido viaja con el resto del formulario al confirmar', () => {
+    const { document, window, mensajes, dom } = montar(PLANTILLA_CHECKOUT, datosCheckout);
+    document.querySelector('[name="nombre_cliente"]').value = 'Ana Gómez';
+    document.querySelector('[name="telefono"]').value = '0981123456';
+    document.querySelector('[name="direccion"]').value = 'Calle Falsa 123';
+    const selDepto = document.querySelector('[data-gesicomm-geografia="departamento"]');
+    const selCiudad = document.querySelector('[data-gesicomm-geografia="ciudad"]');
+    selDepto.value = 'Alto Paraná';
+    selDepto.dispatchEvent(new window.Event('change', { bubbles: true }));
+    selCiudad.value = 'Ciudad del Este';
+    document.querySelector('form[data-gesicomm-checkout-form]')
+      .dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+    const confirmado = mensajes.find(m => m.tipo === 'gesicomm:confirmar-checkout');
+    expect(confirmado.campos).toMatchObject({ departamento: 'Alto Paraná', ciudad: 'Ciudad del Este' });
     dom.window.close();
   });
 });

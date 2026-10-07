@@ -98,20 +98,49 @@ function paqueteVisible(oferta, venta) {
 }
 
 const FICHA_BLOQUES_DEFAULT = {
-  portada: true,
-  textos: true,
+  galeria: true,
+  encabezado: true,
+  precio: true,
+  descripcion: true,
+  info_compra: true,
   urgencia: true,
   beneficios: true,
   compra: true,
+  promociones_pago: true,
+  contacto_pago: true,
   incluye: true,
   opiniones: true,
   preguntas: true,
+  portada: true,
+  textos: true,
 };
+const FICHA_ORDEN_MOBILE_DEFAULT = [
+  'galeria',
+  'encabezado',
+  'precio',
+  'descripcion',
+  'beneficios',
+  'compra',
+  'contacto_pago',
+  'promociones_pago',
+  'incluye',
+  'opiniones',
+  'preguntas',
+];
+function normalizarOrdenMobileFicha(orden) {
+  const vistos = new Set();
+  const limpio = (Array.isArray(orden) ? orden : []).filter(clave => {
+    if (!FICHA_ORDEN_MOBILE_DEFAULT.includes(clave) || vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
+  return [...limpio, ...FICHA_ORDEN_MOBILE_DEFAULT.filter(clave => !vistos.has(clave))];
+}
 
 const PRESENTACION_PRODUCTO_DEFAULT = {
   resenas_texto: '4.9 · 5 estrellas · +1.000 reseñas verificadas',
   insignia_principal: '',
-  cta_texto: 'Comprar ahora',
+  cta_texto: 'Comprar con pago anticipado',
   agregar_carrito_texto: 'Agregar al carrito',
   beneficios_kicker: 'Por qué elegirlo',
   beneficios_titulo: 'Beneficios que se entienden rápido.',
@@ -134,8 +163,10 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
     { titulo: 'Producto seleccionado', texto: 'Una presentación clara para mostrar lo mejor de este producto.' },
   ],
   botones_pago: [
-    { label: 'Pagar en checkout', tipo: 'checkout', valor: '' },
-    { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: 'Hola! Quiero consultar por este producto.' },
+    { label: 'Pago contra entrega', tipo: 'checkout', valor: 'efectivo' },
+  ],
+  botones_contacto: [
+    { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: '' },
   ],
   metodos_pago: [
     { texto: 'Pago contra entrega' },
@@ -200,6 +231,11 @@ export function presentacionComercial(item, venta) {
       ? { titulo: b, texto: '' }
       : { titulo: String(b?.titulo || b?.texto || '').trim(), texto: String(b?.texto || '').trim(), icono: b?.icono || null }
   )).filter(b => b.titulo || b.texto);
+  const preguntasFuente = Array.isArray(fuente.preguntas) && fuente.preguntas.length
+    ? fuente.preguntas
+    : (Array.isArray(fuente.preguntas_frecuentes) && fuente.preguntas_frecuentes.length
+      ? fuente.preguntas_frecuentes
+      : PRESENTACION_PRODUCTO_DEFAULT.preguntas);
   // Logos de medios de pago (Tarjetas / Bocas de cobranza / Billetera
   // electrónica) de la ficha genérica: el comercio elige cuáles mostrar
   // desde Configurar venta → Checkout (nunca por producto, es de la tienda
@@ -208,16 +244,33 @@ export function presentacionComercial(item, venta) {
   const pagoLogoTarjetas = venta?.pago_logos?.tarjetas !== false;
   const pagoLogoBocas = venta?.pago_logos?.bocas !== false;
   const pagoLogoBilletera = venta?.pago_logos?.billetera !== false;
+  const bloquesCrudos = fuente.ficha_bloques || {};
+  const bloquesCompatibles = { ...FICHA_BLOQUES_DEFAULT, ...bloquesCrudos };
+  if (bloquesCrudos.portada === false && bloquesCrudos.galeria === undefined) bloquesCompatibles.galeria = false;
+  if (bloquesCrudos.urgencia === false && bloquesCrudos.precio === undefined) bloquesCompatibles.precio = false;
+  if (bloquesCrudos.textos === false) {
+    if (bloquesCrudos.encabezado === undefined) bloquesCompatibles.encabezado = false;
+    if (bloquesCrudos.precio === undefined) bloquesCompatibles.precio = false;
+    if (bloquesCrudos.descripcion === undefined) bloquesCompatibles.descripcion = false;
+  }
+  if (bloquesCrudos.compra === false) {
+    if (bloquesCrudos.info_compra === undefined) bloquesCompatibles.info_compra = false;
+    if (bloquesCrudos.promociones_pago === undefined) bloquesCompatibles.promociones_pago = false;
+    if (bloquesCrudos.contacto_pago === undefined) bloquesCompatibles.contacto_pago = false;
+  }
+
   return {
     ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
-    ficha_bloques: { ...FICHA_BLOQUES_DEFAULT, ...(fuente.ficha_bloques || {}) },
+    ficha_bloques: bloquesCompatibles,
+    ficha_orden_mobile: normalizarOrdenMobileFicha(fuente.ficha_orden_mobile),
     beneficios,
     botones_pago: lista('botones_pago'),
     // Vacía = el comercio desmarcó todos los métodos: no se rellena con ejemplos.
     metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
     incluye_pedido: lista('incluye_pedido'),
-    botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : [],
+    botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : PRESENTACION_PRODUCTO_DEFAULT.botones_contacto,
     opiniones: lista('opiniones'),
+    preguntas: preguntasFuente,
     pago_logo_tarjetas: pagoLogoTarjetas,
     pago_logo_bocas: pagoLogoBocas,
     pago_logo_billetera: pagoLogoBilletera,
@@ -559,11 +612,18 @@ export function datosRuntimePublico(data, slug, productoPublico, opciones = {}) 
     carrito: resumenCarritoRuntime(opciones.carrito || []),
     checkout_estado: opciones.checkoutEstado || null,
     recomendados: recomendadosVista(catalogo, producto, venta),
+    // Departamentos/ciudades de Paraguay para el checkout propio (ver
+    // data-gesicomm-geografia). Se pide una sola vez en LandingCodigoPublica,
+    // no por vista — por eso llega entero o vacío, nunca a medio cargar.
+    geografia: Array.isArray(opciones.geografia) ? opciones.geografia : [],
   };
 }
 
+/** Sentinel para "todas las categorías" en el preview del panel de categorías. */
+export const TODAS_CATEGORIAS = '__todas__';
+
 /** Datos del runtime para el preview del editor, con el catálogo del panel. */
-export function datosRuntimePreview({ productos = [], tienda, venta, vista, productoId, categoria = null, ofertas = [] }) {
+export function datosRuntimePreview({ productos = [], tienda, venta, vista, productoId, categoria = null, ofertas = [], geografia = [] }) {
   // Ofertas de la tienda (panel) agrupadas por su producto, ya filtradas
   // con la misma regla que la landing publicada.
   const porProducto = new Map();
@@ -581,7 +641,11 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     : null;
   return {
     vista: producto ? 'producto' : vista || 'inicio',
-    categoria: vista === 'categoria' ? { nombre: categoria || catalogo.find(i => i.categoria)?.categoria || 'Categoría', slug: slugCategoria(categoria || catalogo.find(i => i.categoria)?.categoria || 'categoria'), url: '#' } : null,
+    categoria: vista === 'categoria'
+      ? (categoria === TODAS_CATEGORIAS
+        ? { nombre: '', slug: '', url: '#' }
+        : { nombre: categoria || catalogo.find(i => i.categoria)?.categoria || 'Categoría', slug: slugCategoria(categoria || catalogo.find(i => i.categoria)?.categoria || 'categoria'), url: '#' })
+      : null,
     tienda: {
       nombre: tienda?.nombre || '',
       logo: media(tienda?.logo_imagen),
@@ -621,6 +685,7 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     }] : []),
     checkout_estado: null,
     recomendados: recomendadosVista(catalogo, producto, venta),
+    geografia: Array.isArray(geografia) ? geografia : [],
   };
 }
 

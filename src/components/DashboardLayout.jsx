@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import Logo from './public/Logo';
@@ -8,9 +9,15 @@ import { notificationsService } from '../services/notifications.service';
 import './dashboard.css';
 
 const DashboardLayout = ({ children }) => {
+    const location = useLocation();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+
+    const isLandingRoute = Boolean(
+        location.pathname.match(/\/(mi-landing|landing)\/[a-zA-Z0-9_-]+/) ||
+        location.pathname.includes('/mi-landing/producto/')
+    );
 
     // El panel de administración no tenía campanita: los avisos in-app (por
     // ejemplo, un comprobante de abastecimiento esperando validación) se
@@ -80,7 +87,14 @@ const DashboardLayout = ({ children }) => {
                     <ThemeToggle className="h-8 w-8 !border-none" />
                 </header>
 
-                <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+                <main 
+                    className={`flex-1 flex flex-col ${isLandingRoute ? '' : 'overflow-y-auto px-4 py-6 sm:px-6 lg:px-10 lg:py-8'}`}
+                    style={{
+                        minHeight: 0,
+                        overflowY: isLandingRoute ? 'hidden' : 'auto',
+                        overflowX: isLandingRoute ? 'hidden' : undefined,
+                    }}
+                >
                     {children}
                 </main>
             </div>

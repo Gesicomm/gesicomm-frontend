@@ -438,7 +438,7 @@ Estructura recomendada:
 4. Formulario principal con <form data-gesicomm-checkout-form>. Inputs:
    - name="nombre_cliente" required
    - name="telefono" required
-   - name="ciudad" required
+   - Ciudad: NO un <input> de texto libre. Dos <select>: <select name="departamento" data-gesicomm-geografia="departamento"> y <select name="ciudad" data-gesicomm-geografia="ciudad" required>, cada uno con una sola <option value="">Departamento</option> / <option value="">Ciudad</option> de arranque — Gesicomm los llena con el catálogo real de Paraguay y filtra las ciudades por el departamento elegido. No escribas vos las opciones ni un <input> en su lugar.
    - name="direccion" required
    - name="documento" opcional
    - Método de pago: NO uses un <select>. Dos tarjetas clickeables, cada una con <input type="radio" name="payment_method">, value "pagopar" y "contra_entrega". La de "pagopar" va PRIMERO, marcada checked por default, y remarcada con el color primario (fondo tinte usando la superficie de la tienda, nunca un blanco fijo que rompe el modo oscuro) más una insignia tipo "Recomendado" (en un <span>, nunca <em> — no tiene que salir en itálica): es la que le conviene al comercio (cobra seguro, sin riesgo de rechazo al entregar) y tiene que saltar a la vista antes que la de contra entrega. La de "contra_entrega" se ve neutra, sin remarcar. Copy: "Pago contra entrega" se describe como "Pagás cuando recibís el pedido" — nunca asumas que es en efectivo, el comercio puede cobrar por otros medios al entregar.

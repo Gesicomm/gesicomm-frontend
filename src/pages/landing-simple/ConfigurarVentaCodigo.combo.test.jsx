@@ -65,6 +65,21 @@ beforeEach(() => {
 afterEach(() => { cleanup(); sessionStorage.clear(); });
 
 describe('Armador compartido de combos en la landing', () => {
+  it('crear combo desde la sección Combos abre el armador sin producto principal precargado', async () => {
+    montar();
+    fireEvent.click(screen.getByRole('tab', { name: /Combos/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Crear combo$/ }));
+
+    const armador = await screen.findByRole('dialog', { name: 'Armar combo' });
+    expect(within(armador).getByText('Sin producto principal')).toBeInTheDocument();
+
+    fireEvent.change(await within(armador).findByPlaceholderText('Ej: Pack Detox 3 en 1'), { target: { value: 'Combo libre QA' } });
+    fireEvent.click(within(armador).getByRole('button', { name: /Siguiente: producto principal/ }));
+
+    expect(within(armador).getByPlaceholderText('Buscar el producto principal...')).toBeInTheDocument();
+    expect(within(armador).queryByRole('textbox', { name: 'Precio de venta de Cacerola' })).toBeNull();
+  });
+
   it('abre siete pasos, conserva la selección y suma el combo activo a la vista y al guardado', async () => {
     sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify([{ id: 111, nombre: 'Otra selección' }]));
     montar();

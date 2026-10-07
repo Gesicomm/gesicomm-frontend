@@ -161,6 +161,19 @@ export async function validarCuponLanding(slug, codigo, items) {
   return data;
 }
 
+/**
+ * Catálogo de departamentos y ciudades de Paraguay para el selector de
+ * dirección del checkout propio del lienzo (ver data-gesicomm-geografia en
+ * runtimeGesicomm.js). No depende de la tienda ni del slug: es un catálogo
+ * compartido, el mismo que usa Courier → Nuevo pedido.
+ * @returns {Array<{id:number, nombre:string, ciudades:Array<{id:number, nombre:string}>}>}
+ */
+export async function obtenerGeografiaPublica() {
+  const res = await fetch('/api/l/geografia');
+  if (!res.ok) throw new Error('No se pudo cargar el catálogo de ciudades.');
+  return res.json();
+}
+
 export async function consultarResultadoPagoLanding(hash) {
   const res = await fetch(`/api/l/pagopar/resultado/${encodeURIComponent(hash)}`);
   const data = await res.json().catch(() => null);

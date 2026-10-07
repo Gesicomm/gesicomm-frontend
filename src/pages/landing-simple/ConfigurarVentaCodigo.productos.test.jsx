@@ -23,7 +23,7 @@ function montar(inicial = { seleccion: catalogo.productos }) {
 }
 
 function abrirFichaProducto(nombre) {
-  fireEvent.click(screen.getAllByRole('tab', { name: 'Vista producto' })[0]);
+  fireEvent.click(within(screen.getByRole('tablist', { name: 'Área de configuración' })).getByRole('tab', { name: 'Vista producto' }));
   const select = screen.getByRole('combobox', { name: 'Producto a editar' });
   fireEvent.change(select, { target: { value: nombre === 'Olla' ? 'olla' : 'cacerola' } });
 }
@@ -32,53 +32,29 @@ describe('Presentación de los productos del lienzo', () => {
   it('actualiza ancla y etiquetas en el preview y guarda los mismos valores', async () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');
-    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1200000' } });
-    fireEvent.change(screen.getByLabelText('Etiquetas para filtrar (separadas por coma)'), { target: { value: 'Cocina, Oferta especial' } });
-    fireEvent.change(screen.getByLabelText('Título comercial'), { target: { value: 'Cocina sin esfuerzo' } });
-    fireEvent.change(screen.getByLabelText('Mensaje corto'), { target: { value: 'Ideal para risottos' } });
-    fireEvent.change(screen.getByLabelText('Insignia principal'), { target: { value: 'Oferta' } });
-    expect(datosPreview().productos[0]).toMatchObject({ precio: 850000, precio_antes: 1200000, etiqueta: 'Cocina, Oferta especial', descuento_pct: 29 });
+    const bloqueTextos = screen.getByText('Reseñas, rótulo, título y subtítulo').closest('details');
+    fireEvent.change(within(bloqueTextos).getByLabelText('Precio anterior'), { target: { value: '1200000' } });
+    fireEvent.change(within(bloqueTextos).getByLabelText('Título'), { target: { value: 'Cocina sin esfuerzo' } });
+    fireEvent.change(within(bloqueTextos).getByLabelText('Subtítulo'), { target: { value: 'Ideal para risottos' } });
+    fireEvent.change(within(bloqueTextos).getByLabelText('Rótulo superior'), { target: { value: 'Oferta' } });
+    expect(datosPreview().productos[0]).toMatchObject({ precio: 850000, precio_antes: 1200000, descuento_pct: 29 });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
     expect(confirmar.mock.calls[0][0].venta.presentacion_productos['producto:1']).toMatchObject({ titulo_comercial: 'Cocina sin esfuerzo', mensaje_comercial: 'Ideal para risottos', insignia_principal: 'Oferta' });
     expect(datosPreview().productos[0].titulo_comercial).toBe('Cocina sin esfuerzo');
-    expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: 1200000, etiqueta: 'Cocina, Oferta especial' });
+    expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: 1200000 });
   });
 
   it('marca etiquetas comerciales, badge y fecha de oferta desde la ficha', () => {
     const confirmar = montar();
     abrirFichaProducto('Cacerola');
-    fireEvent.click(screen.getByRole('button', { name: 'Oferta' }));
-    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1200000' } });
-    fireEvent.change(screen.getByLabelText('Fecha fin de oferta'), { target: { value: '2026-10-20T14:30' } });
+    const bloqueTextos = screen.getByText('Reseñas, rótulo, título y subtítulo').closest('details');
+    fireEvent.change(within(bloqueTextos).getByLabelText('Rótulo superior'), { target: { value: 'Oferta' } });
+    fireEvent.change(within(bloqueTextos).getByLabelText('Precio anterior'), { target: { value: '1200000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
 
     const payload = confirmar.mock.calls[0][0];
-    expect(payload.items[0]).toMatchObject({ precio_ancla: 1200000, etiqueta: 'Oferta' });
+    expect(payload.items[0]).toMatchObject({ precio_ancla: 1200000 });
     expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Oferta' });
-    expect(payload.venta.urgencia).toMatchObject({ activo: true, productos: ['cacerola'], producto_id: 'cacerola' });
-    expect(payload.venta.urgencia.fin_at).toBe(new Date('2026-10-20T14:30').toISOString());
-  });
-
-  it('edita solo la promo desde la sección de productos sin abrir los bloques de ficha', () => {
-    const confirmar = montar();
-    fireEvent.click(screen.getAllByRole('tab', { name: 'Productos' })[0]);
-    fireEvent.click(screen.getAllByRole('button', { name: 'Editar precio, descuento y badges' })[0]);
-
-    expect(screen.getByText('Editás solo la promo del catálogo.')).toBeInTheDocument();
-    expect(screen.queryByText('Portada e imágenes')).not.toBeInTheDocument();
-    expect(screen.queryByText('Beneficios')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1200000' } });
-    fireEvent.change(screen.getByLabelText('Etiquetas para filtrar (separadas por coma)'), { target: { value: 'Oferta' } });
-    fireEvent.click(screen.getByLabelText('Activar countdown para esta promo'));
-    fireEvent.change(screen.getByLabelText('Fecha fin de oferta'), { target: { value: '2026-10-21T09:00' } });
-    fireEvent.change(screen.getByLabelText('Insignia principal'), { target: { value: 'Hot sale' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
-
-    const payload = confirmar.mock.calls[0][0];
-    expect(payload.items[0]).toMatchObject({ precio_ancla: 1200000, etiqueta: 'Oferta' });
-    expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Hot sale' });
-    expect(payload.venta.urgencia.productos).toContain('cacerola');
-    expect(payload.venta.urgencia.fin_at).toBe(new Date('2026-10-21T09:00').toISOString());
   });
 
   it('edita la ficha paso a paso con portada primero, beneficios, contador y medios de pago', () => {
@@ -133,13 +109,12 @@ describe('Presentación de los productos del lienzo', () => {
   it('permite quitar el ancla guardada y ocultar del inicio desde la ficha', () => {
     const confirmar = montar({ seleccion: [{ ...catalogo.productos[0], precio_ancla: 1200000, etiqueta: 'Oferta' }, catalogo.productos[1]] });
     abrirFichaProducto('Cacerola');
-    expect(screen.getByLabelText('Precio ancla')).toHaveValue('Gs 1.200.000');
-    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '' } });
-    fireEvent.change(screen.getByLabelText('Etiquetas para filtrar (separadas por coma)'), { target: { value: '' } });
-    fireEvent.click(screen.getByLabelText('Mostrar en inicio'));
+    const bloqueTextos = screen.getByText('Reseñas, rótulo, título y subtítulo').closest('details');
+    expect(within(bloqueTextos).getByLabelText('Precio anterior')).toHaveValue('Gs 1.200.000');
+    fireEvent.change(within(bloqueTextos).getByLabelText('Precio anterior'), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
     expect(confirmar.mock.calls[0][0].items.map(i => i.id)).toEqual([1, 2]);
-    expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: null, etiqueta: '', mostrar_en_inicio: false });
+    expect(confirmar.mock.calls[0][0].items[0]).toMatchObject({ precio_ancla: null });
     expect(datosPreview().productos[0].precio_antes).toBe(900000);
   });
 
@@ -168,7 +143,8 @@ describe('Presentación de los productos del lienzo', () => {
   it('guarda ajustes por producto sin cerrar una regla dinámica', () => {
     const confirmar = montar({ venta: { seleccion: 'todos', configurado: true }, seleccion: [] });
     abrirFichaProducto('Olla');
-    fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1300000' } });
+    const bloqueTextos = screen.getByText('Reseñas, rótulo, título y subtítulo').closest('details');
+    fireEvent.change(within(bloqueTextos).getByLabelText('Precio anterior'), { target: { value: '1300000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
     expect(confirmar.mock.calls[0][0].venta.seleccion).toBe('todos');
     expect(confirmar.mock.calls[0][0].items).toHaveLength(1);

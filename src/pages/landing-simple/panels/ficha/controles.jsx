@@ -262,6 +262,13 @@ export function CamposUrgencia({ d, set }) {
         Arranca en este tiempo cada vez que alguien abre la página y baja hasta cero. No hay una fecha
         límite real detrás.
       </p>
+      {d.activo && (
+        <p className="text-[10px] text-amber-400/90 leading-relaxed bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1.5">
+          Este contador es solo visual, acá en la ficha del producto. Para que el producto aparezca
+          además en <b>Categorías</b> o en <b>Oferta flash</b> de una landing, activalo también ahí, en
+          <b> Configurar venta → Categorías → Editar promo</b> de esa landing.
+        </p>
+      )}
     </>
   );
 }

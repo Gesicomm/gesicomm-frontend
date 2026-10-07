@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Tag, Layers, AlertTriangle, BarChart2, Activity, X, Check, ShoppingCart, Sparkles } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import OfertaImagenPicker, { subirImagenPendiente } from '../../components/OfertaImagenPicker';
 import { productService } from '../../services/productService';
@@ -148,6 +148,95 @@ function BadgeRentabilidad({ status }) {
   return <span className={`combo-badge ${map[status]}`}>{labels[status]}</span>;
 }
 
+function OfertaPreviewMedia({ imagenSrc, alt, fallbackIcon = null }) {
+  return (
+    <div className="oferta-preview-media">
+      {imagenSrc
+        ? <img src={imagenSrc} alt={alt || ''} />
+        : <div className="oferta-preview-media-empty">{fallbackIcon || <Layers size={20} />}</div>}
+    </div>
+  );
+}
+
+function VistaPreviaOferta({ tipo, titulo, descripcion, imagenSrc, precioNormal, precioFinal, unidades, productoNombre, productoExtraNombre, ahorro }) {
+  const normal = Number(precioNormal) || 0;
+  const final = Number(precioFinal) || 0;
+  const hayPromo = final > 0 && normal > final;
+  const descuento = hayPromo ? Math.round((1 - final / normal) * 100) : 0;
+  const precioMostrado = final > 0 ? formatMoney(final) : 'Definí el precio';
+  const tituloSeguro = titulo?.trim() || (tipo === 'pack'
+    ? `Pack x${unidades} de ${productoNombre || 'este producto'}`
+    : tipo === 'upsell'
+      ? 'Oferta especial para completar tu pedido'
+      : 'Sí, sumá este complemento');
+  const descripcionSegura = descripcion?.trim() || (tipo === 'pack'
+    ? 'El cliente ve este paquete como una opción dentro de la ficha del producto.'
+    : tipo === 'upsell'
+      ? 'Se muestra antes de confirmar la compra, con una acción rápida para agregarlo.'
+      : 'Aparece en el checkout como una casilla para agregarlo al pedido.');
+
+  if (tipo === 'order_bump') {
+    return (
+      <div className="oferta-preview-card oferta-preview-card--bump">
+        <button type="button" className="oferta-preview-bump-check" tabIndex={-1}>
+          <span className="oferta-preview-checkbox"><Check size={13} /></span>
+          <span>{tituloSeguro}</span>
+        </button>
+        <div className="oferta-preview-body">
+          <OfertaPreviewMedia imagenSrc={imagenSrc} alt={productoExtraNombre || tituloSeguro} fallbackIcon={<ShoppingCart size={20} />} />
+          <div className="oferta-preview-copy">
+            <span className="oferta-preview-eyebrow">Oferta en checkout</span>
+            <strong>{productoExtraNombre || 'Producto que se suma'}</strong>
+            <p>{descripcionSegura}</p>
+            <div className="oferta-preview-price">
+              <b>{precioMostrado}</b>
+              {hayPromo && <del>{formatMoney(normal)}</del>}
+              {descuento > 0 && <span>{descuento}% OFF</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tipo === 'upsell') {
+    return (
+      <div className="oferta-preview-card oferta-preview-card--upsell">
+        <span className="oferta-preview-pill"><Sparkles size={13} /> Oferta exclusiva</span>
+        <div className="oferta-preview-upsell-grid">
+          <OfertaPreviewMedia imagenSrc={imagenSrc} alt={productoExtraNombre || tituloSeguro} fallbackIcon={<Sparkles size={20} />} />
+          <div className="oferta-preview-copy">
+            <strong>{tituloSeguro}</strong>
+            <p>{descripcionSegura}</p>
+            <div className="oferta-preview-price oferta-preview-price--stacked">
+              {hayPromo && <del>{formatMoney(normal)}</del>}
+              <b>{precioMostrado}</b>
+              {ahorro > 0 && <span>Ahorrás {formatMoney(ahorro)}</span>}
+            </div>
+            <button type="button" className="oferta-preview-action" tabIndex={-1}>Sí, agregar a mi pedido</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="oferta-preview-card oferta-preview-card--pack">
+      <OfertaPreviewMedia imagenSrc={imagenSrc} alt={productoNombre || tituloSeguro} />
+      <div className="oferta-preview-copy">
+        <span className="oferta-preview-eyebrow">Paquete x{unidades}</span>
+        <strong>{tituloSeguro}</strong>
+        <p>{descripcionSegura}</p>
+        <div className="oferta-preview-price">
+          <b>{precioMostrado}</b>
+          {normal > 0 && <del>{formatMoney(normal)}</del>}
+          {ahorro > 0 && <span>Ahorrás {formatMoney(ahorro)}</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function OfertasProductoTab({
   productoId, productoNombre, productoAnclaPrecioBase = 0, productoAnclaPrecioCosto = 0,
   // Si llega un tipo contextual, abre directo el formulario correspondiente
@@ -176,6 +265,7 @@ export default function OfertasProductoTab({
   // calculado de los productos elegidos ya no lo pisa.
   const precioManualRef = useRef(false);
   const [ofertaABorrar, setOfertaABorrar] = useState(null);
+  const [previewImagenLocal, setPreviewImagenLocal] = useState(null);
   // Variantes reales de cada producto elegido como componente — se traen on
   // demand (no de una vez para todo el catálogo) y se cachean por
   // producto_id, porque acá NUNCA se crean/editan variantes: solo se
@@ -214,6 +304,16 @@ export default function OfertasProductoTab({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.componentes]);
+
+  useEffect(() => {
+    if (!form.imagen_archivo) {
+      setPreviewImagenLocal(null);
+      return undefined;
+    }
+    const url = URL.createObjectURL(form.imagen_archivo);
+    setPreviewImagenLocal(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.imagen_archivo]);
 
   async function cargar() {
     if (modoBorrador) { setLoading(false); return; }
@@ -639,6 +739,37 @@ export default function OfertasProductoTab({
       porcentaje: (ahorro / valorIndividual) * 100,
     };
   }, [productoBase.precio, unidadesPack, form.precio]);
+
+  const productoExtraPreview = useMemo(() => {
+    const componente = (form.componentes || []).find(c => c.producto_id && Number(c.producto_id) !== Number(productoId))
+      || (form.componentes || []).find(c => c.producto_id);
+    if (!componente) return null;
+    if (Number(componente.producto_id) === Number(productoId)) {
+      return { ...productoBase, cantidad: Number(componente.cantidad) || 1 };
+    }
+    const producto = productosDisponibles.find(p => Number(p.id) === Number(componente.producto_id));
+    return {
+      nombre: producto?.nombre || nombreProducto(componente.producto_id),
+      precio: Number(producto?.precio_efectivo ?? producto?.precio_base) || 0,
+      imagen: producto?.imagen || producto?.imagenes?.[0]?.url || producto?.imagenes?.[0] || null,
+      cantidad: Number(componente.cantidad) || 1,
+    };
+  }, [form.componentes, productoId, productoBase, productosDisponibles]);
+
+  const tipoPreviewOferta = tipoVisibleOferta(form);
+  const precioNormalPreview = tipoPreviewOferta === 'pack'
+    ? productoBase.precio * unidadesPack
+    : Number(form.precio) || Number(productoExtraPreview?.precio) || 0;
+  const precioFinalPreview = esBumpOUpsell && Number(form.precio_order_bump) > 0
+    ? Number(form.precio_order_bump)
+    : Number(form.precio) || 0;
+  const ahorroPreview = tipoPreviewOferta === 'pack'
+    ? Math.max(0, precioNormalPreview - precioFinalPreview)
+    : Math.max(0, (Number(form.precio) || 0) - precioFinalPreview);
+  const imagenPreviewOferta = previewImagenLocal
+    || (form.imagen_url ? getMediaUrl(form.imagen_url) : null)
+    || (productoExtraPreview?.imagen ? getMediaUrl(productoExtraPreview.imagen) : null)
+    || (productoBase.imagen ? getMediaUrl(productoBase.imagen) : null);
 
   const ofertasVisibles = useMemo(
     () => estrategiaVista === 'all'
@@ -1155,6 +1286,21 @@ export default function OfertasProductoTab({
                   archivo={form.imagen_archivo}
                   respaldoUrl={productoBase.imagen}
                   onChange={({ imagen_url, archivo }) => setForm(f => ({ ...f, imagen_url: imagen_url || '', imagen_archivo: archivo }))}
+                />
+              </div>
+              <div className="form-group full">
+                <label>Vista previa</label>
+                <VistaPreviaOferta
+                  tipo={tipoPreviewOferta}
+                  titulo={form.nombre}
+                  descripcion={form.descripcion}
+                  imagenSrc={imagenPreviewOferta}
+                  precioNormal={precioNormalPreview}
+                  precioFinal={precioFinalPreview}
+                  unidades={unidadesPack}
+                  productoNombre={productoBase.nombre}
+                  productoExtraNombre={productoExtraPreview?.nombre}
+                  ahorro={ahorroPreview}
                 />
               </div>
               </div>

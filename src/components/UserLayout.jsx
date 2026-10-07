@@ -579,6 +579,8 @@ const UserLayout = ({ children }) => {
           style={{
             background: 'var(--color-canvas)',
             flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
             minHeight: 0,
             padding: 0,
             overflowY: isLandingRoute ? 'hidden' : 'auto',

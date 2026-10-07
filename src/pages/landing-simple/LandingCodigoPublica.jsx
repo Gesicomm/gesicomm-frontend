@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CodigoPreview from './CodigoPreview';
-import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, esFichaProductoBase } from './plantillasBaseCodigo';
+import { PLANTILLA_PRODUCTO, PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_CHECKOUT, PLANTILLA_INICIO, esFichaProductoBase, esCheckoutBase } from './plantillasBaseCodigo';
 import { datosRuntimePublico, urlProducto, itemPublicoARuntime, urlPaginaTienda, PAGINAS_TIENDA, ofertaCruzadaVisible } from './datosRuntime';
 import { generarEventId, leerCookiesFacebook, trackearEvento, trackearEventoPersonalizado } from '../../lib/metaPixel';
 import { trackearEventoGA } from '../../lib/googleAnalytics';
-import { registrarEventoLanding, obtenerCatalogoLandingPublica } from '../../services/landingPublicaService';
+import { registrarEventoLanding, obtenerCatalogoLandingPublica, obtenerGeografiaPublica } from '../../services/landingPublicaService';
 import CartDrawer from '../landing/CartDrawer';
 import { armarSeccionesSistema, codigoTieneContacto, codigoTieneFooter, codigoTieneProductos } from './seccionesSistemaCodigo';
 import { getMediaUrl } from '../../services/api';
@@ -92,6 +92,16 @@ function textoLegibleSobre(fondo) {
   return blanco >= negro ? '#ffffff' : '#111827';
 }
 
+function queryCatalogoDesdeFiltro(filtro = {}) {
+  const params = new URLSearchParams();
+  if (filtro.categoria) params.set('categoria', filtro.categoria);
+  if (filtro.etiqueta) params.set('etiqueta', filtro.etiqueta);
+  if (filtro.badge && !filtro.etiqueta) params.set('etiqueta', filtro.badge);
+  if (filtro.busqueda) params.set('busqueda', filtro.busqueda);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
 // Los únicos eventos que el backend acepta en /eventos además de los del
 // carrito (ver EVENTOS_PERMITIDOS en landingPublica.controller). Cualquier
 // otro nombre que ponga el comercio en data-gesicomm-evento va solo al
@@ -107,6 +117,62 @@ function resolverItemCheckout(items, pedido) {
     return items.find(i => i.tipo === tipo && Number(i.referencia_id) === Number(id));
   }
   return items.find(i => i.content_id === raw || `${i.tipo}-${i.referencia_id}` === raw);
+}
+
+function unirPartesUnicas(partes = []) {
+  const vistas = [];
+  const vistasSet = new Set();
+  partes.forEach(parte => {
+    const valor = String(parte || '').trim();
+    if (!valor || vistasSet.has(valor)) return;
+    vistasSet.add(valor);
+    vistas.push(parte);
+  });
+  return vistas.join('\n\n');
+}
+
+function extraerGlobalesTienda(html = '') {
+  const header = /<header\b[^>]*>/i.exec(html);
+  if (!header) return null;
+  const finHeader = html.indexOf('</header>', header.index);
+  if (finHeader < 0) return null;
+
+  let inicio = header.index;
+  const antes = html.slice(0, header.index);
+  const barras = [...antes.matchAll(/<(?:div|section|aside)\b[^>]*>/gi)]
+    .filter(match => {
+      const tag = match[0];
+      return /data-gesicomm-bloque=(["'])anuncios\1/i.test(tag)
+        || /class=(["'])(?=[^"']*(?:announcement|trust(?:-bar)?|top-?bar|promo|promocion|promociones|anuncio|anuncios|benefit|beneficios|shipping|envio|envios|aviso|avisos))[^"']*\1/i.test(tag);
+    });
+  const barra = barras[barras.length - 1];
+  if (barra) inicio = barra.index;
+
+  return {
+    inicio,
+    fin: finHeader + '</header>'.length,
+    html: html.slice(inicio, finHeader + '</header>'.length),
+  };
+}
+
+function conGlobalesHeredados(codigoVista, codigoInicio) {
+  if (!codigoVista?.html || !codigoInicio?.html || codigoVista === codigoInicio) return codigoVista;
+  const globalInicio = extraerGlobalesTienda(codigoInicio.html);
+  const globalVista = extraerGlobalesTienda(codigoVista.html);
+  if (!globalInicio) return codigoVista;
+  const html = globalVista
+    ? `${codigoVista.html.slice(0, globalVista.inicio)}${globalInicio.html}${codigoVista.html.slice(globalVista.fin)}`
+    : `${globalInicio.html}\n${codigoVista.html}`;
+  return {
+    ...codigoVista,
+    html,
+    css: unirPartesUnicas([codigoInicio.css, codigoVista.css]),
+    js: unirPartesUnicas([codigoInicio.js, codigoVista.js]),
+  };
+}
+
+function codigoConGlobales(codigos = []) {
+  return codigos.find(c => c?.html && extraerGlobalesTienda(c.html)) || null;
 }
 
 export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, data = null, slug, productId = null, modoLegal = false, vistaCodigo = null, categorySlug = null }) {
@@ -134,14 +200,26 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   const codigoCatalogo = data?.content?.vistas?.catalogo;
   const codigoCategoria = data?.content?.vistas?.categoria;
   const codigoCheckout = data?.content?.vistas?.checkout;
+  const codigoInicioHeredable = codigoConGlobales([
+    data?.content?.codigo,
+    data?.content?.vistas?.inicio,
+    codigoInicio,
+    PLANTILLA_INICIO,
+  ]) || codigoInicio || PLANTILLA_INICIO;
   const codigoFicha = fichaPropia?.html && !esFichaProductoBase(fichaPropia.html)
     ? fichaPropia
     : (fichaGeneral?.html && !esFichaProductoBase(fichaGeneral.html) ? fichaGeneral : PLANTILLA_PRODUCTO);
+  const codigoCatalogoConGlobales = conGlobalesHeredados(codigoCatalogo?.html ? codigoCatalogo : PLANTILLA_CATALOGO, codigoInicioHeredable);
+  const codigoCategoriaConGlobales = conGlobalesHeredados(codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA, codigoInicioHeredable);
+  const codigoCheckoutConGlobales = conGlobalesHeredados(
+    codigoCheckout?.html && !esCheckoutBase(codigoCheckout.html) ? codigoCheckout : PLANTILLA_CHECKOUT,
+    codigoInicioHeredable,
+  );
   const codigo = esFicha
     ? codigoFicha
-    : vistaActual === 'checkout' ? (codigoCheckout?.html ? codigoCheckout : PLANTILLA_CHECKOUT)
-      : vistaActual === 'catalogo' ? (codigoCatalogo?.html ? codigoCatalogo : PLANTILLA_CATALOGO)
-        : vistaActual === 'categoria' ? (codigoCategoria?.html ? codigoCategoria : PLANTILLA_CATEGORIA)
+    : vistaActual === 'checkout' ? codigoCheckoutConGlobales
+      : vistaActual === 'catalogo' ? codigoCatalogoConGlobales
+        : vistaActual === 'categoria' ? codigoCategoriaConGlobales
           : codigoInicio;
 
   const tema = useMemo(() => temaDesdeData(data), [data]);
@@ -159,14 +237,30 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
   }, [data, extras]);
   const cartState = useStoreCart(slug, data, productos);
   const [checkoutEstado, setCheckoutEstado] = useState(null);
+  const [paymentMethodInicial, setPaymentMethodInicial] = useState(null);
+  // Departamentos/ciudades de Paraguay para el <select> de dirección del
+  // checkout propio (ver data-gesicomm-geografia). Catálogo compartido, no
+  // de esta tienda: se pide una sola vez, recién al llegar a checkout (no en
+  // cada visita a la landing, que es la inmensa mayoría de las veces que
+  // nadie llega a pagar).
+  const [geografia, setGeografia] = useState([]);
+  useEffect(() => {
+    if (vistaActual !== 'checkout' || geografia.length) return;
+    let cancelado = false;
+    obtenerGeografiaPublica()
+      .then(lista => { if (!cancelado) setGeografia(Array.isArray(lista) ? lista : []); })
+      .catch(() => {}); // best-effort: mismo catálogo que ya usa Courier, no debería fallar; si falla, reintenta en el próximo render
+    return () => { cancelado = true; };
+  }, [vistaActual, geografia.length]);
   const datosRuntime = useMemo(
     () => (data ? datosRuntimePublico(data, slug, productoPublico, {
       vista: vistaActual,
       categorySlug,
       carrito: Array.from(cartState.carrito.values()),
       checkoutEstado,
+      geografia,
     }) : null),
-    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado],
+    [data, slug, productoPublico, vistaActual, categorySlug, cartState.carrito, checkoutEstado, geografia],
   );
   const tieneProductosEnCodigo = useMemo(() => codigoTieneProductos(codigo), [codigo?.html]);
   const tieneContactoEnCodigo = useMemo(() => codigoTieneContacto(codigo), [codigo?.html]);
@@ -253,6 +347,9 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
       ? (oferta.precio_efectivo ?? oferta.precio_normal ?? oferta.precio ?? item.precio)
       : (variante?.precio_efectivo ?? item.precio ?? 0);
     cartState.agregarAlCarrito({ item, variante, oferta, cantidad, precio });
+    if (pedido?.payment_method === 'pagopar' || pedido?.payment_method === 'efectivo') {
+      setPaymentMethodInicial(pedido.payment_method);
+    }
     if (pedido?.abrir !== false) cartState.setCarritoAbierto(true);
   }
 
@@ -313,7 +410,7 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
     } else if (pedido?.destino === 'pagina' && pedido.pagina === 'checkout') {
       navigate(slug ? `/l/${slug}/checkout` : '/checkout');
     } else if (pedido?.destino === 'pagina' && PAGINAS_TIENDA[pedido.pagina]) {
-      navigate(urlPaginaTienda(slug, pedido.pagina));
+      navigate(`${urlPaginaTienda(slug, pedido.pagina)}${pedido.pagina === 'catalogo' ? queryCatalogoDesdeFiltro(pedido.filtro) : ''}`);
     } else if (pedido?.destino === 'categoria' && pedido.categoria) {
       const categoria = String(pedido.categoria || '');
       const normalizada = categoria.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -394,6 +491,8 @@ export default function LandingCodigoPublica({ codigo: codigoInicio, titulo, dat
           pasarelas={data?.checkout?.pasarelas || []}
           deliveryCiudades={data?.delivery_ciudades || []}
           apariencia={cartApariencia}
+          paymentMethodInicial={paymentMethodInicial}
+          onIrACheckout={() => navegar({ destino: 'checkout' })}
         />
       )}
     </div>

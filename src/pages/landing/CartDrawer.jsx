@@ -116,6 +116,14 @@ export default function CartDrawer({
   // Distinto del order bump (una oferta configurada con precio especial).
   crossSells = [],
   onAgregarCrossSell,
+  // Lienzo en blanco: la tienda tiene su propia página de checkout (nombre,
+  // departamento/ciudad reales de Paraguay, medio de pago). Con esto,
+  // "Finalizar compra" cierra el carrito y navega ahí en vez de abrir el
+  // paso "formulario" de acá adentro — un solo formulario de checkout, no
+  // dos. Sin esta prop (armador clásico, sin página de checkout propia) el
+  // comportamiento de siempre sigue intacto.
+  onIrACheckout = null,
+  paymentMethodInicial = null,
 }) {
   const [paso, setPaso] = useState(pasoInicial); // carrito | formulario | confirmado
   // El upsell NO es un paso del drawer: tiene que interrumpir con un popup
@@ -180,6 +188,12 @@ export default function CartDrawer({
   const varsTema = primarioTema
     ? { '--l-primary': primarioTema, '--l-on-primary': tintaSobre(primarioTema) }
     : undefined;
+
+  useEffect(() => {
+    if (!abierto || !paymentMethodInicial) return;
+    if (paymentMethodInicial !== 'pagopar' && paymentMethodInicial !== 'efectivo') return;
+    setForm(prev => prev.payment_method === paymentMethodInicial ? prev : { ...prev, payment_method: paymentMethodInicial });
+  }, [abierto, paymentMethodInicial]);
 
   async function aplicarCupon() {
     setValidandoCupon(true);
@@ -326,7 +340,9 @@ export default function CartDrawer({
 
   function reiniciar() {
     setPaso('carrito');
-    setForm(FORM_VACIO);
+    setForm(paymentMethodInicial === 'pagopar' || paymentMethodInicial === 'efectivo'
+      ? { ...FORM_VACIO, payment_method: paymentMethodInicial }
+      : FORM_VACIO);
     setCiudadDeliveryInput('');
     setAcepta(false);
     setResultado(null);
@@ -363,6 +379,11 @@ export default function CartDrawer({
   }
 
   function avanzarDesdeCarrito() {
+    if (onIrACheckout) {
+      onCerrar();
+      onIrACheckout();
+      return;
+    }
     setPaso('formulario');
   }
 
