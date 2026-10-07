@@ -10,6 +10,17 @@ function unirPartesUnicas(partes = []) {
   return vistas.join('\n\n');
 }
 
+// Tamaño y marcas de un hero/banner de venta colado como si fuera un global
+// de tienda (ver abajo): por encima de esto, o con video/imagen de fondo,
+// ya no es "una tira de texto antes del header" sino contenido propio del
+// Inicio que no tiene sentido (ni su CSS de origen) en otra vista.
+const LIMITE_GLOBAL = 4000;
+// video/picture/source nunca aparecen en un header normal (logo + nav) —
+// son casi siempre la marca de un hero. Un solo <img> sigue siendo válido
+// (el logo); dos o más ya es una galería o un banner con fotos.
+const TIENE_MEDIA_DE_HERO = /<(picture|video|source)\b/i;
+const MAX_IMAGENES = 1;
+
 export function extraerGlobalesTienda(html = '') {
   const header = /<header\b[^>]*>/i.exec(html);
   if (!header) return null;
@@ -18,29 +29,28 @@ export function extraerGlobalesTienda(html = '') {
 
   let inicio = header.index;
   const antes = html.slice(0, header.index);
+  // Únicamente la marca explícita del sistema (data-gesicomm-bloque=
+  // "anuncios", la que arma el propio Inicio para su barra de beneficios)
+  // cuenta como "global de tienda" para arrastrar antes del header. Un
+  // regex de clase libre (class contiene "promo", "anuncio", "shipping"...)
+  // también matcheaba el hero/banner de venta que la IA escribe con esos
+  // mismos nombres, duplicando ese bloque — grande, sin su CSS, roto —
+  // arriba de categoría/catálogo/checkout (ver memoria gesicomm_lienzo_html_runtime).
   const barras = [...antes.matchAll(/<(?:div|section|aside)\b[^>]*>/gi)]
-    .filter(match => {
-      const tag = match[0];
-      const esCandidata = /data-gesicomm-bloque=(["'])anuncios\1/i.test(tag)
-        || /class=(["'])(?=[^"']*(?:announcement|trust(?:-bar)?|top-?bar|promo|promocion|promociones|anuncio|anuncios|benefit|beneficios|shipping|envio|envios|aviso|avisos))[^"']*\1/i.test(tag);
-      if (!esCandidata) return false;
-      // Una barra de anuncios/beneficios real es una tira angosta de texto;
-      // un hero/banner de venta (con su propia clase "promo-banner-home" o
-      // similar) puede matchear el mismo regex de clase pero mide miles de
-      // caracteres y trae imágenes — eso NO es global de la tienda, es
-      // contenido propio del Inicio. Colarlo acá lo duplicaba (roto, sin su
-      // CSS de origen) arriba de categoría/catálogo/checkout.
-      const bloque = html.slice(match.index, header.index);
-      return bloque.length <= 800 && !/<(img|picture|video|source)\b/i.test(bloque);
-    });
+    .filter(match => /data-gesicomm-bloque=(["'])anuncios\1/i.test(match[0]));
   const barra = barras[barras.length - 1];
   if (barra) inicio = barra.index;
 
-  return {
-    inicio,
-    fin: finHeader + '</header>'.length,
-    html: html.slice(inicio, finHeader + '</header>'.length),
-  };
+  const fin = finHeader + '</header>'.length;
+  const bloque = html.slice(inicio, fin);
+  // Aun el <header> "oficial" puede venir con un hero de fondo escrito por
+  // la IA adentro (patrón común: header pegajoso + banner superpuesto). Si
+  // es así, no es seguro clonarlo en otra vista: se prefiere que esa vista
+  // se quede con su propio header genérico antes que mostrar un bloque roto.
+  const cantidadImagenes = (bloque.match(/<img\b/gi) || []).length;
+  if (bloque.length > LIMITE_GLOBAL || TIENE_MEDIA_DE_HERO.test(bloque) || cantidadImagenes > MAX_IMAGENES) return null;
+
+  return { inicio, fin, html: bloque };
 }
 
 export function conGlobalesHeredados(codigoVista, codigoInicio) {

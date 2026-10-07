@@ -630,7 +630,7 @@ export default function ConfigurarTienda() {
                               )}
                             </div>
                             <span className="tn-field-hint">
-                              PNG con fondo transparente, JPG o WebP (máx. 5 MB). Se guarda al subirlo y aparece en todas tus páginas que no tengan un logo propio.
+                              PNG con fondo transparente, JPG o WebP (máx. 5 MB). Tamaño recomendado: 512x512 px. Se guarda al subirlo y aparece en todas tus páginas que no tengan un logo propio.
                             </span>
                             {errorLogo && <span className="tn-logo-error"><AlertCircle size={12} /> {errorLogo}</span>}
                           </div>

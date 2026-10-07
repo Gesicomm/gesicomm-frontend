@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { construirDocumentoCodigo } from '../src/pages/landing-simple/construirDocumentoCodigo.js';
-import { PLANTILLA_INICIO } from '../src/pages/landing-simple/plantillasBaseCodigo.js';
+import { PLANTILLA_CATALOGO, PLANTILLA_CATEGORIA, PLANTILLA_INICIO, PLANTILLA_PRODUCTO } from '../src/pages/landing-simple/plantillasBaseCodigo.js';
 
 function json(route, body, status = 200) {
   return route.fulfill({
@@ -445,6 +445,20 @@ test('encabezado permite logo mas grande junto al nombre de la tienda', async ({
   expect(estilos.logoWidth).toBeGreaterThan(35);
   expect(estilos.logoHeight).toBeGreaterThan(estilos.nombreHeight);
   expect(estilos.transform).not.toBe('none');
+});
+
+test('las vistas internas no muestran la franja fija de beneficios sin configurar', async ({ page }) => {
+  for (const plantilla of [PLANTILLA_CATEGORIA, PLANTILLA_CATALOGO, PLANTILLA_PRODUCTO]) {
+    const html = construirDocumentoCodigo(plantilla, {
+      datos: { tienda: { nombre: 'sommix', colores: coloresTienda }, productos: [producto], catalogo: {} },
+    });
+
+    await page.setContent(html);
+    await expect(page.locator('.announcement')).toHaveCount(0);
+    await expect(page.getByText('Pago seguro online o al recibir')).toHaveCount(0);
+    await expect(page.getByText('Envío rápido a tu ciudad')).toHaveCount(0);
+    await expect(page.getByText('Atención por WhatsApp te ayudamos a elegir')).toHaveCount(0);
+  }
 });
 
 test('colecciones ganan altura para que las imagenes no queden cortadas', async ({ page }) => {
