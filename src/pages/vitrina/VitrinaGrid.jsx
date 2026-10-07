@@ -4,8 +4,9 @@ import {
   Package, Layers, BarChart3, Loader, ImageOff, Check, AlertCircle,
   Search, ArrowUpDown, TrendingUp, Tag, Archive, Flame, Sparkles,
   ChevronRight, Box, Plus, Edit2, UserCheck, Ticket, Truck, SlidersHorizontal, Grid,
-  Store
+  Store, Trash2
 } from 'lucide-react';
+import { productService } from '../../services/productService';
 import { vitrinaService } from '../../services/vitrinaService';
 import { landingSimpleService } from '../../services/landingSimpleService';
 import { landingService } from '../../services/landingService';
@@ -601,6 +602,31 @@ export default function VitrinaGrid() {
     [itemsSeleccionados]
   );
 
+  const todosSonPropios = productosSeleccionados.length > 0
+    && productosSeleccionados.length === itemsSeleccionados.length
+    && productosSeleccionados.every(
+      item => usuarioActual?.id != null && Number(item.creado_por) === Number(usuarioActual.id)
+    );
+
+  const [borrando, setBorrando] = useState(false);
+  const borrarSeleccionados = async () => {
+    const cantidad = productosSeleccionados.length;
+    if (!window.confirm(
+      `¿Estás seguro de eliminar ${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}? Esta acción no se puede deshacer.`
+    )) return;
+    setBorrando(true);
+    try {
+      await Promise.all(productosSeleccionados.map(p => productService.eliminar(p.id)));
+      limpiarSeleccion();
+      await cargar();
+    } catch (err) {
+      console.error(err);
+      alert('Ocurrió un error al eliminar. Intentá de nuevo.');
+    } finally {
+      setBorrando(false);
+    }
+  };
+
   async function guardarCategoriaSeleccion(payload) {
     const resultado = await vitrinaService.categorizarProductos(payload);
     setModalCategoriaAbierto(false);
@@ -827,6 +853,19 @@ export default function VitrinaGrid() {
               <Tag size={15} />
               Categorizar
             </button>
+            {todosSonPropios && (
+              <button
+                type="button"
+                className="vit-seleccion-cancelar vit-seleccion-combo"
+                onClick={borrarSeleccionados}
+                disabled={borrando}
+                title="Eliminar productos seleccionados"
+                style={{ color: 'var(--color-danger, #ef4444)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+              >
+                {borrando ? <Loader size={15} className="spin-icon" /> : <Trash2 size={15} />}
+                Eliminar
+              </button>
+            )}
             <button type="button" className="vit-seleccion-cta" onClick={generarLanding} disabled={generandoLanding}>
               {generandoLanding ? <Loader size={15} className="spin-icon" /> : null}
               {enOnboarding ? 'Generar landing' : 'Generar mi landing'} <ChevronRight size={15} />
