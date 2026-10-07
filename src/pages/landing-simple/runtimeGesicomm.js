@@ -857,6 +857,7 @@ export function runtimeGesicomm() {
     var venta = datos.venta || {};
     var urg = venta.urgencia || {};
     var marca = (venta.inicio && venta.inicio.marca) || (venta.inicio_comercial && venta.inicio_comercial.marca) || {};
+    var testimonios = (venta.inicio && venta.inicio.testimonios) || (venta.inicio_comercial && venta.inicio_comercial.testimonios) || {};
     switch (campo) {
       case 'recomendados_kicker': return venta.recomendados_kicker || 'Te puede gustar';
       case 'recomendados_titulo': return venta.recomendados_titulo || 'Te puede gustar';
@@ -868,6 +869,9 @@ export function runtimeGesicomm() {
       case 'marca_kicker': return marca.kicker || '';
       case 'marca_titulo': return marca.titulo || '';
       case 'marca_texto': return marca.texto || '';
+      case 'testimonios_kicker': return testimonios.kicker || 'Opiniones';
+      case 'testimonios_titulo': return testimonios.titulo || 'Clientes que ya compraron.';
+      case 'testimonios_subtitulo': return testimonios.subtitulo || '';
       case 'productos_categoria_kicker': return productosCategoriaConfig().kicker || '';
       case 'productos_categoria_titulo': return productosCategoriaConfig().titulo || 'Productos seleccionados';
       case 'productos_categoria_subtitulo': return productosCategoriaConfig().subtitulo || '';
@@ -881,7 +885,7 @@ export function runtimeGesicomm() {
       var clave = seccion.getAttribute('data-gesicomm-venta-configurada');
       // "marca" vive en venta.inicio.marca (config del Inicio), el resto
       // (urgencia, etc.) directo en venta — ver inicioConfig().
-      var config = (datos.venta && datos.venta[clave]) || (clave === 'marca' ? marcaConfig() : null);
+      var config = (datos.venta && datos.venta[clave]) || (clave === 'marca' ? marcaConfig() : (clave === 'testimonios' ? testimoniosInicioConfig() : null));
       seccion.hidden = !config || config.activo !== true;
     });
     var els = document.querySelectorAll('[data-gesicomm-venta]');
@@ -907,7 +911,7 @@ export function runtimeGesicomm() {
     categorias: 1, menu_categorias: 1, banners_inicio: 1, banners_intermedios: 1, secciones_inicio: 1,
     beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1,
     botones_pago_producto: 1, metodos_pago_producto: 1, incluye_pedido_producto: 1,
-    anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1,
+    anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1, testimonios_inicio: 1,
   };
   var LISTA_PAQUETES = 'paquetes';
 
@@ -993,6 +997,34 @@ export function runtimeGesicomm() {
 
   function marcaConfig() {
     return inicioConfig().marca || null;
+  }
+
+  function testimoniosInicioConfig() {
+    var cfg = inicioConfig().testimonios || null;
+    if (!cfg) return null;
+    if (cfg.activo !== true && Array.isArray(cfg.items) && cfg.items.length) {
+      var tieneContenido = cfg.items.some(function (o) {
+        return o && String(o.nombre || o.comentario || o.texto || o.foto || o.imagen || '').trim();
+      });
+      cfg = Object.assign({}, cfg, { activo: tieneContenido });
+    }
+    return cfg;
+  }
+
+  function testimoniosInicio() {
+    var cfg = testimoniosInicioConfig() || {};
+    var lista = Array.isArray(cfg.items) ? cfg.items : [];
+    return lista.map(function (o) {
+      var n = Math.max(1, Math.min(5, Number(o.calificacion) || 5));
+      return {
+        nombre: String(o.nombre || '').trim(),
+        detalle: String(o.detalle || '').trim(),
+        comentario: String(o.comentario || o.texto || '').trim(),
+        imagen: urlSegura(o.foto || o.imagen || o.avatar || '') || '',
+        calificacion: n,
+        estrellas: '★★★★★'.slice(0, n),
+      };
+    }).filter(function (o) { return o.nombre || o.comentario || o.imagen; }).slice(0, 8);
   }
 
   function productosCategoriaConfig() {
@@ -1457,6 +1489,7 @@ export function runtimeGesicomm() {
           if (respaldoMarca) base = [{ imagen: respaldoMarca, tipo_medio: 'imagen' }];
         }
         break;
+      case 'testimonios_inicio': base = testimoniosInicio(); break;
       case 'productos_ofertas': base = productosOfertaLimitada(); break;
       case 'productos_novedades':
         base = productos.filter(function (p) { return tieneEtiqueta(p, 'Novedades'); });

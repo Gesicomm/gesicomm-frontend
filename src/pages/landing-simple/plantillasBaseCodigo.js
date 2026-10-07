@@ -514,6 +514,17 @@ const INICIO_CSS_LEGACY = `${TOKENS_CSS}
 .storefront .dynamic-section { padding: 30px 0 0; border: 0; }
 .storefront .dynamic-head { margin-bottom: 14px; }
 .storefront .dynamic-head h2 { font-size: 1.34rem; }
+.storefront .testimonials-section { padding-top: 34px; }
+.storefront .testimonials-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.storefront .testimonial-card { display: grid; gap: 14px; min-height: 220px; padding: 20px; color: var(--gc-texto); background: color-mix(in srgb, var(--gc-superficie, var(--white)) 94%, var(--gc-primario) 6%); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px rgba(8,41,71,.08); }
+.storefront .testimonial-stars { color: var(--tienda-destacado, var(--accent)); font-size: 1rem; letter-spacing: .08em; }
+.storefront .testimonial-quote { margin: 0; color: var(--gc-texto); font-size: .95rem; line-height: 1.55; }
+.storefront .testimonial-person { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; align-items: center; margin-top: auto; }
+.storefront .testimonial-avatar { width: 48px; height: 48px; overflow: hidden; background: color-mix(in srgb, var(--gc-primario) 12%, var(--white)); border: 1px solid var(--line); border-radius: 999px; }
+.storefront .testimonial-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.storefront .testimonial-avatar:empty::before { display: grid; width: 100%; height: 100%; place-items: center; color: var(--gc-primario); content: "★"; font-size: 1.1rem; font-weight: 900; }
+.storefront .testimonial-name { display: block; color: var(--gc-texto); font-size: .9rem; font-weight: 900; line-height: 1.2; }
+.storefront .testimonial-detail { display: block; margin-top: 3px; color: var(--muted); font-size: .75rem; font-weight: 700; }
 .storefront .limited-offer { margin-top: 30px; }
 .storefront .limited-offer-card { border-radius: 10px; }
 .storefront .collection-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -845,7 +856,7 @@ h1 em { color: var(--ui-action); font-style: normal; }
   .storefront .hero h1, .hero-banner h2 { font-size: 1.8rem; }
   .storefront .category-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .storefront .category-card:nth-child(n+5) { display: none; }
-  .storefront .spotlight-grid, .storefront .product-grid, .storefront .news-grid, .storefront .collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .storefront .spotlight-grid, .storefront .product-grid, .storefront .news-grid, .storefront .collection-grid, .storefront .testimonials-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .storefront .news-grid .product-card:first-of-type { grid-row: auto; }
   .storefront .news-grid .product-card:first-of-type .product-image { height: 138px; }
   .storefront .news-grid .product-card:first-of-type .product-image img { height: 118px; }
@@ -857,7 +868,7 @@ h1 em { color: var(--ui-action); font-style: normal; }
 }
 @media (max-width: 430px) {
   .store-benefits { grid-template-columns: 1fr; }
-  .storefront .spotlight-grid, .storefront .product-grid, .storefront .news-grid, .storefront .collection-grid { grid-template-columns: 1fr; }
+  .storefront .spotlight-grid, .storefront .product-grid, .storefront .news-grid, .storefront .collection-grid, .storefront .testimonials-grid { grid-template-columns: 1fr; }
   .storefront .limited-offer-products { grid-template-columns: 1fr; }
   .storefront .limited-offer-product, .storefront .limited-offer-product.has-commercial-presentation { grid-template-columns: 82px minmax(0, 1fr); }
 }`;
@@ -886,6 +897,8 @@ ${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
     <section id="productos-categoria" class="section pc-section" data-gesicomm-bloque="productos_categoria"><div class="section-heading pc-head"><div><p class="eyebrow" data-gesicomm-venta="productos_categoria_kicker"></p><h2 data-gesicomm-venta="productos_categoria_titulo"></h2><p data-gesicomm-venta="productos_categoria_subtitulo"></p></div><label class="pc-search"><span>Buscar</span><input type="search" placeholder="Buscar en esta selección" aria-label="Buscar en productos seleccionados" data-gesicomm-pc-buscar></label></div><div class="pc-tabs" data-gesicomm-pc-tabs></div><div class="spotlight-grid" data-gesicomm-lista="productos_categoria"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div><p class="pc-empty" data-gesicomm-pc-vacio hidden>No encontramos productos con esa búsqueda.</p></section>
 
     <section id="confianza" class="section trust-section" data-gesicomm-bloque="confianza"><div class="trust-grid" data-gesicomm-lista="confianza_inicio"><template><div class="trust-card"><span class="trust-card-icon" data-gesicomm-bind="icono"></span><div><h3 data-gesicomm-bind="titulo"></h3><p data-gesicomm-bind="texto"></p></div></div></template></div></section>
+
+    <section id="testimonios" class="section testimonials-section" data-gesicomm-bloque="testimonios" data-gesicomm-venta-configurada="testimonios" hidden><div class="section-heading"><div><p class="eyebrow" data-gesicomm-venta="testimonios_kicker"></p><h2 data-gesicomm-venta="testimonios_titulo"></h2><p data-gesicomm-venta="testimonios_subtitulo"></p></div></div><div class="testimonials-grid" data-gesicomm-lista="testimonios_inicio"><template><article class="testimonial-card"><div class="testimonial-stars" data-gesicomm-bind="estrellas"></div><p class="testimonial-quote" data-gesicomm-bind="comentario"></p><div class="testimonial-person"><div class="testimonial-avatar"><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div><strong class="testimonial-name" data-gesicomm-bind="nombre"></strong><span class="testimonial-detail" data-gesicomm-bind="detalle"></span></div></div></article></template></div></section>
 
     <section id="marca" class="section brand-section" data-gesicomm-bloque="marca" data-gesicomm-venta-configurada="marca" hidden><div class="brand-layout"><div class="brand-media" data-gesicomm-lista="marca_medios"><template><div class="brand-medio"><img data-gesicomm-bind="imagen" alt="" loading="lazy"><video data-gesicomm-bind="video" muted autoplay loop playsinline preload="metadata"></video></div></template></div><div class="brand-copy"><p class="eyebrow" data-gesicomm-venta="marca_kicker"></p><h2 data-gesicomm-venta="marca_titulo"></h2><p data-gesicomm-venta="marca_texto"></p><div class="brand-badges" data-gesicomm-lista="marca_badges"><template><span class="brand-badge" data-gesicomm-bind="texto"></span></template></div></div></div></section>
 

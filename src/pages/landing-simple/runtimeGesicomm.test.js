@@ -442,6 +442,43 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(css).toContain('main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout');
   });
 
+  it('testimonios del inicio se ocultan sin datos y pintan opiniones configuradas', () => {
+    const sinTestimonios = montar(PLANTILLA_INICIO, datos);
+    expect(sinTestimonios.document.querySelector('#testimonios').hidden).toBe(true);
+
+    const { document } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        inicio: {
+          testimonios: {
+            kicker: 'Clientes reales',
+            titulo: 'Lo que dicen de la tienda',
+            subtitulo: 'Opiniones cargadas por el comercio.',
+            items: [
+              {
+                nombre: 'María López',
+                detalle: 'Compra verificada',
+                comentario: 'Me respondieron rápido y el producto llegó perfecto.',
+                foto: 'https://cdn.test/maria.webp',
+                calificacion: 4,
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    expect(document.querySelector('#testimonios').hidden).toBe(false);
+    expect(document.querySelector('[data-gesicomm-venta="testimonios_kicker"]').textContent).toBe('Clientes reales');
+    expect(document.querySelector('[data-gesicomm-venta="testimonios_titulo"]').textContent).toBe('Lo que dicen de la tienda');
+    expect(document.querySelector('[data-gesicomm-venta="testimonios_subtitulo"]').textContent).toBe('Opiniones cargadas por el comercio.');
+    expect(document.querySelector('.testimonial-stars').textContent).toBe('★★★★');
+    expect(document.querySelector('.testimonial-name').textContent).toBe('María López');
+    expect(document.querySelector('.testimonial-detail').textContent).toBe('Compra verificada');
+    expect(document.querySelector('.testimonial-quote').textContent).toBe('Me respondieron rápido y el producto llegó perfecto.');
+    expect(document.querySelector('.testimonial-avatar img').getAttribute('src')).toBe('https://cdn.test/maria.webp');
+  });
+
   it('productos por categoría: sin selección usa catálogo visible, filtra por tab y respeta el límite', () => {
     const sinItems = montar(PLANTILLA_INICIO, datos);
     expect(sinItems.document.querySelector('#productos-categoria').hidden).toBe(false);

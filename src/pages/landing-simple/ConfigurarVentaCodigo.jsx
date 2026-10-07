@@ -139,6 +139,7 @@ const ENLACES_BANNER_INICIO = [
   ['#productos-categoria', 'Productos por categoría'],
   ['#confianza', 'Zona de confianza'],
   ['#marca', 'Nuestra marca'],
+  ['#testimonios', 'Testimonios'],
 ];
 const MENU_PRINCIPAL_DEFAULT = [
   { id: 'inicio', texto: 'Inicio', destino: '#inicio', visible: true },
@@ -157,6 +158,7 @@ const DESTINOS_MENU_PRINCIPAL = [
   ['#productos-categoria', 'Productos por categoría'],
   ['#confianza', 'Zona de confianza'],
   ['#marca', 'Nuestra marca'],
+  ['#testimonios', 'Testimonios'],
   ['personalizado', 'Personalizado'],
 ];
 const DESTINOS_MENU_VALIDOS = new Set(DESTINOS_MENU_PRINCIPAL.map(([value]) => value).filter(value => value !== 'personalizado'));
@@ -178,6 +180,12 @@ const MARCA_INICIO_DEFAULT = {
   texto: 'Seleccionamos productos pensados para resolver compras reales, con atención cercana antes y después de cada pedido.',
   badges: ['Atención personalizada', 'Productos seleccionados', 'Compra simple'],
   medios: [],
+};
+const TESTIMONIOS_INICIO_DEFAULT = {
+  kicker: 'Opiniones',
+  titulo: 'Clientes que ya compraron.',
+  subtitulo: '',
+  items: [],
 };
 
 const VISTAS_CODIGO_TIENDA = [
@@ -371,7 +379,7 @@ function inicioComercialDesdeVenta(venta = {}) {
 // (el espejo del lado del runtime). "Menú" no está: vive en el header fijo,
 // no tiene una posición en la página que mover.
 const TIPOS_BLOQUE_INICIO = [
-  'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'marca', 'colecciones',
+  'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
 ];
 const ETIQUETAS_BLOQUE_INICIO = {
   anuncios: 'Barra de anuncios',
@@ -380,6 +388,7 @@ const ETIQUETAS_BLOQUE_INICIO = {
   productos_categoria: 'Productos',
   destacados: 'Productos destacados',
   confianza: 'Zona de confianza',
+  testimonios: 'Testimonios',
   marca: 'Nuestra marca',
   banner_intermedio: 'Banner intermedio',
   secciones_inicio: 'Vitrinas opcionales',
@@ -396,7 +405,7 @@ const ETIQUETAS_BLOQUE_INICIO = {
 // ver primero, visible; el resto (lo que ya traía la base) queda apagado
 // pero disponible por si lo quiere prender después.
 const BLOQUES_INICIO_DEFAULT = [
-  'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'marca', 'colecciones',
+  'anuncios', 'banner', 'productos_categoria', 'ofertas_urgencia', 'confianza', 'testimonios', 'marca', 'colecciones',
 ].map(tipo => ({ tipo, visible: true }));
 
 function normalizarBloquesInicio(bloques) {
@@ -454,6 +463,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     : [];
   const productosCategoria = inicio.productos_categoria && typeof inicio.productos_categoria === 'object' ? inicio.productos_categoria : {};
   const marca = inicio.marca && typeof inicio.marca === 'object' ? inicio.marca : {};
+  const testimoniosConfig = inicio.testimonios && typeof inicio.testimonios === 'object' ? inicio.testimonios : {};
   const anuncios = Array.isArray(inicio.anuncios)
     ? inicio.anuncios.map(it => (typeof it === 'string' ? { texto: it, icono: '' } : { texto: it?.texto || '', icono: it?.icono || '' }))
     : [];
@@ -462,6 +472,16 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     ? inicio.confianza.map(it => ({ icono: it?.icono || '', titulo: it?.titulo || '', texto: it?.texto || '' }))
     : [];
   const confianzaConTexto = confianza.filter(it => String(it.titulo || it.texto || '').trim());
+  const testimoniosItems = Array.isArray(testimoniosConfig.items)
+    ? testimoniosConfig.items.map((it, idx) => ({
+      id: it?.id || `testimonio-${idx + 1}`,
+      nombre: it?.nombre || '',
+      detalle: it?.detalle || '',
+      comentario: it?.comentario || it?.texto || '',
+      foto: it?.foto || it?.imagen || '',
+      calificacion: limitarNumero(it?.calificacion, 1, 5, 5),
+    }))
+    : [];
   return {
     encabezado: normalizarEncabezadoInicio(inicio.encabezado),
     menu_links: normalizarMenuPrincipal(inicio.menu_links),
@@ -492,6 +512,13 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       texto: marca.texto || MARCA_INICIO_DEFAULT.texto,
       badges: Array.isArray(marca.badges) && marca.badges.some(b => String(b || '').trim()) ? marca.badges : MARCA_INICIO_DEFAULT.badges,
       medios: Array.isArray(marca.medios) ? marca.medios : MARCA_INICIO_DEFAULT.medios,
+    },
+    testimonios: {
+      kicker: testimoniosConfig.kicker || TESTIMONIOS_INICIO_DEFAULT.kicker,
+      titulo: testimoniosConfig.titulo || TESTIMONIOS_INICIO_DEFAULT.titulo,
+      subtitulo: testimoniosConfig.subtitulo || '',
+      activo: testimoniosConfig.activo === true,
+      items: testimoniosItems,
     },
   };
 }
@@ -1137,6 +1164,39 @@ export default function ConfigurarVentaCodigo({
     setInicioComercial(prev => ({ ...prev, marca: { ...prev.marca, medios: medio ? [medio] : [] } }));
   }
 
+  // ─── Testimonios del inicio ────────────────────────────────────────────
+  function cambiarTestimoniosInicio(cambio) {
+    setInicioComercial(prev => ({ ...prev, testimonios: { ...prev.testimonios, ...cambio } }));
+  }
+  function cambiarTestimonioInicio(id, cambio) {
+    setInicioComercial(prev => ({
+      ...prev,
+      testimonios: {
+        ...prev.testimonios,
+        items: (prev.testimonios?.items || []).map(item => (item.id === id ? { ...item, ...cambio } : item)),
+      },
+    }));
+  }
+  function agregarTestimonioInicio() {
+    setInicioComercial(prev => ({
+      ...prev,
+      testimonios: {
+        ...prev.testimonios,
+        items: [
+          ...(prev.testimonios?.items || []),
+          { id: uidComercial('testimonio'), nombre: '', detalle: '', comentario: '', foto: '', calificacion: 5 },
+        ].slice(0, 8),
+      },
+    }));
+    verDonde('inicio', 'testimonios_inicio');
+  }
+  function quitarTestimonioInicio(id) {
+    setInicioComercial(prev => ({
+      ...prev,
+      testimonios: { ...prev.testimonios, items: (prev.testimonios?.items || []).filter(item => item.id !== id) },
+    }));
+  }
+
   // ─── Productos por categoría ────────────────────────────────────────────
   function cambiarProductosCategoria(cambio) {
     setInicioComercial(prev => ({ ...prev, productos_categoria: { ...prev.productos_categoria, ...cambio } }));
@@ -1284,6 +1344,13 @@ export default function ConfigurarVentaCodigo({
     // real, mismo criterio que los banners de arriba — así no hay dos
     // controles (el "Mostrar" del bloque + uno adentro) para lo mismo.
     marca: { ...inicioComercial.marca, activo: !!(inicioComercial.marca.titulo || inicioComercial.marca.texto || inicioComercial.marca.medios?.length) },
+    testimonios: {
+      ...inicioComercial.testimonios,
+      activo: (inicioComercial.testimonios?.items || []).some(it => it && (it.nombre || it.comentario || it.foto)),
+      items: (inicioComercial.testimonios?.items || [])
+        .filter(it => it && (it.nombre || it.comentario || it.foto))
+        .slice(0, 8),
+    },
     productos_categoria: { ...inicioComercial.productos_categoria, activo: (inicioComercial.productos_categoria.items || []).length > 0 },
   }), [inicioComercial]);
 
@@ -1888,6 +1955,16 @@ export default function ConfigurarVentaCodigo({
                       <EditorConfianzaInicio
                         items={inicioComercial.confianza}
                         onCambiar={cambiarConfianza}
+                      />
+                    ),
+                    testimonios: (
+                      <EditorTestimoniosInicio
+                        testimonios={inicioComercial.testimonios}
+                        onCambiar={cambiarTestimoniosInicio}
+                        onCambiarItem={cambiarTestimonioInicio}
+                        onAgregar={agregarTestimonioInicio}
+                        onQuitar={quitarTestimonioInicio}
+                        onSubir={onSubirImagen ? subirImagenLanding : null}
                       />
                     ),
                     marca: (
@@ -3477,6 +3554,101 @@ function EditorMarcaInicio({ marca, onCambiar, onCambiarBadge, onAgregarBadge, o
         onCambiar={cambio => onCambiarMedio({ url: cambio.imagen ?? (medio?.url || ''), tipo: cambio.tipo_medio ?? (medio?.tipo || 'imagen') })}
         onSubir={onSubir}
       />
+    </div>
+  );
+}
+
+function EditorTestimoniosInicio({ testimonios, onCambiar, onCambiarItem, onAgregar, onQuitar, onSubir }) {
+  const items = testimonios?.items || [];
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-fg-muted">Se muestra en la homepage solo cuando cargás al menos una opinión real. Podés sumar foto, nombre, estrellas y el comentario.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <CampoTexto label="Rótulo" value={testimonios?.kicker || ''} onChange={v => onCambiar({ kicker: v })} placeholder="Opiniones" maxLength={40} />
+        <CampoTexto label="Título" value={testimonios?.titulo || ''} onChange={v => onCambiar({ titulo: v })} placeholder="Clientes que ya compraron." maxLength={100} />
+        <div className="sm:col-span-2">
+          <CampoTexto label="Subtítulo" value={testimonios?.subtitulo || ''} onChange={v => onCambiar({ subtitulo: v })} placeholder="Comentarios reales de personas que confiaron en tu tienda." maxLength={180} />
+        </div>
+      </div>
+      <div className="space-y-3">
+        {items.map((item, idx) => (
+          <EditorTestimonioInicio
+            key={item.id || idx}
+            item={item}
+            numero={idx + 1}
+            onCambiar={cambio => onCambiarItem(item.id, cambio)}
+            onQuitar={() => onQuitar(item.id)}
+            onSubir={onSubir}
+          />
+        ))}
+        {items.length < 8 && (
+          <button type="button" onClick={onAgregar} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-border text-sm font-semibold text-fg hover:border-border-strong">
+            <Plus size={15} /> Agregar testimonio
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditorTestimonioInicio({ item, numero, onCambiar, onQuitar, onSubir }) {
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState('');
+  const foto = getMediaUrl(item.foto || '');
+
+  async function alElegir(event) {
+    const archivo = event.target.files?.[0];
+    event.target.value = '';
+    if (!archivo || !onSubir) return;
+    setError('');
+    setSubiendo(true);
+    try {
+      const url = await onSubir(archivo);
+      onCambiar({ foto: url });
+    } catch {
+      setError('No se pudo subir la foto. Probá con JPG, PNG o WEBP.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-surface p-3">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-fg">Testimonio {numero}</p>
+        <button type="button" onClick={onQuitar} className="h-8 px-2.5 rounded-lg border border-border text-xs font-medium text-danger hover:bg-danger/[0.06]">Quitar</button>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-[112px_1fr]">
+        <div className="space-y-2">
+          <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-full border border-border bg-surface-2">
+            {foto ? <img src={foto} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-semibold text-fg-muted">Foto</span>}
+          </div>
+          <label className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-semibold text-fg hover:border-border-strong">
+            {subiendo ? <Loader size={13} className="animate-spin" /> : <Upload size={13} />}
+            Subir
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={!onSubir || subiendo} onChange={alElegir} />
+          </label>
+          {error && <p className="text-[11px] text-danger">{error}</p>}
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <CampoTexto label="Nombre" value={item.nombre || ''} onChange={v => onCambiar({ nombre: v })} placeholder="María López" maxLength={60} />
+          <CampoTexto label="Detalle" value={item.detalle || ''} onChange={v => onCambiar({ detalle: v })} placeholder="Compra verificada" maxLength={80} />
+          <label className="block">
+            <span className="block text-xs font-medium text-fg-muted mb-1">Estrellas</span>
+            <select
+              value={item.calificacion || 5}
+              onChange={e => onCambiar({ calificacion: Number(e.target.value) })}
+              className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+            >
+              {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} estrella{n === 1 ? '' : 's'}</option>)}
+            </select>
+          </label>
+          <CampoTexto label="URL de foto" value={item.foto || ''} onChange={v => onCambiar({ foto: v })} placeholder="https://..." maxLength={320} />
+          <div className="sm:col-span-2">
+            <CampoTexto label="Qué dijo" value={item.comentario || ''} onChange={v => onCambiar({ comentario: v })} placeholder="Llegó rápido y el producto era tal cual la descripción." maxLength={360} multiline />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
