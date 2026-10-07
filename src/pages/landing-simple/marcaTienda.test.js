@@ -74,7 +74,7 @@ describe('Branding de Mi Tienda en la landing HTML', () => {
     expect(html).toContain(':where([data-gesicomm-lista] .product-card .product-footer)');
     expect(html).toContain('background: var(--gc-primario, var(--tienda-primario, #075da0)) !important;');
     expect(html).toContain('color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;');
-    expect(html).toContain('color: var(--tienda-primario-texto, var(--gc-primario, var(--tienda-primario, #075da0))) !important;');
+    expect(html).toContain('color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;');
   });
 
   it('sin logo no agrega ningun logo inventado y el nombre no tiene fondo', () => {

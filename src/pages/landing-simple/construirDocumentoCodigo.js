@@ -131,7 +131,7 @@ const SYSTEM_CSS = `
   --gc-texto-suave: var(--tienda-texto-suave, #506172);
   --gc-superficie: var(--tienda-superficie, #ffffff);
   --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #ffffff);
-  --navy: var(--tienda-banda, var(--tienda-primario, #062b4f));
+  --navy: var(--gc-texto, var(--tienda-texto, #062b4f));
   --navy-deep: color-mix(in srgb, var(--navy) 78%, #000);
   --blue: var(--tienda-primario, #075da0);
   --blue-bright: color-mix(in srgb, var(--blue) 82%, #fff);
@@ -695,9 +695,14 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   position: relative;
   isolation: isolate;
   background: var(--gc-superficie);
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 [data-gesicomm-lista] .product-card > .product-content h3 {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   line-height: 1.35;
+}
+:where([data-gesicomm-lista] .product-card .product-category, [data-gesicomm-lista] .product-card .product-description, [data-gesicomm-lista] .product-card .gc-commercial-copy) {
+  color: var(--gc-texto-suave, var(--tienda-texto-suave, #506172)) !important;
 }
 [data-gesicomm-lista] .product-card .product-footer {
   flex-wrap: wrap;
@@ -720,12 +725,12 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   color: color-mix(in srgb, var(--gc-texto-sobre-primario, #fff) 72%, transparent) !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary) {
-  color: var(--tienda-primario-texto, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   background: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
   border-color: var(--gc-superficie, var(--tienda-superficie, #fff)) !important;
 }
 :where([data-gesicomm-lista] .product-card .product-footer .button-primary:hover) {
-  color: var(--tienda-primario-texto, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
   background: color-mix(in srgb, var(--gc-superficie, #fff) 92%, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
   border-color: color-mix(in srgb, var(--gc-superficie, #fff) 92%, var(--gc-primario, var(--tienda-primario, #075da0))) !important;
 }
@@ -993,6 +998,7 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {
   padding-block: clamp(76px, 9vw, 112px) clamp(70px, 8vw, 100px) !important;
   background: var(--gc-superficie, #fff) !important;
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
 }
 main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout {
   width: min(100%, 1120px) !important;
@@ -1016,6 +1022,17 @@ main[data-gesicomm-base="catalogo"] .brand-medio :where(img, video) {
 main[data-gesicomm-base="catalogo"] .brand-medio :where(img, video) {
   min-height: 370px !important;
   object-fit: contain !important;
+}
+main[data-gesicomm-base="catalogo"] .brand-copy :where(.eyebrow, h1, h2, h3, p),
+main[data-gesicomm-base="catalogo"] .brand-badge {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+main[data-gesicomm-base="catalogo"] .brand-copy .eyebrow {
+  color: var(--tienda-destacado, var(--gc-texto, #10202f)) !important;
+}
+main[data-gesicomm-base="catalogo"] .brand-badge {
+  background: color-mix(in srgb, var(--gc-superficie, #fff) 88%, var(--gc-primario, #18a66b)) !important;
+  border-color: var(--tienda-linea, var(--line, #e4eaf0)) !important;
 }
 @media (max-width: 900px) {
   main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {

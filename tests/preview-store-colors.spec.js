@@ -29,6 +29,16 @@ const producto = {
   tipo: 'producto',
 };
 
+function contraste(a, b) {
+  const canal = color => color.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number).map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  const lum = ([r, g, bl]) => 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  const [l1, l2] = [lum(canal(a)), lum(canal(b))].sort((x, y) => y - x);
+  return (l1 + 0.05) / (l2 + 0.05);
+}
+
 test('la vista previa de configurar landing recibe los colores anidados de Mi tienda', async ({ page }) => {
   await page.route('**/api/**', route => json(route, {}));
   await page.route('**/api/auth/me', route => json(route, {
@@ -116,7 +126,75 @@ test('la plantilla base visible no deja la barra superior con colores default', 
   });
 
   expect(estilos.tiendaPrimario).toBe(coloresTienda.primario);
-  expect(estilos.navy).toBe(estilos.tiendaBanda);
+  expect(estilos.navy).not.toBe(estilos.tiendaBanda);
   expect(estilos.trustBarBackground).not.toBe('rgb(6, 43, 79)');
   expect(estilos.trustBarStrong).not.toBe('rgb(115, 201, 245)');
+});
+
+test('textos de productos y Nuestra marca mantienen contraste con fondo oscuro', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <main data-gesicomm-base="catalogo">
+        <section data-gesicomm-lista="productos">
+          <article class="product-card">
+            <div class="product-image"><img data-gesicomm-bind="imagen" src="${producto.imagen}" alt=""></div>
+            <div class="product-content">
+              <div class="product-category">Climatizacion</div>
+              <h3>${producto.nombre}</h3>
+              <div class="product-footer">
+                <span class="price">Gs 138.859</span>
+                <button class="button-primary" type="button">Comprar con pago anticipado</button>
+              </div>
+            </div>
+          </article>
+        </section>
+        <div class="page-content">
+          <section class="brand-section">
+            <div class="brand-layout">
+              <div class="brand-media"><div class="brand-medio"><img src="${producto.imagen}" alt=""></div></div>
+              <div class="brand-copy">
+                <p class="eyebrow">Nuestra marca</p>
+                <h2>Comprá con confianza en nuestra tienda.</h2>
+                <p>Seleccionamos productos pensados para resolver compras reales.</p>
+                <div class="brand-badges"><span class="brand-badge">Atención personalizada</span></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    `,
+    css: `
+      .product-card { background: #18232a; color: var(--navy); }
+      .product-content { background: #18232a; }
+      .brand-section { background: #fff; }
+      .brand-copy h2, .brand-copy p, .brand-badge { color: var(--navy); }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('.product-card h3').first()).toHaveText(producto.nombre);
+  await expect(page.locator('.brand-copy h2')).toBeVisible();
+
+  const estilos = await page.evaluate(() => {
+    const productoTitulo = document.querySelector('.product-card h3');
+    const productoPanel = productoTitulo.closest('.product-content');
+    const marcaTitulo = document.querySelector('.brand-copy h2');
+    const marcaSeccion = marcaTitulo.closest('.brand-section');
+    const c = el => getComputedStyle(el);
+
+    return {
+      productoTitulo: c(productoTitulo).color,
+      productoFondo: c(productoPanel).backgroundColor,
+      productoCategoria: c(document.querySelector('.product-card .product-category')).color,
+      marcaTitulo: c(marcaTitulo).color,
+      marcaFondo: c(marcaSeccion).backgroundColor,
+      marcaTexto: c(document.querySelector('.brand-copy p:not(.eyebrow)')).color,
+    };
+  });
+
+  expect(contraste(estilos.productoTitulo, estilos.productoFondo)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.productoCategoria, estilos.productoFondo)).toBeGreaterThanOrEqual(3);
+  expect(contraste(estilos.marcaTitulo, estilos.marcaFondo)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.marcaTexto, estilos.marcaFondo)).toBeGreaterThanOrEqual(4.5);
 });
