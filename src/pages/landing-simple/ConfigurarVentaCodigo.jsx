@@ -145,6 +145,11 @@ const MENU_PRINCIPAL_DEFAULT = [
   { id: 'productos', texto: 'Productos', destino: '/catalogo', visible: true },
   { id: 'colecciones', texto: 'Colecciones', destino: '#colecciones', visible: true },
 ];
+const ENCABEZADO_INICIO_DEFAULT = {
+  logo_tamano: 46,
+  logo_rotacion: 0,
+  logo_posicion: 'izquierda',
+};
 const DESTINOS_MENU_PRINCIPAL = [
   ['#inicio', 'Inicio'],
   ['/catalogo', 'Productos'],
@@ -249,6 +254,12 @@ function formatearGs(n) {
   return `Gs ${num.toLocaleString('es-PY', { maximumFractionDigits: 0 })}`;
 }
 
+function limitarNumero(valor, min, max, fallback) {
+  const num = Number(valor);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(min, Math.min(max, num));
+}
+
 const precioPanel = item => item?.precio_efectivo ?? item?.precio_usuario ?? item?.precio_base ?? item?.precio ?? null;
 const limpiarNumeroPromo = valor => Number(String(valor ?? '').replace(/\D/g, '')) || 0;
 const descuentoDesdeAnclaPromo = (precio, ancla) => {
@@ -332,6 +343,14 @@ function normalizarMenuPrincipal(menu = []) {
   return normalizados.length ? normalizados : MENU_PRINCIPAL_DEFAULT;
 }
 
+function normalizarEncabezadoInicio(encabezado = {}) {
+  return {
+    logo_tamano: limitarNumero(encabezado.logo_tamano, 28, 96, ENCABEZADO_INICIO_DEFAULT.logo_tamano),
+    logo_rotacion: limitarNumero(encabezado.logo_rotacion, -180, 180, ENCABEZADO_INICIO_DEFAULT.logo_rotacion),
+    logo_posicion: encabezado.logo_posicion === 'centro' ? 'centro' : ENCABEZADO_INICIO_DEFAULT.logo_posicion,
+  };
+}
+
 function inicioComercialDesdeVenta(venta = {}) {
   const legado = venta.inicio_comercial && typeof venta.inicio_comercial === 'object' ? venta.inicio_comercial : {};
   const actual = venta.inicio && typeof venta.inicio === 'object' ? venta.inicio : {};
@@ -343,6 +362,7 @@ function inicioComercialDesdeVenta(venta = {}) {
     banners_intermedios: Array.isArray(actual.banners_intermedios) ? actual.banners_intermedios : legado.banners_intermedios,
     secciones: Array.isArray(actual.secciones) ? actual.secciones : legado.secciones,
     menu_links: Array.isArray(actual.menu_links) ? actual.menu_links : legado.menu_links,
+    encabezado: actual.encabezado || legado.encabezado,
   };
 }
 
@@ -443,6 +463,7 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     : [];
   const confianzaConTexto = confianza.filter(it => String(it.titulo || it.texto || '').trim());
   return {
+    encabezado: normalizarEncabezadoInicio(inicio.encabezado),
     menu_links: normalizarMenuPrincipal(inicio.menu_links),
     menu_categorias: inicio.menu_categorias !== false,
     categorias: Array.isArray(inicio.categorias) ? inicio.categorias : [],
@@ -921,6 +942,12 @@ export default function ConfigurarVentaCodigo({
 
   function cambiarInicio(campo, valor) {
     setInicioComercial(prev => ({ ...prev, [campo]: valor }));
+  }
+  function cambiarEncabezado(cambio) {
+    setInicioComercial(prev => ({
+      ...prev,
+      encabezado: normalizarEncabezadoInicio({ ...(prev.encabezado || {}), ...cambio }),
+    }));
   }
   function cambiarMenuPrincipal(id, cambio) {
     setInicioComercial(prev => ({
@@ -1818,8 +1845,11 @@ export default function ConfigurarVentaCodigo({
                   onAlternar={alternarBloqueInicio}
                   menuPanel={(
                     <EditorMenuPrincipal
+                      encabezado={inicioComercial.encabezado}
                       items={inicioComercial.menu_links || []}
                       categorias={categoriasInicioDisponibles}
+                      tienda={tienda}
+                      onCambiarEncabezado={cambiarEncabezado}
                       onAgregar={agregarMenuPrincipal}
                       onCambiar={cambiarMenuPrincipal}
                       onQuitar={quitarMenuPrincipal}
@@ -3533,7 +3563,10 @@ function EditorCategoriasInicio({ categorias, seleccionadas, onCambiar }) {
   );
 }
 
-function EditorMenuPrincipal({ items, categorias = [], onAgregar, onCambiar, onQuitar, onMover }) {
+function EditorMenuPrincipal({ encabezado, items, categorias = [], tienda, onCambiarEncabezado, onAgregar, onCambiar, onQuitar, onMover }) {
+  const cfg = normalizarEncabezadoInicio(encabezado);
+  const logo = getMediaUrl(tienda?.logo || tienda?.logo_imagen || tienda?.logo_url || '');
+  const nombre = tienda?.nombre || 'Tu tienda';
   const categoriasLista = categorias.map(([cat]) => cat).filter(Boolean);
   const destinoDe = item => {
     if (categoriasLista.some(cat => item.destino === `/categoria/${slugCategoria(cat)}`)) return 'categoria';
@@ -3548,6 +3581,82 @@ function EditorMenuPrincipal({ items, categorias = [], onAgregar, onCambiar, onQ
   };
   return (
     <div className="space-y-3">
+      <div className="rounded-xl border border-border bg-surface-2/50 p-3">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-fg">Marca del encabezado</p>
+            <p className="mt-1 text-xs leading-relaxed text-fg-muted">El logo queda junto al nombre de la tienda en la barra superior.</p>
+          </div>
+          <div className={`flex min-w-[150px] items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 ${cfg.logo_posicion === 'centro' ? 'flex-col text-center' : ''}`}>
+            {logo ? (
+              <img
+                src={logo}
+                alt=""
+                className="shrink-0 object-contain"
+                style={{
+                  width: Math.round(cfg.logo_tamano * 0.72),
+                  height: cfg.logo_tamano,
+                  transform: `rotate(${cfg.logo_rotacion}deg)`,
+                }}
+              />
+            ) : (
+              <span
+                className="grid shrink-0 place-items-center rounded-xl bg-primary text-sm font-black text-primary-fg"
+                style={{
+                  width: Math.round(cfg.logo_tamano * 0.72),
+                  height: cfg.logo_tamano,
+                  transform: `rotate(${cfg.logo_rotacion}deg)`,
+                }}
+              >
+                {nombre.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span className="truncate text-sm font-black text-fg">{nombre}</span>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <label className="block">
+            <span className="block text-xs font-medium text-fg-muted mb-1">Tamaño del logo</span>
+            <input
+              type="range"
+              min="28"
+              max="96"
+              value={cfg.logo_tamano}
+              onChange={e => onCambiarEncabezado({ logo_tamano: Number(e.target.value) })}
+              className="w-full accent-primary"
+            />
+            <span className="mt-1 block text-[11px] text-fg-muted">{cfg.logo_tamano}px</span>
+          </label>
+          <label className="block">
+            <span className="block text-xs font-medium text-fg-muted mb-1">Rotación</span>
+            <input
+              type="range"
+              min="-45"
+              max="45"
+              value={cfg.logo_rotacion}
+              onChange={e => onCambiarEncabezado({ logo_rotacion: Number(e.target.value) })}
+              className="w-full accent-primary"
+            />
+            <span className="mt-1 block text-[11px] text-fg-muted">{cfg.logo_rotacion}°</span>
+          </label>
+          <label className="block">
+            <span className="block text-xs font-medium text-fg-muted mb-1">Posición</span>
+            <select
+              value={cfg.logo_posicion}
+              onChange={e => onCambiarEncabezado({ logo_posicion: e.target.value })}
+              className="w-full h-9 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
+            >
+              <option value="izquierda">Logo a la izquierda</option>
+              <option value="centro">Logo centrado arriba</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-3">
+        <p className="text-sm font-semibold text-fg">Links del menú</p>
+        <p className="mt-1 text-xs text-fg-muted">Estos links aparecen a la derecha de la marca.</p>
+      </div>
       <div className="space-y-2">
         {(items || []).map((item, idx) => {
           const tipoDestino = destinoDe(item);

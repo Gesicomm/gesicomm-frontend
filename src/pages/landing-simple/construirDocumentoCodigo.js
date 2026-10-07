@@ -229,6 +229,63 @@ body {
   background: color-mix(in srgb, var(--gc-superficie, var(--tienda-superficie, #fff)) 92%, transparent) !important;
   border-color: var(--tienda-linea, var(--gc-primario, #d7e6ef)) !important;
 }
+:where(.commerce-header .brand, .commerce-header .brand-mark, .commerce-header [data-gesicomm-tienda="nombre"], .commerce-header .cart-button, .commerce-header .cart-button strong, .commerce-header .menu-toggle) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.commerce-header .brand, .commerce-header .brand-mark) {
+  gap: clamp(8px, 1vw, 12px) !important;
+  min-height: calc(var(--gc-logo-tamano, 46px) + 10px) !important;
+}
+:where(.commerce-header.logo-centrado .brand, .commerce-header.logo-centrado .brand-mark) {
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  text-align: center !important;
+}
+:where(.commerce-header .brand-logo, .commerce-header [data-gesicomm-tienda="logo"]) {
+  width: calc(var(--gc-logo-tamano, 46px) * .72) !important;
+  height: var(--gc-logo-tamano, 46px) !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  transform: rotate(var(--gc-logo-rotacion, 0deg)) !important;
+  transform-origin: center !important;
+}
+:where(.commerce-header [data-gesicomm-tienda="nombre"]) {
+  font-size: clamp(17px, calc(var(--gc-logo-tamano, 46px) * .42), 24px) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+:where(.commerce-header .nav-links, .commerce-header .nav-links a, .commerce-header .main-nav a, .commerce-header .header-nav a) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+:where(.commerce-header .nav-links a:hover, .commerce-header .nav-links a.active, .commerce-header .nav-links a[aria-current="page"], .commerce-header .main-nav a:hover, .commerce-header .main-nav a.active, .commerce-header .main-nav a[aria-current="page"], .commerce-header .header-nav a:hover, .commerce-header .header-nav a.active, .commerce-header .header-nav a[aria-current="page"]) {
+  color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, #93c5fd))) !important;
+  border-color: currentColor !important;
+  text-decoration-color: currentColor !important;
+}
+.commerce-header .nav-links,
+.commerce-header .nav-links a,
+.commerce-header .main-nav a,
+.commerce-header .header-nav a {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
+.commerce-header .nav-links a:hover,
+.commerce-header .nav-links a.active,
+.commerce-header .nav-links a[aria-current="page"],
+.commerce-header .main-nav a:hover,
+.commerce-header .main-nav a.active,
+.commerce-header .main-nav a[aria-current="page"],
+.commerce-header .header-nav a:hover,
+.commerce-header .header-nav a.active,
+.commerce-header .header-nav a[aria-current="page"] {
+  color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, #93c5fd))) !important;
+  border-color: currentColor !important;
+  text-decoration-color: currentColor !important;
+}
+:where(.commerce-header .cart-button svg, .commerce-header .cart-button i) {
+  color: var(--gc-texto, var(--tienda-texto, #10202f)) !important;
+}
 body > :where(header, main, footer, section, article, aside, nav, div):not(.container) {
   min-width: 100% !important;
 }
@@ -1014,9 +1071,9 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   align-items: center !important;
 }
 :where(.commerce-header .search-toggle) {
-  color: var(--gc-primario, var(--tienda-primario, currentColor)) !important;
-  background: color-mix(in srgb, var(--gc-primario, var(--tienda-primario, currentColor)) 10%, var(--gc-superficie, #fff)) !important;
-  border: 1px solid color-mix(in srgb, var(--gc-primario, var(--tienda-primario, currentColor)) 18%, transparent) !important;
+  color: var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, currentColor))) !important;
+  background: color-mix(in srgb, var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, currentColor))) 12%, var(--gc-superficie, #fff)) !important;
+  border: 1px solid color-mix(in srgb, var(--tienda-destacado, var(--gc-secundario, var(--tienda-secundario, currentColor))) 22%, transparent) !important;
 }
 :where(.commerce-header .search-toggle:hover, .commerce-header .search-toggle[aria-expanded="true"]) {
   color: var(--gc-texto-sobre-primario, var(--tienda-texto-sobre-primario, #fff)) !important;
@@ -1120,6 +1177,33 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
   font-size: 12px !important;
   font-weight: 800 !important;
 }
+
+/* Colecciones: tarjetas mas altas y con lectura clara sobre imagen. */
+:where(.storefront .collection-grid, .collection-grid) {
+  gap: clamp(16px, 2vw, 24px) !important;
+}
+:where(.storefront .collection-card, .collection-card, .collection) {
+  min-height: clamp(190px, 18vw, 260px) !important;
+  padding: clamp(18px, 2.2vw, 28px) !important;
+  overflow: hidden !important;
+  border-radius: 10px !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow:
+    inset 0 -145px 95px color-mix(in srgb, #000 62%, transparent),
+    0 18px 36px color-mix(in srgb, var(--gc-fondo, #000) 22%, transparent) !important;
+}
+:where(.storefront .collection-card h3, .collection-card h3, .collection strong) {
+  color: #fff !important;
+  font-size: clamp(1rem, 1.15vw, 1.25rem) !important;
+  line-height: 1.15 !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,.45) !important;
+}
+:where(.storefront .collection-card p, .collection-card p, .collection span) {
+  color: color-mix(in srgb, #fff 88%, transparent) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 12px rgba(0,0,0,.45) !important;
+}
 :where(.trust-track, .announcement-track) {
   width: max-content !important;
   min-width: max-content !important;
@@ -1129,8 +1213,8 @@ section.limited-offer[data-gesicomm-bloque="ofertas_urgencia"] :is(.limited-offe
 }
 
 [data-gesicomm-tienda="logo"] {
-  max-width: 160px !important;
-  max-height: 52px !important;
+  max-width: none !important;
+  max-height: none !important;
   object-fit: contain !important;
 }
 [data-gesicomm-tienda="logo"]:not([src]),

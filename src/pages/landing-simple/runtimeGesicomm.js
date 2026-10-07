@@ -887,6 +887,27 @@ export function runtimeGesicomm() {
     return (datos.venta && (datos.venta.inicio || datos.venta.inicio_comercial)) || {};
   }
 
+  function encabezadoConfig() {
+    var e = inicioConfig().encabezado || {};
+    var tamano = Number(e.logo_tamano);
+    var rotacion = Number(e.logo_rotacion);
+    return {
+      logo_tamano: isFinite(tamano) ? Math.max(28, Math.min(96, tamano)) : 46,
+      logo_rotacion: isFinite(rotacion) ? Math.max(-180, Math.min(180, rotacion)) : 0,
+      logo_posicion: e.logo_posicion === 'centro' ? 'centro' : 'izquierda',
+    };
+  }
+
+  function aplicarEncabezadoInicio() {
+    var cfg = encabezadoConfig();
+    var headers = document.querySelectorAll('.commerce-header');
+    for (var i = 0; i < headers.length; i++) {
+      headers[i].style.setProperty('--gc-logo-tamano', cfg.logo_tamano + 'px');
+      headers[i].style.setProperty('--gc-logo-rotacion', cfg.logo_rotacion + 'deg');
+      headers[i].classList.toggle('logo-centrado', cfg.logo_posicion === 'centro');
+    }
+  }
+
   // ─── Zona de confianza, anuncios y "Nuestra marca" del Inicio ──────────
   var ANUNCIOS_DEFAULT = ['Envío a todo Paraguay', 'Pago seguro', 'Atención personalizada', 'Cambios y devoluciones'];
   var CONFIANZA_DEFAULT = [
@@ -1761,6 +1782,7 @@ export function runtimeGesicomm() {
     }
     pintarRedes();
     pintarContactoFlotante();
+    aplicarEncabezadoInicio();
     prepararMenuPrincipalHeader();
     prepararMenuCategoriasHeader();
   }

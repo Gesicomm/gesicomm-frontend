@@ -338,6 +338,158 @@ test('confianza y botones promocionales respetan los colores de la tienda', asyn
   expect(contraste(estilos.buttonColor, estilos.buttonBackground)).toBeGreaterThanOrEqual(4.5);
 });
 
+test('encabezado publico mantiene contraste y usa el acento solo en estados activos', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <header class="commerce-header">
+        <div class="container header-main">
+          <a class="brand brand-mark" href="/"><span data-gesicomm-tienda="nombre">sommix</span></a>
+          <nav class="header-nav">
+            <div class="nav-links">
+              <a class="active" href="/">Inicio</a>
+              <a href="/catalogo">Productos</a>
+            </div>
+          </nav>
+          <div class="header-actions">
+            <button class="search-toggle" type="button" aria-expanded="false">⌕</button>
+            <button class="cart-button" type="button"><span>🛒</span><strong>Carrito</strong></button>
+          </div>
+        </div>
+      </header>
+    `,
+    css: `
+      .commerce-header { background:#26333a; border-bottom:1px solid #18242b; }
+      .brand-mark { color:#10202f; }
+      .nav-links a { color:var(--ink-soft); border-bottom:2px solid transparent; }
+      .nav-links a.active { color:var(--brand); border-bottom-color:var(--brand); }
+      .search-toggle { color:var(--blue); background:#eef8ff; }
+      .cart-button strong { color:#10202f; }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('.commerce-header .brand-mark')).toContainText('sommix');
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const header = document.querySelector('.commerce-header');
+    const brand = document.querySelector('.brand-mark');
+    const active = document.querySelector('.nav-links a.active');
+    const inactive = document.querySelector('.nav-links a:not(.active)');
+    const search = document.querySelector('.search-toggle');
+    const cart = document.querySelector('.cart-button strong');
+    return {
+      headerBackground: c(header).backgroundColor,
+      brandColor: c(brand).color,
+      activeColor: c(active).color,
+      activeBorder: c(active).borderBottomColor,
+      inactiveColor: c(inactive).color,
+      searchColor: c(search).color,
+      searchBackground: c(search).backgroundColor,
+      cartColor: c(cart).color,
+    };
+  });
+
+  expect(contraste(estilos.brandColor, estilos.headerBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.inactiveColor, estilos.headerBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(estilos.activeColor, estilos.headerBackground)).toBeGreaterThanOrEqual(4.5);
+  expect(estilos.activeBorder).toBe(estilos.activeColor);
+  expect(contraste(estilos.searchColor, estilos.searchBackground)).toBeGreaterThanOrEqual(3);
+  expect(contraste(estilos.cartColor, estilos.headerBackground)).toBeGreaterThanOrEqual(4.5);
+});
+
+test('encabezado permite logo mas grande junto al nombre de la tienda', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <header class="commerce-header">
+        <div class="container header-main">
+          <a class="brand brand-mark" href="#">
+            <img class="brand-logo" data-gesicomm-tienda="logo" alt="">
+            <span data-gesicomm-tienda="nombre">llévalo fácil</span>
+          </a>
+        </div>
+      </header>
+    `,
+    css: `
+      .brand-logo { width: 29px; height: 29px; }
+      .brand-mark { font-size: 12px; color: #10202f; }
+    `,
+    js: '',
+  }, {
+    datos: {
+      tienda: { nombre: 'llévalo fácil', logo: producto.imagen, colores: coloresTienda },
+      venta: { inicio: { encabezado: { logo_tamano: 56, logo_rotacion: -8, logo_posicion: 'izquierda' } } },
+    },
+  });
+
+  await page.setContent(html);
+  await expect(page.locator('.brand-logo')).toBeVisible();
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const brand = document.querySelector('.brand-mark');
+    const logo = document.querySelector('.brand-logo');
+    const nombre = document.querySelector('[data-gesicomm-tienda="nombre"]');
+    return {
+      direction: c(brand).flexDirection,
+      logoWidth: logo.getBoundingClientRect().width,
+      logoHeight: logo.getBoundingClientRect().height,
+      nombreHeight: nombre.getBoundingClientRect().height,
+      transform: c(logo).transform,
+    };
+  });
+
+  expect(estilos.direction).toBe('row');
+  expect(estilos.logoHeight).toBeGreaterThanOrEqual(55);
+  expect(estilos.logoWidth).toBeGreaterThan(35);
+  expect(estilos.logoHeight).toBeGreaterThan(estilos.nombreHeight);
+  expect(estilos.transform).not.toBe('none');
+});
+
+test('colecciones ganan altura para que las imagenes no queden cortadas', async ({ page }) => {
+  const html = construirDocumentoCodigo({
+    html: `
+      <main class="storefront" data-gesicomm-base="catalogo">
+        <section id="colecciones" class="section">
+          <div class="section-heading"><h2>Colecciones</h2></div>
+          <div class="collection-grid">
+            <a class="collection-card" href="/catalogo" style="background-image:url('${producto.imagen}')">
+              <h3>Climatización</h3>
+              <p>Explorar →</p>
+            </a>
+          </div>
+        </section>
+      </main>
+    `,
+    css: `
+      .collection-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:13px; }
+      .collection-card { min-height:135px; padding:13px; background-size:cover; background-position:center; color:#fff; }
+      .collection-card h3 { color:#fff; }
+      .collection-card p { color:#fff; }
+    `,
+    js: '',
+  }, { datos: { tienda: { nombre: 'sommix', colores: coloresTienda } } });
+
+  await page.setContent(html);
+  await expect(page.locator('.collection-card h3')).toHaveText('Climatización');
+
+  const estilos = await page.evaluate(() => {
+    const c = el => getComputedStyle(el);
+    const card = document.querySelector('.collection-card');
+    const title = document.querySelector('.collection-card h3');
+    return {
+      height: card.getBoundingClientRect().height,
+      backgroundSize: c(card).backgroundSize,
+      titleColor: c(title).color,
+    };
+  });
+
+  expect(estilos.height).toBeGreaterThanOrEqual(190);
+  expect(estilos.backgroundSize).toBe('cover');
+  expect(estilos.titleColor).toBe('rgb(255, 255, 255)');
+});
+
 test('vista de categoria usa fondo y superficies de Mi tienda', async ({ page }) => {
   const html = construirDocumentoCodigo({
     html: `
