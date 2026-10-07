@@ -4,12 +4,13 @@ import {
   Store, LogOut, Grid, ShoppingCart, Megaphone, Settings, User,
   GraduationCap, Lock, Sparkles, X, Menu, LayoutDashboard,
   Receipt, Truck, PanelLeftClose, Bot, BadgeDollarSign, MapPin, PackageCheck,
-  Circle
+  Circle, ChevronDown, Check, Plus
 } from 'lucide-react';
 import { verificarSesion, cerrarSesion } from '../utils/auth';
 import { getProgresoSidebar } from '../services/educacionApi';
 import { planesService } from '../services/planesService';
 import { notificationsService } from '../services/notifications.service';
+import { tiendaService } from '../services/tiendaService';
 import NotificationBell from './NotificationBell';
 import Logo from './public/Logo';
 import ThemeToggle from './public/ThemeToggle';
@@ -64,6 +65,10 @@ const UserLayout = ({ children }) => {
   const [modalBloqueo, setModalBloqueo] = useState(null); // { menu, moduloRequerido, moduloId }
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopClosed, setDesktopClosed] = useState(false);
+  const [tiendaActiva, setTiendaActiva] = useState(null);
+  const [tiendas, setTiendas] = useState([]);
+  const [tiendaMenuAbierto, setTiendaMenuAbierto] = useState(false);
+  const [cambiandoTienda, setCambiandoTienda] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -113,6 +118,15 @@ const UserLayout = ({ children }) => {
         planesService.miEstado()
           .then(estado => { if (activo) setEstadoCuenta(estado); })
           .catch(() => { if (activo) setEstadoCuenta(null); });
+        // Qué tienda está activa — para mostrarlo siempre visible en el
+        // sidebar. null es un estado válido (sin tienda activa todavía).
+        tiendaService.obtener()
+          .then(tienda => { if (activo) setTiendaActiva(tienda); })
+          .catch(() => { if (activo) setTiendaActiva(null); });
+        // Todas sus tiendas, para el combo de cambio rápido.
+        tiendaService.mias()
+          .then(lista => { if (activo) setTiendas(Array.isArray(lista) ? lista : []); })
+          .catch(() => { if (activo) setTiendas([]); });
       } else {
         setEstadoCuenta(null);
       }
@@ -159,6 +173,21 @@ const UserLayout = ({ children }) => {
   const handleLogout = async () => {
     await cerrarSesion();
     window.location.href = '/login';
+  };
+
+  // Recarga completa (no navigate): los datos de casi toda la app —
+  // pedidos, dashboard, costos, notificaciones— dependen de la tienda
+  // activa y ya se cargaron en memoria con la tienda anterior.
+  const cambiarTienda = async (tienda) => {
+    if (cambiandoTienda || tienda.id === tiendaActiva?.id) { setTiendaMenuAbierto(false); return; }
+    setCambiandoTienda(true);
+    try {
+      await tiendaService.seleccionar(tienda.id);
+      window.location.href = '/mi-dashboard';
+    } catch (e) {
+      console.error('Error al cambiar de tienda', e);
+      setCambiandoTienda(false);
+    }
   };
 
   const isActive = (path) => location.pathname === path;
@@ -366,6 +395,111 @@ const UserLayout = ({ children }) => {
             </button>
           </div>
         </header>
+
+        {usuario?.rol === 'usuario' && tiendaActiva && (
+          <div style={{ position: 'relative', margin: '0.5rem 0.75rem' }}>
+            <button
+              type="button"
+              onClick={() => setTiendaMenuAbierto(v => !v)}
+              title="Cambiar de tienda"
+              aria-expanded={tiendaMenuAbierto}
+              aria-haspopup="listbox"
+              disabled={cambiandoTienda}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
+                padding: '0.55rem 0.75rem', borderRadius: '8px',
+                border: '1px solid var(--color-border)', background: 'var(--color-canvas)',
+                cursor: cambiandoTienda ? 'wait' : 'pointer', textAlign: 'left',
+              }}
+            >
+              <span style={{
+                width: '22px', height: '22px', borderRadius: '6px', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6', overflow: 'hidden',
+              }}>
+                {tiendaActiva.logo_imagen
+                  ? <img src={tiendaActiva.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : <Store size={12} />}
+              </span>
+              <span style={{
+                flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-fg)',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {tiendaActiva.nombre}
+              </span>
+              <ChevronDown size={14} style={{ flexShrink: 0, color: '#64748b', transform: tiendaMenuAbierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
+            </button>
+
+            {tiendaMenuAbierto && (
+              <>
+                <div
+                  onClick={() => setTiendaMenuAbierto(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 49 }}
+                  aria-hidden="true"
+                />
+                <ul
+                  role="listbox"
+                  aria-label="Tus tiendas"
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 50,
+                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                    borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                    padding: '0.35rem', margin: 0, listStyle: 'none',
+                    maxHeight: '260px', overflowY: 'auto',
+                  }}
+                >
+                  {tiendas.map((t) => (
+                    <li key={t.id}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={t.id === tiendaActiva.id}
+                        onClick={() => cambiarTienda(t)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
+                          padding: '0.5rem 0.6rem', borderRadius: '6px', border: 'none',
+                          background: t.id === tiendaActiva.id ? 'rgba(61, 95, 163, 0.12)' : 'transparent',
+                          cursor: 'pointer', textAlign: 'left',
+                        }}
+                      >
+                        <span style={{
+                          width: '20px', height: '20px', borderRadius: '5px', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(61, 95, 163, 0.15)', color: '#7d9bd6', overflow: 'hidden',
+                        }}>
+                          {t.logo_imagen
+                            ? <img src={t.logo_imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : <Store size={11} />}
+                        </span>
+                        <span style={{
+                          flex: 1, minWidth: 0, fontSize: '0.78rem', color: 'var(--color-fg)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {t.nombre}
+                        </span>
+                        {t.id === tiendaActiva.id && <Check size={14} style={{ flexShrink: 0, color: '#7d9bd6' }} />}
+                      </button>
+                    </li>
+                  ))}
+                  <li style={{ borderTop: '1px solid var(--color-border)', marginTop: '0.25rem', paddingTop: '0.25rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setTiendaMenuAbierto(false); navigate('/onboarding', { state: { nueva: true } }); }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%',
+                        padding: '0.5rem 0.6rem', borderRadius: '6px', border: 'none',
+                        background: 'transparent', cursor: 'pointer', textAlign: 'left',
+                        fontSize: '0.78rem', color: 'var(--color-fg-muted, #94a3b8)',
+                      }}
+                    >
+                      <Plus size={14} /> Crear otra tienda
+                    </button>
+                  </li>
+                </ul>
+              </>
+            )}
+          </div>
+        )}
 
         <nav aria-label="Navegación de usuario" className="sidebar-nav-container">
           {renderSidebarDinamico()}

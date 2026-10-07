@@ -868,11 +868,8 @@ const INICIO_HTML = `<div class="trust-bar" aria-label="Beneficios de compra" da
 </div>
 
 ${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
-      <a href="#ofertas">Ofertas</a>
-      <a href="#mas-vendidos">Más vendidos</a>
-      <a href="#novedades">Novedades</a>
-      <a href="#colecciones">Colecciones</a>
-      <a href="#preguntas">Ayuda</a>`)}
+      <a href="/catalogo" data-gesicomm-link="catalogo">Productos</a>
+      <a href="#colecciones">Colecciones</a>`)}
 
 <main class="storefront" data-gesicomm-base="catalogo">
   <div class="page-content">

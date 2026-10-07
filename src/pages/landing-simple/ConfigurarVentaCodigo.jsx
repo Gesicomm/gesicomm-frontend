@@ -1,11 +1,12 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Loader, ArrowRight, ArrowLeft, Search, Check, AlertTriangle, Infinity as InfinityIcon, Tag, Plus, Pencil, X,
-  Eye, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
-  Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw,
+  Eye, EyeOff, Home, ShoppingBag, MousePointerClick, Smartphone, Monitor, Maximize2, ChevronDown, ChevronUp,
+  Upload, Film, PackagePlus, FileCode2, Tags, CreditCard, RefreshCw, Trash2, ExternalLink, Save, Settings2,
 } from 'lucide-react';
 import { ofertaService } from '../../services/ofertaService';
 import { comboAdminService } from '../../services/comboAdminService';
+import CurrencyInput from '../../components/CurrencyInput';
 import PrecioAncla, { claveItem, precioDeVenta } from './PrecioAnclaItem';
 import PresentacionProducto from './PresentacionProducto';
 import { contentIdPanel, datosRuntimePreview, slugCategoria } from './datosRuntime';
@@ -131,32 +132,46 @@ const AYUDAS_SECCION_INICIO = {
 };
 const ENLACES_BANNER_INICIO = [
   ['#inicio', 'Inicio'],
-  ['#ofertas', 'Ofertas'],
-  ['#mas-vendidos', 'Más vendidos'],
-  ['#novedades', 'Novedades'],
   ['#colecciones', 'Colecciones'],
   ['/catalogo', 'Productos'],
-  ['#categorias', 'Categorías'],
+  ['#productos-categoria', 'Productos por categoría'],
+  ['#confianza', 'Zona de confianza'],
+  ['#marca', 'Nuestra marca'],
 ];
 const MENU_PRINCIPAL_DEFAULT = [
   { id: 'inicio', texto: 'Inicio', destino: '#inicio', visible: true },
   { id: 'productos', texto: 'Productos', destino: '/catalogo', visible: true },
-  { id: 'ofertas', texto: 'Ofertas', destino: '#ofertas', visible: true },
-  { id: 'mas-vendidos', texto: 'Más vendidos', destino: '#mas-vendidos', visible: true },
-  { id: 'novedades', texto: 'Novedades', destino: '#novedades', visible: true },
-  { id: 'ayuda', texto: 'Ayuda', destino: '#preguntas', visible: true },
+  { id: 'colecciones', texto: 'Colecciones', destino: '#colecciones', visible: true },
 ];
 const DESTINOS_MENU_PRINCIPAL = [
   ['#inicio', 'Inicio'],
   ['/catalogo', 'Productos'],
-  ['#ofertas', 'Ofertas'],
-  ['#mas-vendidos', 'Más vendidos'],
-  ['#novedades', 'Novedades'],
   ['#colecciones', 'Colecciones'],
-  ['#categorias', 'Categorías visuales'],
-  ['#preguntas', 'Ayuda'],
+  ['#productos-categoria', 'Productos por categoría'],
+  ['#confianza', 'Zona de confianza'],
+  ['#marca', 'Nuestra marca'],
   ['personalizado', 'Personalizado'],
 ];
+const DESTINOS_MENU_VALIDOS = new Set(DESTINOS_MENU_PRINCIPAL.map(([value]) => value).filter(value => value !== 'personalizado'));
+const ANUNCIOS_INICIO_DEFAULT = [
+  { texto: 'Envío a todo Paraguay', icono: 'truck' },
+  { texto: 'Pago seguro', icono: 'lock' },
+  { texto: 'Atención personalizada', icono: 'headphones' },
+  { texto: 'Cambios y devoluciones', icono: 'rotate' },
+];
+const CONFIANZA_INICIO_DEFAULT = [
+  { icono: '💳', titulo: 'Opciones de pago', texto: 'Consultá los medios de pago disponibles para tu compra.' },
+  { icono: '↺', titulo: 'Cambios y devoluciones', texto: 'Conocé las condiciones y los pasos para solicitar un cambio.' },
+  { icono: '🚚', titulo: 'Envíos a tu zona', texto: 'Confirmá la cobertura, el costo y el plazo antes de pedir.' },
+];
+const MARCA_INICIO_DEFAULT = {
+  activo: true,
+  kicker: 'NUESTRA MARCA',
+  titulo: 'Comprá con confianza en nuestra tienda.',
+  texto: 'Seleccionamos productos pensados para resolver compras reales, con atención cercana antes y después de cada pedido.',
+  badges: ['Atención personalizada', 'Productos seleccionados', 'Compra simple'],
+  medios: [],
+};
 
 const VISTAS_CODIGO_TIENDA = [
   { key: 'inicio', label: 'Inicio', icono: Home, base: tipo => plantillaInicioPara(tipo) },
@@ -212,6 +227,18 @@ function formatearGs(n) {
 }
 
 const precioPanel = item => item?.precio_efectivo ?? item?.precio_usuario ?? item?.precio_base ?? item?.precio ?? null;
+const limpiarNumeroPromo = valor => Number(String(valor ?? '').replace(/\D/g, '')) || 0;
+const descuentoDesdeAnclaPromo = (precio, ancla) => {
+  const antes = limpiarNumeroPromo(ancla);
+  const ahora = Number(precio) || 0;
+  return antes > ahora && ahora > 0 ? Math.round((1 - ahora / antes) * 100) : '';
+};
+const precioAnclaPorDescuentoPromo = (precio, pct) => {
+  const descuento = Number(String(pct ?? '').replace(',', '.'));
+  const actual = Number(precio) || 0;
+  if (!Number.isFinite(descuento) || descuento <= 0 || descuento >= 95 || actual <= 0) return '';
+  return String(Math.ceil(actual / (1 - descuento / 100)));
+};
 
 function imagenPanel(item) {
   const directa = item?.imagen || item?.imagen_url || item?.url_imagen;
@@ -267,15 +294,19 @@ function crearSeccionInicio(tipo = 'categoria', categoria = '') {
 
 function normalizarMenuPrincipal(menu = []) {
   const fuente = Array.isArray(menu) && menu.length ? menu : MENU_PRINCIPAL_DEFAULT;
-  return fuente.map((item, idx) => {
-    const destino = item.destino || item.href || item.enlace || MENU_PRINCIPAL_DEFAULT[idx]?.destino || '#inicio';
-    return {
-      id: item.id || `menu-${idx + 1}`,
-      texto: item.texto || item.label || MENU_PRINCIPAL_DEFAULT[idx]?.texto || 'Menú',
-      destino,
-      visible: item.visible !== false,
-    };
-  });
+  const normalizados = fuente
+    .map((item, idx) => {
+      const destino = item.destino || item.href || item.enlace || MENU_PRINCIPAL_DEFAULT[idx]?.destino || '#inicio';
+      if (String(destino || '').startsWith('#') && !DESTINOS_MENU_VALIDOS.has(destino)) return null;
+      return {
+        id: item.id || `menu-${idx + 1}`,
+        texto: item.texto || item.label || MENU_PRINCIPAL_DEFAULT[idx]?.texto || 'Menú',
+        destino,
+        visible: item.visible !== false,
+      };
+    })
+    .filter(Boolean);
+  return normalizados.length ? normalizados : MENU_PRINCIPAL_DEFAULT;
 }
 
 function inicioComercialDesdeVenta(venta = {}) {
@@ -297,9 +328,7 @@ function inicioComercialDesdeVenta(venta = {}) {
 // (el espejo del lado del runtime). "Menú" no está: vive en el header fijo,
 // no tiene una posición en la página que mover.
 const TIPOS_BLOQUE_INICIO = [
-  'anuncios', 'banner', 'categorias', 'productos_categoria', 'destacados', 'confianza', 'marca',
-  'banner_intermedio', 'secciones_inicio', 'mas_vendidos', 'ofertas_urgencia', 'ofertas_catalogo',
-  'novedades', 'combos', 'colecciones', 'preguntas', 'contacto',
+  'anuncios', 'banner', 'productos_categoria', 'confianza', 'marca', 'colecciones',
 ];
 const ETIQUETAS_BLOQUE_INICIO = {
   anuncios: 'Barra de anuncios',
@@ -325,10 +354,7 @@ const ETIQUETAS_BLOQUE_INICIO = {
 // pero disponible por si lo quiere prender después.
 const BLOQUES_INICIO_DEFAULT = [
   'anuncios', 'banner', 'productos_categoria', 'confianza', 'marca', 'colecciones',
-].map(tipo => ({ tipo, visible: true })).concat(
-  TIPOS_BLOQUE_INICIO.filter(t => !['anuncios', 'banner', 'productos_categoria', 'confianza', 'marca', 'colecciones'].includes(t))
-    .map(tipo => ({ tipo, visible: false })),
-);
+].map(tipo => ({ tipo, visible: true }));
 
 function normalizarBloquesInicio(bloques) {
   const guardados = Array.isArray(bloques) ? bloques.filter(b => b && TIPOS_BLOQUE_INICIO.includes(b.tipo)) : [];
@@ -382,6 +408,14 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     : [];
   const productosCategoria = inicio.productos_categoria && typeof inicio.productos_categoria === 'object' ? inicio.productos_categoria : {};
   const marca = inicio.marca && typeof inicio.marca === 'object' ? inicio.marca : {};
+  const anuncios = Array.isArray(inicio.anuncios)
+    ? inicio.anuncios.map(it => (typeof it === 'string' ? { texto: it, icono: '' } : { texto: it?.texto || '', icono: it?.icono || '' }))
+    : [];
+  const anunciosConTexto = anuncios.filter(it => String(it.texto || '').trim());
+  const confianza = Array.isArray(inicio.confianza)
+    ? inicio.confianza.map(it => ({ icono: it?.icono || '', titulo: it?.titulo || '', texto: it?.texto || '' }))
+    : [];
+  const confianzaConTexto = confianza.filter(it => String(it.titulo || it.texto || '').trim());
   return {
     menu_links: normalizarMenuPrincipal(inicio.menu_links),
     menu_categorias: inicio.menu_categorias !== false,
@@ -394,10 +428,8 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
     bloques: normalizarBloquesInicio(inicio.bloques),
     // Acepta el string suelto que guardaban las landings de antes del
     // selector de ícono (ver limpiarAnuncioInicio, backend).
-    anuncios: Array.isArray(inicio.anuncios)
-      ? inicio.anuncios.map(it => (typeof it === 'string' ? { texto: it, icono: '' } : { texto: it?.texto || '', icono: it?.icono || '' }))
-      : [],
-    confianza: Array.isArray(inicio.confianza) ? inicio.confianza : [],
+    anuncios: anunciosConTexto.length ? anunciosConTexto : ANUNCIOS_INICIO_DEFAULT,
+    confianza: confianzaConTexto.length ? confianzaConTexto : CONFIANZA_INICIO_DEFAULT,
     productos_categoria: {
       activo: productosCategoria.activo === true,
       titulo: productosCategoria.titulo || '',
@@ -407,12 +439,12 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       limite: Number(productosCategoria.limite) > 0 ? Number(productosCategoria.limite) : 8,
     },
     marca: {
-      activo: marca.activo === true,
-      kicker: marca.kicker || '',
-      titulo: marca.titulo || '',
-      texto: marca.texto || '',
-      badges: Array.isArray(marca.badges) ? marca.badges : [],
-      medios: Array.isArray(marca.medios) ? marca.medios : [],
+      activo: marca.activo !== false,
+      kicker: marca.kicker || MARCA_INICIO_DEFAULT.kicker,
+      titulo: marca.titulo || MARCA_INICIO_DEFAULT.titulo,
+      texto: marca.texto || MARCA_INICIO_DEFAULT.texto,
+      badges: Array.isArray(marca.badges) && marca.badges.some(b => String(b || '').trim()) ? marca.badges : MARCA_INICIO_DEFAULT.badges,
+      medios: Array.isArray(marca.medios) ? marca.medios : MARCA_INICIO_DEFAULT.medios,
     },
   };
 }
@@ -479,6 +511,18 @@ export default function ConfigurarVentaCodigo({
   // Precios tachados que esta landing ya tiene guardados, por item:
   // { "producto:12": 250000 }. Viven en landing_items, no en el producto.
   anclasIniciales = {},
+  // Acciones de la landing ya guardada (null hasta que "venta" esté
+  // configurada): publicar, eliminar, guardar sin pasar por "confirmar", y
+  // abrir el editor de código crudo (HTML/CSS/JS, Secciones, Footer) para
+  // quien lo necesite — este asistente ya no es el único lugar, pero sigue
+  // siendo la puerta de entrada.
+  publicUrl = null,
+  landingActiva = false,
+  onPublicar = null,
+  onEliminar = null,
+  onGuardarRapido = null,
+  sinGuardar = false,
+  onAbrirCodigo = null,
 }) {
   const ventaInicial = inicial?.venta || {};
   const [subidasPendientes, setSubidasPendientes] = useState(0);
@@ -652,10 +696,6 @@ export default function ConfigurarVentaCodigo({
     const q = busquedaCategoria.trim().toLowerCase();
     return q ? categoriasDisponibles.filter(([cat]) => cat.toLowerCase().includes(q)) : categoriasDisponibles;
   }, [categoriasDisponibles, busquedaCategoria]);
-  const categoriaPreviewValida = useMemo(() => {
-    const disponibles = new Set(categoriasDisponibles.map(([cat]) => cat));
-    return disponibles.has(categoriaPreview) ? categoriaPreview : (categoriasDisponibles[0]?.[0] || '');
-  }, [categoriasDisponibles, categoriaPreview]);
 
   const esRegla = modo === 'todos' || modo === 'categoria';
 
@@ -678,6 +718,15 @@ export default function ConfigurarVentaCodigo({
   }, [esRegla, catalogoActual, modo, categorias, incluirCombos, tipo, manual, porClave, principal, presentacion, anclas]);
 
   const excedeManual = !esRegla && seleccion.length > MAX_PRODUCTOS_MANUAL;
+  const categoriasLandingDisponibles = useMemo(() => {
+    const conteo = new Map();
+    seleccion.forEach(i => { if (i.categoria) conteo.set(i.categoria, (conteo.get(i.categoria) || 0) + 1); });
+    return Array.from(conteo.entries()).sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  }, [seleccion]);
+  const categoriaPreviewValida = useMemo(() => {
+    const disponibles = new Set(categoriasLandingDisponibles.map(([cat]) => cat));
+    return disponibles.has(categoriaPreview) ? categoriaPreview : (categoriasLandingDisponibles[0]?.[0] || '');
+  }, [categoriasLandingDisponibles, categoriaPreview]);
   const categoriasInicioDisponibles = useMemo(() => {
     const conteo = new Map();
     seleccion.forEach(i => {
@@ -958,7 +1007,7 @@ export default function ConfigurarVentaCodigo({
   // ─── Zona de confianza (siempre 3 tarjetas) ────────────────────────────
   function cambiarConfianza(idx, cambio) {
     setInicioComercial(prev => {
-      const base = Array.from({ length: 3 }, (_, i) => prev.confianza?.[i] || { icono: 'shield', titulo: '', texto: '' });
+      const base = Array.from({ length: 3 }, (_, i) => prev.confianza?.[i] || CONFIANZA_INICIO_DEFAULT[i] || { icono: '', titulo: '', texto: '' });
       base[idx] = { ...base[idx], ...cambio };
       return { ...prev, confianza: base };
     });
@@ -1191,12 +1240,15 @@ export default function ConfigurarVentaCodigo({
   }
 
   function abrirNuevaOferta(tipoOferta = null) {
-    const producto = seleccion.find(i => i.tipo === 'producto');
-    if (!producto) {
+    const hayProductos = seleccion.some(i => i.tipo === 'producto');
+    if (!hayProductos) {
       setError('Primero elegí al menos un producto para configurar sus ofertas.');
       return;
     }
-    setPanelOfertas({ producto, estrategia: tipoOferta });
+    // Sin producto: PanelOfertas abre su propio buscador/selector (ver
+    // `producto ? ... : <Buscador/>` más abajo) — nunca se adivina el
+    // producto por el visitante, se lo pregunta.
+    setPanelOfertas({ producto: null, estrategia: tipoOferta });
   }
 
   function abrirNuevoCombo() {
@@ -1433,19 +1485,72 @@ export default function ConfigurarVentaCodigo({
 
   return (
     <div className="h-full min-h-0 w-full overflow-hidden flex flex-col bg-canvas">
+      {/* Barra superior: siempre a la vista, con las acciones de la landing
+          ya guardada. Reemplaza al antiguo editor de código como pantalla
+          de entrada — esas acciones (publicar, guardar, eliminar) vivían
+          ahí y ahora viven acá. */}
+      <div className="shrink-0 border-b border-border bg-surface px-4 md:px-6 py-2.5 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onVolver}
+          className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
+        >
+          <ArrowLeft size={15} /> Volver
+        </button>
+        <div className="flex items-center gap-1.5">
+          {onAbrirCodigo && (
+            <button
+              type="button"
+              onClick={onAbrirCodigo}
+              title="Código avanzado: HTML/CSS/JS, Secciones, Footer y Prompt IA"
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold text-fg-muted hover:bg-surface-2 hover:text-fg"
+            >
+              <Settings2 size={14} /> <span className="hidden sm:inline">Código avanzado</span>
+            </button>
+          )}
+          {publicUrl && (
+            <a
+              href={publicUrl} target="_blank" rel="noreferrer"
+              title="Ver landing pública"
+              className="p-2 rounded-lg text-fg-muted hover:bg-surface-2 hover:text-fg"
+            >
+              <ExternalLink size={16} />
+            </a>
+          )}
+          {onEliminar && (
+            <button type="button" onClick={onEliminar} title="Eliminar landing" className="p-2 rounded-lg text-fg-muted hover:bg-danger/10 hover:text-danger">
+              <Trash2 size={16} />
+            </button>
+          )}
+          {onPublicar && (
+            <button
+              type="button"
+              onClick={onPublicar}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-xs font-semibold bg-surface-2 text-fg hover:bg-border"
+            >
+              {landingActiva ? <><EyeOff size={14} /> Despublicar</> : <><Eye size={14} /> Publicar</>}
+            </button>
+          )}
+          {onGuardarRapido && (
+            <button
+              type="button"
+              onClick={onGuardarRapido}
+              disabled={guardando}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-semibold bg-fg text-canvas hover:bg-fg-muted disabled:opacity-50"
+            >
+              {guardando ? <Loader size={13} className="animate-spin" /> : <Save size={13} />}
+              Guardar{sinGuardar ? ' •' : ''}
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 min-h-0 min-w-0 overflow-hidden flex">
         {/* Configuración */}
         <div className="flex-1 xl:flex-none xl:w-[600px] 2xl:w-[680px] min-w-0 overflow-y-auto overscroll-contain">
           <div className="max-w-[720px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10">
             <header className="mb-7">
-              <button
-                type="button"
-                onClick={onVolver}
-                className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-hover shadow-sm"
-              >
-                <ArrowLeft size={15} /> Volver
-              </button>
-              <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML · paso 1 de 2</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">Landing HTML · paso 1 de 2</p>
               <h1 className="mt-2 text-[28px] md:text-[32px] leading-tight font-bold tracking-tight text-fg">Configurar tienda</h1>
               <p className="mt-2 text-[15px] text-fg-muted">
                 Ajustá qué se ve en el inicio, cómo se presentan las fichas y qué ofertas reales tendrá la tienda.
@@ -1787,13 +1892,15 @@ export default function ConfigurarVentaCodigo({
 
                   <Bloque
                     titulo="Promos y descuentos del catálogo"
-                    ayuda="Editá precio anterior, % de descuento, badges, CTA e imágenes de los productos que aparecen en el catálogo."
+                    ayuda="Editá solo precio anterior, % de descuento, badges, etiquetas y countdown de los productos que aparecen en el catálogo."
                     verDonde={() => verDonde('catalogo', null)}
                   >
                     <EditorPromosCatalogo
                       productos={candidatosDatosProducto}
                       productoEditando={productoConfigActual}
                       ofertasSeleccionadas={urgenciaProductosValidos}
+                      anclas={anclas}
+                      ofertaFinAt={urgenciaFinAt}
                       onEditar={contentId => {
                         setProductoEditando(contentId);
                         setVistaPreview('catalogo');
@@ -1801,42 +1908,22 @@ export default function ConfigurarVentaCodigo({
                         setAvisoPreview('');
                         setResaltado(null);
                       }}
+                      onAncla={(item, valor) => {
+                        setAnclas(prev => ({ ...prev, [claveItem(item)]: valor }));
+                        setVistaPreview('catalogo');
+                        setProductoPreview(item.content_id);
+                        setAvisoPreview('');
+                        setResaltado(null);
+                      }}
+                      onCambiar={(item, campo, valor) => cambiarPresentacion(item, campo, valor)}
+                      onOfertaFinAt={cambiarUrgenciaFinAt}
                       onAlternarOferta={contentId => {
                         activarOfertaCatalogo(contentId);
                         setVistaPreview('catalogo');
                         setResaltado(null);
                       }}
                       onQuitarOferta={quitarOfertaCatalogo}
-                      renderPresentacion={item => (
-                        <PresentacionProducto
-                          key={item.content_id}
-                          item={item}
-                          ancla={anclas[claveItem(item)] ?? ''}
-                          onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
-                          onCambiar={(campo, valor) => cambiarPresentacion(item, campo, valor)}
-                          destacado={destacadosValidos.includes(item.content_id)}
-                          onDestacar={() => alternarDestacado(item.content_id)}
-                          tienda={tienda}
-                          onSubirImagen={onSubirImagen ? subirImagenLanding : null}
-                          {...propsOfertaProducto(item)}
-                          inicialmenteAbierto
-                        />
-                      )}
                     />
-                    <div className="mt-4 rounded-xl border border-border bg-surface-2/60 p-3">
-                      <EditorUrgenciaInicio
-                        titulo={urgenciaTitulo}
-                        texto={urgenciaTexto}
-                        cta={urgenciaCta}
-                        finAt={urgenciaFinAt}
-                        confirmar={urgenciaConfirmar}
-                        onTitulo={setUrgenciaTitulo}
-                        onTexto={setUrgenciaTexto}
-                        onCta={setUrgenciaCta}
-                        onFinAt={cambiarUrgenciaFinAt}
-                        onConfirmar={setUrgenciaConfirmar}
-                      />
-                    </div>
                   </Bloque>
                 </>
               )}
@@ -1845,14 +1932,14 @@ export default function ConfigurarVentaCodigo({
                 <>
                   <Bloque
                     titulo="Categorías"
-                    ayuda="La página de categoría toma las categorías reales del catálogo. Desde acá podés previsualizar cómo se ve cada entrada."
+                    ayuda="La página de categoría toma las categorías reales de esta landing. Desde acá podés previsualizar cómo se ve cada entrada."
                     verDonde={() => verDonde('categoria', null)}
                   >
-                    {categoriasDisponibles.length === 0 ? (
-                      <p className="text-sm text-fg-muted">Todavía no hay categorías cargadas en productos.</p>
+                    {categoriasLandingDisponibles.length === 0 ? (
+                      <p className="text-sm text-fg-muted">Esta landing todavía no tiene productos con categoría.</p>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
-                        {categoriasDisponibles.map(([cat, count]) => (
+                        {categoriasLandingDisponibles.map(([cat, count]) => (
                           <button
                             key={cat}
                             type="button"
@@ -3025,18 +3112,13 @@ const ICONOS_CONFIANZA = [
   ['location', 'Ubicación'], ['cash', 'Efectivo'],
 ];
 function EditorConfianzaInicio({ items, onCambiar }) {
-  const slots = Array.from({ length: 3 }, (_, i) => items?.[i] || { icono: 'shield', titulo: '', texto: '' });
+  const slots = Array.from({ length: 3 }, (_, i) => items?.[i] || CONFIANZA_INICIO_DEFAULT[i] || { icono: '', titulo: '', texto: '' });
   return (
     <div className="space-y-3">
-      <p className="text-xs text-fg-muted">Siempre 3 tarjetas. Si las dejás vacías, se muestran unas de ejemplo (pago, cambios, envíos).</p>
+      <p className="text-xs text-fg-muted">Siempre 3 tarjetas. Ya vienen cargadas: podés cambiar el texto y escribir el ícono libremente, como emoji o nombre de ícono.</p>
       {slots.map((it, idx) => (
         <div key={idx} className="grid grid-cols-1 sm:grid-cols-[110px_1fr_1fr] gap-2 rounded-lg border border-border p-2.5">
-          <label className="block">
-            <span className="block text-xs font-medium text-fg-muted mb-1">Ícono</span>
-            <select value={it.icono} onChange={e => onCambiar(idx, { icono: e.target.value })} className="w-full h-9 rounded-lg border border-border bg-surface-2 px-2 text-sm text-fg outline-none focus:border-primary">
-              {ICONOS_CONFIANZA.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-            </select>
-          </label>
+          <CampoTexto label="Ícono" value={it.icono} onChange={v => onCambiar(idx, { icono: v })} placeholder="🚚 o fa-truck" maxLength={40} />
           <CampoTexto label="Título" value={it.titulo} onChange={v => onCambiar(idx, { titulo: v })} placeholder="Opciones de pago" maxLength={60} />
           <CampoTexto label="Texto" value={it.texto} onChange={v => onCambiar(idx, { texto: v })} placeholder="Consultá los medios disponibles" maxLength={120} />
         </div>
@@ -3288,7 +3370,19 @@ function EditorProductosDestacados({ candidatosDestacados, destacadosValidos, se
   );
 }
 
-function EditorPromosCatalogo({ productos, productoEditando, ofertasSeleccionadas, onEditar, onAlternarOferta, onQuitarOferta, renderPresentacion }) {
+function EditorPromosCatalogo({
+  productos,
+  productoEditando,
+  ofertasSeleccionadas,
+  anclas,
+  ofertaFinAt,
+  onEditar,
+  onAncla,
+  onCambiar,
+  onAlternarOferta,
+  onQuitarOferta,
+  onOfertaFinAt,
+}) {
   if (!productos.length) {
     return <p className="text-sm text-fg-muted">Primero elegí productos para la landing o usá una regla de catálogo.</p>;
   }
@@ -3337,7 +3431,16 @@ function EditorPromosCatalogo({ productos, productoEditando, ofertasSeleccionada
               </div>
               {editando && (
                 <div className="md:col-span-2">
-                  {renderPresentacion(productoEditando)}
+                  <EditorPromoCatalogoProducto
+                    item={productoEditando}
+                    ancla={anclas[claveItem(productoEditando)] ?? ''}
+                    ofertaActiva={enOferta}
+                    ofertaFinAt={ofertaFinAt}
+                    onAncla={v => onAncla(productoEditando, v)}
+                    onCambiar={(campo, valor) => onCambiar(productoEditando, campo, valor)}
+                    onAlternarOferta={() => (enOferta ? onQuitarOferta(contentId) : onAlternarOferta(contentId))}
+                    onOfertaFinAt={onOfertaFinAt}
+                  />
                 </div>
               )}
             </React.Fragment>
@@ -3348,6 +3451,102 @@ function EditorPromosCatalogo({ productos, productoEditando, ofertasSeleccionada
       {!productoEditando && (
         <p className="rounded-xl border border-dashed border-border-strong px-4 py-5 text-center text-sm text-fg-muted">Elegí un producto para editar su promoción.</p>
       )}
+    </div>
+  );
+}
+
+function EditorPromoCatalogoProducto({ item, ancla, ofertaActiva, ofertaFinAt, onAncla, onCambiar, onAlternarOferta, onOfertaFinAt }) {
+  const precio = Number(precioDeVenta(item)) || Number(precioPanel(item)) || 0;
+  const descuento = descuentoDesdeAnclaPromo(precio, ancla);
+  const precioAntes = limpiarNumeroPromo(ancla);
+  const ahorro = precioAntes > precio ? precioAntes - precio : 0;
+
+  return (
+    <div className="space-y-4 rounded-xl border border-primary/40 bg-surface p-4 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
+        <p className="text-sm font-semibold text-fg">Editás solo la promo del catálogo.</p>
+        <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+          Estos datos afectan cómo se ve el producto en grillas, ofertas y filtros. La ficha completa se edita desde “Fichas de producto”.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <label className="block text-xs text-fg-muted">
+          Precio anterior
+          <CurrencyInput
+            aria-label="Precio ancla"
+            inputMode="numeric"
+            value={ancla ?? ''}
+            onChange={v => onAncla(v == null ? '' : String(v))}
+            placeholder="Opcional"
+            className="mt-1 h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg tabular-nums outline-none focus:border-primary"
+          />
+        </label>
+        <label className="block text-xs text-fg-muted">
+          % de descuento
+          <input
+            aria-label="% de descuento"
+            inputMode="numeric"
+            value={descuento}
+            placeholder="Ej: 25"
+            className="mt-1 h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+            onChange={e => onAncla(precioAnclaPorDescuentoPromo(precio, e.target.value))}
+          />
+        </label>
+        <label className="block text-xs text-fg-muted">
+          Badge
+          <input
+            aria-label="Insignia principal"
+            value={item.insignia_principal || ''}
+            maxLength={40}
+            placeholder={descuento ? 'Oferta' : 'Hot sale'}
+            className="mt-1 h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+            onChange={e => onCambiar('insignia_principal', e.target.value)}
+          />
+        </label>
+      </div>
+
+      <label className="block text-xs text-fg-muted">
+        Etiquetas para filtrar (separadas por coma)
+        <input
+          aria-label="Etiquetas para filtrar (separadas por coma)"
+          value={item.etiqueta || ''}
+          maxLength={140}
+          placeholder="Oferta, Flash sale, Envío gratis"
+          className="mt-1 h-9 w-full rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+          onChange={e => onCambiar('etiqueta', e.target.value)}
+        />
+      </label>
+
+      <div className="grid grid-cols-1 gap-3 rounded-xl border border-border bg-surface-2/40 p-3 sm:grid-cols-[1fr_220px]">
+        <label className="flex items-center gap-2 text-sm font-medium text-fg">
+          <input
+            type="checkbox"
+            checked={ofertaActiva}
+            onChange={onAlternarOferta}
+            className="accent-primary"
+          />
+          Activar countdown para esta promo
+        </label>
+        <label className="block text-xs text-fg-muted">
+          Fecha fin de oferta
+          <input
+            aria-label="Fecha fin de oferta"
+            type="datetime-local"
+            value={ofertaFinAt || ''}
+            disabled={!ofertaActiva}
+            onChange={e => onOfertaFinAt(e.target.value)}
+            className="mt-1 h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary disabled:opacity-50"
+          />
+        </label>
+      </div>
+
+      <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3 text-xs text-fg-muted">
+        <span className="font-semibold text-fg">Preview comercial:</span>{' '}
+        {formatearGs(precio) || 'Sin precio'}
+        {precioAntes > precio ? ` · antes ${formatearGs(precioAntes)} · ${descuento}% OFF` : ' · sin precio anterior'}
+        {ahorro > 0 ? ` · ahorro ${formatearGs(ahorro)}` : ''}
+      </div>
     </div>
   );
 }

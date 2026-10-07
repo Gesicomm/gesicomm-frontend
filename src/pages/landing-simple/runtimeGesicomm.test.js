@@ -290,7 +290,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
     const { window, click } = montar(PLANTILLA_INICIO, datos);
     let scrollPedido = null;
     window.scrollTo = (opts) => { scrollPedido = opts; };
-    click('a[href="#ofertas"]');
+    click('a[href="#colecciones"]');
     // scrollIntoView se propaga al editor que contiene el iframe: no se usa.
     expect(window.__scrolleado).toBeUndefined();
     expect(scrollPedido).toEqual(expect.objectContaining({ behavior: 'smooth' }));
@@ -404,6 +404,9 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(getComputedStyle(document.querySelector('[data-gesicomm-venta="marca_texto"]').parentElement.querySelector('p:not(.eyebrow)')).whiteSpace).toBe('pre-line');
     expect([...document.querySelectorAll('.brand-badge')].map(el => el.textContent)).toEqual(['Utilidad', 'Simplicidad']);
     expect(document.querySelector('.brand-medio img').getAttribute('src')).toBe('https://cdn.test/marca.jpg');
+    const css = [...document.querySelectorAll('style')].map(el => el.textContent).join('\n');
+    expect(css).toContain('.brand-section .brand-layout { width: min(100%, 1120px); margin: 0 auto; padding: 0 clamp(28px, 4vw, 42px);');
+    expect(css).toContain('main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout');
   });
 
   it('productos por categoría: oculto sin items, filtra por tab y respeta el límite', () => {

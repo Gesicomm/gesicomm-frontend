@@ -489,6 +489,21 @@ export function runtimeGesicomm() {
       if (campo === 'url' && !el.hasAttribute('data-gesicomm-ver')) el.setAttribute('data-gesicomm-ver', item.id || '');
       return;
     }
+    if (campo === 'icono') {
+      var iconoTexto = String(valor || '').trim();
+      el.textContent = '';
+      if (!iconoTexto) { el.style.display = 'none'; return; }
+      el.style.display = '';
+      if (/^(fa[srbld]?\s|fa-)/i.test(iconoTexto) && /^[a-z0-9_\-\s]+$/i.test(iconoTexto)) {
+        var icono = document.createElement('i');
+        icono.className = iconoTexto;
+        icono.setAttribute('aria-hidden', 'true');
+        el.appendChild(icono);
+      } else {
+        el.textContent = iconoTexto;
+      }
+      return;
+    }
     // Campos opcionales: si no hay dato, el elemento desaparece en vez de
     // quedar un "Gs " o una etiqueta vacía colgando en el diseño.
     if (vacio) { el.style.display = 'none'; return; }
@@ -836,7 +851,8 @@ export function runtimeGesicomm() {
     var lista = inicioConfig().confianza;
     var items = Array.isArray(lista) && lista.length ? lista : CONFIANZA_DEFAULT;
     return items.map(function (it) {
-      return { icono: EMOJI_CONFIANZA[it.icono] || '🛡️', titulo: it.titulo || '', texto: it.texto || '' };
+      var icono = String(it.icono || '').trim();
+      return { icono: EMOJI_CONFIANZA[icono] || icono || '🛡️', titulo: it.titulo || '', texto: it.texto || '' };
     });
   }
 
@@ -976,7 +992,9 @@ export function runtimeGesicomm() {
     var contenedor = document.querySelector('.page-content');
     var mapa = {};
     for (var i = 0; i < secciones.length; i++) mapa[secciones[i].getAttribute('data-gesicomm-bloque')] = secciones[i];
+    var configurados = {};
     for (var b = 0; b < bloques.length; b++) {
+      configurados[bloques[b].tipo] = 1;
       var el = mapa[bloques[b].tipo];
       if (!el) continue;
       // Solo suma un "oculto": si el bloque ya se escondió solo (sin banners
@@ -985,6 +1003,9 @@ export function runtimeGesicomm() {
       // que se fuerza acá.
       if (bloques[b].visible === false) el.hidden = true;
       if (contenedor && contenedor.contains(el)) contenedor.appendChild(el); // reinserta al final, en el orden de `bloques`
+    }
+    for (var tipo in mapa) {
+      if (Object.prototype.hasOwnProperty.call(mapa, tipo) && !configurados[tipo]) mapa[tipo].hidden = true;
     }
   }
 
@@ -1011,6 +1032,12 @@ export function runtimeGesicomm() {
       boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
       cont.appendChild(boton);
     }
+  }
+
+  function repintarProductosCategoria() {
+    var listas = document.querySelectorAll('[data-gesicomm-lista="productos_categoria"]');
+    for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
+    pintarProductosCategoria();
   }
 
   function categoriasDeProductos() {
@@ -1265,7 +1292,13 @@ export function runtimeGesicomm() {
       case 'marca_badges': base = (marcaConfig() && marcaConfig().badges || []).map(function (texto) { return { texto: texto }; }); break;
       // `imagen`/`tipo_medio`: mismo contrato que un banner, así aplicarBind
       // decide sola si pintar <img> o <video> (ver aaplicarBind, campo "video").
-      case 'marca_medios': base = (marcaConfig() && marcaConfig().medios || []).map(function (m) { return { imagen: m.url, tipo_medio: m.tipo }; }); break;
+      case 'marca_medios':
+        base = (marcaConfig() && marcaConfig().medios || []).map(function (m) { return { imagen: m.url, tipo_medio: m.tipo }; });
+        if (!base.length) {
+          var respaldoMarca = (datos.tienda && datos.tienda.logo) || ((productos[0] || {}).imagen || '');
+          if (respaldoMarca) base = [{ imagen: respaldoMarca, tipo_medio: 'imagen' }];
+        }
+        break;
       case 'productos_ofertas': base = productosOfertaLimitada(); break;
       case 'productos_novedades':
         base = productos.filter(function (p) { return tieneEtiqueta(p, 'Novedades'); });
@@ -2069,8 +2102,7 @@ export function runtimeGesicomm() {
     var pcBuscador = e.target && e.target.closest ? e.target.closest('[data-gesicomm-pc-buscar]') : null;
     if (pcBuscador) {
       pcBusqueda = normalizar(String(pcBuscador.value || '').slice(0, 80));
-      renderizar();
-      pintarProductosCategoria();
+      repintarProductosCategoria();
     }
   });
 
@@ -2238,8 +2270,7 @@ export function runtimeGesicomm() {
     if ((el = t.closest('[data-gesicomm-pc-categoria]'))) {
       e.preventDefault();
       pcCategoriaActiva = el.getAttribute('data-gesicomm-pc-categoria') || '';
-      renderizar();
-      pintarProductosCategoria();
+      repintarProductosCategoria();
       return;
     }
     if (!t.closest('.category-menu-wrap')) cerrarMenuCategorias();

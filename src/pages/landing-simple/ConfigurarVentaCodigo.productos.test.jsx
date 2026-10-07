@@ -24,7 +24,8 @@ function montar(inicial = { seleccion: catalogo.productos }) {
 
 function abrirFichaProducto(nombre) {
   fireEvent.click(screen.getByRole('tab', { name: 'Fichas de producto' }));
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(nombre) }));
+  const select = screen.getByRole('combobox', { name: 'Producto a editar' });
+  fireEvent.change(select, { target: { value: nombre === 'Olla' ? 'olla' : 'cacerola' } });
 }
 
 describe('Presentación de los productos del lienzo', () => {
@@ -58,13 +59,17 @@ describe('Presentación de los productos del lienzo', () => {
     expect(payload.venta.urgencia.fin_at).toBe(new Date('2026-10-20T14:30').toISOString());
   });
 
-  it('abre la edición completa de promo desde la sección de productos', () => {
+  it('edita solo la promo desde la sección de productos sin abrir los bloques de ficha', () => {
     const confirmar = montar();
     fireEvent.click(screen.getAllByRole('tab', { name: 'Productos' })[0]);
     fireEvent.click(screen.getAllByRole('button', { name: 'Editar precio, descuento y badges' })[0]);
 
+    expect(screen.getByText('Editás solo la promo del catálogo.')).toBeInTheDocument();
+    expect(screen.queryByText('Portada e imágenes')).not.toBeInTheDocument();
+    expect(screen.queryByText('Beneficios')).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Precio ancla'), { target: { value: '1200000' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Oferta' }));
+    fireEvent.change(screen.getByLabelText('Etiquetas para filtrar (separadas por coma)'), { target: { value: 'Oferta' } });
+    fireEvent.click(screen.getByLabelText('Activar countdown para esta promo'));
     fireEvent.change(screen.getByLabelText('Fecha fin de oferta'), { target: { value: '2026-10-21T09:00' } });
     fireEvent.change(screen.getByLabelText('Insignia principal'), { target: { value: 'Hot sale' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));

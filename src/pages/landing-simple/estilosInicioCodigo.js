@@ -211,9 +211,9 @@ h1, h2, h3, p { margin-top: 0; }
 .trust-card h3 { margin: 0 0 4px; color: var(--navy); font-size: 13px; }
 .trust-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 /* ─── Nuestra marca (bloque nuevo) ─── */
-.brand-section { padding: 76px 0 68px; background: #fff; border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
-.brand-section .brand-layout { display: grid; grid-template-columns: minmax(320px, .98fr) minmax(0, 1fr); gap: clamp(44px, 6vw, 84px); align-items: center; }
-.brand-media { border-radius: 18px; overflow: hidden; background: color-mix(in srgb, var(--tienda-destacado, var(--blue)) 12%, #f2f0e9); min-height: 370px; }
+.brand-section { padding: clamp(76px, 9vw, 112px) 0 clamp(70px, 8vw, 100px); background: #fff; border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
+.brand-section .brand-layout { width: min(100%, 1120px); margin: 0 auto; padding: 0 clamp(28px, 4vw, 42px); display: grid; grid-template-columns: minmax(320px, .98fr) minmax(0, 1fr); gap: clamp(44px, 6vw, 84px); align-items: center; }
+.brand-media { border-radius: 18px; overflow: hidden; background: color-mix(in srgb, var(--tienda-destacado, var(--blue)) 12%, #f2f0e9); min-height: 370px; aspect-ratio: 1.46 / 1; }
 .brand-medio { width: 100%; height: 100%; }
 .brand-medio img, .brand-medio video { width: 100%; height: 100%; min-height: 370px; object-fit: contain; display: block; padding: clamp(22px, 4vw, 54px); }
 .brand-copy { max-width: 620px; }
@@ -267,6 +267,7 @@ h1, h2, h3, p { margin-top: 0; }
   .product-toolbar { align-items: start; flex-direction: column; }
   .pc-head { align-items: stretch; flex-direction: column; }
   .pc-search { flex-basis: auto; width: 100%; }
+  .brand-section .brand-layout { padding: 0 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .trust-track { animation: none; }

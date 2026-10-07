@@ -360,6 +360,55 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
   content: none !important;
 }
 
+/* Nuestra marca: este bloque vive dentro de .page-content pero necesita su
+   propio ancho y respiro, porque algunas landings guardadas lo dejaban pegado
+   al borde del contenedor. */
+main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {
+  padding-block: clamp(76px, 9vw, 112px) clamp(70px, 8vw, 100px) !important;
+  background: var(--gc-superficie, #fff) !important;
+}
+main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout {
+  width: min(100%, 1120px) !important;
+  margin-inline: auto !important;
+  padding-inline: clamp(28px, 4vw, 42px) !important;
+  display: grid !important;
+  grid-template-columns: minmax(320px, .98fr) minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(44px, 6vw, 84px) !important;
+}
+main[data-gesicomm-base="catalogo"] .brand-media {
+  min-height: 370px !important;
+  aspect-ratio: 1.46 / 1 !important;
+  overflow: hidden !important;
+}
+main[data-gesicomm-base="catalogo"] .brand-medio,
+main[data-gesicomm-base="catalogo"] .brand-medio :where(img, video) {
+  width: 100% !important;
+  height: 100% !important;
+}
+main[data-gesicomm-base="catalogo"] .brand-medio :where(img, video) {
+  min-height: 370px !important;
+  object-fit: contain !important;
+}
+@media (max-width: 900px) {
+  main[data-gesicomm-base="catalogo"] > .page-content > .brand-section {
+    padding-block: 48px !important;
+  }
+  main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+  main[data-gesicomm-base="catalogo"] .brand-media,
+  main[data-gesicomm-base="catalogo"] .brand-medio :where(img, video) {
+    min-height: 280px !important;
+  }
+}
+@media (max-width: 600px) {
+  main[data-gesicomm-base="catalogo"] > .page-content > .brand-section > .brand-layout {
+    padding-inline: 16px !important;
+  }
+}
+
 /* Los upsells no viven dentro de la ficha: son una etapa del checkout. */
 [data-gesicomm-lista="ofertas_upsell"] {
   display: none !important;

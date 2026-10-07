@@ -28,9 +28,9 @@ const confirmar = vi.fn();
 const recargar = vi.fn();
 const cargarOfertas = vi.fn().mockResolvedValue([]);
 const datos = () => JSON.parse(screen.getByTestId('datos-combo').textContent);
-function montar(venta = { seleccion: 'manual' }) {
+function montar(venta = { seleccion: 'manual' }, catalogoOverride = catalogo) {
   render(<MemoryRouter initialEntries={['/landing/201']}><Routes><Route path="/landing/:id" element={<ConfigurarVentaCodigo
-    catalogo={catalogo} codigos={{ inicio: { html: '<h1>Inicio personalizado</h1>' }, producto: { html: '<h1>Ficha personalizada</h1>', css: '.mi-combo { color: purple; }' } }} inicial={{ venta, seleccion: [{ ...productos[0], precio_ancla: 120000, etiqueta: 'Oferta' }] }}
+    catalogo={catalogoOverride} codigos={{ inicio: { html: '<h1>Inicio personalizado</h1>' }, producto: { html: '<h1>Ficha personalizada</h1>', css: '.mi-combo { color: purple; }' } }} inicial={{ venta, seleccion: [{ ...productos[0], precio_ancla: 120000, etiqueta: 'Oferta' }] }}
     cargarOfertas={cargarOfertas} onConfirmar={confirmar} onVolver={vi.fn()} onRecargarCatalogo={recargar}
   />} /></Routes></MemoryRouter>);
   fireEvent.click(screen.getByRole('radio', { name: 'Celular', exact: true }));
@@ -117,5 +117,19 @@ describe('Armador compartido de combos en la landing', () => {
     expect(datos().productos.map(p => p.id)).toEqual(['cacerola', 'utensilios', 'combo-99']);
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
     expect(confirmar.mock.calls[0][0].venta).toMatchObject({ seleccion: 'categoria', categorias: ['Cocina'], incluir_combos: true });
+  });
+  it('lista en la sección Categorías solo las categorías de la landing', async () => {
+    const catalogoConCategoriaFueraDeLanding = {
+      productos: [
+        ...productos,
+        { id: 9, tipo: 'producto', slug: 'serum', nombre: 'Serum facial', categoria: 'Belleza', imagen: '/serum.png', precio_base: 20000, precio_efectivo: 45000 },
+      ],
+      combos: [],
+    };
+    montar({ seleccion: 'manual' }, catalogoConCategoriaFueraDeLanding);
+    fireEvent.click(screen.getByRole('tab', { name: /Categorías/ }));
+    expect(screen.getByText('Cocina')).toBeInTheDocument();
+    expect(screen.getAllByText('1 producto').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: /Belleza/ })).not.toBeInTheDocument();
   });
 });

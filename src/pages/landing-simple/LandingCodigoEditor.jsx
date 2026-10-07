@@ -229,7 +229,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   const [tienda, setTienda] = useState(null);
   const [catalogo, setCatalogo] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [paso, setPaso] = useState(landingInicial?.content?.venta?.configurado ? 'codigo' : 'venta');
+  // "Configurar tienda" es la única puerta de entrada al lienzo en blanco:
+  // el editor de código crudo (paso 'codigo') solo se abre a pedido, desde
+  // el botón "Código avanzado" de ese asistente.
+  const [paso, setPaso] = useState('venta');
   const [venta, setVenta] = useState(landingInicial?.content?.venta || null);
   const [seleccion, setSeleccion] = useState([]);
   const [vista, setVistaBase] = useState('inicio');
@@ -291,7 +294,7 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
       setSeleccion(seleccionInicial);
       // Al llegar del catálogo se revisa la selección manual antes de guardar.
       setVenta(prefilled.length ? { ...l.content?.venta, seleccion: 'manual' } : l.content?.venta || null);
-      setPaso(prefilled.length || !l.content?.venta?.configurado ? 'venta' : 'codigo');
+      setPaso('venta');
       if (prefilled.length) setSinGuardar(true);
       setCodigos(inicial);
       setCodigosPreview(inicial);
@@ -474,9 +477,10 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
     setCodigos(nuevosCodigos);
     const ok = await guardar({ venta: nuevaVenta, items: nuevosItems, codigos: nuevosCodigos, confirmaciones });
     if (ok) {
-      setPaso('codigo');
       setTab((usarBase || usarFichaBase) ? 'prompts' : 'html');
-      if (usarBase || usarFichaBase) setAviso('Listo: actualizamos la base de inicio/ficha para que el diseño guardado coincida con la vista previa.');
+      setAviso((usarBase || usarFichaBase)
+        ? 'Listo: actualizamos la base de inicio/ficha para que el diseño guardado coincida con la vista previa.'
+        : 'Diseño guardado.');
     }
   }
 
@@ -528,13 +532,15 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
   // Volver a la pantalla de "¿Cómo querés armar tu landing?": la landing de
   // código recién creada se borra (todavía no tiene nada) y /landing, sin
   // landings, muestra el selector de modo.
-  // "Volver" desde el paso de venta. Con la landing ya configurada, vuelve a
-  // su editor. Recién creada (sin configurar), el editor solo tendría el
-  // código de arranque: la vuelta atrás que tiene sentido es la pantalla de
-  // "¿Cómo querés armar tu landing?". La landing en blanco se borra —
-  // todavía no tiene nada — y sin landings /landing muestra ese selector.
+  // "Volver" desde "Configurar tienda", que ahora es la única pantalla de
+  // este editor. Con la landing ya configurada no hay a dónde "volver"
+  // dentro del editor: se sale a la lista de landings. Recién creada (sin
+  // configurar), el editor solo tendría el código de arranque: la vuelta
+  // atrás que tiene sentido es la pantalla de "¿Cómo querés armar tu
+  // landing?". La landing en blanco se borra — todavía no tiene nada — y
+  // sin landings /landing muestra ese selector.
   function volverDesdeVenta() {
-    if (venta?.configurado) { setPaso('codigo'); return; }
+    if (venta?.configurado) { navigate('/landing', { replace: true }); return; }
     const intacta = !codigos.inicio.html.trim() || codigos.inicio.html.includes(MARCA_CODIGO_INICIAL);
     cambiarDeModo({ preguntar: !intacta });
   }
@@ -724,6 +730,18 @@ export default function LandingCodigoEditor({ landingInicial, onEliminada }) {
         errorGuardado={error ? { mensaje: error, detalles: erroresDetalle } : null}
         onCambiarModo={venta?.configurado ? null : () => cambiarDeModo()}
         tienda={tienda}
+        // Acciones de la landing ya guardada: solo tienen sentido una vez
+        // configurada (recién creada, "Publicar"/"Eliminar" todavía no
+        // aplican a nada guardado).
+        publicUrl={venta?.configurado ? publicUrl : null}
+        landingActiva={landing?.activo}
+        onPublicar={venta?.configurado ? () => cambiarEstado(!landing?.activo) : null}
+        onEliminar={venta?.configurado ? eliminar : null}
+        onGuardarRapido={venta?.configurado ? () => guardar() : null}
+        sinGuardar={sinGuardar}
+        // Editor de código crudo (HTML/CSS/JS, Secciones, Footer, Prompt IA):
+        // ya no es la pantalla de entrada, pero sigue accesible desde acá.
+        onAbrirCodigo={venta?.configurado ? () => setPaso('codigo') : null}
         codigos={codigos}
         onCambiarCodigo={(vistaCodigo, parte, valor) => {
           const valorSeguro = parte === 'html' ? limpiarAvisosIaHtml(valor) : valor;
