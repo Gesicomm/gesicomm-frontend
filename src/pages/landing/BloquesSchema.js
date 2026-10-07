@@ -1,7 +1,8 @@
 import {
   LayoutTemplate, Image as ImageIcon, FileText, AlignLeft,
   MessageCircle, Rocket, MessageSquareQuote, CheckSquare,
-  HelpCircle, Link as LinkIcon, SplitSquareHorizontal, ShieldCheck, Grid
+  HelpCircle, Link as LinkIcon, SplitSquareHorizontal, ShieldCheck, Grid,
+  ShoppingBag
 } from 'lucide-react';
 
 const SIZE_OPTIONS = [
@@ -101,6 +102,20 @@ export const BLOQUES_SCHEMA = {
     ],
     contentSchema: [
       { key: 'titulo', type: 'text', label: 'Título' }
+    ]
+  },
+  productos_recomendados: {
+    type: 'productos_recomendados',
+    name: 'Productos recomendados',
+    icon: ShoppingBag,
+    categoria: 'ecommerce',
+    templates: [
+      { id: 'grid', label: 'Grilla de tarjetas' }
+    ],
+    contentSchema: [
+      { key: 'titulo', type: 'text', label: 'Título' },
+      { key: 'subtitulo', type: 'textarea', label: 'Subtítulo' },
+      { key: 'cta_texto', type: 'text', label: 'Texto del botón' }
     ]
   },
 
@@ -372,6 +387,16 @@ export const VALORES_DEFECTO_POR_TIPO = {
   categorias: { activo: true, template: 'grid', config: { colorScheme: 'default' }, contenido: {} },
   destacados: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: {} },
   productos: { activo: true, template: 'grid_4', config: { colorScheme: 'default' }, contenido: {} },
+  productos_recomendados: {
+    activo: true,
+    template: 'grid',
+    config: { colorScheme: 'default' },
+    contenido: {
+      titulo: 'También te puede interesar',
+      subtitulo: 'Productos elegidos para complementar esta compra.',
+      cta_texto: 'Ver producto',
+    },
+  },
   banner: { activo: true, template: 'standard', config: { colorScheme: 'default' }, contenido: { titulo: 'Promocin especial', boton_texto: 'Ver mǭs', altura: 'md' } },
   rich_text: { activo: true, template: 'centered', config: { colorScheme: 'default' }, contenido: { titulo: 'Nosotros', texto: 'Contanos algo de tu negocio.', tamano: 'md' } },
   image_text: { activo: true, template: 'image_left', config: { colorScheme: 'default' }, contenido: { titulo: 'Título', texto: 'Escribí acá...', boton_texto: '' } },
@@ -385,13 +410,22 @@ export const VALORES_DEFECTO_POR_TIPO = {
 };
 export const getSeccionesBase = () => ['header', 'hero', 'beneficios', 'categorias', 'destacados', 'banner', 'productos', 'testimonios', 'faq', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
 
+export const getSeccionesProducto = () => [
+  'announcement_bar',
+  'header',
+  'product_detail',
+  'testimonios',
+  'productos_recomendados',
+  'footer',
+].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+
 // Plantillas por defecto de las páginas fijas nuevas (ver Landing.tipo_pagina)
 // — mismo patrón que getSeccionesBase(), listas más cortas porque cada
 // página tiene un propósito distinto (no repiten hero/beneficios/etc.).
-export const getSeccionesCatalogo = () => ['header', 'productos', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+export const getSeccionesCatalogo = () => ['announcement_bar', 'header', 'productos', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
 
 export const getSeccionesContacto = () => {
-  const base = ['header', 'hero', 'rich_text', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+  const base = ['announcement_bar', 'header', 'hero', 'rich_text', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
   const hero = base.find(s => s.tipo === 'hero');
   if (hero) hero.contenido = { ...hero.contenido, titulo: 'Hablemos', descripcion: 'Escribinos y te respondemos a la brevedad.' };
   const texto = base.find(s => s.tipo === 'rich_text');
@@ -423,7 +457,7 @@ const CONTENIDO_LEGAL_POR_TIPO = {
 };
 
 export const getSeccionesLegal = (tipoPagina) => {
-  const base = ['header', 'rich_text', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
+  const base = ['announcement_bar', 'header', 'rich_text', 'footer'].map(tipo => ({ tipo, ...VALORES_DEFECTO_POR_TIPO[tipo] }));
   const contenido = CONTENIDO_LEGAL_POR_TIPO[tipoPagina] || CONTENIDO_LEGAL_POR_TIPO.aviso_legal;
   const texto = base.find(s => s.tipo === 'rich_text');
   if (texto) texto.contenido = { ...texto.contenido, ...contenido, tamano: 'md' };

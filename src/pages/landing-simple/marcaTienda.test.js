@@ -115,6 +115,6 @@ describe('landing ya guardada con la base vieja (verde fijo)', () => {
     const html = construirDocumentoCodigo({ html: '', css: ':root { --gc-primario: #e11d48; --gc-texto-sobre-primario: #fff; --gc-fondo: #ffffff; }', js: '' }, { datos: { tienda: { colores } } });
     expect(html).toContain('--gc-primario: var(--tienda-primario, #e11d48);');
     expect(html).toContain('--gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #fff);');
-    expect(html).toContain('--gc-fondo: #ffffff;');
+    expect(html).toContain('--gc-fondo: var(--tienda-fondo, #ffffff);');
   });
 });

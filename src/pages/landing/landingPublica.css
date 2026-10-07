@@ -3360,7 +3360,7 @@ button.lp-tier-card--imagen {
 .lp-product-relacionados {
   max-width: var(--l-max, 1240px);
   margin: 3.5rem auto 0;
-  padding-top: 2.5rem;
+  padding: 2.5rem var(--l-gutter, 24px) 0;
   border-top: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.08));
 }
 .lp-product-relacionados-titulo {
@@ -3425,6 +3425,22 @@ button.lp-tier-card--imagen {
   font-weight: 500;
   text-decoration: line-through;
   color: var(--l-text-muted, #94a3b8);
+}
+.lp-product-relacionados-cta {
+  margin: 0 0.7rem 0.8rem;
+  width: calc(100% - 1.4rem);
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.08));
+  color: var(--l-text, #f8fafc);
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.lp-product-relacionados-cta:hover {
+  border-color: var(--l-primary);
+  color: var(--l-primary);
+  background: color-mix(in srgb, var(--l-primary) 10%, transparent);
 }
 
 
