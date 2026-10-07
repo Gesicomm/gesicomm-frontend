@@ -101,6 +101,9 @@ describe('Presentación de los productos del lienzo', () => {
     });
 
     expect(datosPreview().venta.inicio.banners[0]).toMatchObject({ titulo: 'Banner guardado', imagen: 'https://cdn.test/banner-viejo.webp' });
+    // El bloque "Banner principal" ahora vive colapsado dentro de "Bloques
+    // del Inicio" — hay que abrirlo antes de tocar sus campos.
+    fireEvent.click(screen.getByRole('button', { name: 'Banner principal' }));
     fireEvent.change(screen.getAllByLabelText('URL del medio')[0], { target: { value: 'https://cdn.test/banner-nuevo.webp' } });
     fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
 

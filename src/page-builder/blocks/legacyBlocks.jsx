@@ -170,6 +170,7 @@ const AnnouncementBarAdapter = ({ content, settings, section }) => {
 
 import { ProductDetailBlock } from './product-detail/ProductDetailBlock';
 import { ProductoGaleriaBlock } from './producto-galeria/ProductoGaleriaBlock';
+import ProductRecommendationsBlock from './product-recommendations/ProductRecommendationsBlock';
 
 import { BLOQUES_SCHEMA } from '../../pages/landing/BloquesSchema';
 
@@ -227,6 +228,7 @@ export function registerLegacyBlocks() {
   registerWithSchema('faq', FaqAdapter);
   registerWithSchema('footer', FooterAdapter);
   registerWithSchema('product_detail', ProductDetailBlock);
+  registerWithSchema('productos_recomendados', ProductRecommendationsBlock);
   registerWithSchema('producto_galeria', ProductoGaleriaBlock);
   registerWithSchema('texto', TextoAdapter);
   registerWithSchema('rich_text', TextoAdapter);

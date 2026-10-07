@@ -20,7 +20,7 @@ import InspectorSeccion from './InspectorSeccion';
 import SidebarSecciones from './SidebarSecciones';
 import SelectorSecciones from './SelectorSecciones';
 import LandingTemplatePicker from './LandingTemplatePicker';
-import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase, getSeccionesCatalogo, getSeccionesContacto, getSeccionesLegal } from './BloquesSchema';
+import { VALORES_DEFECTO_POR_TIPO, getSeccionesBase, getSeccionesCatalogo, getSeccionesContacto, getSeccionesLegal, getSeccionesProducto } from './BloquesSchema';
 import { FooterProvider } from '../../page-builder/blocks/footer-builder/FooterContext';
 import FooterInspectorPanel from '../../page-builder/blocks/footer-builder/FooterInspectorPanel';
 
@@ -114,6 +114,95 @@ function claveItem(tipo, id) {
 function linkBannerValido(link) {
   const limpio = link.trim();
   return !limpio || /^https?:\/\//i.test(limpio) || limpio.startsWith('/');
+}
+
+function seccionesDefaultProducto() {
+  return getSeccionesProducto().map((s, idx) => ({
+    ...s,
+    id: `base-producto-${s.tipo}-${idx}`,
+    orden: idx,
+    nombre_interno: s.nombre_interno || (
+      s.tipo === 'announcement_bar' ? 'Barra superior'
+        : s.tipo === 'product_detail' ? 'Detalle de Producto'
+          : s.tipo === 'testimonios' ? 'Opiniones'
+            : s.tipo === 'productos_recomendados' ? 'Productos recomendados'
+              : s.tipo === 'footer' ? 'Footer'
+                : s.tipo === 'header' ? 'Header'
+                  : s.tipo
+    ),
+    config: s.config || {},
+    contenido: s.contenido || {},
+  }));
+}
+
+function completarSeccionesProducto(secciones = [], fuenteLanding = []) {
+  const heredables = new Map((fuenteLanding || [])
+    .filter(s => ['announcement_bar', 'header', 'footer'].includes(s.tipo))
+    .map(s => [s.tipo, s]));
+  const aplicarHerencia = (s) => {
+    const heredada = heredables.get(s.tipo);
+    return heredada
+      ? { ...s, ...heredada, page_type: 'product', id: s.id, stable_id: null, orden: s.orden }
+      : s;
+  };
+
+  if (!secciones.length) secciones = seccionesDefaultProducto().map(aplicarHerencia);
+
+  const existentes = new Set(secciones.map(s => s.tipo));
+  const faltantes = seccionesDefaultProducto()
+    .filter(s => !existentes.has(s.tipo))
+    .map(aplicarHerencia);
+  if (!faltantes.length) return secciones;
+
+  const insertarAntesDeFooter = secciones.findIndex(s => s.tipo === 'footer');
+  const base = [...secciones];
+  const posicion = insertarAntesDeFooter >= 0 ? insertarAntesDeFooter : base.length;
+  base.splice(posicion, 0, ...faltantes.map((s, i) => ({ ...s, id: `${s.id}-missing-${i}` })));
+  return base.map((s, idx) => ({ ...s, orden: idx }));
+}
+
+const TIPOS_HEREDABLES_TIENDA = new Set(['announcement_bar', 'header', 'footer']);
+
+function completarSeccionesPagina(tipoPagina, secciones = [], fuenteInicio = []) {
+  const defaults = seccionesDefaultPorRol(tipoPagina).map((s, idx) => ({
+    ...s,
+    id: `base-${tipoPagina || 'landing'}-${s.tipo}-${idx}`,
+    orden: idx,
+    nombre_interno: s.nombre_interno || (
+      s.tipo === 'announcement_bar' ? 'Barra superior'
+        : s.tipo === 'header' ? 'Header'
+          : s.tipo === 'footer' ? 'Footer'
+            : s.tipo === 'productos' ? 'Productos'
+              : s.tipo
+    ),
+    config: s.config || {},
+    contenido: s.contenido || {},
+  }));
+  const heredables = new Map((fuenteInicio || [])
+    .filter(s => TIPOS_HEREDABLES_TIENDA.has(s.tipo))
+    .map(s => [s.tipo, s]));
+  const existentes = new Map((secciones || []).map(s => [s.tipo, s]));
+  const tiposDefault = new Set(defaults.map(s => s.tipo));
+
+  const resultado = defaults.map((def) => {
+    const actual = existentes.get(def.tipo) || def;
+    const heredada = heredables.get(def.tipo);
+    if (!heredada) return actual;
+    return {
+      ...actual,
+      ...heredada,
+      page_type: 'landing',
+      id: actual.id,
+      stable_id: actual.stable_id,
+      orden: actual.orden,
+    };
+  });
+
+  const extras = (secciones || []).filter(s => !tiposDefault.has(s.tipo));
+  const indiceFooter = resultado.findIndex(s => s.tipo === 'footer');
+  const destino = indiceFooter >= 0 ? indiceFooter : resultado.length;
+  resultado.splice(destino, 0, ...extras);
+  return resultado.map((s, idx) => ({ ...s, orden: idx }));
 }
 
 function tiempoRelativo(fecha) {
@@ -428,6 +517,7 @@ export default function LandingEditor() {
       setTienda(datosTienda);
 
       if (esModoProducto) {
+        let seccionesInicioParaProducto = [];
         // El producto editado va primero en itemsPreview: es lo que usa
         // LandingPreview.jsx como mockItem del bloque product_detail
         // cuando no hay uno seleccionado explícitamente (ver
@@ -458,6 +548,20 @@ export default function LandingEditor() {
           if (inicio) {
             setInicioLandingId(inicio.id);
             const detalleInicio = await landingService.obtener(inicio.id);
+            seccionesInicioParaProducto = (detalleInicio.secciones || [])
+              .filter(s => !s.page_type || s.page_type === 'landing')
+              .sort((a, b) => a.orden - b.orden)
+              .map((s, idx2) => BlockRegistry.migrate({
+                id: String(s.id || `loaded-inicio-${s.tipo}-${idx2}`),
+                stable_id: s.stable_id,
+                tipo: s.tipo,
+                schema_version: s.schema_version,
+                nombre_interno: s.nombre_interno || s.tipo,
+                activo: s.activo !== false,
+                orden: idx2,
+                config: s.config || s.config_json || {},
+                contenido: s.contenido || s.contenido_json || {},
+              }));
             setForm(prev => ({
               ...prev,
               tema_modo: detalleInicio.tema_modo || prev.tema_modo,
@@ -472,8 +576,7 @@ export default function LandingEditor() {
         } catch { /* no crítico: la preview cae a los defaults del form */ }
 
         const guardadas = await landingService.obtenerSeccionesProducto(productoId);
-        const pdDefaults = VALORES_DEFECTO_POR_TIPO['product_detail'] || { template: 'standard', config: {}, contenido: {} };
-        const secciones = guardadas.length > 0
+        const secciones = completarSeccionesProducto(guardadas.length > 0
           ? guardadas.sort((a, b) => a.orden - b.orden).map((s, idx2) => BlockRegistry.migrate({
               id: String(s.id || `loaded-prod-${s.tipo}-${idx2}`),
               stable_id: s.stable_id,
@@ -485,11 +588,7 @@ export default function LandingEditor() {
               config: s.config || s.config_json || {},
               contenido: s.contenido || s.contenido_json || {},
             }))
-          : [
-              { id: 'base-header-p0', tipo: 'header', nombre_interno: 'Header', activo: true, orden: 0, config: {}, contenido: {} },
-              { id: 'base-product_detail-p1', tipo: 'product_detail', nombre_interno: 'Detalle de Producto', activo: true, orden: 1, config: pdDefaults.config, contenido: pdDefaults.contenido },
-              { id: 'base-footer-p2', tipo: 'footer', nombre_interno: 'Footer', activo: true, orden: 2, config: {}, contenido: {} },
-            ];
+          : seccionesDefaultProducto(), seccionesInicioParaProducto);
         setDocumentModel({ pages: { landing: { sections: [] }, producto: { sections: secciones } } });
         setSucio(false);
         setCargando(false);
@@ -542,6 +641,30 @@ export default function LandingEditor() {
         let hasOldData = false;
         let loadedSecciones = [];
         let loadedSeccionesProducto = [];
+        let seccionesInicioParaPagina = [];
+        if (guardada.tipo_pagina !== 'inicio') {
+          try {
+            const paginasSitio = await landingService.paginas();
+            const inicio = paginasSitio.find(p => p.tipo_pagina === 'inicio');
+            if (inicio?.id && String(inicio.id) !== String(guardada.id)) {
+              const detalleInicio = await landingService.obtener(inicio.id);
+              seccionesInicioParaPagina = (detalleInicio.secciones || [])
+                .filter(s => !s.page_type || s.page_type === 'landing')
+                .sort((a, b) => a.orden - b.orden)
+                .map((s, idx2) => BlockRegistry.migrate({
+                  id: String(s.id || `loaded-inicio-${s.tipo}-${idx2}`),
+                  stable_id: s.stable_id,
+                  tipo: s.tipo,
+                  schema_version: s.schema_version,
+                  nombre_interno: s.nombre_interno || s.tipo,
+                  activo: s.activo !== false,
+                  orden: idx2,
+                  config: s.config || s.config_json || {},
+                  contenido: s.contenido || s.contenido_json || {},
+                }));
+            }
+          } catch { /* no crítico: usa los defaults propios de la página */ }
+        }
         
         if (Array.isArray(guardada.secciones) && guardada.secciones.length > 0) {
           const basePorTipo = new Map(getSeccionesBase().map(s => [s.tipo, s]));
@@ -586,16 +709,9 @@ export default function LandingEditor() {
         if (loadedSecciones.length === 0) {
           loadedSecciones = seccionesDefaultPorRol(guardada.tipo_pagina).map((s, idx) => ({ ...s, id: `base-${s.tipo}-${idx}`, orden: idx }));
         }
+        loadedSecciones = completarSeccionesPagina(guardada.tipo_pagina, loadedSecciones, seccionesInicioParaPagina);
 
-        if (loadedSeccionesProducto.length === 0) {
-          // Default para vista de producto
-          const pdDefaults = VALORES_DEFECTO_POR_TIPO['product_detail'] || { template: 'standard', config: {}, contenido: {} };
-          loadedSeccionesProducto = [
-            { id: 'base-header-p0', tipo: 'header', nombre_interno: 'Header', activo: true, orden: 0, config: {}, contenido: {} },
-            { id: 'base-product_detail-p1', tipo: 'product_detail', nombre_interno: 'Detalle de Producto', activo: true, orden: 1, config: pdDefaults.config, contenido: pdDefaults.contenido },
-            { id: 'base-footer-p2', tipo: 'footer', nombre_interno: 'Footer', activo: true, orden: 2, config: {}, contenido: {} },
-          ];
-        }
+        loadedSeccionesProducto = completarSeccionesProducto(loadedSeccionesProducto, loadedSecciones);
 
         // MIGRACION: Si existen testimonios sueltos, inyectarlos en la sección testimonios
         if (guardada.testimonios && guardada.testimonios.length > 0) {

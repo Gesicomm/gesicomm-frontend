@@ -43,6 +43,9 @@ export default function ImagenesProductoLanding({ item, onCambiar, onSubirImagen
   return <fieldset className="space-y-3">
     <legend className="mb-2 text-sm font-semibold text-fg">Imágenes de esta landing</legend>
     <p className="text-xs text-fg-muted">La primera foto es la portada. Los cambios se aplican al inicio y la ficha de esta landing; las fotos del catálogo se conservan.</p>
+    <div className="rounded-lg border border-primary/20 bg-primary/[0.06] px-3 py-2 text-xs leading-relaxed text-fg">
+      <strong>Tamaño recomendado para la vista del producto:</strong> 1200 x 1200 px, fondo blanco o transparente, producto centrado y con margen. También funcionan 1600 x 1200 px si necesitás una foto horizontal.
+    </div>
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {fotos.map((url, idx) => <div key={url} className="rounded-xl border border-border bg-surface overflow-hidden">
         <img src={url} alt={`Foto ${idx + 1} de ${item.nombre}`} className="h-24 w-full object-contain bg-white" />
@@ -68,3 +71,4 @@ export default function ImagenesProductoLanding({ item, onCambiar, onSubirImagen
     {error && <p role="alert" className="text-xs text-danger">{error}</p>}
   </fieldset>;
 }
+

@@ -23,7 +23,7 @@ import TemplateThumbnails from './TemplateThumbnails';
 // barra angosta, header/footer son estructurales de toda la página, y
 // product_detail ya arma su propio layout de 2 columnas adentro — ponerlo
 // a "mitad" al lado de otra sección daría un resultado roto.
-const TIPOS_SIEMPRE_ANCHO_COMPLETO = new Set(['header', 'footer', 'announcement_bar', 'product_detail']);
+const TIPOS_SIEMPRE_ANCHO_COMPLETO = new Set(['header', 'footer', 'announcement_bar', 'product_detail', 'productos_recomendados']);
 
 const sectionEditors = {
   header: HeaderInspector,

@@ -217,6 +217,11 @@ export default function LandingPreview({
         categoriaImagen: categoriaImagen,
         marcas: marcas,
         etiquetas: etiquetas,
+        relacionados: {
+          titulo: 'Productos recomendados',
+          automatico: true,
+          items: itemsPreview.filter(i => i.content_id !== mockItem.content_id).slice(0, 4),
+        },
         hayFiltroActivo: false,
         conteo: itemsPreview.length
       },

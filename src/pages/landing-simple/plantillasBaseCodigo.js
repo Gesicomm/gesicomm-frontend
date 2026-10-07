@@ -883,7 +883,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a class="active" href="#inicio">Inicio</a>
       </div>
     </section>
 
-    <section id="productos-categoria" class="section pc-section" data-gesicomm-bloque="productos_categoria"><div class="section-heading"><div><p class="eyebrow" data-gesicomm-venta="productos_categoria_kicker"></p><h2 data-gesicomm-venta="productos_categoria_titulo"></h2><p data-gesicomm-venta="productos_categoria_subtitulo"></p></div></div><div class="pc-tabs" data-gesicomm-pc-tabs></div><div class="spotlight-grid" data-gesicomm-lista="productos_categoria"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div></section>
+    <section id="productos-categoria" class="section pc-section" data-gesicomm-bloque="productos_categoria"><div class="section-heading pc-head"><div><p class="eyebrow" data-gesicomm-venta="productos_categoria_kicker"></p><h2 data-gesicomm-venta="productos_categoria_titulo"></h2><p data-gesicomm-venta="productos_categoria_subtitulo"></p></div><label class="pc-search"><span>Buscar</span><input type="search" placeholder="Buscar en esta selección" aria-label="Buscar en productos seleccionados" data-gesicomm-pc-buscar></label></div><div class="pc-tabs" data-gesicomm-pc-tabs></div><div class="spotlight-grid" data-gesicomm-lista="productos_categoria"><template><article class="product-card"><div class="product-badge" data-gesicomm-bind="etiqueta"></div><div class="product-image" data-gesicomm-ver><img data-gesicomm-bind="imagen" alt="" loading="lazy"></div><div class="product-content"><div class="product-category" data-gesicomm-bind="categoria"></div><h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3><p class="product-description" data-gesicomm-bind="descripcion"></p><div class="product-footer"><div class="product-prices"><span class="price" data-gesicomm-bind="precio"></span><span class="price-old" data-gesicomm-bind="precio_antes"></span></div><button class="button-primary" type="button" data-gesicomm-comprar>Agregar al carrito</button></div></div></article></template></div><p class="pc-empty" data-gesicomm-pc-vacio hidden>No encontramos productos con esa búsqueda.</p></section>
 
     <section id="confianza" class="section trust-section" data-gesicomm-bloque="confianza"><div class="trust-grid" data-gesicomm-lista="confianza_inicio"><template><div class="trust-card"><span class="trust-card-icon" data-gesicomm-bind="icono"></span><div><h3 data-gesicomm-bind="titulo"></h3><p data-gesicomm-bind="texto"></p></div></div></template></div></section>
 
@@ -979,6 +979,9 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
 .thumb img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: normal; }
 
 .pdp-info h1 { margin-bottom: 14px; font-size: clamp(2rem, 3.4vw, 3rem); line-height: 1.02; letter-spacing: -.06em; }
+.pdp-reviews { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: -4px 0 18px; color: var(--ink-soft); font-size: .9rem; }
+.pdp-reviews .stars { color: #b7791f; letter-spacing: .08em; }
+.pdp-reviews a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .pdp-prices { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
 .pdp-prices .price { font-size: 2rem; }
 .pdp-lead { margin-bottom: 26px; color: var(--ink-soft); font-size: 1.02rem; }
@@ -998,6 +1001,25 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
    total, y el bump no tiene que competir con tres botones iguales. */
 .pdp .buy-secondary .button-secondary { min-height: 40px; background: transparent; border-color: transparent; color: var(--ink-soft); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .pdp .buy-secondary .button-secondary:hover { color: var(--ink); }
+.contact-actions, .payment-actions { display: grid; gap: 10px; margin: -10px 0 16px; }
+.contact-action, .payment-action { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 16px; color: var(--ink); background: var(--white); border: 1.5px solid var(--line); border-radius: 999px; text-decoration: none; font-weight: 850; }
+.contact-action:hover, .payment-action:hover { border-color: var(--brand); color: var(--brand-dark); background: var(--brand-soft); }
+.payment-methods { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+.payment-methods span { padding: 8px 12px; color: var(--ink); background: var(--white); border: 1px solid var(--line); border-radius: 999px; font-size: .78rem; font-weight: 800; }
+.order-includes { margin: 26px 0; padding: 22px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; }
+.order-includes h2 { margin: 0 0 14px; font-size: 1.25rem; letter-spacing: -.02em; }
+.order-includes ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.order-includes li { position: relative; padding-left: 28px; color: var(--ink); font-weight: 650; line-height: 1.35; }
+.order-includes li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--brand-dark); font-weight: 950; }
+.opiniones-section { background: var(--paper); }
+.opiniones-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.opinion-card { padding: 24px; background: var(--white); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-sm); }
+.opinion-head { display: flex; align-items: center; gap: 12px; }
+.opinion-avatar { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 999px; object-fit: cover; background: var(--brand-soft); border: 1px solid var(--line); }
+.opinion-stars { color: #b7791f; letter-spacing: .08em; font-size: .88rem; }
+.opinion-card p { margin: 12px 0 16px; color: var(--ink-soft); line-height: 1.65; }
+.opinion-card b { display: block; color: var(--ink); }
+.opinion-card small { color: var(--ink-soft); font-weight: 750; }
 
  .offers { display: grid; gap: 12px; margin-bottom: 26px; }
 /* Order bump moderno: mini oferta clickeable, no formulario amarillo. */
@@ -1259,6 +1281,7 @@ const PRODUCTO_CSS = `${TOKENS_CSS}
   .sticky-compra .button-primary { min-height: 46px; padding: 0 20px; }
   body { padding-bottom: 76px; }
   .mini-trust { grid-template-columns: 1fr; }
+  .opiniones-grid { grid-template-columns: 1fr; }
   .offer .button-primary, .offer .button-secondary, .upsell .button-primary { flex: 1 1 100%; }
   .stats { grid-template-columns: 1fr 1fr; }
   .table-head, .table-row { grid-template-columns: 1.35fr .95fr .95fr; font-size: .72rem; }
@@ -1288,8 +1311,9 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
     </div>
 
     <div class="pdp-info">
-      <p class="eyebrow" data-gesicomm-bind="categoria"></p>
+      <p class="eyebrow" data-gesicomm-bind="insignia_principal"></p>
       <h1 data-gesicomm-bind="nombre"></h1>
+      <div class="pdp-reviews"><span class="stars">★★★★★</span><a href="#opiniones" data-gesicomm-bind="resenas_texto"></a></div>
       <!-- Propuesta de valor: el porqué en una frase (Productos → Vista del producto). -->
       <p class="pdp-promesa" data-gesicomm-bind="propuesta_valor"></p>
       <div class="pdp-prices">
@@ -1405,11 +1429,24 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
       <div class="buy-row">
         <!-- Con paquetes, la cantidad la da el paquete elegido. -->
         <input class="qty" type="number" min="1" max="99" value="1" aria-label="Cantidad" data-gesicomm-cantidad-input data-gesicomm-sin="tiene_paquetes">
-        <button class="button-primary" type="button" data-gesicomm-comprar><span data-gesicomm-cta>Comprar ahora</span> · <span data-gesicomm-total></span></button>
+        <button class="button-primary" type="button" data-gesicomm-comprar><span data-gesicomm-cta data-gesicomm-bind="cta_texto">Comprar ahora</span> · <span data-gesicomm-total></span></button>
       </div>
       <div class="buy-secondary">
-        <button class="button-secondary" type="button" data-gesicomm-agregar>Agregar al carrito</button>
+        <button class="button-secondary" type="button" data-gesicomm-agregar><span data-gesicomm-bind="agregar_carrito_texto">Agregar al carrito</span></button>
         <button class="button-secondary" type="button" data-gesicomm-whatsapp>Consultar por WhatsApp</button>
+      </div>
+      <div class="payment-actions" data-gesicomm-lista="botones_pago_producto">
+        <template><a class="payment-action" data-gesicomm-bind="url" target="_blank" rel="noopener"><span data-gesicomm-bind="label"></span></a></template>
+      </div>
+      <div class="payment-methods" data-gesicomm-lista="metodos_pago_producto">
+        <template><span data-gesicomm-bind="texto"></span></template>
+      </div>
+      <div class="contact-actions" data-gesicomm-lista="botones_contacto_producto">
+        <template><a class="contact-action" data-gesicomm-bind="url" target="_blank" rel="noopener"><span data-gesicomm-bind="label"></span></a></template>
+      </div>
+      <div class="order-includes" data-gesicomm-lista="incluye_pedido_producto">
+        <h2>¿Qué incluye tu pedido?</h2>
+        <ul><template><li data-gesicomm-bind="texto"></li></template></ul>
       </div>
 
       <!-- Junto al botón, lo que se busca antes de comprar: envío, pago y
@@ -1457,7 +1494,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
 <!-- Beneficios completos: cada motivo con su explicación. -->
 <section id="beneficios" class="section beneficios-section" data-gesicomm-lista="beneficios">
   <div class="container">
-    <div class="section-heading"><p class="eyebrow">Por qué elegirlo</p><h2>Lo que vas a notar.</h2></div>
+    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="beneficios_kicker">Por qué elegirlo</p><h2 data-gesicomm-bind="beneficios_titulo">Lo que vas a notar.</h2><p data-gesicomm-bind="beneficios_subtitulo"></p></div>
     <div class="beneficios-grid" data-gesicomm-lista="beneficios">
       <template>
         <article class="beneficio">
@@ -1598,6 +1635,23 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
   </div>
 </section>
 
+<!-- Opiniones reales cargadas por el comercio para este producto. -->
+<section id="opiniones" class="section opiniones-section" data-gesicomm-lista="opiniones_producto">
+  <div class="container">
+    <div class="section-heading"><p class="eyebrow" data-gesicomm-bind="opiniones_kicker">Opiniones</p><h2 data-gesicomm-bind="opiniones_titulo">Personas que ya lo probaron.</h2><p data-gesicomm-bind="opiniones_subtitulo"></p></div>
+    <div class="opiniones-grid" data-gesicomm-lista="opiniones_producto">
+      <template>
+        <article class="opinion-card">
+          <div class="opinion-head"><img class="opinion-avatar" data-gesicomm-bind="imagen" alt="" loading="lazy"><div class="opinion-stars" data-gesicomm-bind="estrellas"></div></div>
+          <p data-gesicomm-bind="comentario"></p>
+          <b data-gesicomm-bind="nombre"></b>
+          <small data-gesicomm-bind="detalle"></small>
+        </article>
+      </template>
+    </div>
+  </div>
+</section>
+
 <!-- Preguntas frecuentes del producto: responde las dudas que frenan la compra. -->
 <section id="preguntas" class="section faq-section" data-gesicomm-lista="preguntas">
   <div class="container faq-container">
@@ -1616,7 +1670,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
 <!-- Recomendados: según la configuración de venta de la landing. -->
 <section id="relacionados" class="related" data-gesicomm-lista="recomendados">
   <div class="container">
-    <div class="section-heading"><p class="eyebrow">Te puede gustar</p><h2 data-gesicomm-venta="recomendados_titulo">Te puede gustar</h2></div>
+    <div class="section-heading"><p class="eyebrow" data-gesicomm-venta="recomendados_kicker">Te puede gustar</p><h2 data-gesicomm-venta="recomendados_titulo">Te puede gustar</h2><p data-gesicomm-venta="recomendados_subtitulo"></p></div>
     <div class="product-grid" data-gesicomm-lista="recomendados">
       <template>
         <article class="product-card">
@@ -1626,7 +1680,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#" data-gesicomm-inicio>Inicio</a>
             <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
             <div class="product-footer">
               <span class="price" data-gesicomm-bind="precio"></span>
-              <button class="button-primary" type="button" data-gesicomm-agregar>Agregar</button>
+              <button class="button-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="recomendados_cta">Agregar</button>
             </div>
           </div>
         </article>
@@ -1754,7 +1808,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">Detalles</a>
   <!-- Complementos: el resto de la selección (se oculta si no hay). -->
   <section class="section" data-gesicomm-lista="recomendados">
     <div class="container">
-      <div class="section-heading"><p class="eyebrow">Complementá tu compra</p><h2 data-gesicomm-venta="recomendados_titulo">Te puede gustar</h2></div>
+      <div class="section-heading"><p class="eyebrow" data-gesicomm-venta="recomendados_kicker">Complementá tu compra</p><h2 data-gesicomm-venta="recomendados_titulo">Te puede gustar</h2><p data-gesicomm-venta="recomendados_subtitulo"></p></div>
       <div class="product-grid" data-gesicomm-lista="recomendados">
         <template>
           <article class="product-card">
@@ -1763,7 +1817,7 @@ ${HEADER_HTML.replace('__LINKS__', `<a href="#detalles">Detalles</a>
               <h3 data-gesicomm-bind="nombre" data-gesicomm-ver></h3>
               <div class="product-footer">
                 <span class="price" data-gesicomm-bind="precio"></span>
-                <button class="button-primary" type="button" data-gesicomm-agregar>Agregar</button>
+                <button class="button-primary" type="button" data-gesicomm-agregar data-gesicomm-venta="recomendados_cta">Agregar</button>
               </div>
             </div>
           </article>
@@ -1972,6 +2026,15 @@ a{color:inherit;text-decoration:none}
 .lv-field span{color:var(--lv-muted);font-size:11px;font-weight:850;text-transform:uppercase}
 .lv-field input,.lv-field select,.lv-field textarea{width:100%;min-height:43px;border:1px solid var(--lv-line);border-radius:7px;background:#fff;color:var(--gc-texto);padding:10px 12px;outline:none}
 .lv-field input:focus,.lv-field select:focus,.lv-field textarea:focus{border-color:var(--gc-primario);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc-primario) 14%,transparent)}
+.lv-pay-options{display:grid;gap:10px}
+.lv-pay-option{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1.5px solid var(--lv-line);border-radius:var(--lv-radius);cursor:pointer;background:#fff}
+.lv-pay-option input{width:16px!important;min-height:0!important;height:16px;margin:3px 0 0;padding:0;border:0;background:none;accent-color:var(--gc-primario);flex-shrink:0}
+.lv-pay-option-copy{display:grid;gap:2px;min-width:0}
+.lv-pay-option-copy strong{display:flex;align-items:center;flex-wrap:wrap;gap:8px;color:var(--gc-texto);font-size:14px}
+.lv-pay-option-copy small{color:var(--lv-muted);font-size:12px;line-height:1.4}
+.lv-pay-option-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;background:var(--gc-primario);color:var(--gc-texto-sobre-primario)}
+.lv-pay-option--highlight{border-color:color-mix(in srgb,var(--gc-primario) 55%,transparent);background:color-mix(in srgb,var(--gc-primario) 10%,var(--lv-surface))}
+.lv-pay-option:has(input:checked){border-color:var(--gc-primario);box-shadow:0 0 0 3px color-mix(in srgb,var(--gc-primario) 20%,transparent)}
 .lv-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .lv-card{background:var(--lv-surface);border:1px solid var(--lv-line);border-radius:var(--lv-radius);overflow:hidden;box-shadow:0 10px 24px rgba(16,32,29,.05);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
 .lv-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--gc-primario) 34%,var(--lv-line));box-shadow:0 18px 34px rgba(16,32,29,.1)}
@@ -2283,13 +2346,25 @@ const CHECKOUT_HTML = `<div class="lv-shell">
             <span>Direccion</span>
             <input name="direccion" autocomplete="street-address" required>
           </label>
-          <label class="lv-field lv-wide">
+          <div class="lv-field lv-wide">
             <span>Metodo de pago</span>
-            <select name="payment_method">
-              <option value="contra_entrega">Pago al recibir</option>
-              <option value="pagopar">Pago online con PagoPar</option>
-            </select>
-          </label>
+            <div class="lv-pay-options">
+              <label class="lv-pay-option lv-pay-option--highlight">
+                <input type="radio" name="payment_method" value="pagopar" checked>
+                <span class="lv-pay-option-copy">
+                  <strong>Pago anticipado <em class="lv-pay-option-badge">Recomendado</em></strong>
+                  <small>Tarjetas, QR o Tigo Money. Tu pedido queda confirmado al instante.</small>
+                </span>
+              </label>
+              <label class="lv-pay-option">
+                <input type="radio" name="payment_method" value="contra_entrega">
+                <span class="lv-pay-option-copy">
+                  <strong>Pago contra entrega</strong>
+                  <small>Pagas en efectivo cuando recibis el pedido.</small>
+                </span>
+              </label>
+            </div>
+          </div>
           <label class="lv-field lv-wide">
             <span>Notas para la tienda</span>
             <textarea name="notas" rows="3" placeholder="Referencia de entrega, horario preferido u otra aclaracion"></textarea>
@@ -2399,3 +2474,11 @@ const PRODUCTO_CSS_GENERICO = PRODUCTO_CSS
 
 export const PLANTILLA_PRODUCTO = { html: PRODUCTO_HTML_GENERICO, css: PRODUCTO_CSS_GENERICO, js: JS_COMUN };
 export const PLANTILLA_PRODUCTO_SUPLEMENTOS = { html: PRODUCTO_HTML, css: PRODUCTO_CSS, js: JS_COMUN };
+
+
+
+
+
+
+
+

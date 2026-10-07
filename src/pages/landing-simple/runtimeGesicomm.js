@@ -419,6 +419,16 @@ export function runtimeGesicomm() {
     switch (campo) {
       case 'nombre': valor = item.titulo_comercial || item.nombre; break;
       case 'descripcion': valor = item.mensaje_comercial || item.descripcion; break;
+      case 'insignia_principal': valor = item.insignia_principal || item.categoria || ''; break;
+      case 'resenas_texto': valor = item.resenas_texto || 'Sin reseñas todavía'; break;
+      case 'cta_texto': valor = item.cta_texto || 'Comprar ahora'; break;
+      case 'agregar_carrito_texto': valor = item.agregar_carrito_texto || 'Agregar al carrito'; break;
+      case 'beneficios_kicker': valor = item.beneficios_kicker || 'Por qué elegirlo'; break;
+      case 'beneficios_titulo': valor = item.beneficios_titulo || 'Lo que vas a notar.'; break;
+      case 'beneficios_subtitulo': valor = item.beneficios_subtitulo || ''; break;
+      case 'opiniones_kicker': valor = item.opiniones_kicker || 'Opiniones'; break;
+      case 'opiniones_titulo': valor = item.opiniones_titulo || 'Personas que ya lo probaron.'; break;
+      case 'opiniones_subtitulo': valor = item.opiniones_subtitulo || ''; break;
       case 'precio': valor = formatoPrecio(item.precio_efectivo !== undefined ? item.precio_efectivo : precioDe(item, variante)); break;
       case 'precio_unitario': valor = formatoPrecio(item.precio_unitario); break;
       case 'subtotal': valor = formatoPrecio(item.subtotal); break;
@@ -721,7 +731,10 @@ export function runtimeGesicomm() {
     var urg = venta.urgencia || {};
     var marca = (venta.inicio && venta.inicio.marca) || (venta.inicio_comercial && venta.inicio_comercial.marca) || {};
     switch (campo) {
+      case 'recomendados_kicker': return venta.recomendados_kicker || 'Te puede gustar';
       case 'recomendados_titulo': return venta.recomendados_titulo || 'Te puede gustar';
+      case 'recomendados_subtitulo': return venta.recomendados_subtitulo || '';
+      case 'recomendados_cta': return venta.recomendados_cta || 'Agregar';
       case 'urgencia_titulo': return urg.titulo || 'Ofertas que terminan pronto';
       case 'urgencia_texto': return urg.texto || 'Aprovechá antes de que se agoten';
       case 'urgencia_cta': return urg.cta_texto || 'Ver todos';
@@ -768,6 +781,7 @@ export function runtimeGesicomm() {
   var LISTAS_DE_DATOS = {
     categorias: 1, menu_categorias: 1, banners_inicio: 1, banners_intermedios: 1, secciones_inicio: 1,
     beneficios: 1, confianza: 1, preguntas: 1, combo_incluye: 1, estadisticas: 1, checkout_items: 1,
+    botones_pago_producto: 1, metodos_pago_producto: 1, incluye_pedido_producto: 1,
     anuncios: 1, confianza_inicio: 1, marca_badges: 1, marca_medios: 1,
   };
   var LISTA_PAQUETES = 'paquetes';
@@ -784,29 +798,40 @@ export function runtimeGesicomm() {
     { icono: 'truck', titulo: 'Envíos a tu zona', texto: 'Confirmá la cobertura, el costo y el plazo antes de pedir.' },
   ];
 
+  // El runtime vive en un iframe aislado sin el set de íconos de React del
+  // editor (lucide-react, ver iconosBeneficios.js) — por eso la clave
+  // guardada (ej. "truck") se traduce a un glifo simple acá, mismo criterio
+  // que el carrito (🛒) del header. Mismo catálogo que el selector de
+  // íconos del editor (ConfigurarVentaCodigo.jsx, ICONOS_CONFIANZA) — una
+  // clave nueva ahí necesita su glifo acá también.
+  var EMOJI_CONFIANZA = {
+    shield: '🛡️', card: '💳', truck: '🚚', rotate: '↺', badge: '✅', heart: '❤️',
+    leaf: '🌿', headphones: '🎧', package: '📦', clock: '⏱️', gift: '🎁', star: '⭐',
+    lock: '🔒', whatsapp: '💬', mail: '✉️', location: '📍', cash: '💵',
+  };
   // El runtime nunca deja la barra ni la zona de confianza vacías: sin
   // configurar todavía, se ven con este contenido de ejemplo (igual criterio
   // que textoVenta/urgencia). El comercio lo reemplaza desde el editor.
-  var ICONOS_ANUNCIOS = ['✦', '✓', '◉', '↺'];
+  // Ícono por defecto cuando el anuncio todavía no tiene uno elegido (texto
+  // suelto guardado antes de que existiera el selector, o nunca tocado) —
+  // cicla estos 4 en vez de repetir siempre el mismo.
+  var ICONOS_ANUNCIOS_DEFAULT = ['✦', '✓', '◉', '↺'];
   function anunciosInicio() {
     var lista = inicioConfig().anuncios;
-    var textos = Array.isArray(lista) && lista.length ? lista : ANUNCIOS_DEFAULT;
-    var items = textos.map(function (texto, i) { return { texto: texto, icono: ICONOS_ANUNCIOS[i % ICONOS_ANUNCIOS.length] }; });
+    var fuente = Array.isArray(lista) && lista.length ? lista : ANUNCIOS_DEFAULT;
+    var items = fuente.map(function (it, i) {
+      var esObjeto = it && typeof it === 'object';
+      var texto = esObjeto ? (it.texto || '') : (it || '');
+      var claveIcono = esObjeto ? it.icono : '';
+      var icono = (claveIcono && EMOJI_CONFIANZA[claveIcono]) || ICONOS_ANUNCIOS_DEFAULT[i % ICONOS_ANUNCIOS_DEFAULT.length];
+      return { texto: texto, icono: icono };
+    });
     // El track se duplica una vez para el loop sin cortes (transform
     // translateX(-50%), ver .trust-track) — repetir el ciclo entero, no
     // completar a un número fijo, para que no quede media vuelta pegada.
     return items.concat(items);
   }
 
-  // El runtime vive en un iframe aislado sin el set de íconos de React del
-  // editor (lucide-react, ver iconosBeneficios.js) — por eso la clave
-  // guardada (ej. "truck") se traduce a un glifo simple acá, mismo criterio
-  // que el carrito (🛒) y los anuncios (✦/✓/◉/↺) del header.
-  var EMOJI_CONFIANZA = {
-    shield: '🛡️', card: '💳', truck: '🚚', rotate: '↺', badge: '✅', heart: '❤️',
-    leaf: '🌿', headphones: '🎧', package: '📦', clock: '⏱️', gift: '🎁', star: '⭐',
-    lock: '🔒', whatsapp: '💬', mail: '✉️', location: '📍', cash: '💵',
-  };
   function confianzaInicio() {
     var lista = inicioConfig().confianza;
     var items = Array.isArray(lista) && lista.length ? lista : CONFIANZA_DEFAULT;
@@ -851,10 +876,86 @@ export function runtimeGesicomm() {
   // propio, nunca el de `filtros`: esa es la categoría del catálogo
   // completo, no debe mezclarse con esta grilla chica del inicio.
   var pcCategoriaActiva = '';
+  var pcBusqueda = '';
+
+  function urlContactoProducto(boton) {
+    var tipo = String(boton && boton.tipo || 'whatsapp');
+    var valor = String(boton && boton.valor || '').trim();
+    if (tipo === 'checkout') return '/checkout';
+    if (tipo === 'contacto') return '/contacto';
+    if (tipo === 'url') return urlSegura(valor) || '#';
+    var numero = String((datos.tienda && datos.tienda.whatsapp) || '').replace(/\D/g, '');
+    if (!numero) return '#';
+    var mensaje = valor || ('Hola! Quiero consultar por ' + (productoActual && productoActual.nombre || 'este producto'));
+    return 'https://wa.me/' + numero + '?text=' + encodeURIComponent(mensaje);
+  }
+
+  function contactosProducto() {
+    var lista = productoActual && Array.isArray(productoActual.botones_contacto) ? productoActual.botones_contacto : [];
+    return lista.map(function (b) {
+      return {
+        label: String(b.label || '').trim() || 'Consultar',
+        tipo: b.tipo || 'whatsapp',
+        valor: b.valor || '',
+        url: urlContactoProducto(b),
+      };
+    }).filter(function (b) { return b.label; }).slice(0, 4);
+  }
+
+  function botonesPagoProducto() {
+    var lista = productoActual && Array.isArray(productoActual.botones_pago) ? productoActual.botones_pago : [];
+    return lista.map(function (b) {
+      return {
+        label: String(b.label || '').trim() || 'Pagar',
+        tipo: b.tipo || 'checkout',
+        valor: b.valor || '',
+        url: urlContactoProducto(b),
+      };
+    }).filter(function (b) { return b.label; }).slice(0, 4);
+  }
+
+  function metodosPagoProducto() {
+    var lista = productoActual && Array.isArray(productoActual.metodos_pago) ? productoActual.metodos_pago : [];
+    return lista.map(function (m) { return { texto: String((m && (m.texto || m.label)) || '').trim() }; })
+      .filter(function (m) { return m.texto; }).slice(0, 8);
+  }
+
+  function incluyePedidoProducto() {
+    var lista = productoActual && Array.isArray(productoActual.incluye_pedido) ? productoActual.incluye_pedido : [];
+    return lista.map(function (m) { return { texto: String((m && (m.texto || m.titulo)) || '').trim() }; })
+      .filter(function (m) { return m.texto; }).slice(0, 8);
+  }
+
+  function opinionesProducto() {
+    var lista = productoActual && Array.isArray(productoActual.opiniones) ? productoActual.opiniones : [];
+    return lista.map(function (o) {
+      var n = Math.max(1, Math.min(5, Number(o.calificacion) || 5));
+      return {
+        nombre: String(o.nombre || '').trim(),
+        comentario: String(o.comentario || '').trim(),
+        detalle: String(o.detalle || '').trim(),
+        imagen: urlSegura(o.foto || o.imagen || o.avatar || '') || '',
+        calificacion: n,
+        estrellas: '★★★★★'.slice(0, n),
+      };
+    }).filter(function (o) { return o.nombre || o.comentario; }).slice(0, 6);
+  }
 
   function productosCategoriaFiltrados() {
     var base = productosCategoriaBase();
     if (pcCategoriaActiva) base = base.filter(function (p) { return String(p.categoria || '') === pcCategoriaActiva; });
+    if (pcBusqueda) {
+      base = base.filter(function (p) {
+        return normalizar([
+          p.nombre,
+          p.categoria,
+          p.marca,
+          p.etiqueta,
+          p.descripcion,
+          p.descripcion_corta,
+        ].filter(Boolean).join(' ')).indexOf(pcBusqueda) !== -1;
+      });
+    }
     var limite = Number(productosCategoriaConfig().limite);
     return base.slice(0, limite > 0 ? limite : 8);
   }
@@ -890,6 +991,8 @@ export function runtimeGesicomm() {
   function pintarProductosCategoria() {
     var seccion = document.querySelector('[data-gesicomm-bloque="productos_categoria"]');
     if (seccion) seccion.hidden = productosCategoriaBase().length === 0;
+    var vacio = document.querySelector('[data-gesicomm-pc-vacio]');
+    if (vacio) vacio.hidden = productosCategoriaBase().length === 0 || productosCategoriaFiltrados().length > 0;
     var cont = document.querySelector('[data-gesicomm-pc-tabs]');
     if (!cont) return;
     var cats = categoriasProductosCategoria();
@@ -1203,6 +1306,11 @@ export function runtimeGesicomm() {
       // (solo ficha) 1 unidad + los paquetes: el selector de cantidad/precio.
       case 'paquetes': base = paquetesDelProducto().length ? opcionesDePaquete() : []; break;
       case 'imagenes': base = productoActual ? (productoActual.imagenes_url || []) : []; break;
+      case 'botones_pago_producto': base = botonesPagoProducto(); break;
+      case 'metodos_pago_producto': base = metodosPagoProducto(); break;
+      case 'incluye_pedido_producto': base = incluyePedidoProducto(); break;
+      case 'botones_contacto_producto': base = contactosProducto(); break;
+      case 'opiniones_producto': base = opinionesProducto(); break;
       // Prueba social cuantitativa cargada en "Configurar venta" (venta.prueba_social.items):
       // en modo "demo" son valores de ejemplo de la IA, en "confirmado" son los reales del
       // comercio — el runtime los pinta igual en los dos casos, la diferencia es de negocio.
@@ -1341,7 +1449,7 @@ export function runtimeGesicomm() {
       }
       if (algunaConDatos) { sec.style.display = ''; continue; }
       // ¿Hay algo vivo fuera de esas listas? (un CTA, un dato del producto)
-      var vivos = sec.querySelectorAll('[data-gesicomm-comprar], [data-gesicomm-agregar], [data-gesicomm-bind], [data-gesicomm-form], [data-gesicomm-whatsapp]');
+      var vivos = sec.querySelectorAll('[data-gesicomm-comprar], [data-gesicomm-agregar], [data-gesicomm-bind], [data-gesicomm-venta], [data-gesicomm-form], [data-gesicomm-whatsapp]');
       var hayVivoAfuera = false;
       for (var k = 0; k < vivos.length; k++) {
         if (!vivos[k].closest('[data-gesicomm-lista]')) { hayVivoAfuera = true; break; }
@@ -1958,6 +2066,12 @@ export function runtimeGesicomm() {
 
   document.addEventListener('input', function (e) {
     if (e.target && e.target.matches && e.target.matches('[data-gesicomm-cantidad-input]')) pintarTotal();
+    var pcBuscador = e.target && e.target.closest ? e.target.closest('[data-gesicomm-pc-buscar]') : null;
+    if (pcBuscador) {
+      pcBusqueda = normalizar(String(pcBuscador.value || '').slice(0, 80));
+      renderizar();
+      pintarProductosCategoria();
+    }
   });
 
   document.addEventListener('keydown', function (e) {
@@ -2395,3 +2509,8 @@ export function runtimeGesicomm() {
   // respuesta inicial solo trae los primeros productos).
   if (paginado && document.querySelector('[data-gesicomm-lista="catalogo"]')) pedirPagina('reemplazar');
 }
+
+
+
+
+

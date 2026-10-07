@@ -2778,20 +2778,79 @@ button.lp-tier-card--imagen {
   font-size: 0.84rem;
   font-weight: 850;
 }
-.lp-checkout-payment-methods label {
+.lp-pay-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  border: 1.5px solid color-mix(in srgb, var(--l-text, #f8fafc) 14%, transparent);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.lp-pay-option + .lp-pay-option {
+  margin-top: 0.6rem;
+}
+.lp-pay-option input[type='radio'] {
+  margin: 0.15rem 0 0;
+  accent-color: var(--l-primary);
+  flex-shrink: 0;
+}
+.lp-pay-option-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--l-text, #f8fafc) 8%, transparent);
+  color: var(--l-text-muted, #94a3b8);
+  flex-shrink: 0;
+}
+.lp-pay-option-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.lp-pay-option-title {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 800;
   color: var(--l-text, #f8fafc);
-  font-size: 0.82rem;
-  cursor: pointer;
 }
-.lp-checkout-payment-methods label + label {
-  margin-top: 0.65rem;
+.lp-pay-option-desc {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--l-text-muted, #94a3b8);
 }
-.lp-checkout-payment-methods input {
-  margin: 0;
-  accent-color: var(--l-primary);
+.lp-pay-option-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--l-primary);
+  color: var(--l-on-primary, #fff);
+}
+/* El anticipado se remarca SIEMPRE, no solo cuando está elegido: es la
+   opción que le conviene al comercio (cobra seguro, sin riesgo de rechazo en
+   la puerta) y tiene que saltar a la vista antes de que el cliente elija. */
+.lp-pay-option--highlight {
+  border-color: color-mix(in srgb, var(--l-primary) 55%, transparent);
+  background: color-mix(in srgb, var(--l-primary) 10%, transparent);
+}
+.lp-pay-option--highlight .lp-pay-option-icon {
+  background: var(--l-primary);
+  color: var(--l-on-primary, #fff);
+}
+.lp-pay-option.is-selected {
+  border-color: var(--l-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--l-primary) 22%, transparent);
 }
 .lp-checkout-total-box {
   display: grid;
@@ -3365,7 +3424,7 @@ button.lp-tier-card--imagen {
 .lp-product-relacionados {
   max-width: var(--l-max, 1240px);
   margin: 3.5rem auto 0;
-  padding-top: 2.5rem;
+  padding: 2.5rem var(--l-gutter, 24px) 0;
   border-top: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.08));
 }
 .lp-product-relacionados-titulo {
@@ -3430,6 +3489,22 @@ button.lp-tier-card--imagen {
   font-weight: 500;
   text-decoration: line-through;
   color: var(--l-text-muted, #94a3b8);
+}
+.lp-product-relacionados-cta {
+  margin: 0 0.7rem 0.8rem;
+  width: calc(100% - 1.4rem);
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--l-card-border, rgba(255, 255, 255, 0.08));
+  color: var(--l-text, #f8fafc);
+  font-size: 0.8rem;
+  font-weight: 800;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.lp-product-relacionados-cta:hover {
+  border-color: var(--l-primary);
+  color: var(--l-primary);
+  background: color-mix(in srgb, var(--l-primary) 10%, transparent);
 }
 
 

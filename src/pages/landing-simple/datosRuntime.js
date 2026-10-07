@@ -133,7 +133,11 @@ function ofertasRuntime(item, venta) {
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const fuente = venta?.presentacion_productos?.[key] || item;
-  return Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'urgencia_texto'].map(campo => [campo, String(fuente[campo] || '').trim()]));
+  return {
+    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo'].map(campo => [campo, String(fuente[campo] || '').trim()])),
+    botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : [],
+    opiniones: Array.isArray(fuente.opiniones) ? fuente.opiniones : [],
+  };
 }
 
 export function imagenesParaLanding(item, venta = null) {
@@ -185,6 +189,7 @@ export function itemPublicoARuntime(item, slug, venta = null) {
     // ficha de cada producto muestra "Llevalo en combo" con estos.
     combo_productos: item.tipo === 'combo' ? (item.productos_combo || []).map(p => Number(p.id)) : [],
     ...contenidoFicha(item),
+    ...presentacionComercial(item, venta),
     url: urlProducto(slug, item.content_id),
   };
 }
@@ -307,6 +312,7 @@ export function itemPanelARuntime(item, ofertas = [], imagenDeProducto, venta = 
     productos_incluidos: item.productos_incluidos || null,
     combo_productos: item.tipo === 'combo' ? (item.productos_combo || []).map(p => Number(p.id)) : [],
     ...contenidoFicha({ ...item, precio, precio_antes: precioAntes }),
+    ...presentacionComercial(item, venta),
     url: '#',
   };
 }
@@ -401,7 +407,10 @@ function ventaRuntime(venta, catalogo = [], productoPreferido = null) {
       banners: (Array.isArray(inicio.banners) ? inicio.banners : []).filter(Boolean).map(normalizarBanner),
       banners_intermedios: (Array.isArray(inicio.banners_intermedios) ? inicio.banners_intermedios : []).filter(Boolean).map(normalizarBanner),
     },
+    recomendados_kicker: venta.recomendados?.kicker || '',
     recomendados_titulo: venta.recomendados?.titulo || '',
+    recomendados_subtitulo: venta.recomendados?.subtitulo || '',
+    recomendados_cta: venta.recomendados?.cta_texto || '',
     paquetes: venta.paquetes || {},
     catalogo_filtros: venta.catalogo_filtros || {},
     urgencia,
@@ -526,4 +535,5 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
     recomendados: recomendadosVista(catalogo, producto, venta),
   };
 }
+
 

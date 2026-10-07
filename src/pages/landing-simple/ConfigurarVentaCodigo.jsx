@@ -174,6 +174,37 @@ const PARTES_CODIGO = [
 
 const clave = item => `${item.tipo}:${item.id}`;
 
+class PanelLazyErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.resetKey !== prevProps.resetKey && this.state.error) {
+      this.setState({ error: null });
+    }
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+
+    return (
+      <div className="rounded-xl border border-danger/30 bg-danger/10 p-4 text-sm text-fg">
+        <p className="font-semibold">No se pudo cargar este panel.</p>
+        <p className="mt-1 text-fg-muted">Si el servidor de desarrollo acaba de reiniciarse, recargá la pantalla e intentá de nuevo.</p>
+        <button type="button" onClick={() => window.location.reload()} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+          <RefreshCw size={14} /> Recargar
+        </button>
+      </div>
+    );
+  }
+}
+
 function formatearGs(n) {
   const num = Number(n);
   if (!Number.isFinite(num) || num <= 0) return '';
@@ -271,7 +302,7 @@ const TIPOS_BLOQUE_INICIO = [
   'novedades', 'combos', 'colecciones', 'preguntas', 'contacto',
 ];
 const ETIQUETAS_BLOQUE_INICIO = {
-  anuncios: 'Barra de confianza (anuncios)',
+  anuncios: 'Barra de anuncios',
   banner: 'Banner principal',
   categorias: 'Categorías visuales',
   productos_categoria: 'Productos por categoría',
@@ -361,7 +392,11 @@ function normalizarInicioComercial(inicio = {}, categorias = []) {
       crearSeccionInicio('categoria', primeraCategoria),
     ],
     bloques: normalizarBloquesInicio(inicio.bloques),
-    anuncios: Array.isArray(inicio.anuncios) ? inicio.anuncios : [],
+    // Acepta el string suelto que guardaban las landings de antes del
+    // selector de ícono (ver limpiarAnuncioInicio, backend).
+    anuncios: Array.isArray(inicio.anuncios)
+      ? inicio.anuncios.map(it => (typeof it === 'string' ? { texto: it, icono: '' } : { texto: it?.texto || '', icono: it?.icono || '' }))
+      : [],
     confianza: Array.isArray(inicio.confianza) ? inicio.confianza : [],
     productos_categoria: {
       activo: productosCategoria.activo === true,
@@ -516,6 +551,9 @@ export default function ConfigurarVentaCodigo({
   const [recoItems, setRecoItems] = useState(ventaInicial.recomendados?.items || []);
   const [recoMax, setRecoMax] = useState(ventaInicial.recomendados?.max || 4);
   const [recoTitulo, setRecoTitulo] = useState(ventaInicial.recomendados?.titulo || '');
+  const [recoKicker, setRecoKicker] = useState(ventaInicial.recomendados?.kicker || '');
+  const [recoSubtitulo, setRecoSubtitulo] = useState(ventaInicial.recomendados?.subtitulo || '');
+  const [recoCta, setRecoCta] = useState(ventaInicial.recomendados?.cta_texto || '');
 
   // Countdown de oferta y estadísticas: pueden ser datos reales confirmados
   // o contenido de ejemplo/generado por IA. Si quedan sin confirmar, publicar
@@ -903,15 +941,15 @@ export default function ConfigurarVentaCodigo({
   }
 
   // ─── Anuncios (barra de confianza de arriba) ───────────────────────────
-  function cambiarAnuncio(idx, texto) {
+  function cambiarAnuncio(idx, cambio) {
     setInicioComercial(prev => {
       const anuncios = [...(prev.anuncios || [])];
-      anuncios[idx] = texto;
+      anuncios[idx] = { ...anuncios[idx], ...cambio };
       return { ...prev, anuncios };
     });
   }
   function agregarAnuncio() {
-    setInicioComercial(prev => ({ ...prev, anuncios: [...(prev.anuncios || []), ''].slice(0, 8) }));
+    setInicioComercial(prev => ({ ...prev, anuncios: [...(prev.anuncios || []), { texto: '', icono: '' }].slice(0, 8) }));
   }
   function quitarAnuncio(idx) {
     setInicioComercial(prev => ({ ...prev, anuncios: (prev.anuncios || []).filter((_, i) => i !== idx) }));
@@ -1048,8 +1086,15 @@ export default function ConfigurarVentaCodigo({
     banners: inicioComercial.banners.filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
     banners_intermedios: (inicioComercial.banners_intermedios || []).filter(b => b.activo !== false && (b.titulo || b.subtitulo || b.imagen)),
     secciones: inicioComercial.secciones.filter(s => s.activo !== false && s.titulo),
-    anuncios: (inicioComercial.anuncios || []).map(t => (t || '').trim()).filter(Boolean),
+    anuncios: (inicioComercial.anuncios || [])
+      .map(it => ({ texto: (it?.texto || '').trim(), icono: it?.icono || '' }))
+      .filter(it => it.texto),
     confianza: (inicioComercial.confianza || []).filter(it => it && (it.titulo || it.texto)).slice(0, 3),
+    // "activo" ya no es un interruptor manual: se prende solo con contenido
+    // real, mismo criterio que los banners de arriba — así no hay dos
+    // controles (el "Mostrar" del bloque + uno adentro) para lo mismo.
+    marca: { ...inicioComercial.marca, activo: !!(inicioComercial.marca.titulo || inicioComercial.marca.texto || inicioComercial.marca.medios?.length) },
+    productos_categoria: { ...inicioComercial.productos_categoria, activo: (inicioComercial.productos_categoria.items || []).length > 0 },
   }), [inicioComercial]);
 
   const ventaActual = useMemo(() => ({
@@ -1066,8 +1111,14 @@ export default function ConfigurarVentaCodigo({
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
-      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'urgencia_texto'].map(campo => [campo, value[campo] || ''])),
+      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo'].map(campo => [campo, value[campo] || ''])),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
+      ...(Array.isArray(value.beneficios) ? { beneficios: value.beneficios.filter(b => b && (b.titulo || b.texto)).slice(0, 8) } : {}),
+      ...(Array.isArray(value.botones_pago) ? { botones_pago: value.botones_pago.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
+      ...(Array.isArray(value.metodos_pago) ? { metodos_pago: value.metodos_pago.filter(m => m && (m.texto || m.label)).slice(0, 8) } : {}),
+      ...(Array.isArray(value.incluye_pedido) ? { incluye_pedido: value.incluye_pedido.filter(i => i && (i.texto || i.titulo)).slice(0, 8) } : {}),
+      ...(Array.isArray(value.botones_contacto) ? { botones_contacto: value.botones_contacto.filter(b => b && (b.label || b.tipo || b.valor)).slice(0, 4) } : {}),
+      ...(Array.isArray(value.opiniones) ? { opiniones: value.opiniones.filter(o => o && (o.nombre || o.comentario)).slice(0, 6) } : {}),
     }])),
     // El producto que abre la landing en "Directo en un producto" (con una
     // regla no hay items guardados que lo pongan primero).
@@ -1081,6 +1132,9 @@ export default function ConfigurarVentaCodigo({
       items: recoItemsValidos,
       max: recoMax,
       titulo: recoTitulo,
+      kicker: recoKicker,
+      subtitulo: recoSubtitulo,
+      cta_texto: recoCta,
     },
     urgencia: {
       activo: urgenciaActiva,
@@ -1416,7 +1470,7 @@ export default function ConfigurarVentaCodigo({
                       if (key === 'inicio') verDonde('inicio', null);
                       if (key === 'catalogo') verDonde('catalogo', null);
                       if (key === 'categorias') { if (categoriaPreviewValida) setCategoriaPreview(categoriaPreviewValida); verDonde('categoria', null); }
-                      if (key === 'fichas') { setVistaPreview('producto'); setAvisoPreview('Elegí un producto para configurar su ficha.'); setResaltado(null); }
+                      if (key === 'fichas') { const primero = productoEditando || candidatosDatosProducto[0]?.content_id || null; if (primero) { seleccionarProductoConfig(primero); } else { setVistaPreview('producto'); setAvisoPreview('Elegí un producto para configurar su ficha.'); setResaltado(null); } }
                       if (key === 'checkout') verDonde('checkout', null);
                       if (key === 'ofertas') verOfertas();
                       if (key === 'combos') { setVistaPreview('inicio'); setAvisoPreview('Los combos aparecen como packs o vitrinas cuando están activos y sumados a la landing.'); setResaltado(null); }
@@ -1433,35 +1487,27 @@ export default function ConfigurarVentaCodigo({
               {seccionConfig === 'fichas' && (
                 <>
                   <Bloque
-                    titulo="Fichas de producto"
-                    ayuda="Elegí un producto y configurá solo esa ficha. La lista evita tener diez formularios abiertos a la vez."
+                    titulo="1. Elegí el producto que vas a editar"
+                    ayuda="La ficha se edita de a un producto: elegís uno, el panel de abajo cambia a esa ficha y la preview salta al producto seleccionado."
                   >
                     {candidatosDatosProducto.length === 0 ? (
                       <p className="text-sm text-fg-muted">Agregá productos desde Productos para configurar sus fichas.</p>
                     ) : (
-                      <div className="space-y-2">
-                        <Buscador valor={busqueda} onChange={setBusqueda} placeholder="Buscar producto..." etiqueta="Buscar producto para configurar" />
-                        <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-1">
-                          {candidatosDatosProducto
-                            .filter(item => !busqueda.trim() || normalizarTexto(item.nombre).includes(normalizarTexto(busqueda)))
-                            .map(item => {
-                              const activo = productoConfigActual?.content_id === item.content_id;
-                              return (
-                                <button
-                                  key={item.content_id}
-                                  type="button"
-                                  onClick={() => seleccionarProductoConfig(item.content_id)}
-                                  className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors ${activo ? 'border-accent bg-accent/[0.08]' : 'border-border hover:border-border-strong hover:bg-surface-2'}`}
-                                >
-                                  <Miniatura item={item} />
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm font-semibold text-fg">{item.nombre}</span>
-                                    <span className="block text-xs text-fg-muted tabular-nums">{formatearGs(precioDeVenta(item)) || 'Sin precio'}</span>
-                                  </span>
-                                  <span className="text-xs font-semibold text-primary-text">Editar →</span>
-                                </button>
-                              );
-                            })}
+                      <div className="space-y-3">
+                        <label className="block">
+                          <span className="block text-sm font-medium text-fg mb-1.5">Producto a editar</span>
+                          <select
+                            value={productoConfigActual?.content_id || ''}
+                            onChange={e => seleccionarProductoConfig(e.target.value)}
+                            className="w-full h-11 rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-fg outline-none focus:border-primary"
+                          >
+                            <option value="" disabled>Seleccioná un producto</option>
+                            {candidatosDatosProducto.map(item => <option key={item.content_id} value={item.content_id}>{item.nombre}</option>)}
+                          </select>
+                        </label>
+                        <div className="rounded-xl border border-border bg-surface-2/60 px-3.5 py-3">
+                          <p className="text-xs font-semibold text-fg">Ahora editás solo este producto</p>
+                          <p className="mt-1 text-[12px] leading-relaxed text-fg-muted">Imágenes, reseñas, textos, beneficios, compra, pagos, opiniones y recomendaciones quedan separados de los otros productos.</p>
                         </div>
                       </div>
                     )}
@@ -1523,13 +1569,23 @@ export default function ConfigurarVentaCodigo({
 
               <Bloque
                 titulo="Bloques del Inicio"
-                ayuda="El orden real de la página. Reordená, mostrá u ocultá cada sección — el Menú queda abajo porque vive en el header fijo."
+                ayuda="Todo lo que se ve en el homepage se edita acá, bloque por bloque: abrí uno para cambiar su contenido, reordená o mostrá/ocultá con los controles de la derecha."
                 verDonde={() => verDonde('inicio', null)}
               >
                 <EditorBloquesInicio
                   bloques={inicioComercial.bloques}
                   onMover={moverBloqueInicio}
                   onAlternar={alternarBloqueInicio}
+                  menuPanel={(
+                    <EditorMenuPrincipal
+                      items={inicioComercial.menu_links || []}
+                      categorias={categoriasInicioDisponibles}
+                      onAgregar={agregarMenuPrincipal}
+                      onCambiar={cambiarMenuPrincipal}
+                      onQuitar={quitarMenuPrincipal}
+                      onMover={moverMenuPrincipal}
+                    />
+                  )}
                   paneles={{
                     anuncios: (
                       <EditorAnuncios
@@ -1537,6 +1593,17 @@ export default function ConfigurarVentaCodigo({
                         onCambiar={cambiarAnuncio}
                         onAgregar={agregarAnuncio}
                         onQuitar={quitarAnuncio}
+                      />
+                    ),
+                    banner: (
+                      <EditorBannersInicio
+                        banners={inicioComercial.banners}
+                        categorias={categoriasInicioDisponibles}
+                        onAgregar={agregarBanner}
+                        onCambiar={cambiarBanner}
+                        onQuitar={quitarBanner}
+                        onMover={moverBanner}
+                        onSubir={onSubirImagen ? subirImagenLanding : null}
                       />
                     ),
                     productos_categoria: (
@@ -1564,147 +1631,101 @@ export default function ConfigurarVentaCodigo({
                         onSubir={onSubirImagen ? subirImagenLanding : null}
                       />
                     ),
+                    categorias: (
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-sm font-medium text-fg">
+                          <input type="checkbox" checked={inicioComercial.menu_categorias} onChange={e => cambiarInicio('menu_categorias', e.target.checked)} className="accent-primary" />
+                          Mostrar también en el menú de categorías del header
+                        </label>
+                        {inicioComercial.menu_categorias && (
+                          <EditorCategoriasInicio
+                            categorias={categoriasInicioDisponibles}
+                            seleccionadas={inicioComercial.categorias}
+                            onCambiar={cats => cambiarInicio('categorias', cats)}
+                          />
+                        )}
+                      </div>
+                    ),
+                    destacados: (
+                      <EditorProductosDestacados
+                        candidatosDestacados={candidatosDestacados}
+                        destacadosValidos={destacadosValidos}
+                        seleccionLength={seleccion.length}
+                        onAlternar={alternarDestacado}
+                        onVer={() => verDonde('inicio', 'productos_destacados')}
+                      />
+                    ),
+                    banner_intermedio: (
+                      <EditorBannersInicio
+                        banners={inicioComercial.banners_intermedios || []}
+                        categorias={categoriasInicioDisponibles}
+                        onAgregar={agregarBannerIntermedio}
+                        onCambiar={cambiarBannerIntermedio}
+                        onQuitar={quitarBannerIntermedio}
+                        onMover={moverBannerIntermedio}
+                        onSubir={onSubirImagen ? subirImagenLanding : null}
+                      />
+                    ),
+                    secciones_inicio: (
+                      <EditorSeccionesInicio
+                        secciones={inicioComercial.secciones}
+                        categorias={categoriasInicioDisponibles}
+                        productos={candidatosReco}
+                        onAgregar={agregarSeccionInicio}
+                        onCambiar={cambiarSeccionInicio}
+                        onQuitar={quitarSeccionInicio}
+                        onMover={moverSeccionInicio}
+                        onAlternarProducto={alternarProductoSeccion}
+                      />
+                    ),
+                    ofertas_urgencia: (
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 text-sm font-medium text-fg">
+                          <input type="checkbox" checked={urgenciaActiva} onChange={e => setUrgenciaActiva(e.target.checked)} className="accent-primary" />
+                          Activar la cuenta regresiva (también se usa en las fichas de producto)
+                        </label>
+                        {urgenciaActiva && (
+                          <>
+                            <EditorUrgenciaInicio
+                              titulo={urgenciaTitulo}
+                              texto={urgenciaTexto}
+                              cta={urgenciaCta}
+                              finAt={urgenciaFinAt}
+                              confirmar={urgenciaConfirmar}
+                              onTitulo={setUrgenciaTitulo}
+                              onTexto={setUrgenciaTexto}
+                              onCta={setUrgenciaCta}
+                              onFinAt={cambiarUrgenciaFinAt}
+                              onConfirmar={setUrgenciaConfirmar}
+                            />
+                            <EditorProductosOfertaLimitada
+                              productos={candidatosOfertaLimitada}
+                              seleccionados={urgenciaProductosValidos}
+                              productoEditando={productoOfertaEditando}
+                              onAlternar={alternarProductoUrgencia}
+                              onEditar={setProductoOfertaEditandoId}
+                              renderPresentacion={item => (
+                                <PresentacionProducto
+                                  key={item.content_id}
+                                  item={item}
+                                  ancla={anclas[claveItem(item)] ?? ''}
+                                  onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
+                                  onCambiar={(campo, valor) => cambiarPresentacion(item, campo, valor)}
+                                  destacado={destacadosValidos.includes(item.content_id)}
+                                  onDestacar={() => alternarDestacado(item.content_id)}
+                                  tienda={tienda}
+                                  onSubirImagen={onSubirImagen ? subirImagenLanding : null}
+                                  {...propsOfertaProducto(item)}
+                                  inicialmenteAbierto
+                                />
+                              )}
+                            />
+                          </>
+                        )}
+                      </div>
+                    ),
                   }}
                 />
-              </Bloque>
-
-              <Bloque
-                titulo="Menú principal"
-                ayuda="Elegí qué accesos aparecen en la barra superior y a dónde lleva cada uno."
-                verDonde={() => verDonde('inicio', null)}
-              >
-                <EditorMenuPrincipal
-                  items={inicioComercial.menu_links || []}
-                  categorias={categoriasInicioDisponibles}
-                  onAgregar={agregarMenuPrincipal}
-                  onCambiar={cambiarMenuPrincipal}
-                  onQuitar={quitarMenuPrincipal}
-                  onMover={moverMenuPrincipal}
-                />
-              </Bloque>
-
-              <Bloque
-                titulo="Banners promocionales"
-                ayuda="Son los banners grandes del carrusel principal, arriba de categorías."
-                verDonde={() => verDonde('inicio', 'banners_inicio')}
-              >
-                <EditorBannersInicio
-                  banners={inicioComercial.banners}
-                  categorias={categoriasInicioDisponibles}
-                  onAgregar={agregarBanner}
-                  onCambiar={cambiarBanner}
-                  onQuitar={quitarBanner}
-                  onMover={moverBanner}
-                  onSubir={onSubirImagen ? subirImagenLanding : null}
-                />
-              </Bloque>
-
-              <Bloque
-                titulo="Categorías visuales"
-                ayuda="Aparecen debajo del banner principal como accesos rápidos por categoría. El catálogo sigue usando las categorías reales de Productos."
-                interruptor={{ activo: inicioComercial.menu_categorias, onChange: v => cambiarInicio('menu_categorias', v), etiqueta: 'Mostrar categorías visuales en inicio' }}
-                verDonde={() => verDonde('inicio', 'menu_categorias')}
-              >
-                {inicioComercial.menu_categorias && (
-                  <EditorCategoriasInicio
-                    categorias={categoriasInicioDisponibles}
-                    seleccionadas={inicioComercial.categorias}
-                    onCambiar={cats => cambiarInicio('categorias', cats)}
-                  />
-                )}
-              </Bloque>
-
-              <Bloque
-                titulo="Productos destacados"
-                ayuda="Aparecen después de categorías. Si no marcás ninguno, Gesicomm usa los primeros productos de la selección."
-                verDonde={() => verDonde('inicio', 'productos_destacados')}
-              >
-                <EditorProductosDestacados
-                  candidatosDestacados={candidatosDestacados}
-                  destacadosValidos={destacadosValidos}
-                  seleccionLength={seleccion.length}
-                  onAlternar={alternarDestacado}
-                  onVer={() => verDonde('inicio', 'productos_destacados')}
-                />
-              </Bloque>
-
-              <Bloque
-                titulo="Banner intermedio"
-                ayuda="Aparece debajo de Productos destacados. Sirve para una campaña, colección o promoción puntual sin tocar el carrusel principal."
-                verDonde={() => verDonde('inicio', 'banners_intermedios')}
-              >
-                <EditorBannersInicio
-                  banners={inicioComercial.banners_intermedios || []}
-                  categorias={categoriasInicioDisponibles}
-                  onAgregar={agregarBannerIntermedio}
-                  onCambiar={cambiarBannerIntermedio}
-                  onQuitar={quitarBannerIntermedio}
-                  onMover={moverBannerIntermedio}
-                  onSubir={onSubirImagen ? subirImagenLanding : null}
-                />
-              </Bloque>
-
-              <Bloque
-                titulo="Vitrinas opcionales del inicio"
-                ayuda="Son filas extra de productos en la homepage, antes del catálogo completo. Podés crear una por categoría, por selección manual o por productos con descuento."
-                verDonde={() => verDonde('inicio', 'secciones_inicio')}
-              >
-                <EditorSeccionesInicio
-                  secciones={inicioComercial.secciones}
-                  categorias={categoriasInicioDisponibles}
-                  productos={candidatosReco}
-                  onAgregar={agregarSeccionInicio}
-                  onCambiar={cambiarSeccionInicio}
-                  onQuitar={quitarSeccionInicio}
-                  onMover={moverSeccionInicio}
-                  onAlternarProducto={alternarProductoSeccion}
-                />
-              </Bloque>
-
-              <Bloque
-                titulo="Oferta por tiempo limitado"
-                ayuda="Bloque global de urgencia para Inicio y fichas. La fecha de fin es editable y viaja al contador del lienzo."
-                interruptor={{ activo: urgenciaActiva, onChange: setUrgenciaActiva, etiqueta: 'Mostrar oferta por tiempo limitado' }}
-                verDonde={() => verDonde('inicio', 'urgencia')}
-              >
-                {urgenciaActiva && (
-                  <>
-                    <EditorUrgenciaInicio
-                      titulo={urgenciaTitulo}
-                      texto={urgenciaTexto}
-                      cta={urgenciaCta}
-                      finAt={urgenciaFinAt}
-                      confirmar={urgenciaConfirmar}
-                      onTitulo={setUrgenciaTitulo}
-                      onTexto={setUrgenciaTexto}
-                      onCta={setUrgenciaCta}
-                      onFinAt={cambiarUrgenciaFinAt}
-                      onConfirmar={setUrgenciaConfirmar}
-                    />
-                    <EditorProductosOfertaLimitada
-                      productos={candidatosOfertaLimitada}
-                      seleccionados={urgenciaProductosValidos}
-                      productoEditando={productoOfertaEditando}
-                      onAlternar={alternarProductoUrgencia}
-                      onEditar={setProductoOfertaEditandoId}
-                      renderPresentacion={item => (
-                        <PresentacionProducto
-                          key={item.content_id}
-                          item={item}
-                          ancla={anclas[claveItem(item)] ?? ''}
-                          onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(item)]: v }))}
-                          onCambiar={(campo, valor) => cambiarPresentacion(item, campo, valor)}
-                          destacado={destacadosValidos.includes(item.content_id)}
-                          onDestacar={() => alternarDestacado(item.content_id)}
-                          tienda={tienda}
-                          onSubirImagen={onSubirImagen ? subirImagenLanding : null}
-                          {...propsOfertaProducto(item)}
-                          inicialmenteAbierto
-                        />
-                      )}
-                    />
-                  </>
-                )}
               </Bloque>
 
               <Bloque
@@ -2012,8 +2033,8 @@ export default function ConfigurarVentaCodigo({
                 <>
               {/* Recomendados */}
               <Bloque
-                titulo="Productos recomendados"
-                ayuda="Una fila «Te puede gustar» al final de la ficha de cada producto."
+                titulo="8. Productos recomendados"
+                ayuda="Ultimo bloque de la ficha: titulo, subtitulo, cantidad y productos recomendados."
                 interruptor={{ activo: recoActivo, onChange: setRecoActivo, etiqueta: 'Mostrar productos recomendados' }}
                 verDonde={recoActivo ? verRecomendados : null}
               >
@@ -2115,7 +2136,48 @@ export default function ConfigurarVentaCodigo({
                       )
                     )}
 
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <label>
+                        <span className="block text-sm font-medium text-fg mb-1.5">Rótulo superior</span>
+                        <input
+                          value={recoKicker}
+                          onChange={e => setRecoKicker(e.target.value)}
+                          maxLength={50}
+                          placeholder="Te puede gustar"
+                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                        />
+                      </label>
+                      <label>
+                        <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
+                        <input
+                          value={recoTitulo}
+                          onChange={e => setRecoTitulo(e.target.value)}
+                          maxLength={80}
+                          placeholder="Productos recomendados"
+                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                        />
+                      </label>
+                      <label className="sm:col-span-2">
+                        <span className="block text-sm font-medium text-fg mb-1.5">Subtítulo</span>
+                        <textarea
+                          value={recoSubtitulo}
+                          onChange={e => setRecoSubtitulo(e.target.value)}
+                          maxLength={180}
+                          rows={2}
+                          placeholder="Elegí alternativas o complementos para que el cliente siga comprando."
+                          className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                        />
+                      </label>
+                      <label>
+                        <span className="block text-sm font-medium text-fg mb-1.5">Texto del botón</span>
+                        <input
+                          value={recoCta}
+                          onChange={e => setRecoCta(e.target.value)}
+                          maxLength={40}
+                          placeholder="Agregar"
+                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
+                        />
+                      </label>
                       <div>
                         <span id="reco-cantidad" className="block text-sm font-medium text-fg mb-1.5">Cuántos mostrar</span>
                         <div role="radiogroup" aria-labelledby="reco-cantidad" className="inline-flex rounded-lg bg-surface-2 p-1">
@@ -2133,148 +2195,11 @@ export default function ConfigurarVentaCodigo({
                           ))}
                         </div>
                       </div>
-                      <label className="flex-1">
-                        <span className="block text-sm font-medium text-fg mb-1.5">Título de la sección</span>
-                        <input
-                          value={recoTitulo}
-                          onChange={e => setRecoTitulo(e.target.value)}
-                          maxLength={80}
-                          placeholder="Te puede gustar"
-                          className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg placeholder:text-fg-muted/70 outline-none focus:border-primary"
-                        />
-                      </label>
                     </div>
                   </div>
                 )}
               </Bloque>
 
-              {/* Urgencia (countdown) */}
-              <Bloque
-                titulo="Countdown de oferta"
-                ayuda="Cuenta regresiva asociada a un producto concreto. Si la fecha no es real, se avisa al publicar."
-                interruptor={{ activo: urgenciaActiva, onChange: setUrgenciaActiva, etiqueta: 'Mostrar countdown de oferta' }}
-              >
-                {urgenciaActiva && (
-                  <div className="space-y-3">
-                    <label className="block max-w-lg">
-                      <span className="block text-sm font-medium text-fg mb-1.5">Producto al que corresponde</span>
-                      <select
-                        value={urgenciaProductoValido}
-                        onChange={e => setUrgenciaProductoId(e.target.value)}
-                        className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                      >
-                        {candidatosDatosProducto.map(item => (
-                          <option key={item.content_id} value={item.content_id}>{item.nombre}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block max-w-xs">
-                      <span className="block text-sm font-medium text-fg mb-1.5">Fin de la promoción</span>
-                      <input
-                        type="datetime-local"
-                        value={urgenciaFinAt}
-                        onChange={e => cambiarUrgenciaFinAt(e.target.value)}
-                        className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                      />
-                    </label>
-                    <label className="flex items-start gap-2 text-sm text-fg">
-                      <input
-                        type="checkbox"
-                        checked={urgenciaConfirmar}
-                        disabled={!urgenciaFinAt}
-                        onChange={e => setUrgenciaConfirmar(e.target.checked)}
-                        className="mt-0.5"
-                      />
-                      <span>
-                        Confirmo que esta es la fecha real de fin de la oferta.
-                        {!urgenciaConfirmar && (
-                          <span className="block text-xs text-amber-600 mt-0.5">
-                            Si no la confirmás, al publicar se va a pedir una aceptación explícita de que revisaste este dato generado o cargado como ejemplo.
-                          </span>
-                        )}
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </Bloque>
-
-              {/* Prueba social (estadísticas) */}
-              <Bloque
-                titulo="Estadísticas / prueba social"
-                ayuda="Cifras asociadas a un producto concreto. Si son generadas por IA o ejemplo, se advierte al publicar."
-                interruptor={{ activo: pruebaSocialActiva, onChange: setPruebaSocialActiva, etiqueta: 'Mostrar estadísticas' }}
-              >
-                {pruebaSocialActiva && (
-                  <div className="space-y-3">
-                    <label className="block max-w-lg">
-                      <span className="block text-sm font-medium text-fg mb-1.5">Producto al que corresponden</span>
-                      <select
-                        value={pruebaSocialProductoValido}
-                        onChange={e => setPruebaSocialProductoId(e.target.value)}
-                        className="w-full h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                      >
-                        {candidatosDatosProducto.map(item => (
-                          <option key={item.content_id} value={item.content_id}>{item.nombre}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <div className="space-y-2">
-                      {pruebaSocialItems.map((it, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <input
-                            value={it.valor}
-                            onChange={e => cambiarStatItem(idx, 'valor', e.target.value)}
-                            maxLength={20}
-                            placeholder="94%"
-                            className="w-24 h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                          />
-                          <input
-                            value={it.etiqueta}
-                            onChange={e => cambiarStatItem(idx, 'etiqueta', e.target.value)}
-                            maxLength={120}
-                            placeholder="se sintió más liviano"
-                            className="flex-1 h-10 rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
-                          />
-                          <button type="button" onClick={() => quitarStatItem(idx)} className="p-2 text-fg-muted hover:text-fg" aria-label="Quitar">
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    {pruebaSocialItems.length < 8 && (
-                      <button
-                        type="button"
-                        onClick={agregarStatItem}
-                        className="inline-flex items-center gap-1.5 text-[13px] font-medium text-primary-text hover:underline"
-                      >
-                        <Plus size={14} /> Agregar estadística
-                      </button>
-                    )}
-                    <label className="flex items-start gap-2 text-sm text-fg">
-                      <input
-                        type="checkbox"
-                        checked={pruebaSocialConfirmar}
-                        disabled={!estadisticasConfirmables}
-                        onChange={e => setPruebaSocialConfirmar(e.target.checked)}
-                        className="mt-0.5"
-                      />
-                      <span>
-                        Confirmo que estas cifras son reales.
-                        {!estadisticasConfirmables && (
-                          <span className="block text-xs text-fg-muted mt-0.5">
-                            Para confirmar, cargá al menos una cifra completa: valor y descripción.
-                          </span>
-                        )}
-                        {!pruebaSocialConfirmar && (
-                          <span className="block text-xs text-amber-600 mt-0.5">
-                            Si no las confirmás, al publicar se va a pedir una aceptación explícita de que revisaste estas cifras generadas o cargadas como ejemplo.
-                          </span>
-                        )}
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </Bloque>
                 </>
               )}
 
@@ -2987,45 +2912,78 @@ function EditorBannersInicio({ banners, categorias = [], onAgregar, onCambiar, o
 // (categorías, destacados, colecciones…) solo se puede prender/apagar y
 // reordenar — su contenido se configura en el bloque de abajo que ya
 // existía para eso (Categorías visuales, Productos destacados, etc.).
-function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {} }) {
+// Fila de un bloque — con o sin control de orden/visibilidad (el Menú no
+// tiene ninguno de los dos: vive fijo en el header).
+function FilaBloqueInicio({ numero, etiqueta, visible, primero, ultimo, onMover, onAlternar, panel, abierto, onAbrir }) {
+  const tienePanel = !!panel;
+  const puedeMoverse = !!onMover;
+  return (
+    <div className={`rounded-xl border ${visible === false ? 'border-border bg-surface-2/40 opacity-70' : 'border-border'}`}>
+      <div className="flex items-center gap-2 p-2.5">
+        <span className="w-5 shrink-0 text-center text-xs font-mono text-fg-muted">{numero}</span>
+        <button
+          type="button"
+          onClick={() => tienePanel && onAbrir(abierto ? null : numero)}
+          disabled={!tienePanel}
+          className={`min-w-0 flex-1 text-left text-sm font-medium text-fg ${tienePanel ? 'hover:underline' : ''}`}
+        >
+          {etiqueta}
+        </button>
+        {onAlternar && (
+          <label className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted">
+            <input type="checkbox" checked={visible} onChange={onAlternar} className="accent-primary" />
+            Mostrar
+          </label>
+        )}
+        <div className="flex items-center gap-1">
+          {puedeMoverse && (
+            <>
+              <button type="button" onClick={() => onMover(-1)} disabled={primero} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Subir bloque">
+                <ChevronUp size={14} className="mx-auto" />
+              </button>
+              <button type="button" onClick={() => onMover(1)} disabled={ultimo} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Bajar bloque">
+                <ChevronDown size={14} className="mx-auto" />
+              </button>
+            </>
+          )}
+          {tienePanel && (
+            <button type="button" onClick={() => onAbrir(abierto ? null : numero)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={abierto}>
+              {abierto ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+            </button>
+          )}
+        </div>
+      </div>
+      {abierto && tienePanel && <div className="border-t border-border p-3.5">{panel}</div>}
+    </div>
+  );
+}
+
+// Todo lo que afecta al Inicio se edita DESDE ACÁ, por bloque — nada
+// duplicado en paneles sueltos más abajo. El Menú entra como bloque 2, fijo
+// (vive en el header: no se reordena ni se oculta), el resto sale de
+// `bloques` (venta.inicio.bloques) con su orden y su "Mostrar".
+function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {}, menuPanel }) {
   const [abierto, setAbierto] = useState(null);
+  const filas = [bloques[0], { tipo: '__menu__' }, ...bloques.slice(1)];
   return (
     <div className="space-y-2">
-      {bloques.map((b, idx) => {
-        const tienePanel = !!paneles[b.tipo];
-        const expandido = abierto === b.tipo;
+      {filas.map((b, idx) => {
+        const esMenu = b.tipo === '__menu__';
+        const idxReal = esMenu ? -1 : (idx === 0 ? 0 : idx - 1);
         return (
-          <div key={b.tipo} className={`rounded-xl border ${b.visible ? 'border-border' : 'border-border bg-surface-2/40 opacity-70'}`}>
-            <div className="flex items-center gap-2 p-2.5">
-              <span className="w-5 shrink-0 text-center text-xs font-mono text-fg-muted">{idx + 1}</span>
-              <button
-                type="button"
-                onClick={() => tienePanel && setAbierto(expandido ? null : b.tipo)}
-                disabled={!tienePanel}
-                className={`min-w-0 flex-1 text-left text-sm font-medium text-fg ${tienePanel ? 'hover:underline' : ''}`}
-              >
-                {ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo}
-              </button>
-              <label className="inline-flex items-center gap-1.5 text-xs font-medium text-fg-muted">
-                <input type="checkbox" checked={b.visible} onChange={() => onAlternar(b.tipo)} className="accent-primary" />
-                Mostrar
-              </label>
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => onMover(b.tipo, -1)} disabled={idx === 0} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Subir bloque">
-                  <ChevronUp size={14} className="mx-auto" />
-                </button>
-                <button type="button" onClick={() => onMover(b.tipo, 1)} disabled={idx === bloques.length - 1} className="h-8 w-8 rounded-lg border border-border text-fg-muted hover:text-fg disabled:opacity-35" aria-label="Bajar bloque">
-                  <ChevronDown size={14} className="mx-auto" />
-                </button>
-                {tienePanel && (
-                  <button type="button" onClick={() => setAbierto(expandido ? null : b.tipo)} className="inline-flex h-8 items-center gap-1 rounded-lg border border-border px-2 text-xs font-semibold text-fg-muted hover:text-fg" aria-expanded={expandido}>
-                    {expandido ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                  </button>
-                )}
-              </div>
-            </div>
-            {expandido && tienePanel && <div className="border-t border-border p-3.5">{paneles[b.tipo]}</div>}
-          </div>
+          <FilaBloqueInicio
+            key={b.tipo}
+            numero={idx + 1}
+            etiqueta={esMenu ? 'Menú principal' : (ETIQUETAS_BLOQUE_INICIO[b.tipo] || b.tipo)}
+            visible={esMenu ? undefined : b.visible}
+            primero={idxReal === 0}
+            ultimo={idxReal === bloques.length - 1}
+            onMover={esMenu ? null : dir => onMover(b.tipo, dir)}
+            onAlternar={esMenu ? null : () => onAlternar(b.tipo)}
+            panel={esMenu ? menuPanel : paneles[b.tipo]}
+            abierto={abierto === idx + 1}
+            onAbrir={setAbierto}
+          />
         );
       })}
     </div>
@@ -3035,10 +2993,19 @@ function EditorBloquesInicio({ bloques, onMover, onAlternar, paneles = {} }) {
 function EditorAnuncios({ anuncios, onCambiar, onAgregar, onQuitar }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs text-fg-muted">La franja que se mueve arriba del todo. Si no agregás ninguno, se muestran unos de ejemplo.</p>
-      {(anuncios || []).map((texto, idx) => (
+      <p className="text-xs text-fg-muted">La franja que se mueve arriba del todo. Si no agregás ninguno, se muestran unos de ejemplo. Sin elegir ícono, se van ciclando unos genéricos.</p>
+      {(anuncios || []).map((it, idx) => (
         <div key={idx} className="flex items-center gap-2">
-          <CampoTexto value={texto} onChange={v => onCambiar(idx, v)} placeholder="Envío a todo Paraguay" maxLength={80} />
+          <select
+            value={it.icono || ''}
+            onChange={e => onCambiar(idx, { icono: e.target.value })}
+            aria-label="Ícono del anuncio"
+            className="h-9 w-32 shrink-0 rounded-lg border border-border bg-surface-2 px-2 text-sm text-fg outline-none focus:border-primary"
+          >
+            <option value="">Automático</option>
+            {ICONOS_CONFIANZA.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+          </select>
+          <CampoTexto value={it.texto} onChange={v => onCambiar(idx, { texto: v })} placeholder="Envío a todo Paraguay" maxLength={80} />
           <button type="button" onClick={() => onQuitar(idx)} className="h-9 px-2.5 rounded-lg border border-border text-xs font-medium text-danger hover:bg-danger/[0.06]">Quitar</button>
         </div>
       ))}
@@ -3082,40 +3049,33 @@ function EditorMarcaInicio({ marca, onCambiar, onCambiarBadge, onAgregarBadge, o
   const medio = marca.medios?.[0] || null;
   return (
     <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm font-semibold text-fg">
-        <input type="checkbox" checked={marca.activo} onChange={e => onCambiar({ activo: e.target.checked })} className="accent-primary" />
-        Mostrar esta sección
-      </label>
-      {marca.activo && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <CampoTexto label="Rótulo (kicker)" value={marca.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="CONOCÉ NUESTRA MARCA" maxLength={40} />
-            <CampoTexto label="Título" value={marca.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Lo cotidiano puede ser más simple." maxLength={100} />
-            <div className="sm:col-span-2"><CampoTexto label="Texto" value={marca.texto} onChange={v => onCambiar({ texto: v })} placeholder="Contá qué hace distinta a tu marca." maxLength={600} multiline /></div>
-          </div>
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-fg-muted">Badges (chips cortos)</p>
-            <div className="space-y-2">
-              {(marca.badges || []).map((texto, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <CampoTexto value={texto} onChange={v => onCambiarBadge(idx, v)} placeholder="Simplicidad" maxLength={30} />
-                  <button type="button" onClick={() => onQuitarBadge(idx)} className="h-9 px-2.5 rounded-lg border border-border text-xs font-medium text-danger hover:bg-danger/[0.06]">Quitar</button>
-                </div>
-              ))}
-              {(marca.badges || []).length < 6 && (
-                <button type="button" onClick={onAgregarBadge} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg hover:border-border-strong">
-                  <Plus size={13} /> Agregar badge
-                </button>
-              )}
+      <p className="text-xs text-fg-muted">Se muestra sola apenas cargues un título, un texto o una foto. Sin nada de eso, queda oculta aunque "Mostrar" esté tildado arriba.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <CampoTexto label="Rótulo (kicker)" value={marca.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="CONOCÉ NUESTRA MARCA" maxLength={40} />
+        <CampoTexto label="Título" value={marca.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Lo cotidiano puede ser más simple." maxLength={100} />
+        <div className="sm:col-span-2"><CampoTexto label="Texto" value={marca.texto} onChange={v => onCambiar({ texto: v })} placeholder="Contá qué hace distinta a tu marca." maxLength={600} multiline /></div>
+      </div>
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-fg-muted">Badges (chips cortos)</p>
+        <div className="space-y-2">
+          {(marca.badges || []).map((texto, idx) => (
+            <div key={idx} className="flex items-center gap-2">
+              <CampoTexto value={texto} onChange={v => onCambiarBadge(idx, v)} placeholder="Simplicidad" maxLength={30} />
+              <button type="button" onClick={() => onQuitarBadge(idx)} className="h-9 px-2.5 rounded-lg border border-border text-xs font-medium text-danger hover:bg-danger/[0.06]">Quitar</button>
             </div>
-          </div>
-          <EditorMedioBanner
-            banner={{ imagen: medio?.url || '', tipo_medio: medio?.tipo || 'imagen' }}
-            onCambiar={cambio => onCambiarMedio({ url: cambio.imagen ?? (medio?.url || ''), tipo: cambio.tipo_medio ?? (medio?.tipo || 'imagen') })}
-            onSubir={onSubir}
-          />
-        </>
-      )}
+          ))}
+          {(marca.badges || []).length < 6 && (
+            <button type="button" onClick={onAgregarBadge} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-fg hover:border-border-strong">
+              <Plus size={13} /> Agregar badge
+            </button>
+          )}
+        </div>
+      </div>
+      <EditorMedioBanner
+        banner={{ imagen: medio?.url || '', tipo_medio: medio?.tipo || 'imagen' }}
+        onCambiar={cambio => onCambiarMedio({ url: cambio.imagen ?? (medio?.url || ''), tipo: cambio.tipo_medio ?? (medio?.tipo || 'imagen') })}
+        onSubir={onSubir}
+      />
     </div>
   );
 }
@@ -3123,30 +3083,25 @@ function EditorMarcaInicio({ marca, onCambiar, onCambiarBadge, onAgregarBadge, o
 function EditorProductosCategoria({ config, candidatos, onCambiar, onAlternarItem }) {
   return (
     <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm font-semibold text-fg">
-        <input type="checkbox" checked={config.activo} onChange={e => onCambiar({ activo: e.target.checked })} className="accent-primary" />
-        Mostrar esta sección
-      </label>
-      {config.activo && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_110px] gap-3">
-            <CampoTexto label="Rótulo (kicker)" value={config.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="PRODUCTOS" maxLength={40} />
-            <CampoTexto label="Título" value={config.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Productos seleccionados" maxLength={100} />
-            <label className="block">
-              <span className="block text-xs font-medium text-fg-muted mb-1">Cantidad</span>
-              <input
-                type="number" min="1" max="48" value={config.limite}
-                onChange={e => onCambiar({ limite: Math.max(1, Math.min(48, Number(e.target.value) || 8)) })}
-                className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
-              />
-            </label>
-          </div>
-          <CampoTexto label="Subtítulo" value={config.subtitulo} onChange={v => onCambiar({ subtitulo: v })} placeholder="Explorá nuestra selección" maxLength={160} />
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-fg-muted">Elegí qué productos entran (se agrupan solos por categoría)</p>
-            {candidatos.length === 0 ? (
-              <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
-            ) : (
+      <p className="text-xs text-fg-muted">Se muestra sola apenas elijas al menos un producto abajo. Sin productos, queda oculta aunque "Mostrar" esté tildado arriba.</p>
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_110px] gap-3">
+        <CampoTexto label="Rótulo (kicker)" value={config.kicker} onChange={v => onCambiar({ kicker: v })} placeholder="PRODUCTOS" maxLength={40} />
+        <CampoTexto label="Título" value={config.titulo} onChange={v => onCambiar({ titulo: v })} placeholder="Productos seleccionados" maxLength={100} />
+        <label className="block">
+          <span className="block text-xs font-medium text-fg-muted mb-1">Cantidad</span>
+          <input
+            type="number" min="1" max="48" value={config.limite}
+            onChange={e => onCambiar({ limite: Math.max(1, Math.min(48, Number(e.target.value) || 8)) })}
+            className="w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg outline-none focus:border-primary"
+          />
+        </label>
+      </div>
+      <CampoTexto label="Subtítulo" value={config.subtitulo} onChange={v => onCambiar({ subtitulo: v })} placeholder="Explorá nuestra selección" maxLength={160} />
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-fg-muted">Elegí qué productos entran (se agrupan solos por categoría)</p>
+        {candidatos.length === 0 ? (
+          <p className="text-sm text-fg-muted">Primero elegí los productos de la landing.</p>
+        ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
                 {candidatos.map(i => {
                   const elegido = (config.items || []).includes(i.content_id);
@@ -3175,8 +3130,6 @@ function EditorProductosCategoria({ config, candidatos, onCambiar, onAlternarIte
               </div>
             )}
           </div>
-        </>
-      )}
     </div>
   );
 }
@@ -3952,12 +3905,16 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
   }, [productos, busqueda, enLanding]);
 
   if (producto && (estrategia === 'combo' || armandoCombo)) {
-    return <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-canvas" role="status">Abriendo el armador de combos…</div>}>
-      <ArmarComboPanel productos={productos} principalInicial={producto} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
-        if (onComboCreado) return onComboCreado(nuevo);
-        else onCerrar();
-      }} />
-    </Suspense>;
+    return (
+      <PanelLazyErrorBoundary resetKey={`combo-${producto.id}-${armandoCombo}-${estrategia || ''}`}>
+        <Suspense fallback={<div className="fixed inset-0 z-50 grid place-items-center bg-canvas" role="status">Abriendo el armador de combos…</div>}>
+          <ArmarComboPanel productos={productos} principalInicial={producto} landingPreview={landingPreview} onCerrar={onCerrar} onCreado={nuevo => {
+            if (onComboCreado) return onComboCreado(nuevo);
+            else onCerrar();
+          }} />
+        </Suspense>
+      </PanelLazyErrorBoundary>
+    );
   }
 
   return (
@@ -3991,17 +3948,19 @@ export function PanelOfertas({ producto, estrategia = null, productos, enLanding
         <div className="flex-1 overflow-y-auto">
           {producto ? (
             <div className="p-4 md:p-6">
-              <Suspense fallback={<p className="flex items-center gap-2 text-sm text-fg-muted"><Loader size={14} className="animate-spin" /> Abriendo el editor…</p>}>
-                <OfertasProductoTab
-                  key={`${producto.id}-${estrategia || ''}`}
-                  crearAlAbrir={estrategia}
-                  onCrearCombo={permitirCombo ? () => setArmandoCombo(true) : null}
-                  productoId={producto.id}
-                  productoNombre={producto.nombre}
-                  productoAnclaPrecioBase={Number(precioPanel(producto)) || 0}
-                  productoAnclaPrecioCosto={Number(producto.precio_costo) || 0}
-                />
-              </Suspense>
+              <PanelLazyErrorBoundary resetKey={`ofertas-${producto.id}-${estrategia || ''}`}>
+                <Suspense fallback={<p className="flex items-center gap-2 text-sm text-fg-muted"><Loader size={14} className="animate-spin" /> Abriendo el editor…</p>}>
+                  <OfertasProductoTab
+                    key={`${producto.id}-${estrategia || ''}`}
+                    crearAlAbrir={estrategia}
+                    onCrearCombo={permitirCombo ? () => setArmandoCombo(true) : null}
+                    productoId={producto.id}
+                    productoNombre={producto.nombre}
+                    productoAnclaPrecioBase={Number(precioPanel(producto)) || 0}
+                    productoAnclaPrecioCosto={Number(producto.precio_costo) || 0}
+                  />
+                </Suspense>
+              </PanelLazyErrorBoundary>
             </div>
           ) : (
             <div className="p-5 md:p-6">
@@ -4103,6 +4062,11 @@ function Miniatura({ item }) {
     ? <img src={src} alt="" className="w-10 h-10 rounded-lg object-cover bg-surface-2 shrink-0" loading="lazy" />
     : <span className="w-10 h-10 rounded-lg bg-surface-2 shrink-0" />;
 }
+
+
+
+
+
 
 
 

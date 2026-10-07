@@ -362,6 +362,24 @@ describe('runtime del lienzo en blanco — inicio', () => {
     expect(tarjetas[0].querySelector('.trust-card-icon').textContent).toBe('🚚');
   });
 
+  it('cada anuncio puede elegir su propio ícono; sin elegir, ciclan los genéricos', () => {
+    const { document } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      venta: {
+        inicio: {
+          anuncios: [
+            { texto: 'Envío rápido', icono: 'truck' },
+            { texto: 'Pago seguro', icono: 'card' },
+            { texto: 'Sin ícono elegido' }, // icono vacío/ausente: cae al genérico por posición
+          ],
+        },
+      },
+    });
+    const items = [...document.querySelectorAll('.trust-bar .trust-item')].slice(0, 3);
+    expect(items.map(el => el.querySelector('.trust-icon').textContent)).toEqual(['🚚', '💳', '◉']);
+    expect(items.map(el => el.querySelector('strong').textContent)).toEqual(['Envío rápido', 'Pago seguro', 'Sin ícono elegido']);
+  });
+
   it('"Nuestra marca" queda oculta sin configurar, y se pinta completa cuando está activa', () => {
     const sinMarca = montar(PLANTILLA_INICIO, datos);
     expect(sinMarca.document.querySelector('#marca').hidden).toBe(true);
@@ -371,7 +389,7 @@ describe('runtime del lienzo en blanco — inicio', () => {
       venta: {
         inicio: {
           marca: {
-            activo: true, kicker: 'Conocé', titulo: 'Lo cotidiano puede ser más simple.', texto: 'Hola',
+            activo: true, kicker: 'Conocé', titulo: 'Lo cotidiano puede ser más simple.', texto: 'Hola\n\nSegundo párrafo',
             badges: ['Utilidad', 'Simplicidad'],
             medios: [{ tipo: 'imagen', url: 'https://cdn.test/marca.jpg' }],
           },
@@ -380,7 +398,10 @@ describe('runtime del lienzo en blanco — inicio', () => {
     });
     const { document } = conMarca;
     expect(document.querySelector('#marca').hidden).toBe(false);
+    expect(document.querySelector('#marca').style.display).not.toBe('none');
     expect(document.querySelector('[data-gesicomm-venta="marca_titulo"]').textContent).toBe('Lo cotidiano puede ser más simple.');
+    expect(document.querySelector('[data-gesicomm-venta="marca_texto"]').textContent).toBe('Hola\n\nSegundo párrafo');
+    expect(getComputedStyle(document.querySelector('[data-gesicomm-venta="marca_texto"]').parentElement.querySelector('p:not(.eyebrow)')).whiteSpace).toBe('pre-line');
     expect([...document.querySelectorAll('.brand-badge')].map(el => el.textContent)).toEqual(['Utilidad', 'Simplicidad']);
     expect(document.querySelector('.brand-medio img').getAttribute('src')).toBe('https://cdn.test/marca.jpg');
   });
@@ -419,6 +440,27 @@ describe('runtime del lienzo en blanco — inicio', () => {
 
     click('[data-gesicomm-pc-categoria=""]');
     expect(nombres()).toEqual(['Air Fryer 2.6L', 'Remera']);
+  });
+
+  it('productos por categoría: incluye buscador propio sin tocar el catálogo completo', () => {
+    const { document, window } = montar(PLANTILLA_INICIO, {
+      ...datos,
+      productos: [airFryer, remera],
+      venta: { inicio: { productos_categoria: { activo: true, items: ['air-fryer-26l', 'remera'], limite: 8 } } },
+    });
+    const nombres = () => [...document.querySelectorAll('#productos-categoria [data-gesicomm-bind="nombre"]')].map(el => el.textContent);
+    const buscador = document.querySelector('[data-gesicomm-pc-buscar]');
+    expect(buscador).toBeTruthy();
+
+    buscador.value = 'remera';
+    buscador.dispatchEvent(new window.Event('input', { bubbles: true }));
+    expect(nombres()).toEqual(['Remera']);
+    expect(document.querySelector('[data-gesicomm-pc-vacio]').hidden).toBe(true);
+
+    buscador.value = 'no existe';
+    buscador.dispatchEvent(new window.Event('input', { bubbles: true }));
+    expect(nombres()).toEqual([]);
+    expect(document.querySelector('[data-gesicomm-pc-vacio]').hidden).toBe(false);
   });
 
   it('bloques: reordena y oculta secciones del body sin lista guardada (compatibilidad total)', () => {

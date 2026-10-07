@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Award, ShieldCheck, Banknote } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, ImageOff, Layers, ArrowLeft, ArrowRight, Check, Loader, Sparkles, Zap, MapPin, Award, ShieldCheck, Banknote, CreditCard } from 'lucide-react';
 import { getMediaUrl } from '../../services/api';
 import { formatPrecio } from '../../lib/mensajeWhatsapp';
 import { buscarOpcionDelivery, descripcionDelivery, etiquetaDelivery, prepararOpcionesDelivery } from '../../lib/deliveryOptions';
@@ -896,27 +896,41 @@ export default function CartDrawer({
                   {hasPagoPar && (
                     <div className="lp-checkout-payment-methods">
                       <p>Medio de pago</p>
-                      
-                      <label>
-                        <input 
-                          type="radio" 
-                          name="payment_method" 
-                          value="efectivo"
-                          checked={form.payment_method === 'efectivo'}
-                          onChange={() => actualizarCampo('payment_method', 'efectivo')}
-                        />
-                        <span>Pagar en efectivo al recibir</span>
-                      </label>
-                      
-                      <label>
-                        <input 
-                          type="radio" 
-                          name="payment_method" 
+
+                      {/* El pago anticipado va primero y remarcado: le conviene
+                          al comercio (cobra seguro, sin riesgo de rechazo en
+                          la puerta) y tiene que saltar a la vista antes de que
+                          el contra entrega se vea como la opción obvia. */}
+                      <label className={`lp-pay-option lp-pay-option--highlight ${pagaOnline ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="payment_method"
                           value="pagopar"
-                          checked={form.payment_method === 'pagopar'}
+                          checked={pagaOnline}
                           onChange={() => actualizarCampo('payment_method', 'pagopar')}
                         />
-                        <span>Pago online (Tarjetas, QR, Tigo Money)</span>
+                        <span className="lp-pay-option-icon"><CreditCard size={16} /></span>
+                        <span className="lp-pay-option-copy">
+                          <span className="lp-pay-option-title">
+                            Pago anticipado <span className="lp-pay-option-badge">Recomendado</span>
+                          </span>
+                          <span className="lp-pay-option-desc">Tarjetas, QR o Tigo Money. Pagás ahora y tu pedido queda confirmado al instante.</span>
+                        </span>
+                      </label>
+
+                      <label className={`lp-pay-option ${!pagaOnline ? 'is-selected' : ''}`}>
+                        <input
+                          type="radio"
+                          name="payment_method"
+                          value="efectivo"
+                          checked={!pagaOnline}
+                          onChange={() => actualizarCampo('payment_method', 'efectivo')}
+                        />
+                        <span className="lp-pay-option-icon"><Banknote size={16} /></span>
+                        <span className="lp-pay-option-copy">
+                          <span className="lp-pay-option-title">Pago contra entrega</span>
+                          <span className="lp-pay-option-desc">Pagás en efectivo cuando recibís el pedido.</span>
+                        </span>
                       </label>
                     </div>
                   )}

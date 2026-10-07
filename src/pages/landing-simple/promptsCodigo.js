@@ -441,7 +441,7 @@ Estructura recomendada:
    - name="ciudad" required
    - name="direccion" required
    - name="documento" opcional
-   - select name="payment_method" con "contra_entrega" y "pagopar"
+   - Método de pago: NO uses un <select>. Dos tarjetas clickeables, cada una con <input type="radio" name="payment_method">, value "pagopar" y "contra_entrega". La de "pagopar" va PRIMERO, marcada checked por default, y remarcada con el color primario (fondo tinte, borde más grueso) más una insignia tipo "Recomendado": es la que le conviene al comercio (cobra seguro, sin riesgo de rechazo al entregar) y tiene que saltar a la vista antes que la de contra entrega. La de "contra_entrega" se ve neutra, sin remarcar.
    - textarea name="notas" opcional
 5. Resumen lateral o superior del pedido con data-gesicomm-lista="checkout_items": imagen, nombre, variante, precio_unitario, cantidad y subtotal.
 6. Totales con data-gesicomm-checkout="subtotal", "cantidad" y "total"; mensaje/estado con data-gesicomm-checkout="mensaje".

@@ -1123,6 +1123,7 @@ export default function TiendaPaginaView({ data, slug, productId, vistaCodigo = 
       conteo,
       itemAbierto,
       item: itemSeleccionado,
+      relacionados: data.relacionados || { titulo: null, automatico: false, items: [] },
     },
     actions: {
       abrirCarrito: () => setCarritoAbierto(true),
