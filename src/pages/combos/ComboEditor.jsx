@@ -419,9 +419,11 @@ export default function ComboEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const usarPrefillCatalogo = location.state?.usarPrefillCatalogo === true;
+  const usarPrefillCatalogo = location.state?.usarPrefillCatalogo === true
+    && sessionStorage.getItem('gesicomm:usarComboPrefillCatalogo') === '1';
 
   useEffect(() => {
+    sessionStorage.removeItem('gesicomm:usarComboPrefillCatalogo');
     if (!usarPrefillCatalogo) sessionStorage.removeItem('gesicomm:comboPrefillItems');
   }, [usarPrefillCatalogo]);
 

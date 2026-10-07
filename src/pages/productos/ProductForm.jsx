@@ -1441,7 +1441,7 @@ export default function ProductForm() {
   );
 
   return (
-    <div className="prod-page">
+    <div className={`prod-page ${tabActiva === 'marketing' ? 'product-view-page' : ''}`}>
 
       <div className="prod-header">
         <div className="prod-header-left">

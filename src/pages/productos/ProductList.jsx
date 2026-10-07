@@ -11,7 +11,6 @@ import {
   ToggleLeft, ToggleRight, Loader, Tag, Layers, Warehouse, Truck
 } from 'lucide-react';
 import ConfirmDialog from '../../components/ConfirmDialog';
-import ProductCombosDrawer from './ProductCombosDrawer';
 import LogisticaAbastecimientoModal from '../../components/depositos/LogisticaAbastecimientoModal';
 import { verificarSesion } from '../../utils/auth';
 import './productos.css';
@@ -45,7 +44,6 @@ export default function ProductList() {
   const [cargando, setCargando] = useState(true);
   const [categorias, setCategorias] = useState([]);
   const [proveedores, setProveedores] = useState([]);
-  const [comboProductoSeleccionado, setComboProductoSeleccionado] = useState(null);
   const [productoABajar, setProductoABajar] = useState(null);
   const [productoAbastecer, setProductoAbastecer] = useState(null);
   const [dandoBaja, setDandoBaja] = useState(false);
@@ -140,6 +138,11 @@ export default function ProductList() {
     if (nueva < 1 || nueva > totalPaginas) return;
     setPagina(nueva);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const abrirOfertas = (producto) => {
+    sessionStorage.setItem('gesicomm:tabInicial', 'ofertas');
+    navigate(`/products/${producto.id}/editar`);
   };
 
   const precioDisplay = (valor) =>
@@ -405,8 +408,8 @@ export default function ProductList() {
                             )}
                             <button
                               className="btn-icon"
-                              onClick={(e) => { e.stopPropagation(); setComboProductoSeleccionado(p); }}
-                              title="Gestionar Combos"
+                              onClick={(e) => { e.stopPropagation(); abrirOfertas(p); }}
+                              title="Gestionar ofertas"
                             >
                               <Tag size={15} />
                             </button>
@@ -483,13 +486,6 @@ export default function ProductList() {
           </>
         )}
       </div>
-
-      {comboProductoSeleccionado && (
-        <ProductCombosDrawer
-          producto={comboProductoSeleccionado}
-          onClose={() => setComboProductoSeleccionado(null)}
-        />
-      )}
 
       {productoAbastecer && (
         <LogisticaAbastecimientoModal

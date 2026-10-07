@@ -2025,6 +2025,13 @@ const TIENDA_VISTA_CSS = `:root{
   --gc-texto-sobre-primario: var(--tienda-texto-sobre-primario, #ffffff);
   --gc-fondo: var(--tienda-fondo, #f6f7f2);
   --gc-texto: var(--tienda-texto, #10201d);
+  --ink: var(--gc-texto);
+  --ink-soft: var(--tienda-texto-suave, #506172);
+  --paper: var(--gc-fondo);
+  --white: var(--tienda-superficie, #ffffff);
+  --line: var(--tienda-linea, #dfe5dc);
+  --brand: var(--gc-primario);
+  --brand-dark: color-mix(in srgb, var(--brand) 72%, #000);
   --lv-surface: var(--tienda-superficie, #ffffff);
   --lv-line: var(--tienda-linea, #dfe5dc);
   --lv-soft: color-mix(in srgb, var(--gc-primario) 8%, var(--gc-fondo));
@@ -2038,6 +2045,40 @@ button{cursor:pointer}
 a{color:inherit;text-decoration:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .lv-shell{min-height:100vh;background:linear-gradient(180deg,var(--lv-soft),var(--gc-fondo) 320px)}
+.announcement{overflow:hidden;color:#fff;background:#111827;font-size:.82rem;white-space:nowrap}
+.announcement-track{display:inline-flex;min-width:max-content;animation:announcement-scroll 24s linear infinite}
+.announcement span{display:inline-flex;align-items:center;gap:8px;padding:9px 28px}
+.announcement strong{color:#93c5fd}
+@keyframes announcement-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.commerce-header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
+.commerce-header .container{width:min(calc(100% - 40px),1180px);margin-inline:auto}
+.commerce-header .header-main{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.commerce-header .brand-column{display:flex;align-items:center;gap:18px;min-width:0}
+.commerce-header .brand{display:inline-flex;align-items:center;gap:10px;min-width:0;color:var(--ink);font-size:20px;font-weight:850;letter-spacing:-.04em;background:transparent;border:0;box-shadow:none}
+.commerce-header .brand-logo{width:36px;height:36px;object-fit:contain}
+.commerce-header .brand-logo[src=""],.commerce-header .brand-logo:not([src]){display:none}
+.commerce-header .category-menu-wrap{position:relative;display:inline-flex;align-items:center}
+.commerce-header .category-menu{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:var(--ink);font-size:12px;font-weight:850;white-space:nowrap}
+.commerce-header .category-menu-panel{position:absolute;left:0;top:calc(100% + 12px);z-index:80;width:min(290px,calc(100vw - 32px));padding:12px;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(8,41,71,.16)}
+.commerce-header .category-menu-panel[hidden]{display:none!important}
+.commerce-header .category-menu-title{margin:0 0 8px;color:var(--ink-soft);font-size:11px;font-weight:900;text-transform:uppercase}
+.commerce-header .category-menu-list{display:grid;gap:4px}
+.commerce-header .category-menu-list button{width:100%;border:0;background:transparent;color:var(--ink);padding:9px 10px;border-radius:8px;text-align:left;font-size:13px;font-weight:750}
+.commerce-header .category-menu-list button:hover{background:color-mix(in srgb,var(--brand) 9%,#fff);color:var(--brand-dark)}
+.commerce-header .header-nav{display:flex;align-items:center;justify-content:center;flex:1;min-width:0}
+.commerce-header .nav-links{display:flex;align-items:center;gap:22px;color:var(--ink-soft);font-size:.82rem;font-weight:800}
+.commerce-header .nav-links a{color:var(--ink-soft);text-decoration:none;white-space:nowrap}
+.commerce-header .nav-links a:hover,.commerce-header .nav-links a.active{color:var(--brand-dark)}
+.commerce-header .header-actions{display:flex;align-items:center;gap:12px;position:relative}
+.commerce-header .search-wrap{position:relative}
+.commerce-header .search-toggle,.commerce-header .cart-button,.commerce-header .menu-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:40px;border:0;background:transparent;color:var(--ink);font-size:12px;font-weight:850}
+.commerce-header .search-toggle{width:40px}
+.commerce-header .cart-button{gap:7px}
+.commerce-header .search-box{position:absolute;top:calc(100% + 10px);right:0;z-index:70;width:min(320px,calc(100vw - 36px));display:flex;min-height:42px;overflow:hidden;background:var(--white);border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 45px rgba(8,41,71,.16)}
+.commerce-header .search-box[hidden]{display:none!important}
+.commerce-header .search-box input{min-width:0;flex:1;padding:0 14px;color:var(--ink);background:transparent;border:0;outline:0;font-size:.86rem}
+.commerce-header .search-box button{width:50px;color:var(--gc-texto-sobre-primario);background:var(--brand);border:0;font-size:1.1rem;font-weight:900}
+.commerce-header .menu-toggle{display:none;width:40px;border:1px solid var(--line);border-radius:10px;background:var(--white)}
 .lv-topbar{background:var(--gc-primario);color:var(--gc-texto-sobre-primario);font-size:13px;font-weight:750}
 .lv-topbar-inner{max-width:1180px;margin:0 auto;padding:9px 18px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .lv-header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--gc-fondo) 88%,white);backdrop-filter:blur(12px);border-bottom:1px solid var(--lv-line)}
@@ -2169,33 +2210,19 @@ a{color:inherit;text-decoration:none}
 .lv-shop-old{color:var(--shop-muted);font-size:12px;text-decoration:line-through}
 .lv-shop-card .lv-primary{width:100%;min-height:46px;margin-top:8px;border-radius:8px;background:var(--shop-accent);color:#fff;box-shadow:none}
 .lv-stock-note{color:var(--shop-muted);font-size:11px}
-@media(max-width:920px){.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}.lv-shop-layout{grid-template-columns:1fr}.lv-filters{position:static}.lv-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid,.lv-shop-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}.lv-results-head{grid-template-columns:1fr}.lv-filter-row{grid-template-columns:1fr}}
+@media(max-width:920px){.commerce-header .header-main{align-items:flex-start;flex-wrap:wrap;padding:14px 0}.commerce-header .brand-column{flex:1 1 auto}.commerce-header .header-nav{display:none;position:absolute;left:20px;right:20px;top:calc(100% + 1px);z-index:75;order:3;flex-basis:100%;justify-content:flex-start;flex-direction:column;align-items:stretch;gap:0;padding:10px;background:var(--white);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 45px rgba(8,41,71,.16)}.commerce-header .header-nav.is-open{display:flex}.commerce-header .nav-links{display:flex;flex-direction:column;align-items:stretch;gap:0}.commerce-header .nav-links a{padding:11px 12px}.commerce-header .menu-toggle{display:inline-flex}.lv-hero,.lv-checkout-head{display:grid}.lv-metrics{grid-template-columns:1fr 1fr}.lv-toolbar,.lv-checkout-grid{grid-template-columns:1fr}.lv-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lv-summary{position:static}.lv-form-grid{grid-template-columns:1fr}.lv-shop-layout{grid-template-columns:1fr}.lv-filters{position:static}.lv-shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.commerce-header .container{width:min(calc(100% - 28px),1180px)}.commerce-header .category-menu-wrap{display:none}.commerce-header .cart-button strong{display:none}.lv-header-inner{align-items:flex-start}.lv-nav{width:100%;justify-content:flex-start}.lv-grid,.lv-shop-grid{grid-template-columns:1fr}.lv-metrics{grid-template-columns:1fr}.lv-title{font-size:34px}.lv-page{padding-top:24px}.lv-topbar-inner{justify-content:flex-start}.lv-results-head{grid-template-columns:1fr}.lv-filter-row{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.announcement-track{animation:none;transform:none}}
 `;
 
-const CATEGORIA_HTML = `<div class="lv-shell">
-  <div class="lv-topbar">
-    <div class="lv-topbar-inner">
-      <span>Pago seguro online o al recibir</span>
-      <span>Envio rapido a tu ciudad</span>
-      <span>Atencion por WhatsApp</span>
-    </div>
-  </div>
-
-  <header class="lv-header">
-    <div class="lv-header-inner">
-      <a class="lv-brand" href="/" data-gesicomm-inicio>
-        <img data-gesicomm-tienda="logo" alt="">
-        <span data-gesicomm-tienda="nombre">Tienda</span>
-      </a>
-      <nav class="lv-nav" aria-label="Navegacion">
+const VISTA_TIENDA_HEADER = `${ANNOUNCEMENT_HTML}${HEADER_HTML.replace('__LINKS__', `
         <a href="/" data-gesicomm-inicio>Inicio</a>
-        <a href="/catalogo" data-gesicomm-link="catalogo">Catalogo</a>
+        <a href="/catalogo" data-gesicomm-link="catalogo">Productos</a>
         <a href="/checkout" data-gesicomm-link="checkout">Checkout</a>
-        <button type="button" data-gesicomm-carrito>Carrito</button>
-      </nav>
-    </div>
-  </header>
+      `)}`;
+
+const CATEGORIA_HTML = `<div class="lv-shell">
+  ${VISTA_TIENDA_HEADER}
 
   <main class="lv-page lv-shop-page">
     <p class="lv-shop-breadcrumb"><a href="/" data-gesicomm-inicio>Inicio</a> / Productos</p>
@@ -2322,27 +2349,7 @@ const CATALOGO_HTML = CATEGORIA_HTML
   .replace('Filtros de categoria', 'Filtros del catalogo');
 
 const CHECKOUT_HTML = `<div class="lv-shell">
-  <div class="lv-topbar">
-    <div class="lv-topbar-inner">
-      <span>Pedido protegido por Gesicomm</span>
-      <span>Pago online o al recibir</span>
-      <span>Confirmacion por WhatsApp</span>
-    </div>
-  </div>
-
-  <header class="lv-header">
-    <div class="lv-header-inner">
-      <a class="lv-brand" href="/" data-gesicomm-inicio>
-        <img data-gesicomm-tienda="logo" alt="">
-        <span data-gesicomm-tienda="nombre">Tienda</span>
-      </a>
-      <nav class="lv-nav" aria-label="Navegacion">
-        <a href="/" data-gesicomm-inicio>Inicio</a>
-        <a href="/catalogo" data-gesicomm-link="catalogo">Seguir comprando</a>
-        <button type="button" data-gesicomm-carrito>Carrito</button>
-      </nav>
-    </div>
-  </header>
+  ${VISTA_TIENDA_HEADER}
 
   <main class="lv-page">
     <section class="lv-checkout-head" data-gesicomm-checkout-con-items>

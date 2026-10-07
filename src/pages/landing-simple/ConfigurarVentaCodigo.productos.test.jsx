@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import ConfigurarVentaCodigo from './ConfigurarVentaCodigo';
 
 vi.mock('../../utils/auth', () => ({ verificarSesion: vi.fn().mockResolvedValue({ id: 1 }) }));
@@ -23,7 +23,7 @@ function montar(inicial = { seleccion: catalogo.productos }) {
 }
 
 function abrirFichaProducto(nombre) {
-  fireEvent.click(screen.getByRole('tab', { name: 'Fichas de producto' }));
+  fireEvent.click(screen.getAllByRole('tab', { name: 'Vista producto' })[0]);
   const select = screen.getByRole('combobox', { name: 'Producto a editar' });
   fireEvent.change(select, { target: { value: nombre === 'Olla' ? 'olla' : 'cacerola' } });
 }
@@ -79,6 +79,55 @@ describe('Presentación de los productos del lienzo', () => {
     expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({ insignia_principal: 'Hot sale' });
     expect(payload.venta.urgencia.productos).toContain('cacerola');
     expect(payload.venta.urgencia.fin_at).toBe(new Date('2026-10-21T09:00').toISOString());
+  });
+
+  it('edita la ficha paso a paso con portada primero, beneficios, contador y medios de pago', () => {
+    const confirmar = montar();
+    abrirFichaProducto('Cacerola');
+
+    const portada = screen.getByText('Portada e imágenes');
+    const oferta = screen.getByText('Oferta por tiempo limitado');
+    const beneficiosTitulo = screen.getByText('Beneficios', { exact: true });
+    const compraTitulo = screen.getByText('Botón de compra, pagos y contacto');
+    expect(Boolean(portada.compareDocumentPosition(oferta) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(oferta.compareDocumentPosition(beneficiosTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    expect(Boolean(beneficiosTitulo.compareDocumentPosition(compraTitulo) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+
+    const bloqueOferta = oferta.closest('details');
+    fireEvent.change(within(bloqueOferta).getByLabelText('Rótulo'), { target: { value: 'Solo hoy' } });
+    fireEvent.change(within(bloqueOferta).getByLabelText('Horas'), { target: { value: '5' } });
+    fireEvent.change(within(bloqueOferta).getByLabelText('Minutos'), { target: { value: '30' } });
+    fireEvent.change(within(bloqueOferta).getByLabelText('Segundos'), { target: { value: '15' } });
+
+    const bloqueBeneficios = beneficiosTitulo.closest('details');
+    fireEvent.change(within(bloqueBeneficios).getByLabelText('Rótulo de sección'), { target: { value: 'Ventajas reales' } });
+    fireEvent.change(within(bloqueBeneficios).getByLabelText('Título de sección'), { target: { value: 'Lo importante antes de comprar' } });
+    fireEvent.click(within(bloqueBeneficios).getByRole('button', { name: /\+ Agregar beneficio/i }));
+    fireEvent.change(within(bloqueBeneficios).getAllByPlaceholderText('Beneficio').at(-1), { target: { value: 'Probado en tienda' } });
+
+    const bloqueCompra = compraTitulo.closest('details');
+    const metodos = within(bloqueCompra).getByRole('group', { name: 'Métodos de pago' });
+    fireEvent.click(within(metodos).getByLabelText('Transferencia bancaria'));
+    fireEvent.click(within(bloqueCompra).getByLabelText('Tarjetas de crédito'));
+    fireEvent.click(within(bloqueCompra).getByLabelText('Bocas de cobranza'));
+    fireEvent.click(within(bloqueCompra).getByLabelText('Billetera electrónica'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar y armar el diseño' }));
+
+    const payload = confirmar.mock.calls[0][0];
+    expect(payload.venta.presentacion_productos['producto:1']).toMatchObject({
+      urgencia_kicker: 'Solo hoy',
+      urgencia_horas: '5',
+      urgencia_minutos: '30',
+      urgencia_segundos: '15',
+      beneficios_kicker: 'Ventajas reales',
+      beneficios_titulo: 'Lo importante antes de comprar',
+      metodos_pago: [{ texto: 'Pago contra entrega' }],
+    });
+    expect(payload.venta.presentacion_productos['producto:1'].beneficios).toEqual(
+      expect.arrayContaining([expect.objectContaining({ titulo: 'Probado en tienda' })]),
+    );
+    expect(payload.venta.pago_logos).toEqual({ tarjetas: false, bocas: false, billetera: false });
   });
 
   it('permite quitar el ancla guardada y ocultar del inicio desde la ficha', () => {

@@ -36,6 +36,7 @@ async function iniciar() {
   return screen.findByRole('textbox', { name: 'Precio de venta de Cacerola QA' });
 }
 function renderConPrefillCatalogo() {
+  sessionStorage.setItem('gesicomm:usarComboPrefillCatalogo', '1');
   render(
     <MemoryRouter initialEntries={[{ pathname: '/combos/nuevo', state: { usarPrefillCatalogo: true } }]}>
       <ComboEditor />
@@ -67,6 +68,19 @@ describe('Precios de venta durante el armado del combo', () => {
   it('no arrastra productos preseleccionados viejos al crear un combo desde Mis combos', async () => {
     sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos));
     render(<MemoryRouter><ComboEditor /></MemoryRouter>);
+
+    expect(await screen.findByRole('heading', { name: '¿Cómo se llama el combo?' })).toBeInTheDocument();
+    expect(screen.getByText('Sin producto principal')).toBeInTheDocument();
+    await waitFor(() => expect(sessionStorage.getItem('gesicomm:comboPrefillItems')).toBeNull());
+  });
+
+  it('ignora una navegación con state viejo si catálogo no dejó la marca temporal', async () => {
+    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos));
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/combos/nuevo', state: { usarPrefillCatalogo: true } }]}>
+        <ComboEditor />
+      </MemoryRouter>
+    );
 
     expect(await screen.findByRole('heading', { name: '¿Cómo se llama el combo?' })).toBeInTheDocument();
     expect(screen.getByText('Sin producto principal')).toBeInTheDocument();

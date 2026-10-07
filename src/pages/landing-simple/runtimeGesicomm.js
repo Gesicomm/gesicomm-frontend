@@ -443,6 +443,9 @@ export function runtimeGesicomm() {
       case 'urgencia_kicker': valor = item.urgencia_kicker || 'Oferta por tiempo limitado'; break;
       case 'urgencia_titulo': valor = item.urgencia_titulo || 'Reservá esta condición antes de que termine.'; break;
       case 'urgencia_texto': valor = item.urgencia_texto || 'La fecha real se configura en Gesicomm; el contador se actualiza solo.'; break;
+      case 'urgencia_horas': valor = item.urgencia_horas || '1'; break;
+      case 'urgencia_minutos': valor = item.urgencia_minutos || '59'; break;
+      case 'urgencia_segundos': valor = item.urgencia_segundos || '58'; break;
       case 'opiniones_kicker': valor = item.opiniones_kicker || 'Opiniones'; break;
       case 'opiniones_titulo': valor = item.opiniones_titulo || 'Personas que ya lo probaron.'; break;
       case 'opiniones_subtitulo': valor = item.opiniones_subtitulo || ''; break;
@@ -682,6 +685,15 @@ export function runtimeGesicomm() {
   var COUNTDOWN_DEMO_MS = 2 * 60 * 60 * 1000;
   function dosDigitos(n) { return (n < 10 ? '0' : '') + n; }
 
+  function countdownDemoMs(item) {
+    if (!item) return COUNTDOWN_DEMO_MS;
+    var horas = Math.max(0, parseInt(item.urgencia_horas, 10) || 0);
+    var minutos = Math.max(0, Math.min(59, parseInt(item.urgencia_minutos, 10) || 0));
+    var segundos = Math.max(0, Math.min(59, parseInt(item.urgencia_segundos, 10) || 0));
+    var total = (horas * 3600 + minutos * 60 + segundos) * 1000;
+    return total > 0 ? total : COUNTDOWN_DEMO_MS;
+  }
+
   function prepararCountdown(el, finMs) {
     var horas = el.querySelector('[data-gesicomm-countdown-parte="horas"]');
     var minutos = el.querySelector('[data-gesicomm-countdown-parte="minutos"]');
@@ -711,7 +723,7 @@ export function runtimeGesicomm() {
       if (isFinite(real) && real > Date.now()) return real;
       if (!aplica && item) return NaN;
     }
-    return Date.now() + COUNTDOWN_DEMO_MS;
+    return Date.now() + countdownDemoMs(item);
   }
 
   function prepararCountdowns() {
@@ -720,8 +732,13 @@ export function runtimeGesicomm() {
     var urgencia = datos.venta && datos.venta.urgencia;
     for (var i = 0; i < els.length; i++) {
       var contItem = els[i].closest('[data-gesicomm-item]');
-      var item = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : (els[i].closest('[data-gesicomm-ficha-bloque="urgencia"]') ? productoActual : null);
+      var enFicha = !contItem && !!els[i].closest('[data-gesicomm-ficha-bloque="urgencia"]');
+      var item = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : (enFicha ? productoActual : null);
       var finMs = finCountdown(urgencia, item);
+      // El bloque de urgencia de la ficha lo prende o apaga el comercio desde
+      // el editor: si la Oferta flash es de otros productos, usa la duración
+      // cargada en la ficha en vez de desaparecer.
+      if (!isFinite(finMs) && enFicha && item) finMs = Date.now() + countdownDemoMs(item);
       if (!isFinite(finMs)) { els[i].style.display = 'none'; continue; }
       prepararCountdown(els[i], finMs);
     }
@@ -1553,7 +1570,10 @@ export function runtimeGesicomm() {
     var els = document.querySelectorAll('[data-gesicomm-ficha-bloque]');
     for (var i = 0; i < els.length; i++) {
       var clave = els[i].getAttribute('data-gesicomm-ficha-bloque');
-      els[i].style.display = bloques[clave] === false ? 'none' : '';
+      // Atributo y no style.display: el display lo manejan también las
+      // listas vacías y data-gesicomm-si; pisarlo con '' re-mostraba los
+      // logos de pago apagados o la lista de métodos vacía.
+      els[i].toggleAttribute('data-gesicomm-ficha-oculto', bloques[clave] === false);
     }
   }
 
@@ -1584,7 +1604,10 @@ export function runtimeGesicomm() {
     // abierta y antes esos binds quedaban vacíos — una <img> sin src.
     var sueltos = document.querySelectorAll('[data-gesicomm-bind]');
     for (var j = 0; j < sueltos.length; j++) {
-      if (sueltos[j].closest('[data-gesicomm-lista]')) continue;
+      // Lo de una tarjeta generada ya lo pintó su lista. El rótulo y título
+      // de sección (Beneficios, Opiniones, Preguntas) viven dentro del
+      // envoltorio con data-gesicomm-lista pero son de la ficha: van acá.
+      if (sueltos[j].closest('[data-gesicomm-generado]')) continue;
       var contItem = sueltos[j].closest('[data-gesicomm-item]');
       var itemSuelto = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : productoActual;
       if (!itemSuelto) continue;

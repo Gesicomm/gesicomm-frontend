@@ -25,7 +25,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   productService.crear.mockResolvedValue({ id: 42, ofertas: [{ id: 61 }] });
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  sessionStorage.clear();
+});
 
 async function montar() {
   render(<MemoryRouter initialEntries={['/products/nuevo']}><Routes>
@@ -53,6 +56,13 @@ async function prepararPack() {
 }
 
 describe('Alta de producto por secciones', () => {
+  it('abre directamente Venta cuando el listado pide gestionar ofertas', async () => {
+    sessionStorage.setItem('gesicomm:tabInicial', 'ofertas');
+    await montar();
+    expect(screen.getByRole('tab', { name: /^Venta/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('button', { name: 'Nueva oferta' })).toBeVisible();
+  });
+
   it('desde Identidad lleva a Precio y enfoca el campo pendiente, sin crear el producto', async () => {
     await montar();
     completarIdentidad();
@@ -121,11 +131,17 @@ describe('Alta de producto por secciones', () => {
     expect(productService.crear.mock.calls[1][0].ofertas).toHaveLength(1);
   });
 
+  it('no ofrece Combo dentro del armador de ofertas', async () => {
+    await montar();
+    fireEvent.click(screen.getByRole('tab', { name: /^Venta/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nueva oferta' }));
+    expect(screen.queryByRole('radio', { name: /^Combo/ })).toBeNull();
+  });
+
   it.each([
-    ['Combo', 'normal', 'Precio del combo', true],
-    ['Order bump', 'order_bump', 'Precio de lo que se suma', false],
-    ['Upsell', 'upsell', 'Precio de lo que se suma', false],
-  ])('prepara %s con referencias correctas al producto nuevo y al complemento', async (tipo, estrategia, label, incluyeAncla) => {
+    ['Order bump', 'order_bump', 'Precio de lo que se suma'],
+    ['Upsell', 'upsell', 'Precio de lo que se suma'],
+  ])('prepara %s con referencias correctas al producto nuevo y al complemento', async (tipo, estrategia, label) => {
     await montar();
     completarIdentidad(); completarPrecio();
     fireEvent.click(screen.getByRole('tab', { name: /^Venta/ }));
@@ -140,7 +156,7 @@ describe('Alta de producto por secciones', () => {
     await screen.findByText('Catálogo guardado');
     const oferta = productService.crear.mock.calls[0][0].ofertas[0];
     expect(oferta.estrategia).toBe(estrategia);
-    expect(oferta.componentes.some(c => c.es_producto_actual)).toBe(incluyeAncla);
+    expect(oferta.componentes.some(c => c.es_producto_actual)).toBe(false);
     expect(oferta.componentes.some(c => c.producto_id === 7)).toBe(true);
   });
 });

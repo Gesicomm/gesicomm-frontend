@@ -1753,6 +1753,77 @@
   margin-top: 0;
 }
 
+@media (min-width: 1181px) {
+  .product-view-page {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .product-view-page .prod-form,
+  .product-view-page .prod-workspace-main,
+  .product-view-page .tab-content.active,
+  .product-view-page .product-view-workspace {
+    min-height: 0;
+  }
+
+  .product-view-page .prod-form {
+    overflow: hidden;
+  }
+
+  .product-view-page .prod-workspace.product-view-mode {
+    height: 100%;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .product-view-page .prod-step-nav,
+  .product-view-page .product-view-editor {
+    max-height: 100%;
+    overflow-y: auto;
+  }
+
+  .product-view-page .prod-workspace-main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .product-view-page .tab-content.active {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .product-view-page .product-view-workspace {
+    height: 100%;
+    align-items: stretch;
+  }
+
+  .product-view-page .product-preview-panel {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  .product-view-page .product-preview-frame {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .product-view-page .product-preview-surface {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+
+  .product-view-page .product-preview-frame.mobile .product-preview-surface {
+    height: auto;
+  }
+}
+
 .product-view-funnel-link {
   width: fit-content;
 }

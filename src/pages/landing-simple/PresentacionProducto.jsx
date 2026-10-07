@@ -9,9 +9,9 @@ export const INSIGNIAS_COMERCIALES = ['Sale', 'Oferta', 'Flash Deal', 'Más vend
 const campo = 'mt-1 w-full h-9 rounded-lg border border-border bg-surface-2 px-3 text-sm text-fg';
 const area = 'mt-1 w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-fg';
 export const FICHA_BLOQUES_DEFAULT = {
-  urgencia: true,
   portada: true,
   textos: true,
+  urgencia: true,
   beneficios: true,
   compra: true,
   incluye: true,
@@ -20,7 +20,7 @@ export const FICHA_BLOQUES_DEFAULT = {
 };
 const DEFAULTS_PRESENTACION = {
   resenas_texto: '4.9 · 5 estrellas · +1.000 reseñas verificadas',
-  insignia_principal: 'Oferta destacada',
+  insignia_principal: '',
   beneficios_kicker: 'Por qué elegirlo',
   beneficios_titulo: 'Beneficios que se entienden rápido.',
   beneficios_subtitulo: 'Usá estos ejemplos como guía y ajustalos a lo que realmente ofrece tu producto.',
@@ -29,6 +29,9 @@ const DEFAULTS_PRESENTACION = {
   urgencia_kicker: 'Oferta por tiempo limitado',
   urgencia_titulo: 'Reservá esta condición antes de que termine.',
   urgencia_texto: 'La fecha real se configura en Gesicomm; el contador se actualiza solo.',
+  urgencia_horas: 1,
+  urgencia_minutos: 59,
+  urgencia_segundos: 58,
   opiniones_kicker: 'Opiniones',
   opiniones_titulo: 'Personas que ya lo probaron.',
   opiniones_subtitulo: 'Reemplazá estos ejemplos por comentarios reales de tus clientes.',
@@ -45,9 +48,8 @@ const DEFAULTS_PRESENTACION = {
     { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: 'Hola! Quiero consultar por este producto.' },
   ],
   metodos_pago: [
-    { texto: 'Pago online' },
-    { texto: 'Transferencia' },
-    { texto: 'Pago al recibir' },
+    { texto: 'Pago contra entrega' },
+    { texto: 'Transferencia bancaria' },
   ],
   incluye_pedido: [
     { texto: '1 unidad del producto seleccionado' },
@@ -197,7 +199,72 @@ function ListaBotones({ titulo, ayuda, items, campoLista, max = 4, onCambiar }) 
   );
 }
 
-export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, onSubirImagen, inicialmenteAbierto = false }) {
+// Un solo lugar para decir qué cobra la tienda. Los dos primeros salen como
+// chip de texto (metodos_pago, por producto); los de PagoPar salen como logo
+// (pago_logos, de toda la landing). Antes eran dos editores separados y la
+// ficha mostraba "Pago online" en chip y otra vez las tarjetas en logo.
+const METODOS_CHIP = [
+  ['contra_entrega', 'Pago contra entrega', 'Efectivo al recibir el pedido', ['pago contra entrega', 'contra entrega', 'pago al recibir']],
+  ['transferencia', 'Transferencia bancaria', 'Te pasa el comprobante por WhatsApp', ['transferencia bancaria', 'transferencia']],
+];
+const OPCIONES_LOGOS_PAGO = [
+  ['tarjetas', 'Tarjetas de crédito', 'Visa, Mastercard, Pago Móvil'],
+  ['bocas', 'Bocas de cobranza', 'Aquí Pago, Pago Express, Practipago, Infonet Cobranzas'],
+  ['billetera', 'Billetera electrónica', 'Tigo Money, Billetera Personal'],
+];
+const normalizar = t => String(t || '').trim().toLowerCase();
+const metodoChipDe = texto => METODOS_CHIP.find(([, , , alias]) => alias.includes(normalizar(texto)));
+
+function FilaMetodo({ label, detalle, checked, onChange }) {
+  return (
+    <label className="flex items-start justify-between gap-3 rounded-lg border border-border bg-surface-2/60 px-3 py-2">
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-fg">{label}</span>
+        <span className="block truncate text-xs text-fg-muted">{detalle}</span>
+      </span>
+      <input type="checkbox" className="mt-1 accent-primary" checked={checked} onChange={e => onChange(e.target.checked)} aria-label={label} />
+    </label>
+  );
+}
+
+function MetodosPagoEditor({ metodos, onCambiar, pagoLogos, onPagoLogosChange }) {
+  const base = Array.isArray(metodos) ? metodos : [];
+  const otros = base.filter(m => !metodoChipDe(m?.texto || m?.label));
+  const activo = clave => base.some(m => metodoChipDe(m?.texto || m?.label)?.[0] === clave);
+  // Los chips conocidos van primero y en orden fijo; los "otros" detrás.
+  const armar = (claves, extras) => [
+    ...METODOS_CHIP.filter(([clave]) => claves.includes(clave)).map(([, label]) => ({ texto: label })),
+    ...extras,
+  ];
+  const clavesActivas = METODOS_CHIP.map(([clave]) => clave).filter(activo);
+  const alternar = (clave, si) => onCambiar('metodos_pago', armar(si ? [...clavesActivas, clave] : clavesActivas.filter(c => c !== clave), otros));
+  const cambiarOtro = (idx, texto) => onCambiar('metodos_pago', armar(clavesActivas, otros.map((m, i) => (i === idx ? { texto } : m))));
+  const quitarOtro = idx => onCambiar('metodos_pago', armar(clavesActivas, otros.filter((_, i) => i !== idx)));
+  const agregarOtro = () => onCambiar('metodos_pago', armar(clavesActivas, [...otros, { texto: '' }]));
+  const conLogos = !!(pagoLogos && onPagoLogosChange);
+  return (
+    <fieldset className="space-y-2 rounded-lg border border-border bg-surface px-3 py-3">
+      <legend className="px-1 text-sm font-semibold text-fg">Métodos de pago</legend>
+      <p className="text-xs leading-relaxed text-fg-muted">Marcá solo lo que tu tienda cobra. Lo que desmarques no aparece en la ficha.</p>
+      {METODOS_CHIP.map(([clave, label, detalle]) => (
+        <FilaMetodo key={clave} label={label} detalle={detalle} checked={activo(clave)} onChange={si => alternar(clave, si)} />
+      ))}
+      {conLogos && OPCIONES_LOGOS_PAGO.map(([clave, label, detalle]) => (
+        <FilaMetodo key={clave} label={label} detalle={`${detalle} · igual en todas las fichas`} checked={pagoLogos[clave] !== false} onChange={si => onPagoLogosChange(clave, si)} />
+      ))}
+      {otros.length > 0 && <p className="pt-1 text-xs font-semibold text-fg">Otros métodos</p>}
+      {otros.map((m, idx) => (
+        <div key={idx} className="flex items-center gap-2">
+          <input className={campo} value={m.texto || m.label || ''} maxLength={40} placeholder="Ej: Giros Tigo" aria-label={`Otro método ${idx + 1}`} onChange={e => cambiarOtro(idx, e.target.value)} />
+          <button type="button" onClick={() => quitarOtro(idx)} className="h-9 rounded-lg px-2 text-xs font-semibold text-fg-muted hover:text-danger">Quitar</button>
+        </div>
+      ))}
+      {base.length < 8 && <button type="button" onClick={agregarOtro} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-primary-text">+ Otro método</button>}
+    </fieldset>
+  );
+}
+
+export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, onSubirImagen, pagoLogos = null, onPagoLogosChange = null, inicialmenteAbierto = false }) {
   const precio = Number(precioDeVenta(item)) || 0;
   const descuento = descuentoDesdeAncla(precio, ancla);
   const src = imagenPrincipal(item);
@@ -206,7 +273,8 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
   const porcentaje = useMemo(() => descuento || '', [descuento]);
   const beneficios = Array.isArray(item.beneficios) && item.beneficios.length ? item.beneficios : DEFAULTS_PRESENTACION.beneficios;
   const botonesPago = Array.isArray(item.botones_pago) && item.botones_pago.length ? item.botones_pago : DEFAULTS_PRESENTACION.botones_pago;
-  const metodosPago = Array.isArray(item.metodos_pago) && item.metodos_pago.length ? item.metodos_pago : DEFAULTS_PRESENTACION.metodos_pago;
+  // Lista vacía = el comercio desmarcó todo; solo sin dato se usan los ejemplos.
+  const metodosPago = Array.isArray(item.metodos_pago) ? item.metodos_pago : DEFAULTS_PRESENTACION.metodos_pago;
   const incluyePedido = Array.isArray(item.incluye_pedido) && item.incluye_pedido.length ? item.incluye_pedido : DEFAULTS_PRESENTACION.incluye_pedido;
   const botonesContacto = Array.isArray(item.botones_contacto) ? item.botones_contacto : [];
   const opiniones = Array.isArray(item.opiniones) && item.opiniones.length ? item.opiniones : DEFAULTS_PRESENTACION.opiniones;
@@ -254,10 +322,11 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
 
   const resumenPortada = src ? 'Imagen lista para la ficha' : 'Subí o pegá la imagen principal';
   const resumenTextos = `${titulo} · ${gs(precio)}`;
+  const resumenUrgencia = item.urgencia_titulo || DEFAULTS_PRESENTACION.urgencia_titulo;
   const resumenBeneficios = beneficios.length ? `${beneficios.length} beneficio${beneficios.length === 1 ? '' : 's'}` : 'Sin beneficios cargados';
-  const resumenPagos = `${botonesPago.length} botón${botonesPago.length === 1 ? '' : 'es'} · ${metodosPago.length} método${metodosPago.length === 1 ? '' : 's'}`;
+  const resumenPagos = `${botonesPago.length} ${botonesPago.length === 1 ? 'botón' : 'botones'} · ${metodosPago.length} método${metodosPago.length === 1 ? '' : 's'}`;
   const resumenIncluye = incluyePedido.length ? `${incluyePedido.length} ítem${incluyePedido.length === 1 ? '' : 's'}` : 'Sin ítems cargados';
-  const resumenOpiniones = opiniones.length ? `${opiniones.length} opinión${opiniones.length === 1 ? '' : 'es'}` : 'Sin opiniones todavía';
+  const resumenOpiniones = opiniones.length ? `${opiniones.length} ${opiniones.length === 1 ? 'opinión' : 'opiniones'}` : 'Sin opiniones todavía';
   const resumenPreguntas = preguntas.length ? `${preguntas.length} pregunta${preguntas.length === 1 ? '' : 's'}` : 'Sin preguntas cargadas';
 
   return (
@@ -267,19 +336,11 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
         <p className="mt-1 text-xs leading-relaxed text-fg-muted">Los bloques siguen el orden real de la vista: imagen, reseñas y textos, beneficios, compra, pagos, qué incluye, opiniones y preguntas frecuentes.</p>
       </div>
       <div className="space-y-3">
-        <BloqueFicha numero="1" titulo="Oferta por tiempo limitado" resumen={item.urgencia_titulo || DEFAULTS_PRESENTACION.urgencia_titulo} abierto={inicialmenteAbierto} visible={bloquesFicha.urgencia} onVisible={v => cambiarBloque('urgencia', v)}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <label className="block text-xs text-fg-muted">Rótulo<input className={campo} value={item.urgencia_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.urgencia_kicker} onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted">Título<input className={campo} value={item.urgencia_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.urgencia_titulo} onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
-            <label className="block text-xs text-fg-muted sm:col-span-2">Texto<textarea className={area} rows={2} value={item.urgencia_texto || ''} maxLength={180} placeholder={DEFAULTS_PRESENTACION.urgencia_texto} onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
-          </div>
-          <p className="text-xs leading-relaxed text-fg-muted">La fecha del contador se configura en el bloque de oferta flash. Si no hay fecha real, el preview muestra un contador de ejemplo.</p>
-        </BloqueFicha>
-        <BloqueFicha numero="2" titulo="Portada e imágenes" resumen={resumenPortada} abierto={inicialmenteAbierto} visible={bloquesFicha.portada} onVisible={v => cambiarBloque('portada', v)}>
+        <BloqueFicha numero="1" titulo="Portada e imágenes" resumen={resumenPortada} abierto={inicialmenteAbierto} visible={bloquesFicha.portada} onVisible={v => cambiarBloque('portada', v)}>
           <datalist id={insigniasListId}>{INSIGNIAS_COMERCIALES.map(i => <option key={i} value={i} />)}</datalist>
           <ImagenesProductoLanding item={item} onCambiar={onCambiar} onSubirImagen={onSubirImagen} />
         </BloqueFicha>
-        <BloqueFicha numero="3" titulo="Reseñas, rótulo, título y subtítulo" resumen={resumenTextos} abierto={inicialmenteAbierto} visible={bloquesFicha.textos} onVisible={v => cambiarBloque('textos', v)}>
+        <BloqueFicha numero="2" titulo="Reseñas, rótulo, título y subtítulo" resumen={resumenTextos} abierto={inicialmenteAbierto} visible={bloquesFicha.textos} onVisible={v => cambiarBloque('textos', v)}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="block text-xs text-fg-muted">Texto de reseñas<input className={campo} value={item.resenas_texto || ''} maxLength={80} placeholder={DEFAULTS_PRESENTACION.resenas_texto} onChange={e => onCambiar('resenas_texto', e.target.value)} /></label>
             <label className="block text-xs text-fg-muted">Rótulo superior<input className={campo} value={item.insignia_principal || ''} list={insigniasListId} maxLength={40} placeholder={DEFAULTS_PRESENTACION.insignia_principal} onChange={e => onCambiar('insignia_principal', e.target.value)} /></label>
@@ -291,6 +352,22 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
             <label className="block text-xs text-fg-muted">% de descuento<input inputMode="numeric" value={porcentaje} placeholder="Ej: 21" className={campo} onChange={e => onAncla(precioAnclaPorDescuento(precio, e.target.value))} /></label>
             <label className="block text-xs text-fg-muted">Badge de precio<input className={campo} value={item.insignia_secundaria || ''} list={insigniasListId} maxLength={40} placeholder={descuento ? `-${descuento}%` : 'Oferta especial'} onChange={e => onCambiar('insignia_secundaria', e.target.value)} /></label>
           </div>
+        </BloqueFicha>
+        <BloqueFicha numero="3" titulo="Oferta por tiempo limitado" resumen={resumenUrgencia} abierto={inicialmenteAbierto} visible={bloquesFicha.urgencia} onVisible={v => cambiarBloque('urgencia', v)}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="block text-xs text-fg-muted">Rótulo<input className={campo} value={item.urgencia_kicker || ''} maxLength={60} placeholder={DEFAULTS_PRESENTACION.urgencia_kicker} onChange={e => onCambiar('urgencia_kicker', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted">Título<input className={campo} value={item.urgencia_titulo || ''} maxLength={90} placeholder={DEFAULTS_PRESENTACION.urgencia_titulo} onChange={e => onCambiar('urgencia_titulo', e.target.value)} /></label>
+            <label className="block text-xs text-fg-muted sm:col-span-2">Texto<textarea className={area} rows={2} value={item.urgencia_texto || ''} maxLength={180} placeholder={DEFAULTS_PRESENTACION.urgencia_texto} onChange={e => onCambiar('urgencia_texto', e.target.value)} /></label>
+          </div>
+          <fieldset className="rounded-lg border border-border bg-surface px-3 py-3">
+            <legend className="px-1 text-sm font-semibold text-fg">Duración del contador de ejemplo</legend>
+            <div className="grid grid-cols-3 gap-3">
+              <label className="block text-xs text-fg-muted">Horas<input className={campo} type="number" min="0" max="99" value={item.urgencia_horas ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_horas)} onChange={e => onCambiar('urgencia_horas', e.target.value)} /></label>
+              <label className="block text-xs text-fg-muted">Minutos<input className={campo} type="number" min="0" max="59" value={item.urgencia_minutos ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_minutos)} onChange={e => onCambiar('urgencia_minutos', e.target.value)} /></label>
+              <label className="block text-xs text-fg-muted">Segundos<input className={campo} type="number" min="0" max="59" value={item.urgencia_segundos ?? ''} placeholder={String(DEFAULTS_PRESENTACION.urgencia_segundos)} onChange={e => onCambiar('urgencia_segundos', e.target.value)} /></label>
+            </div>
+          </fieldset>
+          <p className="text-xs leading-relaxed text-fg-muted">Si configurás una fecha real en Oferta flash, esa fecha manda. Estos campos controlan el contador de ejemplo de la ficha cuando no hay fecha real activa.</p>
         </BloqueFicha>
         <BloqueFicha numero="4" titulo="Beneficios" resumen={resumenBeneficios} visible={bloquesFicha.beneficios} onVisible={v => cambiarBloque('beneficios', v)}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -306,7 +383,7 @@ export default function PresentacionProducto({ item, ancla, onAncla, onCambiar, 
             <label className="block text-xs text-fg-muted">Botón agregar al carrito<input className={campo} value={item.agregar_carrito_texto || ''} maxLength={36} placeholder="Agregar al carrito" onChange={e => onCambiar('agregar_carrito_texto', e.target.value)} /></label>
           </div>
           <ListaBotones titulo="Botones de pago" ayuda="Botones secundarios como Pago contra entrega, Comprar por WhatsApp o un link de pago." items={botonesPago} campoLista="botones_pago" onCambiar={onCambiar} />
-          <ListaSimple titulo="Métodos de pago" ayuda="Chips cortos debajo de los botones, por ejemplo Bancard, PagoPar o Transferencia bancaria." items={metodosPago} campoLista="metodos_pago" placeholder="Método de pago" onCambiar={onCambiar} />
+          <MetodosPagoEditor metodos={metodosPago} onCambiar={onCambiar} pagoLogos={pagoLogos} onPagoLogosChange={onPagoLogosChange} />
           <ListaBotones titulo="Botones configurables de contacto" ayuda="Caminos de contacto adicionales de esta ficha." items={botonesContacto} campoLista="botones_contacto" onCambiar={onCambiar} />
         </BloqueFicha>
         <BloqueFicha numero="6" titulo="Qué incluye el pedido" resumen={resumenIncluye} visible={bloquesFicha.incluye} onVisible={v => cambiarBloque('incluye', v)}>

@@ -685,6 +685,7 @@ export default function ConfigurarVentaCodigo({
   const [codigoModal, setCodigoModal] = useState(null);
   const [categoriaPreview, setCategoriaPreview] = useState('');
   const [productoEditando, setProductoEditando] = useState(null); // content_id
+  const [promoEditando, setPromoEditando] = useState(null); // content_id
   const [inicioComercial, setInicioComercial] = useState(() => normalizarInicioComercial(inicioComercialDesdeVenta(ventaInicial)));
 
   // Todas las order bump / upsell activas de la tienda, de entrada: antes se
@@ -815,10 +816,30 @@ export default function ConfigurarVentaCodigo({
     () => candidatosDatosProducto.find(i => i.content_id === productoEditando) || null,
     [candidatosDatosProducto, productoEditando],
   );
+  const productosCategoriaActual = useMemo(
+    () => candidatosDatosProducto.filter(i => i.categoria === categoriaPreviewValida),
+    [candidatosDatosProducto, categoriaPreviewValida],
+  );
+  const productoCategoriaEditando = useMemo(
+    () => productosCategoriaActual.find(i => i.content_id === productoEditando) || null,
+    [productosCategoriaActual, productoEditando],
+  );
+  const productoPromoEditando = useMemo(
+    () => candidatosDatosProducto.find(i => i.content_id === promoEditando) || null,
+    [candidatosDatosProducto, promoEditando],
+  );
   const seleccionarProductoConfig = useCallback((contentId) => {
     setProductoEditando(contentId);
     setSeccionConfig('fichas');
     setVistaPreview('producto');
+    setProductoPreview(contentId);
+    setAvisoPreview('');
+    setResaltado(null);
+  }, []);
+  const abrirPromoProducto = useCallback((contentId, vista = 'catalogo') => {
+    setPromoEditando(contentId);
+    setProductoEditando(contentId);
+    setVistaPreview(vista);
     setProductoPreview(contentId);
     setAvisoPreview('');
     setResaltado(null);
@@ -1231,7 +1252,7 @@ export default function ConfigurarVentaCodigo({
     paquetes: confPaquetes,
     catalogo_filtros: filtrosCatalogo,
     presentacion_productos: Object.fromEntries(Object.entries(presentacion).slice(0, 500).map(([key, value]) => [key, {
-      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, value[campo] || ''])),
+      ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, value[campo] || ''])),
       ...(value.ficha_bloques && typeof value.ficha_bloques === 'object' ? { ficha_bloques: value.ficha_bloques } : {}),
       ...(Array.isArray(value.imagenes_landing) ? { imagenes_landing: value.imagenes_landing } : {}),
       ...(Array.isArray(value.beneficios) ? { beneficios: value.beneficios.filter(b => b && (b.titulo || b.texto)).slice(0, 8) } : {}),
@@ -1677,7 +1698,7 @@ export default function ConfigurarVentaCodigo({
               {seccionConfig === 'fichas' && (
                 <>
                   <Bloque
-                    titulo="1. Elegí el producto que vas a editar"
+                    titulo="Elegí el producto que vas a editar"
                     ayuda="La ficha se edita de a un producto: elegís uno, el panel de abajo cambia a esa ficha y la preview salta al producto seleccionado."
                   >
                     {candidatosDatosProducto.length === 0 ? (
@@ -1712,6 +1733,8 @@ export default function ConfigurarVentaCodigo({
                       <PresentacionProducto item={productoConfigActual} ancla={anclas[claveItem(productoConfigActual)] ?? ''}
                         onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoConfigActual)]: v }))}
                         onCambiar={(campo, valor) => cambiarPresentacion(productoConfigActual, campo, valor)}
+                        pagoLogos={pagoLogos}
+                        onPagoLogosChange={(clave, activo) => setPagoLogos(prev => ({ ...prev, [clave]: activo }))}
                         destacado={destacadosValidos.includes(productoConfigActual.content_id)} onDestacar={() => alternarDestacado(productoConfigActual.content_id)}
                         tienda={tienda} onSubirImagen={onSubirImagen ? subirImagenLanding : null} {...propsOfertaProducto(productoConfigActual)} inicialmenteAbierto />
                     </Bloque>
@@ -1977,13 +2000,7 @@ export default function ConfigurarVentaCodigo({
                       ofertaTitulo={urgenciaTitulo}
                       ofertaTexto={urgenciaTexto}
                       ofertaCta={urgenciaCta}
-                      onEditar={contentId => {
-                        setProductoEditando(contentId);
-                        setVistaPreview('catalogo');
-                        setProductoPreview(contentId);
-                        setAvisoPreview('');
-                        setResaltado(null);
-                      }}
+                      onEditar={contentId => abrirPromoProducto(contentId, 'catalogo')}
                       onAncla={(item, valor) => {
                         setAnclas(prev => ({ ...prev, [claveItem(item)]: valor }));
                         setVistaPreview('catalogo');
@@ -2011,7 +2028,7 @@ export default function ConfigurarVentaCodigo({
                 <>
                   <Bloque
                     titulo="Categorías"
-                    ayuda="La página de categoría toma las categorías reales de esta landing. Desde acá podés previsualizar cómo se ve cada entrada."
+                    ayuda="La página de categoría toma las categorías reales de esta landing. Elegí una categoría para ver y editar sus productos."
                     verDonde={() => verDonde('categoria', null)}
                   >
                     {categoriasLandingDisponibles.length === 0 ? (
@@ -2023,7 +2040,7 @@ export default function ConfigurarVentaCodigo({
                             key={cat}
                             type="button"
                             onClick={() => { setCategoriaPreview(cat); setVistaPreview('categoria'); setAvisoPreview(`Preview de categoría: ${cat}.`); setResaltado(null); }}
-                            className="rounded-lg border border-border bg-surface px-3 py-2.5 text-left hover:border-border-strong"
+                            className={`rounded-lg border px-3 py-2.5 text-left hover:border-border-strong ${categoriaPreviewValida === cat ? 'border-primary bg-primary/[0.06]' : 'border-border bg-surface'}`}
                           >
                             <span className="block text-sm font-semibold text-fg truncate">{cat}</span>
                             <span className="block text-xs text-fg-muted">{count} producto{count === 1 ? '' : 's'}</span>
@@ -2032,6 +2049,44 @@ export default function ConfigurarVentaCodigo({
                       </div>
                     )}
                   </Bloque>
+
+                  {categoriaPreviewValida && (
+                    <Bloque
+                      titulo={`Productos de ${categoriaPreviewValida}`}
+                      ayuda="Editá precio anterior, descuento, badge, etiquetas de filtro y countdown de los productos de esta categoría."
+                      verDonde={() => verDonde('categoria', null)}
+                    >
+                      <EditorPromosCatalogo
+                        productos={productosCategoriaActual}
+                        productoEditando={productoCategoriaEditando}
+                        ofertasSeleccionadas={urgenciaProductosValidos}
+                        anclas={anclas}
+                        ofertaFinAt={urgenciaFinAt}
+                      ofertaTitulo={urgenciaTitulo}
+                      ofertaTexto={urgenciaTexto}
+                      ofertaCta={urgenciaCta}
+                        onEditar={contentId => abrirPromoProducto(contentId, 'categoria')}
+                        onAncla={(item, valor) => {
+                          setAnclas(prev => ({ ...prev, [claveItem(item)]: valor }));
+                          setVistaPreview('categoria');
+                          setProductoPreview(item.content_id);
+                          setAvisoPreview('');
+                          setResaltado(null);
+                        }}
+                        onCambiar={(item, campo, valor) => cambiarPresentacion(item, campo, valor)}
+                        onOfertaFinAt={cambiarUrgenciaFinAt}
+                        onOfertaTitulo={setUrgenciaTitulo}
+                        onOfertaTexto={setUrgenciaTexto}
+                        onOfertaCta={setUrgenciaCta}
+                        onAlternarOferta={contentId => {
+                          activarOfertaCatalogo(contentId);
+                          setVistaPreview('categoria');
+                          setResaltado(null);
+                        }}
+                        onQuitarOferta={quitarOfertaCatalogo}
+                      />
+                    </Bloque>
+                  )}
                 </>
               )}
 
@@ -2227,8 +2282,8 @@ export default function ConfigurarVentaCodigo({
                 <>
               {/* Recomendados */}
               <Bloque
-                titulo="8. Productos recomendados"
-                ayuda="Ultimo bloque de la ficha: titulo, subtitulo, cantidad y productos recomendados."
+                titulo="9. Productos recomendados"
+                ayuda="Último bloque de la ficha, igual para todos los productos: título, subtítulo, cantidad y qué productos recomendar."
                 interruptor={{ activo: recoActivo, onChange: setRecoActivo, etiqueta: 'Mostrar productos recomendados' }}
                 verDonde={recoActivo ? verRecomendados : null}
               >
@@ -2539,6 +2594,35 @@ export default function ConfigurarVentaCodigo({
           onCambiar={onCambiarCodigo}
           onRestaurar={onRestaurarCodigo}
           onCerrar={() => setCodigoModal(null)}
+        />
+      )}
+
+      {productoPromoEditando && (
+        <PromoCatalogoModal
+          item={productoPromoEditando}
+          ancla={anclas[claveItem(productoPromoEditando)] ?? ''}
+          ofertaActiva={urgenciaProductosValidos.includes(productoPromoEditando.content_id)}
+          ofertaFinAt={urgenciaFinAt}
+          ofertaTitulo={urgenciaTitulo}
+          ofertaTexto={urgenciaTexto}
+          ofertaCta={urgenciaCta}
+          onAncla={v => setAnclas(prev => ({ ...prev, [claveItem(productoPromoEditando)]: v }))}
+          onCambiar={(campo, valor) => cambiarPresentacion(productoPromoEditando, campo, valor)}
+          onAlternarOferta={() => {
+            const activa = urgenciaProductosValidos.includes(productoPromoEditando.content_id);
+            if (activa) quitarOfertaCatalogo(productoPromoEditando.content_id);
+            else activarOfertaCatalogo(productoPromoEditando.content_id);
+            if (!activa && urgenciaFinAt) setUrgenciaConfirmar(true);
+          }}
+          onOfertaFinAt={valor => {
+            activarOfertaCatalogo(productoPromoEditando.content_id);
+            cambiarUrgenciaFinAt(valor);
+            setUrgenciaConfirmar(!!valor);
+          }}
+          onOfertaTitulo={setUrgenciaTitulo}
+          onOfertaTexto={setUrgenciaTexto}
+          onOfertaCta={setUrgenciaCta}
+          onCerrar={() => setPromoEditando(null)}
         />
       )}
 
@@ -3554,66 +3638,66 @@ function EditorPromosCatalogo({
           const editando = productoEditando?.content_id === contentId;
           const enOferta = ofertasSeleccionadas.includes(contentId);
           return (
-            <React.Fragment key={contentId}>
-              <div className={`rounded-xl border p-3 ${editando ? 'border-primary bg-primary/[0.05]' : 'border-border bg-surface-2/40'}`}>
-                <button type="button" onClick={() => onEditar(contentId)} className="flex w-full items-center gap-3 text-left">
-                  <Miniatura item={item} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-fg">{item.titulo_comercial || item.nombre}</span>
-                    <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="font-mono font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
-                      {ancla > precio && <span className="font-mono text-fg-muted line-through">{formatearGs(ancla)}</span>}
-                      {descuento > 0 && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">-{descuento}%</span>}
-                    </span>
-                    <span className="mt-1 block truncate text-[11px] text-fg-muted">{item.categoria || 'Sin categoría'}</span>
+            <div key={contentId} className={`rounded-xl border p-3 ${editando ? 'border-primary bg-primary/[0.05]' : 'border-border bg-surface-2/40'}`}>
+              <button type="button" onClick={() => onEditar(contentId)} className="flex w-full items-center gap-3 text-left">
+                <Miniatura item={item} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-fg">{item.titulo_comercial || item.nombre}</span>
+                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-mono font-semibold text-fg">{formatearGs(precio) || 'Sin precio'}</span>
+                    {ancla > precio && <span className="font-mono text-fg-muted line-through">{formatearGs(ancla)}</span>}
+                    {descuento > 0 && <span className="rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-bold text-success">-{descuento}%</span>}
                   </span>
+                  <span className="mt-1 block truncate text-[11px] text-fg-muted">{item.categoria || 'Sin categoría'}</span>
+                </span>
+              </button>
+              <div className="mt-3 grid grid-cols-1 gap-2">
+                {enOferta && (
+                  <span className="inline-flex h-8 items-center justify-center rounded-lg border border-success/30 bg-success/10 px-3 text-xs font-semibold text-success">
+                    Countdown activo
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onEditar(contentId)}
+                  className={`inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition-colors ${editando ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface text-fg hover:border-border-strong'}`}
+                >
+                  Editar promo
                 </button>
-                <div className="mt-3 grid grid-cols-1 gap-2">
-                  <label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-xs text-fg">
-                    <span>Usar en oferta con fecha de fin</span>
-                    <input
-                      type="checkbox"
-                      checked={enOferta}
-                      onChange={e => (e.target.checked ? onAlternarOferta(contentId) : onQuitarOferta(contentId))}
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => onEditar(contentId)}
-                    className={`inline-flex h-9 items-center justify-center rounded-lg border px-3 text-xs font-semibold transition-colors ${editando ? 'border-primary bg-primary text-primary-fg' : 'border-border bg-surface text-fg hover:border-border-strong'}`}
-                  >
-                    {editando ? 'Editando promo' : 'Editar precio, descuento y badges'}
-                  </button>
-                </div>
               </div>
-              {editando && (
-                <div className="md:col-span-2">
-                  <EditorPromoCatalogoProducto
-                    item={productoEditando}
-                    ancla={anclas[claveItem(productoEditando)] ?? ''}
-                    ofertaActiva={enOferta}
-                    ofertaFinAt={ofertaFinAt}
-                    ofertaTitulo={ofertaTitulo}
-                    ofertaTexto={ofertaTexto}
-                    ofertaCta={ofertaCta}
-                    onAncla={v => onAncla(productoEditando, v)}
-                    onCambiar={(campo, valor) => onCambiar(productoEditando, campo, valor)}
-                    onAlternarOferta={() => (enOferta ? onQuitarOferta(contentId) : onAlternarOferta(contentId))}
-                    onOfertaFinAt={onOfertaFinAt}
-                    onOfertaTitulo={onOfertaTitulo}
-                    onOfertaTexto={onOfertaTexto}
-                    onOfertaCta={onOfertaCta}
-                  />
-                </div>
-              )}
-            </React.Fragment>
+            </div>
           );
         })}
       </div>
       {productos.length > 24 && <p className="text-xs text-fg-muted">Mostrando los primeros 24 productos configurables. Los demás siguen usando su precio y datos del catálogo.</p>}
-      {!productoEditando && (
-        <p className="rounded-xl border border-dashed border-border-strong px-4 py-5 text-center text-sm text-fg-muted">Elegí un producto para editar su promoción.</p>
-      )}
+    </div>
+  );
+}
+
+function PromoCatalogoModal(props) {
+  const { item, onCerrar } = props;
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 px-4 py-6" role="dialog" aria-modal="true" aria-label={`Editar promo de ${item?.nombre || 'producto'}`}>
+      <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-fg-muted">Promo del producto</p>
+            <h2 className="mt-1 truncate text-lg font-bold text-fg">{item?.titulo_comercial || item?.nombre || 'Producto'}</h2>
+            <p className="mt-1 text-sm text-fg-muted">{item?.categoria || 'Sin categoría'}</p>
+          </div>
+          <button type="button" onClick={onCerrar} className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-fg-muted hover:border-border-strong hover:text-fg" aria-label="Cerrar">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="max-h-[72vh] overflow-y-auto p-5">
+          <EditorPromoCatalogoProducto {...props} />
+        </div>
+        <div className="flex justify-end border-t border-border px-5 py-4">
+          <button type="button" onClick={onCerrar} className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-fg hover:bg-primary-hover">
+            Listo
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -3712,10 +3796,10 @@ function EditorPromoCatalogoProducto({
             aria-label="Fecha fin de oferta"
             type="datetime-local"
             value={ofertaFinAt || ''}
-            disabled={!ofertaActiva}
             onChange={e => onOfertaFinAt(e.target.value)}
-            className="mt-1 h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary disabled:opacity-50"
+            className="mt-1 h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm text-fg outline-none focus:border-primary"
           />
+          {!ofertaActiva && <span className="mt-1 block text-[11px] text-fg-muted">Al cargar una fecha se activa para este producto.</span>}
         </label>
         {ofertaActiva && (
           <div className="sm:col-span-2 grid grid-cols-1 gap-3 md:grid-cols-2">

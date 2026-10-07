@@ -98,18 +98,19 @@ function paqueteVisible(oferta, venta) {
 }
 
 const FICHA_BLOQUES_DEFAULT = {
-  urgencia: true,
   portada: true,
   textos: true,
+  urgencia: true,
   beneficios: true,
   compra: true,
   incluye: true,
   opiniones: true,
+  preguntas: true,
 };
 
 const PRESENTACION_PRODUCTO_DEFAULT = {
   resenas_texto: '4.9 · 5 estrellas · +1.000 reseñas verificadas',
-  insignia_principal: 'Oferta destacada',
+  insignia_principal: '',
   cta_texto: 'Comprar ahora',
   agregar_carrito_texto: 'Agregar al carrito',
   beneficios_kicker: 'Por qué elegirlo',
@@ -118,9 +119,15 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
   urgencia_kicker: 'Oferta por tiempo limitado',
   urgencia_titulo: 'Reservá esta condición antes de que termine.',
   urgencia_texto: 'La fecha real se configura en Gesicomm; el contador se actualiza solo.',
+  urgencia_horas: 1,
+  urgencia_minutos: 59,
+  urgencia_segundos: 58,
   opiniones_kicker: 'Opiniones',
   opiniones_titulo: 'Personas que ya lo probaron.',
   opiniones_subtitulo: 'Reemplazá estos ejemplos por comentarios reales de tus clientes.',
+  preguntas_kicker: 'Resolvemos tus dudas',
+  preguntas_titulo: 'Preguntas frecuentes',
+  preguntas_subtitulo: '',
   beneficios: [
     { titulo: 'Compra simple', texto: 'Elegí la opción ideal y completá tu pedido en pocos pasos.' },
     { titulo: 'Atención cercana', texto: 'Podés consultar antes de comprar y recibir ayuda con tu pedido.' },
@@ -131,9 +138,8 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
     { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: 'Hola! Quiero consultar por este producto.' },
   ],
   metodos_pago: [
-    { texto: 'Pago online' },
-    { texto: 'Transferencia' },
-    { texto: 'Pago al recibir' },
+    { texto: 'Pago contra entrega' },
+    { texto: 'Transferencia bancaria' },
   ],
   incluye_pedido: [
     { texto: '1 unidad del producto seleccionado' },
@@ -143,6 +149,11 @@ const PRESENTACION_PRODUCTO_DEFAULT = {
   opiniones: [
     { nombre: 'Cliente verificado', comentario: 'La compra fue simple y la atención me ayudó a elegir mejor.', detalle: 'Ejemplo editable', calificacion: 5, foto: '' },
     { nombre: 'María P.', comentario: 'Me gustó poder ver la información clara antes de hacer el pedido.', detalle: 'Ejemplo editable', calificacion: 5, foto: '' },
+  ],
+  preguntas: [
+    { pregunta: '¿Cómo confirmo que este producto es para mí?', respuesta: 'Revisá las características y las imágenes. Si tenés alguna duda sobre compatibilidad o uso, consultanos antes de realizar el pedido.' },
+    { pregunta: '¿Cuánto cuesta el envío y cuándo llega?', respuesta: 'La cobertura, el costo y el plazo se confirman según tu dirección antes de cerrar la compra.' },
+    { pregunta: '¿Puedo pagar contra entrega o pedir un cambio?', respuesta: 'Las opciones disponibles dependen de tu ciudad y de las políticas de la tienda. Podés consultarnos antes de comprar.' },
   ],
 };
 
@@ -198,11 +209,12 @@ export function presentacionComercial(item, venta) {
   const pagoLogoBocas = venta?.pago_logos?.bocas !== false;
   const pagoLogoBilletera = venta?.pago_logos?.billetera !== false;
   return {
-    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo'].map(campo => [campo, texto(campo)])),
+    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'urgencia_horas', 'urgencia_minutos', 'urgencia_segundos', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo', 'preguntas_kicker', 'preguntas_titulo', 'preguntas_subtitulo'].map(campo => [campo, texto(campo)])),
     ficha_bloques: { ...FICHA_BLOQUES_DEFAULT, ...(fuente.ficha_bloques || {}) },
     beneficios,
     botones_pago: lista('botones_pago'),
-    metodos_pago: lista('metodos_pago'),
+    // Vacía = el comercio desmarcó todos los métodos: no se rellena con ejemplos.
+    metodos_pago: Array.isArray(fuente.metodos_pago) ? fuente.metodos_pago : PRESENTACION_PRODUCTO_DEFAULT.metodos_pago,
     incluye_pedido: lista('incluye_pedido'),
     botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : [],
     opiniones: lista('opiniones'),

@@ -637,6 +637,7 @@ export default function VitrinaGrid() {
       sku: item.sku || null,
       creado_por: item.creado_por ?? null,
     }))));
+    sessionStorage.setItem('gesicomm:usarComboPrefillCatalogo', '1');
     navigate('/combos/nuevo', { state: { usarPrefillCatalogo: true } });
   }
 
