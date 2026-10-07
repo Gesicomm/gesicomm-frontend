@@ -232,6 +232,33 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
 .gc-commercial-copy { margin:8px 0 14px; font:400 14px/1.6 system-ui,sans-serif; color:inherit; opacity:.85; }
 .gc-commercial-saving { margin:12px 0 0; font:700 14px/1.5 system-ui,sans-serif; color:inherit; }
 .gc-commercial-details { display:inline-flex; margin:14px 0 0; padding:0; border:0; background:transparent; color:inherit; font:700 14px/1.5 system-ui,sans-serif; cursor:pointer; }
+.gc-card-countdown {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #b80f45, #f15d3d);
+  border-radius: 14px;
+  box-shadow: 0 12px 26px rgba(184, 15, 69, .22);
+}
+.gc-card-countdown strong {
+  font: 900 13px/1.2 system-ui, sans-serif;
+}
+.gc-card-countdown span {
+  font: 650 11px/1.35 system-ui, sans-serif;
+  opacity: .9;
+}
+.gc-card-countdown em {
+  width: fit-content;
+  padding: 5px 8px;
+  color: #7a092b;
+  background: #fff;
+  border-radius: 999px;
+  font: 900 12px/1 system-ui, sans-serif;
+  font-style: normal;
+  letter-spacing: .02em;
+}
 [data-gesicomm-lista]:not([data-gesicomm-lista="banners_inicio"]) :where(.card__media, .product-image, .product-media, .product__media, .catalog-card__media, .combo__media, .pack__media, .media, .thumb, .image) {
   overflow: hidden !important;
   background: #fff !important;
@@ -320,6 +347,47 @@ main[data-gesicomm-base="catalogo"] :where([data-gesicomm-lista="banners_inicio"
   transform: translateY(-1px);
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
+:where(.gc-contact-float) {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 2147483000;
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--tienda-primario, #16a34a);
+  color: #fff;
+  border: 1px solid color-mix(in srgb, #fff 22%, transparent);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, .28);
+  text-decoration: none;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+:where(.gc-contact-float:hover) {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, .34);
+}
+:where(.gc-contact-float__icon) {
+  display: block;
+}
+:where(.gc-contact-float__label) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+:where(.gc-contact-float--whatsapp) { background: #16a34a; }
+:where(.gc-contact-float--instagram) { background: #c13584; }
+:where(.gc-contact-float--email) { background: #2563eb; }
+:where(.gc-contact-float--telefono) { background: #0f766e; }
 
 :where([data-gesicomm-item][data-gesicomm-ver], [data-gesicomm-ver]) {
   cursor: pointer;

@@ -441,7 +441,7 @@ Estructura recomendada:
    - name="ciudad" required
    - name="direccion" required
    - name="documento" opcional
-   - Método de pago: NO uses un <select>. Dos tarjetas clickeables, cada una con <input type="radio" name="payment_method">, value "pagopar" y "contra_entrega". La de "pagopar" va PRIMERO, marcada checked por default, y remarcada con el color primario (fondo tinte, borde más grueso) más una insignia tipo "Recomendado": es la que le conviene al comercio (cobra seguro, sin riesgo de rechazo al entregar) y tiene que saltar a la vista antes que la de contra entrega. La de "contra_entrega" se ve neutra, sin remarcar.
+   - Método de pago: NO uses un <select>. Dos tarjetas clickeables, cada una con <input type="radio" name="payment_method">, value "pagopar" y "contra_entrega". La de "pagopar" va PRIMERO, marcada checked por default, y remarcada con el color primario (fondo tinte usando la superficie de la tienda, nunca un blanco fijo que rompe el modo oscuro) más una insignia tipo "Recomendado" (en un <span>, nunca <em> — no tiene que salir en itálica): es la que le conviene al comercio (cobra seguro, sin riesgo de rechazo al entregar) y tiene que saltar a la vista antes que la de contra entrega. La de "contra_entrega" se ve neutra, sin remarcar. Copy: "Pago contra entrega" se describe como "Pagás cuando recibís el pedido" — nunca asumas que es en efectivo, el comercio puede cobrar por otros medios al entregar.
    - textarea name="notas" opcional
 5. Resumen lateral o superior del pedido con data-gesicomm-lista="checkout_items": imagen, nombre, variante, precio_unitario, cantidad y subtotal.
 6. Totales con data-gesicomm-checkout="subtotal", "cantidad" y "total"; mensaje/estado con data-gesicomm-checkout="mensaje".

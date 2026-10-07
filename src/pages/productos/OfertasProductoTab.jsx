@@ -40,7 +40,6 @@ const ESTRATEGIAS_CHECKOUT = ['order_bump', 'upsell'];
 // estrategia "normal", pero en UX son decisiones distintas.
 const OPCIONES_TIPO_OFERTA = [
   { value: 'pack', titulo: 'Oferta por cantidad', texto: 'Varias unidades del mismo producto.' },
-  { value: 'combo', titulo: 'Combo', texto: 'Productos diferentes vendidos juntos.' },
   { value: 'order_bump', titulo: 'Order bump', texto: 'Producto complementario antes de terminar la compra.' },
   { value: 'upsell', titulo: 'Upsell', texto: 'Oferta posterior cuando el producto ya está en el carrito.' },
 ];
@@ -65,12 +64,6 @@ const RESUMEN_OFERTAS = [
     id: 'pack',
     titulo: 'Paquetes',
     descripcion: 'El mismo producto en más cantidad a precio especial (ej. 2 x 770.000). Se eligen en su ficha.',
-    icon: Layers,
-  },
-  {
-    id: 'combo',
-    titulo: 'Combos',
-    descripcion: 'Productos diferentes vendidos juntos, con precio propio.',
     icon: Layers,
   },
   {
@@ -673,7 +666,7 @@ export default function OfertasProductoTab({
         </button>
       </div>
       <p className="field-hint">
-        Estas ofertas aparecen cuando el cliente compra este producto. Acá se crean paquetes, combos, order bumps y upsells sin volver a elegir el producto disparador.
+        Estas ofertas aparecen cuando el cliente compra este producto. Acá se crean paquetes, order bumps y upsells sin volver a elegir el producto disparador. Los combos se arman desde la sección Combos.
       </p>
       {modoBorrador && <p className="prod-offer-draft-hint" role="status">Podés preparar tus ofertas ahora. Se guardarán junto con el producto al pulsar Guardar.</p>}
 

@@ -80,6 +80,12 @@ export function runtimeGesicomm() {
   var paginado = !!metaCatalogo.paginado;
   var porPagina = metaCatalogo.por_pagina || metaCatalogo.porPagina || 20;
   var filtros = { busqueda: '', categoria: datos.categoria && datos.categoria.nombre ? datos.categoria.nombre : '', marca: '', etiqueta: '', precioMin: '', precioMax: '', disponibilidad: 'todos', soloDescuento: '', orden: '', pagina: 1 };
+  try {
+    var paramsIniciales = new URLSearchParams(window.location.search || '');
+    if (paramsIniciales.get('etiqueta')) filtros.etiqueta = paramsIniciales.get('etiqueta');
+    if (paramsIniciales.get('badge')) filtros.etiqueta = paramsIniciales.get('badge');
+    if (paramsIniciales.get('categoria')) filtros.categoria = paramsIniciales.get('categoria');
+  } catch (e) { /* URLSearchParams no disponible: usa los filtros por defecto */ }
   var catalogoVista = {
     items: productos.slice(),
     pagina: 1,
@@ -151,7 +157,15 @@ export function runtimeGesicomm() {
       var pagina = paginaDeEnlace(enlaces[i]);
       if (!pagina) continue;
       enlaces[i].setAttribute('data-gesicomm-link', pagina);
-      if (enlaces[i].tagName === 'A' && paginasTienda[pagina]) enlaces[i].setAttribute('href', paginasTienda[pagina]);
+      if (enlaces[i].tagName === 'A' && paginasTienda[pagina]) {
+        var original = enlaces[i].getAttribute('href') || '';
+        var extra = '';
+        var queryIdx = original.indexOf('?');
+        var hashIdx = original.indexOf('#');
+        if (queryIdx >= 0) extra = original.slice(queryIdx);
+        else if (hashIdx >= 0) extra = original.slice(hashIdx);
+        enlaces[i].setAttribute('href', paginasTienda[pagina] + extra);
+      }
     }
   }
 
@@ -426,9 +440,15 @@ export function runtimeGesicomm() {
       case 'beneficios_kicker': valor = item.beneficios_kicker || 'Por qué elegirlo'; break;
       case 'beneficios_titulo': valor = item.beneficios_titulo || 'Lo que vas a notar.'; break;
       case 'beneficios_subtitulo': valor = item.beneficios_subtitulo || ''; break;
+      case 'urgencia_kicker': valor = item.urgencia_kicker || 'Oferta por tiempo limitado'; break;
+      case 'urgencia_titulo': valor = item.urgencia_titulo || 'Reservá esta condición antes de que termine.'; break;
+      case 'urgencia_texto': valor = item.urgencia_texto || 'La fecha real se configura en Gesicomm; el contador se actualiza solo.'; break;
       case 'opiniones_kicker': valor = item.opiniones_kicker || 'Opiniones'; break;
       case 'opiniones_titulo': valor = item.opiniones_titulo || 'Personas que ya lo probaron.'; break;
       case 'opiniones_subtitulo': valor = item.opiniones_subtitulo || ''; break;
+      case 'preguntas_kicker': valor = item.preguntas_kicker || 'Resolvemos tus dudas'; break;
+      case 'preguntas_titulo': valor = item.preguntas_titulo || 'Preguntas frecuentes'; break;
+      case 'preguntas_subtitulo': valor = item.preguntas_subtitulo || ''; break;
       case 'precio': valor = formatoPrecio(item.precio_efectivo !== undefined ? item.precio_efectivo : precioDe(item, variante)); break;
       case 'precio_unitario': valor = formatoPrecio(item.precio_unitario); break;
       case 'subtotal': valor = formatoPrecio(item.subtotal); break;
@@ -486,7 +506,7 @@ export function runtimeGesicomm() {
     }
     if (campo === 'url' || campo === 'enlace' || campo === 'categoria_url') {
       if (el.tagName === 'A' && urlSegura(valor)) el.setAttribute('href', valor);
-      if (campo === 'url' && !el.hasAttribute('data-gesicomm-ver')) el.setAttribute('data-gesicomm-ver', item.id || '');
+      if (campo === 'url' && item.id && !el.hasAttribute('data-gesicomm-ver') && !el.closest('.payment-actions, .contact-actions')) el.setAttribute('data-gesicomm-ver', item.id || '');
       return;
     }
     if (campo === 'icono') {
@@ -536,6 +556,20 @@ export function runtimeGesicomm() {
     return imgs;
   }
 
+  function productoAplicaUrgencia(item, config) {
+    if (!item || !config || !config.activo) return false;
+    var ids = Array.isArray(config.productos) ? config.productos : [];
+    if (ids.length) {
+      for (var i = 0; i < ids.length; i++) {
+        if (String(item.id) === String(ids[i]) || String(item.content_id || '') === String(ids[i])) return true;
+      }
+      return false;
+    }
+    var id = config.producto_id || config.content_id;
+    if (!id) return true;
+    return String(item.id) === String(id) || String(item.content_id || '') === String(id);
+  }
+
   function prepararTarjetaProducto(raiz, item) {
     if (!raiz || !item) return;
     var contenido = raiz.querySelector('.product-content, .limited-offer-copy, .hero-card-copy');
@@ -570,6 +604,24 @@ export function runtimeGesicomm() {
         var saving = document.createElement('p'); saving.className = 'gc-commercial-saving'; saving.textContent = 'Ahorrás ' + formatoPrecio(ahorro);
         var footer = contenido.querySelector('.product-footer, .limited-offer-prices');
         if (footer) footer.appendChild(saving); else contenido.appendChild(saving);
+      }
+      var urgencia = datos.venta && datos.venta.urgencia;
+      if (productoAplicaUrgencia(item, urgencia) && urgencia.fin_at && !contenido.querySelector('.gc-card-countdown')) {
+        var cardCountdown = document.createElement('div');
+        cardCountdown.className = 'gc-card-countdown';
+        cardCountdown.setAttribute('data-gesicomm-countdown', '');
+        var tituloCountdown = document.createElement('strong');
+        tituloCountdown.textContent = urgencia.titulo || 'Esta oferta termina pronto';
+        var textoCountdown = document.createElement('span');
+        textoCountdown.textContent = urgencia.texto || 'Aprovechá antes de que vuelva a su precio normal.';
+        var tiempoCountdown = document.createElement('em');
+        tiempoCountdown.innerHTML = '<b data-gesicomm-countdown-parte="horas">--</b>h <b data-gesicomm-countdown-parte="minutos">--</b>m <b data-gesicomm-countdown-parte="segundos">--</b>s';
+        cardCountdown.appendChild(tituloCountdown);
+        cardCountdown.appendChild(textoCountdown);
+        cardCountdown.appendChild(tiempoCountdown);
+        var footerCountdown = contenido.querySelector('.product-footer, .limited-offer-prices');
+        if (footerCountdown) footerCountdown.insertAdjacentElement('beforebegin', cardCountdown);
+        else contenido.appendChild(cardCountdown);
       }
       if (item.cta_texto) {
         contenido.querySelectorAll('[data-gesicomm-comprar]').forEach(function (btn) { btn.textContent = item.cta_texto; });
@@ -650,11 +702,14 @@ export function runtimeGesicomm() {
     el.__gesicommCountdownTimer = timer;
   }
 
-  function finCountdown(urgencia) {
+  function finCountdown(urgencia, item) {
     if (urgencia && urgencia.activo) {
-      var aplica = !urgencia.producto_id && !urgencia.content_id ? true : datoAplicaAlProducto(urgencia);
+      var aplica = item
+        ? productoAplicaUrgencia(item, urgencia)
+        : (!urgencia.producto_id && !urgencia.content_id && !(Array.isArray(urgencia.productos) && urgencia.productos.length) ? true : datoAplicaAlProducto(urgencia));
       var real = aplica ? Date.parse(urgencia.fin_at) : NaN;
       if (isFinite(real) && real > Date.now()) return real;
+      if (!aplica && item) return NaN;
     }
     return Date.now() + COUNTDOWN_DEMO_MS;
   }
@@ -663,8 +718,11 @@ export function runtimeGesicomm() {
     var els = document.querySelectorAll('[data-gesicomm-countdown]');
     if (!els.length) return;
     var urgencia = datos.venta && datos.venta.urgencia;
-    var finMs = finCountdown(urgencia);
     for (var i = 0; i < els.length; i++) {
+      var contItem = els[i].closest('[data-gesicomm-item]');
+      var item = contItem ? buscar(contItem.getAttribute('data-gesicomm-item')) : (els[i].closest('[data-gesicomm-ficha-bloque="urgencia"]') ? productoActual : null);
+      var finMs = finCountdown(urgencia, item);
+      if (!isFinite(finMs)) { els[i].style.display = 'none'; continue; }
       prepararCountdown(els[i], finMs);
     }
   }
@@ -783,9 +841,7 @@ export function runtimeGesicomm() {
 
   function datoAplicaAlProducto(config) {
     if (!config || !config.activo || !productoActual) return false;
-    var id = config.producto_id || config.content_id;
-    if (!id) return false;
-    return String(productoActual.id) === String(id) || String(productoActual.content_id || '') === String(id);
+    return productoAplicaUrgencia(productoActual, config);
   }
 
   // ─── Listas ───────────────────────────────────────────────────────────
@@ -1491,6 +1547,16 @@ export function runtimeGesicomm() {
     }
   }
 
+  function aplicarVisibilidadFicha() {
+    if (!productoActual) return;
+    var bloques = productoActual.ficha_bloques || {};
+    var els = document.querySelectorAll('[data-gesicomm-ficha-bloque]');
+    for (var i = 0; i < els.length; i++) {
+      var clave = els[i].getAttribute('data-gesicomm-ficha-bloque');
+      els[i].style.display = bloques[clave] === false ? 'none' : '';
+    }
+  }
+
   function renderizar() {
     var listas = document.querySelectorAll('[data-gesicomm-lista]');
     for (var i = 0; i < listas.length; i++) renderizarLista(listas[i]);
@@ -1510,6 +1576,7 @@ export function runtimeGesicomm() {
       var hayDato = Array.isArray(dato) ? dato.length > 0 : (dato !== null && dato !== undefined && dato !== '' && dato !== 0 && dato !== false);
       condicionales[q].style.display = hayDato ? '' : 'none';
     }
+    aplicarVisibilidadFicha();
     // Binds sueltos (fuera de listas): el producto de la ficha, o el que
     // declare data-gesicomm-item="content_id" en un ancestro. Eso último es
     // lo que hace posible un bloque "producto protagonista" en el INICIO
@@ -1523,6 +1590,7 @@ export function runtimeGesicomm() {
       if (!itemSuelto) continue;
       aplicarBind(sueltos[j], itemSuelto, itemSuelto === productoActual ? { variante: varianteElegida } : undefined);
     }
+    aplicarVisibilidadFicha();
     // La ficha base también existe como HTML guardado: evita un bloque de
     // "Detalles" vacío cuando el producto no tiene descripción cargada.
     var descripciones = document.querySelectorAll('section.description');
@@ -1569,6 +1637,7 @@ export function runtimeGesicomm() {
       categoriaEls[ce].style.display = valCat ? '' : 'none';
     }
     pintarRedes();
+    pintarContactoFlotante();
     prepararMenuPrincipalHeader();
     prepararMenuCategoriasHeader();
   }
@@ -1649,6 +1718,8 @@ export function runtimeGesicomm() {
     tiktok: '<path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path>',
     youtube: '<rect x="2" y="5" width="20" height="14" rx="4"></rect><path d="M10 9.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" stroke="none"></path>',
     twitter: '<path d="M4 4l7.5 9.5L4.5 20H7l5.8-6.4L17.5 20H20l-8-10L19 4h-2.5l-5.2 5.8L7 4H4z" fill="currentColor" stroke="none"></path>',
+    email: '<path d="M4 4h16v16H4z"></path><path d="m22 6-10 7L2 6"></path>',
+    telefono: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.6 2.61a2 2 0 0 1-.45 2.11L8 9.7a16 16 0 0 0 6.3 6.3l1.26-1.26a2 2 0 0 1 2.11-.45c.84.28 1.71.48 2.61.6A2 2 0 0 1 22 16.92z"></path>',
   };
   function urlRed(red, valor) {
     var v = String(valor || '').trim();
@@ -1690,6 +1761,47 @@ export function runtimeGesicomm() {
       }
       c.style.display = hay ? '' : 'none';
     }
+  }
+
+  function canalContactoPreferido() {
+    var tienda = datos.tienda || {};
+    var preferido = String(tienda.canal_contacto || 'whatsapp').toLowerCase();
+    var orden = [preferido, 'whatsapp', 'telefono', 'instagram', 'email'];
+    for (var i = 0; i < orden.length; i++) {
+      var canal = orden[i];
+      if (canal === 'email' && tienda.email) return ['email', 'Email', 'mailto:' + tienda.email];
+      if (canal === 'telefono' && tienda.telefono) return ['telefono', 'Teléfono', 'tel:' + String(tienda.telefono).replace(/\D/g, '')];
+      if (canal === 'instagram' && tienda.instagram) {
+        var instagramHref = urlRed(REDES[1], tienda.instagram);
+        if (instagramHref) return ['instagram', 'Instagram', instagramHref];
+      }
+      if (canal === 'whatsapp' && tienda.whatsapp) {
+        var href = urlRed(REDES[0], tienda.whatsapp);
+        if (href) href += (href.indexOf('?') === -1 ? '?' : '&') + 'text=' + encodeURIComponent(mensajeWhatsapp());
+        return ['whatsapp', 'WhatsApp', href];
+      }
+    }
+    return null;
+  }
+
+  function pintarContactoFlotante() {
+    var actual = document.querySelector('[data-gesicomm-contacto-flotante]');
+    var canal = canalContactoPreferido();
+    if (!canal) {
+      if (actual) actual.remove();
+      return;
+    }
+    if (!actual) {
+      actual = document.createElement('a');
+      actual.setAttribute('data-gesicomm-contacto-flotante', '');
+      actual.className = 'gc-contact-float';
+      document.body.appendChild(actual);
+    }
+    actual.className = 'gc-contact-float gc-contact-float--' + canal[0];
+    actual.href = canal[2] || '#contacto';
+    actual.title = canal[1];
+    actual.setAttribute('aria-label', canal[1]);
+    actual.innerHTML = '<svg class="gc-contact-float__icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONOS_RED[canal[0]] || ICONOS_RED.whatsapp) + '</svg><span class="gc-contact-float__label">' + canal[1] + '</span>';
   }
 
   // ─── Catálogo: filtros, páginas y pedidos al servidor ─────────────────
@@ -2258,6 +2370,15 @@ export function runtimeGesicomm() {
       enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' });
       return;
     }
+    if ((el = t.closest('[data-gesicomm-contacto-flotante]'))) {
+      var seccionContacto = document.getElementById('contacto') || document.querySelector('[data-gesicomm-bloque="contacto"]');
+      enviar({ tipo: 'gesicomm:evento', nombre: 'Contact', datos: { canal: (datos.tienda && datos.tienda.canal_contacto) || 'whatsapp' } });
+      if (seccionContacto) {
+        e.preventDefault();
+        try { seccionContacto.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (err) { seccionContacto.scrollIntoView(); }
+        return;
+      }
+    }
     if ((el = t.closest('[data-gesicomm-categorias-toggle]'))) {
       e.preventDefault();
       var panelCategorias = document.querySelector('[data-gesicomm-menu-categorias]');
@@ -2336,6 +2457,9 @@ export function runtimeGesicomm() {
       } else {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
+      if (hash === '#inicio') enviar({ tipo: 'gesicomm:navegar', destino: 'inicio' });
+      if (hash === '#categorias' || hash === '#productos-categoria') enviar({ tipo: 'gesicomm:navegar', destino: 'categoria' });
+      if (hash === '#checkout') enviar({ tipo: 'gesicomm:navegar', destino: 'checkout' });
       // Sin return: el mismo link puede tener además un data-gesicomm-evento.
     }
 
@@ -2345,7 +2469,14 @@ export function runtimeGesicomm() {
         // Navega el contenedor (sin recargar la app); en el preview del
         // editor, avisa qué página abriría en vez de sacarte del editor.
         e.preventDefault();
-        enviar({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: paginaTienda });
+        var filtroLink = {};
+        try {
+          var urlLink = new URL(el.getAttribute('href') || '', window.location.href);
+          if (urlLink.searchParams.get('etiqueta')) filtroLink.etiqueta = urlLink.searchParams.get('etiqueta');
+          if (urlLink.searchParams.get('badge')) filtroLink.etiqueta = urlLink.searchParams.get('badge');
+          if (urlLink.searchParams.get('categoria')) filtroLink.categoria = urlLink.searchParams.get('categoria');
+        } catch (err) { /* href relativo raro: navega sin filtro extra */ }
+        enviar({ tipo: 'gesicomm:navegar', destino: 'pagina', pagina: paginaTienda, filtro: filtroLink });
         return;
       }
     }

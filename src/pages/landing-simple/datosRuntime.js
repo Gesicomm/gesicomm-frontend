@@ -97,6 +97,55 @@ function paqueteVisible(oferta, venta) {
   return conf?.activo !== false;
 }
 
+const FICHA_BLOQUES_DEFAULT = {
+  urgencia: true,
+  portada: true,
+  textos: true,
+  beneficios: true,
+  compra: true,
+  incluye: true,
+  opiniones: true,
+};
+
+const PRESENTACION_PRODUCTO_DEFAULT = {
+  resenas_texto: '4.9 · 5 estrellas · +1.000 reseñas verificadas',
+  insignia_principal: 'Oferta destacada',
+  cta_texto: 'Comprar ahora',
+  agregar_carrito_texto: 'Agregar al carrito',
+  beneficios_kicker: 'Por qué elegirlo',
+  beneficios_titulo: 'Beneficios que se entienden rápido.',
+  beneficios_subtitulo: 'Usá estos ejemplos como guía y ajustalos a lo que realmente ofrece tu producto.',
+  urgencia_kicker: 'Oferta por tiempo limitado',
+  urgencia_titulo: 'Reservá esta condición antes de que termine.',
+  urgencia_texto: 'La fecha real se configura en Gesicomm; el contador se actualiza solo.',
+  opiniones_kicker: 'Opiniones',
+  opiniones_titulo: 'Personas que ya lo probaron.',
+  opiniones_subtitulo: 'Reemplazá estos ejemplos por comentarios reales de tus clientes.',
+  beneficios: [
+    { titulo: 'Compra simple', texto: 'Elegí la opción ideal y completá tu pedido en pocos pasos.' },
+    { titulo: 'Atención cercana', texto: 'Podés consultar antes de comprar y recibir ayuda con tu pedido.' },
+    { titulo: 'Producto seleccionado', texto: 'Una presentación clara para mostrar lo mejor de este producto.' },
+  ],
+  botones_pago: [
+    { label: 'Pagar en checkout', tipo: 'checkout', valor: '' },
+    { label: 'Consultar por WhatsApp', tipo: 'whatsapp', valor: 'Hola! Quiero consultar por este producto.' },
+  ],
+  metodos_pago: [
+    { texto: 'Pago online' },
+    { texto: 'Transferencia' },
+    { texto: 'Pago al recibir' },
+  ],
+  incluye_pedido: [
+    { texto: '1 unidad del producto seleccionado' },
+    { texto: 'Coordinación de entrega' },
+    { texto: 'Soporte de la tienda para tu compra' },
+  ],
+  opiniones: [
+    { nombre: 'Cliente verificado', comentario: 'La compra fue simple y la atención me ayudó a elegir mejor.', detalle: 'Ejemplo editable', calificacion: 5, foto: '' },
+    { nombre: 'María P.', comentario: 'Me gustó poder ver la información clara antes de hacer el pedido.', detalle: 'Ejemplo editable', calificacion: 5, foto: '' },
+  ],
+};
+
 /** Ahorro y % de descuento de una oferta — lo que muestran "Ahorrás Gs X" y el "-30%". */
 function conAhorro(oferta) {
   const antes = Number(oferta.precio_normal) || 0;
@@ -133,10 +182,34 @@ function ofertasRuntime(item, venta) {
 export function presentacionComercial(item, venta) {
   const key = `${item.tipo || 'producto'}:${item.referencia_id ?? item.id}`;
   const fuente = venta?.presentacion_productos?.[key] || item;
+  const texto = campo => String(fuente[campo] || PRESENTACION_PRODUCTO_DEFAULT[campo] || '').trim();
+  const lista = (campo) => (Array.isArray(fuente[campo]) && fuente[campo].length ? fuente[campo] : PRESENTACION_PRODUCTO_DEFAULT[campo]);
+  const beneficios = lista('beneficios').map(b => (
+    typeof b === 'string'
+      ? { titulo: b, texto: '' }
+      : { titulo: String(b?.titulo || b?.texto || '').trim(), texto: String(b?.texto || '').trim(), icono: b?.icono || null }
+  )).filter(b => b.titulo || b.texto);
+  // Logos de medios de pago (Tarjetas / Bocas de cobranza / Billetera
+  // electrónica) de la ficha genérica: el comercio elige cuáles mostrar
+  // desde Configurar venta → Checkout (nunca por producto, es de la tienda
+  // entera). `undefined` = todavía no lo tocó = se muestra, por eso el
+  // chequeo es `!== false` y no `=== true`.
+  const pagoLogoTarjetas = venta?.pago_logos?.tarjetas !== false;
+  const pagoLogoBocas = venta?.pago_logos?.bocas !== false;
+  const pagoLogoBilletera = venta?.pago_logos?.billetera !== false;
   return {
-    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo'].map(campo => [campo, String(fuente[campo] || '').trim()])),
+    ...Object.fromEntries(['titulo_comercial', 'mensaje_comercial', 'insignia_principal', 'insignia_secundaria', 'cta_texto', 'agregar_carrito_texto', 'resenas_texto', 'beneficios_kicker', 'beneficios_titulo', 'beneficios_subtitulo', 'urgencia_kicker', 'urgencia_titulo', 'urgencia_texto', 'opiniones_kicker', 'opiniones_titulo', 'opiniones_subtitulo'].map(campo => [campo, texto(campo)])),
+    ficha_bloques: { ...FICHA_BLOQUES_DEFAULT, ...(fuente.ficha_bloques || {}) },
+    beneficios,
+    botones_pago: lista('botones_pago'),
+    metodos_pago: lista('metodos_pago'),
+    incluye_pedido: lista('incluye_pedido'),
     botones_contacto: Array.isArray(fuente.botones_contacto) ? fuente.botones_contacto : [],
-    opiniones: Array.isArray(fuente.opiniones) ? fuente.opiniones : [],
+    opiniones: lista('opiniones'),
+    pago_logo_tarjetas: pagoLogoTarjetas,
+    pago_logo_bocas: pagoLogoBocas,
+    pago_logo_billetera: pagoLogoBilletera,
+    pago_logos_activo: pagoLogoTarjetas || pagoLogoBocas || pagoLogoBilletera,
   };
 }
 
@@ -360,7 +433,8 @@ function tiendaRuntime(data) {
       fondo: null,
     },
     whatsapp: c.whatsapp || t.whatsapp || data?.contacto_whatsapp || '',
-    mensaje: t.mensaje || '',
+    mensaje: t.mensaje || data?.tienda?.mensaje_contacto || '',
+    canal_contacto: c.canal_contacto || t.canal_contacto || data?.tienda?.canal_contacto || data?.canal_contacto || 'whatsapp',
     incluir_precio: !!t.incluir_precio,
     incluir_url: !!t.incluir_url,
     telefono: c.telefono || t.telefono || '',
@@ -505,6 +579,8 @@ export function datosRuntimePreview({ productos = [], tienda, venta, vista, prod
         fondo: tienda?.color_fondo || null,
       },
       whatsapp: tienda?.whatsapp || tienda?.telefono || '',
+      mensaje: tienda?.mensaje_contacto || '',
+      canal_contacto: tienda?.canal_contacto || 'whatsapp',
       telefono: tienda?.telefono || '',
       email: tienda?.email || '',
       direccion: [tienda?.direccion, tienda?.ciudad].filter(Boolean).join(', '),

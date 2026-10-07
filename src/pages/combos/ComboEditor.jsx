@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Layers, Search, X, Save, Power, PowerOff, ArrowLeft, ArrowRight, Check,
   AlertTriangle, Package, Star, Upload, Plus, Eye, Loader, TrendingDown,
@@ -418,7 +418,14 @@ function Recibo({ titulo, precio, costoProductos, etiquetaCostoProductos, public
 export default function ComboEditor() {
   const { id } = useParams();
   const navigate = useNavigate();
-  return <ComboBuilder id={id} usarPrefillCatalogo onCancelar={() => navigate('/combos')} onGuardado={(_, aviso) => navigate('/combos', { state: { aviso } })} />;
+  const location = useLocation();
+  const usarPrefillCatalogo = location.state?.usarPrefillCatalogo === true;
+
+  useEffect(() => {
+    if (!usarPrefillCatalogo) sessionStorage.removeItem('gesicomm:comboPrefillItems');
+  }, [usarPrefillCatalogo]);
+
+  return <ComboBuilder id={id} usarPrefillCatalogo={usarPrefillCatalogo} onCancelar={() => navigate('/combos')} onGuardado={(_, aviso) => navigate('/combos', { state: { aviso } })} />;
 }
 
 // Las landings usan el mismo armador sin leer su :id como si fuera un combo.

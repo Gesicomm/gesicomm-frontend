@@ -929,7 +929,7 @@ export default function CartDrawer({
                         <span className="lp-pay-option-icon"><Banknote size={16} /></span>
                         <span className="lp-pay-option-copy">
                           <span className="lp-pay-option-title">Pago contra entrega</span>
-                          <span className="lp-pay-option-desc">Pagás en efectivo cuando recibís el pedido.</span>
+                          <span className="lp-pay-option-desc">Pagás cuando recibís el pedido.</span>
                         </span>
                       </label>
                     </div>

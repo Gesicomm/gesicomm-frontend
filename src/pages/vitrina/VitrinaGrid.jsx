@@ -616,6 +616,7 @@ export default function VitrinaGrid() {
   function armarCombo(itemsBase = productosSeleccionados) {
     const productos = (itemsBase || []).filter(item => item?.tipo === 'producto');
     if (productos.length < 2) {
+      sessionStorage.removeItem('gesicomm:comboPrefillItems');
       navigate('/combos/nuevo');
       return;
     }
@@ -636,7 +637,7 @@ export default function VitrinaGrid() {
       sku: item.sku || null,
       creado_por: item.creado_por ?? null,
     }))));
-    navigate('/combos/nuevo');
+    navigate('/combos/nuevo', { state: { usarPrefillCatalogo: true } });
   }
 
   const [totalPages, setTotalPages] = useState(1);

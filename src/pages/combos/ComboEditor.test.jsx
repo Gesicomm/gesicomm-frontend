@@ -35,6 +35,13 @@ async function iniciar() {
   fireEvent.click(screen.getByRole('button', { name: /Siguiente: producto principal/i }));
   return screen.findByRole('textbox', { name: 'Precio de venta de Cacerola QA' });
 }
+function renderConPrefillCatalogo() {
+  render(
+    <MemoryRouter initialEntries={[{ pathname: '/combos/nuevo', state: { usarPrefillCatalogo: true } }]}>
+      <ComboEditor />
+    </MemoryRouter>
+  );
+}
 function elegir(nombre, accion = 'Elegir') {
   const campo = screen.getByRole('textbox', { name: `Precio de venta de ${nombre}` });
   fireEvent.click(within(campo.closest('li')).getByRole('button', { name: new RegExp(accion) }));
@@ -47,7 +54,7 @@ function editar(campo, valor) {
 describe('Precios de venta durante el armado del combo', () => {
   it('conserva imágenes de los productos preseleccionados del catálogo en la vista del combo', async () => {
     sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos));
-    render(<MemoryRouter><ComboEditor /></MemoryRouter>);
+    renderConPrefillCatalogo();
     await screen.findByRole('heading', { name: '¿Cuánto descontás en cada complemento?' });
     await waitFor(() => expect(screen.getByRole('button', { name: /Vista del combo/ })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: /Vista del combo/ }));
@@ -55,6 +62,15 @@ describe('Precios de venta durante el armado del combo', () => {
     expect(preview.querySelector('img[src$="/cacerola.png"]')).not.toBeNull();
     expect(preview.querySelector('img[src$="/utensilios.png"]')).not.toBeNull();
     expect(within(preview).queryByText(/Sin imagen/)).toBeNull();
+  });
+
+  it('no arrastra productos preseleccionados viejos al crear un combo desde Mis combos', async () => {
+    sessionStorage.setItem('gesicomm:comboPrefillItems', JSON.stringify(productos));
+    render(<MemoryRouter><ComboEditor /></MemoryRouter>);
+
+    expect(await screen.findByRole('heading', { name: '¿Cómo se llama el combo?' })).toBeInTheDocument();
+    expect(screen.getByText('Sin producto principal')).toBeInTheDocument();
+    await waitFor(() => expect(sessionStorage.getItem('gesicomm:comboPrefillItems')).toBeNull());
   });
   it.each(['administrador', 'usuario'])('edita desde el buscador y guarda el precio correcto para %s', async rol => {
     verificarSesion.mockResolvedValue({ id: 1, rol });
